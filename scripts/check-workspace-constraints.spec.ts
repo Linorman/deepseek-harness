@@ -9,16 +9,16 @@ import {
 
 const experimental: WorkspaceManifest = {
   dir: 'packages/experimental/prototype',
-  manifest: { name: '@deepseek-ai/dsh-experimental-prototype', private: true },
+  manifest: { name: '@clocky/clocky-experimental-prototype', private: true },
 }
 
 describe('experimental workspace constraints', () => {
   it('requires the experimental package-name prefix', () => {
     expect(checkExperimentalManifest({
       ...experimental,
-      manifest: { ...experimental.manifest, name: '@deepseek-ai/dsh-prototype' },
+      manifest: { ...experimental.manifest, name: '@clocky/clocky-prototype' },
     })).toEqual([
-      '@deepseek-ai/dsh-prototype: experimental package name must start with "@deepseek-ai/dsh-experimental-"',
+      '@clocky/clocky-prototype: experimental package name must start with "@clocky/clocky-experimental-"',
     ])
   })
 
@@ -28,8 +28,8 @@ describe('experimental workspace constraints', () => {
       ...experimental,
       manifest: { ...experimental.manifest, private: false, publishConfig: { access: 'public' } },
     })).toEqual([
-      '@deepseek-ai/dsh-experimental-prototype: experimental package must set "private": true',
-      '@deepseek-ai/dsh-experimental-prototype: experimental package must omit publishConfig',
+      '@clocky/clocky-experimental-prototype: experimental package must set "private": true',
+      '@clocky/clocky-experimental-prototype: experimental package must omit publishConfig',
     ])
   })
 
@@ -39,11 +39,11 @@ describe('experimental workspace constraints', () => {
       expect(checkExperimentalDependencyIsolation([experimental, {
         dir: 'packages/core/consumer',
         manifest: {
-          name: '@deepseek-ai/dsh-consumer',
-          [section]: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+          name: '@clocky/clocky-consumer',
+          [section]: { '@clocky/clocky-experimental-prototype': 'workspace:^' },
         },
       }])).toEqual([
-        `@deepseek-ai/dsh-consumer: ${section}.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package`,
+        `@clocky/clocky-consumer: ${section}.@clocky/clocky-experimental-prototype must not reference an experimental package`,
       ])
     },
   )
@@ -52,25 +52,25 @@ describe('experimental workspace constraints', () => {
     const manifests: WorkspaceManifest[] = [experimental, {
       dir: 'packages/core/test-only',
       manifest: {
-        name: '@deepseek-ai/dsh-test-only',
-        devDependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@clocky/clocky-test-only',
+        devDependencies: { '@clocky/clocky-experimental-prototype': 'workspace:^' },
       },
     }, {
       dir: 'packages/experimental/consumer',
       manifest: {
-        name: '@deepseek-ai/dsh-experimental-consumer',
-        dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@clocky/clocky-experimental-consumer',
+        dependencies: { '@clocky/clocky-experimental-prototype': 'workspace:^' },
       },
     }, {
       dir: 'python/sdk-runtime',
       manifest: {
-        name: '@deepseek-ai/dsh-python-runtime',
-        dependencies: { '@deepseek-ai/dsh-experimental-prototype': 'workspace:^' },
+        name: '@clocky/clocky-python-runtime',
+        dependencies: { '@clocky/clocky-experimental-prototype': 'workspace:^' },
       },
     }]
 
     expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
-      '@deepseek-ai/dsh-python-runtime: dependencies.@deepseek-ai/dsh-experimental-prototype must not reference an experimental package',
+      '@clocky/clocky-python-runtime: dependencies.@clocky/clocky-experimental-prototype must not reference an experimental package',
     ])
   })
 })

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-session-telemetry-otel`.
- * @module @deepseek-ai/dsh-session-telemetry-otel/invariant
+ * Package-owned invariant companion for `@clocky/clocky-session-telemetry-otel`.
+ * @module @clocky/clocky-session-telemetry-otel/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-session-telemetry-otel'
+const PACKAGE_NAME = '@clocky/clocky-session-telemetry-otel'
 
 /** Cordis companion plugin name. */
 export const name = 'session-telemetry-otel-invariant'

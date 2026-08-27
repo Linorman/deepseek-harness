@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-pwsh-local",
-  "description": "Local PowerShell implementation of the DeepSeek Harness bash executor seam",
+  "name": "@clocky/clocky-pwsh-local",
+  "description": "Local PowerShell implementation of Clocky bash executor seam",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/shell/pwsh-local"
   },
   "type": "module",
@@ -32,23 +32,23 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-shell": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^"
+    "@clocky/clocky-shell": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@clocky/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-shell": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/dsh-subprocess-local": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^"
+    "@clocky/clocky-shell": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-subprocess-local": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^"
   }
 }

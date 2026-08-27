@@ -16,7 +16,7 @@ import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionEvent } from '@clocky/clocky-session'
 import {
   acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
@@ -123,8 +123,8 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       await compareOrRefreshGolden(PLAN_ACTIVE_EXPECTED, planSnapshot, MODE)
       const planStyle = await planButton.evaluate((element) => {
         const probe = document.createElement('span')
-        probe.style.color = 'var(--dsw-alias-state-warn-label)'
-        probe.style.backgroundColor = 'var(--dsw-alias-state-warn-tertiary)'
+        probe.style.color = 'var(--clocky-alias-state-warn-label)'
+        probe.style.backgroundColor = 'var(--clocky-alias-state-warn-tertiary)'
         document.body.append(probe)
         const actual = getComputedStyle(element)
         const reference = getComputedStyle(probe)
@@ -227,7 +227,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
-    // Selection persisted (dsh.sessions.current) and history replayed: the
+    // Selection persisted (clocky.sessions.current) and history replayed: the
     // recorded turn re-renders from session.history with zero model calls —
     // the replay cursor was fully consumed before the reload, so any stray
     // request would fail the scenario loudly at close().
@@ -251,7 +251,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       await page.evaluate(() => {
         const sidebar = document.querySelector('[class*="sidebar"], [class*="rail"]') ?? document.body
         return {
-          token: getComputedStyle(document.body).getPropertyValue('--dsw-alias-bg-base').trim(),
+          token: getComputedStyle(document.body).getPropertyValue('--clocky-alias-bg-base').trim(),
           sidebarBg: getComputedStyle(sidebar).backgroundColor,
           bodyBg: getComputedStyle(document.body).backgroundColor,
         }

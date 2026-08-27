@@ -2,11 +2,11 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { AgentHandle } from '@deepseek-ai/dsh-agent'
-import { CallId, createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-agent-presets'
-import type {} from '@deepseek-ai/dsh-system-prompt'
+import type { AgentHandle } from '@clocky/clocky-agent'
+import { CallId, createUserMessage } from '@clocky/clocky-llm'
+import { SessionId } from '@clocky/clocky-session'
+import type {} from '@clocky/clocky-agent-presets'
+import type {} from '@clocky/clocky-system-prompt'
 import { assertFixtureInventory, launchWebScaffold, type WebScaffold } from './scaffold.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/minimal-preset', import.meta.url))
@@ -28,7 +28,7 @@ describe('minimal agent preset', () => {
     agentHandle = await scaffold.ctx.agents.create({
       sessionId: SessionId('minimal-preset-smoke'),
       meta: { cwd: scaffold.workspaceCwd, agentPreset: 'minimal' },
-      agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      agentOptions: { provider: 'test-provider', model: 'test-model' },
       setup: agentCtx => scaffold.ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
     })
   })
@@ -57,7 +57,7 @@ describe('minimal agent preset', () => {
     if (requestHeader === undefined) throw new Error('the minimal agent issued no model request')
     expect(agentHandle.agent.session.events.some(event => event.type === 'user/message'
       && event.data.source.kind === 'plugin'
-      && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt')).toBe(false)
+      && event.data.source.plugin === '@clocky/clocky-system-prompt')).toBe(false)
     const presetFileSystem = scaffold.ctx.agentPresets.serviceFor(agentHandle.agent, 'fs')
     expect(presetFileSystem).toBeDefined()
     expect(presetFileSystem?.sandboxMode).toBeUndefined()
@@ -70,14 +70,14 @@ describe('minimal agent preset', () => {
       signal,
       callId: CallId('minimal-bash-state-setup'),
       name: 'bash',
-      arguments: { command: `cd ${JSON.stringify(stateDir)} && export DSH_MINIMAL_STATE=PERSISTED` },
+      arguments: { command: `cd ${JSON.stringify(stateDir)} && export CLOCKY_MINIMAL_STATE=PERSISTED` },
       agent: agentHandle.agent,
     })
     const bash = await scaffold.ctx.tools.execute({
       signal,
       callId: CallId('minimal-bash-state-read'),
       name: 'bash',
-      arguments: { command: 'printf \'%s:%s\n\' "$DSH_MINIMAL_STATE" "$PWD"' },
+      arguments: { command: 'printf \'%s:%s\n\' "$CLOCKY_MINIMAL_STATE" "$PWD"' },
       agent: agentHandle.agent,
     })
     const seedPath = join(scaffold.workspaceCwd, 'preset-smoke.txt')

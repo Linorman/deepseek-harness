@@ -2,18 +2,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import type { SubagentListEntry } from '@deepseek-ai/dsh-subagent'
-import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { LlmAdapter } from '@deepseek-ai/dsh-llm'
+import { Context } from '@clocky/cordis'
+import { CallId } from '@clocky/clocky-llm'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import { SessionId } from '@clocky/clocky-session'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import SessionProjectionRegistry from '@clocky/clocky-session-projection'
+import SubagentRuntime from '@clocky/clocky-subagent'
+import type { SubagentListEntry } from '@clocky/clocky-subagent'
+import * as SubagentSpawn from '@clocky/clocky-subagent-spawn-in-process'
+import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
+import { LlmAdapter } from '@clocky/clocky-llm'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import * as tool from '../src/list-agents.ts'
 import { parkParent } from './park-parent.ts'
@@ -54,7 +54,7 @@ afterEach(() => {
 async function setupWith(adapter: MockAdapter | GatedAdapter) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
-  const root = mkdtempSync(join(tmpdir(), 'dsh-tool-list-agents-'))
+  const root = mkdtempSync(join(tmpdir(), 'clocky-tool-list-agents-'))
   roots.push(root)
   await ctx.plugin(JsonlSessionPersistence, { root })
   await ctx.plugin(AgentLoop, { agents: [] })
@@ -100,7 +100,7 @@ async function waitNoActivation(ctx: Context, childId: SessionId): Promise<void>
   }, { timeout: 5_000 })
 }
 
-describe('dsh-tool-subagent-control/list-agents', () => {
+describe('clocky-tool-subagent-control/list-agents', () => {
   it('registers list_agents once, globally, with only the optional scope parameter', async () => {
     const { ctx } = await setup([])
     const schemas = ctx.tools.schemas().filter(schema => schema.name === 'list_agents')

@@ -1,12 +1,12 @@
-/* Visual baseline: deepsuite `@deepseek/md` markdown.css, adapted to CSS
+/* Visual baseline: the upstream markdown.css reference, adapted to CSS
    Modules. Cite pills, header anchors, and thinking-small variants are
    intentionally absent (no matching DOM). Token names match that sheet. */
 
 .markdown {
   min-width: 0;
   overflow-wrap: anywhere;
-  font: var(--dsw-font-markdown-base);
-  color: var(--dsw-alias-label-primary);
+  font: var(--clocky-font-markdown-base);
+  color: var(--clocky-alias-label-primary);
 }
 
 .markdown strong {
@@ -14,27 +14,27 @@
 }
 
 .markdown h1 {
-  font: var(--dsw-font-markdown-h1);
+  font: var(--clocky-font-markdown-h1);
   margin: 32px 0 16px;
 }
 
 .markdown h2 {
-  font: var(--dsw-font-markdown-h2);
+  font: var(--clocky-font-markdown-h2);
   margin: 32px 0 16px;
 }
 
 .markdown h3 {
-  font: var(--dsw-font-markdown-h3);
+  font: var(--clocky-font-markdown-h3);
   margin: 32px 0 16px;
 }
 
 .markdown h4 {
-  font: var(--dsw-font-markdown-h4);
+  font: var(--clocky-font-markdown-h4);
   margin: 16px 0;
 }
 
 .markdown :where(h5, h6) {
-  font: var(--dsw-font-markdown-base-strong);
+  font: var(--clocky-font-markdown-base-strong);
   margin: 16px 0;
 }
 
@@ -56,10 +56,10 @@
 }
 
 .markdown a {
-  /* deepsuite markdown.css uses brand-text (blue in newDesign); this sheet
+  /* The upstream markdown reference uses brand-text (blue in newDesign); this sheet
      keeps design-platform brand-text as near-black, so links use the blue
      business-primary alias instead. */
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--clocky-alias-state-business-primary);
   transition: box-shadow var(--ds-transition-duration) var(--ds-ease-in-out);
   position: relative;
   text-decoration: none;
@@ -75,11 +75,11 @@
 .markdown a:hover,
 .markdown a:focus {
   outline: none;
-  text-decoration: underline var(--dsw-alias-state-business-primary);
+  text-decoration: underline var(--clocky-alias-state-business-primary);
 }
 
 .markdown a:focus-visible {
-  box-shadow: 0 0 0 2px var(--dsw-alias-state-business-primary);
+  box-shadow: 0 0 0 2px var(--clocky-alias-state-business-primary);
 }
 
 .markdown :where(ul, ol) {
@@ -97,7 +97,7 @@
 
 .markdown li::marker {
   line-height: 28px;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--clocky-alias-label-secondary);
 }
 
 /* Nested ol under ul/ol: markers inside (models sometimes emit this shape). */
@@ -128,11 +128,11 @@
   border: none;
   height: 1px;
   margin: 32px 0;
-  background: var(--dsw-alias-border-l2);
+  background: var(--clocky-alias-border-l2);
 }
 
 .markdown blockquote {
-  border-left: 2px solid var(--dsw-alias-label-caption);
+  border-left: 2px solid var(--clocky-alias-label-caption);
   margin: 16px 0 0;
   padding-left: 14px;
 }
@@ -147,10 +147,10 @@
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
-  font: var(--dsw-font-markdown-code);
+  font: var(--clocky-font-markdown-code);
   font-family: var(--ds-font-family-code);
   font-size: 0.875em !important;
-  background-color: var(--dsw-alias-markdown-inline-code);
+  background-color: var(--clocky-alias-markdown-inline-code);
   border-radius: 6px;
   padding: 0 5px;
 }
@@ -168,7 +168,7 @@
 
 .markdown input[type='checkbox'] {
   margin: 0 8px 0 0;
-  accent-color: var(--dsw-alias-label-secondary);
+  accent-color: var(--clocky-alias-label-secondary);
 }
 
 .tableScroll {
@@ -188,7 +188,7 @@
    already the hover that re-enables `auto`. */
 .tableScroll:global(.md-table-wide) {
   overflow-x: hidden;
-  padding-bottom: var(--dsh-scrollbar-width, 8px);
+  padding-bottom: var(--clocky-scrollbar-width, 8px);
 }
 
 .tableScroll:global(.md-table-wide):hover,
@@ -201,12 +201,12 @@
    the sheet's link focus color. */
 .tableScroll:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--dsw-alias-state-business-primary);
+  box-shadow: 0 0 0 2px var(--clocky-alias-state-business-primary);
 }
 
 /* Many-column tables (the renderer's `md-table-wide` hook) keep their
    natural width and scroll inside the wrapper; a hosting layout may widen
-   the wrapper through the hook (deepsuite chat TableWrapper parity). */
+   the wrapper through the hook (chat TableWrapper parity). */
 .tableScroll table {
   border-collapse: collapse;
   width: max-content;
@@ -215,7 +215,7 @@
 
 /* Tables under four columns, and any table inside a blockquote, fill the
    column instead: cells wrap down to their minimum readable width, and the
-   wrapper's scroll only remains for the below-floor case (deepsuite chat
+   wrapper's scroll only remains for the below-floor case (chat
    parity: `.wrapper:not(:has(th:nth-child(4), td:nth-child(4)))`). */
 .tableFill table {
   width: 100%;
@@ -225,9 +225,9 @@
 .tableScroll th {
   text-align: start;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--dsw-alias-border-l3);
+  border-bottom: 1px solid var(--clocky-alias-border-l3);
   border-top: none;
-  font: var(--dsw-font-markdown-table-head);
+  font: var(--clocky-font-markdown-table-head);
   max-width: 320px;
   max-width: min(30vw, 320px);
   min-width: 100px;
@@ -235,8 +235,8 @@
 
 .tableScroll td {
   padding: 10px 16px;
-  border-bottom: 1px solid var(--dsw-alias-border-l2);
-  font: var(--dsw-font-markdown-table);
+  border-bottom: 1px solid var(--clocky-alias-border-l2);
+  font: var(--clocky-font-markdown-table);
   max-width: 320px;
   max-width: min(30vw, 320px);
   min-width: 100px;
@@ -266,7 +266,7 @@
 }
 
 .imageAlt {
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--clocky-alias-label-tertiary);
   font-style: italic;
 }
 
@@ -277,7 +277,7 @@
   height: auto;
   margin: 0;
   border-radius: 8px;
-  background: var(--dsw-alias-bg-base);
+  background: var(--clocky-alias-bg-base);
   object-fit: contain;
 }
 
@@ -291,7 +291,7 @@
   border: none;
   background: none;
   font: inherit;
-  color: var(--dsw-alias-state-business-primary);
+  color: var(--clocky-alias-state-business-primary);
   text-decoration: none;
   cursor: pointer;
 }
@@ -299,6 +299,6 @@
 .fileMention:hover,
 .fileMention:focus {
   outline: none;
-  text-decoration: underline var(--dsw-alias-state-business-primary);
+  text-decoration: underline var(--clocky-alias-state-business-primary);
   text-underline-offset: 3px;
 }

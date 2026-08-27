@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
+import { Context } from '@clocky/cordis'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { renderPrompt } from '@clocky/clocky-system-prompt'
 import { mountAgentLoopTestDependencies } from '../src/index.ts'
 
-describe('dsh-agent-loop-testkit', () => {
+describe('clocky-agent-loop-testkit', () => {
   it('mounts a configurable prerequisite spine that can activate AgentLoop', async () => {
     const ctx = new Context()
     await mountAgentLoopTestDependencies(ctx, {

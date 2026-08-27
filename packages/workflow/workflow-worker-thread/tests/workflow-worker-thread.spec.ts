@@ -2,17 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import type { Worker } from 'node:worker_threads'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import type { SubagentCapabilities, SubagentProvider, SubagentResult, SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
-import type { WorkflowMeta, WorkflowResult, WorkflowResultInfo, WorkflowRun, WorkflowRunInfo } from '@deepseek-ai/dsh-workflow'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import type { Agent } from '@clocky/clocky-agent'
+import SubagentRuntime from '@clocky/clocky-subagent'
+import type { SubagentCapabilities, SubagentProvider, SubagentResult, SubagentRun, SubagentStartRequest } from '@clocky/clocky-subagent'
+import type { WorkflowMeta, WorkflowResult, WorkflowResultInfo, WorkflowRun, WorkflowRunInfo } from '@clocky/clocky-workflow'
 import * as workerEngineModule from '../src/index.ts'
 import WorkerThreadWorkflowEngine, { type Config } from '../src/index.ts'
 import { workerSpawnEnv } from '../src/host.ts'
 import { HostToWorkerType, WorkerToHostType } from '../src/protocol.ts'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId } from '@clocky/clocky-session'
 
 /** A minimal parent stand-in: the engine only threads it through to the provider. */
 function fakeParent(): Agent {
@@ -175,7 +175,7 @@ async function run(ctx: Context, parent: Agent, source: { script: string; meta: 
   }
 }
 
-describe('dsh-workflow-worker-thread', () => {
+describe('clocky-workflow-worker-thread', () => {
   describe('script execution over a real worker thread', () => {
     it('runs a script end-to-end: agent() text results, phases, log, args, return value, events', async () => {
       const { ctx, parent, provider } = await setup({ reply: (_request, index) => text(`answer-${index}`) })
@@ -213,7 +213,7 @@ describe('dsh-workflow-worker-thread', () => {
         reply: () => ({ output: [], structured: { files: ['x.ts', 'y.ts'] }, stopReason: 'completed' }),
       })
       const result = await run(ctx, parent, scripted(`
-        const found = await agent('list files', { model: 'deepseek-v4-pro', schema: { type: 'object', properties: { files: { type: 'array', items: { type: 'string' } } }, required: ['files'] } })
+        const found = await agent('list files', { model: 'test-model-pro', schema: { type: 'object', properties: { files: { type: 'array', items: { type: 'string' } } }, required: ['files'] } })
         return { first: found.files[0], count: found.files.length }
       `))
       expect(result.value).toEqual({ first: 'x.ts', count: 2 })
@@ -222,7 +222,7 @@ describe('dsh-workflow-worker-thread', () => {
         properties: { files: { type: 'array', items: { type: 'string' } } },
         required: ['files'],
       })
-      expect(provider.runs[0]!.request.agentOptions).toEqual({ model: 'deepseek-v4-pro' })
+      expect(provider.runs[0]!.request.agentOptions).toEqual({ model: 'test-model-pro' })
       expect(provider.runs[0]!.request.parent).toBeDefined()
     })
 
@@ -610,7 +610,7 @@ describe('dsh-workflow-worker-thread', () => {
       const { ctx, parent } = await setup()
       // The ACP snapshot harness runs the parent with its cwd OUTSIDE the
       // repo and pins the repo tsconfig through this variable; the worker
-      // must inherit the pin (or its dsh-* imports silently resolve to
+      // must inherit the pin (or its clocky-* imports silently resolve to
       // unbuilt lib/ bundles) while every other variable stays scrubbed.
       const tsconfig = fileURLToPath(new URL('../../../../tsconfig.json', import.meta.url))
       process.env.TSX_TSCONFIG_PATH = tsconfig

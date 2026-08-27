@@ -1,13 +1,13 @@
 /**
  * Human-facing `/goal` command over the persisted same-session goal domain.
- * @module @deepseek-ai/dsh-command-goal
+ * @module @clocky/clocky-command-goal
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'
-import { GoalError } from '@deepseek-ai/dsh-goal'
-import type { GoalPhase, GoalRef, GoalView } from '@deepseek-ai/dsh-goal'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { Context } from '@clocky/cordis'
+import type { CommandInvocation, CommandResult } from '@clocky/clocky-commands'
+import { GoalError } from '@clocky/clocky-goal'
+import type { GoalPhase, GoalRef, GoalView } from '@clocky/clocky-goal'
+import { createUserMessage } from '@clocky/clocky-llm'
 
 export const name = 'command-goal'
 export const inject = ['commands', 'goals']

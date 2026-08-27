@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, vi } from 'vitest'
-import { CallId, createAssistantMessage, createToolResultMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
-import { SESSION_FORMAT_VERSION, Session, SessionId } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-session-title'
+import { CallId, createAssistantMessage, createToolResultMessage, createUserMessage } from '@clocky/clocky-llm'
+import { SESSION_FORMAT_VERSION, Session, SessionId } from '@clocky/clocky-session'
+import type {} from '@clocky/clocky-session-title'
 import {
   launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
@@ -62,7 +62,7 @@ function producedFixture(): string {
         name: 'write',
         arguments: call.args,
       })),
-      source: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      source: { provider: 'test-provider', model: 'test-model' },
     }),
   }, { surfaceOp: 'append' })
   for (const call of calls) {
@@ -85,7 +85,7 @@ function producedFixture(): string {
     step: 2,
     message: createAssistantMessage({
       content: [{ type: 'text', text: `Created the site.\n\n${DONE}` }],
-      source: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      source: { provider: 'test-provider', model: 'test-model' },
     }),
   }, { surfaceOp: 'append' })
   session.append('step/end', { turn: 1, step: 2 })

@@ -1,9 +1,9 @@
 {
-  "organization": "deepseek-harness",
-  "repository": "deepseek-harness",
+  "organization": "clocky",
+  "repository": "clocky",
   "projectNumber": 1,
-  "projectTitle": "DSH Issue Management",
-  "lifecycleActor": "dsh-issue-management",
+  "projectTitle": "Clocky Issue Management",
+  "lifecycleActor": "clocky-issue-management",
   "priorityField": "Priority",
   "allowUnassignedOwner": true,
   "statuses": [

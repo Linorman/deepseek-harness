@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-subagent-in-process-driver`.
- * @module @deepseek-ai/dsh-subagent-in-process-driver/invariant
+ * Package-owned invariant companion for `@clocky/clocky-subagent-in-process-driver`.
+ * @module @clocky/clocky-subagent-in-process-driver/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-subagent-in-process-driver'
+const PACKAGE_NAME = '@clocky/clocky-subagent-in-process-driver'
 
 /** Cordis companion plugin name. */
 export const name = 'subagent-in-process-driver-invariant'

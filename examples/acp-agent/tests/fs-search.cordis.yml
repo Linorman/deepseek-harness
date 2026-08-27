@@ -1,23 +1,26 @@
 # Minimal live counterpart for the glob-sampling snapshot composition.
-- id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
+- id: llm-pi-ai
+  name: '@clocky/clocky-llm-pi-ai'
   config:
-    models:
-      - id: deepseek-v4-pro
+    providers:
+      deepseek:
+        apiKeyEnv: DEEPSEEK_API_KEY
+        models:
+          - id: deepseek-v4-pro
 
 - id: subprocess
-  name: '@deepseek-ai/dsh-subprocess-local'
+  name: '@clocky/clocky-subprocess-local'
 
 - id: bash
-  name: '@deepseek-ai/dsh-bash-local'
+  name: '@clocky/clocky-bash-local'
 
 - id: acp-agent
-  name: '@deepseek-ai/dsh-acp-demo'
+  name: '@clocky/clocky-acp-demo'
   config:
-    provider: deepseek-official
+    provider: deepseek
     model: deepseek-v4-pro
-    persistenceRoot: !!js process.env.DSH_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
-    persistenceCompression: !!js "process.env.DSH_SNAPSHOT === undefined ? 'zstd' : 'none'"
+    persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+    persistenceCompression: !!js "process.env.CLOCKY_SNAPSHOT === undefined ? 'zstd' : 'none'"
     workspaceContext: false
     skills:
       enabled: false
@@ -26,7 +29,7 @@
     persona: You are a concise snapshot agent working in {{cwd}}.
 
 - id: tool-fs-search
-  name: '@deepseek-ai/dsh-tool-fs-search'
+  name: '@clocky/clocky-tool-fs-search'
   config:
     sampleOverCapGlobResults: true
     globMaxResults: 4

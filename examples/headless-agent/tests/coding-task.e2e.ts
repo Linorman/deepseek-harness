@@ -1,12 +1,12 @@
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage } from '@clocky/clocky-llm'
 import { spawnSync } from 'node:child_process'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId } from '@clocky/clocky-session'
 
 /**
  * The swebench-style smoke test: a real model fixes a real bug in a temp
@@ -46,7 +46,7 @@ afterEach(async () => {
 
 describe.skipIf(!process.env.DEEPSEEK_API_KEY)('coding task: fix a failing test via bash', () => {
   it('repairs add.js so node add.test.js passes', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-coding-task-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-coding-task-'))
     await writeFile(join(workdir, 'add.js'), BUGGY_ADD)
     await writeFile(join(workdir, 'add.test.js'), TEST_FILE)
 
@@ -55,7 +55,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('coding task: fix a failing test 
     expect(before.status).not.toBe(0)
 
     ctx = await codingHarness(workdir, { persona: SYSTEM_PROMPT })
-    const agent = ctx.agentLoop.create(SessionId('e2e-task'), { provider: 'deepseek-official', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-task'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
 
     agent.followup(createUserMessage({
       content: [{

@@ -18,7 +18,7 @@
 - button "Commands":
   - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash":
-  - text: DeepSeek-V4-Flash
+- button "Select model, current Test Model":
+  - text: Test Model
   - img
 - button "Send message" [disabled]

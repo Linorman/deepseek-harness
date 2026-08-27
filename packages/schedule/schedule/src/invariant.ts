@@ -1,14 +1,14 @@
 /**
  * Package-owned strict Schedule stream invariant.
- * @module @deepseek-ai/dsh-schedule/invariant
+ * @module @clocky/clocky-schedule/invariant
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
-import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { Session, SessionEvent } from '@clocky/clocky-session'
+import type { InvariantFailure, InvariantInstaller } from '@clocky/clocky-invariants'
 import { foldScheduleEvents, ScheduleLogError } from './domain.ts'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-schedule'
+const PACKAGE_NAME = '@clocky/clocky-schedule'
 
 /** Cordis invariant-companion plugin name. */
 export const name = 'tool-schedule-invariant'

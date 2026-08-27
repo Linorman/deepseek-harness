@@ -6,14 +6,14 @@
  * continuation host in `./continuation.ts` — so this module stays the published
  * surface rather than a bag of everything type-shaped.
  *
- * @module @deepseek-ai/dsh-subagent/types
+ * @module @clocky/clocky-subagent/types
  */
 
-import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
-import type { ObjectJsonSchema, ToolRestriction } from '@deepseek-ai/dsh-tools'
+import type { Agent, AgentOptions } from '@clocky/clocky-agent'
+import type { Branded } from '@clocky/clocky-brand'
+import type { ContentBlock } from '@clocky/clocky-llm'
+import type { SessionEvent, SessionId } from '@clocky/clocky-session'
+import type { ObjectJsonSchema, ToolRestriction } from '@clocky/clocky-tools'
 import type { SubagentDescriptorData } from './descriptor.ts'
 
 /** Identifies one accepted subagent run across its lifecycle event pair. */

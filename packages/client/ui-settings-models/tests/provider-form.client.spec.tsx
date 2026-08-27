@@ -2,14 +2,15 @@
 /** Model-list editing, endpoint interrogation, and hand-declared provider creation. */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import Schema from '@deepseek-ai/schemastery'
-import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
-import type { RpcResponse, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
+import Schema from '@clocky/schemastery'
+import { bindSnapshotSelector } from '@clocky/clocky-client-test-runtime'
+import type { RpcResponse, SettingsNamespaceView } from '@clocky/clocky-api-remotes/client'
 import { ModelsSection, providerCopy } from '../src/client/ModelsSection.tsx'
 import type { ModelsSectionInjected, ModelsSectionProps } from '../src/client/ModelsSection.tsx'
 import { CustomProviderCard } from '../src/client/CustomProviderCard.tsx'
-import { formatCapacity, parseCapacity } from '../src/client/DeepSeekModelsEditor.tsx'
-import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
+import { ProviderEditor } from '../src/client/ProviderEditor.tsx'
+import { formatCapacity, parseCapacity } from '../src/client/model-utils.ts'
+import { SettingsDescribeMirror } from '@clocky/clocky-client-ui-settings/src/client/settings-mirror.ts'
 import { ModelsSettingsStore, deriveKeyRef, protocolChoices } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
 import { settingsSchema } from './settings-schema.client.ts'
@@ -73,6 +74,9 @@ function scriptedFace(options: {
   baseProviders?: Record<string, unknown>
   /** Routes the adapter reports as hand-declared; the rest come back as shipped. */
   declaredRoutes?: readonly string[]
+  writable?: boolean
+  credential?: { configured: boolean; writable: boolean }
+  providerDisplayNames?: Record<string, string>
   discover?: ReturnType<typeof vi.fn>
   mutate?: ReturnType<typeof vi.fn>
   set?: ReturnType<typeof vi.fn>
@@ -84,12 +88,18 @@ function scriptedFace(options: {
   const discover = options.discover ?? vi.fn(() => Promise.resolve(ok({ models: [] })))
   const mutate = options.mutate ?? vi.fn(() => Promise.resolve(ok(namespace)))
   const set = options.set ?? vi.fn(() => Promise.resolve(ok({})))
+  const describeCredentials = vi.fn((payload: { refs: string[] }) => Promise.resolve(ok({
+    credentials: Object.fromEntries(payload.refs.map(ref => [ref, {
+      configured: options.credential?.configured ?? false,
+      writable: options.credential?.writable ?? true,
+    }])),
+  })))
   const face = {
     llm: {
       providers: vi.fn(() => Promise.resolve(ok({
         providers: Object.keys(providers).map(provider => ({
           provider,
-          displayName: provider,
+          displayName: options.providerDisplayNames?.[provider] ?? provider,
           settingsNs: 'llm-pi-ai',
           settingsPath: ['providers', provider],
           active: true,
@@ -100,20 +110,18 @@ function scriptedFace(options: {
       discoverModels: discover,
     },
     settings: {
-      describe: vi.fn(() => Promise.resolve(ok({ writable: true, namespaces: [namespace] }))),
+      describe: vi.fn(() => Promise.resolve(ok({ writable: options.writable ?? true, namespaces: [namespace] }))),
       update: vi.fn(),
       replace: vi.fn(),
       mutate,
     },
     credentials: {
-      describe: vi.fn((payload: { refs: string[] }) => Promise.resolve(ok({
-        credentials: Object.fromEntries(payload.refs.map(ref => [ref, { configured: false, writable: true }])),
-      }))),
+      describe: describeCredentials,
       set,
-      unset: vi.fn(),
+      unset: vi.fn(() => Promise.resolve(ok({}))),
     },
   }
-  return { face, discover, mutate, set, namespace }
+  return { face, discover, mutate, set, namespace, describeCredentials }
 }
 
 type WireFace = ConstructorParameters<typeof ModelsSettingsStore>[0]
@@ -1402,5 +1410,154 @@ describe('API key field', () => {
     await waitFor(() => { expect(mutate).toHaveBeenCalledOnce() })
     await waitFor(() => { expect(load).toHaveBeenCalledOnce() })
     expect(screen.queryByText(en.customTitle)).toBeNull()
+  })
+})
+
+describe('provider editor edge paths', () => {
+  it('locks the key field when the credential is configured but not writable', async () => {
+    await mountSection({ credential: { configured: true, writable: false } })
+    openEditor('openai')
+
+    const key = screen.getByLabelText<HTMLInputElement>(en.keyInput)
+    await waitFor(() => { expect(key.disabled).toBe(true) })
+    expect(key.placeholder).toBe(en.keyEnvLocked)
+  })
+
+  it('handles a settings conflict, another settings refusal, and a transport rejection', async () => {
+    const conflict = vi.fn(() => Promise.resolve(fail('conflict details', 'settings-conflict')))
+    await mountSection({ mutate: conflict })
+    openEditor('openai')
+    fireEvent.click(screen.getByText(en.customized))
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://conflict.example/v1' } })
+    fireEvent.click(screen.getByText(en.apply))
+    expect(await screen.findByText(en.conflict)).toBeTruthy()
+    cleanup()
+
+    const refused = vi.fn(() => Promise.resolve(fail('settings refused', 'settings-rejected')))
+    await mountSection({ mutate: refused })
+    openEditor('openai')
+    fireEvent.click(screen.getByText(en.customized))
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://refused.example/v1' } })
+    fireEvent.click(screen.getByText(en.apply))
+    expect(await screen.findByText('settings refused')).toBeTruthy()
+    cleanup()
+
+    const rejecting = vi.fn(() => Promise.reject(new Error('settings transport down')))
+    await mountSection({ mutate: rejecting })
+    openEditor('openai')
+    fireEvent.click(screen.getByText(en.customized))
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://down.example/v1' } })
+    fireEvent.click(screen.getByText(en.apply))
+    expect(await screen.findByText('settings transport down')).toBeTruthy()
+  })
+
+  it('reports a credential refusal from an existing provider editor', async () => {
+    const set = vi.fn(() => Promise.resolve(fail('credential refused', 'credential-rejected')))
+    await mountSection({ set })
+    openEditor('openai')
+    fireEvent.change(screen.getByLabelText(en.keyInput), { target: { value: 'sk-new' } })
+    fireEvent.click(screen.getByText(en.apply))
+
+    expect(await screen.findByText('credential refused')).toBeTruthy()
+    expect(set).toHaveBeenCalledWith({ ref: 'OPENAI_API_KEY', value: 'sk-new' })
+  })
+
+  it('clears an existing endpoint through the editor', async () => {
+    const { mutate } = await mountSection()
+    openEditor('openai')
+    fireEvent.click(screen.getByText(en.customized))
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: '' } })
+    fireEvent.click(screen.getByText(en.apply))
+
+    await waitFor(() => { expect(mutate).toHaveBeenCalled() })
+    expect((mutate.mock.calls[0]?.[0] as { ops: unknown[] }).ops)
+      .toContainEqual({ op: 'unset', path: ['providers', 'openai', 'baseURL'] })
+  })
+
+  it('renders an advanced hint for an unknown settings namespace and remains cancellable', () => {
+    const scripted = scriptedFace()
+    const namespace = { ...scripted.namespace, ns: 'llm-plain' }
+    const onClose = vi.fn()
+    render(
+      <ProviderEditor
+        provider="openai"
+        displayName="OpenAI"
+        namespace={namespace}
+        schema={settingsSchema}
+        settingsPath={['providers', 'openai']}
+        api={scripted.face as never}
+        t={t}
+        readOnly={false}
+        onClose={onClose}
+      />,
+    )
+
+    expect(screen.getByText(`${en.advancedHint} (llm-plain)`)).toBeTruthy()
+    fireEvent.click(screen.getByText(en.cancel))
+    expect(onClose).toHaveBeenCalledWith(false)
+  })
+
+  it('reports a schema path that cannot be resolved', () => {
+    const scripted = scriptedFace()
+    render(
+      <ProviderEditor
+        provider="missing"
+        displayName="Missing"
+        namespace={scripted.namespace}
+        schema={settingsSchema}
+        settingsPath={['missing']}
+        api={scripted.face as never}
+        t={t}
+        readOnly={false}
+        onClose={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('missing: unresolvable settings path')).toBeTruthy()
+  })
+
+  it('keeps the editor usable when the credential read rejects', async () => {
+    const scripted = scriptedFace()
+    scripted.face.credentials.describe = vi.fn(() => Promise.reject(new Error('credential unavailable')))
+    render(
+      <ProviderEditor
+        provider="openai"
+        displayName="openai"
+        namespace={scripted.namespace}
+        schema={settingsSchema}
+        settingsPath={['providers', 'openai']}
+        api={scripted.face as never}
+        t={t}
+        readOnly={false}
+        onClose={vi.fn()}
+      />,
+    )
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(screen.getByLabelText(en.keyInput)).toBeTruthy()
+  })
+
+  it('materializes an empty native profile when its path has no user or fallback value', async () => {
+    const scripted = scriptedFace({ providers: {} })
+    const onClose = vi.fn()
+    render(
+      <ProviderEditor
+        provider="new-provider"
+        displayName="new-provider"
+        namespace={scripted.namespace}
+        schema={settingsSchema}
+        settingsPath={['providers', 'new-provider']}
+        api={scripted.face as never}
+        t={t}
+        readOnly={false}
+        onClose={onClose}
+      />,
+    )
+    fireEvent.click(screen.getByText(en.apply))
+
+    await waitFor(() => { expect(scripted.mutate).toHaveBeenCalled() })
+    expect((scripted.mutate.mock.calls[0]?.[0] as { ops: unknown[] }).ops)
+      .toEqual([{ op: 'set', path: ['providers', 'new-provider'], value: {} }])
+    expect(onClose).toHaveBeenCalledWith(true)
   })
 })

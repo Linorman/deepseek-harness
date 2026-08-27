@@ -1,11 +1,11 @@
 /** Default Agent model settings layered over a real settings provider. */
 
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import AgentDefaultModelConfig, { AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE } from '../src/index.ts'
-import { SettingsProvider } from '@deepseek-ai/dsh-settings'
-import type { SettingsNamespace } from '@deepseek-ai/dsh-settings'
-import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { SettingsProvider } from '@clocky/clocky-settings'
+import type { SettingsNamespace } from '@clocky/clocky-settings'
+import { ReasoningEffortId } from '@clocky/clocky-llm'
 
 /** The smallest real provider: one in-memory document, always writable. */
 class MemorySettings extends SettingsProvider {
@@ -34,8 +34,8 @@ async function boot(): Promise<{
   const settingsFiber = ctx.plugin(MemorySettings)
   await settingsFiber.await()
   await ctx.plugin(AgentDefaultModelConfig, {
-    provider: 'deepseek-official',
-    model: 'deepseek-v4-flash',
+    provider: 'configured-provider',
+    model: 'configured-model',
   })
   return { ctx, settingsFiber, defaultModel: ctx.agentDefaultModel }
 }
@@ -44,7 +44,7 @@ describe('AgentDefaultModelConfig', () => {
   it('resolves the user layer over the composition entry', async () => {
     const bench = await boot()
     expect(bench.defaultModel.currentSelection()).toEqual({
-      provider: 'deepseek-official', model: 'deepseek-v4-flash',
+      provider: 'configured-provider', model: 'configured-model',
     })
 
     await bench.defaultModel.saveSelection({
@@ -69,10 +69,10 @@ describe('AgentDefaultModelConfig', () => {
   it('layers a hand-written partial section over the entry', async () => {
     const bench = await boot()
     await bench.settingsFiber.ctx.settings.replace(AGENT_DEFAULT_MODEL_SETTINGS_NAMESPACE, {
-      model: 'deepseek-reasoner',
+      model: 'configured-model-reasoning',
     })
     expect(bench.defaultModel.currentSelection()).toEqual({
-      provider: 'deepseek-official', model: 'deepseek-reasoner',
+      provider: 'configured-provider', model: 'configured-model-reasoning',
     })
     await bench.ctx.fiber.dispose()
   })
@@ -80,10 +80,10 @@ describe('AgentDefaultModelConfig', () => {
   it('falls back to the composition entry when the settings provider detaches', async () => {
     const bench = await boot()
     await bench.defaultModel.saveSelection({ provider: 'acme-gateway', model: 'acme-large' })
-    expect(bench.defaultModel.currentSelection().provider).toBe('acme-gateway')
+    expect(bench.defaultModel.currentSelection()?.provider).toBe('acme-gateway')
     await bench.settingsFiber.dispose()
     expect(bench.defaultModel.currentSelection()).toEqual({
-      provider: 'deepseek-official', model: 'deepseek-v4-flash',
+      provider: 'configured-provider', model: 'configured-model',
     })
     await bench.ctx.fiber.dispose()
   })
@@ -93,6 +93,13 @@ describe('AgentDefaultModelConfig', () => {
     await ctx.plugin(AgentDefaultModelConfig, { provider: 'p', model: 'm' })
     await ctx.agentDefaultModel.saveSelection({ provider: 'other', model: 'other' })
     expect(ctx.agentDefaultModel.currentSelection()).toEqual({ provider: 'p', model: 'm' })
+    await ctx.fiber.dispose()
+  })
+
+  it('allows a deployment with no default selection', async () => {
+    const ctx = new Context()
+    await ctx.plugin(AgentDefaultModelConfig, {})
+    expect(ctx.agentDefaultModel.currentSelection()).toBeUndefined()
     await ctx.fiber.dispose()
   })
 })

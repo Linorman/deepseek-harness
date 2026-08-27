@@ -8,7 +8,7 @@ import {
   launchAcpTestAgent,
   type AgentUnderTest,
   type LaunchedAcpTestAgent,
-} from '@deepseek-ai/dsh-acp-snapshot'
+} from '@clocky/clocky-acp-snapshot'
 import { cleanupAcpExampleTest } from './cleanup.ts'
 
 /**
@@ -26,7 +26,7 @@ const AGENT: AgentUnderTest = {
   configPath: fileURLToPath(new URL('../cordis.yml', import.meta.url)),
   tsconfigPath: fileURLToPath(new URL('../../../tsconfig.json', import.meta.url)),
 }
-const DANGER_FULL_ACCESS_ENV = { DSH_PERMISSION_MODE: 'danger-full-access' }
+const DANGER_FULL_ACCESS_ENV = { CLOCKY_PERMISSION_MODE: 'danger-full-access' }
 
 let spawned: LaunchedAcpTestAgent | undefined
 let workdir: string | undefined
@@ -43,7 +43,7 @@ describe('acp-agent over real stdio (no key required)', () => {
   it('emits only framed JSON-RPC on stdout', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'acp-e2e-'))
     // Inspect the launcher's raw-byte tee in addition to driving its SDK client.
-    // A dummy key lets the deepseek adapter APPLY (it only checks the key is
+    // A dummy key lets the provider adapter APPLY (it only checks the key is
     // present at boot, not valid — the key is used only on a real model call,
     // which this purity test never triggers). So this runs WITHOUT real creds.
     spawned = launchAcpTestAgent({
@@ -78,7 +78,7 @@ describe('acp-agent over real stdio (no key required)', () => {
     // the factory). This closes that gap: boot the real subprocess and create a
     // session, asserting the RPC RESOLVES (not rejects with an inject error).
     workdir = await mkdtemp(join(tmpdir(), 'acp-e2e-'))
-    // A dummy key lets the deepseek adapter boot (it only checks presence, not
+    // A dummy key lets the provider adapter boot (it only checks presence, not
     // validity, at apply time); no model call is made, so the key is never used.
     spawned = launchAcpTestAgent({
       agent: AGENT,

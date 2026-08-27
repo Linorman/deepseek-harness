@@ -1,10 +1,10 @@
-/** Package-owned subagent registry and lifecycle invariants. @module @deepseek-ai/dsh-subagent/invariant */
+/** Package-owned subagent registry and lifecycle invariants. @module @clocky/clocky-subagent/invariant */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantFailure, InvariantInstaller } from '@clocky/clocky-invariants'
 import type { SubagentProvider, SubagentRunEndInfo, SubagentRunInfo } from './types.ts'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-subagent'
+const PACKAGE_NAME = '@clocky/clocky-subagent'
 
 /** Cordis companion plugin name. */
 export const name = 'subagent-invariant'

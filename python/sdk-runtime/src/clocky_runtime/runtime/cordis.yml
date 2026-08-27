@@ -1,0 +1,55 @@
+# Bundled default config. The runtime still requires an explicit
+# $CLOCKY_CORDIS_CONFIG or argv path; the SDK injects this path for bundled
+# zero-config launches. SDK-set session-root and cwd variables have manual-run fallbacks.
+
+# Stdio JSON-RPC server entry; without it the agent has no SDK client.
+- id: sdk-jsonrpc-server
+  name: '@clocky/clocky-sdk-jsonrpc-server'
+
+# Agent spine; the SDK server creates agents per sessionId.
+- id: agent-core
+  name: '@clocky/clocky-agent-spine-demo'
+  config:
+    workspaceContext:
+      maxBytes: 65536
+
+# A caller-selected route is configured through the generic pi-ai adapter. The
+# smoke route is inert by default and resolves its credential through the seam.
+- id: llm-pi-ai
+  name: '@clocky/clocky-llm-pi-ai'
+  config:
+    providers:
+      test-provider:
+        apiKeyEnv: TEST_API_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:9
+        models:
+          - id: !!js process.env.TEST_MODEL ?? 'test-model'
+
+# JSONL persistence; $CLOCKY_SESSION_ROOT wins over ./.sessions in the process cwd.
+- id: sessions
+  name: '@clocky/clocky-session-persistence-jsonl'
+  config:
+    root: !!js process.env.CLOCKY_SESSION_ROOT ?? './.sessions'
+
+# Persistence owns durable storage; this separate policy explicitly selects
+# the request, tool-dispatch, and completed-step durability checkpoints.
+- id: session-checkpoints
+  name: '@clocky/clocky-session-checkpoint-policy'
+
+# Local bash executor; $CLOCKY_CWD wins over the process cwd.
+# Managed child-process groups for the bash executor (spawn/kill/output plumbing).
+- id: subprocess
+  name: '@clocky/clocky-subprocess-local'
+
+- id: bash
+  name: '@clocky/clocky-bash-local'
+  config:
+    cwd: !!js process.env.CLOCKY_CWD ?? process.cwd()
+
+# Local filesystem provider for workspace instruction loading. This does not
+# expose model-facing file tools by itself.
+- id: fs-local
+  name: '@clocky/clocky-fs-local'
+  config:
+    cwd: !!js process.env.CLOCKY_CWD ?? process.cwd()

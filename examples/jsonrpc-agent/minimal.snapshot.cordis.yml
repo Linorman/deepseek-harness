@@ -1,20 +1,20 @@
 # Keyless replay keeps the complete minimal composition intact and replaces
-# only its live DeepSeek adapter with the fixture-backed provider. The replay
+# only its live provider adapter with the fixture-backed provider. The replay
 # catalog claims the same route initialized by the SDK.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./minimal.cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - insert:
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
+                    - id: test-model

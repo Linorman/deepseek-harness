@@ -62,7 +62,7 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
           result: {
             ok: true,
             value: {
-              current: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+              current: { provider: 'test-provider', model: 'test-model' },
               routable: true,
               groups: [],
               failures: [],
@@ -340,16 +340,16 @@ describe('unary round trip (handler ⇄ client, no network)', () => {
     expect((await c.sessions.models({ sessionId: 's' as never })).result.ok).toBe(true)
     const selected = await c.sessions.selectModel({
       sessionId: 's' as never,
-      provider: 'deepseek-official',
-      model: 'deepseek-v4-flash',
+      provider: 'test-provider',
+      model: 'test-model',
       reasoningEffort: 'max',
     })
     expect(selected.result).toMatchObject({
       ok: true,
       value: {
         selected: {
-          provider: 'deepseek-official',
-          model: 'deepseek-v4-flash',
+          provider: 'test-provider',
+          model: 'test-model',
           reasoningEffort: 'max',
         },
       },
@@ -786,7 +786,7 @@ describe('resolveBase', () => {
     }
     const probe = new Probe()
     await probe.sessions.list({})
-    expect(probe.urls[0]).toMatch(/^http:\/\/dsh\.internal\//)
+    expect(probe.urls[0]).toMatch(/^http:\/\/clocky\.internal\//)
 
     const globalWithLocation = globalThis as { location?: { origin?: string } }
     globalWithLocation.location = { origin: 'http://host.example' }
@@ -797,7 +797,7 @@ describe('resolveBase', () => {
       globalWithLocation.location = { origin: 'null' } // sandboxed iframe shape
       const probe3 = new Probe()
       await probe3.sessions.list({})
-      expect(probe3.urls[0]).toMatch(/^http:\/\/dsh\.internal\//)
+      expect(probe3.urls[0]).toMatch(/^http:\/\/clocky\.internal\//)
     } finally {
       delete globalWithLocation.location
     }

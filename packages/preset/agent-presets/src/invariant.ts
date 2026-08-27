@@ -1,20 +1,20 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-agent-presets`.
- * @module @deepseek-ai/dsh-agent-presets/invariant
+ * Package-owned invariant companion for `@clocky/clocky-agent-presets`.
+ * @module @clocky/clocky-agent-presets/invariant
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 // Type-only: resolves the `system-prompt/assemble` waterfall this companion
-// joins, and the `agent` field `dsh-agent` merges into its context.
-import type {} from '@deepseek-ai/dsh-system-prompt'
-import type {} from '@deepseek-ai/dsh-agent'
+// joins, and the `agent` field `clocky-agent` merges into its context.
+import type {} from '@clocky/clocky-system-prompt'
+import type {} from '@clocky/clocky-agent'
 // Imported through the package name, not `./mount.ts`: a module shared between
 // the two build entry points becomes a third chunk that the published `files`
 // list does not carry, which `verify-built-package-invariants` rejects.
-import { leakedServices, livePresetMounts } from '@deepseek-ai/dsh-agent-presets'
+import { leakedServices, livePresetMounts } from '@clocky/clocky-agent-presets'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-agent-presets'
+const PACKAGE_NAME = '@clocky/clocky-agent-presets'
 
 /** Cordis companion plugin name. */
 export const name = 'agent-presets-invariant'

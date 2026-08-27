@@ -1,20 +1,20 @@
-import { CallId, createUserMessage } from '@deepseek-ai/dsh-llm'
+import { CallId, createUserMessage } from '@clocky/clocky-llm'
 /**
  * Tests for the queue-aware `Agent.cancel()` primitive. The default clears
  * queued and steering work, while `keepInbox` preserves pending input for a
  * later wake after the active turn reaches quiescence. The suite
  * covers every landing window plus signal reset and `whenIdle()` quiescence.
- * @module dsh-agent-loop/tests/cancel
+ * @module clocky-agent-loop/tests/cancel
  */
 
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId, TurnEndReason } from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { defineContentToolFixture, TOOL_ABORTED_BEFORE_DISPATCH } from '@deepseek-ai/dsh-tools'
-import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import { Context } from '@clocky/cordis'
+import LlmRuntime from '@clocky/clocky-llm'
+import SessionStore, { SessionId, TurnEndReason } from '@clocky/clocky-session'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { defineContentToolFixture, TOOL_ABORTED_BEFORE_DISPATCH } from '@clocky/clocky-tools'
+import AgentRegistry, { type Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
 import { MockAdapter, textResponse, toolCallResponse } from './mock-adapter.ts'
 
 function driverDone(agent: Agent): Promise<void> {
@@ -570,7 +570,7 @@ describe('Agent.cancel()', () => {
     const ctx = await harness(adapter)
     const agent = ctx.agentLoop.create(SessionId('recovery-cancel'), { provider: 'mock', model: 'mock' })
     // Cancellation lands while agent/request-error is in flight — the window
-    // dsh-llm-retry opens when its backoff waits after appending llm/retry.
+    // clocky-llm-retry opens when its backoff waits after appending llm/retry.
     ctx.on('agent/request-error', async ({ agent: subject }) => {
       if (subject === agent) subject.cancel({ kind: 'user' })
     })

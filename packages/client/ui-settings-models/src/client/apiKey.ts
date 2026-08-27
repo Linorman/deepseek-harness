@@ -1,13 +1,13 @@
 /**
  * Browser-side judgement of a typed API key.
- * @module @deepseek-ai/dsh-client-ui-settings-models/apiKey
+ * @module @clocky/clocky-client-ui-settings-models/apiKey
  */
 
 /**
- * Twin of `normalizeApiKey` in `@deepseek-ai/dsh-llm`: printable ASCII, space
+ * Twin of `normalizeApiKey` in `@clocky/clocky-llm`: printable ASCII, space
  * excluded. Client packages reference only client packages, so the charset
- * rule is mirrored here rather than imported; keep the two in step, as
- * `validateDeepSeekModels` is kept in step with the host's `catalogModel`.
+ * rule is mirrored here rather than imported; keep it in step with the host's
+ * model catalog validation.
  */
 const LEGAL_API_KEY = /^[\x21-\x7E]+$/
 

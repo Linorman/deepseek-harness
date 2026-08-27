@@ -56,19 +56,14 @@
         "acp-agent/tests/fixtures/parent-sandbox-override.ts",
         "acp-agent/tests/fixtures/partial-landlock-sandbox.ts",
         "acp-agent/tests/fixtures/subagent-durability-failure.ts",
-        "acp-agent/tests/fixtures/subagent-result-diagnostic.ts",
         "acp-agent/tests/fixtures/subagent-report-fence.ts",
         "acp-agent/tests/fixtures/subagent-settlement-marker.ts",
         "acp-agent/tests/fixtures/workspace-context-compaction.ts",
         "acp-agent/tests/fixtures/subagent/subagent-acp/mock-delegating-llm.ts",
         "acp-agent/tests/fixtures/subagent/subagent-acp/driver.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-claude-code/fixture.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-claude-code/driver.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-codex/fixture.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-codex/driver.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-dsh-sdk/driver.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-dsh-sdk/child-mock-llm.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-dsh-sdk/mock-delegating-llm.ts",
+        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/driver.ts",
+        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/child-mock-llm.ts",
+        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/mock-delegating-llm.ts",
         "*/tests/**/*.e2e.ts",
         "*/tests/**/*.snapshot.ts"
       ],
@@ -76,13 +71,13 @@
         "**/*.ts"
       ],
       "ignoreDependencies": [
-        "@deepseek-ai/.+"
+        "@clocky/.+"
       ]
     },
     "packages/host/directory-picker-auto": {
       "ignoreDependencies": [
-        "@deepseek-ai/dsh-client-ui-directory-picker-browse",
-        "@deepseek-ai/dsh-client-ui-directory-picker-native"
+        "@clocky/clocky-client-ui-directory-picker-browse",
+        "@clocky/clocky-client-ui-directory-picker-native"
       ]
     },
     "packages/extensions/cordis-host-runner": {
@@ -116,7 +111,7 @@
         "tests/**/*.ts"
       ],
       "ignoreDependencies": [
-        "@deepseek-ai/dsh-api-gateway"
+        "@clocky/clocky-api-gateway"
       ]
     },
     "packages/client/ui-primitives": {
@@ -376,16 +371,6 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/llm/llm-deepseek": {
-      "entry": [
-        "tests/**/*.spec.ts",
-        "tests/**/*.e2e.ts"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "tests/**/*.ts"
-      ]
-    },
     "packages/llm/llm-pi-ai": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -466,16 +451,6 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/web/web-search-deepseek": {
-      "entry": [
-        "tests/**/*.spec.ts",
-        "tests/**/*.e2e.ts"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "tests/**/*.ts"
-      ]
-    },
     "packages/examples/acp-demo": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -544,26 +519,6 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/subagent/subagent-codex": {
-      "entry": [
-        "tests/**/*.spec.ts",
-        "tests/**/*.e2e.ts"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "tests/**/*.ts"
-      ]
-    },
-    "packages/subagent/subagent-claude-code": {
-      "entry": [
-        "tests/**/*.spec.ts",
-        "tests/**/*.e2e.ts"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "tests/**/*.ts"
-      ]
-    },
     "packages/fs/tool-fs": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -618,8 +573,8 @@
         "tests/**/*.ts"
       ],
       "ignoreDependencies": [
-        "@deepseek-ai/dsh-client-ui-primitives",
-        "@deepseek-ai/dsh-client-ui-slots",
+        "@clocky/clocky-client-ui-primitives",
+        "@clocky/clocky-client-ui-slots",
         "@types/react",
         "@types/react-dom",
         "react",
@@ -637,10 +592,10 @@
         "tests/**/*.ts"
       ],
       "ignoreDependencies": [
-        "@deepseek-ai/.+"
+        "@clocky/.+"
       ]
     },
-    "packages/subagent/subagent-dsh-sdk": {
+    "packages/subagent/subagent-clocky-sdk": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"
@@ -652,17 +607,17 @@
     },
     "packages/bundle/base": {
       "ignoreDependencies": [
-        "@deepseek-ai/.+"
+        "@clocky/.+"
       ]
     },
     "packages/bundle/headless": {
       "ignoreDependencies": [
-        "@deepseek-ai/dsh-code-runtime-worker-thread"
+        "@clocky/clocky-code-runtime-worker-thread"
       ]
     },
     "packages/bundle/web-app": {
       "ignoreDependencies": [
-        "@deepseek-ai/.+"
+        "@clocky/.+"
       ]
     }
   }

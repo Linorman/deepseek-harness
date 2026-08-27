@@ -1,6 +1,6 @@
 /** Deterministic keyless Agent Teams adapter for the real headless Loader snapshot. */
 
-import { CallId, LlmAdapter } from '@deepseek-ai/dsh-llm'
+import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 
 let nextCall = 0
 
@@ -190,5 +190,5 @@ export const inject = ['llm']
 
 /** Register the keyless adapter on the shipped default provider route. */
 export function apply(ctx) {
-  ctx.llm.registerAdapter(['deepseek-official'], new TeamFixtureAdapter())
+  ctx.llm.registerAdapter(['test-provider'], new TeamFixtureAdapter())
 }

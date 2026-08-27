@@ -3,54 +3,50 @@
 # the composition base, while user-plane values resolve per request through
 # the two providers below.
 
-# User-settings document (`$DSH_HOME/settings.yaml`, hot-reloaded): a
-# `llm-deepseek:` section there overrides the adapter entry below without a
-# restart.
+# User-settings document (`$CLOCKY_HOME/settings.yaml`, hot-reloaded): an
+# `llm-pi-ai:` section overrides the adapter entry below without a restart.
 - id: settings
-  name: '@deepseek-ai/dsh-settings-file'
+  name: '@clocky/clocky-settings-file'
 
-# Credential store: the live process environment over `$DSH_HOME/.credentials.yaml`
+# Credential store: the live process environment over `$CLOCKY_HOME/.credentials.yaml`
 # (owner-only file, hot-reloaded). The adapter resolves `DEEPSEEK_API_KEY`
 # through it at each request, so no key is inlined in this file.
 - id: credentials
-  name: '@deepseek-ai/dsh-credentials-local'
+  name: '@clocky/clocky-credentials-local'
 
-# The DeepSeek adapter. Swap to '@deepseek-ai/dsh-llm-pi-ai' for the pi-ai-backed
-# twin (a `providers` dict keyed by route; `reasoning: high` replaces
-# thinking/reasoningEffort). Shipped default: full thinking at max effort on
-# every request. Exact-model resolution materializes request defaults before
-# the request header is logged.
-- id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
+# DeepSeek is one provider profile of the generic pi-ai adapter.
+- id: llm-pi-ai
+  name: '@clocky/clocky-llm-pi-ai'
   config:
-    thinking: enabled
-    reasoningEffort: max
-    models:
-      - id: deepseek-v4-pro
-        contextWindow: 128000
-      - id: deepseek-v4-flash
-        contextWindow: 128000
+    providers:
+      deepseek:
+        apiKeyEnv: DEEPSEEK_API_KEY
+        reasoning: max
+        models:
+          - id: deepseek-v4-pro
+            contextWindow: 128000
+          - id: deepseek-v4-flash
+            contextWindow: 128000
 
 # Managed child-process groups for the bash executor (spawn/kill/output plumbing).
 - id: subprocess
-  name: '@deepseek-ai/dsh-subprocess-local'
+  name: '@clocky/clocky-subprocess-local'
 
 - id: bash
-  name: '@deepseek-ai/dsh-bash-local'
+  name: '@clocky/clocky-bash-local'
   config:
     timeoutMs: 60000
 
 # The example composition pre-creates one fresh `main` agent for its test driver.
+# Replay and refresh overlays replace the provider and model with the scripted
+# route; normal and record runs keep the explicit DeepSeek provider profile.
 - id: agent-spine
-  name: '@deepseek-ai/dsh-agent-spine-demo'
+  name: '@clocky/clocky-agent-spine-demo'
   config:
     agents:
       - id: main
-        provider: deepseek-official
-        # Stays on flash: the goal/ralph replay corpora were recorded on it, and
-        # their nested-include overlays cannot re-pin the app config (a config
-        # patch cannot target an entry behind a nested include).
-        model: deepseek-v4-flash
+        provider: !!js "process.env.CLOCKY_SNAPSHOT === undefined || process.env.CLOCKY_SNAPSHOT === 'record' ? 'deepseek' : 'test-provider'"
+        model: !!js "process.env.CLOCKY_SNAPSHOT === undefined || process.env.CLOCKY_SNAPSHOT === 'record' ? 'deepseek-v4-flash' : 'test-model'"
         cwd: !!js process.cwd()
     workspaceContext:
       maxBytes: 65536
@@ -61,20 +57,20 @@
       factual.
 
 - id: persistence
-  name: '@deepseek-ai/dsh-session-persistence-jsonl'
+  name: '@clocky/clocky-session-persistence-jsonl'
   config:
     root: './.sessions'
-    compression: !!js "process.env.DSH_SNAPSHOT === undefined ? 'zstd' : 'none'"
+    compression: !!js "process.env.CLOCKY_SNAPSHOT === undefined ? 'zstd' : 'none'"
 
 - id: checkpoint-policy
-  name: '@deepseek-ai/dsh-session-checkpoint-policy'
+  name: '@clocky/clocky-session-checkpoint-policy'
 
 # Summarize an older range when derived history approaches the context window.
 - id: token-meter
-  name: '@deepseek-ai/dsh-token-meter'
+  name: '@clocky/clocky-token-meter'
 
 - id: compaction-basic
-  name: '@deepseek-ai/dsh-compaction-basic'
+  name: '@clocky/clocky-compaction-basic'
   config:
     thresholdRatio: 0.8
     retainRatio: 0.16
@@ -84,20 +80,20 @@
 # Projection registry: durable subagent identity (mode/label) folds through
 # its registered units; subagent catalog reads fail loud without the capability.
 - id: session-projection
-  name: '@deepseek-ai/dsh-session-projection'
+  name: '@clocky/clocky-session-projection'
 
 # Expose fresh-child `spawn` and completed-prefix `fork` through independent
 # in-process backends.
 - id: subagent
-  name: '@deepseek-ai/dsh-subagent'
+  name: '@clocky/clocky-subagent'
 
 - id: subagent-spawn-in-process
-  name: '@deepseek-ai/dsh-subagent-spawn-in-process'
+  name: '@clocky/clocky-subagent-spawn-in-process'
   config:
     providerName: spawn
 
 - id: subagent-fork-in-process
-  name: '@deepseek-ai/dsh-subagent-fork-in-process'
+  name: '@clocky/clocky-subagent-fork-in-process'
   config:
     providerName: fork
 
@@ -105,13 +101,13 @@
 # separately loaded control registers global `send_message`; `report` is
 # installed only in continuable child scopes.
 - id: tool-subagent-control
-  name: '@deepseek-ai/dsh-tool-subagent-control'
+  name: '@clocky/clocky-tool-subagent-control'
 
 - id: tool-subagent-report
-  name: '@deepseek-ai/dsh-tool-subagent-report'
+  name: '@clocky/clocky-tool-subagent-report'
 
 - id: tool-subagent
-  name: '@deepseek-ai/dsh-tool-subagent'
+  name: '@clocky/clocky-tool-subagent'
   config:
     provider: spawn
     toolName: subagent
@@ -123,7 +119,7 @@
 # as an explicit foreground-only choice even though agent-spine-demo mounts the
 # generic Job runtime. See .agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md.
 - id: tool-subagent-fork
-  name: '@deepseek-ai/dsh-tool-subagent'
+  name: '@clocky/clocky-tool-subagent'
   config:
     provider: fork
     toolName: subagent_fork
@@ -134,33 +130,33 @@
 # The worker-thread workflow engine fans a model-written JavaScript script's
 # `agent()` calls out through the spawn backend.
 - id: workflow-worker-thread
-  name: '@deepseek-ai/dsh-workflow-worker-thread'
+  name: '@clocky/clocky-workflow-worker-thread'
   config:
     provider: spawn
 
 - id: tool-workflow
-  name: '@deepseek-ai/dsh-tool-workflow'
+  name: '@clocky/clocky-tool-workflow'
 
 # A separate fixed consumer demonstrates fresh-agent Ralph iteration without
 # changing the workflow tool or same-session goal behavior.
 - id: tool-ralph
-  name: '@deepseek-ai/dsh-tool-ralph'
+  name: '@clocky/clocky-tool-ralph'
 
 # `todo_write` replaces the logged whole list.
 - id: tool-todo
-  name: '@deepseek-ai/dsh-tool-todo'
+  name: '@clocky/clocky-tool-todo'
   config:
     allowParallelInProgress: true
 
 # Policy loads before the model-facing filesystem tools so writes and edits
 # require an observed file. Relative paths resolve from the process cwd.
 - id: fs-local
-  name: '@deepseek-ai/dsh-fs-local'
+  name: '@clocky/clocky-fs-local'
   config:
     cwd: !!js process.cwd()
 
 - id: fs-observation-policy
-  name: '@deepseek-ai/dsh-fs-observation-policy'
+  name: '@clocky/clocky-fs-observation-policy'
 
 - id: tool-fs
-  name: '@deepseek-ai/dsh-tool-fs'
+  name: '@clocky/clocky-tool-fs'

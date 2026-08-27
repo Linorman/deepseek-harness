@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { WorkflowError } from '@deepseek-ai/dsh-workflow'
+import { WorkflowError } from '@clocky/clocky-workflow'
 import { validateMeta } from '../src/meta.ts'
 
 /** Assert a META_INVALID throw whose message matches every given fragment. */
@@ -34,7 +34,7 @@ describe('validateMeta', () => {
       whenToUse: 'large mechanical sweeps',
       phases: [
         { title: 'Discover', provider: 'openai' },
-        { title: 'Transform', detail: 'one agent per file', model: 'deepseek-v4-pro' },
+        { title: 'Transform', detail: 'one agent per file', model: 'test-model-pro' },
       ],
     })
     expect(meta).toEqual({
@@ -43,7 +43,7 @@ describe('validateMeta', () => {
       whenToUse: 'large mechanical sweeps',
       phases: [
         { title: 'Discover', provider: 'openai' },
-        { title: 'Transform', detail: 'one agent per file', model: 'deepseek-v4-pro' },
+        { title: 'Transform', detail: 'one agent per file', model: 'test-model-pro' },
       ],
     })
   })

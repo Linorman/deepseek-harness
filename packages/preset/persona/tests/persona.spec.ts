@@ -1,9 +1,9 @@
-import { Context } from '@deepseek-ai/cordis'
-import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
-import { createScope, type ScopeKey } from '@deepseek-ai/dsh-scope'
+import { Context } from '@clocky/cordis'
+import SystemPrompt, { renderPrompt } from '@clocky/clocky-system-prompt'
+import { createScope, type ScopeKey } from '@clocky/clocky-scope'
 import { describe, expect, it } from 'vitest'
-import * as Persona from '@deepseek-ai/dsh-persona'
-import { PERSONA_SECTION } from '@deepseek-ai/dsh-persona'
+import * as Persona from '@clocky/clocky-persona'
+import { PERSONA_SECTION } from '@clocky/clocky-persona'
 
 async function harness(deploymentPersona: string): Promise<Context> {
   const ctx = new Context()
@@ -75,7 +75,7 @@ describe('the persona row', () => {
   it('interpolates prompt variables strictly, like any other section', async () => {
     const ctx = await harness('')
     const key: ScopeKey = { agent: 'a1' }
-    ctx.systemPrompt.variable('model', () => 'deepseek-v4-pro')
+    ctx.systemPrompt.variable('model', () => 'test-model-pro')
 
     await createScope(ctx, key).ctx.plugin(Persona, { text: 'You run on {{model}}.' })
 
@@ -83,7 +83,7 @@ describe('the persona row', () => {
     // stage that resolves `{{…}}` against the assembly's variables.
     expect(await personaText(ctx, key)).toBe('You run on {{model}}.')
     expect(renderPrompt(await ctx.systemPrompt.assemble({ scope: key })))
-      .toContain('You run on deepseek-v4-pro.')
+      .toContain('You run on test-model-pro.')
   })
 
   it('makes a complete persona the exact prompt after every other contribution', async () => {

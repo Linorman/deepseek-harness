@@ -1,12 +1,12 @@
 /** Host registry for model-visible, read-only Cordis capability queries. */
 
-import { Service } from '@deepseek-ai/cordis'
-import type { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { snapshotJsonValue } from '@deepseek-ai/dsh-session'
-import type { JsonValue } from '@deepseek-ai/dsh-session/types'
-import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@deepseek-ai/dsh-tools'
-import type { JsonSchemaNode } from '@deepseek-ai/dsh-tools'
+import { Service } from '@clocky/cordis'
+import type { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import { snapshotJsonValue } from '@clocky/clocky-session'
+import type { JsonValue } from '@clocky/clocky-session/types'
+import { assertSupportedJsonSchema, validateJsonSchemaValue } from '@clocky/clocky-tools'
+import type { JsonSchemaNode } from '@clocky/clocky-tools'
 import type {
   CordisInspectMethodManifest, CordisInspectPlatform, CordisInspectProviderManifest,
   CordisInspectProviderView, CordisInspectQueryRequest, CordisInspectQueryResolution,
@@ -35,7 +35,7 @@ interface PendingClientQuery {
   settle(resolution: CordisInspectQueryResolution): void
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Context {
     /** Host registry for Cordis inspect providers and Client manifest/query routing. */
     cordisInspect: CordisInspectRegistryService

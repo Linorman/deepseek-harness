@@ -1,11 +1,11 @@
-/** Package-owned hook invocation/result stream invariants. @module @deepseek-ai/dsh-hook-protocol/invariant */
+/** Package-owned hook invocation/result stream invariants. @module @clocky/clocky-hook-protocol/invariant */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
-import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { Session, SessionEvent } from '@clocky/clocky-session'
+import type { InvariantFailure, InvariantInstaller } from '@clocky/clocky-invariants'
 import type {} from './types.ts'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-hook-protocol'
+const PACKAGE_NAME = '@clocky/clocky-hook-protocol'
 
 /** Cordis companion plugin name. */
 export const name = 'hook-protocol-invariant'

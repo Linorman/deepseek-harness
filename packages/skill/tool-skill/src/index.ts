@@ -1,16 +1,16 @@
 /**
  * Durable session skill catalog and model-facing `skill` loader tool.
  *
- * @module @deepseek-ai/dsh-tool-skill
+ * @module @clocky/clocky-tool-skill
  */
 
 import { createHash } from 'node:crypto'
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { UserMessage } from '@deepseek-ai/dsh-session'
+import type { Context } from '@clocky/cordis'
+import z from '@clocky/schemastery'
+import type { Agent, PreStepDecision } from '@clocky/clocky-agent'
+import { defineTool } from '@clocky/clocky-tools'
+import { createUserMessage } from '@clocky/clocky-llm'
+import type { UserMessage } from '@clocky/clocky-session'
 import {
   escapeText,
   isModelInvocable,
@@ -19,7 +19,7 @@ import {
   renderSkillContent,
   type SkillInvocationSource,
   type SkillSummary,
-} from '@deepseek-ai/dsh-skill'
+} from '@clocky/clocky-skill'
 
 export const name = 'tool-skill'
 export const inject = ['agents', 'tools', 'skills']
@@ -40,7 +40,7 @@ export interface SkillCatalogSource {
   readonly entries: readonly { readonly name: string; readonly description: string }[]
 }
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@clocky/clocky-llm' {
   interface MessageSourceMap {
     'skill-catalog': SkillCatalogSource
   }

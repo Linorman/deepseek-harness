@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-session-checkpoint-policy`.
- * @module @deepseek-ai/dsh-session-checkpoint-policy/invariant
+ * Package-owned invariant companion for `@clocky/clocky-session-checkpoint-policy`.
+ * @module @clocky/clocky-session-checkpoint-policy/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-session-checkpoint-policy'
+const PACKAGE_NAME = '@clocky/clocky-session-checkpoint-policy'
 
 /** Cordis companion plugin name. */
 export const name = 'session-checkpoint-policy-invariant'

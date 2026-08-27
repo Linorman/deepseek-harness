@@ -2,20 +2,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import { scopeOf } from '@deepseek-ai/dsh-scope'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import SubagentService from '@deepseek-ai/dsh-subagent'
-import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
-import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
-import * as ToolSubagentControl from '@deepseek-ai/dsh-tool-subagent-control'
-import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import { CallId } from '@clocky/clocky-llm'
+import { scopeOf } from '@clocky/clocky-scope'
+import { SessionId } from '@clocky/clocky-session'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import SubagentService from '@clocky/clocky-subagent'
+import * as SubagentFork from '@clocky/clocky-subagent-fork-in-process'
+import * as SubagentSpawn from '@clocky/clocky-subagent-spawn-in-process'
+import { renderPrompt } from '@clocky/clocky-system-prompt'
+import * as ToolSubagentControl from '@clocky/clocky-tool-subagent-control'
+import { defineContentToolFixture } from '@clocky/clocky-tools'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import TeamService from '../../agent-team/src/index.ts'
 import * as toolTeam from '../src/index.ts'
@@ -44,7 +44,7 @@ afterEach(() => {
 async function setup(script: ConstructorParameters<typeof MockAdapter>[0], legacyControl = false) {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx)
-  const storageRoot = mkdtempSync(join(tmpdir(), 'dsh-tool-team-'))
+  const storageRoot = mkdtempSync(join(tmpdir(), 'clocky-tool-team-'))
   roots.push(storageRoot)
   await ctx.plugin(JsonlSessionPersistence, { root: storageRoot })
   await ctx.plugin(AgentLoop, { agents: [] })
@@ -110,7 +110,7 @@ async function waitNoAgent(ctx: Context, id: SessionId): Promise<void> {
   await vi.waitFor(() => { expect(ctx.agents.get(id)).toBeUndefined() }, { timeout: 5_000 })
 }
 
-describe('dsh-tool-team', () => {
+describe('clocky-tool-team', () => {
   it('installs the complete scoped schema and shared-checkout policy for roots and teammates', async () => {
     const { ctx, lead } = await setup(['hang'])
     const leadAssembly = await assembly(ctx, lead)

@@ -12,7 +12,7 @@
     },
     {
       "op": "waitForFile",
-      "path": ".dsh-snapshot-subagent-settled"
+      "path": ".clocky-snapshot-subagent-settled"
     },
     {
       "op": "waitForTurnStart",

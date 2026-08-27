@@ -1,10 +1,10 @@
 /**
  * Configuration vocabulary for the replay-aware basic compaction backend.
  *
- * @module @deepseek-ai/dsh-compaction-basic/types
+ * @module @clocky/clocky-compaction-basic/types
  */
 
-import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
+import type { LlmCallConfig } from '@clocky/clocky-llm'
 
 /** Policy fields shared by the default policy and exact model overrides. */
 export interface CompactionPolicyConfig {

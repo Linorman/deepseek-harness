@@ -1,6 +1,6 @@
 // Web e2e scenario: the configurable tab in Plugins settings — the cards a
 // deployment's exposed host-plane namespaces produce, one field edited through the real
-// wire down to `$DSH_HOME/settings.yaml`, and the override badge and reset
+// wire down to `$CLOCKY_HOME/settings.yaml`, and the override badge and reset
 // that layering produces. Zero model calls: everything is client state plus
 // the settings document on a blank frame, so there is no fixture and a stray
 // stream would fail loud on the open llm seam.
@@ -75,11 +75,11 @@ describe('web e2e: plugin configuration section', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-plugin-config-cards'))
     const dialog = await openPlugins()
 
-    // Every card the shipped web composition exposes: the shell executor, the
-    // agent loop, and the DeepSeek search provider.
+    // Every card the shipped web composition exposes: the shell executor and
+    // the agent loop. Search providers are opt-in and do not own a shipped card.
     await dialog.getByText('终端', { exact: true }).waitFor({ timeout: 10_000 })
     expect(await dialog.getByText('Agent 循环', { exact: true }).count()).toBe(1)
-    expect(await dialog.getByText('网页搜索', { exact: true }).count()).toBe(1)
+    expect(await dialog.getByText('网页搜索', { exact: true }).count()).toBe(0)
     // Collapsed: a card's fields appear only once it is expanded.
     expect(await dialog.getByLabel('命令超时（毫秒）').count()).toBe(0)
 

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-fs-observation-policy`.
- * @module @deepseek-ai/dsh-fs-observation-policy/invariant
+ * Package-owned invariant companion for `@clocky/clocky-fs-observation-policy`.
+ * @module @clocky/clocky-fs-observation-policy/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-fs-observation-policy'
+const PACKAGE_NAME = '@clocky/clocky-fs-observation-policy'
 
 /** Cordis companion plugin name. */
 export const name = 'fs-observation-policy-invariant'

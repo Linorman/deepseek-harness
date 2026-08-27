@@ -8,22 +8,22 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import { z } from 'zod'
-import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
-import { AttachmentStore } from '@deepseek-ai/dsh-attachment'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import type { Session } from '@deepseek-ai/dsh-session'
-import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
-import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import UserQuestionService from '@deepseek-ai/dsh-user-questions'
-import type { MuxFrame, RpcRequest } from '@deepseek-ai/dsh-host-apiproxy/api'
-import { RpcId } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
-import { createApiProxy } from '@deepseek-ai/dsh-host-apiproxy'
+import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
+import { AttachmentStore } from '@clocky/clocky-attachment'
+import type { Agent } from '@clocky/clocky-agent'
+import { createUserMessage } from '@clocky/clocky-llm'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import type { Session } from '@clocky/clocky-session'
+import SessionProjectionRegistry from '@clocky/clocky-session-projection'
+import type { ProjectionDefinition } from '@clocky/clocky-session-projection'
+import UserQuestionService from '@clocky/clocky-user-questions'
+import type { MuxFrame, RpcRequest } from '@clocky/clocky-host-apiproxy/api'
+import { RpcId } from '@clocky/clocky-host-apiproxy/api/rpc'
+import { createApiProxy } from '@clocky/clocky-host-apiproxy'
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
+declare module '@clocky/clocky-session-projection/types' {
   interface SessionProjectionStateMap {
     'test/last-user': LastUserState
     'test/internal-count': number

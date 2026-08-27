@@ -1,12 +1,12 @@
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import type {
   CompactionSummaryNode, ConversationMatch, ConversationNodeContext, ConversationNodeDefinition,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@deepseek-ai/dsh-compaction/types'
+} from '@clocky/clocky-client-runtime/client'
+import type {} from '@clocky/clocky-compaction/types'
 import { chatNode } from './common.ts'
 import { compactSource, compactSummary, updateCompactionState } from './command.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@clocky/clocky-client-ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Automatic compaction checkpoint marker. */
     compaction: CompactionSummaryNode

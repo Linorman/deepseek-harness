@@ -8,11 +8,11 @@
  * Unsupported or misplaced keywords reject rather than being accepted without
  * enforcement. Consumers that require an object root apply
  * {@link assertObjectJsonSchema} before accepting input.
- * @module dsh-tools/json-schema
+ * @module clocky-tools/json-schema
  */
 
-import { assertNever, HarnessError } from '@deepseek-ai/dsh-llm'
-import { isJsonValue, type JsonValue } from '@deepseek-ai/dsh-session'
+import { assertNever, HarnessError } from '@clocky/clocky-llm'
+import { isJsonValue, type JsonValue } from '@clocky/clocky-session'
 
 /** Scalar JSON values supported by `enum` and `const`. */
 export type JsonSchemaScalar = string | number | boolean | null

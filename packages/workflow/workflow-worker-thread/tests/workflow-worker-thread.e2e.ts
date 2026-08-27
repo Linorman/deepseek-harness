@@ -1,20 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
+import { Context } from '@clocky/cordis'
+import LlmRuntime from '@clocky/clocky-llm'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime from '@clocky/clocky-tools'
+import AgentRegistry from '@clocky/clocky-agent'
 
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import * as LlmDeepSeek from '@deepseek-ai/dsh-llm-deepseek'
-import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import * as Spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
+import SubagentRuntime from '@clocky/clocky-subagent'
+import * as Spawn from '@clocky/clocky-subagent-spawn-in-process'
 import WorkerThreadWorkflowEngine from '../src/index.ts'
 
 /**
  * With-key e2e: a REAL script in a REAL worker thread
- * drives REAL spawn children against the live DeepSeek API — one plain child
+ * drives REAL spawn children through the pi-ai DeepSeek provider — one plain child
  * and one schema'd child through the real structured-output runtime — and
  * the run's value, events, and child sessions are asserted from the outside
  * (never the script's self-report alone). Key-gated (self-skips without
@@ -36,7 +36,7 @@ async function harness(): Promise<Context> {
   await built.plugin(ToolRuntime)
   await built.plugin(AgentRegistry)
   await built.plugin(AgentLoop, { agents: [] })
-  await built.plugin(LlmDeepSeek)
+  await built.plugin(LlmPiAi, { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } })
   await built.plugin(SubagentRuntime)
   await built.plugin(Spawn, { providerName: 'spawn' })
   await built.plugin(WorkerThreadWorkflowEngine, { provider: 'spawn' })
@@ -64,7 +64,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('worker workflow engine with-key 
     ctx = await harness()
     const parentHandle = await ctx.agents.create({
       sessionId: 'wf-worker-e2e-session' as never,
-      agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      agentOptions: { provider: 'deepseek', model: 'deepseek-v4-flash' },
     })
 
     const events: string[] = []

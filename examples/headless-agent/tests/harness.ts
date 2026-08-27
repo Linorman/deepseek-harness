@@ -1,24 +1,24 @@
-import { Context } from '@deepseek-ai/cordis'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { LocalBashExecutor } from '@deepseek-ai/dsh-bash-local'
-import * as BashEnvPlugin from '@deepseek-ai/dsh-shell-env'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as ToolBash from '@deepseek-ai/dsh-tool-bash'
-import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
-import * as LlmDeepSeek from '@deepseek-ai/dsh-llm-deepseek'
-import TokenMeter from '@deepseek-ai/dsh-token-meter'
-import ToolResultPruner from '@deepseek-ai/dsh-compaction-tool-result-pruner'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import * as SessionCheckpointPolicy from '@deepseek-ai/dsh-session-checkpoint-policy'
-import { BasicCompactionEngine } from '@deepseek-ai/dsh-compaction-basic'
-import type { BasicCompactionConfig } from '@deepseek-ai/dsh-compaction-basic'
+import { Context } from '@clocky/cordis'
+import type { SessionEvent } from '@clocky/clocky-session'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import { LocalBashExecutor } from '@clocky/clocky-bash-local'
+import * as BashEnvPlugin from '@clocky/clocky-shell-env'
+import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
+import * as ToolBash from '@clocky/clocky-tool-bash'
+import * as ToolTodo from '@clocky/clocky-tool-todo'
+import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
+import TokenMeter from '@clocky/clocky-token-meter'
+import ToolResultPruner from '@clocky/clocky-compaction-tool-result-pruner'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import * as SessionCheckpointPolicy from '@clocky/clocky-session-checkpoint-policy'
+import { BasicCompactionEngine } from '@clocky/clocky-compaction-basic'
+import type { BasicCompactionConfig } from '@clocky/clocky-compaction-basic'
 
 /**
  * Shared harness for the headless-agent e2e suites: the full plugin stack
- * with the real DeepSeek adapter and the real bash + todo_write tools. Lives
+ * with the generic pi-ai adapter and the real bash + todo_write tools. Lives
  * outside the *.e2e.ts pattern so importing it never re-registers another
  * file's tests.
  */
@@ -49,7 +49,7 @@ export interface CodingHarnessOptions {
    * compaction plugin (the default suites run without it).
    */
   compact?: BasicCompactionConfig
-  /** Test-only context capacity advertised for `deepseek-v4-flash`. */
+  /** Test-only context capacity advertised for `test-model`. */
   modelContextWindow?: number
 }
 
@@ -59,8 +59,16 @@ export async function codingHarness(workdir: string, options: CodingHarnessOptio
     systemPrompt: { persona: options.persona ?? '' },
   })
   await ctx.plugin(AgentLoop, { agents: [] })
-  await ctx.plugin(LlmDeepSeek, options.modelContextWindow === undefined ? {} : {
-    models: [{ id: 'deepseek-v4-flash', contextWindow: options.modelContextWindow }],
+  await ctx.plugin(LlmPiAi, {
+    providers: {
+      deepseek: {
+        apiKeyEnv: 'DEEPSEEK_API_KEY',
+        ...process.env.DEEPSEEK_BASE_URL === undefined ? {} : { baseURL: process.env.DEEPSEEK_BASE_URL },
+        ...options.modelContextWindow === undefined
+          ? {}
+          : { models: [{ id: 'test-model', contextWindow: options.modelContextWindow }] },
+      },
+    },
   })
   await ctx.plugin(LocalSubprocessRuntime)
   await ctx.plugin(BashEnvPlugin)

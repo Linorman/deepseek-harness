@@ -7,24 +7,24 @@
    mid-slide. */
 
 .root {
-  --dsh-sidebar-inline-padding: 12px;
+  --clocky-sidebar-inline-padding: 12px;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 6px var(--dsh-sidebar-inline-padding);
+  padding: 6px var(--clocky-sidebar-inline-padding);
   box-sizing: border-box;
-  background: var(--dsw-specific-sidebar-fill);
-  color: var(--dsw-alias-label-primary);
+  background: var(--clocky-specific-sidebar-fill);
+  color: var(--clocky-alias-label-primary);
   font-size: 14px;
   /* The sidebar is elevated above the conversation surface, so a revealed
      scrollbar uses the l2 pair. .quietBars hides it without changing layout. */
-  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
-  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
 }
 
 /* Rail geometry (figma rail spec): 36x36 control boxes centered in the 56px
    rail (10px side padding), 12px vertical rhythm, 18px from the rail top to
-   the whale's box (24px to the 24-wide whale glyph itself). */
+   the neutral mark's box. */
 .root.collapsed {
   padding: 18px 10px 6px;
 }
@@ -38,8 +38,8 @@
    revealing the thumb never reflows a row. Rebinding contract and the two
    rendering paths it reaches: ui-theme's README. */
 .root.quietBars {
-  --dsh-scrollbar-thumb: transparent;
-  --dsh-scrollbar-thumb-hover: transparent;
+  --clocky-scrollbar-thumb: transparent;
+  --clocky-scrollbar-thumb-hover: transparent;
 }
 
 /* Collapse phase 1: the whole frozen-width content fades out in place over
@@ -153,12 +153,6 @@
   letter-spacing: 0.04em;
 }
 
-.fallbackBrandName {
-  font-size: 17px;
-  letter-spacing: 0px;
-  white-space: nowrap;
-}
-
 .iconButton {
   flex: none;
   display: inline-flex;
@@ -171,11 +165,11 @@
   padding: 0;
   background: transparent;
   cursor: pointer;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--clocky-alias-label-secondary);
 }
 
 .iconButton:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: var(--clocky-alias-interactive-bg-hover);
 }
 
 .collapsed .iconButton {
@@ -183,7 +177,7 @@
   height: 36px;
 }
 
-/* Rail logo swap: collapsed, the toggle rests as the whale mark (brand ink,
+/* Rail logo swap: collapsed, the toggle rests as the neutral mark (brand ink,
    no hover circle) and hovering reveals the panel icon — the expand
    affordance (figma sidebar-hover flow). Expanded it is a plain panel icon. */
 .collapsed .toggle .panelIcon {
@@ -207,7 +201,7 @@
 /* Rail icons ride the primary ink (figma rail spec); expanded keeps the
    secondary icon-button ink. */
 .collapsed .iconButton {
-  color: var(--dsw-alias-label-primary);
+  color: var(--clocky-alias-label-primary);
 }
 
 .buildRevision {
@@ -216,8 +210,8 @@
   height: 16px;
   padding: 0 4px;
   border-radius: 3px;
-  color: var(--dsw-alias-label-primary-inverted);
-  background: var(--dsw-alias-label-primary);
+  color: var(--clocky-alias-label-primary-inverted);
+  background: var(--clocky-alias-label-primary);
   font-family: var(--ds-font-family-code);
   font-size: 8px;
   font-weight: 500;
@@ -236,10 +230,10 @@
   padding: 8px 16px;
   margin: 0 2px 8px;
   box-sizing: border-box;
-  border: 1px solid var(--dsw-alias-border-l2);
+  border: 1px solid var(--clocky-alias-border-l2);
   border-radius: 12px;
-  background: var(--dsw-alias-button-elevated-fill);
-  color: var(--dsw-alias-label-primary);
+  background: var(--clocky-alias-button-elevated-fill);
+  color: var(--clocky-alias-label-primary);
   font-size: 14px;
   font-weight: 500;
   line-height: 22px;
@@ -248,7 +242,7 @@
 }
 
 .newSession:hover {
-  background: var(--dsw-alias-button-floating-hover);
+  background: var(--clocky-alias-button-floating-hover);
 }
 
 .collapsed .newSession {
@@ -263,7 +257,7 @@
 }
 
 .collapsed .newSession:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: var(--clocky-alias-interactive-bg-hover);
 }
 
 .newSessionLabel {
@@ -285,7 +279,7 @@
   display: flex;
   flex-direction: column;
   margin-left: -4px;
-  margin-right: calc(-1 * var(--dsh-sidebar-inline-padding));
+  margin-right: calc(-1 * var(--clocky-sidebar-inline-padding));
   padding-left: 4px;
   overflow: hidden;
 }

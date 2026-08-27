@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { scopeTarget } from '@deepseek-ai/dsh-scope'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import SubagentRuntime, { SubagentRunId } from '@deepseek-ai/dsh-subagent'
+import { Context } from '@clocky/cordis'
+import { scopeTarget } from '@clocky/clocky-scope'
+import { SessionId } from '@clocky/clocky-session'
+import SubagentRuntime, { SubagentRunId } from '@clocky/clocky-subagent'
 import type {
   SubagentProvider,
   SubagentRunEndInfo,
   SubagentRunInfo,
-} from '@deepseek-ai/dsh-subagent'
-import * as SubagentInvariant from '@deepseek-ai/dsh-subagent/invariant'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
+} from '@clocky/clocky-subagent'
+import * as SubagentInvariant from '@clocky/clocky-subagent/invariant'
+import InvariantRegistry from '@clocky/clocky-invariants'
 
 async function setup(): Promise<Context> {
   const ctx = new Context()

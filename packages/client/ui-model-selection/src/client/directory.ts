@@ -7,9 +7,9 @@
  */
 import type {
   IApiClient, ModelCatalogFailure, ModelProviderGroup, ModelSelection, SessionId, SessionModels,
-} from '@deepseek-ai/dsh-api-remotes/client'
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+} from '@clocky/clocky-api-remotes/client'
+import type { SnapshotStore } from '@clocky/clocky-client-runtime/client'
+import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 
 /** Directory snapshot both entries render from. */
 export interface ModelDirectoryState {
@@ -75,7 +75,7 @@ export class ModelDirectory {
     }
     const { current, routable, groups, failures } = result.value
     this.store.update((s) => {
-      s.current = current
+      s.current = current ?? null
       s.routable = routable
       s.groups = groups
       s.failures = failures

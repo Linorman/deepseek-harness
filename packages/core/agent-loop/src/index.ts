@@ -2,13 +2,13 @@
  * Concrete agent-loop plugin: creates scoped ReactLoopAgents, publishes them
  * through the agent/session registries, and owns their ordered teardown.
  *
- * @module @deepseek-ai/dsh-agent-loop
+ * @module @clocky/clocky-agent-loop
  */
 
-import { Context, FiberState, Service } from '@deepseek-ai/cordis'
+import { Context, FiberState, Service } from '@clocky/cordis'
 import { randomUUID } from 'node:crypto'
-import z from '@deepseek-ai/schemastery'
-import { emitAgentEvent } from '@deepseek-ai/dsh-agent'
+import z from '@clocky/schemastery'
+import { emitAgentEvent } from '@clocky/clocky-agent'
 import type {
   Agent,
   AgentFactory,
@@ -18,14 +18,14 @@ import type {
   CreateAgentOptions,
   ResumeAgentOptions,
   SessionStartSource,
-} from '@deepseek-ai/dsh-agent'
-import { errorChain } from '@deepseek-ai/dsh-llm'
-import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
-import { SessionId, SessionPreparation } from '@deepseek-ai/dsh-session'
-import type { Session, SessionHeader } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-system-prompt'
-import type {} from '@deepseek-ai/dsh-tools'
-import type { SessionPersistence } from '@deepseek-ai/dsh-session-persistence'
+} from '@clocky/clocky-agent'
+import { errorChain } from '@clocky/clocky-llm'
+import { installSettingsSection, settingsNamespace } from '@clocky/clocky-settings'
+import { SessionId, SessionPreparation } from '@clocky/clocky-session'
+import type { Session, SessionHeader } from '@clocky/clocky-session'
+import type {} from '@clocky/clocky-system-prompt'
+import type {} from '@clocky/clocky-tools'
+import type { SessionPersistence } from '@clocky/clocky-session-persistence'
 import { ReactLoopAgent } from './agent.ts'
 import { DEFAULT_MAX_PARALLEL_TOOL_CALLS } from './constants.ts'
 
@@ -157,7 +157,7 @@ interface PreparedAgent {
   dispose(): Promise<void>
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Context {
     agentLoop: AgentLoop
     /**
@@ -653,7 +653,7 @@ export class AgentLoop extends Service implements AgentFactory {
   async resume(ownerCtx: Context, options: ResumeAgentOptions): Promise<AgentHandle> {
     const persistence = this.runtime.ctx.get('sessionPersistence')
     if (persistence === undefined) {
-      throw new Error('cannot resume: session persistence is not configured (load a dsh-session-persistence backend)')
+      throw new Error('cannot resume: session persistence is not configured (load a clocky-session-persistence backend)')
     }
     return this.resumeWith(ownerCtx, persistence, options)
   }

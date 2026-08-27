@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-native-command`.
- * @module @deepseek-ai/dsh-native-command/invariant
+ * Package-owned invariant companion for `@clocky/clocky-native-command`.
+ * @module @clocky/clocky-native-command/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-native-command'
+const PACKAGE_NAME = '@clocky/clocky-native-command'
 
 /** Cordis companion plugin name. */
 export const name = 'native-command-invariant'

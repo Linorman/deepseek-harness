@@ -1,15 +1,15 @@
-/** Published dsh web + pnpm dev:web → browser HMR, with no page reload. */
+/** Published clocky web + pnpm dev:web → browser HMR, with no page reload. */
 
-import { existsSync, globSync } from 'node:fs'
+import { existsSync, globSync, statSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import type { Fiber } from '@deepseek-ai/cordis'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import type { SubprocessHandle, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
+import { Context } from '@clocky/cordis'
+import type { Fiber } from '@clocky/cordis'
+import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
+import type { SubprocessHandle, SubprocessSpawnSpec } from '@clocky/clocky-subprocess'
 import { readClientBuildRecord } from '../../../scripts/client-build-environment.ts'
 import { REPO_ROOT } from './support.ts'
 
@@ -69,14 +69,21 @@ async function stopTree(child: SubprocessHandle): Promise<void> {
 }
 
 it('hot-reloads a real client-plugin source edit without refreshing the page', async () => {
-  const world = await mkdtemp(join(tmpdir(), 'dsh-web-hmr-world-'))
+  const world = await mkdtemp(join(tmpdir(), 'clocky-web-hmr-world-'))
   const sourcePath = join(REPO_ROOT, 'packages/client/ui-conversation/src/client/locales.ts')
   const binPath = join(REPO_ROOT, 'apps/cli/lib/bin.js')
-  if (!existsSync(binPath)) throw new Error('HMR browser test needs the built dsh bin; run pnpm run build first')
+  if (!existsSync(binPath)) throw new Error('HMR browser test needs the built clocky bin; run pnpm run build first')
   const clientBuildEnvironment = readClientBuildRecord(REPO_ROOT).environment
-  const clientBundlePaths = globSync('packages/*/*/lib/client.js{,.map}', { cwd: REPO_ROOT })
+  const clientArtifactPaths = [
+    ...globSync('packages/*/*/lib/client.js{,.map}', { cwd: REPO_ROOT }),
+    ...globSync('apps/web/dist/**/*', { cwd: REPO_ROOT })
+      .filter(path => statSync(join(REPO_ROOT, path)).isFile()),
+  ]
     .map(path => join(REPO_ROOT, path))
-  const originalClientBundles = await Promise.all(clientBundlePaths.map(async path => [path, await readFile(path)] as const))
+  const originalClientArtifacts = await Promise.all(
+    clientArtifactPaths.map(async path => [path, await readFile(path)] as const),
+  )
+  const originalClientArtifactSet = new Set(originalClientArtifacts.map(([path]) => path))
   const originalSource = await readFile(sourcePath)
   const oldText = 'Into the Unknown'
   const sourceNeedle = "'hero.headline': 'Into the Unknown'"
@@ -103,10 +110,10 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
       world,
       {
         DEEPSEEK_API_KEY: 'keyless-hmr-no-call',
-        DSH_HOME: join(world, '.dsh'),
+        CLOCKY_HOME: join(world, '.clocky'),
       },
     ))
-    const baseUrl = await waitForOutput(host, /dsh web: (http:\/\/[^\s]+)/, 'built dsh web')
+    const baseUrl = await waitForOutput(host, /clocky web: (http:\/\/[^\s]+)/, 'built clocky web')
     browser = await chromium.launch()
     const page = await browser.newPage()
     const pageErrors: string[] = []
@@ -115,23 +122,36 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
     await page.getByText(oldText, { exact: true }).waitFor({ timeout: 15_000 })
     const pageIdentity = await page.evaluate(() => {
       const identity = crypto.randomUUID()
-      Object.defineProperty(window, '__dshHmrPageIdentity', { value: identity })
+      Object.defineProperty(window, '__clockyHmrPageIdentity', { value: identity })
       return identity
     })
 
     await writeFile(sourcePath, updatedSource)
     await page.getByText(newText, { exact: true }).waitFor({ timeout: 30_000 })
-    expect(await page.evaluate(() => (window as Window & { __dshHmrPageIdentity?: string }).__dshHmrPageIdentity))
+    expect(await page.evaluate(() => (window as Window & { __clockyHmrPageIdentity?: string }).__clockyHmrPageIdentity))
       .toBe(pageIdentity)
     expect(pageErrors).toEqual([])
   } catch (error) {
     failures.push(error)
   } finally {
-    await writeFile(sourcePath, originalSource).catch((error: unknown) => failures.push(error))
+    // Stop the watcher before restoring the source. Restoring first schedules
+    // one more build, which can finish after the original bundles are put back
+    // and leave the complete-build record out of sync for the next test.
     if (watcher !== undefined) await stopTree(watcher).catch((error: unknown) => failures.push(error))
-    await Promise.all(originalClientBundles.map(async ([path, content]) => {
+    await writeFile(sourcePath, originalSource).catch((error: unknown) => failures.push(error))
+    await Promise.all(originalClientArtifacts.map(async ([path, content]) => {
       await writeFile(path, content).catch((error: unknown) => failures.push(error))
     }))
+    const currentClientArtifactPaths = [
+      ...globSync('packages/*/*/lib/client.js{,.map}', { cwd: REPO_ROOT }),
+      ...globSync('apps/web/dist/**/*', { cwd: REPO_ROOT })
+        .filter(path => statSync(join(REPO_ROOT, path)).isFile()),
+    ].map(path => join(REPO_ROOT, path))
+    await Promise.all(currentClientArtifactPaths
+      .filter(path => !originalClientArtifactSet.has(path))
+      .map(async (path) => {
+        await rm(path, { force: true }).catch((error: unknown) => failures.push(error))
+      }))
     if (host !== undefined) await stopTree(host).catch((error: unknown) => failures.push(error))
     await browser?.close().catch((error: unknown) => failures.push(error))
     await subprocessFiber?.dispose().catch((error: unknown) => failures.push(error))

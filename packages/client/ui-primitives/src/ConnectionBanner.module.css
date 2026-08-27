@@ -8,6 +8,6 @@
   text-align: center;
   font-size: 12px;
   line-height: 18px;
-  background: var(--dsw-alias-state-error-primary);
-  color: var(--dsw-alias-label-primary-foreground);
+  background: var(--clocky-alias-state-error-primary);
+  color: var(--clocky-alias-label-primary-foreground);
 }

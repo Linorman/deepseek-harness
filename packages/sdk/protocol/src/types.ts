@@ -1,16 +1,16 @@
 /**
- * Named wire types for the DeepSeek Harness SDK runtime protocol: the three
+ * Named wire types for Clocky SDK runtime protocol: the three
  * request/result pairs and the four server-to-client notification payloads
  * exchanged over the newline-delimited JSON-RPC stdio transport. The server
- * plugin (`@deepseek-ai/dsh-sdk-jsonrpc-server`) and SDK clients share these shapes;
- * `serverInfo.name` stays the wire-stable `deepseek-harness-sdk-runtime`.
+ * plugin (`@clocky/clocky-sdk-jsonrpc-server`) and SDK clients share these shapes;
+ * `serverInfo.name` stays the wire-stable `clocky-sdk-runtime`.
  *
- * @module @deepseek-ai/dsh-sdk-protocol/types
+ * @module @clocky/clocky-sdk-protocol/types
  */
 
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import type { SubagentStopReason } from '@deepseek-ai/dsh-subagent'
+import type { ContentBlock } from '@clocky/clocky-llm'
+import type { SessionEvent } from '@clocky/clocky-session'
+import type { SubagentStopReason } from '@clocky/clocky-subagent'
 
 /** Parameters for the process-wide SDK handshake. */
 export interface InitializeParams {
@@ -18,7 +18,7 @@ export interface InitializeParams {
   cwd: string
   /** Provider route every SDK-created agent runs on. */
   provider: string
-  /** Model name every SDK-created agent runs on (the server may mount a fallback adapter; see `HarnessSdkJsonRpcServer.initialize`). */
+  /** Model name every SDK-created agent runs on; the surrounding composition owns its adapter. */
   model: string
   /** Optional positive output-token cap inherited by SDK-created agents and their in-process descendants. */
   maxTokens?: number
@@ -26,7 +26,7 @@ export interface InitializeParams {
 
 /** Wire-stable server identity returned by initialization. */
 export interface InitializeResult {
-  /** Wire-stable server identity (`deepseek-harness-sdk-runtime`) and version. */
+  /** Wire-stable server identity (`clocky-sdk-runtime`) and version. */
   serverInfo: { name: string; version: string }
 }
 

@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-spill-local`.
- * @module @deepseek-ai/dsh-spill-local/invariant
+ * Package-owned invariant companion for `@clocky/clocky-spill-local`.
+ * @module @clocky/clocky-spill-local/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-spill-local'
+const PACKAGE_NAME = '@clocky/clocky-spill-local'
 
 /** Cordis companion plugin name. */
 export const name = 'spill-local-invariant'

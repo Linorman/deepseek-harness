@@ -7,18 +7,18 @@ import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { afterEach, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import { canonicalPath, writableRoots } from '@deepseek-ai/dsh-sandbox'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { CallId } from '@clocky/clocky-llm'
+import { canonicalPath, writableRoots } from '@clocky/clocky-sandbox'
+import { SessionId } from '@clocky/clocky-session'
+import { settingsNamespace } from '@clocky/clocky-settings'
 // Empty type imports carry the tools/sandboxPolicy/approval Context merges.
-import type {} from '@deepseek-ai/dsh-tools'
-import type {} from '@deepseek-ai/dsh-sandbox-policy'
-import type {} from '@deepseek-ai/dsh-user-approval'
-import type {} from '@deepseek-ai/dsh-permission-presets'
-import type {} from '@deepseek-ai/dsh-agent-presets'
-import type {} from '@deepseek-ai/dsh-commands'
-import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@clocky/clocky-tools'
+import type {} from '@clocky/clocky-sandbox-policy'
+import type {} from '@clocky/clocky-user-approval'
+import type {} from '@clocky/clocky-permission-presets'
+import type {} from '@clocky/clocky-agent-presets'
+import type {} from '@clocky/clocky-commands'
+import type {} from '@clocky/clocky-system-prompt'
 import { launchWebScaffold, type WebScaffold } from './scaffold.ts'
 
 const FILE_REFERENCE_PROMPT = fileURLToPath(new URL(
@@ -60,7 +60,7 @@ const EXPECTED_TOOLS = [
 ]
 
 /**
- * `glob` and `grep` come from `dsh-tool-fs-search`, which spawns the PACKAGED
+ * `glob` and `grep` come from `clocky-tool-fs-search`, which spawns the PACKAGED
  * ripgrep binary (`@vscode/ripgrep`) through the subprocess seam, so the pair
  * is always present on every host — asserted as fixed members, not a host
  * dependency.
@@ -75,9 +75,9 @@ afterEach(async () => {
 })
 
 it('assembles the shipped Web catalog, file-reference guidance, retry policy, and confined access default', async () => {
-  scaffold = await launchWebScaffold({ deepSeekMissingCredential: true })
+  scaffold = await launchWebScaffold()
   const ctx = scaffold.ctx
-  expect(ctx.llm.providerRetryPolicy('deepseek-official')).toMatchInlineSnapshot(`
+  expect(ctx.llm.providerRetryPolicy('test-provider')).toMatchInlineSnapshot(`
     {
       "initialDelayMs": 500,
       "jitterRatio": 0.1,
@@ -93,21 +93,19 @@ it('assembles the shipped Web catalog, file-reference guidance, retry policy, an
       ],
     }
   `)
-  await ctx.settings.update(settingsNamespace('llm-deepseek'), {
-    retryPolicy: { mode: 'always', maxRetries: 5 },
-  })
-  expect(ctx.llm.providerRetryPolicy('deepseek-official')).toMatchInlineSnapshot(`
-    {
-      "initialDelayMs": 500,
-      "jitterRatio": 0.1,
-      "maxDelayMs": 10000,
-      "mode": "always",
-    }
-  `)
   await ctx.settings.update(settingsNamespace('llm-pi-ai'), {
     providers: {
-      openai: {},
-      anthropic: { retryPolicy: { mode: 'always' } },
+      openai: {
+        api: 'openai-completions',
+        baseURL: 'http://127.0.0.1:9/v1',
+        models: [{ id: 'test-model', contextWindow: 128_000, maxTokens: 8_192 }],
+      },
+      anthropic: {
+        api: 'anthropic-messages',
+        baseURL: 'http://127.0.0.1:9',
+        models: [{ id: 'test-model', contextWindow: 128_000, maxTokens: 8_192 }],
+        retryPolicy: { mode: 'always' },
+      },
     },
   })
   expect(ctx.llm.providerRetryPolicy('openai')).toMatchInlineSnapshot(`
@@ -171,7 +169,7 @@ it('assembles the shipped Web catalog, file-reference guidance, retry policy, an
   const commandHandle = await scaffold.ctx.agents.create({
     sessionId: SessionId('shipped-command-catalog'),
     meta: { cwd: scaffold.workspaceCwd },
-    agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+    agentOptions: { provider: 'test-provider', model: 'test-model' },
   })
   try {
     expect(scaffold.ctx.commands.list(commandHandle.agent)).toContainEqual({

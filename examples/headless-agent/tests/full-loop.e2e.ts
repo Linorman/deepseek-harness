@@ -1,11 +1,11 @@
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage } from '@clocky/clocky-llm'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId } from '@clocky/clocky-session'
 
 /**
  * The first place a REAL model meets the REAL bash tool: the cheap canary
@@ -27,9 +27,9 @@ afterEach(async () => {
 
 describe.skipIf(!process.env.DEEPSEEK_API_KEY)('full loop: real model + real bash tool', () => {
   it('runs a bash command on request and reports its output', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-full-loop-e2e-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-full-loop-e2e-'))
     ctx = await codingHarness(workdir, { persona: SYSTEM_PROMPT })
-    const agent = ctx.agentLoop.create(SessionId('e2e-loop'), { provider: 'deepseek-official', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-loop'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
 
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Run `echo e2e-ok` with the bash tool and tell me its exact output.' }], source: { kind: 'user' } }))
     await waitForIdle(ctx, agent)

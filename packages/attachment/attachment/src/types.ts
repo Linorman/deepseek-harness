@@ -1,4 +1,4 @@
-/** Durable attachment vocabulary. @module @deepseek-ai/dsh-attachment/types */
+/** Durable attachment vocabulary. @module @clocky/clocky-attachment/types */
 
 import type { AttachmentId, ImageVariantId } from './brand.ts'
 
@@ -71,7 +71,7 @@ export interface StoredImageAttachment {
 export interface ImageRequestPolicy {
   /** Maximum width multiplied by height after aspect-preserving projection. */
   maxPixels: number
-  /** Encoded-byte cap before base64 expansion or Files API upload. */
+  /** Encoded-byte cap before base64 expansion. */
   maxBytes: number
 }
 

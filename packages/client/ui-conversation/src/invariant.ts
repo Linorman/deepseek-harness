@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-client-ui-conversation`.
- * @module @deepseek-ai/dsh-client-ui-conversation/invariant
+ * Package-owned invariant companion for `@clocky/clocky-client-ui-conversation`.
+ * @module @clocky/clocky-client-ui-conversation/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-client-ui-conversation'
+const PACKAGE_NAME = '@clocky/clocky-client-ui-conversation'
 
 /** Cordis companion plugin name. */
 export const name = 'client-ui-conversation-invariant'

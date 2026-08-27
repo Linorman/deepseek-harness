@@ -3,9 +3,9 @@
 import { useEffect } from 'react'
 import {
   IconCodeOutline16, IconInspectOutline12, StateDot,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { InjectFace, PropsLocale, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
+} from '@clocky/clocky-client-ui-primitives'
+import type { InjectFace, PropsLocale, PropsRenderSlots } from '@clocky/clocky-client-ui-slots'
+import type { ToolCallViewProps } from '@clocky/clocky-client-ui-tool/client'
 import { cordisRunCard } from './card-model.ts'
 import { cordisToolViewKey } from './run-card-index.ts'
 import type { CordisRunCardFace } from './slots.ts'

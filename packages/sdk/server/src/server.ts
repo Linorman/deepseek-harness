@@ -2,18 +2,17 @@
  * JSON-RPC methods and notifications for out-of-process harness SDKs.
  * The surrounding context owns plugins, persistence, and configured adapters.
  *
- * @module @deepseek-ai/dsh-sdk-jsonrpc-server/server
+ * @module @clocky/clocky-sdk-jsonrpc-server/server
  */
 
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import { resolve } from 'node:path'
-import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { carrierKeyOf, type Scoped } from '@deepseek-ai/dsh-scope'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import type SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import type { SubagentRunEndInfo } from '@deepseek-ai/dsh-subagent'
-import * as LlmDeepSeek from '@deepseek-ai/dsh-llm-deepseek'
+import type { Agent, AgentHandle } from '@clocky/clocky-agent'
+import { createUserMessage } from '@clocky/clocky-llm'
+import { carrierKeyOf, type Scoped } from '@clocky/clocky-scope'
+import { SessionId } from '@clocky/clocky-session'
+import type SubagentRuntime from '@clocky/clocky-subagent'
+import type { SubagentRunEndInfo } from '@clocky/clocky-subagent'
 import type {
   InitializeParams,
   InitializeResult,
@@ -23,7 +22,7 @@ import type {
   SessionPromptResult,
   SubagentFinishedNotification,
   SubagentStartedNotification,
-} from '@deepseek-ai/dsh-sdk-protocol'
+} from '@clocky/clocky-sdk-protocol'
 
 interface SessionRecord {
   handle: AgentHandle
@@ -52,10 +51,9 @@ function successStatus(reason: string, options: HarnessSdkJsonRpcServerOptions):
  */
 export class HarnessSdkJsonRpcServer {
   private cwd = process.cwd()
-  private provider = 'deepseek-official'
-  private model = 'deepseek-official'
+  private provider: string | undefined
+  private model: string | undefined
   private maxTokens: number | undefined
-  private llmFiber: { dispose(): Promise<void> } | undefined
   private readonly sessions = new Map<string, SessionRecord>()
   private readonly sessionCreations = new Map<string, Promise<SessionRecord>>()
   private readonly disposers: (() => void)[] = []
@@ -104,24 +102,24 @@ export class HarnessSdkJsonRpcServer {
   }
 
   /**
-   * Configure the SDK route, mounting the DeepSeek fallback only when unowned.
+   * Configure the SDK route. The adapter must already be owned by the
+   * surrounding composition; this server never mounts a provider during the
+   * handshake.
    * @param params - SDK handshake parameters.
    * @returns server identity for the handshake.
    */
-  async initialize(params: InitializeParams): Promise<InitializeResult> {
+  initialize(params: InitializeParams): InitializeResult {
     if (params.maxTokens !== undefined
       && (!Number.isSafeInteger(params.maxTokens) || params.maxTokens <= 0)) {
       throw new TypeError('initialize maxTokens must be a positive safe integer')
     }
     this.cwd = resolve(params.cwd)
-    this.provider = params.provider
+    const provider = params.provider
+    this.provider = provider
     this.model = params.model
     this.maxTokens = params.maxTokens
-    if (!this.hasAdapterFor(this.provider)) {
-      if (this.provider !== 'deepseek-official') throw new Error(`no adapter registered for provider "${this.provider}"`)
-      this.llmFiber = await this.ctx.plugin(LlmDeepSeek, {})
-    }
-    return { serverInfo: { name: 'deepseek-harness-sdk-runtime', version: '0.0.1' } }
+    if (!this.hasAdapterFor(provider)) throw new Error(`no adapter registered for provider "${provider}"`)
+    return { serverInfo: { name: 'clocky-sdk-runtime', version: '0.0.1' } }
   }
 
   /**
@@ -169,9 +167,7 @@ export class HarnessSdkJsonRpcServer {
     }
     const teardownResults = await Promise.allSettled([
       ...records.map(rec => Promise.resolve().then(() => rec.handle.dispose())),
-      ...(this.llmFiber === undefined ? [] : [Promise.resolve().then(() => this.llmFiber?.dispose())]),
     ])
-    this.llmFiber = undefined
     failures.push(...teardownResults
       .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
       .map(result => result.reason as unknown))
@@ -196,7 +192,7 @@ export class HarnessSdkJsonRpcServer {
       case 'shutdown':
         return this.shutdown()
       default:
-        throw new Error(`unknown DeepSeek Harness SDK runtime method: ${method}`)
+        throw new Error(`unknown SDK runtime method: ${method}`)
     }
   }
 
@@ -216,10 +212,13 @@ export class HarnessSdkJsonRpcServer {
   }
 
   private async createSession(sessionId: string): Promise<SessionRecord> {
+    if (this.provider === undefined || this.model === undefined) {
+      throw new Error('SDK server is not initialized with a provider and model')
+    }
     // No preset composition: this server's compositions keep the model-facing
     // rows in the host plane, so this agent reads them from the global layer. A
     // deployment that configures a roster has to join one here first
-    // (@deepseek-ai/dsh-agent-presets README, "Composing a child agent").
+    // (@clocky/clocky-agent-presets README, "Composing a child agent").
     const handle = await this.ctx.agents.create({
       sessionId: SessionId(sessionId),
       meta: { cwd: this.cwd },

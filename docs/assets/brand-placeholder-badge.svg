@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="20" viewBox="0 0 121 20" fill="none">
+  <style>
+    .stroke { stroke: #475569; }
+    .fill { fill: #475569; }
+    @media (prefers-color-scheme: dark) {
+      .stroke { stroke: #cbd5e1; }
+      .fill { fill: #cbd5e1; }
+    }
+  </style>
+  <rect class="stroke" x="0.75" y="0.75" width="119.5" height="18.5" rx="4" stroke-width="1.5"/>
+  <g class="stroke" transform="translate(-0.85 2) scale(0.84)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5V2.75"/>
+    <rect x="4.5" y="5.5" width="15" height="13" rx="3.5"/>
+    <path d="M4.5 10H2.75M19.5 10h1.75"/>
+    <path d="M8.5 15.5h7"/>
+  </g>
+  <circle class="fill" cx="9.23" cy="3.68" r="0.84"/>
+  <circle class="fill" cx="6.71" cy="11.66" r="0.84"/>
+  <circle class="fill" cx="11.75" cy="11.66" r="0.84"/>
+  <path class="stroke" d="M19 7h40M19 10h52M19 13h28M88 7h22M88 10h16M88 13h19" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

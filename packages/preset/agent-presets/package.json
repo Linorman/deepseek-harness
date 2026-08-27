@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-agent-presets",
-  "description": "Per-session agent composition from preset cordis.yml files for the DeepSeek Harness",
+  "name": "@clocky/clocky-agent-presets",
+  "description": "Per-session agent composition from preset cordis.yml files for Clocky",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/preset/agent-presets"
   },
   "type": "module",
@@ -37,37 +37,37 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-atomic-write": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-home-paths": "workspace:^",
-    "@deepseek-ai/dsh-scope": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-atomic-write": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-home-paths": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@clocky/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-agent-loop": "workspace:^",
-    "@deepseek-ai/dsh-atomic-write": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-home-paths": "workspace:^",
-    "@deepseek-ai/dsh-scope": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-settings-file": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-tools": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-loop": "workspace:^",
+    "@clocky/clocky-atomic-write": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-home-paths": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^",
+    "@clocky/clocky-settings-file": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/clocky-tools": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   }
 }

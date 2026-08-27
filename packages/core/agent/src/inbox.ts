@@ -1,11 +1,11 @@
 /**
  * Incremental projection of durable agent inbox events.
  *
- * @module @deepseek-ai/dsh-agent/inbox
+ * @module @clocky/clocky-agent/inbox
  */
 
-import type { MessageId } from '@deepseek-ai/dsh-llm'
-import type { Session, SessionEventMap, UserMessage } from '@deepseek-ai/dsh-session'
+import type { MessageId } from '@clocky/clocky-llm'
+import type { Session, SessionEventMap, UserMessage } from '@clocky/clocky-session'
 import type { InboxTarget } from './types.ts'
 
 /** Mutable state privately owned by an {@link Inbox}. */

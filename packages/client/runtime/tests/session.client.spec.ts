@@ -7,9 +7,9 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
-import type {} from '@deepseek-ai/dsh-commands/types'
-import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { SessionEvent } from '@clocky/clocky-session/types'
+import type {} from '@clocky/clocky-commands/types'
+import type { SessionId } from '@clocky/clocky-api-remotes/client'
 import { Session } from '../src/client/sessions/session.ts'
 import type {
   ChatConversationViewNode, ChatLocationNodeIndex, ChatNodeStore, ChatSnapshot,
@@ -239,7 +239,7 @@ describe('open', () => {
     gate.resolve(ok({
       events: entries(page) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      modelSelection: { provider: 'test-provider', model: 'test-model' },
     }))
     await opening
     const seqs = session.getSnapshot().nodes.map(n => n.seq)
@@ -438,7 +438,7 @@ describe('paging', () => {
     gate.resolve(ok({
       events: entries(plainTurn(0, 0, 'a', 'b')) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      modelSelection: { provider: 'test-provider', model: 'test-model' },
     }))
     await Promise.all([first, second])
     expect(api.callsOf('session.history')).toHaveLength(2) // open + one page, not two
@@ -821,7 +821,7 @@ describe('remaining branches', () => {
     stale.resolve(ok({
       events: entries(plainTurn(0, 0, '旧', '代')) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'stale' },
+      modelSelection: { provider: 'test-provider', model: 'stale' },
     })) // success, but its generation is gone
     await Promise.all([opening, resynced])
     expect(session.getSnapshot().nodes.map(n => n.seq)).toEqual([7, 9]) // only the fresh generation's window
@@ -844,7 +844,7 @@ describe('remaining branches', () => {
     secondPull.resolve(ok({
       events: entries([...plainTurn(0, 0, 'a', 'b'), ...plainTurn(6, 1, 'c', 'd')]) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'stale' },
+      modelSelection: { provider: 'test-provider', model: 'stale' },
     }))
     await Promise.all([opening, resynced])
     expect(session.getSnapshot().openState).toBe('open')
@@ -862,7 +862,7 @@ describe('remaining branches', () => {
     repairPull.resolve(ok({
       events: entries(plainTurn(0, 0, '旧', '页')) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'stale' },
+      modelSelection: { provider: 'test-provider', model: 'stale' },
     })) // repair result: stale, dropped
     await resynced
     expect(session.getSnapshot().nodes.map(n => n.seq)).toEqual([7, 9])
@@ -892,7 +892,7 @@ describe('remaining branches', () => {
         { event: ev.toolResult(7, 1, 'h1', 'done'), view: { for: 'result', view: { card: 'generic', title: '历史果' } } },
       ] as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      modelSelection: { provider: 'test-provider', model: 'test-model' },
     }))
     await session.open()
     expect(chatEvents(session.getSnapshot()).slice(-2).map(item => item.view)).toEqual([

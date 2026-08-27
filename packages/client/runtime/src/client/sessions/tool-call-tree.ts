@@ -1,5 +1,5 @@
-import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
-import type {} from '@deepseek-ai/dsh-tools/types'
+import type { SessionEvent } from '@clocky/clocky-session/types'
+import type {} from '@clocky/clocky-tools/types'
 import type {
   ConversationNode, RunningToolCall, ToolCallBlock, ToolResultNode,
 } from './conversation.ts'

@@ -2,29 +2,29 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime, { createUserMessage, CallId, HarnessError  } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { RUN_CODE_NAME, defineTool } from '@deepseek-ai/dsh-tools'
-import type { ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
+import { Context } from '@clocky/cordis'
+import LlmRuntime, { createUserMessage, CallId, HarnessError  } from '@clocky/clocky-llm'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import type { SessionEvent } from '@clocky/clocky-session'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { RUN_CODE_NAME, defineTool } from '@clocky/clocky-tools'
+import type { ToolExecutionResult } from '@clocky/clocky-tools'
+import AgentRegistry, { type Agent } from '@clocky/clocky-agent'
 
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { LocalBashExecutor } from '@deepseek-ai/dsh-bash-local'
-import * as BashEnvPlugin from '@deepseek-ai/dsh-shell-env'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import * as ToolBash from '@deepseek-ai/dsh-tool-bash'
-import * as LlmDeepSeek from '@deepseek-ai/dsh-llm-deepseek'
-import { WorkerThreadCodeRuntime } from '@deepseek-ai/dsh-code-runtime-worker-thread'
-import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
-import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
-import * as WorkspaceContext from '@deepseek-ai/dsh-agent-instructions'
-import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
-import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
-import CordisHostRunner from '@deepseek-ai/dsh-cordis-host-runner'
-import * as ToolCordis from '@deepseek-ai/dsh-tool-cordis'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { LocalBashExecutor } from '@clocky/clocky-bash-local'
+import * as BashEnvPlugin from '@clocky/clocky-shell-env'
+import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
+import * as ToolBash from '@clocky/clocky-tool-bash'
+import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
+import { WorkerThreadCodeRuntime } from '@clocky/clocky-code-runtime-worker-thread'
+import LocalFileSystem from '@clocky/clocky-fs-local'
+import * as ToolFs from '@clocky/clocky-tool-fs'
+import * as WorkspaceContext from '@clocky/clocky-agent-instructions'
+import LocalJobRegistry from '@clocky/clocky-jobs-local'
+import * as ToolTasks from '@clocky/clocky-tool-jobs'
+import CordisHostRunner from '@clocky/clocky-cordis-host-runner'
+import * as ToolCordis from '@clocky/clocky-tool-cordis'
 
 /**
  * With-key Code Mode proof: a real model receives only `run_code`, composes two
@@ -57,7 +57,7 @@ async function codeModeHarness(cwd: string): Promise<Context> {
   await harness.plugin(ToolRuntime, { mode: 'code' })
   await harness.plugin(AgentRegistry)
   await harness.plugin(AgentLoop, { agents: [] })
-  await harness.plugin(LlmDeepSeek)
+  await harness.plugin(LlmPiAi, { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } })
   await harness.plugin(LocalSubprocessRuntime)
   await harness.plugin(BashEnvPlugin)
   await harness.plugin(LocalBashExecutor, { cwd, timeoutMs: 30_000 })
@@ -77,7 +77,9 @@ async function workspaceCodeModeHarness(): Promise<Context> {
   await harness.plugin(ToolFs)
   await harness.plugin(WorkspaceContext, { maxBytes: 65536 })
   await harness.plugin(AgentLoop, { agents: [] })
-  await harness.plugin(LlmDeepSeek, { models: [{ id: 'deepseek-v4-flash' }] })
+  await harness.plugin(LlmPiAi, {
+    providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY', models: [{ id: 'deepseek-v4-flash' }] } },
+  })
   await harness.plugin(WorkerThreadCodeRuntime, {})
   return harness
 }
@@ -187,7 +189,7 @@ describe('Code Mode typed values: keyless real-worker contracts', () => {
   })
 
   it('returns a background job id, settles the outer run, and polls that id to completion', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-background-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-background-'))
     ctx = await backgroundCodeModeHarness(workdir)
 
     const jobId = completion(await runCode(ctx, `
@@ -210,7 +212,7 @@ describe('Code Mode typed values: keyless real-worker contracts', () => {
   }, 15_000)
 
   it('pre-abort spawns nothing; post-publication abort leaves job_kill as the cancellation owner', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-task-cancel-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-task-cancel-'))
     ctx = await backgroundCodeModeHarness(workdir)
 
     const pre = new AbortController()
@@ -247,7 +249,7 @@ describe('Code Mode typed values: keyless real-worker contracts', () => {
   }, 15_000)
 
   it('keeps foreground bash coupled to the outer signal', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-foreground-cancel-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-foreground-cancel-'))
     ctx = await backgroundCodeModeHarness(workdir)
     const controller = new AbortController()
     const startedAt = Date.now()
@@ -351,9 +353,9 @@ function waitForIdle(harness: Context, agent: Agent): Promise<void> {
 
 describe.skipIf(!process.env.DEEPSEEK_API_KEY)('Code Mode: real model writes a program over real tools', () => {
   it('collapses the wire tool list to [run_code], bridges sub-calls, and returns curated output', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-e2e-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-e2e-'))
     ctx = await codeModeHarness(workdir)
-    const agent = ctx.agentLoop.create(SessionId('e2e-code-mode'), { provider: 'deepseek-official', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-code-mode'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
 
     agent.followup(createUserMessage({
       content: [{
@@ -396,7 +398,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('Code Mode: real model writes a p
   }, 180_000)
 
   it('projects nested workspace instructions discovered by an fs sub-call', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-workspace-e2e-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-workspace-e2e-'))
     await mkdir(join(workdir, '.git'), { recursive: true })
     await mkdir(join(workdir, 'pkg/deep'), { recursive: true })
     await writeFile(join(workdir, 'pkg/AGENTS.md'), `If asked for the Code Mode workspace handshake, reply with exactly ${WORKSPACE_PROBE} and nothing else.\n`)
@@ -405,7 +407,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('Code Mode: real model writes a p
     const handle = await ctx.agents.create({
       sessionId: SessionId('e2e-code-mode-workspace-session'),
       meta: { cwd: workdir },
-      agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      agentOptions: { provider: 'deepseek', model: 'deepseek-v4-flash' },
     })
 
     handle.agent.followup(createUserMessage({

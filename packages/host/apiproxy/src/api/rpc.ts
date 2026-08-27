@@ -7,9 +7,9 @@
 
 import type { z as zCore } from 'zod'
 type ZodIssue = zCore.core.$ZodIssue
-import type { Branded } from '@deepseek-ai/dsh-brand'
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { Branded } from '@clocky/clocky-brand'
+import type { MessageId } from '@clocky/clocky-llm/brand'
+import type { SessionId } from '@clocky/clocky-session/types'
 
 /**
  * Message correlation id: the initiator mints it on a request; a response
@@ -34,6 +34,7 @@ export interface RpcErrorDetailsMap {
   'cancelled': {}
   'session-not-found': { sessionId: SessionId }
   'model-unavailable': { provider: string; model: string }
+  'model-not-configured': {}
   'session-conflict': { sessionId: SessionId; requestedCwd: string; existingCwd?: string }
   'invalid-time-zone': { value: string }
   'workspace-attach-failed': { sessionId: SessionId; workspaceId: string }

@@ -1,28 +1,28 @@
 # Keyless replay includes the live `cordis.yml`, disables the key-requiring
-# DeepSeek adapter, and inserts `llm-replay` to serve recorded JSONL without a
+# provider adapter, and inserts `llm-replay` to serve recorded JSONL without a
 # key or network; every other entry remains shared. The replay provider
-# catalog claims the `deepseek-official` provider so the SDK server's `initialize`
+# catalog claims the `test-provider` provider so the SDK server's `initialize`
 # finds it owned and never mounts the real-adapter fallback. The SDK snapshot
-# suite passes this path explicitly through `DSH_CORDIS_CONFIG` (the
-# jsonrpc-demo bin performs no DSH_SNAPSHOT config swap of its own), and
-# `llm-replay` reads `DSH_SNAPSHOT_FILE` / `DSH_SNAPSHOT_CHILD_FILES` from the
+# suite passes this path explicitly through `CLOCKY_CORDIS_CONFIG` (the
+# jsonrpc-demo bin performs no CLOCKY_SNAPSHOT config swap of its own), and
+# `llm-replay` reads `CLOCKY_SNAPSHOT_FILE` / `CLOCKY_SNAPSHOT_CHILD_FILES` from the
 # harness. Stdout remains reserved for JSON-RPC frames.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
       # `name` asserts the target: a mismatch skips the patch and warns only
       # when a logger exists.
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - insert:
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
+                    - id: test-model

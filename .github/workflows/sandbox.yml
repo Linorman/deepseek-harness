@@ -21,7 +21,7 @@ permissions:
 env:
   # CI runs must never report to the production telemetry endpoint baked
   # into apps/cli/cordis.yml (AppCLIEntry disables the row when set).
-  DSH_TELEMETRY_DISABLED: '1'
+  CLOCKY_TELEMETRY_DISABLED: '1'
 
 jobs:
   # Keyless real-kernel sandbox proofs (sandbox Agent Note § Testing): each ladder
@@ -117,7 +117,7 @@ jobs:
       # together so registry state cannot mask source/package drift.
       - name: Build packages for the pack rehearsal
         if: matrix.runner == 'landlock'
-        run: pnpm run build:official
+        run: pnpm run build:clocky
 
       - name: Packed-distribution e2e (pack → install → confine)
         if: matrix.runner == 'landlock'

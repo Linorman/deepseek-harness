@@ -23,12 +23,12 @@
  * })
  * ```
  *
- * @module @deepseek-ai/dsh-authorization
+ * @module @clocky/clocky-authorization
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
-import type { CredentialKey } from '@deepseek-ai/dsh-credentials'
-import { HarnessError } from '@deepseek-ai/dsh-llm'
+import { Context, Service } from '@clocky/cordis'
+import type { CredentialKey } from '@clocky/clocky-credentials'
+import { HarnessError } from '@clocky/clocky-llm'
 
 import type {
   AuthorizationEntry, AuthorizationMethod, AuthorizationNotice, AuthorizationOutcome, AuthorizationPrompt,
@@ -40,7 +40,7 @@ export type {
   AuthorizationPromptOption, AuthorizationSettlement, AuthorizationStatus,
 } from './types.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Context {
     authorization: AuthorizationService
   }

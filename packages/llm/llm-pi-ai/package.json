@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-llm-pi-ai",
-  "description": "pi-ai-backed DeepSeek adapter for the DeepSeek Harness LLM seam (design-verification twin of dsh-llm-deepseek)",
+  "name": "@clocky/clocky-llm-pi-ai",
+  "description": "Generic pi-ai multi-provider adapter for the LLM seam",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/llm/llm-pi-ai"
   },
   "type": "module",
@@ -32,30 +32,29 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-attachment": "workspace:^",
-    "@deepseek-ai/dsh-authorization": "workspace:^",
-    "@deepseek-ai/dsh-credentials": "workspace:^",
-    "@deepseek-ai/dsh-launch-environment": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-authorization": "workspace:^",
+    "@clocky/clocky-credentials": "workspace:^",
+    "@clocky/clocky-launch-environment": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.82.1",
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@clocky/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-attachment": "workspace:^",
-    "@deepseek-ai/dsh-authorization": "workspace:^",
-    "@deepseek-ai/dsh-credentials": "workspace:^",
-    "@deepseek-ai/dsh-launch-environment": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-llm-deepseek": "workspace:^",
-    "@deepseek-ai/dsh-settings": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-authorization": "workspace:^",
+    "@clocky/clocky-credentials": "workspace:^",
+    "@clocky/clocky-launch-environment": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-settings": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   }
 }

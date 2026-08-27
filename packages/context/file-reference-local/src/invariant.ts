@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-file-reference-local`.
- * @module @deepseek-ai/dsh-file-reference-local/invariant
+ * Package-owned invariant companion for `@clocky/clocky-file-reference-local`.
+ * @module @clocky/clocky-file-reference-local/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-file-reference-local'
+const PACKAGE_NAME = '@clocky/clocky-file-reference-local'
 
 /** Cordis companion plugin name. */
 export const name = 'file-reference-local-invariant'

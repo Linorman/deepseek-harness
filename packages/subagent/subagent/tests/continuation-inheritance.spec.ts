@@ -10,18 +10,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import SandboxPolicyService, { effectiveSandboxMode, setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
-import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import ApprovalService, { effectiveApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
+import { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import { createUserMessage } from '@clocky/clocky-llm'
+import SandboxPolicyService, { effectiveSandboxMode, setSandboxMode } from '@clocky/clocky-sandbox-policy'
+import { SessionId } from '@clocky/clocky-session'
+import type { SessionEvent } from '@clocky/clocky-session'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import * as SubagentFork from '@clocky/clocky-subagent-fork-in-process'
+import * as SubagentSpawn from '@clocky/clocky-subagent-spawn-in-process'
+import ApprovalService, { effectiveApprovalPolicy } from '@clocky/clocky-user-approval'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import SubagentRuntime from '../src/index.ts'
 
@@ -39,7 +39,7 @@ async function setup(script: Script) {
   const ctx = new Context()
   contexts.push(ctx)
   await mountAgentLoopTestDependencies(ctx)
-  const root = mkdtempSync(join(tmpdir(), 'dsh-continuation-inherit-'))
+  const root = mkdtempSync(join(tmpdir(), 'clocky-continuation-inherit-'))
   roots.push(root)
   await ctx.plugin(JsonlSessionPersistence, { root })
   await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: root })
@@ -104,7 +104,7 @@ describe('continuable policy inheritance', () => {
     const runtimeContext = loaded.events.find(
       (event): event is SessionEvent<'user/message'> => event.type === 'user/message'
         && event.data.source.kind === 'plugin'
-        && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt',
+        && event.data.source.plugin === '@clocky/clocky-system-prompt',
     )
     const contextText = runtimeContext?.data.content
       .flatMap(block => block.type === 'text' ? [block.text] : [])

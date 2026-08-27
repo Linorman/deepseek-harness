@@ -3,10 +3,10 @@
  * API. Exports the `LlmRuntime` default, the abstract `LlmAdapter` for
  * provider backends, and `BlockAssembler` for chunk assembly.
  *
- * @module @deepseek-ai/dsh-llm
+ * @module @clocky/clocky-llm
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@clocky/cordis'
 import type {
   GenerateOptions,
   LlmConfigurableProvider,
@@ -44,7 +44,7 @@ export { BlockAssembler } from './assembler.ts'
 export { callConfigEquals, deepFreeze, isAgentLoopRequest, markAgentLoopRequest } from './call-config.ts'
 export type { LlmCallConfig, LlmCallConfigAdapterDefaults } from './call-config.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Context {
     llm: LlmRuntime
   }
@@ -128,7 +128,7 @@ export class LlmError extends HarnessError {
  * of a secret into a log or a UI is the failure this diagnosis avoids.
  *
  * Lives beside {@link LlmError} rather than in `./api-key.ts` so the predicate
- * module stays dependency-free; both adapters share this one diagnosis instead
+ * module stays dependency-free; adapters share this one diagnosis instead
  * of keeping near-identical local copies.
  * @param raw - the credential exactly as supplied.
  * @param pkg - the refusing package name, prefixed to the diagnostic.
@@ -185,8 +185,8 @@ export interface PreparedAdapterCall {
 /**
  * Provider-wire adapter for the harness message and stream vocabulary. Register implementations
  * with `ctx.llm.registerAdapter(providers, adapter)`. Every provider HTTP request must include
- * `attributionHeaders()`; prove the headers are added in the wire request or library header hook. The direct-fetch
- * DeepSeek and library-backed pi-ai adapters meet this contract through different internals.
+ * `attributionHeaders()`; prove the headers are added in the wire request or library header hook. Adapters may
+ * meet this contract through different internals.
  */
 export abstract class LlmAdapter {
   /**

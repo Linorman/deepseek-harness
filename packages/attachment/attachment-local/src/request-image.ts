@@ -4,21 +4,21 @@ import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import sharp, { type Sharp } from 'sharp'
-import { AttachmentError, ImageVariantId } from '@deepseek-ai/dsh-attachment'
+import { AttachmentError, ImageVariantId } from '@clocky/clocky-attachment'
 import type {
   ImageMediaType,
   ImageAttachmentRef,
   ImageRequestPolicy,
   RequestImageAttachment,
   StoredImageAttachment,
-} from '@deepseek-ai/dsh-attachment'
+} from '@clocky/clocky-attachment'
 import { hasLowColourCount } from './normalization.ts'
 import { encodeFirstWithinLimit, isExhaustedEncoding } from './encoding.ts'
 import { detectImage, encodedAlphaIsCompatible, probeImage } from './image.ts'
 
 /** Transform version included in every cache and upload-index identity. */
 export const REQUEST_IMAGE_TRANSFORM_VERSION = 'request-image-v4'
-/** DeepSeek request versions normally fit at these two preferred qualities. */
+/** Provider request versions normally fit at these two preferred qualities. */
 export const REQUEST_IMAGE_QUALITIES = [85, 80] as const
 
 interface EncodedRequestImage {

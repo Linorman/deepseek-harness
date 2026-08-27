@@ -3,13 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import CommandRuntime from '@deepseek-ai/dsh-commands'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import * as SessionLogDownload from '@deepseek-ai/dsh-session-log-export'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import Include from '@clocky/cordis-plugin-include'
+import type { Agent } from '@clocky/clocky-agent'
+import CommandRuntime from '@clocky/clocky-commands'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import * as SessionLogDownload from '@clocky/clocky-session-log-export'
 
 let root: string | undefined
 let context: Context | undefined
@@ -23,12 +23,12 @@ afterEach(async () => {
 
 describe('session-log-download real Loader composition', () => {
   it('discovers and executes /export through the assembled command plane', async () => {
-    root = await mkdtemp(join(tmpdir(), 'dsh-session-export-loader-'))
+    root = await mkdtemp(join(tmpdir(), 'clocky-session-export-loader-'))
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
-      "- name: '@deepseek-ai/dsh-session'",
-      "- name: '@deepseek-ai/dsh-commands'",
-      "- name: '@deepseek-ai/dsh-session-log-export'",
+      "- name: '@clocky/clocky-session'",
+      "- name: '@clocky/clocky-commands'",
+      "- name: '@clocky/clocky-session-log-export'",
       '',
     ].join('\n'))
 
@@ -37,9 +37,9 @@ describe('session-log-download real Loader composition', () => {
     await context.plugin(Loader)
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-session', SessionStore],
-      ['@deepseek-ai/dsh-commands', CommandRuntime],
-      ['@deepseek-ai/dsh-session-log-export', SessionLogDownload],
+      ['@clocky/clocky-session', SessionStore],
+      ['@clocky/clocky-commands', CommandRuntime],
+      ['@clocky/clocky-session-log-export', SessionLogDownload],
     ])
     context.loader.internal = {
       version: 'v2',

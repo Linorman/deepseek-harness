@@ -7,16 +7,16 @@
  * default transport hook, and the loud failure modes (duplicate
  * registration, cycles, table misses, double boot).
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   apply, createClientModuleSystem, parseBootManifest,
   type BootModuleRow, type ClientBundleRegistration, type ClientModuleCreateOptions,
-  type ClientModuleLoader, type ClientModuleLoaderTarget, type DshWindow,
+  type ClientModuleLoader, type ClientModuleLoaderTarget, type ClockyWindow,
 } from '../src/client/index.ts'
 
-const MODULES_ID = '@deepseek-ai/dsh-client-modules'
-const win = globalThis as DshWindow
+const MODULES_ID = '@clocky/clocky-client-modules'
+const win = globalThis as ClockyWindow
 const bootstrapExports = { apply, createClientModuleSystem }
 
 type Factory = ClientBundleRegistration['factory']

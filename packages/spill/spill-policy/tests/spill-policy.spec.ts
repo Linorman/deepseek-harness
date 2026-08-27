@@ -9,19 +9,19 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import { createUserMessage, CallId } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { PostToolDecision, ToolExecution, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
-import { SpillLocator, SpillStore } from '@deepseek-ai/dsh-spill'
-import type { SaveTextSpill, SpillRef } from '@deepseek-ai/dsh-spill'
-import * as SpillPolicy from '@deepseek-ai/dsh-spill-policy'
-import { WorkerThreadCodeRuntime } from '@deepseek-ai/dsh-code-runtime-worker-thread'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import { createUserMessage, CallId } from '@clocky/clocky-llm'
+import type { ContentBlock } from '@clocky/clocky-llm'
+import { SessionId } from '@clocky/clocky-session'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { defineContentToolFixture } from '@clocky/clocky-tools'
+import type { ToolDefinition } from '@clocky/clocky-tools'
+import type { PostToolDecision, ToolExecution, ToolExecutionToken } from '@clocky/clocky-tools'
+import { SpillLocator, SpillStore } from '@clocky/clocky-spill'
+import type { SaveTextSpill, SpillRef } from '@clocky/clocky-spill'
+import * as SpillPolicy from '@clocky/clocky-spill-policy'
+import { WorkerThreadCodeRuntime } from '@clocky/clocky-code-runtime-worker-thread'
 
 const testToolSignal = new AbortController().signal
 

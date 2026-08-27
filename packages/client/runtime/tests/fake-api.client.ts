@@ -5,8 +5,8 @@ import type {
   ClientResponse, HostFrame, IApiClient, ModelSelection, MuxFrame,
   RpcError, RpcReceipt, RpcRequest, RpcResponse, SessionId, SessionModels, SessionSearchItem, SkillEntry,
   WorkspaceId, WorkspaceView,
-} from '@deepseek-ai/dsh-api-remotes/client'
-import { RpcId } from '@deepseek-ai/dsh-client-connection/client'
+} from '@clocky/clocky-api-remotes/client'
+import { RpcId } from '@clocky/clocky-client-connection/client'
 import type { SessionRemotes } from '../src/client/sessions/remotes.ts'
 
 /** Programmable-default workspace row (branded id, ISO-ish times). */
@@ -78,7 +78,7 @@ export class FakeApiClient implements IApiClient {
   onSearch: (payload: unknown) => Promise<RpcResponse<{ items: SessionSearchItem[]; hasMore: boolean }>> =
     () => Promise.resolve(ok({ items: [], hasMore: false }))
   onCreate: (payload: unknown) => Promise<RpcResponse<{ sessionId: SessionId }>> = () => Promise.resolve(ok({ sessionId: 'fk-new' as SessionId }))
-  readonly defaultModel: ModelSelection = { provider: 'deepseek-official', model: 'deepseek-v4-flash' }
+  readonly defaultModel: ModelSelection = { provider: 'test-provider', model: 'test-model' }
   onRename: (payload: unknown) => Promise<RpcResponse<{ title: string; seq: number }>> = () => Promise.resolve(ok({ title: 'fk-renamed', seq: 0 }))
   onFork: (payload: unknown) => Promise<RpcResponse<{ sessionId: SessionId }>> = () => Promise.resolve(ok({ sessionId: 'fk-fork' as SessionId }))
   onHistory: (payload: { sessionId: SessionId; beforeSeq?: number; maxMessages?: number })
@@ -89,9 +89,9 @@ export class FakeApiClient implements IApiClient {
     current: this.defaultModel,
     routable: true,
     groups: [{
-      id: 'deepseek-official',
-      name: 'DeepSeek',
-      models: [{ id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash' }],
+      id: 'test-provider',
+      name: 'Test Provider',
+      models: [{ id: 'test-model', name: 'Test Model' }],
     }],
     failures: [],
   }))

@@ -1,9 +1,8 @@
 // Web e2e scenario: at the 800×720 viewport the plan chip and the model
 // trigger keep disjoint click areas, and clicking the chip at its center
 // leaves plan mode through the real command channel. This is the browser
-// regression the external report asked for (dsh-external/issues#107 →
-// deepseek-harness#1406): "increase an 800×720 browser regression test and
-// assert that the plan center hits the plan button".
+// regression described in the external report: "increase an 800×720 browser
+// regression test and assert that the plan center hits the plan button".
 //
 // Plan mode is entered through the real /plan command with no argument:
 // the command handler commits plan/mode active on the live agent without a
@@ -28,8 +27,8 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 // Type-only: pulls the plan/mode SessionEventMap merge so the discriminant
 // filter below types as the plan-mode event in the host aggregate.
-import type {} from '@deepseek-ai/dsh-plan-mode'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type {} from '@clocky/clocky-plan-mode'
+import type { SessionEvent } from '@clocky/clocky-session'
 import {
   assertFixtureInventory, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
@@ -92,7 +91,7 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
     // The regression depends on the real model label width: a bare fallback
     // trigger would fit beside the chip even on the pre-fix layout. The
     // directory loads asynchronously, so poll for the real label.
-    await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 }).toContain('DeepSeek-V4-Flash')
+    await expect.poll(() => trigger.getAttribute('aria-label'), { timeout: 10_000 }).toContain('Test Model')
     const chipBox = await chip.boundingBox()
     const triggerBox = await trigger.boundingBox()
     expect(chipBox).not.toBeNull()

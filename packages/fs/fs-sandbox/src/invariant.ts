@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-fs-sandbox`.
- * @module @deepseek-ai/dsh-fs-sandbox/invariant
+ * Package-owned invariant companion for `@clocky/clocky-fs-sandbox`.
+ * @module @clocky/clocky-fs-sandbox/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-fs-sandbox'
+const PACKAGE_NAME = '@clocky/clocky-fs-sandbox'
 
 /** Cordis companion plugin name. */
 export const name = 'fs-sandbox-invariant'

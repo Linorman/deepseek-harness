@@ -4,19 +4,19 @@
  * producers. It also delivers unreported completions to the owning agent:
  * injected into a busy owner's next step, or opening a turn on an idle one
  * under the default `wakeup` delivery, bounded per owner.
- * @module @deepseek-ai/dsh-tool-jobs
+ * @module @clocky/clocky-tool-jobs
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { boundContextSummary, createUserMessage, type ContentBlock } from '@deepseek-ai/dsh-llm'
-import { TextRetainer } from '@deepseek-ai/dsh-output-retention'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { GenericCallView, ToolDefinition, ToolExecution } from '@deepseek-ai/dsh-tools'
-import { JobId } from '@deepseek-ai/dsh-jobs'
-import type { JobSnapshot } from '@deepseek-ai/dsh-jobs'
-import type {} from '@deepseek-ai/dsh-system-prompt'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Context } from '@clocky/cordis'
+import z from '@clocky/schemastery'
+import { boundContextSummary, createUserMessage, type ContentBlock } from '@clocky/clocky-llm'
+import { TextRetainer } from '@clocky/clocky-output-retention'
+import { defineTool } from '@clocky/clocky-tools'
+import type { GenericCallView, ToolDefinition, ToolExecution } from '@clocky/clocky-tools'
+import { JobId } from '@clocky/clocky-jobs'
+import type { JobSnapshot } from '@clocky/clocky-jobs'
+import type {} from '@clocky/clocky-system-prompt'
+import type { Agent } from '@clocky/clocky-agent'
 
 export const name = 'tool-jobs'
 export const inject = ['tools', 'jobs', 'systemPrompt']

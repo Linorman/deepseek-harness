@@ -1,11 +1,11 @@
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import LocalFileSystem from '@deepseek-ai/dsh-fs-local'
-import * as FsPolicy from '@deepseek-ai/dsh-fs-observation-policy'
-import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
-import * as LlmDeepSeek from '@deepseek-ai/dsh-llm-deepseek'
+import { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import LocalFileSystem from '@clocky/clocky-fs-local'
+import * as FsPolicy from '@clocky/clocky-fs-observation-policy'
+import * as ToolFs from '@clocky/clocky-tool-fs'
+import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
 
 /**
  * Build the real fs-tool stack for with-key e2e tests. Agents have no session
@@ -16,7 +16,7 @@ export async function fsHarness(fsCwd: string, persona = ''): Promise<Context> {
   const ctx = new Context()
   await mountAgentLoopTestDependencies(ctx, { systemPrompt: { persona } })
   await ctx.plugin(AgentLoop, { agents: [] })
-  await ctx.plugin(LlmDeepSeek)
+  await ctx.plugin(LlmPiAi, { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } })
   await ctx.plugin(LocalFileSystem, { cwd: fsCwd })
   await ctx.plugin(FsPolicy)
   await ctx.plugin(ToolFs)

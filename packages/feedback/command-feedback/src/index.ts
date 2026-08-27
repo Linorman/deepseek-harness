@@ -3,14 +3,13 @@
  * appends one authoritative log-only event and does not start model work. The
  * append is eager but unflushed, so acknowledgement reports that the entry is
  * logged, not that it reached disk.
- * @module @deepseek-ai/dsh-command-feedback
+ * @module @clocky/clocky-command-feedback
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { CommandInvocation, CommandResult } from '@deepseek-ai/dsh-commands'
-import type { SessionTelemetryBackend, SessionTelemetrySharingStatus } from '@deepseek-ai/dsh-session-telemetry'
-import type { Session } from '@deepseek-ai/dsh-session'
-import { getOrCreateAnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
+import type { Context } from '@clocky/cordis'
+import type { CommandInvocation, CommandResult } from '@clocky/clocky-commands'
+import type { SessionTelemetryBackend, SessionTelemetrySharingStatus } from '@clocky/clocky-session-telemetry'
+import type { Session } from '@clocky/clocky-session'
 
 export const name = 'command-feedback'
 export const inject = ['commands']
@@ -53,7 +52,7 @@ function sharingDisclosure(telemetry: SessionTelemetryBackend | undefined): stri
   return sharingSentence(telemetry.sharing)
 }
 
-declare module '@deepseek-ai/dsh-session/types' {
+declare module '@clocky/clocky-session/types' {
   interface SessionEventMap {
     /**
      * One recorded human remark about this session. Log-only and independent
@@ -80,9 +79,8 @@ export function recordFeedback(session: Session, text: string): void {
  * leaves no `feedback/record` event.
  * @param invocation - receiving agent, raw command input, and UI cancellation.
  * @param ctx - plugin context used to read the optional telemetry service.
- * @returns an acknowledgement containing the receiving session and anonymous
- * user ids plus the session-sharing disclosure, or a usage error when no
- * feedback text was supplied.
+ * @returns an acknowledgement containing the receiving session and
+ * session-sharing disclosure, or a usage error when no feedback text was supplied.
  */
 function executeFeedbackCommand(invocation: CommandInvocation, ctx: Context): CommandResult {
   if (invocation.rawInput.trim().length === 0) {
@@ -92,7 +90,7 @@ function executeFeedbackCommand(invocation: CommandInvocation, ctx: Context): Co
   const telemetry = ctx.get('sessionTelemetry')
   return {
     kind: 'success',
-    text: `Feedback recorded for session ${invocation.agent.session.id}\nAnonymous user: ${getOrCreateAnonymousUserId()}. ${sharingDisclosure(telemetry)}`,
+    text: `Feedback recorded for session ${invocation.agent.session.id}. ${sharingDisclosure(telemetry)}`,
   }
 }
 

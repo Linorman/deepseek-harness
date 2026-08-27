@@ -1,5 +1,5 @@
-import type { GenerateOptions, LlmModelReasoningInfo, LlmResolvedModelInfo, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { CallId, LlmAdapter } from '@deepseek-ai/dsh-llm'
+import type { GenerateOptions, LlmModelReasoningInfo, LlmResolvedModelInfo, StreamChunk } from '@clocky/clocky-llm'
+import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 
 /** Helpers to write scripted responses tersely. */
 export function textResponse(text: string): StreamChunk[] {
@@ -14,7 +14,7 @@ export function textResponse(text: string): StreamChunk[] {
 
 /**
  * Like {@link textResponse} but the stream ends with a `max-tokens` finish —
- * the model was cut off at the output-token ceiling (DeepSeek's `length`).
+ * the model was cut off at the output-token ceiling (`length`).
  * Used to exercise the turn-end `max-tokens` surfacing rule.
  */
 export function maxTokensResponse(text: string): StreamChunk[] {

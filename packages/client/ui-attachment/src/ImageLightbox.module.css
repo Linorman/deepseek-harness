@@ -13,8 +13,8 @@
 .mask {
   position: absolute;
   inset: 0;
-  background: var(--dsw-alias-bg-mask-1);
-  backdrop-filter: var(--dsw-mask-blur);
+  background: var(--clocky-alias-bg-mask-1);
+  backdrop-filter: var(--clocky-mask-blur);
 }
 
 .image {
@@ -23,8 +23,8 @@
   max-height: calc(100vh - 80px);
   object-fit: contain;
   border-radius: 12px;
-  background: var(--dsw-specific-input-major);
-  box-shadow: var(--dsw-shadow-lv3);
+  background: var(--clocky-specific-input-major);
+  box-shadow: var(--clocky-shadow-lv3);
 }
 
 .close {
@@ -36,9 +36,9 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
+  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
   border-radius: 999px;
-  background: var(--dsw-specific-input-major);
-  color: var(--dsw-alias-label-primary);
+  background: var(--clocky-specific-input-major);
+  color: var(--clocky-alias-label-primary);
   cursor: pointer;
 }

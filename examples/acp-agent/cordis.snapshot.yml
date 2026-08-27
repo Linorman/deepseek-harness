@@ -1,30 +1,30 @@
 # Keyless replay includes the live `cordis.yml`, disables the key-requiring
-# DeepSeek adapter, and inserts `llm-replay` to serve recorded JSONL without a key
+# provider adapter, and inserts `llm-replay` to serve recorded JSONL without a key
 # or network; every other app entry remains shared. It also restates the acp-agent
-# config to re-pin `deepseek-v4-flash`: `cordis.yml` ships `deepseek-v4-pro`, but the
+# config to re-pin `test-model`: `cordis.yml` ships `test-model-pro`, but the
 # recorded corpus (request headers, provenance, system prompt) was captured on flash,
 # so replay holds the recorded model to stay reproducible without a re-record. A config
 # patch replaces the whole app config, so the base fields are restated verbatim.
-# With `DSH_SNAPSHOT=replay`, the app bin reads `DSH_SNAPSHOT_FILE` and optional
-# `DSH_SNAPSHOT_OVERRIDE` from the harness. The one-shot patch applies at include
+# With `CLOCKY_SNAPSHOT=replay`, the app bin reads `CLOCKY_SNAPSHOT_FILE` and optional
+# `CLOCKY_SNAPSHOT_OVERRIDE` from the harness. The one-shot patch applies at include
 # load time, and stdout remains reserved for ACP JSON-RPC.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
       # `name` asserts the target: a mismatch skips the patch and warns only when
       # a logger exists. A renamed id leaves a stale adapter entry, but replay still
       # short-circuits through `llm-replay`.
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - id: acp-agent
-        name: '@deepseek-ai/dsh-acp-demo'
+        name: '@clocky/clocky-acp-demo'
         config:
-          provider: deepseek-official
-          model: deepseek-v4-flash
-          persistenceRoot: !!js process.env.DSH_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          provider: test-provider
+          model: test-model
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
           # Replay fixtures are raw JSONL; the whole-config patch must restate
           # the compression choice or the default zstd frames hide the logs
           # from the harness's harvest.
@@ -36,7 +36,7 @@
 
             Verify your work by running the code or tests. Keep answers brief and factual.
       - id: sandbox
-        name: '@deepseek-ai/dsh-sandbox-local'
+        name: '@clocky/clocky-sandbox-local'
         config:
           runnerCommand:
             - bash
@@ -47,14 +47,14 @@
             - 'passthrough-runner: profile rejected'
       - insert:
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
-                    - id: deepseek-v4-pro
+                    - id: test-model
+                    - id: test-model-pro
           # Authored scenarios can fence a later parent action on the real
           # child settlement edge without exposing a test-only model tool.
           - id: subagent-settlement-marker

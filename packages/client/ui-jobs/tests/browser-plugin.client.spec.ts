@@ -4,12 +4,12 @@
  * removal — HMR safety), the inert node entry, and the invariant companion's
  * ownership reservation.
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import { describe, expect, it } from 'vitest'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
-import { stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
-import { apply as applyLocale, inject as localeInject } from '@deepseek-ai/dsh-client-locale/client'
+import InvariantRegistry from '@clocky/clocky-invariants'
+import { SlotRegistry } from '@clocky/clocky-client-runtime/client'
+import { stubSettingsScope } from '@clocky/clocky-client-test-runtime'
+import { apply as applyLocale, inject as localeInject } from '@clocky/clocky-client-locale/client'
 import { apply, inject } from '../src/client/index.ts'
 import { apply as applyNode } from '../src/index.ts'
 import * as JobInvariant from '../src/invariant.ts'

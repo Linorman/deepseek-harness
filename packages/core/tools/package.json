@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-tools",
-  "description": "Tool registry and execution pipeline for the DeepSeek Harness",
+  "name": "@clocky/clocky-tools",
+  "description": "Tool registry and execution pipeline for Clocky",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/core/tools"
   },
   "type": "module",
@@ -41,28 +41,28 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-code-runtime": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-scope": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-user-approval": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-code-runtime": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/clocky-user-approval": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@clocky/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-code-runtime": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-scope": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/dsh-user-approval": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-code-runtime": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/clocky-user-approval": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   }
 }

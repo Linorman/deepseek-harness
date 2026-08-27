@@ -11,13 +11,13 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import type { ISession, SessionId, ToolResultNode } from '@deepseek-ai/dsh-client-runtime/client'
-import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
-import { SlotTestRuntime, stubSettingsScope } from '@deepseek-ai/dsh-client-test-runtime'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { apply as applyConversation, inject as injectConversation } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { apply as applyTool, inject as injectTool } from '@deepseek-ai/dsh-client-ui-tool/client'
-import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
+import type { ISession, SessionId, ToolResultNode } from '@clocky/clocky-client-runtime/client'
+import type { PropsRenderSlots } from '@clocky/clocky-client-ui-slots'
+import { SlotTestRuntime, stubSettingsScope } from '@clocky/clocky-client-test-runtime'
+import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
+import { apply as applyConversation, inject as injectConversation } from '@clocky/clocky-client-ui-conversation/client'
+import { apply as applyTool, inject as injectTool } from '@clocky/clocky-client-ui-tool/client'
+import type { ToolCallViewProps } from '@clocky/clocky-client-ui-tool/client'
 import { toolChatSnapshot } from './tool-details-render.client.tsx'
 
 const SID = 's1' as SessionId

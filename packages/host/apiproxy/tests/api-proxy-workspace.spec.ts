@@ -2,21 +2,21 @@ import { existsSync, mkdirSync, mkdtempSync, realpathSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
-import type { Agent, AgentFactory } from '@deepseek-ai/dsh-agent'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import type { Session } from '@deepseek-ai/dsh-session'
-import Storage from '@deepseek-ai/dsh-storage'
-import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
-import UserQuestionService from '@deepseek-ai/dsh-user-questions'
-import { DirectoryPickerError } from '@deepseek-ai/dsh-host-directory-picker'
-import type { DirectoryPickerCapability } from '@deepseek-ai/dsh-host-directory-picker'
-import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
-import type { HostFrame, WorkspaceId } from '@deepseek-ai/dsh-host-apiproxy/api'
-import type { RpcRequest, RpcResponse } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
-import { RpcId } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
-import { createApiProxy } from '@deepseek-ai/dsh-host-apiproxy'
+import { Context } from '@clocky/cordis'
+import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
+import type { Agent, AgentFactory } from '@clocky/clocky-agent'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import type { Session } from '@clocky/clocky-session'
+import Storage from '@clocky/clocky-storage'
+import { DomainFacility } from '@clocky/clocky-storage-domain'
+import UserQuestionService from '@clocky/clocky-user-questions'
+import { DirectoryPickerError } from '@clocky/clocky-host-directory-picker'
+import type { DirectoryPickerCapability } from '@clocky/clocky-host-directory-picker'
+import WorkspaceRegistry from '@clocky/clocky-workspace'
+import type { HostFrame, WorkspaceId } from '@clocky/clocky-host-apiproxy/api'
+import type { RpcRequest, RpcResponse } from '@clocky/clocky-host-apiproxy/api/rpc'
+import { RpcId } from '@clocky/clocky-host-apiproxy/api/rpc'
+import { createApiProxy } from '@clocky/clocky-host-apiproxy'
 import { MemoryStorageBackend } from '../../../storage/storage-domain/tests/helpers/memory-backend.ts'
 
 let nextRpc = 1
@@ -59,7 +59,7 @@ function stubAgent(session: Session): Agent {
 
 /** Compose the API over real Session, Agent, Storage, Domain, and Workspace services. */
 async function harness(
-  root = realpathSync.native(mkdtempSync(join(tmpdir(), 'dsh-apiproxy-workspace-'))),
+  root = realpathSync.native(mkdtempSync(join(tmpdir(), 'clocky-apiproxy-workspace-'))),
   picker: DirectoryPickerCapability = { kind: 'native', pick: async () => null },
   extras: {
     openPath?: (path: string, signal: AbortSignal) => Promise<void>

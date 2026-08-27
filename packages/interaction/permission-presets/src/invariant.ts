@@ -1,10 +1,10 @@
-/** Package-owned permission-preset event invariants. @module @deepseek-ai/dsh-permission-presets/invariant */
+/** Package-owned permission-preset event invariants. @module @clocky/clocky-permission-presets/invariant */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
-import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { Session, SessionEvent } from '@clocky/clocky-session'
+import type { InvariantFailure, InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-permission-presets'
+const PACKAGE_NAME = '@clocky/clocky-permission-presets'
 
 /** Cordis companion plugin name. */
 export const name = 'permission-presets-invariant'

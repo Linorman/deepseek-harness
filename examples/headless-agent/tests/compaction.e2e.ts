@@ -1,11 +1,11 @@
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage } from '@clocky/clocky-llm'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId } from '@clocky/clocky-session'
 
 /**
  * Key-gated smoke for mid-session compaction. It verifies the compact event
@@ -26,7 +26,7 @@ afterEach(async () => {
 
 describe.skipIf(!process.env.DEEPSEEK_API_KEY)('compaction: a long session compacts mid-flight and keeps running', () => {
   it('summarizes older history into a checkpoint without breaking the task', async () => {
-    workdir = await mkdtemp(join(tmpdir(), 'dsh-compaction-'))
+    workdir = await mkdtemp(join(tmpdir(), 'clocky-compaction-'))
     for (let i = 1; i <= 4; i++) {
       await writeFile(join(workdir, `file${i}.txt`), `This is file number ${i}. `.repeat(50))
     }
@@ -45,7 +45,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('compaction: a long session compa
       },
       persistenceRoot: join(workdir, '.sessions'),
     })
-    const agent = ctx.agentLoop.create(SessionId('e2e-compaction'), { provider: 'deepseek-official', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-compaction'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
 
     agent.followup(createUserMessage({
       content: [{

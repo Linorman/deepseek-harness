@@ -1,13 +1,13 @@
 /** Direct one-shot Agent driving, durable aggregation, flushing, and exit mapping. */
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
-import type { Agent, AgentHandle, CreateAgentOptions } from '@deepseek-ai/dsh-agent'
-import AgentDefaultModelConfig from '@deepseek-ai/dsh-agent-default-model'
-import { createAssistantMessage } from '@deepseek-ai/dsh-llm'
-import SessionStore from '@deepseek-ai/dsh-session'
-import type { Session, UserMessage } from '@deepseek-ai/dsh-session'
+import { Context } from '@clocky/cordis'
+import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
+import type { Agent, AgentHandle, CreateAgentOptions } from '@clocky/clocky-agent'
+import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
+import { createAssistantMessage } from '@clocky/clocky-llm'
+import SessionStore from '@clocky/clocky-session'
+import type { Session, UserMessage } from '@clocky/clocky-session'
 import { apply, Config, internals } from '../src/index.ts'
 
 const originalInternals = { ...internals }
@@ -167,7 +167,7 @@ describe('headless runner', () => {
     expect(await test.run()).toMatchObject({
       code: 1,
       out: '\n',
-      err: 'dsh: SERVER: provider unavailable\n',
+      err: 'clocky: SERVER: provider unavailable\n',
     })
     await test.ctx.fiber.dispose()
   })
@@ -176,6 +176,25 @@ describe('headless runner', () => {
     const test = await bench({ afterPrompt: () => {} })
     expect(await test.run()).toMatchObject({ code: 1, out: '\n', err: '' })
     await test.ctx.fiber.dispose()
+  })
+
+  it('reports missing model configuration before creating an Agent', async () => {
+    const ctx = new Context()
+    let out = ''
+    let err = ''
+    internals.stdout = { write: (chunk: string) => { out += chunk; return true } }
+    internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
+    const exited = new Promise<number>((resolve) => { ctx.provide('appExit', resolve) })
+    ctx.provide('agentDefaultModel', { currentSelection: () => undefined } as never)
+    ctx.provide('sessions', {} as never)
+    ctx.provide('agents', { create: () => { throw new Error('must not create an Agent') } } as never)
+
+    apply(ctx, { task: 't' })
+
+    expect(await exited).toBe(1)
+    expect(out).toBe('')
+    expect(err).toBe('clocky: no model is configured; select a provider and model before running a task\n')
+    await ctx.fiber.dispose()
   })
 
   it('reports a direct Agent creation failure', async () => {
@@ -191,7 +210,7 @@ describe('headless runner', () => {
     ctx.provide('agents', { create: () => Promise.reject(new Error('factory exploded')) } as never)
     apply(ctx, { task: 't' })
     expect(await exited).toBe(1)
-    expect(err).toBe('dsh: factory exploded\n')
+    expect(err).toBe('clocky: factory exploded\n')
     await ctx.fiber.dispose()
   })
 
@@ -213,7 +232,7 @@ describe('headless runner', () => {
     ctx.provide('agents', { create: () => rejected } as never)
     apply(ctx, { task: 't' })
     expect(await exited).toBe(1)
-    expect(err).toBe('dsh: factory exploded\n')
+    expect(err).toBe('clocky: factory exploded\n')
     await ctx.fiber.dispose()
   })
 

@@ -1,18 +1,18 @@
 # Replay counterpart to advanced.cordis.yml; only the live model is replaced.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - id: acp-agent
-        name: '@deepseek-ai/dsh-acp-demo'
+        name: '@clocky/clocky-acp-demo'
         config:
-          provider: deepseek-official
-          model: deepseek-v4-flash
-          persistenceRoot: !!js process.env.DSH_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          provider: test-provider
+          model: test-model
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
           persistenceCompression: 'none'
           workspaceContext:
             maxBytes: 65536
@@ -24,17 +24,17 @@
             Verify your work by running the code or tests. Keep answers brief and factual.
       - insert:
           - id: code-runtime
-            name: '@deepseek-ai/dsh-code-runtime-worker-thread'
+            name: '@clocky/clocky-code-runtime-worker-thread'
           - id: cordis-host-runner
-            name: '@deepseek-ai/dsh-cordis-host-runner'
+            name: '@clocky/clocky-cordis-host-runner'
           - id: tool-cordis
-            name: '@deepseek-ai/dsh-tool-cordis'
+            name: '@clocky/clocky-tool-cordis'
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
-                    - id: deepseek-v4-pro
+                    - id: test-model
+                    - id: test-model-pro

@@ -4,7 +4,7 @@
 .frame {
   display: flex;
   justify-content: center;
-  padding: 6px calc(var(--dsh-composer-side-clearance) + 16px) 10px;
+  padding: 6px calc(var(--clocky-composer-side-clearance) + 16px) 10px;
 }
 
 /* Figma Input 973:36348 body over the 1019:36938 header: no banner strip —
@@ -13,25 +13,25 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: var(--dsh-chat-content-width);
+  max-width: var(--clocky-chat-content-width);
   /* Composer seat sits in a fixed-height conversation column (overflow
      hidden): cap the card against the viewport and scroll the option list
      so header and footer actions stay reachable on long batches. */
   max-height: min(60vh, 520px);
   padding: 0 0 10px;
-  border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
+  border: 1px solid var(--clocky-alias-border-l2-darkmode-thin);
   border-radius: 20px;
-  background: var(--dsw-specific-input-major);
-  box-shadow: var(--dsw-shadow-lv2);
-  color: var(--dsw-alias-label-primary);
+  background: var(--clocky-specific-input-major);
+  box-shadow: var(--clocky-shadow-lv2);
+  color: var(--clocky-alias-label-primary);
   overflow: hidden;
   /* Elevated surface in dark, same as the menus: the body inside scrolls
      once the card hits the cap above, so the thumb takes the l2 pair. Declared
      on the card because the elevation belongs to the surface, and the custom
      properties inherit down to `.body` (see ui-theme styles/scrollbar.css
      for the rebinding contract). */
-  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
-  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
 }
 
 .card,
@@ -79,7 +79,7 @@
 .eyebrow {
   /* Eyebrow-to-title gap widened from the figma 2px (user-tuned). */
   margin-bottom: 5px;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--clocky-alias-label-tertiary);
   font-size: 11px;
   line-height: 16px;
 }
@@ -111,7 +111,7 @@
 
 .progress {
   padding: 0 4px;
-  color: var(--dsw-alias-label-secondary);
+  color: var(--clocky-alias-label-secondary);
   font-size: 14px;
   line-height: 24px;
   font-weight: 500;
@@ -129,17 +129,17 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--clocky-alias-label-tertiary);
   cursor: pointer;
 }
 
 .iconButton:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover);
-  color: var(--dsw-alias-label-primary);
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
 }
 
 .iconButton:disabled {
-  color: var(--dsw-alias-label-dimmed);
+  color: var(--clocky-alias-label-dimmed);
   cursor: default;
 }
 
@@ -187,11 +187,11 @@
 
 .option:hover:not(:disabled),
 .optionSelected {
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: var(--clocky-alias-interactive-bg-hover);
 }
 
 .optionSelected {
-  border-color: var(--dsw-alias-border-l2);
+  border-color: var(--clocky-alias-border-l2);
 }
 
 .option:disabled {
@@ -211,8 +211,8 @@
      the first text line under the row's flex-start alignment. */
   margin-top: 2px;
   border-radius: 6px;
-  background: var(--dsw-alias-bg-overlay);
-  color: var(--dsw-alias-label-secondary);
+  background: var(--clocky-alias-bg-overlay);
+  color: var(--clocky-alias-label-secondary);
   font-size: 12px;
   font-weight: 500;
   line-height: 18px;
@@ -236,7 +236,7 @@
   grid-area: 1 / 1;
   width: 14px;
   height: 14px;
-  border: 1px solid var(--dsw-alias-border-l4);
+  border: 1px solid var(--clocky-alias-border-l4);
   border-radius: 4px;
   transition: background-color 120ms ease, border-color 120ms ease;
 }
@@ -248,12 +248,12 @@
 /* Checked: label-primary fill with a primary-foreground check — the pair
    inverts with the theme (dark fill in light mode, light fill in dark mode). */
 .checkboxChecked {
-  color: var(--dsw-alias-label-primary-foreground);
+  color: var(--clocky-alias-label-primary-foreground);
 }
 
 .checkboxChecked::before {
-  border-color: var(--dsw-alias-label-primary);
-  background: var(--dsw-alias-label-primary);
+  border-color: var(--clocky-alias-label-primary);
+  background: var(--clocky-alias-label-primary);
 }
 
 .optionCopy {
@@ -277,15 +277,15 @@
 .badge {
   padding: 0 4px;
   border-radius: 6px;
-  background: var(--dsw-specific-sidebar-nav-item-active-accent);
-  color: var(--dsw-alias-button-info-fill);
+  background: var(--clocky-specific-sidebar-nav-item-active-accent);
+  color: var(--clocky-alias-button-info-fill);
   font-size: 11px;
   line-height: 18px;
   font-weight: 600;
 }
 
 .description {
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--clocky-alias-label-tertiary);
   font-size: 14px;
   line-height: 24px;
   font-weight: 400;
@@ -313,12 +313,12 @@
 .customRow:hover,
 .customRow:focus-within,
 .customRowActive {
-  background: var(--dsw-alias-interactive-bg-hover);
+  background: var(--clocky-alias-interactive-bg-hover);
 }
 
 .customRow:focus-within,
 .customRowActive {
-  border-color: var(--dsw-alias-border-l2);
+  border-color: var(--clocky-alias-border-l2);
 }
 
 /* Auto-growing free-text answer (see AnswerField): mirror and textarea share
@@ -328,13 +328,13 @@
 .field {
   display: grid;
   min-width: 0;
-  --dsh-answer-field-padding: 0;
+  --clocky-answer-field-padding: 0;
 }
 
 .field > * {
   grid-area: 1 / 1;
   min-width: 0;
-  padding: var(--dsh-answer-field-padding);
+  padding: var(--clocky-answer-field-padding);
   font: inherit;
   font-size: 14px;
   line-height: 24px;
@@ -367,12 +367,12 @@
   border: none;
   outline: none;
   background: transparent;
-  color: var(--dsw-alias-label-primary);
-  caret-color: var(--dsw-alias-state-business-primary);
+  color: var(--clocky-alias-label-primary);
+  caret-color: var(--clocky-alias-state-business-primary);
 }
 
 .fieldInput::placeholder {
-  color: var(--dsw-alias-label-caption);
+  color: var(--clocky-alias-label-caption);
 }
 
 /* Inline variant: the custom row's copy column, borrowing the row's chrome. */
@@ -388,14 +388,14 @@
   min-height: 64px;
   flex-shrink: 0;
   margin: 0 12px;
-  border: 1px solid var(--dsw-alias-border-l2);
+  border: 1px solid var(--clocky-alias-border-l2);
   border-radius: 10px;
-  background: var(--dsw-alias-bg-module-platform);
-  --dsh-answer-field-padding: 8px 12px;
+  background: var(--clocky-alias-bg-module-platform);
+  --clocky-answer-field-padding: 8px 12px;
 }
 
 .customBlock:focus-within {
-  border-color: var(--dsw-alias-state-business-primary);
+  border-color: var(--clocky-alias-state-business-primary);
 }
 
 .footer {
@@ -411,7 +411,7 @@
 .feedback {
   flex: 1;
   min-height: 16px;
-  color: var(--dsw-alias-state-error-primary);
+  color: var(--clocky-alias-state-error-primary);
   font-size: 11px;
   line-height: 16px;
   text-align: right;

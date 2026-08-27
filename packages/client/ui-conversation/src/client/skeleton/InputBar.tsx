@@ -11,16 +11,16 @@ import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import clsx from 'clsx'
 import {
   IconPlusOutline16, IconWarningOutline16, Toast, Tooltip,
-} from '@deepseek-ai/dsh-client-ui-primitives'
+} from '@clocky/clocky-client-ui-primitives'
 // Type-only: the `plan` projection key merge (the TodoDock posture — the
 // composer reads a host-computed value; the domain owns the key).
-import type {} from '@deepseek-ai/dsh-plan-mode/client'
+import type {} from '@clocky/clocky-plan-mode/client'
 // Type-only: the `goal` projection key merge (hint disambiguation).
-import type {} from '@deepseek-ai/dsh-goal/client'
+import type {} from '@clocky/clocky-goal/client'
 // The `imageLimits` projection key merge (intake pre-check) arrives with the
 // wire types: apiproxy's sessions contract declares it, and client-runtime's
 // api-remotes import already places it in every client program.
-import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
+import type { Translate } from '@clocky/clocky-client-ui-slots'
 import type { ComposerBarProps } from '../contract/slots.ts'
 import { deriveDecorations } from '../input/decorations.ts'
 import type { DraftDecorations } from '../input/decorations.ts'
@@ -502,7 +502,7 @@ export function InputBar({
     keyboard.track(keyboard.snapshot.draft, caret)
   }
 
-  // Intake pre-check (DeepSeek Chat semantics): an addition that would break
+  // Intake pre-check: an addition that would break
   // a projected limit is refused as a whole batch, announced immediately, and
   // never enters the rail — no more submit-time failure rolling the rail
   // back. The host enforces the same limits at submit for callers that bypass
@@ -511,7 +511,7 @@ export function InputBar({
     if (addImages === undefined || files.length === 0) return
     const rejected = ((): string | null => {
       if (imageLimits !== undefined) {
-        // Format precedes limits (DeepSeek Chat's filter order): a batch with
+        // Format precedes limits (the filter order): a batch with
         // a non-image must announce the format problem, not a count or size
         // it could never pass anyway — addImages rejects it authoritatively.
         if (files.some(file => !(imageLimits.mediaTypes as readonly string[]).includes(file.type))) {

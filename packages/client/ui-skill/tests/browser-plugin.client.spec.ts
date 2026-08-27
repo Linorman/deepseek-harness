@@ -13,13 +13,13 @@
  * projections. Direct driving is deliberate: this spec owns only the
  * source's own contract.
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
-import { InputTriggerService } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
-import type { ClientSessionContext, InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+import type { SessionId } from '@clocky/clocky-client-runtime/client'
+import { SlotRegistry } from '@clocky/clocky-client-runtime/client'
+import { InputTriggerService } from '@clocky/clocky-client-ui-input-trigger/client'
+import { TestRemote } from '@clocky/clocky-client-test-runtime'
+import type { ClientSessionContext, InputTriggerSource } from '@clocky/clocky-client-ui-input-trigger/client'
 import { apply, inject } from '../src/client/index.ts'
 import { SkillRow as SkillToolRow } from '../src/client/SkillRow.tsx'
 

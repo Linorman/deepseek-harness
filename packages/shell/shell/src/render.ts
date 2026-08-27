@@ -1,8 +1,8 @@
 /**
- * Shared rendering helpers for the shell tools (`dsh-tool-bash`,
- * `dsh-tool-pwsh`): the exit-status marker contract the tools' renderers
+ * Shared rendering helpers for the shell tools (`clocky-tool-bash`,
+ * `clocky-tool-pwsh`): the exit-status marker contract the tools' renderers
  * emit and the presentation layer parses back.
- * @module @deepseek-ai/dsh-shell/render
+ * @module @clocky/clocky-shell/render
  */
 
 /**

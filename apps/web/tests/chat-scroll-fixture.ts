@@ -7,14 +7,14 @@ import {
   createAssistantMessage,
   createToolResultMessage,
   createUserMessage,
-} from '@deepseek-ai/dsh-llm'
+} from '@clocky/clocky-llm'
 import {
   SESSION_FORMAT_VERSION,
   Session,
   SessionId,
-} from '@deepseek-ai/dsh-session'
+} from '@clocky/clocky-session'
 // Carries the session/title event declaration into this fixture builder.
-import type {} from '@deepseek-ai/dsh-session-title'
+import type {} from '@clocky/clocky-session-title'
 
 /** Options for one deterministic long-chat fixture. */
 export interface ChatScrollFixtureOptions {
@@ -67,7 +67,7 @@ function markerHelpers(prefix: string): ChatScrollMarkers {
 function appendRequestHeader(session: Session, turn: number, step: number): void {
   session.append('request/header', {
     header: {
-      config: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      config: { provider: 'test-provider', model: 'test-model' },
       system: `Synthetic chat-scroll request for turn ${String(turn)}, step ${String(step)}.`,
     },
     reason: turn === 1 && step === 1 ? 'initial' : 'change',
@@ -80,7 +80,7 @@ function appendAssistant(session: Session, turn: number, step: number, body: str
     step,
     message: createAssistantMessage({
       content: text(body),
-      source: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      source: { provider: 'test-provider', model: 'test-model' },
     }),
     usage: {
       inputTokens: 2_000 + turn * 7,
@@ -126,7 +126,7 @@ function appendToolStep(
           arguments: call.args,
         })),
       ],
-      source: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+      source: { provider: 'test-provider', model: 'test-model' },
     }),
     usage: { inputTokens: 2_000 + turn * 7, outputTokens: 240, reasoningTokens: 30 },
   }, { surfaceOp: 'append' })

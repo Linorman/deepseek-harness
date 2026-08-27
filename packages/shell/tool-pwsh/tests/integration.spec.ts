@@ -1,5 +1,5 @@
 /**
- * Integration tests: the REAL `@deepseek-ai/dsh-pwsh-local` executor plus the
+ * Integration tests: the REAL `@clocky/clocky-pwsh-local` executor plus the
  * `pwsh` tool, exercised through `ctx.tools.execute()` with a real PowerShell
  * process. These verify the world — actual commands run, stdout/stderr come
  * back, exit codes render, timeouts abort, background jobs settle through the
@@ -14,16 +14,16 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { TOOL_ABORTED } from '@deepseek-ai/dsh-tools'
-import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
-import * as ToolTasks from '@deepseek-ai/dsh-tool-jobs'
-import LocalSubprocessRuntime from '@deepseek-ai/dsh-subprocess-local'
-import { PwshLocalExecutor, resolvePwshPath } from '@deepseek-ai/dsh-pwsh-local'
-import * as ToolPwsh from '@deepseek-ai/dsh-tool-pwsh'
-import * as BashEnvPlugin from '@deepseek-ai/dsh-shell-env'
+import { Context } from '@clocky/cordis'
+import { CallId } from '@clocky/clocky-llm'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { TOOL_ABORTED } from '@clocky/clocky-tools'
+import LocalJobRegistry from '@clocky/clocky-jobs-local'
+import * as ToolTasks from '@clocky/clocky-tool-jobs'
+import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
+import { PwshLocalExecutor, resolvePwshPath } from '@clocky/clocky-pwsh-local'
+import * as ToolPwsh from '@clocky/clocky-tool-pwsh'
+import * as BashEnvPlugin from '@clocky/clocky-shell-env'
 
 const testToolSignal = new AbortController().signal
 
@@ -54,7 +54,7 @@ function text(result: { content: { type: string; text?: string }[] }): string {
 
 describe.skipIf(!hasPwsh)('pwsh tool over the real pwsh executor', () => {
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), 'dsh-tool-pwsh-'))
+    dir = await mkdtemp(join(tmpdir(), 'clocky-tool-pwsh-'))
     await writeFile(join(dir, 'greeting.txt'), 'hello pwsh\n')
 
     ctx = new Context()

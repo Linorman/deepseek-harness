@@ -2,13 +2,13 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import LlmRuntime, { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
-import type { StreamChunk } from '@deepseek-ai/dsh-llm'
-import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
-import * as LlmPiAi from '@deepseek-ai/dsh-llm-pi-ai'
-import { PiAiAdapter } from '@deepseek-ai/dsh-llm-pi-ai'
+import { Context } from '@clocky/cordis'
+import LlmRuntime, { createUserMessage, ReasoningEffortId } from '@clocky/clocky-llm'
+import type { StreamChunk } from '@clocky/clocky-llm'
+import FileSettingsProvider from '@clocky/clocky-settings-file'
+import { settingsNamespace } from '@clocky/clocky-settings'
+import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
+import { PiAiAdapter } from '@clocky/clocky-llm-pi-ai'
 import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
 import { createModels, getSupportedThinkingLevels } from '@earendil-works/pi-ai'
 import type { Api, Model, OpenAICompletionsCompat, Provider } from '@earendil-works/pi-ai'
@@ -35,9 +35,9 @@ afterEach(async () => {
   await Promise.all(homes.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
-/** A throwaway $DSH_HOME with an empty settings document. */
+/** A throwaway $CLOCKY_HOME with an empty settings document. */
 async function home(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-pi-catalog-'))
+  const dir = await mkdtemp(join(tmpdir(), 'clocky-pi-catalog-'))
   homes.push(dir)
   await writeFile(join(dir, 'settings.yaml'), '')
   return dir
@@ -699,7 +699,7 @@ describe('modelOverrides', () => {
       deepseek: {
         modelOverrides: {
           [target.id]: {
-            name: 'DeepSeek (proxied)',
+            name: 'Test Provider (proxied)',
             maxTokens: 4096,
             reasoningEfforts: { off: null, high: 'high' },
           },
@@ -713,7 +713,7 @@ describe('modelOverrides', () => {
     // The whole catalog still serves — that is the difference from `models`,
     // which replaces it.
     expect(models).toHaveLength(catalogSize)
-    expect(reshaped.name).toBe('DeepSeek (proxied)')
+    expect(reshaped.name).toBe('Test Provider (proxied)')
     expect(getSupportedThinkingLevels(reshaped)).toEqual(['off', 'high'])
     // An override's cap is explicit configuration, so it becomes the request
     // default exactly as a models entry's would.
@@ -1119,16 +1119,16 @@ describe('configurable-provider directory', () => {
   it('keeps the previous directory when a route collides with another adapter family', async () => {
     const dir = await home()
     const ctx = await bootWithSettings(dir, {})
-    // Another adapter family owns this route id, exactly as llm-deepseek does.
+    // Another adapter family owns this route id, exactly as llm-test-adapter does.
     ctx.llm.registerConfigurableProviders([
-      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+      { provider: 'test-provider', displayName: 'Test Provider', settingsNs: 'llm-test-adapter', settingsPath: [] },
     ])
     const before = ctx.llm.listConfigurableProviders().length
     expect(before).toBeGreaterThan(30)
 
     await ctx.settings.update(settingsNamespace('llm-pi-ai'), {
       providers: {
-        'deepseek-official': {
+        'test-provider': {
           api: 'openai-completions',
           baseURL: 'https://acme.test/v1',
           models: [{ id: 'm', contextWindow: 1, maxTokens: 1 }],
@@ -1139,8 +1139,8 @@ describe('configurable-provider directory', () => {
     // The refused swap costs a diagnostic, not the directory: every entry the
     // page needs is still declared.
     expect(ctx.llm.listConfigurableProviders()).toHaveLength(before)
-    expect(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'deepseek-official')?.settingsNs)
-      .toBe('llm-deepseek')
+    expect(ctx.llm.listConfigurableProviders().find(entry => entry.provider === 'test-provider')?.settingsNs)
+      .toBe('llm-test-adapter')
   })
 
   it('replaces its entries atomically as declared routes come and go', async () => {

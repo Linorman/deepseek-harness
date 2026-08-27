@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import type { SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { SessionId } from '@clocky/clocky-api-remotes/client'
 import { SessionManager } from '../src/client/sessions/manager.ts'
 import { FakeApiClient, deferred, err, fakeRemote, ok } from './fake-api.client.ts'
 import { entries, ev, plainTurn } from './event-script.client.ts'
@@ -883,7 +883,7 @@ describe('connected generation', () => {
     api.onHistory = () => Promise.resolve(ok({
       events: entries(plainTurn(0, 0, 'a', 'b')) as never[],
       hasMore: false,
-      modelSelection: { provider: 'deepseek-official', model: 'deepseek-chat' },
+      modelSelection: { provider: 'test-provider', model: 'test-model' },
     }))
     const manager = new SessionManager(api, fakeRemote())
     const openedSession = manager.get(S1)

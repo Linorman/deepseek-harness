@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Context, type Fiber } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage, CallId, HarnessError , createMessage } from '@deepseek-ai/dsh-llm'
-import { MAX_TIMER_DELAY_MS, TimeoutReason } from '@deepseek-ai/dsh-timeout'
-import * as TimeoutPolicy from '@deepseek-ai/dsh-tool-call-timeout-policy'
+import { Context, type Fiber } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import { createUserMessage, CallId, HarnessError , createMessage } from '@clocky/clocky-llm'
+import { MAX_TIMER_DELAY_MS, TimeoutReason } from '@clocky/clocky-timeout'
+import * as TimeoutPolicy from '@clocky/clocky-tool-call-timeout-policy'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
   SessionId,
   type Session,
   type SessionHeader,
   type SessionId as SessionIdValue,
-} from '@deepseek-ai/dsh-session'
+} from '@clocky/clocky-session'
 import SessionQueryEngine, {
   SessionQueryError,
   SessionSearchCursor,
@@ -23,10 +23,10 @@ import SessionQueryEngine, {
   type SessionSearchPage,
   type SessionSearchRequest,
   type SessionTitleObservationResult,
-} from '@deepseek-ai/dsh-session-query'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import * as ToolSessionQuery from '@deepseek-ai/dsh-tool-session-query'
+} from '@clocky/clocky-session-query'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { type ToolExecutionResult } from '@clocky/clocky-tools'
+import * as ToolSessionQuery from '@clocky/clocky-tool-session-query'
 
 const activeContexts: Context[] = []
 

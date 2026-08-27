@@ -1,23 +1,23 @@
 # Keyless filesystem snapshots apply the spill and replay overlays directly
 # because include patches cannot target entries behind a nested include. The
 # sandboxed filesystem stack already lives in the base cordis.yml. This file also
-# re-pins the acp-agent model to `deepseek-v4-flash`: `cordis.yml` ships
-# `deepseek-v4-pro`, but the recorded corpus was captured on flash, and a config
+# re-pins the acp-agent model to `test-model`: `cordis.yml` ships
+# `test-model-pro`, but the recorded corpus was captured on flash, and a config
 # patch replaces the whole app config, so the base fields are restated verbatim.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - id: acp-agent
-        name: '@deepseek-ai/dsh-acp-demo'
+        name: '@clocky/clocky-acp-demo'
         config:
-          provider: deepseek-official
-          model: deepseek-v4-flash
-          persistenceRoot: !!js process.env.DSH_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          provider: test-provider
+          model: test-model
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
           persistenceCompression: none
           workspaceContext:
             maxBytes: 65536
@@ -27,19 +27,19 @@
             Verify your work by running the code or tests. Keep answers brief and factual.
       - insert:
           - id: spill-local
-            name: '@deepseek-ai/dsh-spill-local'
+            name: '@clocky/clocky-spill-local'
             config:
-              root: !!js process.env.DSH_SNAPSHOT_SPILL_ROOT ?? './.spill'
+              root: !!js process.env.CLOCKY_SNAPSHOT_SPILL_ROOT ?? './.spill'
           - id: spill-policy
-            name: '@deepseek-ai/dsh-spill-policy'
+            name: '@clocky/clocky-spill-policy'
             config:
               maxInlineBytes: 800
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
-                    - id: deepseek-v4-pro
+                    - id: test-model
+                    - id: test-model-pro

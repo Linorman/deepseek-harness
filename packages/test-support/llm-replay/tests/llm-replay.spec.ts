@@ -2,10 +2,10 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import { CompactionId } from '@deepseek-ai/dsh-compaction'
-import LlmRuntime, { CallId, createUserMessage, GenerateOptions, LlmAdapter, StreamChunk } from '@deepseek-ai/dsh-llm'
+import { Context } from '@clocky/cordis'
+import type { SessionEvent } from '@clocky/clocky-session'
+import { CompactionId } from '@clocky/clocky-compaction'
+import LlmRuntime, { CallId, createUserMessage, GenerateOptions, LlmAdapter, StreamChunk } from '@clocky/clocky-llm'
 import {
   type Config,
   type ReplayEntry,
@@ -605,8 +605,8 @@ describe('installLlmReplay (through the real LlmRuntime)', () => {
       file,
       providers: [
         {
-          id: 'deepseek',
-          name: 'DeepSeek',
+          id: 'test-provider',
+          name: 'Test Provider',
           retryPolicy: {
             mode: 'normal',
             maxRetries: 2,
@@ -629,15 +629,15 @@ describe('installLlmReplay (through the real LlmRuntime)', () => {
     })
 
     expect(ctx.llm.listProviders()).toEqual([
-      { id: 'deepseek', name: 'DeepSeek' },
+      { id: 'test-provider', name: 'Test Provider' },
       { id: 'empty', name: 'empty' },
     ])
-    await expect(ctx.llm.listModels('deepseek')).resolves.toEqual([
-      { provider: 'deepseek', id: 'flash', name: 'flash', inputModalities: ['text', 'image'] },
-      { provider: 'deepseek', id: 'pro', name: 'Pro', description: 'Larger model' },
+    await expect(ctx.llm.listModels('test-provider')).resolves.toEqual([
+      { provider: 'test-provider', id: 'flash', name: 'flash', inputModalities: ['text', 'image'] },
+      { provider: 'test-provider', id: 'pro', name: 'Pro', description: 'Larger model' },
     ])
     await expect(ctx.llm.listModels('empty')).resolves.toEqual([])
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'flash')).resolves.toMatchObject({
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'flash')).resolves.toMatchObject({
       context: { contextWindow: 128_000 },
       inputModalities: ['text', 'image'],
       defaultMaxTokens: 64_000,
@@ -646,16 +646,16 @@ describe('installLlmReplay (through the real LlmRuntime)', () => {
         defaultEffort: 'max',
       },
     })
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'pro')).resolves.not.toHaveProperty('inputModalities')
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'pro')).resolves.not.toHaveProperty('context')
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'pro')).resolves.not.toHaveProperty('inputModalities')
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'pro')).resolves.not.toHaveProperty('context')
     // Efforts without a configured default preserve the provider's own default.
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'pro')).resolves.toMatchObject({
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'pro')).resolves.toMatchObject({
       reasoning: { efforts: [{ id: 'high', name: 'high' }] },
     })
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'pro')).resolves.not.toHaveProperty('defaultMaxTokens')
-    await expect(ctx.llm.resolveModelInfo('deepseek', 'unlisted')).resolves.not.toHaveProperty('context')
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'pro')).resolves.not.toHaveProperty('defaultMaxTokens')
+    await expect(ctx.llm.resolveModelInfo('test-provider', 'unlisted')).resolves.not.toHaveProperty('context')
     await expect(ctx.llm.resolveModelInfo('empty', 'unlisted')).resolves.not.toHaveProperty('context')
-    expect(ctx.llm.providerRetryPolicy('deepseek')).toMatchObject({
+    expect(ctx.llm.providerRetryPolicy('test-provider')).toMatchObject({
       mode: 'normal',
       maxRetries: 2,
       initialDelayMs: 1,
@@ -669,7 +669,7 @@ describe('installLlmReplay (through the real LlmRuntime)', () => {
       maxDelayMs: 10_000,
       jitterRatio: 0.1,
     })
-    expect(await drain(ctx.llm.stream({ provider: 'deepseek', model: 'pro', messages: [] }))).toEqual(TEXT_CHUNKS)
+    expect(await drain(ctx.llm.stream({ provider: 'test-provider', model: 'pro', messages: [] }))).toEqual(TEXT_CHUNKS)
 
     dispose()
     expect(ctx.llm.listProviders()).toEqual([])
@@ -683,9 +683,9 @@ describe('installLlmReplay (through the real LlmRuntime)', () => {
     expect(() => {
       installLlmReplay(ctx, {
         file,
-        providers: [{ id: 'deepseek', retryPolicy: { mode: 'normal', maxRetries: -1 } }],
+        providers: [{ id: 'test-provider', retryPolicy: { mode: 'normal', maxRetries: -1 } }],
       })
-    }).toThrow(/llm-replay: provider "deepseek" retryPolicy\.maxRetries/)
+    }).toThrow(/llm-replay: provider "test-provider" retryPolicy\.maxRetries/)
   })
 
   it('serves the Nth call the Nth derived entry (positional)', async () => {
@@ -1113,17 +1113,17 @@ describe('installLlmReplay (per-session keying)', () => {
 
 describe('apply (the plugin entry)', () => {
   const ORIG = {
-    file: process.env.DSH_SNAPSHOT_FILE,
-    override: process.env.DSH_SNAPSHOT_OVERRIDE,
-    children: process.env.DSH_SNAPSHOT_CHILD_FILES,
+    file: process.env.CLOCKY_SNAPSHOT_FILE,
+    override: process.env.CLOCKY_SNAPSHOT_OVERRIDE,
+    children: process.env.CLOCKY_SNAPSHOT_CHILD_FILES,
   }
   afterEach(() => {
-    if (ORIG.file === undefined) delete process.env.DSH_SNAPSHOT_FILE
-    else process.env.DSH_SNAPSHOT_FILE = ORIG.file
-    if (ORIG.override === undefined) delete process.env.DSH_SNAPSHOT_OVERRIDE
-    else process.env.DSH_SNAPSHOT_OVERRIDE = ORIG.override
-    if (ORIG.children === undefined) delete process.env.DSH_SNAPSHOT_CHILD_FILES
-    else process.env.DSH_SNAPSHOT_CHILD_FILES = ORIG.children
+    if (ORIG.file === undefined) delete process.env.CLOCKY_SNAPSHOT_FILE
+    else process.env.CLOCKY_SNAPSHOT_FILE = ORIG.file
+    if (ORIG.override === undefined) delete process.env.CLOCKY_SNAPSHOT_OVERRIDE
+    else process.env.CLOCKY_SNAPSHOT_OVERRIDE = ORIG.override
+    if (ORIG.children === undefined) delete process.env.CLOCKY_SNAPSHOT_CHILD_FILES
+    else process.env.CLOCKY_SNAPSHOT_CHILD_FILES = ORIG.children
   })
 
   it('exposes the namespace plugin shape (name/inject, no default export)', () => {
@@ -1160,12 +1160,12 @@ describe('apply (the plugin entry)', () => {
     )
   })
 
-  it('falls back to $DSH_SNAPSHOT_FILE / $DSH_SNAPSHOT_OVERRIDE when config is empty', async () => {
+  it('falls back to $CLOCKY_SNAPSHOT_FILE / $CLOCKY_SNAPSHOT_OVERRIDE when config is empty', async () => {
     writeFileSync(file, sessionJsonl([]), 'utf8')
     const overrideFile = join(dir, 'replay.override.json')
     writeFileSync(overrideFile, JSON.stringify([{ kind: 'chunks', chunks: TEXT_CHUNKS }]), 'utf8')
-    process.env.DSH_SNAPSHOT_FILE = file
-    process.env.DSH_SNAPSHOT_OVERRIDE = overrideFile
+    process.env.CLOCKY_SNAPSHOT_FILE = file
+    process.env.CLOCKY_SNAPSHOT_OVERRIDE = overrideFile
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     apply(ctx)
@@ -1174,8 +1174,8 @@ describe('apply (the plugin entry)', () => {
 
   it('uses only the file when no override path is configured or in the env', async () => {
     writeFileSync(file, sessionJsonl(TEXT_CHUNKS.map((c, i) => chunkEvent(i + 1, 1, 1, c))), 'utf8')
-    process.env.DSH_SNAPSHOT_FILE = file
-    delete process.env.DSH_SNAPSHOT_OVERRIDE
+    process.env.CLOCKY_SNAPSHOT_FILE = file
+    delete process.env.CLOCKY_SNAPSHOT_OVERRIDE
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     apply(ctx)
@@ -1183,14 +1183,14 @@ describe('apply (the plugin entry)', () => {
   })
 
   it('throws when no fixture path is given by config or env', async () => {
-    delete process.env.DSH_SNAPSHOT_FILE
+    delete process.env.CLOCKY_SNAPSHOT_FILE
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     expect(() => { apply(ctx, {}) }).toThrow(/a fixture path is required/)
   })
 
   it('treats an empty-string fixture path as missing', async () => {
-    delete process.env.DSH_SNAPSHOT_FILE
+    delete process.env.CLOCKY_SNAPSHOT_FILE
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     expect(() => { apply(ctx, { file: '' }) }).toThrow(/a fixture path is required/)
@@ -1214,7 +1214,7 @@ describe('apply (the plugin entry)', () => {
     expect(await drain(ctx.llm.stream(live('B')))).toEqual(childSecond)
   })
 
-  it('falls back to $DSH_SNAPSHOT_CHILD_FILES (path-delimited) when config omits childFiles', async () => {
+  it('falls back to $CLOCKY_SNAPSHOT_CHILD_FILES (path-delimited) when config omits childFiles', async () => {
     const childChunks: StreamChunk[] = [
       { type: 'block-start', index: 0, blockType: 'text' },
       { type: 'text-delta', index: 0, text: 'env-kid' },
@@ -1223,8 +1223,8 @@ describe('apply (the plugin entry)', () => {
     writeFileSync(file, sessionJsonl(TEXT_CHUNKS.map((c, i) => chunkEvent(i + 1, 1, 1, c)), { id: 'p', createdAt: 1 }), 'utf8')
     const childFile = join(dir, 'session.1.jsonl')
     writeFileSync(childFile, sessionJsonl(childChunks.map((c, i) => chunkEvent(i + 1, 1, 1, c)), { id: 'c', createdAt: 2 }), 'utf8')
-    process.env.DSH_SNAPSHOT_FILE = file
-    process.env.DSH_SNAPSHOT_CHILD_FILES = childFile // single entry, no delimiter needed
+    process.env.CLOCKY_SNAPSHOT_FILE = file
+    process.env.CLOCKY_SNAPSHOT_CHILD_FILES = childFile // single entry, no delimiter needed
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     apply(ctx)
@@ -1234,10 +1234,10 @@ describe('apply (the plugin entry)', () => {
     expect(await drain(ctx.llm.stream(live('B')))).toEqual(childChunks)
   })
 
-  it('ignores an empty $DSH_SNAPSHOT_CHILD_FILES (single-session)', async () => {
+  it('ignores an empty $CLOCKY_SNAPSHOT_CHILD_FILES (single-session)', async () => {
     writeFileSync(file, sessionJsonl(TEXT_CHUNKS.map((c, i) => chunkEvent(i + 1, 1, 1, c)), { id: 'p', createdAt: 1 }), 'utf8')
-    process.env.DSH_SNAPSHOT_FILE = file
-    process.env.DSH_SNAPSHOT_CHILD_FILES = ''
+    process.env.CLOCKY_SNAPSHOT_FILE = file
+    process.env.CLOCKY_SNAPSHOT_CHILD_FILES = ''
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     apply(ctx)

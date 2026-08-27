@@ -4,23 +4,23 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
-import AgentRegistry, { Inbox } from '@deepseek-ai/dsh-agent'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import TerminalSessionService from '@deepseek-ai/dsh-terminal'
-import * as TerminalBash from '@deepseek-ai/dsh-terminal-bash'
-import SandboxProvider from '@deepseek-ai/dsh-sandbox'
-import type { ConfinedArgv, SandboxPolicy } from '@deepseek-ai/dsh-sandbox'
-import SandboxPolicyService from '@deepseek-ai/dsh-sandbox-policy'
-import LocalSubprocessService from '@deepseek-ai/dsh-subprocess-local'
-import { resolvePwshPath } from '@deepseek-ai/dsh-pwsh-local/src/resolve.ts'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRegistry from '@deepseek-ai/dsh-tools'
-import * as ToolPwshPersistent from '@deepseek-ai/dsh-tool-pwsh-persistent'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import Include from '@clocky/cordis-plugin-include'
+import { CallId } from '@clocky/clocky-llm'
+import { Session, SessionId } from '@clocky/clocky-session'
+import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
+import type { Agent } from '@clocky/clocky-agent'
+import TerminalSessionService from '@clocky/clocky-terminal'
+import * as TerminalBash from '@clocky/clocky-terminal-bash'
+import SandboxProvider from '@clocky/clocky-sandbox'
+import type { ConfinedArgv, SandboxPolicy } from '@clocky/clocky-sandbox'
+import SandboxPolicyService from '@clocky/clocky-sandbox-policy'
+import LocalSubprocessService from '@clocky/clocky-subprocess-local'
+import { resolvePwshPath } from '@clocky/clocky-pwsh-local/src/resolve.ts'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRegistry from '@clocky/clocky-tools'
+import * as ToolPwshPersistent from '@clocky/clocky-tool-pwsh-persistent'
 
 const hasPwsh = spawnSync(
   resolvePwshPath(), ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', '$true'],
@@ -72,20 +72,20 @@ function text(result: { content: { type: string; text?: string }[] }): string {
 
 describe.skipIf(!hasPwsh)('persistent pwsh through a real cordis.yml Loader composition', () => {
   it('preserves cwd and environment across calls', async () => {
-    root = await mkdtemp(join(tmpdir(), 'dsh-persistent-pwsh-loader-'))
+    root = await mkdtemp(join(tmpdir(), 'clocky-persistent-pwsh-loader-'))
     const configPath = join(root, 'cordis.yml')
     await writeFile(configPath, [
-      "- name: '@deepseek-ai/dsh-agent'",
-      "- name: '@deepseek-ai/dsh-system-prompt'",
-      "- name: '@deepseek-ai/dsh-tools'",
-      "- name: '@deepseek-ai/dsh-terminal'",
-      "- name: '@deepseek-ai/dsh-test-sandbox'",
-      "- name: '@deepseek-ai/dsh-sandbox-policy'",
+      "- name: '@clocky/clocky-agent'",
+      "- name: '@clocky/clocky-system-prompt'",
+      "- name: '@clocky/clocky-tools'",
+      "- name: '@clocky/clocky-terminal'",
+      "- name: '@clocky/clocky-test-sandbox'",
+      "- name: '@clocky/clocky-sandbox-policy'",
       '  config:',
       '    mode: danger-full-access',
       `    workspaceRoot: ${JSON.stringify(root)}`,
-      "- name: '@deepseek-ai/dsh-subprocess-local'",
-      "- name: '@deepseek-ai/dsh-terminal-bash'",
+      "- name: '@clocky/clocky-subprocess-local'",
+      "- name: '@clocky/clocky-terminal-bash'",
       '  config:',
       '    shellDialect: pwsh',
       '    pollIntervalMs: 10',
@@ -95,7 +95,7 @@ describe.skipIf(!hasPwsh)('persistent pwsh through a real cordis.yml Loader comp
       '    scrollbackLines: 20000',
       '    timeoutMs: 8000',
       '    disposeGraceMs: 500',
-      "- name: '@deepseek-ai/dsh-tool-pwsh-persistent'",
+      "- name: '@clocky/clocky-tool-pwsh-persistent'",
       '  config:',
       '    timeoutMs: 20000',
       '',
@@ -106,15 +106,15 @@ describe.skipIf(!hasPwsh)('persistent pwsh through a real cordis.yml Loader comp
     await context.plugin(Loader)
     context.loader.builtins.include = Include
     const modules = new Map<string, unknown>([
-      ['@deepseek-ai/dsh-agent', AgentRegistry],
-      ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
-      ['@deepseek-ai/dsh-tools', ToolRegistry],
-      ['@deepseek-ai/dsh-terminal', TerminalSessionService],
-      ['@deepseek-ai/dsh-test-sandbox', PassthroughSandbox],
-      ['@deepseek-ai/dsh-sandbox-policy', SandboxPolicyService],
-      ['@deepseek-ai/dsh-subprocess-local', LocalSubprocessService],
-      ['@deepseek-ai/dsh-terminal-bash', TerminalBash],
-      ['@deepseek-ai/dsh-tool-pwsh-persistent', ToolPwshPersistent],
+      ['@clocky/clocky-agent', AgentRegistry],
+      ['@clocky/clocky-system-prompt', SystemPrompt],
+      ['@clocky/clocky-tools', ToolRegistry],
+      ['@clocky/clocky-terminal', TerminalSessionService],
+      ['@clocky/clocky-test-sandbox', PassthroughSandbox],
+      ['@clocky/clocky-sandbox-policy', SandboxPolicyService],
+      ['@clocky/clocky-subprocess-local', LocalSubprocessService],
+      ['@clocky/clocky-terminal-bash', TerminalBash],
+      ['@clocky/clocky-tool-pwsh-persistent', ToolPwshPersistent],
     ])
     context.loader.internal = {
       version: 'v2',
@@ -140,14 +140,14 @@ describe.skipIf(!hasPwsh)('persistent pwsh through a real cordis.yml Loader comp
     await execute('state', '$env:KEEP = "loader"; New-Item -ItemType Directory -Force -Path nested | Out-Null; Set-Location nested')
     const observed = text(await execute('observe', 'Write-Output "cwd=$PWD keep=$env:KEEP"'))
     expect(observed).toContain(`cwd=${join(root, 'nested')} keep=loader`)
-    expect(observed).not.toContain('DSH_PERSISTENT_PWSH')
+    expect(observed).not.toContain('CLOCKY_PERSISTENT_PWSH')
 
     const multiline = text(await execute(
       'multiline',
       '$value = "line one"\nWrite-Output "${value}:it\'s fine"',
     ))
     expect(multiline).toBe("line one:it's fine")
-    expect(multiline).not.toContain('DSH_PERSISTENT_PWSH')
+    expect(multiline).not.toContain('CLOCKY_PERSISTENT_PWSH')
 
     const hereString = text(await execute(
       'here-string',

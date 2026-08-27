@@ -1,7 +1,7 @@
 /**
  * Model text rendering and generic tool-call presentation.
  *
- * @module @deepseek-ai/dsh-tool-session-query/presentation
+ * @module @clocky/clocky-tool-session-query/presentation
  */
 
 import {
@@ -12,12 +12,12 @@ import {
   type SessionLineageTrace,
   type SessionRecord,
   type SessionSearchHit,
-} from '@deepseek-ai/dsh-session-query'
+} from '@clocky/clocky-session-query'
 import type {
   SessionEvent,
   SessionId,
-} from '@deepseek-ai/dsh-session'
-import type { GenericCallView } from '@deepseek-ai/dsh-tools'
+} from '@clocky/clocky-session'
+import type { GenericCallView } from '@clocky/clocky-tools'
 import { workspaceAccess } from './workspace-access.ts'
 
 type TitleView = Awaited<ReturnType<typeof workspaceAccess.readTitle>>

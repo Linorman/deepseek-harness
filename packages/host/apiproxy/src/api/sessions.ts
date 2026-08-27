@@ -4,18 +4,18 @@
  * else references RequestPayload<'session.*'> / ResponseValue<'session.*'>.
  */
 
-import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { AttachmentIdType, ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm/types'
-import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session/types'
+import type { MessageId } from '@clocky/clocky-llm/brand'
+import type { AttachmentIdType, ImageAttachmentLimits, ImageAttachmentRef, ImageMediaType } from '@clocky/clocky-attachment'
+import type { ContentBlock } from '@clocky/clocky-llm/types'
+import type { SessionEvent, SessionId } from '@clocky/clocky-session/types'
 // The pure-type outlet: api/ is browser-importable, and the package root's
-// cordis Context merge (via dsh-agent) must not enter client aggregates.
-import type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/types'
+// cordis Context merge (via clocky-agent) must not enter client aggregates.
+import type { SessionProjectionMap } from '@clocky/clocky-session-projection/types'
 import type { RpcId, RpcRequest, RpcResponse } from './rpc.ts'
 import type { ToolEventView } from './events.ts'
 import type { WorkspaceId } from './workspace.ts'
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
+declare module '@clocky/clocky-session-projection/types' {
   interface SessionProjectionStateMap {
     sessionListMetadata: SessionListMetadata
     imageLimits: null
@@ -47,7 +47,7 @@ export interface SessionListMetadata {
   lastPromptAt: number | null
 }
 
-declare module '@deepseek-ai/dsh-llm' {
+declare module '@clocky/clocky-llm' {
   interface MessageSourceMap {
     /**
      * The prompt's rpcId is passed through MessageSource into the `user/message` event
@@ -155,7 +155,7 @@ export interface ModelCatalogFailure {
 /** Detached model-directory snapshot for one session. */
 export interface SessionModels {
   /** Model selection for the session's next assembled step. */
-  current: ModelSelection
+  current?: ModelSelection
   /**
    * Whether an adapter currently serves `current.provider`, and therefore
    * whether this session can start a turn at all. Deliberately NOT derivable

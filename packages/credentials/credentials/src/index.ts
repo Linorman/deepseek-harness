@@ -5,10 +5,10 @@
  * operation, so a changed credential reaches the next operation without any
  * plugin restart, and configuration surfaces describe a reference without
  * ever seeing its value.
- * @module @deepseek-ai/dsh-credentials
+ * @module @clocky/clocky-credentials
  */
 
-import { Context, Service } from '@deepseek-ai/cordis'
+import { Context, Service } from '@clocky/cordis'
 import type { CredentialKey, CredentialRecord, CredentialRef } from './types.ts'
 
 export type { ApiKeyRecord, CredentialKey, CredentialRecord, CredentialRef, GrantRecord } from './types.ts'
@@ -20,7 +20,7 @@ const KEY_SEGMENT_PATTERN = /^[a-z][a-z0-9-]*$/
 
 /**
  * Brand a raw string as a {@link CredentialRef}.
- * @param value - candidate reference; a POSIX shell identifier such as `DEEPSEEK_API_KEY`.
+ * @param value - candidate reference; a POSIX shell identifier such as `TEST_API_KEY`.
  * @returns the branded reference.
  */
 export function credentialRef(value: string): CredentialRef {
@@ -152,7 +152,7 @@ export interface CredentialRecordEntry {
   kind: CredentialRecord['kind']
 }
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Context {
     credentials: CredentialProvider
   }

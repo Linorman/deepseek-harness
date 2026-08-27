@@ -1,16 +1,17 @@
 /** Ownerless-copy registrations: the five seats, dictionaries, thunked labels, and HMR recovery. */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@clocky/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
-import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
-import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
-import { apply as settingsApply, inject as settingsInject } from '@deepseek-ai/dsh-client-ui-settings/client'
-import { apply, inject } from '@deepseek-ai/dsh-client-ui-settings-general/client'
+import { resolveSlotLabel } from '@clocky/clocky-client-ui-slots'
+import { SlotRegistry } from '@clocky/clocky-client-runtime/client'
+import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
+import { TestRemote } from '@clocky/clocky-client-test-runtime'
+import { apply as settingsApply, inject as settingsInject } from '@clocky/clocky-client-ui-settings/client'
+import { apply, inject } from '@clocky/clocky-client-ui-settings-general/client'
 import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
+import { apply as hostApply } from '../src/index.ts'
 
 // These specs assert the shipped Chinese copy. The lane has no jsdom `window`,
 // so browser-language detection never runs and a fresh LocaleRuntime opens on
@@ -78,6 +79,10 @@ function generalEntry(slots: SlotRegistry) {
 }
 
 describe('ui-settings-general apply', () => {
+  it('keeps the host loader entry as an explicit no-op', () => {
+    expect(() => { hostApply() }).not.toThrow()
+  })
+
   it('declares the services it uses', () => {
     expect(inject).toEqual(['slots', 'locale', 'connection', 'settingsScope'])
   })

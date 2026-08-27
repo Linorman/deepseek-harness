@@ -1,12 +1,12 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-base`.
- * @module @deepseek-ai/dsh-base/invariant
+ * Package-owned invariant companion for `@clocky/clocky-base`.
+ * @module @clocky/clocky-base/invariant
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-base'
+const PACKAGE_NAME = '@clocky/clocky-base'
 
 /** Cordis companion plugin name. */
 export const name = 'base-bundle-invariant'

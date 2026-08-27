@@ -1,8 +1,8 @@
-import { Context, Service } from '@deepseek-ai/cordis'
-import type { Fiber } from '@deepseek-ai/cordis'
+import { Context, Service } from '@clocky/cordis'
+import type { Fiber } from '@clocky/cordis'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { z } from 'zod'
-import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
+import type { ConnectionHandle } from '@clocky/clocky-client-connection/client'
 import type {
   InvocationDescriptor,
   RemoteResult,
@@ -10,12 +10,12 @@ import type {
   TypertContext,
   TypertRemoteScopeApi,
   TypertRemoteNamespace,
-} from '@deepseek-ai/dsh-typert-protocol'
-import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
+} from '@clocky/clocky-typert-protocol'
+import TypertRegistry from '@clocky/clocky-typert-registry'
 import type { ClientRemote } from '../src/client/index.ts'
 import { apply, inject } from '../src/client/index.ts'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@clocky/cordis' {
   interface Events {
     /**
      * Test-only forwarded Host event.
@@ -35,7 +35,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-declare module '@deepseek-ai/dsh-typert-protocol' {
+declare module '@clocky/clocky-typert-protocol' {
   interface TypertRemoteEventSelection extends Record<'fixture/changed' | 'fixture/idle', true> {}
 
   interface TypertContextMap {

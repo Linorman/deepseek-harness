@@ -2,26 +2,26 @@
 # directly — a config patch cannot target an entry behind a nested include — and
 # restates advanced.cordis.yml's overlay (the agent and persistence configs plus the
 # code-runtime and tool-cordis inserts) so the whole app config lives in one patch.
-# It re-pins `deepseek-v4-flash`: `cordis.yml` ships `deepseek-v4-pro`, but the
+# It re-pins `test-model`: `cordis.yml` ships `test-model-pro`, but the
 # recorded corpus (request headers, provenance) was captured on flash, so replay
 # holds the recorded model to stay reproducible without a re-record. It also
-# disables the key-requiring DeepSeek adapter and inserts `llm-replay` to serve
+# disables the key-requiring provider adapter and inserts `llm-replay` to serve
 # recorded JSONL without a key or network.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - id: agent-spine
-        name: '@deepseek-ai/dsh-agent-spine-demo'
+        name: '@clocky/clocky-agent-spine-demo'
         config:
           agents:
             - id: main
-              provider: deepseek-official
-              model: deepseek-v4-flash
+              provider: test-provider
+              model: test-model
               cwd: !!js process.cwd()
           workspaceContext:
             maxBytes: 65536
@@ -32,7 +32,7 @@
 
             Verify your work by running the code or tests. Keep answers brief and factual.
       - id: persistence
-        name: '@deepseek-ai/dsh-session-persistence-jsonl'
+        name: '@clocky/clocky-session-persistence-jsonl'
         config:
           root: './.sessions'
           # Replay fixtures are raw JSONL; the whole-config patch must restate
@@ -40,10 +40,10 @@
           compression: none
       - insert:
           - id: code-runtime
-            name: '@deepseek-ai/dsh-code-runtime-worker-thread'
+            name: '@clocky/clocky-code-runtime-worker-thread'
           - id: cordis-host-runner
-            name: '@deepseek-ai/dsh-cordis-host-runner'
+            name: '@clocky/clocky-cordis-host-runner'
           - id: tool-cordis
-            name: '@deepseek-ai/dsh-tool-cordis'
+            name: '@clocky/clocky-tool-cordis'
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'

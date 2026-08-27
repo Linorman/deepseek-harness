@@ -1,9 +1,9 @@
-import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
-import type { CommandId } from '@deepseek-ai/dsh-commands/brand'
-import type {} from '@deepseek-ai/dsh-commands/types'
+import type { SessionEvent } from '@clocky/clocky-session/types'
+import type { CommandId } from '@clocky/clocky-commands/brand'
+import type {} from '@clocky/clocky-commands/types'
 import type {
   ConversationNodeDefinition,
-} from '@deepseek-ai/dsh-client-runtime/client'
+} from '@clocky/clocky-client-runtime/client'
 
 /** Goal-owned human command input projected independently of model messages. */
 export interface GoalCommandInputData {
@@ -12,7 +12,7 @@ export interface GoalCommandInputData {
   readonly time: number
 }
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@clocky/clocky-client-ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Human-entered `/goal` command input. */
     'command-input': GoalCommandInputData

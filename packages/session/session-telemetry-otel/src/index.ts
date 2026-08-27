@@ -1,5 +1,5 @@
 /**
- * OpenTelemetry Service Provider for the DeepSeek Harness telemetry capability.
+ * OpenTelemetry Service Provider for the session telemetry capability.
  *
  * Composes the OTel JS SDK as-is — a `LoggerProvider` with a
  * `BatchLogRecordProcessor` and an OTLP/HTTP log exporter — and maps each
@@ -9,13 +9,13 @@
  * capture mode and an outer shutdown deadline: the SDK's export timeout does
  * not bound its preceding `forceFlush()` wait.
  *
- * @module @deepseek-ai/dsh-session-telemetry-otel
+ * @module @clocky/clocky-session-telemetry-otel
  */
 
 import { createRequire } from 'node:module'
-import z from '@deepseek-ai/schemastery'
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-command-feedback'
+import z from '@clocky/schemastery'
+import type { Context } from '@clocky/cordis'
+import type {} from '@clocky/clocky-command-feedback'
 import {
   SessionTelemetryBackend,
   SessionTelemetryCoordinator,
@@ -23,9 +23,8 @@ import {
   type SessionTelemetryRecord,
   type SessionTelemetrySeverity,
   type SessionTelemetrySharingStatus,
-} from '@deepseek-ai/dsh-session-telemetry'
-import { APP_IDENTITY } from '@deepseek-ai/dsh-llm'
-import { getOrCreateAnonymousUserId } from '@deepseek-ai/dsh-anonymous-user-id'
+} from '@clocky/clocky-session-telemetry'
+import { APP_IDENTITY } from '@clocky/clocky-llm'
 import {
   BatchLogRecordProcessor,
   LoggerProvider,
@@ -37,7 +36,7 @@ import { SeverityNumber, type AnyValue, type Logger } from '@opentelemetry/api-l
 import { resourceFromAttributes } from '@opentelemetry/resources'
 
 // The package's own manifest is the single source of the instrumentation-scope
-// version (same pattern as dsh-llm's attribution identity).
+// version (same pattern as clocky-llm's attribution identity).
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
 
 /** Session-sharing policy selected by {@link Config.mode}. */
@@ -85,7 +84,7 @@ function sharingStatusFor(mode: SessionTelemetryMode): SessionTelemetrySharingSt
 
 /**
  * Plugin configuration: one sharing policy, two verbatim SDK option objects,
- * and one DSH-owned shutdown bound. Uploading modes validate their endpoint
+ * and one shutdown bound. Uploading modes validate their endpoint
  * and shutdown deadline at plugin load; `DISABLED` reads neither.
  */
 export interface Config {
@@ -198,10 +197,6 @@ export class OpenTelemetrySessionBackend extends SessionTelemetryBackend {
       resource: resourceFromAttributes({
         'service.name': APP_IDENTITY.product,
         'service.version': APP_IDENTITY.version,
-        // OTel semconv's standard user attribute, carried once per export
-        // batch on the Resource rather than per record: the collector
-        // aggregates by Resource, and the id is process-stable anyway.
-        'user.id': getOrCreateAnonymousUserId(),
       }),
       processors: [
         new BatchLogRecordProcessor({
@@ -216,8 +211,8 @@ export class OpenTelemetrySessionBackend extends SessionTelemetryBackend {
         }),
       ],
     })
-    const ledger = this.provider.getLogger('@deepseek-ai/dsh-session-telemetry-otel', version)
-    const ops = this.provider.getLogger('@deepseek-ai/dsh-session-telemetry-otel/ops', version)
+    const ledger = this.provider.getLogger('@clocky/clocky-session-telemetry-otel', version)
+    const ops = this.provider.getLogger('@clocky/clocky-session-telemetry-otel/ops', version)
     const enqueue: SessionTelemetrySink['emit'] = (record) => {
       const logger: Logger = record.channel === 'ops' ? ops : ledger
       logger.emit({

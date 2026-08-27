@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { createUserMessage, CallId , createMessage, createToolResultMessage } from '@deepseek-ai/dsh-llm'
+import { Context } from '@clocky/cordis'
+import { createUserMessage, CallId , createMessage, createToolResultMessage } from '@clocky/clocky-llm'
 import SessionStore, {
   SESSION_FORMAT_VERSION,
   SessionId,
-} from '@deepseek-ai/dsh-session'
-import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
+} from '@clocky/clocky-session'
+import type { SessionEvent, SessionHeader } from '@clocky/clocky-session'
 import {
   buildSessionEventRecords,
   buildSessionEventSearchDocuments,
@@ -16,7 +16,7 @@ import {
   materializeSessionEventResultFilters,
   materializeSessionResultFilters,
   type SessionQueryErrorCode,
-} from '@deepseek-ai/dsh-session-query'
+} from '@clocky/clocky-session-query'
 import { TestSessionQueryEngine } from './test-service.ts'
 
 const id = SessionId('session')

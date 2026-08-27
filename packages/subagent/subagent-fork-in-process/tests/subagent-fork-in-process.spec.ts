@@ -1,20 +1,20 @@
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage } from '@clocky/clocky-llm'
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
-import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
-import * as AgentInvariant from '@deepseek-ai/dsh-agent/invariant'
-import * as AgentLoopInvariant from '@deepseek-ai/dsh-agent-loop/invariant'
-import SubagentRuntime, { type SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import AgentRegistry from '@clocky/clocky-agent'
+import { SessionId } from '@clocky/clocky-session'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import InvariantRegistry from '@clocky/clocky-invariants'
+import * as SessionInvariant from '@clocky/clocky-session/invariant'
+import * as AgentInvariant from '@clocky/clocky-agent/invariant'
+import * as AgentLoopInvariant from '@clocky/clocky-agent-loop/invariant'
+import SubagentRuntime, { type SubagentStartRequest } from '@clocky/clocky-subagent'
 import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
-import type { StreamChunk } from '@deepseek-ai/dsh-llm'
+import type { StreamChunk } from '@clocky/clocky-llm'
 import * as fork from '../src/index.ts'
-import { STRUCTURED_OUTPUT_TOOL } from '@deepseek-ai/dsh-subagent-in-process-driver'
+import { STRUCTURED_OUTPUT_TOOL } from '@clocky/clocky-subagent-in-process-driver'
 
 type Script = ConstructorParameters<typeof MockAdapter>[0]
 
@@ -55,7 +55,7 @@ function text(blocks: { type: string; text?: string }[]): string {
   return blocks.filter(b => b.type === 'text').map(b => b.text).join('')
 }
 
-describe('dsh-subagent-fork-in-process', () => {
+describe('clocky-subagent-fork-in-process', () => {
   it('emits subagent/start only after the seeded child is published', async () => {
     const { ctx, parent } = await setup([textResponse('child answer')])
     let childAtStart: ReturnType<typeof ctx.agents.get>

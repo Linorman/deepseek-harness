@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-message-feedback",
-  "description": "Lifecycle-bound per-message rating and note sidecar for the DeepSeek Harness",
+  "name": "@clocky/clocky-message-feedback",
+  "description": "Lifecycle-bound per-message rating and note sidecar for Clocky",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/feedback/message-feedback"
   },
   "type": "module",
@@ -49,32 +49,32 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-session-persistence": "workspace:^",
-    "@deepseek-ai/dsh-storage-domain": "workspace:^",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-storage-domain": "workspace:^",
+    "@clocky/clocky-typert-protocol": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^",
+    "@clocky/schemastery": "workspace:^",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-session-persistence": "workspace:^",
-    "@deepseek-ai/dsh-session-persistence-jsonl": "workspace:^",
-    "@deepseek-ai/dsh-storage": "workspace:^",
-    "@deepseek-ai/dsh-storage-domain": "workspace:^",
-    "@deepseek-ai/dsh-storage-json": "workspace:^",
-    "@deepseek-ai/dsh-typert-protocol": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
+    "@clocky/clocky-storage": "workspace:^",
+    "@clocky/clocky-storage-domain": "workspace:^",
+    "@clocky/clocky-storage-json": "workspace:^",
+    "@clocky/clocky-typert-protocol": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   }
 }

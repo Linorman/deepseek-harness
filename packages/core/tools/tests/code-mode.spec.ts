@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import { createUserMessage, CallId  } from '@deepseek-ai/dsh-llm'
-import { createScope } from '@deepseek-ai/dsh-scope'
-import type { Scope } from '@deepseek-ai/dsh-scope'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import { CodeRuntime } from '@deepseek-ai/dsh-code-runtime'
-import type { CodeRunRequest, CodeRunResult } from '@deepseek-ai/dsh-code-runtime'
-import ToolRuntime, { CodeRunFailedError, RUN_CODE_NAME, TOOL_ABORTED_BEFORE_DISPATCH, defineContentToolFixture, defineTool } from '@deepseek-ai/dsh-tools'
-import type { Config, JsonSchemaNode, PostToolDecision, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import { Session, SessionId } from '@deepseek-ai/dsh-session'
-import type { JsonValue, SessionEventMap } from '@deepseek-ai/dsh-session'
+import { Context } from '@clocky/cordis'
+import { createUserMessage, CallId  } from '@clocky/clocky-llm'
+import { createScope } from '@clocky/clocky-scope'
+import type { Scope } from '@clocky/clocky-scope'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import { CodeRuntime } from '@clocky/clocky-code-runtime'
+import type { CodeRunRequest, CodeRunResult } from '@clocky/clocky-code-runtime'
+import ToolRuntime, { CodeRunFailedError, RUN_CODE_NAME, TOOL_ABORTED_BEFORE_DISPATCH, defineContentToolFixture, defineTool } from '@clocky/clocky-tools'
+import type { Config, JsonSchemaNode, PostToolDecision, ToolExecutionResult } from '@clocky/clocky-tools'
+import type { Agent } from '@clocky/clocky-agent'
+import { Session, SessionId } from '@clocky/clocky-session'
+import type { JsonValue, SessionEventMap } from '@clocky/clocky-session'
 
 const testToolSignal = new AbortController().signal
 
@@ -1735,7 +1735,7 @@ describe('per-agent presentation', () => {
   })
 
   it('inherits a STANDING preset scope\'s mode down the chain, agents beside it unaffected', async () => {
-    const { bindScopeParent } = await import('@deepseek-ai/dsh-scope')
+    const { bindScopeParent } = await import('@clocky/clocky-scope')
     const { ctx, systemPrompt } = await setup({ mode: 'native' })
     const calls = registerEcho(ctx)
     // The preset's standing scope declares once; the agent only PARENTS to it
@@ -1753,7 +1753,7 @@ describe('per-agent presentation', () => {
     // `native` here, so a collapse predicate reading it instead of this
     // scope's effective mode would announce [run_code] and still execute the
     // native call — the bypass, reopened for exactly the preset composition
-    // `dsh-agent-tool-presentation` produces.
+    // `clocky-agent-tool-presentation` produces.
     expect(ctx.tools.executionMode({
       signal: testToolSignal,
       callId: CallId('preset-coded-schedule'),

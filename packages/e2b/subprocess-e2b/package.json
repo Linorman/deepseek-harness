@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-subprocess-e2b",
-  "description": "E2B subprocess implementation for DeepSeek Harness",
+  "name": "@clocky/clocky-subprocess-e2b",
+  "description": "E2B subprocess implementation for Clocky",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/e2b/subprocess-e2b"
   },
   "type": "module",
@@ -32,20 +32,20 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-e2b": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-e2b": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@clocky/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-e2b": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/dsh-timeout": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/clocky-e2b": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-timeout": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   }
 }

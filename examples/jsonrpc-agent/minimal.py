@@ -7,7 +7,7 @@ import argparse
 import os
 from pathlib import Path
 
-from deepseek_harness import DeepSeekHarness
+from clocky import Clocky
 
 
 CONFIG = Path(__file__).with_name("minimal.cordis.yml")
@@ -18,16 +18,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("prompt", help="Task for the minimal agent")
     parser.add_argument("--workspace", type=Path, default=Path.cwd())
-    parser.add_argument("--session-root", type=Path, default=Path(".dsh-sessions"))
+    parser.add_argument("--session-root", type=Path, default=Path(".clocky-sessions"))
     parser.add_argument("--session-id")
-    parser.add_argument("--provider", default="deepseek-official")
-    parser.add_argument("--model", default=os.environ.get("DSH_MODEL", "deepseek-v4-flash"))
+    parser.add_argument("--provider", default=os.environ.get("CLOCKY_PROVIDER"))
+    parser.add_argument("--model", default=os.environ.get("CLOCKY_MODEL"))
     parser.add_argument("--max-tokens", type=int)
     args = parser.parse_args()
+    if args.provider is None or args.model is None:
+        parser.error("--provider and --model are required (or set CLOCKY_PROVIDER and CLOCKY_MODEL)")
 
     workspace = args.workspace.resolve()
     session_root = args.session_root.resolve()
-    with DeepSeekHarness(
+    with Clocky(
         provider=args.provider,
         model=args.model,
         max_tokens=args.max_tokens,

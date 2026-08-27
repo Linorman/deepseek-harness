@@ -27,10 +27,10 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
           >
             <svg
               aria-hidden="true"
-              data-content="965fe321"
+              data-content="d374a33b"
               fill="none"
-              height="17.6580310880829"
-              viewBox="0 0 23.16 17.04"
+              height="24"
+              viewBox="0 0 24 24"
               width="24"
             />
           </div>
@@ -122,10 +122,10 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
             >
               <svg
                 aria-hidden="true"
-                data-content="965fe321"
+                data-content="d374a33b"
                 fill="none"
-                height="17.6580310880829"
-                viewBox="0 0 23.16 17.04"
+                height="24"
+                viewBox="0 0 24 24"
                 width="24"
               />
             </div>
@@ -137,11 +137,14 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
               data-slot="sidebar.brand.name"
               style="display: contents;"
             >
-              <span
-                class="fallbackBrandName"
-              >
-                DSH Local Build
-              </span>
+              <svg
+                aria-hidden="true"
+                data-content="883ec90c"
+                fill="none"
+                height="24"
+                viewBox="0 0 156 24"
+                width="156"
+              />
               <span
                 class="buildRevision"
               >
@@ -248,10 +251,10 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
             >
               <svg
                 aria-hidden="true"
-                data-content="965fe321"
+                data-content="d374a33b"
                 fill="none"
-                height="17.6580310880829"
-                viewBox="0 0 23.16 17.04"
+                height="24"
+                viewBox="0 0 24 24"
                 width="24"
               />
             </div>
@@ -263,11 +266,14 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
               data-slot="sidebar.brand.name"
               style="display: contents;"
             >
-              <span
-                class="fallbackBrandName"
-              >
-                DSH Local Build
-              </span>
+              <svg
+                aria-hidden="true"
+                data-content="883ec90c"
+                fill="none"
+                height="24"
+                viewBox="0 0 156 24"
+                width="156"
+              />
               <span
                 class="buildRevision"
               >

@@ -2,30 +2,43 @@
 # fixture server stay real (the tool call re-executes the actual HTTP fetch and
 # markdown rendering); only the model adapter is replaced by replay.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
+      - id: acp-agent
+        name: '@clocky/clocky-acp-demo'
+        config:
+          provider: test-provider
+          model: test-model-pro
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          persistenceCompression: none
+          workspaceContext:
+            maxBytes: 65536
+          persona: |
+            You are a coding assistant powered by the {{model}} model. Your working directory is {{cwd}}. Your bash tool runs under a file sandbox — a `[sandbox: file access denied …]` result is policy, not a command bug.
+
+            Verify your work by running the code or tests. Keep answers brief and factual.
       - insert:
           - id: web
-            name: '@deepseek-ai/dsh-web'
+            name: '@clocky/clocky-web'
           - id: web-fetch-http
-            name: '@deepseek-ai/dsh-web-fetch-http'
+            name: '@clocky/clocky-web-fetch-http'
           - id: web-fetch-fixture
             name: './web-fetch-fixture-server.mjs'
           - id: tool-web
-            name: '@deepseek-ai/dsh-tool-web'
+            name: '@clocky/clocky-tool-web'
             config:
               search: false
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
-                    - id: deepseek-v4-pro
+                    - id: test-model
+                    - id: test-model-pro

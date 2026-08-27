@@ -45,7 +45,7 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
     }).map(([key, path]) => [key, artifactUrl(path)]))
     const script = `
       import { createServer } from 'node:http'
-      import * as cordis from '@deepseek-ai/cordis'
+      import * as cordis from '@clocky/cordis'
 
       const urls = ${JSON.stringify(urls)}
       const { Context } = cordis
@@ -123,16 +123,16 @@ describe.skipIf(!requiredArtifacts)('Goal Remote built LIB chain', () => {
         const handoff = handoffs.get(id)
         if (handoff === undefined) throw new Error('missing Client bundle handoff ' + id)
         return handoff.factory(specifier => {
-          if (specifier === '@deepseek-ai/cordis') return cordis
+          if (specifier === '@clocky/cordis') return cordis
           throw new Error('unexpected Client external ' + specifier)
         })
       }
       const client = new Context()
       for (const id of [
-        '@deepseek-ai/dsh-typert-registry',
-        '@deepseek-ai/dsh-client-connection',
-        '@deepseek-ai/dsh-api-gateway',
-        '@deepseek-ai/dsh-api-remotes',
+        '@clocky/clocky-typert-registry',
+        '@clocky/clocky-client-connection',
+        '@clocky/clocky-api-gateway',
+        '@clocky/clocky-api-remotes',
       ]) {
         const plugin = instantiate(id)
         await client.plugin({ inject: plugin.inject, apply: plugin.apply })

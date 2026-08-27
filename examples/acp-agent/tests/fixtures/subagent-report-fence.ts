@@ -4,8 +4,8 @@
  * @module subagent-report-fence
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-agent-loop'
+import type { Context } from '@clocky/cordis'
+import type {} from '@clocky/clocky-agent-loop'
 
 /** Fixture plugin name. */
 export const name = 'subagent-report-fence'

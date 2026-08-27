@@ -1,7 +1,7 @@
-/** Canonical tool-definition fixtures for repository tests. @module dsh-tools/testing */
+/** Canonical tool-definition fixtures for repository tests. @module clocky-tools/testing */
 
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { JsonValue } from '@deepseek-ai/dsh-session'
+import type { ContentBlock } from '@clocky/clocky-llm'
+import type { JsonValue } from '@clocky/clocky-session'
 import { defineTool } from './schema.ts'
 import type { DefineToolOptions, ParameterSchemaSpec } from './schema.ts'
 import type { ToolDefinition, ToolRunContext } from './index.ts'

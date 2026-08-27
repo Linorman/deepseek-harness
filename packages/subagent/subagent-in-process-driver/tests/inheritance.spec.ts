@@ -7,17 +7,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mkdtemp, readFile, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import SandboxedFileSystem from '@deepseek-ai/dsh-fs-sandbox'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import SandboxPolicyService, { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
-import ApprovalService from '@deepseek-ai/dsh-user-approval'
-import { snapshotSubagentDescriptor } from '@deepseek-ai/dsh-subagent'
+import { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import SandboxedFileSystem from '@clocky/clocky-fs-sandbox'
+import type { ContentBlock } from '@clocky/clocky-llm'
+import SandboxPolicyService, { setSandboxMode } from '@clocky/clocky-sandbox-policy'
+import { SessionId, type SessionEvent } from '@clocky/clocky-session'
+import * as ToolFs from '@clocky/clocky-tool-fs'
+import ApprovalService from '@clocky/clocky-user-approval'
+import { snapshotSubagentDescriptor } from '@clocky/clocky-subagent'
 import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { startInProcessRun } from '../src/index.ts'
 
@@ -28,7 +28,7 @@ const contexts: Context[] = []
 let workspace: string
 
 beforeEach(async () => {
-  workspace = await realpath(await mkdtemp(join(tmpdir(), 'dsh-inherit-')))
+  workspace = await realpath(await mkdtemp(join(tmpdir(), 'clocky-inherit-')))
 })
 
 afterEach(async () => {
@@ -114,7 +114,7 @@ describe('in-process policy inheritance', () => {
       const runtimeContext = child.session.events.find(
         (event): event is SessionEvent<'user/message'> => event.type === 'user/message'
           && event.data.source.kind === 'plugin'
-          && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt',
+          && event.data.source.plugin === '@clocky/clocky-system-prompt',
       )
       if (request === undefined || runtimeContext === undefined) throw new Error('child request lacks its runtime policy context')
       expect(runtimeContext.seq).toBeLessThan(request.seq)
@@ -122,7 +122,7 @@ describe('in-process policy inheritance', () => {
         .filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
         .map(block => block.text)
         .join('\n')
-      expect(contextText).toContain('Current DSH file policy: read-only')
+      expect(contextText).toContain('Current Clocky file policy: read-only')
       expect(contextText).toContain('Approval prompts are disabled')
       // The statement rides runtime context; the system prompt stays uniform.
       expect(contextText).toContain('You are a delegated subagent')

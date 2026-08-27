@@ -1,5 +1,5 @@
 {
-  "name": "@deepseek-ai/dsh-app-boot",
+  "name": "@clocky/clocky-app-boot",
   "description": "Shared boot glue for the app bins: .env loading, fail-loud Loader guards, snapshot-aware config resolution, and the Loader boot sequence",
   "version": "0.1.1-rc.2",
   "publishConfig": {
@@ -7,7 +7,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "packages/boot/app-boot"
   },
   "type": "module",
@@ -35,32 +35,32 @@
     "js-yaml": "^4.2.0"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-launch-environment": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-home-paths": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/cordis-plugin-group": "workspace:^",
+    "@clocky/cordis-plugin-hmr": "workspace:^",
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/clocky-launch-environment": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-home-paths": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/cordis": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/cordis-plugin-hmr": {
+    "@clocky/cordis-plugin-hmr": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/cordis-plugin-hmr": "workspace:^",
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/cordis-plugin-timer": "workspace:^",
-    "@deepseek-ai/dsh-launch-environment": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-home-paths": "workspace:^",
-    "@deepseek-ai/dsh-system-prompt": "workspace:^",
+    "@clocky/cordis-plugin-group": "workspace:^",
+    "@clocky/cordis-plugin-hmr": "workspace:^",
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/cordis-plugin-timer": "workspace:^",
+    "@clocky/clocky-launch-environment": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-home-paths": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
     "@types/js-yaml": "^4.0.9",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^"
   }
 }

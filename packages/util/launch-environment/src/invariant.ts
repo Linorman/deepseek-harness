@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-launch-environment`.
- * @module @deepseek-ai/dsh-launch-environment/invariant
+ * Package-owned invariant companion for `@clocky/clocky-launch-environment`.
+ * @module @clocky/clocky-launch-environment/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-launch-environment'
+const PACKAGE_NAME = '@clocky/clocky-launch-environment'
 
 /** Cordis companion plugin name. */
 export const name = 'launch-environment-invariant'

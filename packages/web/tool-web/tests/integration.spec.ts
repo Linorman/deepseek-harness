@@ -1,7 +1,7 @@
 /**
- * Integration: the real fetch backend (`dsh-web-fetch-http`) + a real search provider
- * (`dsh-web-search-exa`) + the real seam (`dsh-web`) + the model tool (`dsh-tool-web`) + the
- * tool-call timeout policy (`dsh-tool-call-timeout-policy`), exercised through `ctx.tools.execute()` —
+ * Integration: the real fetch backend (`clocky-web-fetch-http`) + a real search provider
+ * (`clocky-web-search-exa`) + the real seam (`clocky-web`) + the model tool (`clocky-tool-web`) + the
+ * tool-call timeout policy (`clocky-tool-call-timeout-policy`), exercised through `ctx.tools.execute()` —
  * nothing bypasses the tool registry. Fetch verifies world effects against loopback HTTP; search
  * uses the real Exa provider with only its network boundary stubbed.
  */
@@ -9,15 +9,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import { AddressInfo } from 'node:net'
-import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { type ToolExecutionResult } from '@deepseek-ai/dsh-tools'
-import WebRuntime from '@deepseek-ai/dsh-web'
-import * as WebFetchLocal from '@deepseek-ai/dsh-web-fetch-http'
-import * as WebSearchExa from '@deepseek-ai/dsh-web-search-exa'
-import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
-import * as TimeoutPolicy from '@deepseek-ai/dsh-tool-call-timeout-policy'
+import { Context } from '@clocky/cordis'
+import { CallId } from '@clocky/clocky-llm'
+import SystemPrompt from '@clocky/clocky-system-prompt'
+import ToolRuntime, { type ToolExecutionResult } from '@clocky/clocky-tools'
+import WebRuntime from '@clocky/clocky-web'
+import * as WebFetchLocal from '@clocky/clocky-web-fetch-http'
+import * as WebSearchExa from '@clocky/clocky-web-search-exa'
+import * as ToolWeb from '@clocky/clocky-tool-web'
+import * as TimeoutPolicy from '@clocky/clocky-tool-call-timeout-policy'
 
 const testToolSignal = new AbortController().signal
 
@@ -97,7 +97,7 @@ describe('web_search integration over the real Exa provider', () => {
       JSON.stringify({ results: [{ url: 'https://result.test', title: 'Result', highlights: ['a highlight'] }] }),
       { status: 200, headers: { 'content-type': 'application/json' } },
     )))
-    const out = await call('web_search', { queries: ['deepseek-official'] })
+    const out = await call('web_search', { queries: ['test-provider'] })
     expect(out.isError).toBe(false)
     expect(out.content.map(b => b.type === 'text' ? b.text : '').join('')).toContain('[Result](https://result.test)')
   })
@@ -151,7 +151,7 @@ describe('tool-call timeout returns TOOL_TIMEOUT (deadline wins over a slow fetc
   it('returns a structured TOOL_TIMEOUT (not the provider WEB_FETCH_TIMEOUT) when the tool-call budget wins', async () => {
     const out = await tctx.tools.execute({ signal: testToolSignal, callId: CallId('slow-1'), name: 'web_fetch', arguments: { url: slowBase } })
     expect(out.isError).toBe(true)
-    // The outer tool-call deadline won: TOOL_TIMEOUT, owned by dsh-tool-call-timeout-policy,
+    // The outer tool-call deadline won: TOOL_TIMEOUT, owned by clocky-tool-call-timeout-policy,
     // NOT the provider's own WEB_FETCH_TIMEOUT (its 30s backstop never fired).
     expect(out.error?.info?.code).toBe('TOOL_TIMEOUT')
     const text = out.content.map(b => (b.type === 'text' ? b.text : '')).join('')

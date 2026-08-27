@@ -1,37 +1,37 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
-import { CommandId } from '@deepseek-ai/dsh-commands/brand'
-import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
-import * as AgentInvariant from '@deepseek-ai/dsh-agent/invariant'
-import * as AgentLoopInvariant from '@deepseek-ai/dsh-agent-loop/invariant'
-import * as CompactionInvariant from '@deepseek-ai/dsh-compaction/invariant'
-import * as CompactionBasicInvariant from '@deepseek-ai/dsh-compaction-basic/invariant'
-import { BasicCompactionEngine } from '@deepseek-ai/dsh-compaction-basic'
-import { CompactionId, isCompactCheckpointSource, ManualCompactionError } from '@deepseek-ai/dsh-compaction'
-import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
+import { Context } from '@clocky/cordis'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import InvariantRegistry from '@clocky/clocky-invariants'
+import { CommandId } from '@clocky/clocky-commands/brand'
+import * as SessionInvariant from '@clocky/clocky-session/invariant'
+import * as AgentInvariant from '@clocky/clocky-agent/invariant'
+import * as AgentLoopInvariant from '@clocky/clocky-agent-loop/invariant'
+import * as CompactionInvariant from '@clocky/clocky-compaction/invariant'
+import * as CompactionBasicInvariant from '@clocky/clocky-compaction-basic/invariant'
+import { BasicCompactionEngine } from '@clocky/clocky-compaction-basic'
+import { CompactionId, isCompactCheckpointSource, ManualCompactionError } from '@clocky/clocky-compaction'
+import type { CompactionResult } from '@clocky/clocky-compaction'
 import {
   createAssistantMessage,
   createUserMessage,
   LlmAdapter,
-} from '@deepseek-ai/dsh-llm'
+} from '@clocky/clocky-llm'
 import type {
   ContentBlock,
   LlmResolvedModelInfo,
   Message,
   StreamChunk,
   TokenUsage,
-} from '@deepseek-ai/dsh-llm'
-import SessionStore, { Session, SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import LlmRuntime from '@deepseek-ai/dsh-llm'
-import TokenMeter from '@deepseek-ai/dsh-token-meter'
-import type { Agent } from '@deepseek-ai/dsh-agent'
+} from '@clocky/clocky-llm'
+import SessionStore, { Session, SessionId, type SessionEvent } from '@clocky/clocky-session'
+import LlmRuntime from '@clocky/clocky-llm'
+import TokenMeter from '@clocky/clocky-token-meter'
+import type { Agent } from '@clocky/clocky-agent'
 import type {
   SummarizationInput,
   SummaryResult,
-} from '@deepseek-ai/dsh-compaction-basic/src/summarizer.ts'
+} from '@clocky/clocky-compaction-basic/src/summarizer.ts'
 
 const MODEL = 'mock'
 const SIGNAL = new AbortController().signal

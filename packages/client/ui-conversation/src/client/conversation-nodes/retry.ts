@@ -1,12 +1,12 @@
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@clocky/cordis'
 import type {
   ConversationLocation, ConversationNodeDefinition, ModelRetryNode,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import type {} from '@deepseek-ai/dsh-llm-retry/types'
+} from '@clocky/clocky-client-runtime/client'
+import type {} from '@clocky/clocky-llm-retry/types'
 import type { RetryChatData } from '../contract/chat-nodes.ts'
 import { chatNode } from './common.ts'
 
-declare module '@deepseek-ai/dsh-client-ui-conversation/client' {
+declare module '@clocky/clocky-client-ui-conversation/client' {
   interface ChatNodeDataMap {
     /** Producer-correlated model retry chain. */
     'model-retry': RetryChatData

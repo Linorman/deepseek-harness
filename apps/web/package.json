@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-web-frontend",
-  "description": "Web application entry: vite build over the @deepseek-ai/dsh-client-web shell library; dist/ served by apps/cli's dsh web",
+  "name": "@clocky/clocky-web-frontend",
+  "description": "Web application entry: vite build over the @clocky/clocky-client-web shell library; dist/ served by apps/cli's clocky web",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/Linorman/clocky.git",
     "directory": "apps/web"
   },
   "type": "module",
@@ -26,13 +26,13 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/dsh-client-modules": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
-    "@deepseek-ai/dsh-client-web": "workspace:^",
-    "@deepseek-ai/dsh-cmdline": "workspace:^",
-    "@deepseek-ai/dsh-pwsh-local": "workspace:^",
+    "@clocky/cordis-plugin-group": "workspace:^",
+    "@clocky/clocky-client-modules": "workspace:^",
+    "@clocky/clocky-client-ui-primitives": "workspace:^",
+    "@clocky/clocky-client-ui-slots": "workspace:^",
+    "@clocky/clocky-client-web": "workspace:^",
+    "@clocky/clocky-cmdline": "workspace:^",
+    "@clocky/clocky-pwsh-local": "workspace:^",
     "@types/node": "^22.0.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",

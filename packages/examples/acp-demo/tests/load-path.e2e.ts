@@ -31,27 +31,35 @@ const repoTsconfig = fileURLToPath(new URL('../../../../tsconfig.json', import.m
 // A minimal opt-in leaf that loads this app + the two backends and the optional
 // session-query consumer/policies, inlined so the package test owns its fixture.
 const CORDIS_YML = `
-- id: llm-deepseek
-  name: '@deepseek-ai/dsh-llm-deepseek'
-- id: subprocess
-  name: '@deepseek-ai/dsh-subprocess-local'
-- id: bash
-  name: '@deepseek-ai/dsh-bash-local'
-- id: acp-agent
-  name: '@deepseek-ai/dsh-acp-demo'
+- id: llm-pi-ai
+  name: '@clocky/clocky-llm-pi-ai'
   config:
-    provider: deepseek-official
-    model: deepseek-v4-flash
+    providers:
+      test-provider:
+        apiKeyEnv: TEST_API_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:9
+        models:
+          - id: test-model
+- id: subprocess
+  name: '@clocky/clocky-subprocess-local'
+- id: bash
+  name: '@clocky/clocky-bash-local'
+- id: acp-agent
+  name: '@clocky/clocky-acp-demo'
+  config:
+    provider: test-provider
+    model: test-model
     persona: 'You are a test agent.'
     workspaceContext: false
 - id: tool-session-query
-  name: '@deepseek-ai/dsh-tool-session-query'
+  name: '@clocky/clocky-tool-session-query'
 - id: timeout-policy
-  name: '@deepseek-ai/dsh-tool-call-timeout-policy'
+  name: '@clocky/clocky-tool-call-timeout-policy'
 - id: spill-local
-  name: '@deepseek-ai/dsh-spill-local'
+  name: '@clocky/clocky-spill-local'
 - id: spill-policy
-  name: '@deepseek-ai/dsh-spill-policy'
+  name: '@clocky/clocky-spill-policy'
   config:
     maxInlineBytes: 50000
 `
@@ -88,9 +96,9 @@ async function boot(): Promise<Spawned & { cwd: string }> {
         ...process.env,
         TSX_TSCONFIG_PATH: repoTsconfig,
         // Key-present check only; no prompt is sent, so the model is never called.
-        DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? 'keyless-acp-agent-smoke',
-        DSH_HOME: join(cwd, '.dsh'),
-        DSH_AGENTS_HOME: join(cwd, '.agents'),
+        TEST_API_KEY: process.env.TEST_API_KEY ?? 'keyless-acp-agent-smoke',
+        CLOCKY_HOME: join(cwd, '.clocky'),
+        CLOCKY_AGENTS_HOME: join(cwd, '.agents'),
       },
       stdio: ['pipe', 'pipe', 'pipe'],
     },
@@ -115,7 +123,7 @@ async function boot(): Promise<Spawned & { cwd: string }> {
   return { ...spawned, cwd }
 }
 
-describe('dsh-acp-demo real-load-path smoke (bin + Loader, keyless)', () => {
+describe('clocky-acp-demo real-load-path smoke (bin + Loader, keyless)', () => {
   it('boots via its bin and exposes only fresh text sessions', async () => {
     const { client, cwd, stderr } = await boot()
     // initialize: a broken export shape (collapsed bridge plugin, dropped inject)

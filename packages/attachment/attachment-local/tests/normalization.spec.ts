@@ -297,7 +297,7 @@ describe('hasLowColourCount', () => {
     const text = sharp(Buffer.from(`
       <svg width="512" height="256" xmlns="http://www.w3.org/2000/svg">
         <rect width="512" height="256" fill="white"/>
-        <text x="24" y="145" font-size="96" fill="#16324f">DeepSeek 16-bit</text>
+        <text x="24" y="145" font-size="96" fill="#16324f">Test 16-bit</text>
       </svg>
     `))
     const transparentData = await sharp({

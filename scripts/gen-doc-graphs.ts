@@ -8,9 +8,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import ts from 'typescript'
-import { projectCordisCatalog } from '@deepseek-ai/dsh-typert-generator'
+import { projectCordisCatalog } from '@clocky/clocky-typert-generator'
 import { CORDIS_CATALOG_POLICY } from './gen-cordis-catalog.ts'
-import type { EventEntry, ServiceEntry } from '@deepseek-ai/dsh-typert-generator'
+import type { EventEntry, ServiceEntry } from '@clocky/clocky-typert-generator'
 import {
   collectPackageGraph,
   escapeMermaidLabel as escLabel,
@@ -111,7 +111,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'llm',
     title: 'LLM adapter registry',
     mode: 'seam',
-    implementations: ['llm-deepseek', 'llm-pi-ai', 'llm-replay'],
+    implementations: ['llm-pi-ai', 'llm-replay'],
     consumers: ['agent-loop', 'compaction-basic'],
     note: 'Adapters register provider implementations; the loop and compaction call the provider-neutral stream service.',
   },
@@ -153,7 +153,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Runtime type registry',
     mode: 'core',
     consumers: ['typert-loader', 'api-gateway'],
-    note: 'Plugins register live zod contributions directly or through dsh-typert-loader; the API gateway consumes invocation descriptors and providers, while other runtime consumers query schemas and reflection metadata at their own edges.',
+    note: 'Plugins register live zod contributions directly or through clocky-typert-loader; the API gateway consumes invocation descriptors and providers, while other runtime consumers query schemas and reflection metadata at their own edges.',
   },
   {
     key: 'typertGateway',
@@ -168,7 +168,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Durable session persistence seam',
     mode: 'seam',
     implementations: ['session-persistence-jsonl', 'session-persistence-sqlite'],
-    consumers: ['agent-loop', 'tool-bash', 'hooks-claude-code', 'hooks-codex', 'session-query', 'session-query-sqlite', 'message-feedback'],
+    consumers: ['agent-loop', 'tool-bash', 'session-query', 'session-query-sqlite', 'message-feedback'],
     note: 'Backends persist the same SessionEvent vocabulary; apps choose a backend at composition time.',
   },
   {
@@ -177,7 +177,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'User-settings seam',
     mode: 'seam',
     implementations: ['settings-file'],
-    consumers: ['llm-deepseek', 'llm-pi-ai', 'apiproxy'],
+    consumers: ['llm-pi-ai', 'apiproxy'],
     note: 'Plugins register namespace schemas and resolve layered values; providers store the raw document. The LLM adapters register their entry config as the composition base under the user section; the web gateway serves redacted layered descriptors and writes the user layer.',
   },
   {
@@ -186,7 +186,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Credential seam',
     mode: 'seam',
     implementations: ['credentials-local'],
-    consumers: ['llm-deepseek', 'llm-pi-ai', 'apiproxy'],
+    consumers: ['llm-pi-ai', 'apiproxy'],
     note: 'Configuration carries references to secrets; providers own the values. Consumers resolve per operation, so a rotated credential reaches the very next request; the web gateway exposes value-free views and write-only storage.',
   },
   {
@@ -337,7 +337,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'skill',
     title: 'Skill provider registry',
     mode: 'seam',
-    implementations: ['skill-badge', 'skill-filesystem'],
+    implementations: ['skill-filesystem'],
     consumers: ['tool-skill'],
     note: 'Merges provider skill catalogs; tool-skill renders the session-prefix catalog and loads complete skill bodies.',
   },
@@ -363,7 +363,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Concrete loop driver',
     mode: 'bundle',
     consumers: ['agent-spine-demo'],
-    note: 'The one concrete loop plugin; extension packages depend on dsh-agent events and services, not on this package.',
+    note: 'The one concrete loop plugin; extension packages depend on clocky-agent events and services, not on this package.',
   },
   {
     key: 'goals',
@@ -386,8 +386,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Subprocess seam',
     mode: 'seam',
     implementations: ['subprocess-local', 'subprocess-e2b'],
-    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash', 'lsp-stdio', 'subagent-acp', 'subagent-codex', 'subagent-claude-code'],
-    note: 'The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP, Codex, and Claude Code subagent backends spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation.',
+    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash', 'lsp-stdio', 'subagent-acp'],
+    note: 'The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP subagent backend spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation.',
   },
   {
     key: 'shell',
@@ -395,8 +395,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Bash executor seam',
     mode: 'seam',
     implementations: ['bash-local', 'bash-sandbox', 'pwsh-local'],
-    consumers: ['tool-bash', 'tool-pwsh', 'hooks-claude-code', 'hooks-codex'],
-    note: 'The model-facing shell tools and hook bridges consume this seam; sandboxed, remote, or PowerShell executors replace bash-local without touching them.',
+    consumers: ['tool-bash', 'tool-pwsh'],
+    note: 'The model-facing shell tools consume this seam; sandboxed, remote, or PowerShell executors replace bash-local without touching them.',
   },
   {
     key: 'shellEnv',
@@ -404,7 +404,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Managed bash environment registry',
     mode: 'core',
     consumers: ['tool-bash', 'tool-pwsh'],
-    note: 'Plugins declare effect-scoped DSH_* facts; each shell tool collects one trusted snapshot per execution and its executor rebuilds the namespace.',
+    note: 'Plugins declare effect-scoped CLOCKY_* facts; each shell tool collects one trusted snapshot per execution and its executor rebuilds the namespace.',
   },
   {
     key: 'terminals',
@@ -483,7 +483,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'subagent',
     title: 'Subagent provider and continuation service',
     mode: 'seam',
-    implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-codex', 'subagent-claude-code', 'subagent-dsh-sdk'],
+    implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-clocky-sdk'],
     consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
     note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
   },
@@ -509,7 +509,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'web',
     title: 'Web access provider registry',
     mode: 'seam',
-    implementations: ['web-search-exa', 'web-search-perplexity', 'web-search-deepseek', 'web-fetch-http'],
+    implementations: ['web-search-exa', 'web-search-perplexity', 'web-fetch-http'],
     consumers: ['tool-web'],
     note: 'Search and fetch providers register into one ctx.web seam; tool-web owns the stable model-facing names.',
   },
@@ -545,7 +545,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Client plugin graph host',
     mode: 'core',
     consumers: ['hmr'],
-    note: 'Composes the __DSH_BOOT__ entry graph from an incremental dsh.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers.',
+    note: 'Composes the __CLOCKY_BOOT__ entry graph from an incremental clocky.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers.',
   },
   {
     key: 'workflowEngine',
@@ -725,12 +725,12 @@ function stripYamlScalar(value: string): string {
 
 const APP_EXAMPLES = [
   {
-    id: 'dsh_base',
+    id: 'clocky_base',
     rel: 'apps/cli/composition.md',
-    title: 'DSH Base Composition',
+    title: 'Clocky Base Composition',
     label: 'packages/bundle/base/cordis.patch.yml',
     config: 'packages/bundle/base/cordis.patch.yml',
-    summary: 'The dsh-base bundle patch every profile applies first; mode bundles (dsh-web-app, dsh-headless) and the user\'s profile layer patch over it.',
+    summary: 'The clocky-base bundle patch every profile applies first; mode bundles (clocky-web-app, clocky-headless) and the user\'s profile layer patch over it.',
   },
   {
     id: 'headless',
@@ -738,7 +738,7 @@ const APP_EXAMPLES = [
     title: 'Headless Agent Snapshot Composition',
     label: 'examples/headless-agent',
     config: 'examples/headless-agent/cordis.yml',
-    summary: 'The headless snapshot composition combines the real DeepSeek adapter and coding capabilities with one explicitly configured persisted top-level agent; its JSONL driver is test-only.',
+    summary: 'The headless snapshot composition combines the pi-ai provider adapter and coding capabilities with one explicitly configured persisted top-level agent; its JSONL driver is test-only.',
   },
   {
     id: 'acp',
@@ -755,10 +755,10 @@ type AppExample = typeof APP_EXAMPLES[number]
 function renderAppExpansion(lines: string[], appNode: string, pluginName: string): void {
   const agentCore = nodeId('bundle', 'agent_core')
   const jsonl = nodeId('bundle', 'jsonl')
-  lines.push(`  ${appNode} --> ${agentCore}["@deepseek-ai/dsh-agent-spine-demo"]`)
-  lines.push(`  ${appNode} --> ${jsonl}["@deepseek-ai/dsh-session-persistence-jsonl"]`)
-  if (pluginName === '@deepseek-ai/dsh-acp-demo') {
-    lines.push(`  ${appNode} --> ${nodeId('entrypoint', 'acp')}["@deepseek-ai/dsh-acp<br/>automation-only JSON-RPC stdio<br/>fresh sessions created by client"]`)
+  lines.push(`  ${appNode} --> ${agentCore}["@clocky/clocky-agent-spine-demo"]`)
+  lines.push(`  ${appNode} --> ${jsonl}["@clocky/clocky-session-persistence-jsonl"]`)
+  if (pluginName === '@clocky/clocky-acp-demo') {
+    lines.push(`  ${appNode} --> ${nodeId('entrypoint', 'acp')}["@clocky/clocky-acp<br/>automation-only JSON-RPC stdio<br/>fresh sessions created by client"]`)
   }
   lines.push(
     `  ${agentCore} --> ${nodeId('spine', 'llm')}["ctx.llm"]`,
@@ -783,7 +783,7 @@ function renderAppComposition(example: AppExample): string {
     const pluginNode = nodeId(`plugin_${example.id}`, plugin.id)
     lines.push(`  ${pluginNode}["${escLabel(plugin.id)}<br/>${escLabel(plugin.name)}"]`)
     lines.push(`  cfg --> ${pluginNode}`)
-    if (plugin.name === '@deepseek-ai/dsh-acp-demo') {
+    if (plugin.name === '@clocky/clocky-acp-demo') {
       renderAppExpansion(lines, pluginNode, plugin.name)
     }
   }
@@ -1324,7 +1324,7 @@ function renderLifecycle(): string {
     '',
     'The `assistant/message` event records every successful provider call, including content-less and `max-tokens` finishes. Empty content stays out of derived history, while the durable event keeps usage and `sourceEventSeqs` listing the exact `assistant/chunk` events, including an explicit empty list.',
     '',
-    '`dsh-compaction-basic` uses `agent/pre-step` for pressure before request derivation and `agent/request-error` only for canonical context overflow. Once either trigger qualifies, optional tool-result pruning runs before summary selection. Recovery works between the closed failed step and failed turn close, and opens a fresh retry turn only when pruning or summarization advances the surface replacement generation; otherwise the original request error remains authoritative.',
+    '`clocky-compaction-basic` uses `agent/pre-step` for pressure before request derivation and `agent/request-error` only for canonical context overflow. Once either trigger qualifies, optional tool-result pruning runs before summary selection. Recovery works between the closed failed step and failed turn close, and opens a fresh retry turn only when pruning or summarization advances the surface replacement generation; otherwise the original request error remains authoritative.',
     '',
     'The returned `agent/pre-step` decision is authoritative; listeners wrapping `next()` preserve downstream messages unless replacement is intentional. Steering and injected context pass through the same waterfall after a later claim operation takes their next-step batch.',
     '',
@@ -1415,7 +1415,7 @@ function renderDocs(): GraphDoc[] {
 function renderIndex(docs: GraphDoc[]): string {
   const labels: Record<string, string> = {
     'docs/capability-seams.md': 'capability seams and core services',
-    'apps/cli/composition.md': 'dsh shared base composition',
+    'apps/cli/composition.md': 'clocky shared base composition',
     'examples/headless-agent/composition.md': 'headless-agent app composition',
     'examples/cordis-agent/composition.md': 'cordis-agent app composition',
     'examples/acp-agent/composition.md': 'acp-agent app composition',

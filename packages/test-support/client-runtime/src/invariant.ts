@@ -1,13 +1,13 @@
 /**
- * Package-owned invariant companion for `@deepseek-ai/dsh-client-test-runtime`.
- * @module @deepseek-ai/dsh-client-test-runtime/invariant
+ * Package-owned invariant companion for `@clocky/clocky-client-test-runtime`.
+ * @module @clocky/clocky-client-test-runtime/invariant
  */
 
 /* jscpd:ignore-start */
-import type { Context } from '@deepseek-ai/cordis'
-import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { Context } from '@clocky/cordis'
+import type { InvariantInstaller } from '@clocky/clocky-invariants'
 
-const PACKAGE_NAME = '@deepseek-ai/dsh-client-test-runtime'
+const PACKAGE_NAME = '@clocky/clocky-client-test-runtime'
 
 /** Cordis companion plugin name. */
 export const name = 'client-test-runtime-invariant'

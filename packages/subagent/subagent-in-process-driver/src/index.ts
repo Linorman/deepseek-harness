@@ -8,15 +8,15 @@
  * composes and drives them directly, so this driver owns exactly one turn with
  * one result.
  *
- * @module @deepseek-ai/dsh-subagent-in-process-driver
+ * @module @clocky/clocky-subagent-in-process-driver
  */
 
 import { randomUUID } from 'node:crypto'
-import type { Context } from '@deepseek-ai/cordis'
-import { foldConsumedWork } from '@deepseek-ai/dsh-agent'
-import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent'
-import { SessionId, type SessionEvent, type TurnEndReason } from '@deepseek-ai/dsh-session'
-import { createUserMessage, type ContentBlock } from '@deepseek-ai/dsh-llm'
+import type { Context } from '@clocky/cordis'
+import { foldConsumedWork } from '@clocky/clocky-agent'
+import type { Agent, AgentHandle } from '@clocky/clocky-agent'
+import { SessionId, type SessionEvent, type TurnEndReason } from '@clocky/clocky-session'
+import { createUserMessage, type ContentBlock } from '@clocky/clocky-llm'
 import {
   appendDelegatedPolicyOverrides,
   applyChildComposition,
@@ -26,14 +26,14 @@ import {
   finalAssistantOutput,
   resolveChildAgentOptions,
   resolveChildDepth,
-} from '@deepseek-ai/dsh-subagent'
+} from '@clocky/clocky-subagent'
 import type {
   ResolvedSubagentStartRequest,
   SubagentDescriptorData,
   SubagentResult,
   SubagentRun,
   SubagentStopReason,
-} from '@deepseek-ai/dsh-subagent'
+} from '@clocky/clocky-subagent'
 import {
   attachStructuredRuntime,
   type StructuredAttachment,

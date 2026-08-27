@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import Include from '@deepseek-ai/cordis-plugin-include'
+import { Context } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import Include from '@clocky/cordis-plugin-include'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import LlmRuntime, { createUserMessage, LlmAdapter  } from '@deepseek-ai/dsh-llm'
-import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import SessionTitleService from '@deepseek-ai/dsh-session-title'
-import * as providerPlugin from '@deepseek-ai/dsh-session-title-first-prompt-llm'
+import LlmRuntime, { createUserMessage, LlmAdapter  } from '@clocky/clocky-llm'
+import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
+import SessionStore, { SessionId } from '@clocky/clocky-session'
+import SessionTitleService from '@clocky/clocky-session-title'
+import * as providerPlugin from '@clocky/clocky-session-title-first-prompt-llm'
 
 let root: string | undefined
 let context: Context | undefined
@@ -33,17 +33,17 @@ afterEach(async () => {
 })
 
 async function loadComposition(): Promise<Context> {
-  root = await mkdtemp(join(tmpdir(), 'dsh-title-loader-'))
+  root = await mkdtemp(join(tmpdir(), 'clocky-title-loader-'))
   const configPath = join(root, 'cordis.yml')
   await writeFile(configPath, [
-    "- name: '@deepseek-ai/dsh-llm'",
-    "- name: '@deepseek-ai/dsh-session'",
-    "- name: '@deepseek-ai/dsh-session-title'",
+    "- name: '@clocky/clocky-llm'",
+    "- name: '@clocky/clocky-session'",
+    "- name: '@clocky/clocky-session-title'",
     '  config:',
     '    fallbackMaxWords: 5',
     '    fallbackMaxBytes: 40',
     '    maxTitleBytes: 80',
-    "- name: '@deepseek-ai/dsh-session-title-first-prompt-llm'",
+    "- name: '@clocky/clocky-session-title-first-prompt-llm'",
     '  config:',
     '    targetWords: 5',
     '    targetCjkCharacters: 10',
@@ -60,10 +60,10 @@ async function loadComposition(): Promise<Context> {
   await context.plugin(Loader)
   context.loader.builtins.include = Include
   const modules = new Map<string, unknown>([
-    ['@deepseek-ai/dsh-llm', LlmRuntime],
-    ['@deepseek-ai/dsh-session', SessionStore],
-    ['@deepseek-ai/dsh-session-title', SessionTitleService],
-    ['@deepseek-ai/dsh-session-title-first-prompt-llm', providerPlugin],
+    ['@clocky/clocky-llm', LlmRuntime],
+    ['@clocky/clocky-session', SessionStore],
+    ['@clocky/clocky-session-title', SessionTitleService],
+    ['@clocky/clocky-session-title-first-prompt-llm', providerPlugin],
   ])
   context.loader.internal = {
     version: 'v2',

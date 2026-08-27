@@ -45,16 +45,14 @@
   - text: Context injection AGENTS.md
 - img
 - text: permission preset read-only
-- 'button "feedback Feedback recorded for session {{seededId}} Anonymous user: {{uuid}}. Session sharing is not configured." [expanded]':
-  - img
-  - text: "feedback Feedback recorded for session {{seededId}} Anonymous user: {{uuid}}. Session sharing is not configured."
-- text: "Feedback recorded for session {{seededId}} Anonymous user: {{uuid}}. Session sharing is not configured."
+- img
+- text: feedback Feedback recorded for session {{seededId}}. Session sharing is not configured.
 - textbox "Message the agent"
 - button "Commands":
   - img
 - 'button "Access mode, current: Read Only"': Read Only
-- button "Select model, current DeepSeek-V4-Flash":
-  - text: DeepSeek-V4-Flash
+- button "Select model, current Test Model":
+  - text: Test Model
   - img
 - button "Send message" [disabled]
 - text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 98% Input 15.8K tok · Output 135 tok

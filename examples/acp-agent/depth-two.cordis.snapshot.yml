@@ -1,15 +1,15 @@
 # Keyless counterpart to depth-two.cordis.yml: apply the depth patch and replace
 # the live adapter with per-session replay.
 - id: base
-  name: '@deepseek-ai/cordis-plugin-include'
+  name: '@clocky/cordis-plugin-include'
   config:
     path: ./cordis.yml
     patches:
-      - id: llm-deepseek
-        name: '@deepseek-ai/dsh-llm-deepseek'
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
         disabled: true
       - id: sandbox
-        name: '@deepseek-ai/dsh-sandbox-local'
+        name: '@clocky/clocky-sandbox-local'
         config:
           runnerCommand:
             - bash
@@ -19,21 +19,21 @@
           runnerFailureSignatures:
             - 'passthrough-runner: profile rejected'
       - id: tool-subagent
-        name: '@deepseek-ai/dsh-tool-subagent'
+        name: '@clocky/clocky-tool-subagent'
         config:
           provider: spawn
           toolName: subagent
           backgroundMode: continuable
           maxDepth: 2
-      # Re-pin the recorded model: cordis.yml ships deepseek-v4-pro, but this
+      # Re-pin the recorded model: cordis.yml ships test-model-pro, but this
       # scenario's corpus was captured on flash. A config patch replaces the
       # whole app config, so the base fields are restated verbatim.
       - id: acp-agent
-        name: '@deepseek-ai/dsh-acp-demo'
+        name: '@clocky/clocky-acp-demo'
         config:
-          provider: deepseek-official
-          model: deepseek-v4-flash
-          persistenceRoot: !!js process.env.DSH_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          provider: test-provider
+          model: test-model
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
           persistenceCompression: none
           workspaceContext:
             maxBytes: 65536
@@ -43,11 +43,11 @@
             Verify your work by running the code or tests. Keep answers brief and factual.
       - insert:
           - id: llm-replay
-            name: '@deepseek-ai/dsh-llm-replay'
+            name: '@clocky/clocky-llm-replay'
             config:
               providers:
-                - id: deepseek-official
-                  name: DeepSeek
+                - id: test-provider
+                  name: Test Provider
                   models:
-                    - id: deepseek-v4-flash
-                    - id: deepseek-v4-pro
+                    - id: test-model
+                    - id: test-model-pro

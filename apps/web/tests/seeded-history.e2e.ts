@@ -6,8 +6,8 @@
 // fails loud on the open llm seam). The cold session also carries keyless
 // command-row surfaces: the seeded manual `/compact` lifecycle folds into its
 // checkpoint, an Access-chip pick later runs `/permission` on the host, and
-// `/feedback` pins its expandable correlation ids. The seed is a recorded
-// fixture under the same record discipline as every other: DSH_SNAPSHOT=record drives the turn
+// `/feedback` pins its expandable session/status acknowledgement. The seed is a recorded
+// fixture under the same record discipline as every other: CLOCKY_SNAPSHOT=record drives the turn
 // live through the composer (real read tool against seeded workspace files)
 // and harvests seed.jsonl; replay/refresh seed it cold and only render.
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
@@ -15,11 +15,11 @@ import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, vi } from 'vitest'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
-import { deriveEventMessage, SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import type { TokenMeter } from '@deepseek-ai/dsh-token-meter'
+import { createUserMessage } from '@clocky/clocky-llm'
+import type { ContentBlock, Message } from '@clocky/clocky-llm'
+import { deriveEventMessage, SessionId } from '@clocky/clocky-session'
+import type { SessionEvent } from '@clocky/clocky-session'
+import type { TokenMeter } from '@clocky/clocky-token-meter'
 import { join } from 'node:path'
 import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
@@ -487,10 +487,10 @@ describe('web e2e: seeded history renders through cold resume', () => {
     await compareOrRefreshGolden(COMMAND_ROW_EXPECTED, snapshot, MODE)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('reports full feedback correlation ids in an expandable two-line row', async () => {
+  it.skipIf(MODE === 'record')('reports the session id and sharing status in a command row', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-seeded-feedback-row'))
-    const previousDshHome = process.env.DSH_HOME
-    process.env.DSH_HOME = scaffold.harnessHome
+    const previousClockyHome = process.env.CLOCKY_HOME
+    process.env.CLOCKY_HOME = scaffold.harnessHome
     try {
       const input = page.locator('textarea').first()
       await input.fill('/feedback the diff view is unreadable')
@@ -499,29 +499,21 @@ describe('web e2e: seeded history renders through cold resume', () => {
         hasText: `Feedback recorded for session ${SEED_ID}`,
       })
       await row.waitFor({ timeout: 10_000 })
-      const disclosure = row.locator('[data-expandable]')
-      expect(await disclosure.getAttribute('aria-expanded')).toBe('false')
-      await disclosure.click()
-      await expect.poll(() => disclosure.getAttribute('aria-expanded')).toBe('true')
 
       const agent = scaffold.ctx.agents.get(SessionId(SEED_ID))
       if (agent === undefined) throw new Error('seeded session did not attach an agent')
       const done = agent.session.events.filter(event => event.type === 'command/done').at(-1)
       if (done?.type !== 'command/done') throw new Error('feedback command did not settle')
-      const [sessionLine, userLine, extraLine] = done.data.text?.split('\n') ?? []
-      expect(sessionLine).toBe(`Feedback recorded for session ${SEED_ID}`)
-      expect(userLine).toMatch(/^Anonymous user: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\./i)
-      expect(extraLine).toBeUndefined()
-      const userId = userLine?.match(/^Anonymous user: ([0-9a-f-]+)/i)?.[1]
-      if (userId === undefined) throw new Error('feedback command omitted the user id')
+      expect(done.data.text).toBe(
+        `Feedback recorded for session ${SEED_ID}. Session sharing is not configured.`,
+      )
 
       const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
         .split(SEED_ID).join('{{seededId}}')
-        .split(userId).join('{{userId}}')
       await compareOrRefreshGolden(FEEDBACK_ROW_EXPECTED, snapshot, MODE)
     } finally {
-      if (previousDshHome === undefined) delete process.env.DSH_HOME
-      else process.env.DSH_HOME = previousDshHome
+      if (previousClockyHome === undefined) delete process.env.CLOCKY_HOME
+      else process.env.CLOCKY_HOME = previousClockyHome
     }
   }, 60_000)
 

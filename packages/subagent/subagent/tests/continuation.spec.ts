@@ -2,19 +2,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
-import type { GenerateOptions, MessageId, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { CallId, createUserMessage, LlmAdapter } from '@deepseek-ai/dsh-llm'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
+import { Context } from '@clocky/cordis'
+import type { Agent } from '@clocky/clocky-agent'
+import AgentLoop from '@clocky/clocky-agent-loop'
+import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import { SessionId } from '@clocky/clocky-session'
+import type { SessionEvent } from '@clocky/clocky-session'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import * as SubagentSpawn from '@clocky/clocky-subagent-spawn-in-process'
+import * as SubagentFork from '@clocky/clocky-subagent-fork-in-process'
+import type { GenerateOptions, MessageId, StreamChunk } from '@clocky/clocky-llm'
+import { CallId, createUserMessage, LlmAdapter } from '@clocky/clocky-llm'
+import { defineTool } from '@clocky/clocky-tools'
+import InvariantRegistry from '@clocky/clocky-invariants'
 import { MockAdapter, maxTokensResponse, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import SubagentRuntime, {
   SubagentError,
@@ -71,7 +71,7 @@ async function setupWith(adapter: LlmAdapter, options: { persistence?: boolean }
   let disposePersistence: (() => Promise<void>) | undefined
   let root: string | undefined
   if (options.persistence !== false) {
-    root = mkdtempSync(join(tmpdir(), 'dsh-subagent-continuation-'))
+    root = mkdtempSync(join(tmpdir(), 'clocky-subagent-continuation-'))
     const persistedRoot = root
     const persistenceFiber = await ctx.plugin(JsonlSessionPersistence, { root })
     disposePersistence = () => persistenceFiber.dispose()
@@ -1764,7 +1764,7 @@ describe('continuable settlement delivery', () => {
       { chunks: textResponse('parent ack') },
     ])
     const { ctx, parent } = await setupWith(adapter)
-    // The shipped durability checkpoint (`dsh-session-checkpoint-policy`) is
+    // The shipped durability checkpoint (`clocky-session-checkpoint-policy`) is
     // fail-closed at the step boundary, so a rejected write ends the turn after
     // it claimed its messages and before it entered a step.
     ctx.on('agent/pre-step', async ({ agent: subject, turn }, next) => {
@@ -2446,7 +2446,7 @@ describe('continuable errors', () => {
     const adapter = new GatedAdapter([{ chunks: textResponse('child'), gate: hold.promise }])
     const ctx = new Context()
     await mountAgentLoopTestDependencies(ctx)
-    const root = mkdtempSync(join(tmpdir(), 'dsh-subagent-continuation-'))
+    const root = mkdtempSync(join(tmpdir(), 'clocky-subagent-continuation-'))
     const persistenceFiber = await ctx.plugin(JsonlSessionPersistence, { root })
     cleanups.push(async () => {
       await persistenceFiber.dispose()
