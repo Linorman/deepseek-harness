@@ -298,7 +298,7 @@ describe('workspace context instruction discovery', () => {
     try {
       await writeFile(homeFile, 'file')
 
-      const files = await discoverBaselineInstructionFiles({ cwd: root, clockyHome: homeFile })
+      const files = await discoverBaselineInstructionFiles({ cwd: root, projectRoot: root, clockyHome: homeFile })
 
       expect(files).toEqual([])
     } finally {
@@ -591,7 +591,7 @@ describe('workspace context instruction discovery', () => {
       await write(join(root, 'AGENTS.md'), 'parent without marker')
       await write(join(cwd, 'AGENTS.md'), 'cwd without marker')
 
-      const files = await discoverBaselineInstructionFiles({ cwd })
+      const files = await discoverBaselineInstructionFiles({ cwd, projectRootMarkers: [] })
 
       expect(files.map(file => file.displayPath)).toEqual(['AGENTS.md'])
       expect(files.map(file => file.absolutePath)).toEqual([join(cwd, 'AGENTS.md')])
@@ -609,7 +609,7 @@ describe('workspace context instruction discovery', () => {
       await write(join(envHome, 'AGENTS.md'), 'env global rule')
       vi.stubEnv('CLOCKY_HOME', envHome)
 
-      const files = await discoverBaselineInstructionFiles({ cwd: root })
+      const files = await discoverBaselineInstructionFiles({ cwd: root, projectRoot: root })
 
       expect(files).toEqual([{ absolutePath: join(envHome, 'AGENTS.md'), displayPath: '$CLOCKY_HOME/AGENTS.md' }])
     } finally {
@@ -630,7 +630,7 @@ describe('workspace context instruction discovery', () => {
       vi.resetModules()
       vi.doMock('node:os', () => ({ homedir: () => home }))
       const isolated = await import('@clocky/clocky-agent-instructions')
-      const files = await isolated.discoverBaselineInstructionFiles({ cwd: root })
+      const files = await isolated.discoverBaselineInstructionFiles({ cwd: root, projectRoot: root })
 
       expect(files.map(file => file.displayPath)).toEqual(['~/.clocky/AGENTS.md'])
     } finally {
@@ -651,7 +651,7 @@ describe('workspace context instruction discovery', () => {
       vi.resetModules()
       vi.doMock('node:os', () => ({ homedir: () => home }))
       const isolated = await import('@clocky/clocky-agent-instructions')
-      const files = await isolated.discoverBaselineInstructionFiles({ cwd: root, clockyHome: '~/.clocky' })
+      const files = await isolated.discoverBaselineInstructionFiles({ cwd: root, projectRoot: root, clockyHome: '~/.clocky' })
 
       expect(files).toEqual([{ absolutePath: join(home, '.clocky/AGENTS.md'), displayPath: '~/.clocky/AGENTS.md' }])
     } finally {
@@ -2412,7 +2412,7 @@ describe('workspace context request injection', () => {
     const home = await tempRepo()
     try {
       await write(join(home, 'AGENTS.md'), 'global custom rule')
-      const files = await discoverBaselineInstructionFiles({ cwd: root, clockyHome: home })
+      const files = await discoverBaselineInstructionFiles({ cwd: root, projectRoot: root, clockyHome: home })
 
       expect(files.map(file => file.displayPath)).toEqual(['$CLOCKY_HOME/AGENTS.md'])
     } finally {

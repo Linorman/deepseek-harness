@@ -1,15 +1,10 @@
-/**
- * A session's agent preset is fixed at creation. The gateway records the
- * resolved id on the header and refuses to adopt the identity under a different
- * one, because the session's history was produced under that preset's tools:
- * rebuilding it differently would replay tool calls the new agent cannot make.
- */
+/** Gateway behavior for agent-preset operations on trusted live-agent fixtures. */
 
 import { mkdtempSync, realpathSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
-import AgentRegistry, { type AgentFactory } from '@clocky/clocky-agent'
+import AgentRegistry, { openAgentWorkspaceLease, type AgentFactory } from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import SessionStore, { SessionId, type Session } from '@clocky/clocky-session'
 import UserQuestionService from '@clocky/clocky-user-questions'
@@ -140,116 +135,20 @@ async function harness(
     cwd,
     ...options.defaults,
   })
-  return { api, ctx, cwd }
+  const createAgent = async (sessionId: SessionId, agentPreset?: string): Promise<void> => {
+    await ctx.agents.create({
+      sessionId,
+      meta: {
+        cwd,
+        ...agentPreset === undefined ? {} : { agentPreset },
+      },
+      setup: async (agentCtx) => {
+        if (agentPreset !== undefined) await ctx.get('agentPresets')?.mount(agentCtx, agentPreset)
+      },
+    })
+  }
+  return { api, ctx, cwd, createAgent }
 }
-
-describe('session.create with an agent preset', () => {
-  it('records the resolved preset on the session header', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-
-    const created = await api.sessions.create(request({ sessionId: SessionId('s1'), agentPreset: 'minimal' }))
-
-    expect(created.result.ok).toBe(true)
-    expect(ctx.sessions.get(SessionId('s1'))?.header.agentPreset).toBe('minimal')
-  })
-
-  it('records the default when the caller names none', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-
-    await api.sessions.create(request({ sessionId: SessionId('s2') }))
-
-    expect(ctx.sessions.get(SessionId('s2'))?.header.agentPreset).toBe('standard')
-  })
-
-  it('rejects an unknown preset and names the ones that exist', async () => {
-    const { api } = await harness(['standard'])
-
-    const response = await api.sessions.create(request({ sessionId: SessionId('s3'), agentPreset: 'nope' }))
-
-    expect(response.result.ok).toBe(false)
-    if (response.result.ok) throw new Error('unreachable')
-    expect(response.result.error.code).toBe('agent-preset-not-found')
-  })
-
-  it('refuses to adopt a live session under a different preset', async () => {
-    const { api } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('s4'), agentPreset: 'minimal' }))
-
-    const response = await api.sessions.create(request({ sessionId: SessionId('s4'), agentPreset: 'standard' }))
-
-    expect(response.result.ok).toBe(false)
-    if (response.result.ok) throw new Error('unreachable')
-    expect(response.result.error.code).toBe('agent-preset-conflict')
-    expect(response.result.error.details).toEqual({
-      sessionId: 's4',
-      requestedPreset: 'standard',
-      existingPreset: 'minimal',
-    })
-  })
-
-  it('adopts a live session under the preset it SWITCHED to', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('s4b'), agentPreset: 'standard' }))
-    // Exactly what `agentPreset.select` leaves behind on a blank session: the
-    // header keeps the creation fact, the log states what the agent runs.
-    ctx.sessions.get(SessionId('s4b'))?.append('agent-preset/selected', { agentPreset: 'minimal' })
-
-    const adopted = await api.sessions.create(request({ sessionId: SessionId('s4b'), agentPreset: 'minimal' }))
-    const stale = await api.sessions.create(request({ sessionId: SessionId('s4b'), agentPreset: 'standard' }))
-
-    // Comparing against the header would invert both answers: the preset the
-    // session actually runs would be refused, and the one it left would pass.
-    expect(adopted.result.ok).toBe(true)
-    // The echo has to name the same preset the adoption just accepted, or the
-    // client labels the session with one it has already left — and disagrees
-    // with the row `session.list` serves for it.
-    if (!adopted.result.ok) throw new Error('unreachable')
-    expect(adopted.result.value).toMatchObject({ agentPreset: 'minimal' })
-    expect(stale.result.ok).toBe(false)
-    if (stale.result.ok) throw new Error('unreachable')
-    expect(stale.result.error.details).toMatchObject({ existingPreset: 'minimal' })
-  })
-
-  it('adopts a live session unchanged when the caller names no preset', async () => {
-    const { api } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('s5'), agentPreset: 'minimal' }))
-
-    // Reconnecting and retrying a create must stay ordinary operations.
-    const response = await api.sessions.create(request({ sessionId: SessionId('s5') }))
-
-    expect(response.result.ok).toBe(true)
-  })
-
-  it('leaves the header preset-less when no roster is composed', async () => {
-    const { api, ctx } = await harness()
-
-    await api.sessions.create(request({ sessionId: SessionId('s6') }))
-
-    expect(ctx.sessions.get(SessionId('s6'))?.header.agentPreset).toBeUndefined()
-  })
-
-  it('says why a preset-less session cannot be adopted under one', async () => {
-    // Two callers reach this: a deployment that composes no roster, and a
-    // session created before one existed. Both record no preset, so naming
-    // any is a conflict rather than an adoption — the history was produced
-    // under a composition this roster cannot name. The message has to say
-    // that, because "already runs agent preset undefined" reads as a bug.
-    const { api } = await harness()
-    await api.sessions.create(request({ sessionId: SessionId('s7') }))
-
-    const response = await api.sessions.create(request({ sessionId: SessionId('s7'), agentPreset: 'standard' }))
-
-    expect(response.result.ok).toBe(false)
-    if (response.result.ok) throw new Error('unreachable')
-    expect(response.result.error.code).toBe('agent-preset-conflict')
-    expect(response.result.error.message).toContain('records no agent preset')
-    expect(response.result.error.details).toEqual({
-      sessionId: 's7',
-      requestedPreset: 'standard',
-      existingPreset: undefined,
-    })
-  })
-})
 
 /**
  * A capability a preset mounts is reachable from nowhere the host normally
@@ -259,8 +158,8 @@ describe('session.create with an agent preset', () => {
  */
 describe('a capability the session\'s preset mounts', () => {
   it('serves the goal RPC from the session\'s own goal service', async () => {
-    const { api } = await harness(['standard'])
-    await api.sessions.create(request({ sessionId: SessionId('g1'), agentPreset: 'standard' }))
+    const { api, createAgent } = await harness(['standard'])
+    await createAgent(SessionId('g1'), 'standard')
     const ref = { id: GoalId('goal-1'), revision: 1 }
     const paused: unknown[] = []
     services.set('g1', {
@@ -276,8 +175,8 @@ describe('a capability the session\'s preset mounts', () => {
   })
 
   it('serves the skill catalog from the session\'s own registry', async () => {
-    const { api } = await harness(['standard'])
-    await api.sessions.create(request({ sessionId: SessionId('k1'), agentPreset: 'standard' }))
+    const { api, createAgent } = await harness(['standard'])
+    await createAgent(SessionId('k1'), 'standard')
     services.set('k1', {
       skills: {
         list: () => Promise.resolve([{
@@ -297,8 +196,8 @@ describe('a capability the session\'s preset mounts', () => {
   })
 
   it('says so when no composition mounts the capability at all', async () => {
-    const { api } = await harness(['standard'])
-    await api.sessions.create(request({ sessionId: SessionId('n1'), agentPreset: 'standard' }))
+    const { api, createAgent } = await harness(['standard'])
+    await createAgent(SessionId('n1'), 'standard')
 
     const response = await api.skills.list(request({ sessionId: SessionId('n1') }))
 
@@ -343,8 +242,8 @@ describe('agentPreset.list', () => {
 
 describe('agentPreset.select', () => {
   it('recomposes a blank session', async () => {
-    const { api } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-1'), agentPreset: 'standard' }))
+    const { api, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('sel-1'), 'standard')
 
     const response = await api.agentPresets.select(
       request({ sessionId: SessionId('sel-1'), agentPreset: 'minimal' }))
@@ -355,8 +254,8 @@ describe('agentPreset.select', () => {
   })
 
   it('records the switch in the log, and the list reads it back', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-log'), agentPreset: 'standard' }))
+    const { api, ctx, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('sel-log'), 'standard')
 
     await api.agentPresets.select(
       request({ sessionId: SessionId('sel-log'), agentPreset: 'minimal' }))
@@ -375,8 +274,8 @@ describe('agentPreset.select', () => {
   })
 
   it('forwards the owner event so clients can drop that session\'s catalogs', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-frame'), agentPreset: 'standard' }))
+    const { api, ctx, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('sel-frame'), 'standard')
     // The host-stream opener reads the committed-workspace baseline; this
     // spec owns preset identity, so the stub suffices (api-proxy-commands
     // precedent).
@@ -408,8 +307,8 @@ describe('agentPreset.select', () => {
   })
 
   it('serializes two concurrent selects on one session', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-race'), agentPreset: 'standard' }))
+    const { api, ctx, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('sel-race'), 'standard')
 
     // Both pass the blank check; unserialized, the second unmount finds no
     // record because the first already removed it, and two compositions end up
@@ -428,8 +327,8 @@ describe('agentPreset.select', () => {
   })
 
   it('refuses once the conversation has started', async () => {
-    const { api, ctx } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-2'), agentPreset: 'standard' }))
+    const { api, ctx, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('sel-2'), 'standard')
     // One turn is enough: the history from here on was produced under
     // `standard`'s tools, and a swap would strand those tool calls.
     ctx.sessions.get(SessionId('sel-2'))?.append('turn/start', { turn: 0 })
@@ -443,8 +342,8 @@ describe('agentPreset.select', () => {
   })
 
   it('reports an unknown preset without disturbing the session', async () => {
-    const { api } = await harness(['standard'])
-    await api.sessions.create(request({ sessionId: SessionId('sel-3') }))
+    const { api, createAgent } = await harness(['standard'])
+    await createAgent(SessionId('sel-3'), 'standard')
 
     const response = await api.agentPresets.select(
       request({ sessionId: SessionId('sel-3'), agentPreset: 'nope' }))
@@ -455,8 +354,8 @@ describe('agentPreset.select', () => {
   })
 
   it('reports a deployment that composes no presets', async () => {
-    const { api } = await harness()
-    await api.sessions.create(request({ sessionId: SessionId('sel-4') }))
+    const { api, createAgent } = await harness()
+    await createAgent(SessionId('sel-4'))
 
     const response = await api.agentPresets.select(
       request({ sessionId: SessionId('sel-4'), agentPreset: 'anything' }))
@@ -620,8 +519,38 @@ describe('opening a preset directory', () => {
 })
 
 describe('skills over the layered host registry', () => {
-  it('passes the live agent as the view scope to the host registry', async () => {
+  it('uses a live Team allocation root for workspace-sensitive skill lookup', async () => {
     const { api, ctx } = await harness(['standard'])
+    const seen: Array<{ cwd?: string; scope?: unknown }> = []
+    ctx.provide('skills', {
+      list: (options: { cwd?: string; scope?: unknown }) => {
+        seen.push(options)
+        return Promise.resolve([])
+      },
+    } as never)
+    const sessionId = SessionId('h-workspace')
+    await ctx.agents.create({
+      sessionId,
+      meta: { agentPreset: 'standard' },
+      setup: async (agentCtx) => {
+        await ctx.get('agentPresets')?.mount(agentCtx, 'standard')
+      },
+    })
+    const agent = ctx.agents.get(sessionId)
+    if (agent === undefined) throw new Error('workspace skill fixture did not create its Agent')
+    const lease = openAgentWorkspaceLease(agent)
+    const disposeRoot = lease.publishRoot('/workspace/team-allocation')
+
+    const response = await api.skills.list(request({ sessionId }))
+
+    expect(response.result).toMatchObject({ ok: true, value: { skills: [] } })
+    expect(seen).toEqual([{ cwd: '/workspace/team-allocation', scope: agent }])
+    disposeRoot()
+    lease.dispose()
+  })
+
+  it('passes the live agent as the view scope to the host registry', async () => {
+    const { api, ctx, createAgent } = await harness(['standard'])
     const seen: unknown[] = []
     ctx.provide('skills', {
       list: (options: { scope?: unknown }) => {
@@ -629,7 +558,7 @@ describe('skills over the layered host registry', () => {
         return Promise.resolve([])
       },
     } as never)
-    await api.sessions.create(request({ sessionId: SessionId('h1'), agentPreset: 'standard' }))
+    await createAgent(SessionId('h1'), 'standard')
 
     const response = await api.skills.list(request({ sessionId: SessionId('h1') }))
 
@@ -674,8 +603,8 @@ describe('skills over the layered host registry', () => {
 
 describe('session.history presenter scope', () => {
   it('asks the roster for the RECORDED preset\'s standing key on a cold read', async () => {
-    const { api } = await harness(['standard', 'minimal'])
-    await api.sessions.create(request({ sessionId: SessionId('p1'), agentPreset: 'minimal' }))
+    const { api, createAgent } = await harness(['standard', 'minimal'])
+    await createAgent(SessionId('p1'), 'minimal')
     // Cold: creation registered a live agent in this harness, so simulate the
     // cold path by asking for a session only persistence knows... the harness
     // has no persistence, so read the live one and assert no roster query.

@@ -63,17 +63,12 @@ function providePresentation(ctx: Context): PresentationCapture {
 }
 
 /** Boot the plugin over fake slash/connection faces; returns the captured source and its ctx. */
-async function bench(list: ListFn, addressed?: SessionId, invoke?: InvokeFn) {
+async function bench(list: ListFn, invoke?: InvokeFn) {
   const ctx = new Context()
   let captured: InputTriggerSource | undefined
   ctx.provide('inputTriggers', { registerSource: (src: InputTriggerSource) => { captured = src; return () => {} } })
   const defaultInvoke: InvokeFn = () => Promise.resolve({ result: { ok: true as const, value: { accepted: true as const } } })
   ctx.provide('connection', { api: { skills: { list, invoke: invoke ?? defaultInvoke } } })
-  ctx.provide('sessions', {
-    subagentAddress: (id: SessionId) => id === addressed
-      ? { parentSessionId: sid('parent'), childSessionId: id, mode: 'continuable' as const }
-      : undefined,
-  })
   new TestRemote(ctx)
   providePresentation(ctx)
   await ctx.plugin({ inject: [...inject], apply }).await()
@@ -107,14 +102,13 @@ const req = (query: string, signal?: AbortSignal) =>
 
 describe('apply', () => {
   it('declares the services it binds', () => {
-    expect(inject).toEqual(['inputTriggers', 'connection', 'sessions', 'slots', 'locale', 'remote'])
+    expect(inject).toEqual(['inputTriggers', 'connection', 'slots', 'locale', 'remote'])
   })
 
   it('registers the dedicated skill row and its locale dictionaries', async () => {
     const ctx = new Context()
     ctx.provide('inputTriggers', { registerSource: () => () => {} })
     ctx.provide('connection', { api: { skills: { list: listOk(CATALOG) } } })
-    ctx.provide('sessions', { subagentAddress: () => undefined })
     new TestRemote(ctx)
     const presentation = providePresentation(ctx)
     await ctx.plugin({ inject: [...inject], apply }).await()
@@ -190,13 +184,6 @@ describe('candidates: sessionId addressing', () => {
       .rejects.toThrow('skill.list failed: internal: boom')
   })
 
-  it('does not fetch Agent-bound skills for an addressed child', async () => {
-    const { list, payloads } = countingList()
-    const { source } = await bench(list, sid('child'))
-    await expect(source.candidates(proj('child'), req(''))).resolves.toEqual([])
-    source.warm!(proj('child'))
-    expect(payloads).toEqual([])
-  })
 })
 
 describe('catalog cache', () => {

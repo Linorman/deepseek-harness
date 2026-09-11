@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SessionEvent, SurfaceEvent, SurfaceEventType } from '@clocky/clocky-session'
+import type { SessionEvent, SurfaceEvent, SurfaceEventType, TeamChannelViewEventData } from '@clocky/clocky-session'
 import {
   Session,
   SessionId,
@@ -8,6 +8,7 @@ import {
   isReplacementSurfaceEvent,
   isSurfaceEligibleType,
   isSurfaceEvent,
+  snapshotSessionEvent,
 } from '@clocky/clocky-session'
 import { SurfaceManager } from '@clocky/clocky-session/surface'
 import {
@@ -75,6 +76,23 @@ function toolResultEvent(
     },
     surfaceOp,
     ...sourceEventSeqs === undefined ? {} : { sourceEventSeqs },
+  }
+}
+
+/** Build one exact non-direct Team channel projection already selected for delivery. */
+function teamChannelViewData(): TeamChannelViewEventData {
+  return {
+    teamId: 'team-view',
+    channelId: 'channel-view',
+    adapter: { type: 'discussion', version: 1 },
+    viewPolicy: { type: 'recent-window', version: 1 },
+    triggeringEnvelopeId: 'envelope-trigger',
+    sourceEnvelopeIds: ['envelope-first', 'envelope-trigger'],
+    delivery: 'turn',
+    content: [{ type: 'text', text: 'The stored channel view.' }],
+    causationId: 'envelope-cause',
+    taskId: 'task-view',
+    review: { attemptId: 'attempt-view', reviewRevision: 3, reviewerId: 'reviewer-view' },
   }
 }
 
@@ -703,6 +721,90 @@ describe('SurfaceManager', () => {
 })
 
 describe('deriveMessages with surface', () => {
+  it('replays a channel-only context view without inventing task or reply provenance', () => {
+    const s = Session.create(SessionId('channel-only-view'))
+    const source = teamChannelViewData()
+    const event = s.append('team/channel-view', {
+      teamId: source.teamId,
+      channelId: source.channelId,
+      adapter: source.adapter,
+      viewPolicy: source.viewPolicy,
+      triggeringEnvelopeId: source.triggeringEnvelopeId,
+      sourceEnvelopeIds: source.sourceEnvelopeIds,
+      delivery: 'context',
+      content: [{ type: 'text', text: 'Shared context without a task or reply.' }],
+    }, { surfaceOp: 'append' })
+
+    const restored = Session.create(s.id, [snapshotSessionEvent(event)])
+    expect(restored.deriveMessages()).toEqual(s.deriveMessages())
+    const message = restored.deriveMessages()[0]!
+    expect(message.content).toEqual([{ type: 'text', text: 'Shared context without a task or reply.' }])
+    expect(message.source).toMatchObject({
+      kind: 'team-channel-view',
+      delivery: 'context',
+      triggeringEnvelopeId: source.triggeringEnvelopeId,
+    })
+    expect(message.source).not.toHaveProperty('causationId')
+    expect(message.source).not.toHaveProperty('taskId')
+    expect(message.source).not.toHaveProperty('review')
+  })
+
+  it('derives one user message from stored Team channel-view content and provenance', () => {
+    const s = Session.create(SessionId('team-channel-view'))
+    const content = [{ type: 'text' as const, text: 'The stored channel view.' }]
+    const data = { ...teamChannelViewData(), content }
+    const event = s.append('team/channel-view', data, { surfaceOp: 'append' })
+    data.content[0]!.text = 'Mutated after append.'
+
+    expect(s.surface.nodes).toEqual([event.seq])
+    expect(s.deriveMessages()).toEqual([{
+      id: 'team-channel-view:["team-view","channel-view","envelope-trigger"]',
+      role: 'user',
+      content: [{ type: 'text', text: 'The stored channel view.' }],
+      source: {
+        kind: 'team-channel-view',
+        teamId: 'team-view',
+        channelId: 'channel-view',
+        adapter: { type: 'discussion', version: 1 },
+        viewPolicy: { type: 'recent-window', version: 1 },
+        triggeringEnvelopeId: 'envelope-trigger',
+        sourceEnvelopeIds: ['envelope-first', 'envelope-trigger'],
+        delivery: 'turn',
+        causationId: 'envelope-cause',
+        taskId: 'task-view',
+        review: { attemptId: 'attempt-view', reviewRevision: 3, reviewerId: 'reviewer-view' },
+      },
+    }])
+    expect(Object.isFrozen(s.deriveEventMessage(event))).toBe(true)
+    const snapshot = snapshotSessionEvent(event)
+    expect(Object.isFrozen(snapshot.data)).toBe(true)
+    expect(Object.isFrozen(snapshot.data.content)).toBe(true)
+  })
+
+  it('requires a surface marker and forbids ignorable Team channel views in a restored log', () => {
+    const data = teamChannelViewData()
+    const missingMarker = { type: 'team/channel-view', seq: 0, time: 1, data } as unknown as SessionEvent
+    expect(() => Session.create(SessionId('team-channel-view-marker'), [missingMarker]))
+      .toThrow(/team\/channel-view.*requires a surfaceOp marker/)
+
+    const ignorable = {
+      type: 'team/channel-view', seq: 0, time: 1, data, surfaceOp: 'append', ignorable: true,
+    } as unknown as SessionEvent
+    expect(() => Session.create(SessionId('team-channel-view-required'), [ignorable]))
+      .toThrow(/invalid event envelope/)
+  })
+
+  it('rejects malformed Team channel views at both append and restore boundaries', () => {
+    const invalid = { unexpected: true }
+    const session = Session.create(SessionId('invalid-team-channel-view'))
+    expect(() => session.append('team/channel-view', invalid as never, { surfaceOp: 'append' }))
+      .toThrow(/team\/channel-view/)
+    expect(session.events).toEqual([])
+    expect(() => Session.create(SessionId('invalid-restored-team-channel-view'), [{
+      type: 'team/channel-view', seq: 0, time: 1, data: invalid, surfaceOp: 'append',
+    } as never])).toThrow(/team\/channel-view/)
+  })
+
   it('uses the surface path when surface markers are present', () => {
     const s = surfaceSession()
     const messages = s.deriveMessages()

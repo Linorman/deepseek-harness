@@ -1,0 +1,47 @@
+{
+  "purpose": "Final source-based corrections to initial audit inputs. The main gap design and development plan incorporate these corrections; raw audit inputs preserve initial observations, not final implementation authority.",
+  "corrections": [
+    {
+      "subject": "Classification",
+      "finding": "Existing summary, Direct v4, admission, shared child saga, ranking, workspace loss and consult/discussion forms are not remaining functional gaps merely because a same-candidate matrix is missing. Such evidence work belongs under T items."
+    },
+    {
+      "subject": "Channel retry canonical equivalence",
+      "finding": "Consult null and exact-peer audiences, and discussion null and complete-peer audiences, normalize to the same canonical basic draft. Retry equality follows Hub samePostDraft including delivery/causation/correlation/task/trace/priority/ttl; not arbitrary raw JSON spelling. Direct protocol normalization remains its own rule.",
+      "source": "packages/team/team-channel-basic/src/basic.ts; packages/team/team-channel-admission/src/principal.ts; packages/team/team-hub/src/index.ts"
+    },
+    {
+      "subject": "Child commit order",
+      "finding": "startDelegatedTask creates requested task; beginTaskDelegation reserves child identity. Parent result admission precedes parent-service receipt, child quiescent/terminal completion, then parent settlement; distinct kill windows must remain distinct.",
+      "source": "packages/team/team-run/src/index.ts; packages/team/team-delegation/src/index.ts"
+    },
+    {
+      "subject": "Child integration",
+      "finding": "Existing assertTaskIntegration requires a completed sourceAttemptId in sourceTask.attemptHistory; child task schema requires empty attemptHistory. Directly naming a child task as integration source is rejected. Child artifact reading exists, but a child-result provenance extension is needed for direct formal integration.",
+      "source": "packages/team/team-hub/src/index.ts; packages/core/team/src/schema.ts"
+    },
+    {
+      "subject": "Bounded Team discovery",
+      "finding": "listTeamsPage limits visible output but still lists all stream metadata, sorts ids, and may load many archived Teams. Consumer pagination alone does not establish a total I/O/memory work bound. Current cursor is sorted-array position, not a snapshot-stable sequence.",
+      "source": "packages/team/team-hub/src/index.ts:2115; packages/storage/storage-log/src/index.ts:154"
+    },
+    {
+      "subject": "Workspace pulse provenance",
+      "finding": "Current observation.stage enum has no pulse. Periodic observations require an explicit provenance/stage decision and owning schema/fold/proof/audit updates; do not mislabel them as publish.",
+      "source": "packages/core/team/src/types.ts:400; packages/core/team/src/schema.ts"
+    },
+    {
+      "subject": "Workflow UI scope",
+      "finding": "Existing participant workflow projection UI can be developed independently from optional child-node support. Existing ordinary integration and human review/action forms must not be described as absent."
+    },
+    {
+      "subject": "Delegation documentation owner",
+      "finding": "TeamDelegation is a Consumer class/plugin, not a ctx.teamDelegation service. Documentation must add its package/consumer relationship without inventing a new Context service.",
+      "source": "packages/team/team-delegation/src/index.ts:31-38"
+    },
+    {
+      "subject": "Publication checks",
+      "finding": "Eight standalone publint CLI successes coexist with a repository publication-closure failure for supervisor HTTP protocol chunk. O-06 records the real artifact defect; limited checks do not override it."
+    }
+  ]
+}

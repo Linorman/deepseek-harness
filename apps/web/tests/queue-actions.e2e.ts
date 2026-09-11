@@ -13,16 +13,15 @@ import { afterEach, describe, expect, it, onTestFailed } from 'vitest'
 import { deriveReplayScript, parseSessionLog, type ReplayEntry } from '@clocky/clocky-llm-replay'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
-  launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
+  assertFixtureInventory, captureStableAria, closedSessionFixture, compareOrRefreshGolden,
+  launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/queue-actions', import.meta.url))
 const FIXTURE = fileURLToPath(new URL('./snapshots/live-interactions/session.jsonl', import.meta.url))
 const COLLAPSED_EXPECTED = join(SNAPSHOT_DIR, 'collapsed.expected.md')
 const EDITING_EXPECTED = join(SNAPSHOT_DIR, 'editing.expected.md')
-const LAYOUT_EXPECTED = join(SNAPSHOT_DIR, 'layout.expected.md')
 const PRESERVED_EXPECTED = join(SNAPSHOT_DIR, 'preserved.expected.md')
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
 const MODE = webSnapshotMode()
@@ -76,14 +75,22 @@ describe('web e2e: queue row actions', () => {
     await writeFile(overridePath, JSON.stringify(replay))
 
     const sessionEvents: SessionEvent[] = []
-    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, replayOverride: overridePath })
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true, replayFixture: FIXTURE, replayOverride: overridePath })
+    await seedSession(scaffold, closedSessionFixture(), 'queue-actions-web-e2e')
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     const tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
     onTestFailed(() => saveFailureShot(page, 'web-e2e-queue-actions'))
 
     const input = page.locator('textarea').first()
@@ -179,29 +186,36 @@ describe('web e2e: queue row actions', () => {
     await expect.poll(() => page.locator('[data-queue-dock]').count()).toBe(0)
   }, 120_000)
 
-  it.skipIf(MODE === 'record')('orders Todo before Goal and Queue on one responsive card column', async () => {
+  it.skipIf(MODE === 'record')('orders Todo before Queue on one responsive card column', async () => {
     overrideDir = await mkdtemp(join(tmpdir(), 'clocky-web-context-layout-'))
     const readyFile = join(overrideDir, '.hang-ready')
     const overridePath = join(overrideDir, 'replay.override.json')
     await writeFile(overridePath, JSON.stringify([{ kind: 'hang', readyFile } satisfies ReplayEntry]))
 
     const sessionEvents: SessionEvent[] = []
-    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, replayOverride: overridePath })
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true, replayFixture: FIXTURE, replayOverride: overridePath })
+    await seedSession(scaffold, closedSessionFixture(), 'queue-actions-web-e2e')
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     const tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
     onTestFailed(() => saveFailureShot(page, 'web-e2e-context-layout'))
 
     const input = page.locator('textarea').first()
     const settled = scaffold.whenTurnSettled()
-    await input.fill('/goal Keep the composer context panels aligned')
+    await input.fill('Keep the composer context panels aligned')
     await input.press('Enter')
     await expect.poll(() => existsSync(readyFile), { timeout: 15_000 }).toBe(true)
-    await page.locator('[data-goal-bar]').waitFor({ timeout: 10_000 })
 
     const sessions = scaffold.ctx.sessions.list()
     expect(sessions).toHaveLength(1)
@@ -221,25 +235,13 @@ describe('web e2e: queue row actions', () => {
     await expect.poll(() => queueHeader.getAttribute('aria-expanded'), { timeout: 10_000 })
       .toBe('false')
 
-    const layoutSnapshot = await captureStableAria(
-      page,
-      '[class*="centerCol"]',
-      scaffold.workspaceCwd,
-    )
-    await compareOrRefreshGolden(LAYOUT_EXPECTED, layoutSnapshot, MODE)
-
     const expectAlignedContextPanels = async () => {
       const queuePanelBox = await page.locator('[data-queue-dock] > div').boundingBox()
       const todoBox = await page.locator('[data-testid="todo-panel"]').boundingBox()
-      const goalBox = await page.locator('[data-goal-bar] > div').boundingBox()
       expect(queuePanelBox).not.toBeNull()
       expect(todoBox).not.toBeNull()
-      expect(goalBox).not.toBeNull()
-      expect(todoBox!.y).toBeLessThan(goalBox!.y)
-      expect(goalBox!.y).toBeLessThan(queuePanelBox!.y)
-      expect(todoBox!.x).toBeCloseTo(goalBox!.x, 1)
+      expect(todoBox!.y).toBeLessThan(queuePanelBox!.y)
       expect(todoBox!.x).toBeCloseTo(queuePanelBox!.x, 1)
-      expect(todoBox!.width).toBeCloseTo(goalBox!.width, 1)
       expect(todoBox!.width).toBeCloseTo(queuePanelBox!.width, 1)
     }
     await expectAlignedContextPanels()
@@ -254,8 +256,6 @@ describe('web e2e: queue row actions', () => {
     await expect.poll(() => removeButtons.count(), { timeout: 10_000 }).toBe(1)
     await removeButtons.first().click()
     await expect.poll(() => page.locator('[data-queue-dock]').count(), { timeout: 10_000 }).toBe(0)
-    await page.getByRole('button', { name: 'Clear goal' }).click()
-    await expect.poll(() => page.locator('[data-goal-bar]').count(), { timeout: 10_000 }).toBe(0)
     await page.getByRole('button', { name: 'Stop generating' }).click()
     await settled
 
@@ -267,7 +267,7 @@ describe('web e2e: queue row actions', () => {
   it.skipIf(MODE === 'record')('keeps its snapshot inventory closed', async () => {
     await assertFixtureInventory(
       SNAPSHOT_DIR,
-      ['collapsed.expected.md', 'editing.expected.md', 'layout.expected.md', 'preserved.expected.md', 'ui.expected.md'],
+      ['collapsed.expected.md', 'editing.expected.md', 'preserved.expected.md', 'ui.expected.md'],
     )
   })
 })

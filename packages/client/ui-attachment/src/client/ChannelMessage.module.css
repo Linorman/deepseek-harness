@@ -1,0 +1,11 @@
+.content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

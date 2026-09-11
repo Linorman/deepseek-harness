@@ -1,6 +1,5 @@
 // MessageItem: simple chat nodes — user and consumed-steering bubbles
-// (right-aligned, with clock + copy IconActions; branch lives only under
-// assistant answers), pending steering (copy only), context injection,
+// (right-aligned, with clock + copy IconActions), pending steering (copy only), context injection,
 // compaction marker, retry disclosure, and unknown-surface JSON rows.
 
 import { memo, useEffect, useMemo, useState } from 'react'
@@ -130,8 +129,9 @@ function TurnErrorItem({ node, t }: {
 }
 
 /** Persistent, turn-positioned notice for a turn ended at the output-token cap. */
-function TurnMaxTokensItem({ t }: {
+function TurnMaxTokensItem({ t, continueOutput }: {
   t: ChatViewSlotProps['t']
+  continueOutput?: () => void
 }) {
   return (
     <div className={css.turnErrorRow} role="status">
@@ -140,6 +140,11 @@ function TurnMaxTokensItem({ t }: {
         <span className={css.maxTokensTitle}>{t('message.maxTokens')}</span>
         <span className={css.turnErrorMessage}>{t('message.maxTokens.hint')}</span>
       </div>
+      {continueOutput === undefined ? null : (
+        <button type="button" className={css.maxTokensContinue} onClick={continueOutput}>
+          {t('message.maxTokens.continue')}
+        </button>
+      )}
     </div>
   )
 }
@@ -332,8 +337,8 @@ export const TurnErrorNodeView = memo(function TurnErrorNodeView({ node, t }: Ch
 })
 
 /** Max-tokens turn-end notice keyed Chat renderer. */
-export const TurnMaxTokensNodeView = memo(function TurnMaxTokensNodeView({ t }: ChatNodeViewProps<'turn-max-tokens'>) {
-  return <TurnMaxTokensItem t={t} />
+export const TurnMaxTokensNodeView = memo(function TurnMaxTokensNodeView({ t, continueOutput }: ChatNodeViewProps<'turn-max-tokens'>) {
+  return <TurnMaxTokensItem t={t} {...continueOutput === undefined ? {} : { continueOutput }} />
 })
 
 /** Explicit unknown-surface keyed Chat renderer. */

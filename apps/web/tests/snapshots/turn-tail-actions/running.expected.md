@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Begin your reply with the" [disabled]
-  - img
-  - text: Standard mode
+  - text: Begin your reply with the
   - button "Session log":
     - text: Session log
     - img

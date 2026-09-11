@@ -168,33 +168,10 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'id', description: 'session id (must exist in the list; unknown ids fail loud).' }],
       },
       {
-        signature: 'openSubagent(address: SubagentAddress): void',
-        description: 'Open a healthy catalog child through its exact direct-parent address.',
-        parameters: [{ name: 'address', description: 'catalog-derived parent and child ids.' }],
-      },
-      {
-        signature: 'setSubagentCatalogOpen(parentSessionId: SessionId, open: boolean): void',
-        description: 'Mark whether a catalog menu is consuming live membership updates.',
-        parameters: [{ name: 'parentSessionId', description: 'catalog owner.' }, { name: 'open', description: 'current menu state.' }],
-      },
-      {
-        signature: 'refreshSubagents(parentSessionId: SessionId): Promise<void>',
-        description: 'Refresh one direct-child catalog.',
-        parameters: [{ name: 'parentSessionId', description: 'catalog owner.' }],
-        returns: 'completion of the current or newly started refresh.',
-      },
-      {
         signature: 'search( query: string, signal: AbortSignal, ): Promise<RpcResult<{ items: SessionSearchResultItem[]; hasMore: boolean }>>',
         description: 'Search the Host\'s visible message-content index. Results stay request-local; the list snapshot remains the metadata authority.',
         parameters: [{ name: 'query', description: 'non-blank literal phrase.' }, { name: 'signal', description: 'cancellation for a superseded search.' }],
         returns: 'bounded results, or a business/transport error.',
-      },
-      {
-        signature: 'fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean }): Promise<SessionId>',
-        description: 'Fork a session from a completed-turn prefix of the source; on resolution the child is in the list store and `open()` can target it.',
-        parameters: [{ name: 'opts', description: 'source session id, the optional event seq anchoring the cut (the boundary is the first turn/end at or after it; an in-log anchor in an open turn is unavailable rather than clipped backward), and whether to increment an inherited durable title before resolving.' }],
-        returns: 'the child session id.',
-        throws: ['when the fork fails, or when a requested child-title rename fails after creation.'],
       },
       {
         signature: 'scope(id: SessionId): AgentContext | undefined',
@@ -302,17 +279,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'The workspaces-service face injected as `ctx.workspaces`.',
     methods: [
       {
-        signature: 'connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>',
-        description: 'Connect a Workspace to its reusable or freshly created blank session.',
-        parameters: [{ name: 'workspaceId', description: 'target workspace.' }],
-        returns: 'the connected session id.',
-      },
-      {
-        signature: 'startSession(workspaceId?: WorkspaceId): void',
-        description: 'The New Session flow: connect the explicit, current-Session, or recent Workspace and open the resulting session; failures surface on the session list state.',
-        parameters: [{ name: 'workspaceId', description: 'explicit target; omitted inherits the current Session\'s Workspace before falling back to the recency projection.' }],
-      },
-      {
         signature: 'create(input: { path: string }): Promise<WorkspaceView>',
         description: 'Register an existing path as a Workspace.',
         parameters: [{ name: 'input', description: 'the Host create payload.' }],
@@ -360,7 +326,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'archiveSession(sessionId: SessionId): Promise<void>',
-        description: 'Archive a session into the registry-global set (hidden from grouping surfaces; session log and accounting slot remain). Archiving the current session clears the selection into the New Session view state.',
+        description: 'Archive a session into the registry-global set (hidden from grouping surfaces; session log and accounting slot remain). Archiving the current session clears the selection.',
         parameters: [{ name: 'sessionId', description: 'session to archive.' }],
       },
     ],
@@ -515,7 +481,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ConversationSnapshot',
-    declaration: 'export interface ConversationSnapshot {\n    sessionId: SessionId;\n    views: ConversationViewSnapshotStore;\n    chat: ChatSnapshot;\n    nodes: readonly ConversationNode[];\n    turnTimings: ReadonlyMap<number, {\n        readonly startTime: number;\n        readonly endTime?: number;\n    }>;\n    turnEnds: ReadonlyMap<number, number>;\n    partial: PartialAssistant | null;\n    runningCalls: readonly RunningToolCall[];\n    pending: readonly PendingInteraction[];\n    queue: readonly QueuedMessage[];\n    running: boolean;\n    subagent: {\n        address: SubagentAddress;\n        parentAvailable: boolean;\n    } | null;\n    composerPhase: ComposerPhase;\n    removed: boolean;\n    openState: OpenState;\n    openError: RpcError | null;\n    hasMore: boolean;\n    loadingOlder: boolean;\n    promptError: PromptError | null;\n    blank: boolean;\n    lastAgentError: string | null;\n}',
+    declaration: 'export interface ConversationSnapshot {\n    sessionId: SessionId;\n    views: ConversationViewSnapshotStore;\n    chat: ChatSnapshot;\n    nodes: readonly ConversationNode[];\n    turnTimings: ReadonlyMap<number, {\n        readonly startTime: number;\n        readonly endTime?: number;\n    }>;\n    turnEnds: ReadonlyMap<number, number>;\n    partial: PartialAssistant | null;\n    runningCalls: readonly RunningToolCall[];\n    pending: readonly PendingInteraction[];\n    queue: readonly QueuedMessage[];\n    running: boolean;\n    composerPhase: ComposerPhase;\n    removed: boolean;\n    openState: OpenState;\n    openError: RpcError | null;\n    hasMore: boolean;\n    loadingOlder: boolean;\n    promptError: PromptError | null;\n    blank: boolean;\n    lastAgentError: string | null;\n}',
   },
   {
     name: 'ConversationStepDataMap',

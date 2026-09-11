@@ -17,6 +17,7 @@ import {
   materializeSessionResultFilters,
   type SessionQueryErrorCode,
 } from '@clocky/clocky-session-query'
+import { extractSessionEventText as extractSessionEventTextFromSource } from '../src/extraction.ts'
 import { TestSessionQueryEngine } from './test-service.ts'
 
 const id = SessionId('session')
@@ -115,6 +116,26 @@ describe('session-query semantic extraction', () => {
     expect(extractSessionEventText(events[4]!)).toBe('failed\nOops\nE_OOPS')
     expect(extractSessionEventText(events[5]!)).toBe('')
     expect(extractSessionEventText(events[6]!)).toBe('in_progress\nship search')
+  })
+
+  it('extracts stored Team channel-view content', () => {
+    const event: SessionEvent<'team/channel-view'> = {
+      type: 'team/channel-view',
+      seq: 0,
+      time: 1,
+      data: {
+        teamId: 'team-view',
+        channelId: 'channel-view',
+        adapter: { type: 'discussion', version: 1 },
+        viewPolicy: { type: 'recent-window', version: 1 },
+        triggeringEnvelopeId: 'envelope-trigger',
+        sourceEnvelopeIds: ['envelope-trigger'],
+        delivery: 'turn',
+        content: [{ type: 'text', text: 'stored view' }],
+      },
+      surfaceOp: 'append',
+    }
+    expect(extractSessionEventTextFromSource(event)).toBe('stored view')
   })
 
   it('extracts meaningful turn outcomes and skips structural or unknown events', () => {

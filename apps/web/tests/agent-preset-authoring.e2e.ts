@@ -20,7 +20,7 @@ import {
   captureStableAria, compareOrRefreshGolden, launchWebScaffold, watchConsole,
   webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
+import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/agent-preset-authoring', import.meta.url))
 const SECTION_EXPECTED = join(SNAPSHOT_DIR, 'section.expected.md')
@@ -71,6 +71,7 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
     // The scenario asserts the shipped Chinese copy, so the browser asks for it.
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
@@ -240,37 +241,23 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
     await rm(join(userRoot, 'broken-yaml'), { recursive: true, force: true })
   }, 60_000)
 
-  it('starts a creator-mode session from the section', async () => {
+  it('starts a creator-mode Team draft from the section', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-preset-authoring-creator'))
-    // Without a workspace the flow only stages (there is no session to land
-    // in until one is connected); connect first so the gesture carries all
-    // the way to a composed host session.
     await settingsDialog().getByRole('button', { name: '关闭' }).last().click()
-    await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
     await page.getByRole('button', { name: '设置', exact: true }).click()
     const dialog = settingsDialog()
     await dialog.waitFor({ timeout: 10_000 })
     await dialog.getByRole('button', { name: 'Agent 预设' }).click()
     await dialog.getByRole('button', { name: '用「创造模式」创作自定义预设' }).click()
 
-    // Leaving settings is part of the gesture: the flow lands on the
-    // new-session screen with the self-referential preset staged, and the
-    // blank session the flow produces composes from it on the host.
+    // Leaving settings is part of the gesture: the Team-first surface keeps
+    // the local first-input draft and does not create a Team until the user
+    // submits an objective.
     await dialog.waitFor({ state: 'detached', timeout: 10_000 })
-    await page.getByRole('button', { name: '创造模式' }).waitFor({ timeout: 10_000 })
-    await expect.poll(async () => {
-      const response = await fetch(`${scaffold.baseUrl}/api/session.list`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          type: 'client-request', rpcId: 'creator-draft-stage', method: 'session.list', payload: {},
-        }),
-      })
-      const body = await response.json() as {
-        result: { value?: { sessions: unknown[] } }
-      }
-      return JSON.stringify(body.result.value?.sessions ?? body.result)
-    }, { timeout: 15_000 }).toContain('"agentPreset":"cordis"')
+    const composer = page.getByPlaceholder('描述你想要构建的内容')
+    await composer.waitFor({ timeout: 10_000 })
+    expect(await composer.isEnabled()).toBe(true)
+    expect(await page.getByRole('button', { name: '创造模式' }).count()).toBe(0)
   }, 60_000)
 
   it('drove every surface without a page error or a stream warning', () => {

@@ -184,7 +184,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     // The workspace-aware flow runs sessions in <workspaceCwd>/workspace
     // (the composer's default draft name); the read-tool targets must live in
     // that session cwd. Pre-creating the directory is safe because the picker
@@ -206,6 +206,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
@@ -232,7 +233,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
     // injection stays silent and this block disappears (no titles/todos on
     // the web), while fixture-level suites stay green. Assert through the
     // real HTTP wire against the booted real host.
-    const response = await fetch(`${scaffold.baseUrl}/api/session.history`, {
+    const response = await scaffold.authenticatedFetch(`${scaffold.baseUrl}/api/session.history`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({

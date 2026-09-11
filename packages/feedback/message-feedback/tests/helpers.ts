@@ -123,6 +123,7 @@ class TestPersistence extends SessionPersistence {
 
   locate(_meta: SessionHeader): SessionLocation | undefined { return undefined }
   create(_meta: SessionHeader): Promise<void> { return Promise.resolve() }
+  materializeHeader(_session: Session): Promise<void> { return Promise.resolve() }
   append(_id: SessionId, _events: readonly SessionEvent[]): Promise<void> { return Promise.resolve() }
 
   load(id: SessionId): Promise<SessionInspection> {

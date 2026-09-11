@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-subagent-fork-in-process
+# @clocky/clocky-subagent-fork-in-process
 
 [English](README.md) | 中文
 
@@ -23,7 +23,7 @@ fork 声明 `{ outputSchema: true, depthLimit: true, toolFilter: true, persona: 
 | 键 | 含义 |
 |---|---|
 | `providerName` | `ctx.subagents` 上的注册表名称（默认 `fork`）。 |
-运行生命周期、模型继承与深度跟踪均为共享行为，见 [`dsh-subagent-spawn-in-process`](../subagent-spawn-in-process/README.zh.md)。
+运行生命周期、模型继承与深度跟踪均为共享行为，见 [`clocky-subagent-spawn-in-process`](../subagent-spawn-in-process/README.zh.md)。
 
 ## 模型体验
 
@@ -39,13 +39,13 @@ fork 会把保留的已完成历史复制到独立的子 agent 请求中；随�
 
 #### KV Cache 影响
 
-在提供方和模型相同的前提下，子 agent 可以复用继承的逐字节相同前缀。persona、工具过滤、生成 SDK 或路由变化可能在继承历史之前使复用失效；后续子 agent 历史仅追加。因此随附组合把本提供方绑定为 `backgroundMode: one-shot`：可继续子 agent 还会额外携带作用域局部的 `report` 工具及其提示词 section，而这些增量位于继承历史之前，会使继承历史整体失效（见 [fork 保持 one-shot 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.zh.md)）。
+在提供方和模型相同的前提下，子 agent 可以复用继承的逐字节相同前缀。persona、工具过滤、生成 SDK 或路由变化可能在继承历史之前使复用失效；后续子 agent 历史仅追加。随附产品组合不挂载本提供方。若自定义组合创建可继续 child，它还会携带作用域局部的 `report` 工具及其提示词 section——这些增量位于继承历史之前，会使其失效；当目标是前缀复用时，应使用 one-shot 绑定（见 [fork 保持 one-shot 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.zh.md)）。
 
 ### 父 agent 工具结果（间接）
 
 #### 模型看到的内容
 
-父 agent 只通过 `dsh-tool-subagent` 接收子 agent 自身的最终输出，不接收继承的前缀或中间工作。
+父 agent 只通过 `clocky-tool-subagent` 接收子 agent 自身的最终输出，不接收继承的前缀或中间工作。
 
 #### Token 影响
 
@@ -58,4 +58,4 @@ fork 会把保留的已完成历史复制到独立的子 agent 请求中；随�
 ## 已知限制与暂缓事项
 
 - **初始内容是一次性快照**：子 agent 只能看到 fork 时父 agent 已完成的轮次，看不到父 agent 此后记录的任何内容；不会实时共享上下文。
-- **没有任何随附组合会创建可继续的 fork 子 agent**：`prepareContinuable` 仍然实现完好，seam 也接受它，但每份随附的 `cordis.yml` 都在 fork 委派工具上设置 `backgroundMode: one-shot`，因此该提供方的可继续路径没有生产调用方。重新开放它需要子 agent 的系统提示词与工具 schema 与父 agent 逐字节一致，而这一点目前被 [`report` 返回通道](../tool-subagent-report/README.zh.md)阻止。理由与重新开放条件见 [fork 保持 one-shot 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.zh.md)。
+- **该提供方在随附产品中仅供自定义组合使用**：`prepareContinuable` 仍然实现完好，seam 也接受它，示例与显式自定义组合可以绑定它。可继续绑定若要保留前缀复用，就需要子 agent 的系统提示词与工具 schema 与父 agent 逐字节一致；否则 [`report` 返回通道](../tool-subagent-report/README.zh.md)会阻止这一点。理由与重新开放条件见 [fork 保持 one-shot 的 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.zh.md)。

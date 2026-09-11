@@ -1,0 +1,18 @@
+- id: direct-v4-driver
+  disabled: true
+
+- insert:
+    - id: recoverable-acp
+      name: '@clocky/clocky-agent-runtime-acp'
+      config:
+        providerName: snapshot-acp
+        command: !!js process.execPath
+        args:
+          - !!js process.env.CLOCKY_TEST_MOCK_ACP_SERVER
+        disposeEofGraceMs: 1000
+        recoveryProfile: snapshot-acp-profile
+        recoveryHostId: snapshot-execution-host
+        recoveryFenceGraceMs: 1000
+
+    - id: acp-recovery-driver
+      name: './snapshot-fixtures/agent-runtime-acp-recovery-driver.ts'

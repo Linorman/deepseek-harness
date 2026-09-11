@@ -1,4 +1,4 @@
-# DeepSeek Harness 架构
+# Clocky 架构
 
 [English](architecture.md) | 中文
 
@@ -8,28 +8,28 @@
 
 ## Cordis
 
-[Cordis](cordis-primer.zh.md) 是 dsh 底层的框架：插件向共享上下文贡献服务、类型化事件和可逆的副作用。产品的每一部分都是插件，包括模型适配器、工具注册表、会话日志，以及 agent loop（智能体循环）本身，因此每一部分都可以从配置替换。
+[Cordis](cordis-primer.zh.md) 是 clocky 底层的框架：插件向共享上下文贡献服务、类型化事件和可逆的副作用。产品的每一部分都是插件，包括模型适配器、工具注册表、会话日志，以及 agent loop（智能体循环）本身，因此每一部分都可以从配置替换。
 
-不存在需要打补丁的特权内核：扩展 dsh 的方式是把插件挂载到其他插件旁边，而各项注册都是副作用，会在其插件卸载时撤销。
+不存在需要打补丁的特权内核：扩展 clocky 的方式是把插件挂载到其他插件旁边，而各项注册都是副作用，会在其插件卸载时撤销。
 
 ## Profile 与组合包
 
-运行中的 `dsh` 是一棵插件树，由启动时按序叠加的各层组合而成。
+运行中的 `clocky` 是一棵插件树，由启动时按序叠加的各层组合而成。
 
 **profile** 是存放在 Harness home 中的具名组装。它列出自己叠放的组合包，存放自己安装的树外插件，并保存用户自己的 `cordis.patch.yml`。`web` 和 `headless` 作为模板随发行版交付。
 
 **组合包**是 Cordis 配置项及其挂载代码的分发格式，因此它插入的内容始终可被其上各层 patch。
 
-两者都在各自的 `package.json` 中通过 `dsh` 字段声明自己：`dsh.profile` 列出一个 profile 的组合包，`dsh.bundle` 指向一个组合包的 patch 文件。
+两者都在各自的 `package.json` 中通过 `clocky` 字段声明自己：`clocky.profile` 列出一个 profile 的组合包，`clocky.bundle` 指向一个组合包的 patch 文件。
 
-[`dsh-base`](../packages/bundle/base/README.zh.md) 是每个 profile 的第一层：模型适配器、工具、持久化、沙箱与审批策略、设置、凭据、遥测。[`dsh-web-app`](../packages/bundle/web-app/README.zh.md) 增加浏览器应用；[`dsh-headless`](../packages/bundle/headless/README.zh.md) 增加一次性运行器，且完全不带服务器。
+[`clocky-base`](../packages/bundle/base/README.zh.md) 是每个 profile 的第一层：模型适配器、工具、持久化、沙箱与审批策略、设置、凭据、遥测。[`clocky-web-app`](../packages/bundle/web-app/README.zh.md) 增加浏览器应用；[`clocky-headless`](../packages/bundle/headless/README.zh.md) 增加一次性运行器，且完全不带服务器。
 
 各层按此顺序应用在空条目列表之上：先按 profile 列出的顺序应用每个组合包，然后是 profile 的 `cordis.patch.yml`，然后是 home 级的那份，最后是任意 `--patch` overlay。一条 patch 按 id 定位某个条目并替换其整个 config，或插入新条目。
 
 要查看你的机器实际启动的配置树：
 
 ```sh
-dsh --profile web --dump-config
+clocky --profile web --dump-config
 ```
 
 它打印出的任何条目，都可以由你自己的 patch 替换。
@@ -46,8 +46,13 @@ dsh --profile web --dump-config
 | [`core/system-prompt`](subsystems/system-prompt.zh.md) | 提示词片段与工具 schema 的组装 | `ctx.systemPrompt` |
 | [`core/tools`](subsystems/tools.zh.md) | 作用域化的工具注册表和带把关的执行流水线 | `ctx.tools` |
 | [`core/agent`](subsystems/core.zh.md) | `Agent` 接口、活跃 agent 注册表和 `agent/*` 事件 | `ctx.agents` |
+| [`core/agent-runtime`](subsystems/agent-runtime.zh.md) | Participant 绑定 Agent 激活 provider 注册表 | `ctx.agentRuntimes` |
+| [`core/team-link`](subsystems/team-link.zh.md) | Activation 绑定 Team Link provider 注册表 | `ctx.teamLinks` |
+| [`core/team-workspace`](../packages/core/team-workspace/README.zh.md) | Task execution-root provider 注册表 | `ctx.teamWorkspaces` |
+| [`core/team-artifact`](../packages/core/team-artifact/README.zh.md) | 与 provider 无关的 Team artifact storage 注册表 | `ctx.teamArtifacts` |
 | [`core/agent-loop`](subsystems/core.zh.md) | 实现该接口的默认驱动器 | `ctx.agentLoop` |
 | [`core/scope`](subsystems/scope.zh.md) | 按 agent 划分作用域的注册原语 | 库，无 ctx 键 |
+| [`core/team`](subsystems/team.zh.md) | Team 工作系统 Service Definition、Envelope admission／receipt、适配器注册表和策略 waterfall | `ctx.teams` |
 | [`llm/llm`](subsystems/llm-streaming.zh.md) | 消息与流式词汇表，以及适配器 seam | `ctx.llm` |
 
 <a id="events"></a>
@@ -105,7 +110,13 @@ turn/end
 
 seam 正是替换一个提供方就能改变整个产品的原因。文件系统与进程提供方共享同一个执行世界，因此把它们指向远程沙箱，也就把 Bash、PTY 和 LSP 一并搬了过去，无需提供方专用 fork。[subagent 提供方](subsystems/subagent.zh.md)在同一个接口之后同样千差万别，从新建一个子 agent，到把一个轮次委派给另一个产品。
 
-[实验性 Agent Teams](subsystems/agent-team.zh.md) 是 `ctx.agentTeams` 上的私有显式启用协作 seam，在可继续 subagent 之上提供持久 roster、任务板和 mailbox。
+[`core/team`](subsystems/team.zh.md)是 Team Service Definition。[`team/team-hub`](../packages/team/team-hub/README.zh.md)是显式挂载的本地提供方，负责 Team journal、channel WAL、activation 投影、恢复、游标 watch、已认证 Envelope admission、持久 recipient receipt、临时 delivery claim、由 revision/epoch 围栏保护的 task attempt lease，以及精确 target soft interrupt。[`team/team-activation-controller`](../packages/team/team-activation-controller/README.zh.md)会在 `ctx.teamActivations`公开持久 bind-or-dispose ownership 和显式 fenced 冷替换；[`team/team-channel-direct`](../packages/team/team-channel-direct/README.zh.md)提供 direct v1、产品 direct v2 和双人 human text/image direct v3；[`team/team-channel-task-assignment`](../packages/team/team-channel-task-assignment/README.zh.md)提供单 assignee assignment protocol；[`core/team-link`](subsystems/team-link.zh.md)注册 activation-bound transport client 和动态 enrollment issuer；[`team/team-link-local`](../packages/team/team-link-local/README.zh.md)拥有本地 pending-delivery 和 soft-interrupt replay；[`team/team-link-websocket`](../packages/team/team-link-websocket/README.zh.md)提供远程 v4 client provider 与 cooperative endpoint termination，而 [`team/team-link-websocket-hub`](../packages/team/team-link-websocket-hub/README.zh.md)验证 Hub upgrade 并签发 activation-local credential；[`core/team-workspace`](../packages/core/team-workspace/README.zh.md)将 task workspace mode 解析为 execution-root provider；[`team/team-workspace-shared`](../packages/team/team-workspace-shared/README.zh.md)只接受其确切 Session root 已匹配 canonical shared directory 的本地 Agent；[`core/team-artifact`](../packages/core/team-artifact/README.zh.md)解析 provider-owned artifact bytes 与 reference；[`team/team-artifact-local`](../packages/team/team-artifact-local/README.zh.md)保存 content-addressed file、patch、log、screenshot 和 report；[`team/team-agent-client`](../packages/team/team-agent-client/README.zh.md)会为 durable-bound Agent 声明 direct 或 task-assignment Link notification，仅启动 delivery-bound task attempt，消费 provider-owned workspace root，在唤醒模型步骤前 flush source、记录 receipt，在 cancellation 后确认 soft interrupt，并在 terminal Link failure 后重新连接合格 binding；[`team/tool-team`](../packages/team/tool-team/README.zh.md)公开 scope 内的 task report 和显式 final output；[`team/team-scheduler-dag`](../packages/team/team-scheduler-dag/README.zh.md)会使 durable lease 过期、打开持久 task-assignment channel，并确定性地提交其 assignment Envelope，而不直接唤醒 Agent；[`team/team-run`](../packages/team/team-run/README.zh.md)拥有 headless profile 使用的本地默认 Team topology、reviewer routing、workspace outcome publish 和 human final-result receipt。workspace allocation 会消费 provider root，`publish()`会物化有界 artifact，`integrate()`会创建可评审 proposal 或交给 merge authority，ACP/SDK process teardown 使用有界 termination；自动多主机 Hub 恢复仍是 deployment concern。
+
+当前 Phase 8 使用 v4 WebSocket Link frame，并在 attached socket 退休前支持 cooperative endpoint termination。[`team/team-activation-recovery`](../packages/team/team-activation-recovery/README.zh.md)是 opt-in、一次性的同主机启动扫描；它将匹配的未完成或外部已围栏 SDK epoch 委托给 controller，并且只清理本地已结算的 wake。多主机恢复仍是独立工作。
+
+[`team/team-channel-basic`](../packages/team/team-channel-basic/README.zh.md)和 [`team/team-channel-workflow`](../packages/team/team-channel-workflow/README.zh.md)提供 Team 组合使用的有界 consult、discussion 和声明式 workflow 通道适配器。
+
+[`core/agent-runtime`](subsystems/agent-runtime.zh.md)为一个 Team 已解析的 Participant activation 解析具名 placement provider 和陈旧 epoch fencer。它不拥有 Team 权限；其进程内 provider 创建本地 fresh/fork/resume activation，SDK provider 则通过 SDK 生命周期／状态协议为活跃的 `remote-agent` Participant 提供 fresh/resume activation placement，在配置同主机 profile 时可先 fence child，再让 activation controller 在新 epoch 下恢复其 Session。activation controller 拥有持久 bind-or-dispose handoff；远程 placement 与远程 Link 投递保持分离。
 
 ## 新行为的归属位置
 
@@ -117,7 +128,7 @@ seam 正是替换一个提供方就能改变整个产品的原因。文件系统
 | 添加面向模型的能力 | 在 `ctx.tools` 上注册；其 schema 加入提示词组装 |
 | 让某个会话拥有不同的能力集合 | 组装一个 agent preset；其中的服务行需要 `isolate` realm |
 | 添加 shell 执行 | 注册 `ctx.shell` 后端；本地后端通过 `ctx.subprocess` spawn 进程 |
-| 添加持久化终端执行 | 注册 `ctx.terminals` 后端和 `dsh-tool-terminal` |
+| 添加持久化终端执行 | 注册 `ctx.terminals` 后端和 `clocky-tool-terminal` |
 | 添加用户命令 | 在 `ctx.commands` 上注册；它无需模型轮次即可分派 |
 | 添加后台工作 | 在 `ctx.jobs` 上注册；`job_*` 工具负责收集或停止 |
 | 添加文件系统访问或策略 | 注册 `ctx.fs` 提供方，或监听 `fs/*` 事件 |
@@ -133,3 +144,7 @@ seam 正是替换一个提供方就能改变整个产品的原因。文件系统
 | 将注册项限定到单个 agent | 使用该 agent 的 `agent.ctx` |
 
 [扩展实操手册](cookbook/extension-cookbook.zh.md)将功能映射到能力，并索引[包](cookbook/adding-a-package.zh.md)、[工具](cookbook/adding-a-tool.zh.md)、[LLM（大语言模型）适配器](cookbook/adding-an-llm-adapter.zh.md)、[Chat 节点](cookbook/adding-a-conversation-node.zh.md)和[设置卡片](cookbook/adding-a-settings-card.zh.md)的分步指南。
+
+## 任务级中断
+
+Task cancellation 由 Team plugin 负责。Agent 原语`cancel(cause, { keepInbox: true, resumePending: true })`保留现有 waking 输入，不会提升 non-waking injected context。Task consumer 使用精确的 Session claim 和对应`turn/end`作为停止证据，不用可能跟随无关排队工作的`whenIdle()`代替。Allocation 释放与 durable task settlement 仍由各自既有 owner 负责。

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Context } from '@clocky/cordis'
@@ -13,9 +13,9 @@ import * as acpAgent from '../src/index.ts'
 
 /**
  * In-process unit coverage for the @clocky/clocky-acp-demo composition:
- * mounting it brings up the agent-spine-demo spine + JSONL persistence + the ACP
- * bridge in one `ctx.plugin`. It loads no Loader-only plugin (no hmr), so it
- * mounts in a plain Context.
+ * mounting it brings up the agent-spine-demo spine, local Team stack, JSONL
+ * persistence, and ACP bridge in one `ctx.plugin`. It loads no Loader-only
+ * plugin, so it mounts in a plain Context.
  *
  * The REAL Loader-path guard (export shape via `unwrapExports`, the headline
  * ACP operations end-to-end) is the keyless bin smoke in `load-path.e2e.ts`;
@@ -82,10 +82,11 @@ async function withIsolatedSkillHomes<T>(run: () => Promise<T>): Promise<T> {
 }
 
 describe('clocky-acp-demo composition', () => {
-  it('brings up the spine + persistence + the ACP bridge', async () => {
+  it('brings up the spine, local Team stack, persistence, and ACP bridge', async () => {
     const ctx = await mount({
       provider: 'mock',
       model: 'mock',
+      interruptRetryAttempts: 2,
       persona: 'hi',
       persistenceRoot: await mkdtemp(join(tmpdir(), 'clocky-acp-demo-test-')),
       persistenceCompression: 'none',
@@ -99,25 +100,47 @@ describe('clocky-acp-demo composition', () => {
     expect(ctx.get('sessionReferenceResolver')).toBeUndefined()
     expect((ctx.get('sessionPersistence') as unknown as { config: { compression?: string } }).config.compression).toBe('none')
     expect(ctx.get('agentLoop')).toBeDefined()
+    expect(ctx.agentDefaultModel.currentSelection()).toEqual({ provider: 'mock', model: 'mock' })
+    expect(ctx.get('storage')).toBeDefined()
+    expect(ctx.get('storageLog')).toBeDefined()
+    expect(ctx.get('teams')).toBeDefined()
+    expect(ctx.get('agentRuntimes')).toBeDefined()
+    expect(ctx.get('teamActivations')).toBeDefined()
+    expect(ctx.get('teamLinks')).toBeDefined()
+    expect(ctx.get('teamRuns')).toBeDefined()
     expect(ctx.get('userQuestions')).toBeUndefined()
     expect(ctx.get('commands')).toBeUndefined()
     expect(ctx.get('tools')?.get('ask_user_question')).toBeUndefined()
-    expect(ctx.get('goals')).toBeDefined()
-    expect(ctx.get('tools')?.get('get_goal')).toBeDefined()
+    expect(ctx.get('goals')).toBeUndefined()
+    for (const name of ['create_goal', 'get_goal', 'update_goal']) {
+      expect(ctx.get('tools')?.get(name)).toBeUndefined()
+    }
     // No pre-created agents — ACP session/new creates them on demand.
     expect(ctx.get('agents')!.list()).toHaveLength(0)
     await ctx.fiber.dispose()
   })
 
-  it('can explicitly omit the persisted-goal stack', async () => {
+  it('rejects removed same-session Goal config at the ACP boundary', () => {
+    const legacyConfig = {
+      provider: 'mock',
+      model: 'mock',
+      workspaceContext: false,
+      goals: false,
+    } as unknown as acpAgent.Config
+    expect(() => acpAgent.Config(legacyConfig)).toThrow(/goals/u)
+  })
+
+  it('uses an explicit Team storage root for durable Team records', async () => {
+    const teamStorageRoot = await mkdtemp(join(tmpdir(), 'clocky-acp-demo-team-storage-'))
     const ctx = await mount({
       provider: 'mock',
       model: 'mock',
-      goals: false,
+      teamStorageRoot,
+      skills: await isolatedSkillsConfig(),
       workspaceContext: false,
     })
-    expect(ctx.get('goals')).toBeUndefined()
-    expect(ctx.get('tools')?.get('get_goal')).toBeUndefined()
+    await ctx.teamRuns.create({ objective: 'storage root check', cwd: process.cwd() })
+    expect(await readdir(join(teamStorageRoot, 'logs'))).not.toEqual([])
     await ctx.fiber.dispose()
   })
 
@@ -250,13 +273,10 @@ describe('clocky-acp-demo composition', () => {
     expect(assembly.tools.map(tool => tool.name)).toEqual([
       'zulu',
       'alpha',
-      'create_goal',
-      'get_goal',
       'job_kill',
       'job_list',
       'job_output',
       'skill',
-      'update_goal',
     ])
     await ctx.fiber.dispose()
   })

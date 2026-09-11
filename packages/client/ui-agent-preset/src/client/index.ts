@@ -1,14 +1,13 @@
 /**
- * Agent-preset surface plugin, browser half — four surfaces over one roster:
- * a General-settings row for the default preset, a chip on the new-session
- * screen for the session about to start, a read-only label in the session
- * header, and a settings section that manages the roster (copy, delete,
- * default, and the way into a preset's own files).
+ * Agent-preset surface plugin, browser half — a General-settings row for the
+ * default preset, a read-only Session-header label, and a settings section
+ * that manages the roster (copy, delete, default, and the way into a
+ * preset's own files).
  *
  * A running session keeps the composition it began with (the host refuses to
  * adopt an existing session under a different preset). That is what splits
- * the choice from the display: the General row and the hero chip are both
- * before-the-fact, while the header only reports what a session already runs.
+ * the choice from the display: settings choose future coordinators, while the
+ * header only reports what a Session already runs.
  */
 
 import type { ConnectionHandle } from '@clocky/clocky-api-remotes/client'
@@ -24,21 +23,15 @@ import { AgentPresetLabel } from './AgentPresetLabel.tsx'
 import type { AgentPresetLabelInjected } from './AgentPresetLabel.tsx'
 import { AgentPresetRow } from './AgentPresetRow.tsx'
 import type { AgentPresetRowInjected } from './AgentPresetRow.tsx'
-import { AgentPresetSeat } from './AgentPresetSeat.tsx'
-import type { AgentPresetSeatInjected } from './AgentPresetSeat.tsx'
 import { AgentPresetSection } from './AgentPresetSection.tsx'
 import type { AgentPresetSectionInjected } from './AgentPresetSection.tsx'
-import { AgentPresetSeatController } from './seat-store.ts'
-import type { SeatSessionSummary } from './seat-store.ts'
 import { AgentPresetSectionController } from './section-store.ts'
 import { en, zh } from './locales.ts'
 import { AGENT_PRESET_SETTINGS_NS, AgentPresetSettingsController } from './settings-store.ts'
 
 export type { AgentPresetLabelInjected, AgentPresetLabelProps } from './AgentPresetLabel.tsx'
 export type { AgentPresetRowInjected, AgentPresetRowProps } from './AgentPresetRow.tsx'
-export type { AgentPresetSeatInjected, AgentPresetSeatProps } from './AgentPresetSeat.tsx'
 export type { AgentPresetSectionInjected, AgentPresetSectionProps } from './AgentPresetSection.tsx'
-export type { AgentPresetSeatState, SeatSessionSummary } from './seat-store.ts'
 export {
   draftBlocker, type AgentPresetSectionState, type CopyDraft, type PresetRow, type PresetView,
 } from './section-store.ts'
@@ -55,13 +48,7 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope
 export function apply(ctx: ClientContext): void {
   const { api } = ctx.get('connection') as ConnectionHandle
   const controller = new AgentPresetSettingsController(api, ctx.settingsScope.describe())
-  // One roster, four surfaces. The chip is registered in a later scope, so it
-  // subscribes here rather than being reached from this one.
-  const rosterReaders = new Set<() => void>()
-  const section = new AgentPresetSectionController(api, () => {
-    void controller.load()
-    for (const read of rosterReaders) read()
-  })
+  const section = new AgentPresetSectionController(api, () => { void controller.load() })
 
   ctx.effect(() => ctx.locale.register('settings.agentPreset', { zh, en }), 'ui-agent-preset: settings row dictionaries')
 
@@ -90,83 +77,26 @@ export function apply(ctx: ClientContext): void {
     return () => { for (const dispose of disposers) dispose() }
   }, 'ui-agent-preset: settings refresh')
 
-  // The settings section's conversational authoring entry: stage the
-  // self-referential preset and land a new session on it. Bound inside the
-  // conversation scope below (the seat and the session flow live there) and
-  // unbound with it, so the section's face reads the current binding per
-  // render and simply hides the button while no flow exists.
+  // Bound inside the conversation scope, so the settings face hides the
+  // authoring entry when no Team-first flow is available.
   let creatorDraft: (() => void) | undefined
 
-  // The new-session chip and the header label: one controller, because the
-  // staged choice belongs to the flow rather than to any one session.
-  ctx.inject(['slots', 'conversation', 'sessions', 'workspaces'], (scope: ClientContext) => {
-    const api = (scope.get('connection') as ConnectionHandle).api
-    const seat = new AgentPresetSeatController(api, (): SeatSessionSummary | undefined => {
-      const state = scope.sessions.list.getSnapshot()
-      const summary = state.current === undefined ? undefined : state.byId[state.current]
-      return summary === undefined
-        ? undefined
-        : {
-          id: summary.id,
-          blank: summary.blank,
-          ...summary.agentPreset === undefined ? {} : { agentPreset: summary.agentPreset },
-        }
-    }, (sessionId, agentPreset) => {
-      scope.sessions.noteAgentPreset(sessionId as never, agentPreset)
-    })
-
-    const seatInjected = (): AgentPresetSeatInjected => ({
-      hooks: { agentPresetSeat: seat.store },
-      load: () => seat.load(),
-      select: (id: string) => seat.select(id),
-      introduced: () => { seat.introduced() },
-    })
-
+  ctx.inject(['slots', 'conversation', 'sessions', 'teamTasks'], (scope: ClientContext) => {
     const labelInjected = (): AgentPresetLabelInjected => ({
       hooks: { agentPresets: controller.store },
       load: () => controller.load(),
     })
 
     scope.effect(() => {
-      // Connecting a workspace either creates a blank session or reuses one,
-      // and either way the chip's pick predates it — so the stage is applied
-      // when the session arrives, not when it was made.
-      const stop = scope.sessions.list.subscribe(() => { void seat.apply() })
-      // The chip opens on the deployment default, so a default changed from
-      // the settings surface moves it too — otherwise the screen that starts
-      // the next session keeps offering the previous default until a reload,
-      // which is exactly the session the setting claims to govern. A staged
-      // pick survives: `load()` prefers it over the refreshed fallback.
-      const settingsMoved = scope.remote.$on('settings/document-updated', (ns) => {
-        if (ns !== AGENT_PRESET_SETTINGS_NS) return
-        void seat.load()
-      })
       // Every tab folds the committed preset into the shared session row; the
       // initiating tab may already have applied the RPC echo, which is idempotent.
       const presetSelected = scope.remote.$on('agent-preset/selected', (sessionId, agentPreset) => {
         scope.sessions.noteAgentPreset(sessionId, agentPreset)
       })
-      // Authoring writes a FILE, not a setting, so nothing on the wire
-      // announces it — without this the screen that starts the next session
-      // keeps offering the roster as it stood when the chip first loaded, and
-      // a preset authored to be used is missing from the one place it is used.
-      const readRoster = (): void => { void seat.load() }
-      rosterReaders.add(readRoster)
-      // Stage WITHOUT applying — the still-current running session would
-      // refuse the swap and drop the stage — then start the session it lands
-      // on: the chip's list-change applier composes the blank session the
-      // workspace connect produces or reuses.
       creatorDraft = () => {
-        // The introduce cue makes the chip announce the pick the user never
-        // made on this screen — the stage happened back in settings.
-        seat.stage('cordis', true)
-        scope.workspaces.startSession()
+        scope.teamTasks.startDraft({ agentPreset: 'cordis' })
+        scope.sessions.clear()
       }
-      const chip = scope.slots.register({
-        name: 'conversation.hero.agentPreset',
-        locale: 'settings.agentPreset',
-        inject: seatInjected,
-      }, AgentPresetSeat)
       const label = scope.slots.register({
         name: 'conversation.session.header.actions',
         id: 'agent-preset',
@@ -176,15 +106,11 @@ export function apply(ctx: ClientContext): void {
         inject: labelInjected,
       }, AgentPresetLabel)
       return () => {
-        stop()
-        settingsMoved()
         presetSelected()
-        rosterReaders.delete(readRoster)
         creatorDraft = undefined
-        chip()
         label()
       }
-    }, 'ui-agent-preset: new-session chip and header label')
+    }, 'ui-agent-preset: Team draft entry and header label')
   })
 
   const sectionInjected = (): AgentPresetSectionInjected => ({

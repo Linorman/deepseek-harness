@@ -1,0 +1,24 @@
+{
+  "provider": "shared-local",
+  "artifactCount": 0,
+  "stages": [
+    "baseline",
+    "publish",
+    "release"
+  ],
+  "paths": [
+    {
+      "path": "declared/from-fs.txt",
+      "change": "added",
+      "classification": "declared"
+    },
+    {
+      "path": "undeclared-from-shell.txt",
+      "change": "added",
+      "classification": "undeclared"
+    }
+  ],
+  "truncated": false,
+  "allocation": "released",
+  "sourceVersionChanged": true
+}

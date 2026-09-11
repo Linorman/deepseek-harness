@@ -22,6 +22,10 @@
       "types": "./lib/types/invariant.d.ts",
       "default": "./lib/invariant.js"
     },
+    "./authenticated-product-call": {
+      "types": "./lib/types/authenticated-product-call.d.ts",
+      "default": "./lib/types/authenticated-product-call.js"
+    },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./api": {
@@ -64,7 +68,9 @@
     "@clocky/clocky-session-title": "workspace:^",
     "@clocky/clocky-settings": "workspace:^",
     "@clocky/clocky-skill": "workspace:^",
-    "@clocky/clocky-subagent": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-artifact": "workspace:^",
+    "@clocky/clocky-team-run": "workspace:^",
     "@clocky/clocky-jobs": "workspace:^",
     "@clocky/clocky-tools": "workspace:^",
     "@clocky/clocky-user-approval": "workspace:^",
@@ -75,20 +81,42 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-agent-presets": "workspace:^",
-    "@clocky/clocky-cordis-host-runner": "workspace:^",
-    "@clocky/clocky-invariants": "workspace:^"
-  },
-  "devDependencies": {
-    "@clocky/cordis": "workspace:^",
     "@clocky/clocky-agent-presets": "workspace:^",
     "@clocky/clocky-cordis-host-runner": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
+    "@clocky/clocky-team-channel-summary": "workspace:^",
+    "@clocky/clocky-team-human-actor": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-team-channel-admission": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/clocky-agent-loop": "workspace:^",
+    "@clocky/clocky-agent-loop-testkit": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/clocky-agent-runtime-in-process": "workspace:^",
+    "@clocky/clocky-cordis-host-runner": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
     "@clocky/clocky-storage": "workspace:^",
     "@clocky/clocky-storage-domain": "workspace:^",
+    "@clocky/clocky-storage-json": "workspace:^",
+    "@clocky/clocky-storage-log": "workspace:^",
+    "@clocky/clocky-team-activation-controller": "workspace:^",
+    "@clocky/clocky-team-agent-client": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-team-channel-summary": "workspace:^",
+    "@clocky/clocky-team-hub": "workspace:^",
+    "@clocky/clocky-team-human-actor": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-link-local": "workspace:^",
     "@clocky/clocky-typert-protocol": "workspace:^",
     "@clocky/clocky-typert-registry": "workspace:^",
+    "@clocky/clocky-team-channel-admission": "workspace:^",
+    "@clocky/clocky-attachment-local": "workspace:^",
+    "@clocky/clocky-team-channel-basic": "workspace:^",
     "@clocky/cordis": "workspace:^"
   }
 }

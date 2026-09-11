@@ -21,7 +21,7 @@
 import { resolve as resolvePath } from 'node:path'
 import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import type {} from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent } from '@clocky/clocky-agent'
 import { canonicalPath, type SandboxExecutionPolicy, type SandboxMode } from '@clocky/clocky-sandbox'
 import type { Session } from '@clocky/clocky-session'
 import type {} from '@clocky/clocky-system-prompt'
@@ -69,7 +69,8 @@ export interface Config {
   mode?: SandboxMode
   /**
    * Fallback root for agentless calls and sessions without a cwd (default:
-   * `process.cwd()`). Normal agent calls use their session cwd instead.
+   * `process.cwd()`). Normal agent calls use their Team allocation root when
+   * one is active, then their Session cwd.
    */
   workspaceRoot?: string
 }
@@ -78,6 +79,8 @@ export interface Config {
 export interface SandboxPolicyRequest {
   /** Calling session; its immutable cwd becomes the workspace boundary. */
   session?: Session
+  /** Calling agent; a Team allocation root takes precedence over Session cwd. */
+  agent?: Pick<Agent, 'ctx' | 'session'>
   /** Explicit approved mode override, which outranks session policy. */
   mode?: SandboxMode
 }
@@ -117,7 +120,10 @@ export class SandboxPolicyService extends Service {
           const session = context.agent?.session
           return session === undefined
             ? ''
-            : renderPolicyContext(this.resolve({ session }))
+            : renderPolicyContext(this.resolve({
+              session,
+              ...context.agent === undefined ? {} : { agent: context.agent },
+            }))
         },
       })
     })
@@ -126,18 +132,22 @@ export class SandboxPolicyService extends Service {
   /**
    * Resolve the complete policy for one capability call. An approved explicit
    * mode outranks the session's last `sandbox/mode` event, which outranks the
-   * deployment default. A session cwd is its workspace-write boundary; the
-   * configured root is the fallback for agentless calls and sessions without a
-   * cwd.
+   * deployment default. A Team allocation root is the workspace-write boundary
+   * when present; a Session cwd is the next fallback, followed by the
+   * configured root for agentless calls and Sessions without a cwd.
    * @param request - optional session and approved mode override.
    * @returns the fully resolved per-call mode and absolute workspace root.
    */
   resolve(request: SandboxPolicyRequest = {}): SandboxExecutionPolicy {
     const { session } = request
+    const effectiveSession = session ?? request.agent?.session
+    const workspaceRoot = request.agent === undefined
+      ? effectiveSession?.header.cwd
+      : resolveAgentWorkspaceRoot(request.agent)
     return {
-      mode: request.mode ?? (session === undefined ? undefined : this.overrideOf(session)) ?? this.defaultMode,
-      workspaceRoot: resolveWorkspaceRoot(session?.header.cwd ?? this.workspaceRoot),
-      ...session === undefined ? {} : { sessionId: session.id },
+      mode: request.mode ?? (effectiveSession === undefined ? undefined : this.overrideOf(effectiveSession)) ?? this.defaultMode,
+      workspaceRoot: resolveWorkspaceRoot(workspaceRoot ?? this.workspaceRoot),
+      ...effectiveSession === undefined ? {} : { sessionId: effectiveSession.id },
     }
   }
 

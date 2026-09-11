@@ -1,16 +1,14 @@
 import { createServer } from 'node:http'
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
-import { zstdDecompress } from 'node:zlib'
 import { execa } from 'execa'
 import { describe, expect, it } from 'vitest'
 
 const binScript = fileURLToPath(new URL('../../../packages/examples/jsonrpc-demo/src/bin.ts', import.meta.url))
 const configPath = fileURLToPath(new URL('../cordis.yml', import.meta.url))
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url))
-const decompress = promisify(zstdDecompress)
+const productCredential = 'jsonrpc-keyless-product-credential'
 
 function waitForLine(
   lines: string[],
@@ -45,11 +43,7 @@ function waitForLine(
 }
 
 describe('jsonrpc-agent keyless smoke', () => {
-  it.each([
-    { label: 'reports max-token turns with the default mapping config', envValue: undefined },
-    { label: 'reports max-token turns with mapping enabled through env', envValue: 'true' },
-    { label: 'reports max-token turns with mapping disabled through env', envValue: 'false' },
-  ])('$label', async ({ envValue }) => {
+  it('creates a Team, routes coordinator input, and rejects an unauthenticated Team write without mutation', async () => {
     const root = await mkdtemp(join(repoRoot, '.tmp-jsonrpc-agent-smoke-'))
     const modelRequests: Record<string, unknown>[] = []
     const modelServer = createServer((request, response) => {
@@ -70,7 +64,10 @@ describe('jsonrpc-agent keyless smoke', () => {
     if (address === null || typeof address === 'string') throw new Error('model server did not bind a TCP port')
     const testConfigPath = join(root, 'cordis.yml')
     const config = await readFile(configPath, 'utf8')
-    await writeFile(testConfigPath, config.replace('baseURL: http://127.0.0.1:9', `baseURL: http://127.0.0.1:${address.port}`))
+    const sdkProviderPath = join(repoRoot, 'examples/jsonrpc-agent/tests/fixtures/sdk-product-principal.ts')
+    await writeFile(testConfigPath, config
+      .replace("name: './tests/fixtures/sdk-product-principal.ts'", `name: ${JSON.stringify(sdkProviderPath)}`)
+      .replace('baseURL: http://127.0.0.1:9', `baseURL: http://127.0.0.1:${address.port}`))
     // The line-predicate protocol driving below is the genuinely custom part;
     // execa owns spawn, the deadline, and exit settlement around it.
     const child = execa(process.execPath, [
@@ -84,7 +81,6 @@ describe('jsonrpc-agent keyless smoke', () => {
         TEST_API_KEY: 'keyless-smoke-no-call',
         CLOCKY_CWD: root,
         CLOCKY_SESSION_ROOT: join(root, '.sessions'),
-        ...(envValue === undefined ? {} : { CLOCKY_MAX_TOKENS_AS_SUCCESS: envValue }),
       },
       timeout: 35_000,
       killSignal: 'SIGKILL',
@@ -106,7 +102,7 @@ describe('jsonrpc-agent keyless smoke', () => {
         jsonrpc: '2.0',
         id: 1,
         method: 'initialize',
-        params: { cwd: root, provider: 'test-provider', model: 'test-model', maxTokens: 1234 },
+        params: { credential: productCredential, cwd: root, provider: 'test-provider', model: 'test-model', maxTokens: 1234 },
       })}\n`)
       const initialized = await waitForLine(lines, value => value.id === 1, () => stderr)
       expect(initialized).toMatchObject({
@@ -118,55 +114,97 @@ describe('jsonrpc-agent keyless smoke', () => {
       child.stdin.write(`${JSON.stringify({
         jsonrpc: '2.0',
         id: 2,
-        method: 'session/prompt',
-        params: { sessionId: 'main', contentBlocks: [{ type: 'text', text: 'inspect tools' }] },
+        method: 'team/create',
+        params: { objective: 'Inspect tools.', contentBlocks: [{ type: 'text', text: 'inspect tools' }] },
       })}\n`)
-      const prompt = await waitForLine(lines, value => value.id === 2, () => stderr)
-      expect(prompt).toMatchObject({
+      const created = await waitForLine(lines, value => value.id === 2, () => stderr)
+      expect(created).toMatchObject({
         jsonrpc: '2.0',
         id: 2,
-        result: { messageId: expect.any(String) as unknown },
+        result: {
+          teamId: expect.any(String) as unknown,
+          coordinatorSessionId: expect.any(String) as unknown,
+          envelopeId: expect.any(String) as unknown,
+        },
       })
+      const creation = created.result as { teamId: string; coordinatorSessionId: string }
       const turnEnd = await waitForLine(lines, (value) => {
         if (value.method !== 'session.event') return false
         const params = value.params as Record<string, unknown> | undefined
         const event = params?.event as Record<string, unknown> | undefined
-        return params?.sessionId === 'main' && event?.type === 'turn/end'
+        return params?.sessionId === creation.coordinatorSessionId && event?.type === 'turn/end'
       }, () => stderr)
       expect(turnEnd).toMatchObject({
         jsonrpc: '2.0',
         method: 'session.event',
         params: {
-          sessionId: 'main',
+          sessionId: creation.coordinatorSessionId,
           event: {
             type: 'turn/end',
             data: { reason: { kind: 'max-tokens' } },
           },
         },
       })
-      const tools = modelRequests[0]?.tools as { function?: { name?: string } }[]
-      expect(modelRequests[0]?.max_completion_tokens).toBe(1234)
-      expect(tools.map(tool => tool.function?.name).sort()).toEqual([
-        'bash',
-        'edit',
-        'read',
-        'subagent',
-        'todo_write',
-        'write',
-      ])
+      const coordinatorRequest = modelRequests.find((request) => {
+        const tools = request.tools as { function?: { name?: string } }[] | undefined
+        return tools?.some(tool => tool.function?.name === 'team_final') ?? false
+      })
+      const tools = coordinatorRequest?.tools as { function?: { name?: string } }[]
+      expect(coordinatorRequest?.max_completion_tokens).toBe(1234)
+      expect(tools.map(tool => tool.function?.name)).toContain('team_final')
 
-      child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'shutdown' })}\n`)
-      const shutdown = await waitForLine(lines, value => value.id === 3, () => stderr)
-      expect(shutdown).toMatchObject({ jsonrpc: '2.0', id: 3, result: {} })
-      const exit = await child
-      expect(exit.exitCode, `signal=${String(exit.signal)}; stderr=${stderr}`).toBe(0)
-      const sessionsRoot = join(root, '.sessions')
-      const files = await readdir(sessionsRoot, { recursive: true })
-      const log = files.find(file => file.endsWith('.jsonl.zstd'))
-      expect(log).toBeDefined()
-      const compressed = await readFile(join(sessionsRoot, log!))
-      expect(compressed.subarray(0, 4).toString('hex')).toBe('28b52ffd')
-      expect(JSON.parse((await decompress(compressed)).toString())).toMatchObject({ type: 'session', id: 'main' })
+      child.stdin.write(`${JSON.stringify({
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'team/task-list',
+        params: { teamId: creation.teamId },
+      })}\n`)
+      const tasksBefore = await waitForLine(lines, value => value.id === 3, () => stderr)
+      expect(tasksBefore).toMatchObject({
+        jsonrpc: '2.0',
+        id: 3,
+        result: { items: expect.any(Array) as unknown },
+      })
+
+      child.stdin.write(`${JSON.stringify({
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'team/task-create',
+        params: {
+          teamId: creation.teamId,
+          expectedCursor: 0,
+          idempotencyKey: 'keyless-smoke-untrusted-task',
+          subject: 'Untrusted task',
+          description: 'This write must never reach the Team journal.',
+          blockedBy: [],
+          requiredCapabilities: [],
+          priority: 0,
+          readScopes: [],
+          writeScopes: [],
+          workspaceMode: 'shared',
+          budget: {},
+          reviewPolicy: { kind: 'none' },
+          maxAttempts: 1,
+        },
+      })}\n`)
+      const rejected = await waitForLine(lines, value => value.id === 4, () => stderr)
+      expect(rejected).toMatchObject({
+        jsonrpc: '2.0',
+        id: 4,
+        error: {
+          code: -32_002,
+          data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+        },
+      })
+
+      child.stdin.write(`${JSON.stringify({
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'team/task-list',
+        params: { teamId: creation.teamId },
+      })}\n`)
+      const tasksAfter = await waitForLine(lines, value => value.id === 5, () => stderr)
+      expect(tasksAfter.result).toEqual(tasksBefore.result)
     } finally {
       // No-op after exit; reject: false settles on every outcome, so cleanup never races teardown.
       child.kill('SIGKILL')
@@ -175,29 +213,4 @@ describe('jsonrpc-agent keyless smoke', () => {
       await rm(root, { recursive: true, force: true })
     }
   }, 40_000)
-
-  it('rejects an invalid max-token success env value', async () => {
-    const { exitCode, stdout, stderr } = await execa(process.execPath, [
-      '--import',
-      'tsx',
-      binScript,
-      configPath,
-    ], {
-      cwd: repoRoot,
-      env: {
-        TEST_API_KEY: 'keyless-smoke-no-call',
-        CLOCKY_MAX_TOKENS_AS_SUCCESS: 'sometimes',
-      },
-      stdin: 'ignore',
-      timeout: 25_000,
-      killSignal: 'SIGKILL',
-      reject: false,
-    })
-
-    expect(exitCode, stderr).toBe(1)
-    expect(stdout).toBe('')
-    expect(stderr).toContain('plugin tree failed to load')
-    expect(stderr).toContain('failed to apply loader entry sdk-jsonrpc-server (@clocky/clocky-sdk-jsonrpc-server)')
-    expect(stderr).toContain('sometimes')
-  }, 30_000)
 })

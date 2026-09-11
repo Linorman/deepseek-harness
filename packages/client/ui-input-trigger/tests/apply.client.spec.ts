@@ -52,7 +52,6 @@ describe('apply', () => {
     expect(t('command')).toBe('命令')
     locale.setLocale('en')
     expect(t('skill')).toBe('Skills')
-    expect(t('subagent')).toBe('Subagents')
     expect(t('loading')).toBe('Loading…')
   })
 

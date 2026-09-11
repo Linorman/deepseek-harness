@@ -1,36 +1,82 @@
 /**
  * Keyless integration tests for the SDK subagent backend. Each spawns a REAL
  * subprocess — the SDK client package's scripted fake runtime — and drives it
- * through the REAL backend over real stdio JSON-RPC, so the handshake, the
- * turn round-trip, stop-reason mapping, cancellation, env scrubbing, and
+ * through the REAL backend over real stdio JSON-RPC, so the handshake, Team
+ * final round-trip, cancellation, env scrubbing, and
  * quiescent disposal are all exercised end to end. No model, no key.
  */
 
 import { describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import SubagentRuntime from '@clocky/clocky-subagent'
-import type { Agent } from '@clocky/clocky-agent'
+import { AgentWorkspaceUnavailableError, openAgentWorkspaceLease, type Agent } from '@clocky/clocky-agent'
 import * as sdk from '../src/index.ts'
 import {
   DEFAULT_DISPOSE_EOF_GRACE_MS,
   DEFAULT_DISPOSE_GRACE_MS,
   DEFAULT_SHUTDOWN_TIMEOUT_MS,
-  sdkStopReason,
   startSdkRun,
   type SdkRunSpec,
 } from '../src/run.ts'
 
 const fakeRuntime = fileURLToPath(new URL('../../../sdk/client/tests/fake-runtime.ts', import.meta.url))
+const SDK_SUBAGENT_TEST_CREDENTIAL = 'sdk-subagent-test-credential'
 
-/** A parent Agent stub. The SDK backend reads exactly one thing off it: the session header's cwd (the workspace its child inherits). */
+const teamRuntime = [
+  "const { writeFileSync } = require('node:fs')",
+  "const { createInterface } = require('node:readline')",
+  "const reply = (id, result) => process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result }) + '\\n')",
+  "createInterface({ input: process.stdin }).on('line', (line) => {",
+  '  const frame = JSON.parse(line)',
+  "  if (frame.method === 'initialize') return reply(frame.id, { serverInfo: { name: 'clocky-sdk-runtime', version: 'test' } })",
+  "  if (frame.method === 'team/create') {",
+  "    const result = { teamId: 'team', coordinatorSessionId: 'coordinator', envelopeId: 'input' }",
+  "    if (process.env.FAKE_TEAM_CREATE_READY_FILE) writeFileSync(process.env.FAKE_TEAM_CREATE_READY_FILE, 'ready\\n')",
+  '    if (process.env.FAKE_TEAM_CREATE_GO_FILE) {',
+  "      const timer = setInterval(() => { if (require('node:fs').existsSync(process.env.FAKE_TEAM_CREATE_GO_FILE)) { clearInterval(timer); reply(frame.id, result) } }, 5)",
+  '      return',
+  '    }',
+  '    return reply(frame.id, result)',
+  '  }',
+  "  if (frame.method === 'team/wait-final') {",
+  "    if (process.env.FAKE_TEAM_READY_FILE) writeFileSync(process.env.FAKE_TEAM_READY_FILE, 'ready\\n')",
+  '    if (process.env.FAKE_TEAM_HANG) return',
+  "    return reply(frame.id, { teamId: 'team', channelId: 'channel', envelopeId: 'final', text: 'Team final fallback' })",
+  '  }',
+  "  if (frame.method === 'team/cancel') {",
+  "    if (process.env.FAKE_TEAM_CANCEL_FILE) writeFileSync(process.env.FAKE_TEAM_CANCEL_FILE, 'cancelled\\n')",
+  "    if (process.env.FAKE_TEAM_CANCEL_ERROR) return process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: frame.id, error: { code: 1, message: 'cancel failed' } }) + '\\n')",
+  '    return reply(frame.id, {})',
+  '  }',
+  "  if (frame.method === 'shutdown') { reply(frame.id, {}); return setImmediate(() => process.exit(0)) }",
+  "  process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: frame.id, error: { code: -32603, message: 'unknown method' } }) + '\\n')",
+  '})',
+].join('\n')
+
+/** A parent Agent stub whose resolved workspace root falls back to its Session header. */
 const fakeParent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
 
 function request(text = 'p', signal = new AbortController().signal) {
   return { label: text, prompt: [{ type: 'text' as const, text }], parent: fakeParent, signal }
+}
+
+function teamRuntimeSpec(env: Record<string, string> = {}): SdkRunSpec {
+  return {
+    command: process.execPath,
+    args: ['--eval', teamRuntime],
+    cwd: process.cwd(),
+    provider: 'p',
+    model: 'm',
+    credential: SDK_SUBAGENT_TEST_CREDENTIAL,
+    env,
+    shutdownTimeoutMs: 100,
+    disposeEofGraceMs: 200,
+    disposeGraceMs: 200,
+  }
 }
 
 /** Mount the SDK backend pointed at the fake runtime, scripted by `fakeEnv`. */
@@ -46,6 +92,7 @@ async function setup(fakeEnv: Record<string, string> = {}, config: Partial<sdk.C
     args: [fakeRuntime],
     provider: 'fake-provider',
     model: 'fake-model',
+    credential: SDK_SUBAGENT_TEST_CREDENTIAL,
     env: fakeEnv,
     ...config,
   })
@@ -69,24 +116,8 @@ async function waitForFile(file: string, timeoutMs = 5000): Promise<void> {
   }
 }
 
-describe('sdkStopReason', () => {
-  it('maps each child turn-end reason to the harness vocabulary', () => {
-    expect(sdkStopReason({ kind: 'completed' })).toBe('completed')
-    expect(sdkStopReason({ kind: 'max-tokens' })).toBe('max-tokens')
-    expect(sdkStopReason({ kind: 'aborted', reason: { kind: 'user' } })).toBe('aborted')
-    expect(sdkStopReason({ kind: 'error', error: { message: 'x', code: 'UNKNOWN' } })).toBe('error')
-    expect(sdkStopReason({ kind: 'interrupted' })).toBe('error')
-    expect(sdkStopReason({ kind: 'aborted', reason: { kind: 'disposed' } })).toBe('aborted')
-  })
-
-  it('treats an absent or unknown reason as an error', () => {
-    expect(sdkStopReason(undefined)).toBe('error')
-    expect(sdkStopReason({ kind: 'something-new' } as never)).toBe('error')
-  })
-})
-
 describe('clocky-subagent-clocky-sdk provider', () => {
-  it('runs a child turn end to end with a parent-unique run id', async () => {
+  it('runs a child Team final end to end with a parent-unique run id', async () => {
     const ctx = await setup({ FAKE_TEXT: 'hello from sdk child' })
     const run = await ctx.subagents.start('clocky-sdk', request('do X'))
     expect(run.localAgent).toBeUndefined()
@@ -116,6 +147,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       const { readFileSync } = await import('node:fs')
       const records = readFileSync(recordFile, 'utf8').trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
       expect(records).toEqual([{
+        credential: SDK_SUBAGENT_TEST_CREDENTIAL,
         cwd: process.cwd(),
         provider: 'fake-provider',
         model: 'fake-model',
@@ -147,22 +179,29 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     }
   })
 
-  it('maps a max-tokens child turn end', async () => {
+  it('maps an explicit Team final to completed regardless of a coordinator turn end', async () => {
     const ctx = await setup({ FAKE_REASON_KIND: 'max-tokens', FAKE_STATUS: 'error' })
     const run = await ctx.subagents.start('clocky-sdk', request())
-    expect((await run.result).stopReason).toBe('max-tokens')
+    expect((await run.result).stopReason).toBe('completed')
     await run.dispose()
     await ctx.fiber.dispose()
   })
 
-  it('flattens a child turn error into stopReason error and keeps partial text', async () => {
+  it('uses committed coordinator output before the Team final fallback', async () => {
     const ctx = await setup({ FAKE_REASON_KIND: 'error', FAKE_STATUS: 'error', FAKE_TEXT: 'partial answer' })
     const run = await ctx.subagents.start('clocky-sdk', request())
     const result = await run.result
-    expect(result.stopReason).toBe('error')
+    expect(result.stopReason).toBe('completed')
     expect(text(result.output)).toBe('partial answer')
     await run.dispose()
     await ctx.fiber.dispose()
+  })
+
+  it('uses Team final text when the coordinator commits no output', async () => {
+    const run = await startSdkRun(request(), teamRuntimeSpec())
+    const result = await run.result
+    expect(result).toEqual({ output: [{ type: 'text', text: 'Team final fallback' }], stopReason: 'completed' })
+    await run.dispose()
   })
 
   it('keeps streamed text when a malformed final message prevents completion', async () => {
@@ -184,16 +223,32 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     const ctx = await setup({ FAKE_EMPTY_MESSAGE: '1', FAKE_REASON_KIND: 'max-tokens' })
     const run = await ctx.subagents.start('clocky-sdk', request())
     const result = await run.result
-    expect(result.stopReason).toBe('max-tokens')
+    expect(result.stopReason).toBe('completed')
     expect(text(result.output)).toBe('hello from fake runtime')
     await run.dispose()
     await ctx.fiber.dispose()
   })
 
-  it('reports a settled-without-turn child as an error', async () => {
+  it('accepts an explicit Team final when the coordinator omits a terminal turn reason', async () => {
     const ctx = await setup({ FAKE_REASON_KIND: 'none', FAKE_STATUS: 'error' })
     const run = await ctx.subagents.start('clocky-sdk', request())
-    expect((await run.result).stopReason).toBe('error')
+    expect((await run.result).stopReason).toBe('completed')
+    await run.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('flattens a malformed coordinator event without rejecting the run result', async () => {
+    const ctx = await setup({ FAKE_MALFORMED_EVENT: '1' })
+    const run = await ctx.subagents.start('clocky-sdk', request())
+    expect(await run.result).toEqual({ output: [], stopReason: 'error' })
+    await run.dispose()
+    await ctx.fiber.dispose()
+  })
+
+  it('flattens a coordinator message missing its data record', async () => {
+    const ctx = await setup({ FAKE_MESSAGE_WITHOUT_DATA: '1', FAKE_TEXT: 'stream-only answer' })
+    const run = await ctx.subagents.start('clocky-sdk', request())
+    expect(await run.result).toEqual({ output: [{ type: 'text', text: 'stream-only answer' }], stopReason: 'error' })
     await run.dispose()
     await ctx.fiber.dispose()
   })
@@ -209,6 +264,51 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     expect(result.output).toEqual([])
     await run.dispose()
     await ctx.fiber.dispose()
+  })
+
+  it('requests cancellation from a published Team before disposal', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-team-cancel-'))
+    const ready = join(tmp, 'ready')
+    const cancelled = join(tmp, 'cancelled')
+    try {
+      const controller = new AbortController()
+      const run = await startSdkRun(request('p', controller.signal), teamRuntimeSpec({
+        FAKE_TEAM_READY_FILE: ready,
+        FAKE_TEAM_CANCEL_FILE: cancelled,
+        FAKE_TEAM_HANG: '1',
+      }))
+      await waitForFile(ready)
+      controller.abort('test')
+      expect((await run.result).stopReason).toBe('aborted')
+      await waitForFile(cancelled)
+      await run.dispose()
+    } finally {
+      rmSync(tmp, { recursive: true, force: true })
+    }
+  })
+
+  it('cancels a Team that publishes after local abort', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-late-team-cancel-'))
+    const ready = join(tmp, 'ready')
+    const go = join(tmp, 'go')
+    const cancelled = join(tmp, 'cancelled')
+    try {
+      const controller = new AbortController()
+      const run = await startSdkRun(request('p', controller.signal), teamRuntimeSpec({
+        FAKE_TEAM_CREATE_READY_FILE: ready,
+        FAKE_TEAM_CREATE_GO_FILE: go,
+        FAKE_TEAM_CANCEL_FILE: cancelled,
+        FAKE_TEAM_CANCEL_ERROR: '1',
+      }))
+      await waitForFile(ready)
+      controller.abort('test')
+      expect((await run.result).stopReason).toBe('aborted')
+      writeFileSync(go, 'go\n')
+      await waitForFile(cancelled)
+      await run.dispose()
+    } finally {
+      rmSync(tmp, { recursive: true, force: true })
+    }
   })
 
   it('cancelling between handshake and publish rejects start after reap', async () => {
@@ -227,6 +327,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
         cwd: process.cwd(),
         provider: 'p',
         model: 'm',
+        credential: SDK_SUBAGENT_TEST_CREDENTIAL,
         env: { FAKE_INIT_READY: ready, FAKE_INIT_GO: go },
         shutdownTimeoutMs: 100,
         disposeEofGraceMs: 200,
@@ -235,7 +336,6 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       const pending = startSdkRun(request('p', controller.signal), spec)
       await waitForFile(ready)
       controller.abort('mid-handshake')
-      const { writeFileSync } = await import('node:fs')
       writeFileSync(go, 'go\n')
       await expect(pending).rejects.toThrow('aborted before the SDK child started')
     } finally {
@@ -279,6 +379,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
           cwd: tmp,
           provider: 'p',
           model: 'm',
+          credential: SDK_SUBAGENT_TEST_CREDENTIAL,
           env: {},
           shutdownTimeoutMs: DEFAULT_SHUTDOWN_TIMEOUT_MS,
           disposeEofGraceMs: DEFAULT_DISPOSE_EOF_GRACE_MS,
@@ -289,6 +390,11 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     } finally {
       rmSync(tmp, { recursive: true, force: true })
     }
+  })
+
+  it('fails closed before spawning when the child product credential is absent', async () => {
+    const { credential: _credential, ...withoutCredential } = teamRuntimeSpec()
+    await expect(startSdkRun(request(), withoutCredential)).rejects.toThrow('requires an explicitly configured product credential')
   })
 
   it('rejects after reaping when the child dies before the handshake', async () => {
@@ -310,6 +416,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       cwd: process.cwd(),
       provider: 'p',
       model: 'm',
+      credential: SDK_SUBAGENT_TEST_CREDENTIAL,
       env: { FAKE_HANG_INIT: '1' },
       shutdownTimeoutMs: 100,
       disposeEofGraceMs: 200,
@@ -328,6 +435,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       cwd: process.cwd(),
       provider: 'p',
       model: 'm',
+      credential: SDK_SUBAGENT_TEST_CREDENTIAL,
       // The fake dies as soon as the prompt arrives: FAKE_HANG_PROMPT plus a
       // short-lived process is simulated by killing via dispose below instead;
       // here use FAKE_MALFORMED to make the prompt reply violate the protocol.
@@ -368,6 +476,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       args: [fakeRuntime],
       provider: 'p',
       model: 'm',
+      credential: SDK_SUBAGENT_TEST_CREDENTIAL,
       env: {},
     })
     expect(ctx.subagents.getProvider('sdk-hmr')?.name).toBe('sdk-hmr')
@@ -404,6 +513,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
         args: [],
         provider: 'p',
         model: 'm',
+        credential: SDK_SUBAGENT_TEST_CREDENTIAL,
         maxTokens,
         env: {},
       })).rejects.toThrow('maxTokens')
@@ -422,6 +532,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
         args: [],
         provider: 'p',
         model: 'm',
+        credential: SDK_SUBAGENT_TEST_CREDENTIAL,
         maxTokens,
         env: {},
         shutdownTimeoutMs: DEFAULT_SHUTDOWN_TIMEOUT_MS,
@@ -442,6 +553,7 @@ describe('clocky-subagent-clocky-sdk provider', () => {
       cwd: '',
       provider: 'p',
       model: 'm',
+      credential: SDK_SUBAGENT_TEST_CREDENTIAL,
       env: {},
     })).rejects.toThrow('config cwd must not be empty')
     await ctx.fiber.dispose()
@@ -450,13 +562,22 @@ describe('clocky-subagent-clocky-sdk provider', () => {
   it('uses a validated config cwd override instead of the parent session cwd', async () => {
     const tmp = mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-cwd-'))
     try {
+      const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+      const lease = openAgentWorkspaceLease(parent)
       const ctx = await setup({ FAKE_ECHO_CWD: '1', FAKE_TEXT: 'done' }, { cwd: tmp })
-      const run = await ctx.subagents.start('clocky-sdk', request())
-      const result = await run.result
-      const { realpathSync } = await import('node:fs')
-      expect(text(result.output)).toContain(`cwd=${realpathSync(tmp)}`)
-      await run.dispose()
-      await ctx.fiber.dispose()
+      try {
+        lease.markUnavailable()
+        const run = await ctx.subagents.start('clocky-sdk', {
+          label: 'p', prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
+        })
+        const result = await run.result
+        const { realpathSync } = await import('node:fs')
+        expect(text(result.output)).toContain(`cwd=${realpathSync(tmp)}`)
+        await run.dispose()
+      } finally {
+        lease.dispose()
+        await ctx.fiber.dispose()
+      }
     } finally {
       rmSync(tmp, { recursive: true, force: true })
     }
@@ -470,6 +591,41 @@ describe('clocky-subagent-clocky-sdk provider', () => {
     }))
       .rejects.toThrow('no working directory for the child')
     await ctx.fiber.dispose()
+  })
+
+  it('uses a live allocation root from the delegating Agent before its session cwd', async () => {
+    const allocationRoot = realpathSync(mkdtempSync(join(tmpdir(), 'subagent-clocky-sdk-allocation-root-')))
+    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const lease = openAgentWorkspaceLease(parent)
+    const ctx = await setup({ FAKE_ECHO_CWD: '1', FAKE_TEXT: 'done' })
+    try {
+      lease.publishRoot(allocationRoot)
+      const run = await ctx.subagents.start('clocky-sdk', {
+        label: 'p', prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
+      })
+      const result = await run.result
+      expect(text(result.output)).toContain(`cwd=${allocationRoot}`)
+      await run.dispose()
+    } finally {
+      lease.dispose()
+      await ctx.fiber.dispose()
+      rmSync(allocationRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('fails closed when the parent workspace lease is unavailable', async () => {
+    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const lease = openAgentWorkspaceLease(parent)
+    const ctx = await setup()
+    try {
+      lease.markUnavailable()
+      await expect(ctx.subagents.start('clocky-sdk', {
+        label: 'p', prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
+      })).rejects.toThrow(AgentWorkspaceUnavailableError)
+    } finally {
+      lease.dispose()
+      await ctx.fiber.dispose()
+    }
   })
 
   it('keeps named plugin exports with no default export (loader shape)', () => {

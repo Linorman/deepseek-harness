@@ -1,0 +1,74 @@
+{
+  "state": "Fourth channel batch fully built and real browser validated after all UI/lint fixes. Await compact Luna publint summary. Goal remains active; next keyed basic input retry gap and remaining fullHub failures.",
+  "models": {
+    "code": "gpt-6-astra medium",
+    "execution": "gpt-5.6-luna max"
+  },
+  "root_batch4": [
+    "Core ChannelHumanAdmissionSnapshot adds expectedNext/protocolStatus with actual consult request identity+sequence+review flag; Host/SDK admission schemas wired; ordinary invitation and Link frame unchanged.",
+    "Core TeamChannelCatalog + summary public bounds schemas; summary Consumer.describe; Host team.channel.catalog and SDK team/channel-catalog with high-level TypeScript/Python methods.",
+    "SDK team/channel-summarize using existing human summary proof and Consumer, TypeScript/Python parity. Python runtime mounts basic and summary with explicit same bounds as Headless/Web.",
+    "Shared admission/principal resolvePrincipalChannelText uses authoritative metadata and basic pure consult resolver; Host/SDK channelInput accepts one basic text block; rejects review, wrong turn/peer/causation, media in basic, steer/subset discussion.",
+    "Hub renderChannelDeliveryView now serializes adapter ref+expectedNext rather than adapter.projectView full history, preventing recent/summary policy bypass; policy remains sole message content.",
+    "Host tests catalog registration disposal/auth, actual consult/discussion and summary; Hub recent/summary original text exclusion, explicit endpoint ACKs in fixture; SDK server auth summary/catalog, stdio client low/high API, Python route tests."
+  ],
+  "agents": {
+    "child_parent_medium": "idle/completed lint+usage fixture; current source owned done",
+    "child_final_medium": "latest UI3race code+tests ready; 6file list sentLuna; source modified after1907 build so must rebuild",
+    "verification_luna": "Finished final build/browser/NodeNext; now limited publint8packages, rawCLI warns dev-only ./src/* missing packed files for some packages (existing intentionalpublicationpolicy, do not include sources)."
+  },
+  "next": [
+    "Collect limited publint final counts; no docs/push/commit",
+    "Next feature: high-level basic channelInput keyed retry after protocol advance/close preserving exactimmutable draft + taskId, useexisting Hub keymatch authority no new cancellation readback restriction",
+    "Continue fullHub bail1 after usage-replay4 fixture fix; suite not fullypassed yet",
+    "Other original goal gaps notallcomplete (shared-only child slice etc); do not mark goal complete"
+  ],
+  "newly_observed_followup_gap": "Human channelInput preflight blocks keyed request retries after request->response and response retries after auto-close; use current authenticated own invitation/metadata plus immutable role/retained request reconstruction for keyed retries, let Hub oldkey match/newkey phase gates own acceptance; preserve taskId by draft.kind rather than current phase. Root decided NOT to add fresh Team liveness restrictions to existing raw oldkey readback merely because cancellation occurred: no new writes/side effects, current proof+member checks remain; no proven authority gap.",
+  "prior_verified": {
+    "batch3": "Host media4 SDK media5 SDK client2 Python1 UI52, full build and formal browser1 passed",
+    "child": "Loader complete/cancel2 TeamRun91 task13 child result28 passed"
+  },
+  "constraints": [
+    "No docs/README/Agent Notes edits",
+    "No reset/clean/commit/push; huge shared dirty work",
+    "Luna alone executes checks; project .tmp TMPDIR TSX_DISABLE_CACHE=1",
+    "full build must pnpm run build"
+  ],
+  "recent_fixes": [
+    "Core catalog summary optional union + Hub callChannelAdapter/freeze corrected; first root Host/client tsc now pass (subsequent small changes need final types).",
+    "Exact basic alias alone insufficient: Vite rewriteRelativeImportExtensions selects old source-adjacent basic.js. Preserved 8 generated untracked index/basic artifacts in .tmp/source-artifact-quarantine/team-channel-basic; no unrelated cleanup.",
+    "Host TEAM_INVALID_ARGUMENT now maps to typed team-invalid-argument (rpc.ts/schema and test) rather than internal.",
+    "Parent test fixtures corrected task.execution, legal full-transcript bounds and actual team/channel-view event type; source gates not loosened.",
+    "UI reconnect/loading errors now disable stale basic/ACK authority controls while preserving history.",
+    "Hub findWorkflowPlanChannel now includes pending invitations so exact retry at capacity/restart reuses channel; real old fullHub failure resolved.",
+    "Package files exact new supervisor endpoint/principal/summary tool inventory; check-workspace-constraints packageFileExtras added only these3 names. MissingHostdevCordis/examples digest/Python supervisor dependencies fixed;install+gates PASS.",
+    "Root schema removed impossible world.kind comparison (schema literal) and deprecated .safe after int; Host catalog Promise.then preserves async errors; SDK media guard no nonnull; formatting only otherwise.",
+    "Core registry source disposers now expose actual void|Promise and delegation awaits cleanup/errors, new test6 PASS; Root final list type also permits boolean from ctx.on and last2 longlines fixed (no behavior change).",
+    "UI last3race fixes ready: oldACK awaited read fenced, channel reads bounded by selected Team generation, summary refresh preserves loaded records/selection even on image rejection."
+  ],
+  "recent_verified": [
+    "Hub channel-view-contract10 PASS",
+    "Host catalog+metadata2 PASS; Host basic consult/discussion+real summary1 PASS after quarantine",
+    "SDK media/basic10 PASS after quarantine",
+    "SDK server catalog/summary and SDK client/Python ran; await Luna compact final counts",
+    "Agent closed normal consult/discussion2 PASS",
+    "UI reconnect2files41 PASS",
+    "Fourth remaining frontend10files64 PASS (before last3UI race fixes)",
+    "Human closed outbox9/10 PASS; extension-terminal fails reacquire retired extension (owner investigating test post-receipt read)",
+    "closed Loader currently fails boot summary/tool waits teamRuns in fixture; not production sqlite bug (shutdown message secondary)",
+    "human closed outbox10/10 PASS after test lease lifecycle repair",
+    "closed-channel Loader1 PASS after disabled summary tool dependency fix",
+    "workflow adapter9 PASS",
+    "Hub open-channel-admission8 PASS incl new pending-retry restart2",
+    "Hub usage-replay4 PASS after actual parent reservation fixture",
+    "Host/client aggregate tsc and full build passed at1907 but later source lint/UI changes require latest rebuild",
+    "workspace constraints, Cordis161 configs, runtime closure146 packages4presets PASS",
+    "delegation6 incl async rejection cleanup PASS; Hub child-result28/task-delegation4/channel-list4 PASS; tool ordinaryconsult2 PASS",
+    "Latest6client files94 PASS after all3race fixes",
+    "Latest backend focused oxlint PASS (empty log)",
+    "Latest root Host+client tsc PASS",
+    "Latest fullbuild1958 PASS197artifacts",
+    "Formal channel browser2000 PASS1 (other2Inbox scenarios intentionally filtered, earlierpassed)",
+    "NodeNext2001 PASS269 package declaration APIs"
+  ]
+}

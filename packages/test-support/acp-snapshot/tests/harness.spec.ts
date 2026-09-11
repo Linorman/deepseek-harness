@@ -142,6 +142,37 @@ describe('runScenario', () => {
     expect(exited).toBe(true)
   })
 
+  it('keeps the ACP wire id separate from a Team-provenanced coordinator transcript', async () => {
+    const { fixtureFile } = await scenario({ teamCoordinatorOnNewSession: true })
+    const result = await runScenario({ steps: boot }, {
+      agent: { ...AGENT, transcriptMode: 'team-coordinator' },
+      mode: 'replay',
+      fixtureFile,
+    })
+    expect(result.sessionId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(result.team).toEqual({
+      teamId: `team-${result.sessionId}`,
+      coordinatorSessionId: `team-coordinator-${result.sessionId}`,
+      coordinatorParticipantId: `coordinator-${result.sessionId}`,
+    })
+    expect(result.sessionId).not.toBe(result.team?.coordinatorSessionId)
+    expect(result.sessionLogs[0]).toMatchObject({
+      id: result.team?.coordinatorSessionId,
+      teamId: result.team?.teamId,
+      participantId: result.team?.coordinatorParticipantId,
+    })
+  })
+
+  it('rejects when a Team-mode agent does not persist its coordinator transcript', async () => {
+    const { fixtureFile } = await scenario({})
+    await expect(runScenario({ steps: boot }, {
+      agent: { ...AGENT, transcriptMode: 'team-coordinator' },
+      mode: 'replay',
+      fixtureFile,
+      coordinatorTranscriptTimeoutMs: 1,
+    })).rejects.toThrow('Team coordinator Session did not persist')
+  })
+
   it('waits for inherited stdio and buffered ACP parsing after the parent exits', { timeout: 20_000 }, async () => {
     const { dir, fixtureFile } = await scenario({ lateInheritedOutput: true })
     const launched = launchAcpTestAgent({
@@ -590,7 +621,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
         ],
       }],
@@ -609,7 +640,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           {
             type: 'agent/inbox/spliced',
             seq: 0,
@@ -642,7 +673,7 @@ describe('runScenario', () => {
       persistLogsOnCancel: true,
       logs: [{
         file: 'project/main/session.jsonl',
-        lines: [{ type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 }],
+        lines: [{ type: 'session', version: 0, id: '{{SID}}', createdAt: 1 }],
       }],
     })
     await expect(runScenario(
@@ -658,7 +689,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
           { type: 'session/title', seq: 2, time: 3, data: { title: 'Late title' } },
         ],
@@ -684,7 +715,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/start', seq: 0, time: 1, data: { turn: 3 } },
         ],
       }],
@@ -715,7 +746,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } },
         ],
       }],
@@ -737,7 +768,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } },
           { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'stop' } } },
         ],
@@ -761,7 +792,7 @@ describe('runScenario', () => {
         logs: [{
           file: 'project/main/session.jsonl',
           lines: [
-            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
             { type: 'turn/start', seq: 0, time: 1, data: turn === undefined ? {} : { turn } },
           ],
         }],
@@ -792,7 +823,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } },
         ],
       }],
@@ -816,7 +847,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'goal/change', seq: 1, time: 2, data: {} },
           { type: 'goal/change', seq: 2, time: 3, data: { goal: { phase: 'active' } } },
         ],
@@ -849,14 +880,14 @@ describe('runScenario', () => {
         {
           file: 'project/main/session.jsonl',
           lines: [
-            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
             { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
           ],
         },
         {
           file: 'project/child/session.jsonl',
           lines: [
-            { type: 'session', version: 0, id: 'child-1', createdAt: 2, parentSession: '{{SID}}', delegationDepth: 1 },
+            { type: 'session', version: 0, id: 'child-1', createdAt: 2, parentSession: '{{SID}}' },
             { type: 'subagent/descriptor', seq: 0, time: 1, data: {} },
             { type: 'turn/start', seq: 1, time: 2, data: { turn: 1 } },
             { type: 'request/header', seq: 2, time: 3, data: { header: {}, reason: 'initial' } },
@@ -894,14 +925,14 @@ describe('runScenario', () => {
         {
           file: 'project/main/session.jsonl',
           lines: [
-            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+            { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
             { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
           ],
         },
         {
           file: 'project/child/session.jsonl',
           lines: [
-            { type: 'session', version: 0, id: 'child-1', createdAt: 2, parentSession: '{{SID}}', delegationDepth: 1 },
+            { type: 'session', version: 0, id: 'child-1', createdAt: 2, parentSession: '{{SID}}' },
             { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message' } } },
             { type: 'request/header', seq: 1, time: 2, data: { header: {}, reason: 'initial' } },
             { type: 'turn/end', seq: 2, time: 3, data: { turn: 1, reason: { kind: 'completed' } } },
@@ -935,7 +966,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'session/title', seq: 1, time: 1, data: { title: 'Early title' } },
           { type: 'turn/end', seq: 2, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
         ],
@@ -960,7 +991,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
           { type: 'user/message', seq: 2, time: 3, data: { content: [{ type: 'text', text: 'late goal state' }], source: { kind: 'user' } } },
         ],
@@ -984,7 +1015,7 @@ describe('runScenario', () => {
       logs: [{
         file: 'project/main/session.jsonl',
         lines: [
-          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1, delegationDepth: 0 },
+          { type: 'session', version: 0, id: '{{SID}}', createdAt: 1 },
           { type: 'user/message', seq: 1, time: 1, data: { content: [{ type: 'text', text: 'early' }], source: { kind: 'user' } } },
           { type: 'turn/end', seq: 2, time: 2, data: { turn: 1, reason: { kind: 'aborted' } } },
         ],

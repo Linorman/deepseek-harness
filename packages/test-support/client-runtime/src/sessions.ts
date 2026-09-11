@@ -6,7 +6,6 @@ import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 import type {
   AgentContext, ConversationSnapshot, ISessions, ObservableSnapshot, ProjectionsFace, SessionFace, SessionId,
   SessionListState, SessionProvideDescriptor, SessionSearchResultItem, SessionSummary, SnapshotStore,
-  SubagentAddress,
 } from '@clocky/clocky-client-runtime/client'
 // The double reports the wire schema's own search bound, like the production
 // service — a transport-varying limit would be a fiction no client can see.
@@ -184,8 +183,7 @@ export class TestSessions implements ISessions {
 
   /** Calls observed on the service-level face, newest last. */
   readonly calls: {
-    method: 'open' | 'openSubagent' | 'setSubagentCatalogOpen' | 'refreshSubagents'
-      | 'clear' | 'search' | 'fork'
+    method: 'open' | 'clear' | 'refresh' | 'search'
     args: unknown[]
   }[] = []
 
@@ -202,7 +200,7 @@ export class TestSessions implements ISessions {
   constructor(private readonly stabilize: Stabilizer, private readonly rootCtx: Context) {
     this.list = createSnapshotStore<SessionListState>({
       ids: [], byId: {}, current: undefined, phase: 'ready',
-      subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+      jobsBySession: {},
     })
     this.channel = new SessionProvideChannel({
       rebuildBundles: () => {
@@ -409,35 +407,7 @@ export class TestSessions implements ISessions {
     this.require(id)
     this.list.update((draft) => {
       draft.current = id
-      draft.currentAddress = undefined
     })
-  }
-
-  /** Open an existing fixture through its catalog address. */
-  openSubagent(address: SubagentAddress): void {
-    this.calls.push({ method: 'openSubagent', args: [address] })
-    this.require(address.childSessionId)
-    this.list.update((draft) => {
-      draft.current = address.childSessionId
-      draft.currentAddress = address
-    })
-  }
-
-  /** Resolve the current fixture's retained catalog address. */
-  subagentAddress(id: SessionId): SubagentAddress | undefined {
-    const address = this.list.getSnapshot().currentAddress
-    return address?.childSessionId === id ? address : undefined
-  }
-
-  /** Record catalog consumption; fixture callers drive snapshots explicitly. */
-  setSubagentCatalogOpen(parentSessionId: SessionId, open: boolean): void {
-    this.calls.push({ method: 'setSubagentCatalogOpen', args: [parentSessionId, open] })
-  }
-
-  /** Record a catalog refresh; fixture callers drive snapshots explicitly. */
-  refreshSubagents(parentSessionId: SessionId): Promise<void> {
-    this.calls.push({ method: 'refreshSubagents', args: [parentSessionId] })
-    return Promise.resolve()
   }
 
   /** Apply a confirmed preset switch into the fixture list, as production does. */
@@ -453,8 +423,13 @@ export class TestSessions implements ISessions {
     this.calls.push({ method: 'clear', args: [] })
     this.list.update((draft) => {
       draft.current = undefined
-      draft.currentAddress = undefined
     })
+  }
+
+  /** Record a durable-list refresh; fixture callers update rows explicitly. */
+  refresh(): Promise<void> {
+    this.calls.push({ method: 'refresh', args: [] })
+    return Promise.resolve()
   }
 
   /**
@@ -476,17 +451,6 @@ export class TestSessions implements ISessions {
   search(query: string, signal: AbortSignal): ReturnType<ISessions['search']> {
     this.calls.push({ method: 'search', args: [query, signal] })
     return Promise.resolve({ ok: true, value: this.searchStub?.(query, signal) ?? { items: [], hasMore: false } })
-  }
-
-  /**
-   * Recorded fork stub: no child materializes (benches asserting the full
-   * fork flow drive the production service; this face only proves the call).
-   * @param opts - source session id, optional cut anchor, and client title policy.
-   * @returns the source id (no child record is created).
-   */
-  fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean }): Promise<SessionId> {
-    this.calls.push({ method: 'fork', args: [opts] })
-    return Promise.resolve(opts.sessionId)
   }
 
   /**

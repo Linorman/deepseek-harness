@@ -1,0 +1,39 @@
+{
+  "scenario": "human-question-producer",
+  "gateway": "ApiProxyService",
+  "questionToolCalls": 1,
+  "caller": "live-native-worker-root",
+  "pendingKind": "question",
+  "pendingPhase": "pending",
+  "questions": [
+    {
+      "id": "format",
+      "question": "Which output format should this task use?",
+      "header": "Format",
+      "options": [
+        {
+          "label": "Text",
+          "description": "Return a plain text result."
+        },
+        {
+          "label": "JSON",
+          "description": "Return a structured JSON result."
+        }
+      ]
+    }
+  ],
+  "sourceIdCorrelated": true,
+  "taskAndSessionCorrelated": true,
+  "mux": [
+    "question/requested",
+    "question/resolved"
+  ],
+  "finalAction": "cancelled",
+  "outcome": {
+    "kind": "team-cancelled"
+  },
+  "historyRecords": 2,
+  "originalPendingRetained": true,
+  "team": "cancelled",
+  "goal": "active"
+}

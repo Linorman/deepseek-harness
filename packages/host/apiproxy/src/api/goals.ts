@@ -24,8 +24,7 @@ export interface GoalRef {
 
 /**
  * Goal-domain unary methods. Every mutation resolves an ordinary session's
- * Agent and applies one CAS-guarded verb; session-backed subagents reject with
- * `agent-busy`.
+ * Agent and applies one CAS-guarded verb.
  */
 export interface GoalsApi {
   /** Create and arm a goal. */

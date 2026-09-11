@@ -1,4 +1,4 @@
-// HoverCard: delayed hover-preview card portaled to document.body.
+// HoverCard: delayed preview portaled inside its anchor's modal or document.body.
 // Same portal mechanics as Menu: the wrapper span supplies the anchor rect,
 // the card is fixed-positioned at its right edge and repositions on
 // scroll/resize while open. The card is reachable: it takes pointer events,
@@ -210,7 +210,7 @@ export function HoverCard({
     >
       {anchor}
       {open && copyable && <span className={css.status} role="status">{copied ? copiedLabel : ''}</span>}
-      {card !== false && createPortal(card, document.body)}
+      {card !== false && createPortal(card, rootRef.current?.closest('dialog[open]') ?? document.body)}
     </span>
   )
 }

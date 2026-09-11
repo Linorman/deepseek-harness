@@ -1,6 +1,6 @@
 /**
- * Install packed tarballs into a throwaway consumer outside the repository and
- * drive the installed executable with plain Node.
+ * Install packed tarballs into a throwaway consumer under the repository's
+ * local temp root and drive the installed executable with plain Node.
  *
  * Every tarball the installed tree needs comes from `--from`, so the only
  * registry traffic is for external dependencies. That matters beyond hermetic
@@ -16,13 +16,12 @@
  * checkout cannot stand in for a missing file here.
  */
 
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 import { releaseFamily } from './families.ts'
-import { capture, isEntry } from './process.ts'
+import { capture, isEntry, removeOwnedTree } from './process.ts'
 import { packedIdentity } from './tarball.ts'
 
 /**
@@ -40,6 +39,7 @@ function consumerEnvironment(consumerRoot: string): NodeJS.ProcessEnv {
   environment.CLOCKY_HOME = resolve(consumerRoot, '.clocky')
   environment.CLOCKY_AGENTS_HOME = resolve(consumerRoot, '.agents')
   environment.CLOCKY_TELEMETRY_DISABLED = '1'
+  environment.npm_config_cache = resolve(consumerRoot, '.npm-cache')
   return environment
 }
 
@@ -88,7 +88,9 @@ function main(): void {
   const expected = packed.get(entry.packageName)
   if (expected === undefined) throw new Error(`${entry.packageName} is not among the packed tarballs`)
 
-  const consumerRoot = mkdtempSync(join(tmpdir(), `clocky-packed-${family.id}-`))
+  const tempRoot = resolve(root, '.tmp')
+  mkdirSync(tempRoot, { recursive: true, mode: 0o700 })
+  const consumerRoot = mkdtempSync(join(tempRoot, `clocky-packed-${family.id}-`))
   try {
     writeFileSync(join(consumerRoot, 'package.json'), `${JSON.stringify({
       name: `clocky-packed-install-${family.id}`,
@@ -104,7 +106,7 @@ function main(): void {
     // that cannot install them must still start — which is what optional means
     // here. Their entry package is a plain dependency of clocky-sandbox-local, so
     // its tarball is supplied through --from.
-    capture('npm', ['install', '--no-audit', '--no-fund', '--package-lock=false', '--omit=optional'],
+    capture('npm', ['install', '--no-audit', '--no-fund', '--package-lock=false', '--omit=optional', '--ignore-scripts'],
       { cwd: consumerRoot, env: environment })
 
     const bin = join(consumerRoot, 'node_modules', ...entry.packageName.split('/'), entry.binPath)
@@ -114,7 +116,7 @@ function main(): void {
     }
     console.log(`release verify-packed-install: installed ${entry.packageName} reports ${version}`)
   } finally {
-    rmSync(consumerRoot, { recursive: true, force: true })
+    removeOwnedTree(consumerRoot)
   }
 }
 

@@ -1,9 +1,11 @@
-# The `minimal` agent preset: a fixed-prompt, two-tool coding-agent composition.
+# The `minimal` agent preset: a fixed-prompt, two-tool coding-agent composition
+# that still consumes the host permission policy.
 #
 # The persona is the complete system prompt, so global identity, Web orientation,
 # tool guidance, and later assembly listeners cannot add prompt text. Runtime
-# context snapshots are suppressed for this preset, and the model composes only
-# the persistent shell (`bash` on POSIX, `pwsh` on win32) and
+# context snapshots remain enabled so the model receives the current permission
+# and workspace facts. The model composes only the persistent shell (`bash` on
+# POSIX, `pwsh` on win32) and
 # `str_replace_editor`. Context compaction is absent.
 
 - id: persona
@@ -11,7 +13,7 @@
   config:
     text: You are a helpful software engineer assistant.
     complete: true
-    includeRuntimeContext: false
+    includeRuntimeContext: true
 
 # The PTY registry is an agent-owned service, so it lives in an entry-local
 # realm. The backend still consumes the host sandbox policy and subprocess
@@ -69,20 +71,11 @@
           * Please avoid commands that may produce a very large amount of output.
           * Please run long lived commands in the background, e.g. 'Start-Job' or start a server with Start-Process.
 
-# The bare local filesystem shadows the host's sandboxed provider only for this
-# preset. The editor shares that realm and requires absolute paths.
-- id: filesystem
-  name: cordis:group
-  group: true
-  isolate:
-    fs: true
+# The editor consumes the host `fs-sandbox` provider and its `sandboxPolicy`;
+# it publishes only a scoped tool, so no private service realm is needed. This
+# keeps the two-tool surface small without bypassing the permission mode or the
+# Session workspace root.
+- id: str-replace-editor
+  name: '@clocky/clocky-tool-str-replace-editor'
   config:
-    - id: fs-local
-      name: '@clocky/clocky-fs-local'
-      config:
-        cwd: !!js process.env.CLOCKY_CWD ?? process.cwd()
-
-    - id: str-replace-editor
-      name: '@clocky/clocky-tool-str-replace-editor'
-      config:
-        maxOutputChars: 16000
+    maxOutputChars: 16000

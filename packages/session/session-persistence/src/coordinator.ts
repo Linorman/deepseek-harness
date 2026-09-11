@@ -53,13 +53,17 @@ export class SessionPersistenceCorruptionError extends Error {
  * per session.
  */
 export class SessionFormatUnsupportedError extends Error {
+  /** Backend-specific raw-log location retained for diagnostics, when available. */
+  readonly location?: SessionLocation
+
   /**
    * @param message - stable reason the log cannot be interpreted, already
    *   including the raw-log path when one exists.
    * @param location - the backend's artifact location, when one exists.
    */
-  constructor(message: string, readonly location?: SessionLocation) {
+  constructor(message: string, location?: SessionLocation) {
     super(message)
+    if (location !== undefined) this.location = location
     this.name = 'SessionFormatUnsupportedError'
   }
 }
@@ -177,9 +181,10 @@ export interface PersistenceBackend<TornMarker = unknown> {
 
   /**
    * Durably append a CONTIGUOUS batch, lazily materializing the session first
-   * when `!isMaterialized`. The materialize-write and the first event batch MUST
-   * commit ATOMICALLY (a crash between them must not leave a materialized-but-
-   * empty session). Returns once the batch is durable.
+   * when `!isMaterialized`. An empty batch with `!isMaterialized` writes a
+   * header-only artifact; every other empty batch is a no-op. The
+   * materialize-write and a non-empty first event batch MUST commit ATOMICALLY.
+   * Returns once the header and supplied events are durable.
    */
   appendBatch(meta: SessionHeader, events: readonly SessionEvent[], isMaterialized: boolean): Promise<void>
 
@@ -268,6 +273,27 @@ function seedCoversPrefix(seed: readonly SessionEvent[], prefix: readonly Sessio
       const seedEvent = seed[index]
       return seedEvent !== undefined && JSON.stringify(seedEvent) === JSON.stringify(event)
     })
+}
+
+/** Whether two headers name the same opaque Team/Participant provenance pair. */
+function sameTeamParticipantBinding(left: SessionHeader, right: SessionHeader): boolean {
+  return left.teamId === right.teamId && left.participantId === right.participantId
+}
+
+/** Return the validation failure for a persisted opaque Team/Participant pair. */
+function teamParticipantBindingError(header: SessionHeader): TypeError | undefined {
+  const hasTeamId = header.teamId !== undefined
+  const hasParticipantId = header.participantId !== undefined
+  if (hasTeamId !== hasParticipantId) {
+    return new TypeError('session metadata teamId and participantId must be provided together')
+  }
+  if (hasTeamId && (typeof header.teamId !== 'string' || header.teamId.length === 0)) {
+    return new TypeError('session metadata teamId must be a non-empty string')
+  }
+  if (hasParticipantId && (typeof header.participantId !== 'string' || header.participantId.length === 0)) {
+    return new TypeError('session metadata participantId must be a non-empty string')
+  }
+  return undefined
 }
 
 /** Reject events from an obsolete v0 vocabulary that this build cannot replay. */
@@ -639,7 +665,39 @@ export class PersistenceCoordinator<TornMarker = unknown> {
     if (!Number.isSafeInteger(snapshot.createdAt) || snapshot.createdAt < 0) {
       return Promise.reject(new TypeError('session metadata createdAt must be a non-negative safe integer'))
     }
+    const bindingError = teamParticipantBindingError(snapshot)
+    if (bindingError !== undefined) return Promise.reject(bindingError)
     return this.serialize(snapshot.id, () => this.createCore(snapshot))
+  }
+
+  /**
+   * Materialize one live or unpublished Session header without manufacturing a
+   * seed event. The Session's creation observer claims this state at later
+   * publication, so a provider can establish durable provenance before an
+   * Agent becomes visible.
+   * @param session - immutable-header Session to materialize.
+   * @returns resolution after its header exists in the selected backend.
+   */
+  async materializeHeader(session: Session): Promise<void> {
+    const live = this.initFor(session)
+    live.writes.cancelAutomaticWait()
+    await live.init
+    await live.writes.flush()
+    await this.serialize(session.id, () => this.materializeCore(session))
+  }
+
+  /** Write one tracked but still lazy header as an empty durable artifact. */
+  private async materializeCore(session: Session): Promise<void> {
+    const state = this.states.get(session.id)
+    /* v8 ignore next -- initFor completes with this exact Session as the state owner. */
+    if (state === undefined || state.owner !== session) {
+      throw new Error(`session "${session.id}" is not owned by this persistence lifecycle`)
+    }
+    if (state.materialized) return
+    this.preparations.assertWritable(session.id)
+    await this.backend.appendBatch(state.meta, [], false)
+    state.materialized = true
+    this.preparations.invalidate(session.id)
   }
 
   private async createCore(meta: SessionHeader): Promise<void> {
@@ -977,7 +1035,7 @@ export class PersistenceCoordinator<TornMarker = unknown> {
     const state = this.states.get(session.id)
     /* v8 ignore next -- successful flush always publishes this live session's durable state */
     if (state === undefined) throw new Error(`session "${session.id}" lost persistence state during load`)
-    if (events.length === 0) throw new Error(`session "${session.id}" not found`)
+    if (events.length === 0 && !state.materialized) throw new Error(`session "${session.id}" not found`)
     if (interruptedTurnClosers(events).length > 0) {
       throw new Error(`cannot load session "${session.id}" while its live turn is open; use the live Session or wait for the turn to close`)
     }
@@ -1252,6 +1310,9 @@ export class PersistenceCoordinator<TornMarker = unknown> {
         if (tracked.meta.cwd !== session.header.cwd) {
           throw new Error(`session "${id}" is already persisted at a different cwd (persisted: ${String(tracked.meta.cwd)}, live: ${String(session.header.cwd)}) (id collision)`)
         }
+        if (!sameTeamParticipantBinding(tracked.meta, session.header)) {
+          throw new Error(`session "${id}" is already persisted for another Team participant (id collision)`)
+        }
         if (!await this.seedMatchesPersisted(id, seed, tracked.cursor)) {
           throw new Error(`session "${id}" is already persisted with ${tracked.cursor} event(s) that do not match this live session (id collision)`)
         }
@@ -1304,6 +1365,9 @@ export class PersistenceCoordinator<TornMarker = unknown> {
     this.assertStoredId(session.header.id, meta)
     if (meta.cwd !== session.header.cwd) {
       throw new Error(`session "${session.header.id}" is already persisted at a different cwd (persisted: ${String(meta.cwd)}, live: ${String(session.header.cwd)}) (id collision)`)
+    }
+    if (!sameTeamParticipantBinding(meta, session.header)) {
+      throw new Error(`session "${session.header.id}" is already persisted for another Team participant (id collision)`)
     }
     this.assertVersion(meta)
     const storedEvents = snapshotStoredEvents(events, session.header.id)

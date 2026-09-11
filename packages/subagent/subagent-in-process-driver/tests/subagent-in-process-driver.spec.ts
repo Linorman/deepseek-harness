@@ -1,7 +1,7 @@
 import { CallId, createUserMessage } from '@clocky/clocky-llm'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
-import { type Agent, type AgentOptions } from '@clocky/clocky-agent'
+import { openAgentWorkspaceLease, type Agent, type AgentOptions } from '@clocky/clocky-agent'
 import { SessionId } from '@clocky/clocky-session'
 import AgentLoop from '@clocky/clocky-agent-loop'
 import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
@@ -9,7 +9,7 @@ import InvariantRegistry from '@clocky/clocky-invariants'
 import * as SessionInvariant from '@clocky/clocky-session/invariant'
 import * as AgentInvariant from '@clocky/clocky-agent/invariant'
 import * as AgentLoopInvariant from '@clocky/clocky-agent-loop/invariant'
-import SubagentRuntime, { snapshotSubagentDescriptor } from '@clocky/clocky-subagent'
+import SubagentRuntime, { snapshotSubagentDescriptor, SUBAGENT_DESCRIPTOR_VERSION } from '@clocky/clocky-subagent'
 import { defineContentToolFixture } from '@clocky/clocky-tools'
 import { maxTokensResponse, MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import { startInProcessRun } from '../src/index.ts'
@@ -44,6 +44,7 @@ function request(parent: Agent, signal = new AbortController().signal) {
     descriptor: snapshotSubagentDescriptor({
       mode: 'one-shot',
       provider: 'test',
+      depth: 1,
       label: 'child task',
     }),
   }
@@ -67,9 +68,11 @@ describe('startInProcessRun', () => {
     expect(ctx.agents.get(run.id)).toBeUndefined()
   })
 
-  it('uses explicit child model selectors when the parent has none and preserves its cwd', async () => {
+  it('uses explicit child model selectors when the parent has none and inherits its live workspace root', async () => {
     const { ctx } = await setup([textResponse('driver answer')])
     const parent = ctx.agentLoop.create(SessionId('bare-parent'), {}, { cwd: '/workspace' })
+    const workspaceLease = openAgentWorkspaceLease(parent)
+    const disposeRoot = workspaceLease.publishRoot('/workspace/team-allocation')
     const run = await startInProcessRun({
       ...request(parent),
       agentOptions: { provider: 'mock', model: 'mock' },
@@ -77,9 +80,24 @@ describe('startInProcessRun', () => {
 
     const child = ctx.agents.get(run.id)!
     expect(child.options).toMatchObject({ provider: 'mock', model: 'mock' })
-    expect(child.session.header.cwd).toBe('/workspace')
+    expect(child.session.header.cwd).toBe('/workspace/team-allocation')
     await expect(run.result).resolves.toMatchObject({ stopReason: 'completed' })
     await run.dispose()
+    disposeRoot()
+    workspaceLease.dispose()
+  })
+
+  it('refuses child creation while the parent workspace root is unavailable', async () => {
+    const { ctx, parent } = await setup([textResponse('not reached')])
+    const workspaceLease = openAgentWorkspaceLease(parent)
+    const clearUnavailable = workspaceLease.markUnavailable()
+    const before = ctx.agents.list().length
+
+    await expect(startInProcessRun(request(parent), {})).rejects.toThrow('Team task workspace allocation is unavailable')
+    expect(ctx.agents.list()).toHaveLength(before)
+
+    clearUnavailable()
+    workspaceLease.dispose()
   })
 
   it('reports a prompt a pre-step rejection discarded as refusal, not completion', async () => {
@@ -209,16 +227,15 @@ describe('startInProcessRun', () => {
     await run.dispose()
   })
 
-  it('persists the child origin and depth in its session header', async () => {
+  it('persists the child identity and depth in its descriptor event', async () => {
     const { ctx, parent } = await setup([textResponse('child answer')])
     const run = await startInProcessRun(request(parent), {})
     await run.result
-    // The recursion budget is durable session data, not only runtime options —
-    // a depth that lived only in AgentOptions would reset to 0 on resume.
-    expect(ctx.agents.get(run.id)!.session.header).toMatchObject({
-      origin: 'subagent',
-      delegationDepth: 1,
-    })
+    const descriptor = ctx.agents.get(run.id)!.session.events
+      .find(event => String(event.type) === 'subagent/descriptor')
+    expect(descriptor?.data).toMatchObject({ version: SUBAGENT_DESCRIPTOR_VERSION, depth: 1 })
+    expect(ctx.agents.get(run.id)!.session.header).not.toHaveProperty('origin')
+    expect(ctx.agents.get(run.id)!.session.header).not.toHaveProperty('delegationDepth')
     await run.dispose()
   })
 
@@ -243,14 +260,12 @@ describe('startInProcessRun', () => {
     await overridden.dispose()
   })
 
-  it('counts a RESUMED child by its persisted header depth, not the absent runtime depth', async () => {
-    // Resume rebuilds runtime options, so the durable header must keep this
-    // depth-1 child from delegating as though it were top-level.
+  it('counts a resumed child by its runtime depth restored from its descriptor', async () => {
     const { ctx } = await setup([textResponse('unused')])
     const resumed = (await ctx.agents.create({
       sessionId: SessionId('resumed-child'),
-      meta: { parentSession: SessionId('root'), delegationDepth: 1 },
-      agentOptions: { provider: 'mock', model: 'mock' },
+      meta: { parentSession: SessionId('root') },
+      agentOptions: { provider: 'mock', model: 'mock', subagentDepth: 1 },
       signal: new AbortController().signal,
     })).agent
     await expect(startInProcessRun({ ...request(resumed), maxDepth: 1 }, {}))
@@ -261,11 +276,11 @@ describe('startInProcessRun', () => {
     const { ctx } = await setup([textResponse('unused')])
     const parent = (await ctx.agents.create({
       sessionId: SessionId('deep-parent'),
-      meta: { delegationDepth: 2 },
-      agentOptions: { provider: 'mock', model: 'mock', subagentDepth: 1 },
+      meta: {},
+      agentOptions: { provider: 'mock', model: 'mock', subagentDepth: 2 },
       signal: new AbortController().signal,
     })).agent
-    // Persisted 2 vs runtime 1: the child is depth 3, so maxDepth 2 rejects.
+    // The restored descriptor depth is supplied through runtime options; the child is depth 3.
     await expect(startInProcessRun({ ...request(parent), maxDepth: 2 }, {}))
       .rejects.toMatchObject({ name: 'SubagentDepthError', attemptedDepth: 3, maxDepth: 2 })
   })

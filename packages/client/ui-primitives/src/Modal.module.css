@@ -20,12 +20,17 @@
 
 /* Dialog card: r24, shadow-lv3, layer-2 fill, inverted border, pb 24. */
 .dialog {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-height: calc(100dvh - 48px);
+  color: inherit;
   z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width: min(380px, 100%);
+  width: min(380px, calc(100% - 48px));
   padding: 0 0 24px;
   overflow: hidden;
   border: 1px solid var(--clocky-alias-border-inverted);
@@ -35,6 +40,7 @@
 }
 
 .content {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -43,6 +49,7 @@
 /* Header row (figma Title row): pad l24/t22/r14/b12, SPACE_BETWEEN —
  * title left, close button right. */
 .header {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -87,6 +94,7 @@
 }
 
 .body {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -95,9 +103,19 @@
 }
 
 .footer {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
   padding: 0 24px;
+}
+
+/* The existing app mask supplies the visual backdrop; the native layer owns input isolation. */
+.dialog::backdrop {
+  background: transparent;
+}
+
+.dialog:not([open]) {
+  display: none;
 }

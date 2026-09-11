@@ -9,7 +9,6 @@
 // Record: CLOCKY_SNAPSHOT=record rewrites session.jsonl, then a keyless
 // CLOCKY_SNAPSHOT=refresh regenerates ui.expected.md.
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
@@ -49,6 +48,7 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     // Fresh world: connect a Workspace so the composer scenarios start live.
@@ -86,8 +86,8 @@ describe('web e2e: fresh round trip through the real assembly', () => {
     const system = agent.session.requestHeader()?.system
     if (system === undefined) throw new Error('the settled Web request has no system prompt')
     const prefix = system.split('\n\n').slice(0, 4).join('\n\n')
+      .split(scaffold.workspaceCwd).join('{{cwd}}')
       .split(REPO_ROOT).join('{{sourceRoot}}')
-      .split(join(scaffold.workspaceCwd, 'workspace')).join('{{cwd}}')
       .split(scaffold.baseUrl).join('{{webUrl}}')
     await compareOrRefreshGolden(SYSTEM_PROMPT_EXPECTED, prefix, MODE)
   })

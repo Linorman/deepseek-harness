@@ -82,6 +82,43 @@ export interface TypeApiEntry {
 /** Every harness `ctx.<key>` service, sorted by key. */
 export const SERVICE_API: readonly ServiceApiEntry[] = [
   {
+    key: 'activationSupervisors',
+    summary: 'Resolver of named and versioned execution health/fence providers.',
+    description: 'Resolver of named and versioned execution health/fence providers.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: ActivationSupervisorProvider): () => void',
+        description: 'Register a provider until its owning effect retires.',
+        parameters: [{ name: 'provider', description: 'exact implementation and execution owner.' }],
+        returns: 'idempotent registration disposer; admitted operations continue.',
+      },
+      {
+        signature: 'resolve(binding: ActivationBindingSnapshot): ActivationSupervisorProvider',
+        description: 'Resolve and validate one exact durable descriptor without side effects.',
+        parameters: [{ name: 'binding', description: 'Team-owned epoch and recovery descriptor.' }],
+        returns: 'retained provider for one admitted operation.',
+      },
+      {
+        signature: 'async admitOwned(input: ActivationBindingSnapshot): Promise<void>',
+        description: 'Persist an epoch produced by a trusted runtime on this execution host.',
+        parameters: [{ name: 'input', description: 'provider-minted process facts before activation publication.' }],
+        returns: 'resolution after the selected execution owner durably accepts that epoch.',
+      },
+      {
+        signature: 'async health(binding: ActivationBindingSnapshot, signal: AbortSignal): Promise<ActivationSupervisorObservation>',
+        description: 'Observe an exact generation through its retained provider.',
+        parameters: [{ name: 'binding', description: 'immutable durable execution identity.' }, { name: 'signal', description: 'observation cancellation.' }],
+        returns: 'validated health; unreachable and unknown never become terminated.',
+      },
+      {
+        signature: 'async fence(binding: ActivationBindingSnapshot, signal: AbortSignal): Promise<ActivationSupervisorObservation>',
+        description: 'Fence an exact generation through its retained provider.',
+        parameters: [{ name: 'binding', description: 'immutable durable execution identity.' }, { name: 'signal', description: 'request cancellation.' }],
+        returns: 'exact terminated observation; all other states reject.',
+      },
+    ],
+  },
+  {
     key: 'agentDefaultModel',
     summary: 'Owns the default model selection independently of any Host or transport.',
     description: 'Owns the default model selection independently of any Host or transport. The composition entry remains usable without a settings provider; when one is mounted, its user layer is read live.',
@@ -210,6 +247,49 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'agentRuntimes',
+    summary: 'Named activation-provider registry at `ctx.agentRuntimes`.',
+    description: 'Named activation-provider registry at `ctx.agentRuntimes`. It owns provider registration and post-publication observation; a provider owns every live activation handle it returns.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: AgentRuntimeProvider): () => void',
+        description: 'Register one named activation provider. Registration is effect-scoped and its disposer removes only this provider instance.',
+        parameters: [{ name: 'provider', description: 'placement implementation for future activation requests.' }],
+        returns: 'HMR-safe disposer for this registration.',
+      },
+      {
+        signature: 'getProvider(name: string): AgentRuntimeProvider | undefined',
+        description: 'Resolve one registered activation provider.',
+        parameters: [{ name: 'name', description: 'provider registry name.' }],
+        returns: 'the live provider, or `undefined` when no matching provider remains.',
+      },
+      {
+        signature: 'registerFencer(fencer: AgentRuntimeFencer): () => void',
+        description: 'Register one trusted stale-epoch fencer. A fencer never starts an activation; it only establishes the precondition for a cold replacement.',
+        parameters: [{ name: 'fencer', description: 'external owner for one runtime-provider epoch family.' }],
+        returns: 'HMR-safe disposer for this fencer registration.',
+      },
+      {
+        signature: 'getFencer(provider: string): AgentRuntimeFencer | undefined',
+        description: 'Resolve the current trusted fencer for one runtime provider.',
+        parameters: [{ name: 'provider', description: 'placement-provider name retained in a durable binding.' }],
+        returns: 'the fencer, or `undefined` when no external owner can prove termination.',
+      },
+      {
+        signature: 'listProviders(): AgentRuntimeProviderRef[]',
+        description: 'List registered provider identities in registration order.',
+        parameters: [],
+        returns: 'detached provider references.',
+      },
+      {
+        signature: 'async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>',
+        description: 'Resolve a provider, require its returned activation to match the requested Team/Participant/Session binding, then publish its first observation. A handle that fails post-return validation is disposed before rejection.',
+        parameters: [{ name: 'request', description: 'provider name and already-resolved activation inputs.' }],
+        returns: 'the provider-owned published activation handle.',
+      },
+    ],
+  },
+  {
     key: 'agents',
     summary: 'Agent service (`ctx.agents`): tracks live agents and carries the initiating Agent through one process-local asynchronous driver chain.',
     description: 'Agent service (`ctx.agents`): tracks live agents and carries the initiating Agent through one process-local asynchronous driver chain. Agent *creation* is provided by whichever plugin implements the AgentFactory (`@clocky/clocky-agent-loop`), registered via setFactory.\n\nInitiator methods provide same-process causal attribution only. Ambient presence is neither liveness proof nor authorization; subjects and owners remain explicit, as does identity at worker, process, persistence, and wire boundaries. Returned Promise boundaries drain during teardown, except a nested lineage that starts an owning-fiber unload is excluded from its own drain.',
@@ -305,83 +385,15 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'agentTeams',
-    summary: 'Agent Teams service backed by the exact live Lead Session log.',
-    description: 'Agent Teams service backed by the exact live Lead Session log.',
-    methods: [
-      {
-        signature: 'membership(agent: Agent): TeamMembership',
-        description: 'Resolve one exact live Agent\'s Team role.',
-        parameters: [{ name: 'agent', description: 'exact live Agent used as the authority credential.' }],
-        returns: 'its root, Team identity, role, and model-facing name.',
-      },
-      {
-        signature: 'listMembers(agent: Agent): TeamMemberView[]',
-        description: 'List the runtime-enriched roster visible to one Team member.',
-        parameters: [{ name: 'agent', description: 'exact live Team member.' }],
-        returns: 'Lead and teammate rows in creation order.',
-      },
-      {
-        signature: 'async spawnTeammate(caller: Agent, request: SpawnTeammateRequest): Promise<SpawnTeammateResult>',
-        description: 'Create one named, continuable direct child of the Team Lead.',
-        parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'request', description: 'immutable name, description, prompt, context mode, provider, and cancellation.' }],
-        returns: 'the active roster row.',
-      },
-      {
-        signature: 'async sendMessage(caller: Agent, request: SendTeamMessageRequest): Promise<SendTeamMessageResult>',
-        description: 'Queue one durable peer message, then attempt immediate delivery.',
-        parameters: [{ name: 'caller', description: 'exact live sending Team member.' }, { name: 'request', description: 'target name, content, scheduling mode, and pre-queue cancellation.' }],
-        returns: 'durable message identity and immediate-delivery observation.',
-      },
-      {
-        signature: 'async createTask(caller: Agent, request: CreateTeamTaskRequest): Promise<TeamTaskView>',
-        description: 'Create one unowned pending task in the Team Lead log.',
-        parameters: [{ name: 'caller', description: 'exact live Team member creating the task.' }, { name: 'request', description: 'task text, blockers, and advisory write scopes.' }],
-        returns: 'the revision-one task view.',
-      },
-      {
-        signature: 'getTask(caller: Agent, id: TeamTaskId): TeamTaskView',
-        description: 'Return one task, including a deleted tombstone.',
-        parameters: [{ name: 'caller', description: 'exact live Team member reading the task.' }, { name: 'id', description: 'Team-local task identity.' }],
-        returns: 'the latest task value and derived readiness diagnostics.',
-      },
-      {
-        signature: 'listTasks(caller: Agent): TeamTaskView[]',
-        description: 'List current non-deleted tasks in numeric creation order.',
-        parameters: [{ name: 'caller', description: 'exact live Team member reading the board.' }],
-        returns: 'detached current task views.',
-      },
-      {
-        signature: 'async updateTask(caller: Agent, request: UpdateTeamTaskRequest): Promise<TeamTaskView>',
-        description: 'Compare-and-set one authorized task transition.',
-        parameters: [{ name: 'caller', description: 'exact live Team member authorizing the mutation.' }, { name: 'request', description: 'task identity, expected revision, action, and action fields.' }],
-        returns: 'the committed next task revision.',
-      },
-      {
-        signature: 'async waitForChange(caller: Agent, timeoutMs: number, signal: AbortSignal): Promise<TeamWaitResult>',
-        description: 'Wait for the next Team-domain or member-status change.',
-        parameters: [{ name: 'caller', description: 'exact live Team member waiting for activity.' }, { name: 'timeoutMs', description: 'bounded wait duration from ten seconds through one hour.' }, { name: 'signal', description: 'caller cancellation for the wait only.' }],
-        returns: 'one observed change or a timeout result.',
-      },
-      {
-        signature: 'interrupt(caller: Agent, targetName: string): { previousStatus: \'running\' | \'idle\' | \'inactive\' }',
-        description: 'Interrupt one live teammate turn without clearing its pending inbox.',
-        parameters: [{ name: 'caller', description: 'exact live Lead Agent.' }, { name: 'targetName', description: 'durable teammate name.' }],
-        returns: 'the target status sampled before cancellation.',
-      },
-      {
-        signature: 'tryMembership(agent: Agent): TeamMembership | undefined',
-        description: 'Resolve a caller without throwing, used by scoped-tool installation and observers.',
-        parameters: [{ name: 'agent', description: 'candidate exact live Agent.' }],
-        returns: 'Team membership, or undefined for non-Team subagents and stale identities.',
-      },
-    ],
-  },
-  {
     key: 'apiProxy',
     summary: 'Root interface of the unified API.',
     description: 'Root interface of the unified API. New client-request domain = one new file pair + one field here + one map row.',
     methods: [
+      {
+        signature: 'teams?: TeamsApi',
+        description: 'Team product methods when this host composes the Team provider. Kept optional while legacy ApiProxy fixtures are migrated; the fetch carrier returns `team-service-unavailable` instead of silently omitting a call.',
+        parameters: [],
+      },
       {
         signature: 'downloads: DownloadsApi',
         description: 'Host-only download surfaces (GET, no wire envelope); absent from IApiClient.',
@@ -1135,6 +1147,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'productPrincipals',
+    summary: 'Registry of named product-principal authenticators at `ctx.productPrincipals`.',
+    description: 'Registry of named product-principal authenticators at `ctx.productPrincipals`.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: ProductPrincipalProvider): () => Promise<void>',
+        description: 'Register one named provider through an HMR-safe Cordis effect.',
+        parameters: [{ name: 'provider', description: 'credential validator that owns its issued leases.' }],
+        returns: 'an asynchronous disposer that revokes outstanding provider leases after admitted calls settle.',
+      },
+      {
+        signature: 'listProviders(): readonly ProductPrincipalProviderRef[]',
+        description: 'Return accepting provider names without exposing provider implementation objects.',
+        parameters: [],
+        returns: 'detached accepting provider identities.',
+      },
+      {
+        signature: 'bootstrapCredential(provider: string): string',
+        description: 'Return one provider-owned bootstrap credential only to a trusted transport bootstrap owner.',
+        parameters: [{ name: 'provider', description: 'accepting provider selected by the trusted transport.' }],
+        returns: 'the current opaque bootstrap credential.',
+      },
+      {
+        signature: 'async authenticate(request: ProductPrincipalAuthenticateRequest): Promise<AuthenticatedProductPrincipalLease>',
+        description: 'Authenticate one credential and retain the resulting provider lease.',
+        parameters: [{ name: 'request', description: 'provider selection, opaque credential, and optional cancellation signal.' }],
+        returns: 'a revocable lease that creates runtime-only product call contexts.',
+      },
+    ],
+  },
+  {
     key: 'sandbox',
     summary: 'Abstract process-sandbox service.',
     description: 'Abstract process-sandbox service. confine must return enforcing argv or fail closed at wrap or runner-execution time; silent unconfined passthrough is forbidden. Functional probes arbitrate multi-runner chains and may be skipped for a sole candidate, whose own refusal remains the fail-closed end.',
@@ -1164,7 +1207,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'resolve(request: SandboxPolicyRequest = {}): SandboxExecutionPolicy',
-        description: 'Resolve the complete policy for one capability call. An approved explicit mode outranks the session\'s last `sandbox/mode` event, which outranks the deployment default. A session cwd is its workspace-write boundary; the configured root is the fallback for agentless calls and sessions without a cwd.',
+        description: 'Resolve the complete policy for one capability call. An approved explicit mode outranks the session\'s last `sandbox/mode` event, which outranks the deployment default. A Team allocation root is the workspace-write boundary when present; a Session cwd is the next fallback, followed by the configured root for agentless calls and Sessions without a cwd.',
         parameters: [{ name: 'request', description: 'optional session and approved mode override.' }],
         returns: 'the fully resolved per-call mode and absolute workspace root.',
       },
@@ -1203,6 +1246,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'abstract create(meta: SessionHeader): Promise<void>',
         description: 'Register a new session\'s metadata. A backend MAY defer the physical write until the first append (lazy materialization), in which case a created-but-never-appended session is absent from list — abandoned sessions leave nothing behind.',
         parameters: [{ name: 'meta', description: 'the immutable header (id, version, cwd, lineage) to record.' }],
+      },
+      {
+        signature: 'abstract materializeHeader(session: Session): Promise<void>',
+        description: 'Durably write a Session\'s header even when its event log is empty. A provider may use this before publishing an Agent whose header provenance must survive a process restart.',
+        parameters: [{ name: 'session', description: 'Session whose immutable header must become materialized.' }],
+        returns: 'resolution after the header is durable.',
       },
       {
         signature: 'abstract append(id: SessionId, events: readonly SessionEvent[]): Promise<void>',
@@ -1773,6 +1822,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'storageLog',
+    summary: 'The mounted facility.',
+    description: 'The mounted facility. A caller owns each returned stream and closes it when its projection/runtime stops. Unmount closes admission, drains accepted backend calls, settles every returned handle, then releases the form.',
+    methods: [
+      {
+        signature: 'async open(descriptor: LogStreamDescriptor): Promise<LogStream>',
+        description: 'Open a caller-owned log stream over its configured backend. The facility preserves one open handle per stream name, so a Consumer has exactly one local serialization owner for its expected-tail mutations.',
+        parameters: [{ name: 'descriptor', description: 'Stream declaration owned by the caller package.' }],
+        returns: 'a routed handle that releases the name only after backend close.',
+      },
+      {
+        signature: 'async list(): Promise<readonly LogStreamInfo[]>',
+        description: 'Enumerate materialized streams through their configured backends. An entry stored on a backend that no longer owns its name under this route table is excluded, so recovery cannot accidentally reopen it through the wrong provider.',
+        parameters: [],
+        returns: 'durable stream metadata in stable stream-name order.',
+      },
+      {
+        signature: 'get(name: string): LogStream | undefined',
+        description: 'Read an open handle for diagnostics. Consumers hold the typed result of `open`; this method does not infer a descriptor\'s value type.',
+        parameters: [{ name: 'name', description: 'Stream name.' }],
+        returns: 'its live routed handle, or `undefined`.',
+      },
+      {
+        signature: 'closeAll(): Promise<void>',
+        description: 'Close admission, settle accepted backend calls, then close every resolved caller handle. All owned work settles before an aggregate failure is reported.',
+        parameters: [],
+        returns: 'resolution after every accepted call and returned handle settles.',
+      },
+    ],
+  },
+  {
     key: 'subagents',
     summary: 'Named provider registry with one-shot runs, durable discovery, and continuable-child operations.',
     description: 'Named provider registry with one-shot runs, durable discovery, and continuable-child operations.',
@@ -1929,6 +2009,1626 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Assemble global and scoped providers, detach tool parameters, apply canonical ordering, then run the assembly waterfall. Scoped sections and variables shadow globals. The returned waterfall value is authoritative except that an effective complete section is restored afterwards as the sole prompt section.',
         parameters: [{ name: 'context', description: 'the optional scope and plugin-defined assembly fields.' }],
         returns: 'the post-waterfall assembly with any complete prompt enforced.',
+      },
+    ],
+  },
+  {
+    key: 'teamActivations',
+    summary: 'Team Consumer that owns the small two-system transaction from a published AgentRuntime handle to a durable Team binding.',
+    description: 'Team Consumer that owns the small two-system transaction from a published AgentRuntime handle to a durable Team binding. Each provider owns the execution-specific mechanism behind its handle status stream.',
+    methods: [
+      {
+        signature: 'start(): void',
+        description: 'Begin terminal-intent-driven release of every exact activation handle currently owned by this controller.',
+        parameters: [],
+      },
+      {
+        signature: 'async recoverClosure(input: TeamClosureContinuationRequest): Promise<void>',
+        description: 'Recover at most one epoch selected from an existing durable lifecycle intent. Missing ownership records produce a durable stall; successful fencing first requests allocation release and only later records complete quiescence.',
+        parameters: [{ name: 'input', description: 'exact closure-driver proof and its observed Team cursor.' }],
+        returns: 'settlement of this bounded pass; callers reread state before issuing another proof.',
+      },
+      {
+        signature: 'async activate(input: TeamActivationRequest): Promise<TeamActivationLease>',
+        description: 'Activate one active agent participant and persist its binding before the caller receives a lease. Concurrent callers for the same Team/participant and Session join the exact accepted lease.',
+        parameters: [{ name: 'input', description: 'fully resolved activation inputs.' }],
+        returns: 'a controller-owned durable activation lease.',
+      },
+      {
+        signature: 'async coldReplace(input: TeamActivationColdReplaceRequest): Promise<TeamActivationLease>',
+        description: 'Fence one stale external epoch, atomically release its current task leases and persist it offline, then publish a new activation with the same Team participant and Session under a new id.',
+        parameters: [{ name: 'input', description: 'exact old binding plus replacement composition selected by the recovery owner.' }],
+        returns: 'a durable lease for the newly bound persisted-resume epoch.',
+      },
+      {
+        signature: 'async fenceStale(input: TeamActivationStaleFenceRequest): Promise<void>',
+        description: 'Fence one activation left running after a Host restart before a Team can be resumed.',
+        parameters: [{ name: 'input', description: 'Exact stale activation and recovery authorization selected by the recovery owner.' }],
+      },
+      {
+        signature: 'async preflightResume(input: TeamActivationResumePreflightRequest): Promise<void>',
+        description: 'Confirm that a human-authorized coordinator recovery can reach the selected provider without mutating Team state.',
+        parameters: [{ name: 'input', description: 'exact durable coordinator binding and live human resume authorization.' }],
+        returns: 'resolution after provider and durable binding checks pass.',
+      },
+      {
+        signature: 'close(): Promise<void>',
+        description: 'Stop admission, release every accepted handle, and await bounded settlement.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teamArtifacts',
+    summary: 'Named artifact-provider registry at `ctx.teamArtifacts`.',
+    description: 'Named artifact-provider registry at `ctx.teamArtifacts`.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: TeamArtifactProvider): () => void',
+        description: 'Register one artifact provider under a unique name.',
+        parameters: [{ name: 'provider', description: 'provider that persists and verifies artifact bytes.' }],
+        returns: 'an effect-scoped disposer.',
+      },
+      {
+        signature: 'getProvider(name: string): TeamArtifactProvider | undefined',
+        description: 'Resolve one provider by name.',
+        parameters: [{ name: 'name', description: 'provider identity.' }],
+        returns: 'provider or undefined.',
+      },
+      {
+        signature: 'listProviders(): TeamArtifactProviderRef[]',
+        description: 'List registered provider identities.',
+        parameters: [],
+        returns: 'detached provider refs.',
+      },
+      {
+        signature: 'async save(provider: string, request: TeamArtifactWriteRequest): Promise<TeamArtifactReference>',
+        description: 'Save through one named provider.',
+        parameters: [{ name: 'provider', description: 'provider name.' }, { name: 'request', description: 'write facts.' }],
+        returns: 'immutable reference.',
+      },
+      {
+        signature: 'async read(provider: string, request: TeamArtifactReadRequest): Promise<Uint8Array>',
+        description: 'Read through one named provider.',
+        parameters: [{ name: 'provider', description: 'provider name.' }, { name: 'request', description: 'read facts.' }],
+        returns: 'verified bytes.',
+      },
+      {
+        signature: 'async delete(provider: string, request: TeamArtifactDeleteRequest): Promise<void>',
+        description: 'Delete through one named provider.',
+        parameters: [{ name: 'provider', description: 'provider name.' }, { name: 'request', description: 'delete facts.' }],
+        returns: 'completion after deletion.',
+      },
+      {
+        signature: 'async collect(provider: string, request: TeamArtifactCollectRequest): Promise<TeamArtifactCollectResult>',
+        description: 'Sweep one bounded provider page after a reachability owner has approved exact object ids for reclamation.',
+        parameters: [{ name: 'provider', description: 'provider name.' }, { name: 'request', description: 'current references, approved ids, cursor, and page bound.' }],
+        returns: 'provider-owned scan and cleanup observations.',
+      },
+    ],
+  },
+  {
+    key: 'teamChannelAdmission',
+    summary: 'Shared channel admission Consumer; endpoint acknowledgements remain owned by their authenticated receivers.',
+    description: 'Shared channel admission Consumer; endpoint acknowledgements remain owned by their authenticated receivers.',
+    methods: [
+      {
+        signature: 'runOnce(): Promise<void>',
+        description: 'Replay one bounded discovery/expiry pass; acknowledged invitations are never reissued.',
+        parameters: [],
+        returns: 'settlement after this pass\'s accepted Hub operations finish.',
+      },
+      {
+        signature: 'waitUntilActive(request: ChannelAdmissionWaitRequest): Promise<ChannelSnapshot>',
+        description: 'Wait for durable required endpoint consent before dispatching channel work.',
+        parameters: [{ name: 'request', description: 'exact channel and caller cancellation lifetime.' }],
+        returns: 'an active channel snapshot; terminal admission rejects without dispatch.',
+      },
+    ],
+  },
+  {
+    key: 'teamChannelSummaries',
+    summary: 'Concrete Consumer with one ephemeral proof per exact summary commit.',
+    description: 'Concrete Consumer with one ephemeral proof per exact summary commit.',
+    methods: [
+      {
+        signature: 'describe(): import(\'@clocky/clocky-team\').ChannelSummaryCapabilities',
+        description: 'Return detached public bounds for command discovery.',
+        parameters: [],
+        returns: 'Summary policies and input/output limits of this Consumer.',
+      },
+      {
+        signature: 'summarize(request: ChannelSummarySourceRequest): Promise<ChannelSummaryRecord>',
+        description: 'Generate one explicit channel-wide summary or return its committed retry result.',
+        parameters: [{ name: 'request', description: 'Current coordinator/human proof and exact bounded source selection.' }],
+        returns: 'The durable summary with its original source fingerprint and retry identity.',
+      },
+      {
+        signature: 'async close(): Promise<void>',
+        description: 'Stop new admissions, revoke outstanding proofs and await owned operations. @returns Completion after accepted operations settle.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teamClosureDriver',
+    summary: 'Provider-routed Team closure scanner with one serializer and one proof map per mounted driver.',
+    description: 'Provider-routed Team closure scanner with one serializer and one proof map per mounted driver.',
+    methods: [
+      {
+        signature: 'async start(): Promise<void>',
+        description: 'Subscribe before scanning so notifications racing startup request a later pass, then finish one bounded startup recovery drive.',
+        parameters: [],
+        returns: 'resolution after the initial bounded drive settles.',
+      },
+      {
+        signature: 'drive(request: TeamClosureDriverDriveRequest = {}): Promise<void>',
+        description: 'Discover every eligible Team or drive one selected Team. The backend owns semantic cleanup; this consumer only serializes current-state observations.',
+        parameters: [{ name: 'request', description: 'optional durable Team restriction.' }],
+        returns: 'resolution after every pass selected by this request settles.',
+      },
+      {
+        signature: 'recordTurnEnd(request: TeamClosureDriverTurnEndRequest): Promise<void>',
+        description: 'Admit one current coordinator turn result before its product caller reports the missing final or structured failure.',
+        parameters: [{ name: 'request', description: 'exact activation, Session, turn, and durable reason observation.' }],
+        returns: 'resolution after the corresponding Team fact is accepted.',
+      },
+      {
+        signature: 'recordBudgetStall(request: TeamClosureDriverBudgetStallRequest): Promise<void>',
+        description: 'Admit one frozen budget exhaustion observation through the same proof-bound Hub path used by restart recovery.',
+        parameters: [{ name: 'request', description: 'Team identity and exact budget reason.' }],
+        returns: 'resolution after the durable stalled phase is accepted.',
+      },
+      {
+        signature: 'close(): Promise<void>',
+        description: 'Stop watches and new drives, then await already admitted backend calls within the configured disposal bound while retaining their proofs.',
+        parameters: [],
+        returns: 'resolution after accepted calls settle, or their aggregate failure.',
+      },
+    ],
+  },
+  {
+    key: 'teamClosureDriverHub',
+    summary: 'Real Core Team backend that continues only a driver-issued durable recovery scope.',
+    description: 'Real Core Team backend that continues only a driver-issued durable recovery scope.',
+    methods: [
+      {
+        signature: 'readonly backend: string',
+        description: 'Registered backend identity paired with the driver configuration.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teamClosureDrives',
+    summary: 'Named registry for provider bridges that own the durable closure commands.',
+    description: 'Named registry for provider bridges that own the durable closure commands.',
+    methods: [
+      {
+        signature: 'registerBackend(backend: TeamClosureDriveBackend): () => void',
+        description: 'Register one backend bridge. Disposing the provider fiber removes it from future passes without invalidating an already admitted backend call.',
+        parameters: [{ name: 'backend', description: 'Hub-facing implementation selected by a composition.' }],
+        returns: 'HMR-safe disposer for this exact backend registration.',
+      },
+      {
+        signature: 'getBackend(backend: string): TeamClosureDriveBackend | undefined',
+        description: 'Resolve one live backend without changing its registration lifetime.',
+        parameters: [{ name: 'backend', description: 'configured backend identity.' }],
+        returns: 'the live provider bridge, or `undefined` after removal.',
+      },
+      {
+        signature: 'requireBackend(backend: string): TeamClosureDriveBackend',
+        description: 'Resolve the exact configured bridge or reject before recovery can silently skip durable closure work.',
+        parameters: [{ name: 'backend', description: 'configured backend identity.' }],
+        returns: 'the live provider bridge.',
+        throws: ['{@link TeamClosureDriveError} when the backend is unavailable.'],
+      },
+      {
+        signature: 'listBackends(): readonly TeamClosureDriveBackendRef[]',
+        description: 'List current backend identities in registration order.',
+        parameters: [],
+        returns: 'detached registered backend references.',
+      },
+    ],
+  },
+  {
+    key: 'teamHumanActors',
+    summary: 'Effect-scoped product-principal to active-human binder.',
+    description: 'Effect-scoped product-principal to active-human binder.',
+    methods: [
+      {
+        signature: 'async withProof<T>( call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof) => Promise<T>, ): Promise<T>',
+        description: 'Map one authenticated principal to exactly one active human participant and hold its exact payload-bound proof only while the supplied operation runs.',
+        parameters: [{ name: 'call', description: 'runtime-only authenticated product call retained by its transport lease.' }, { name: 'input', description: 'complete parsed JSON-only mutation input and observed fence.' }, { name: 'operation', description: 'Hub call that may resolve the proof more than once before settling.' }],
+        returns: 'the operation result after the proof is revoked.',
+      },
+      {
+        signature: 'close(): void',
+        description: 'Invalidate every outstanding proof before the source leaves the Team runtime.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teamHumanDelivery',
+    summary: 'Provider-owned principal inbox consumed by Hub admission and authenticated product APIs.',
+    description: 'Provider-owned principal inbox consumed by Hub admission and authenticated product APIs.',
+    methods: [
+      {
+        signature: 'admitFinal(input: TeamHumanFinalInput, proof: TeamHumanSinkProof): Promise<TeamHumanInboxFinal>',
+        description: 'Persist the exact authorized final before Hub admission or receipt.',
+        parameters: [{ name: 'input', description: 'Hub-authorized exact final content.' }, { name: 'proof', description: 'Runtime-only Hub final-admission proof.' }],
+        returns: 'Durable inbox delivery.',
+      },
+      {
+        signature: 'admitMessage(input: TeamHumanMessageInput, proof: TeamHumanSinkProof): Promise<TeamHumanInboxMessage>',
+        description: 'Persist a Hub-authorized ordinary delivery.',
+        parameters: [{ name: 'input', description: 'Exact Envelope and optional rendered view.' }, { name: 'proof', description: 'Runtime-only Hub human-delivery proof.' }],
+        returns: 'Durable inbox item.',
+      },
+      {
+        signature: 'getMessageAdmission(input: Pick<TeamHumanMessageInput, \'principalId\' | \'teamId\' | \'envelopeId\'>, proof: TeamHumanSinkProof): Promise<TeamHumanInboxMessage | undefined>',
+        description: 'Recover a receipt\'s existing sink.',
+        parameters: [{ name: 'input', description: 'Hub-validated owner and Envelope.' }, { name: 'proof', description: 'Runtime-only Hub human-delivery proof.' }],
+        returns: 'Exact admission, or undefined.',
+      },
+      {
+        signature: 'registerActionResponder(responder: TeamHumanActionResponder): () => void',
+        description: 'Register a live action continuation owner.',
+        parameters: [{ name: 'responder', description: 'Host-owned continuation resolver.' }],
+        returns: 'Registration disposer.',
+      },
+      {
+        signature: 'respond(call: AuthenticatedProductCall, input: TeamHumanActionResponseInput): Promise<TeamHumanActionResponseResult>',
+        description: 'Answer one exact durable request.',
+        parameters: [{ name: 'call', description: 'Authenticated principal.' }, { name: 'input', description: 'Actor-free answer and retry fence.' }],
+        returns: 'Durable acceptance or unavailable result.',
+      },
+      {
+        signature: 'read(call: AuthenticatedProductCall, input: TeamHumanInboxReadInput): Promise<TeamHumanInboxPage>',
+        description: 'Read one bounded authorized page.',
+        parameters: [{ name: 'call', description: 'Current authenticated transport lease.' }, { name: 'input', description: 'Actor-free pagination.' }],
+        returns: 'Visible inbox page.',
+      },
+      {
+        signature: 'watch(call: AuthenticatedProductCall, input: TeamHumanInboxReadInput): Promise<TeamHumanInboxPage>',
+        description: 'Wait within the deployment timeout for a fresh page.',
+        parameters: [{ name: 'call', description: 'Revocable authenticated call.' }, { name: 'input', description: 'Actor-free pagination.' }],
+        returns: 'Visible page or an empty timeout result.',
+      },
+      {
+        signature: 'acknowledge(call: AuthenticatedProductCall, input: TeamHumanInboxAcknowledgeInput): Promise<TeamHumanInboxAcknowledgement>',
+        description: 'Persist a monotonic shared display position.',
+        parameters: [{ name: 'call', description: 'Current authenticated call.' }, { name: 'input', description: 'Retained delivery selected by the client.' }],
+        returns: 'Durable shared display cursor.',
+      },
+    ],
+  },
+  {
+    key: 'teamLinks',
+    summary: 'Named Team Link provider registry at `ctx.teamLinks`.',
+    description: 'Named Team Link provider registry at `ctx.teamLinks`. A provider owns every published Link; the registry owns provider registration and connection-time provider/binding verification.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: TeamLinkProvider): () => void',
+        description: 'Register one named Team Link provider. Registration is effect-scoped and its disposer removes only this provider instance.',
+        parameters: [{ name: 'provider', description: 'local or remote Link implementation for future connections.' }],
+        returns: 'HMR-safe disposer for this registration.',
+      },
+      {
+        signature: 'getProvider(name: string): TeamLinkProvider | undefined',
+        description: 'Resolve one registered Team Link provider.',
+        parameters: [{ name: 'name', description: 'provider registry name.' }],
+        returns: 'the live provider, or `undefined` when no matching provider remains.',
+      },
+      {
+        signature: 'listProviders(): TeamLinkProviderRef[]',
+        description: 'List registered Team Link provider identities in registration order.',
+        parameters: [],
+        returns: 'detached provider references.',
+      },
+      {
+        signature: 'registerBoundLinkBorrower(owner: object, borrower: TeamLinkBoundLinkBorrower): () => void',
+        description: 'Register callback-only access to one owner\'s existing bound Link. The caller retains Link lifetime and may remove this access at any time.',
+        parameters: [{ name: 'owner', description: 'exact same-process owner identity that may later borrow.' }, { name: 'borrower', description: 'callback-only accessor for the owner\'s current Link.' }],
+        returns: 'HMR-safe disposer for this owner registration.',
+      },
+      {
+        signature: 'getBoundLinkBorrower(owner: object): TeamLinkBoundLinkBorrower | undefined',
+        description: 'Resolve callback-only access to an owner\'s existing bound Link.',
+        parameters: [{ name: 'owner', description: 'exact owner identity that registered the Link accessor.' }],
+        returns: 'the current borrower, or `undefined` when that owner has no live Link delivery.',
+      },
+      {
+        signature: 'registerEnrollmentProvider(provider: TeamLinkEnrollmentProvider): () => void',
+        description: 'Register one remote-Link enrollment provider. Registration is effect-scoped and does not expose credentials to ordinary Link consumers.',
+        parameters: [{ name: 'provider', description: 'issuer for exact activation-bound remote credentials.' }],
+        returns: 'HMR-safe disposer for this registration.',
+      },
+      {
+        signature: 'getEnrollmentProvider(name: string): TeamLinkEnrollmentProvider | undefined',
+        description: 'Resolve one remote-Link enrollment provider.',
+        parameters: [{ name: 'name', description: 'provider registry name.' }],
+        returns: 'the live credential issuer, or `undefined` when no matching provider remains.',
+      },
+      {
+        signature: 'listEnrollmentProviders(): TeamLinkEnrollmentProviderRef[]',
+        description: 'List registered remote-Link enrollment provider identities in registration order.',
+        parameters: [],
+        returns: 'detached provider references.',
+      },
+      {
+        signature: 'async reserveEnrollment(request: TeamLinkEnrollmentRequest): Promise<TeamLinkEnrollment>',
+        description: 'Reserve one short-lived credential for an exact active activation binding.',
+        parameters: [{ name: 'request', description: 'selected enrollment provider and durable binding.' }],
+        returns: 'opaque credential material owned by the caller until it is revoked.',
+      },
+      {
+        signature: 'async connect(request: TeamLinkConnectRequest): Promise<TeamLink>',
+        description: 'Connect through one registered provider. A returned Link must retain the selected provider name and exact durable activation binding; otherwise the registry closes it before rejecting the connection.',
+        parameters: [{ name: 'request', description: 'provider name, exact durable activation binding, and optional cancellation signal.' }],
+        returns: 'the provider-owned Link after connection-time verification.',
+      },
+    ],
+  },
+  {
+    key: 'teamPlacement',
+    summary: 'Activation owner for tasks whose participants have an explicit deployment route.',
+    description: 'Activation owner for tasks whose participants have an explicit deployment route.',
+    methods: [
+      {
+        signature: 'prepare(teamId: TeamId, signal?: AbortSignal): Promise<number>',
+        description: 'Prepare idle owners for currently ready tasks without assigning any lease.',
+        parameters: [{ name: 'teamId', description: 'Durable Team selected by the scheduler.' }, { name: 'signal', description: 'First caller\'s cancellation, retained by all coalesced callers of that preparation.' }],
+        returns: 'number of activations published by this pass.',
+      },
+      {
+        signature: 'close(): Promise<void>',
+        description: 'Stop new preparation, cancel provider admission and await every owned activation release.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teamRuns',
+    summary: 'Owns the current local default Team topology, trusted human ingress, and explicit final-output receipt.',
+    description: 'Owns the current local default Team topology, trusted human ingress, and explicit final-output receipt. Existing Team services retain authority for durable state, activation, Envelope admission, and Agent turns.',
+    methods: [
+      {
+        signature: 'describeChildTemplate(templateId: string, templateVersion: number): JsonObject',
+        description: 'Resolve a named child template before the parent task reserves its durable child identity.',
+        parameters: [{ name: 'templateId', description: 'exact deployment template name; unavailable versions never fall back.' }, { name: 'templateVersion', description: 'exact positive template revision selected by the parent task.' }],
+        returns: 'detached JSON rules with execution configuration and an explicit coordinator model route; no workspace authority.',
+      },
+      {
+        signature: 'async startChild(request: TeamRunChildRequest): Promise<TeamChildRunBinding>',
+        description: 'Publish a reserved child Team\'s model residency and parent-service result endpoints. The parent service owns invitation consent and the initial consult request.',
+        parameters: [{ name: 'request', description: 'opaque parent authorization and its exact child identity.' }],
+        returns: 'durable endpoints, including an identical already-published binding on retry.',
+      },
+      {
+        signature: 'async cancelChild(request: TeamRunChildRequest): Promise<TeamStateSnapshot>',
+        description: 'Cancel a child under fresh parent authority before releasing its local execution leases.',
+        parameters: [{ name: 'request', description: 'exact cancellation authority and child identity.' }],
+        returns: 'terminal state or explicit durable cleanup progress.',
+      },
+      {
+        signature: 'async create(request: TeamRunCreateRequest): Promise<TeamRunHandle>',
+        description: 'Create the default human/coordinator/worker-pool Team topology and publish its local coordinator residency before any human input enters its channel.',
+        parameters: [{ name: 'request', description: 'objective, coordinator execution root, and optional activation cancellation.' }],
+        returns: 'the durable topology and current local coordinator lease.',
+      },
+      {
+        signature: 'async resume(request: TeamRunResumeRequest): Promise<TeamRunHandle>',
+        description: 'Re-attach a durable default Team to a fresh local coordinator activation. The persisted Session header and request context provide the exact identity and model route; no new Team, Participant, channel, or Session is created.',
+        parameters: [{ name: 'request', description: 'Team identity and optional replacement coordinator choices.' }],
+        returns: 'the re-owned durable topology and current coordinator lease.',
+      },
+      {
+        signature: 'async waitForQuiescence(teamId: TeamId, signal?: AbortSignal): Promise<TeamQuiescenceSnapshot>',
+        description: 'Wait for durable Team quiescence without assuming a local coordinator owner.',
+        parameters: [{ name: 'teamId', description: 'Team identity to inspect.' }, { name: 'signal', description: 'optional cancellation for the local wait.' }],
+        returns: 'the latest quiescence diagnostics.',
+      },
+      {
+        signature: 'async start(request: TeamRunStartRequest): Promise<TeamRunStartResult>',
+        description: 'Create the default topology and admit its first human Envelope. Retries with the same key return the same accepted result while this local owner lives.',
+        parameters: [{ name: 'request', description: 'topology inputs, first human content, and retry identity.' }],
+        returns: 'the created topology plus its accepted first human Envelope.',
+      },
+      {
+        signature: 'async postHumanInput(request: TeamRunHumanInputRequest): Promise<TeamEnvelope>',
+        description: 'Append trusted human content only after the default topology and coordinator residency have committed.',
+        parameters: [{ name: 'request', description: 'Team identity, human content, and requested delivery intent.' }],
+        returns: 'the immutable channel Envelope accepted by the Team Hub.',
+      },
+      {
+        signature: 'async requestCoordinatorInterrupt(teamId: TeamId): Promise<ParticipantInterruptSnapshot | undefined>',
+        description: 'Request one soft interrupt from this TeamRun\'s durable human participant to its current local coordinator. A non-active Team has no interruptable product run, so this returns `undefined` without touching the Hub.',
+        parameters: [{ name: 'teamId', description: 'current locally owned Team run selected by ACP.' }],
+        returns: 'the committed interrupt, or `undefined` when the Team is no longer active.',
+      },
+      {
+        signature: 'coordinatorTaskAuthority(coordinator: Agent): TeamRunCoordinatorTaskAuthority',
+        description: 'Mint a capability for one exact local coordinator without exposing Team, participant, activation, or Session identity to its consumer.',
+        parameters: [{ name: 'coordinator', description: 'current local coordinator Agent selected by a scoped consumer.' }],
+        returns: 'an opaque capability accepted only while this exact coordinator remains current.',
+      },
+      {
+        signature: 'async setWorkerPoolSize( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunWorkerPoolSetRequest, ): Promise<TeamRunWorkerPoolStatus>',
+        description: 'Set the coordinator\'s desired local worker-pool size and reconcile durable worker Participants. Requests above the deployment ceiling are clamped and returned as saturated capacity so a coordinator can keep queueing work.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the exact current coordinator.' }, { name: 'request', description: 'requested worker count, including the default `worker` slot.' }],
+        returns: 'bounded pool and queued-task status after reconciliation.',
+      },
+      {
+        signature: 'tryCoordinatorGoalAuthority(coordinator: Agent): TeamRunCoordinatorGoalAuthority | undefined',
+        description: 'Mint a capability for an exact local coordinator, or leave ordinary Agents outside the scoped Team-goal tools.',
+        parameters: [{ name: 'coordinator', description: 'candidate current local coordinator Agent selected by a scoped consumer.' }],
+        returns: 'an opaque capability, or `undefined` when the Agent owns no current default Team run.',
+      },
+      {
+        signature: 'async readCoordinatorGoal(authority: TeamRunCoordinatorGoalAuthority): Promise<TeamGoalSnapshot>',
+        description: 'Read the durable objective visible to the exact current coordinator.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact current coordinator.' }],
+        returns: 'the current detached Team objective.',
+      },
+      {
+        signature: 'async updateCoordinatorGoal( authority: TeamRunCoordinatorGoalAuthority, request: TeamRunCoordinatorGoalUpdateRequest, ): Promise<TeamGoalSnapshot>',
+        description: 'Compare-and-set the durable objective from an active coordinator turn carrying its trusted human input.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact current coordinator.' }, { name: 'request', description: 'observed revision and replacement objective.' }],
+        returns: 'the committed detached Team objective.',
+      },
+      {
+        signature: 'async transitionCoordinatorGoalPhase( authority: TeamRunCoordinatorGoalAuthority, request: TeamRunCoordinatorGoalPhaseRequest, ): Promise<TeamGoalSnapshot>',
+        description: 'Compare-and-set the durable objective phase from an exact coordinator activation.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the current coordinator.' }, { name: 'request', description: 'expected revision, next phase, and optional blocker.' }],
+        returns: 'the committed durable objective.',
+      },
+      {
+        signature: 'async startDefaultWorkerTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskStartRequest, ): Promise<TeamRunDefaultWorkerTask>',
+        description: 'Lazily activate the default worker and create one bounded scheduler-owned task.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact current coordinator.' }, { name: 'request', description: 'caller retry key and durable task fields.' }],
+        returns: 'the accepted or replayed task\'s compact durable identity.',
+      },
+      {
+        signature: 'async startDelegatedTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDelegatedTaskStartRequest, ): Promise<TeamRunDefaultWorkerTask>',
+        description: 'Admit one child-Team task under the current coordinator\'s narrowed authority.',
+        parameters: [{ name: 'authority', description: 'Opaque authority of this Team\'s current coordinator.' }, { name: 'request', description: 'Durable objective, requested scopes and budget, and optional complete template identity.' }],
+        returns: 'The accepted or replayed parent task; its Consumer owns child startup.',
+      },
+      {
+        signature: 'async waitForDefaultWorkerTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskWaitRequest, ): Promise<TeamRunDefaultWorkerTaskTerminal>',
+        description: 'Wait for one task previously accepted through this coordinator authority.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact current coordinator.' }, { name: 'request', description: 'owned task identity and optional local wait cancellation.' }],
+        returns: 'the task\'s terminal result or retained terminal attempt fact.',
+      },
+      {
+        signature: 'async listDefaultWorkerTasks(authority: TeamRunCoordinatorTaskAuthority): Promise<TeamRunDefaultWorkerTaskList>',
+        description: 'List compact task state owned by the exact current coordinator.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the exact current coordinator.' }],
+        returns: 'the current bounded list of non-workflow default-worker tasks.',
+      },
+      {
+        signature: 'async proposeDefaultWorkerTaskOwner( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskOwnerProposalRequest, ): Promise<TeamRunDefaultWorkerTaskOwnerProposal>',
+        description: 'Set or clear an advisory owner proposal for one pending coordinator-owned task.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the exact current coordinator.' }, { name: 'request', description: 'owned task identity and optional preferred Participant.' }],
+        returns: 'the task phase and retained scheduler hint after the CAS.',
+      },
+      {
+        signature: 'async watchDefaultWorkerTasks( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskWatchRequest = {}, ): Promise<TeamRunDefaultWorkerTaskWatch>',
+        description: 'Wait for a Team cursor advance, then return the bounded owned-task snapshot. This observes unrelated Team changes too; the returned cursor lets the coordinator establish the next no-gap watch.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the exact current coordinator.' }, { name: 'request', description: 'last observed cursor and local cancellation.' }],
+        returns: 'the current cursor and compact owned-task state.',
+      },
+      {
+        signature: 'async cancelDefaultWorkerTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskCancelRequest, ): Promise<TeamRunDefaultWorkerTask>',
+        description: 'Request cancellation of one coordinator-owned task through the durable Team CAS.',
+        parameters: [{ name: 'authority', description: 'opaque capability for the exact current coordinator.' }, { name: 'request', description: 'owned task identity.' }],
+        returns: 'accepted stop progress, or an unchanged terminal task.',
+      },
+      {
+        signature: 'async startWorkflowPlan( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunWorkflowPlanStartRequest, ): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Validate and durably compile one declarative workflow plan. Compilation is retry-safe: the plan, each task binding, and the workflow channel are all recovered from Team records rather than inferred from model code.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact coordinator.' }, { name: 'request', description: 'complete plan, retry identity, and optional local cancellation.' }],
+        returns: 'the ready or already-terminal durable workflow plan.',
+      },
+      {
+        signature: 'async cancelWorkflowTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunWorkflowTaskCancelRequest, ): Promise<TeamRunWorkflowTaskCancelResult>',
+        description: 'Cancel one exact task binding owned by the current coordinator\'s workflow.',
+        parameters: [{ name: 'authority', description: 'current coordinator capability.' }, { name: 'request', description: 'plan/template selection and optional cancellation reason.' }],
+        returns: 'task stop progress; independent workflow tasks remain available.',
+      },
+      {
+        signature: 'async waitForWorkflowPlan( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunWorkflowPlanWaitRequest, ): Promise<TeamRunWorkflowPlanTerminal>',
+        description: 'Wait for all bound tasks to settle and read the Hub-owned terminal result.',
+        parameters: [{ name: 'authority', description: 'opaque capability minted for the exact coordinator.' }, { name: 'request', description: 'owned workflow plan identity and local wait cancellation.' }],
+        returns: 'the durable workflow terminal phase and projected task results.',
+      },
+      {
+        signature: 'async waitForFinal(request: TeamRunFinalWaitRequest): Promise<TeamRunFinal>',
+        description: 'Await and receipt the coordinator\'s explicit final Envelope, then settle the narrow default topology from active through quiescing to completed.',
+        parameters: [{ name: 'request', description: 'Team identity, last observed channel cursor, and local wait cancellation.' }],
+        returns: 'the exact human-addressed final value retained in the channel WAL.',
+      },
+      {
+        signature: 'async cancel( teamId: TeamId, humanOwner?: Extract<TeamParticipantOwner, { readonly kind: \'product-principal\' }>, ): Promise<void>',
+        description: 'Cancel a current local Team run after the Hub has durably closed admission.',
+        parameters: [{ name: 'teamId', description: 'Team selected from the current local product run map.' }, { name: 'humanOwner', description: 'optional authenticated product owner that must match the run\'s durable human.' }],
+        returns: 'resolution after Team terminal state and local coordinator lease settle.',
+      },
+      {
+        signature: 'async archiveTerminal(request: TeamArchiveInput): Promise<TeamStateSnapshot>',
+        description: 'Archive one terminal Team only when this service retained the local owner after settling that Team. The opaque proof is minted for this single Hub call and cannot be reconstructed from a Team id or terminal snapshot.',
+        parameters: [{ name: 'request', description: 'terminal Team identity and observed Team-journal cursor.' }],
+        returns: 'the Team state with its durable archive marker.',
+      },
+      {
+        signature: 'close(): Promise<void>',
+        description: 'Release current local coordinator leases without mutating durable Team phase on plugin disposal.',
+        parameters: [],
+      },
+    ],
+  },
+  {
+    key: 'teams',
+    summary: 'Team Service Definition (`ctx.teams`).',
+    description: 'Team Service Definition (`ctx.teams`). A provider supplies Team operations; this base class owns adapter/policy registration and post-commit observer dispatch without depending on an Agent, Session, Hub, storage medium, or transport.',
+    methods: [
+      {
+        signature: 'async assertChildRunAuthorization(token: TeamChildRunAuthorization): Promise<TeamChildRunScope>',
+        description: 'Validate provider ownership before calling any capability method supplied by a caller.',
+        parameters: [{ name: 'token', description: 'child operation capability returned by this exact provider.' }],
+        returns: 'current immutable scope after asynchronous parent and workspace validation.',
+      },
+      {
+        signature: 'registerSystemDelegationProofSource(source: TeamSystemDelegationProofSource): () => void',
+        description: 'Register the owner of parent delegation operations and live shared-root resolution.',
+        parameters: [{ name: 'source', description: 'exact runtime proof resolver retained by the delegation Consumer.' }],
+        returns: 'effect-owned registration disposer.',
+      },
+      {
+        signature: 'bindChildRun(_request: import(\'./types.ts\').TeamChildRunBindRequest): Promise<import(\'./types.ts\').TeamChildRunBinding>',
+        description: 'Publish exact service/coordinator endpoints for a reserved child Team.',
+        parameters: [{ name: '_request', description: 'live parent authorization, observed child cursor and complete endpoint binding.' }],
+        returns: 'the durable immutable binding; an identical retry returns its original value.',
+      },
+      {
+        signature: 'registerSystemChildResultProofSource(source: TeamSystemChildResultProofSource): () => void | Promise<void>',
+        description: 'Register a child runtime or parent saga result owner.',
+        parameters: [{ name: 'source', description: 'Owner retaining its own nonserializable proofs.' }],
+        returns: 'Effect disposer that invalidates this source.',
+      },
+      {
+        signature: 'admitTaskDelegationResult(_request: TeamTaskDelegationResultAdmitRequest): Promise<TeamDelegationResultAdmission>',
+        description: 'Accept a child response into the parent task without settling the parent.',
+        parameters: [{ name: '_request', description: 'Exact parent task fence and delegation-owned response selection.' }],
+        returns: 'Durable parent result admission.',
+      },
+      {
+        signature: 'completeChildTeam(_request: TeamChildResultCommandRequest): Promise<TeamStateSnapshot>',
+        description: 'Admit and receipt an already parent-accepted result, then begin child completion.',
+        parameters: [{ name: '_request', description: 'Exact child-result proof and child cursor.' }],
+        returns: 'Current child state; completed is possible only after resource quiescence.',
+      },
+      {
+        signature: 'cancelChildTeam(_request: TeamChildCancelRequest): Promise<TeamStateSnapshot>',
+        description: 'Record child cancellation before releasing runtime resources, including partial bootstrap.',
+        parameters: [{ name: '_request', description: 'Provider-owned parent cancellation capability and exact child input.' }],
+        returns: 'Durable cancellation-admitted child state.',
+      },
+      {
+        signature: 'recordChildResultMissing(_request: TeamChildResultCommandRequest): Promise<TeamStateSnapshot>',
+        description: 'Record an actual coordinator turn ending without its bound service response.',
+        parameters: [{ name: '_request', description: 'Live child runtime observation proof and current child cursor.' }],
+        returns: 'Unchanged state when a response exists, otherwise a durable missing-result stall.',
+      },
+      {
+        signature: 'openActivationActorProofIssuer(): ActivationActorProofIssuer',
+        description: 'Open one trusted issuer for activation-bound runtime proofs. The issuer validates and freezes each durable binding; its closure prevents later issuance but does not revoke leases it already returned.',
+        parameters: [],
+        returns: 'an issuer whose leases may be revoked independently.',
+      },
+      {
+        signature: 'registerSystemActivationProofSource(source: TeamSystemActivationProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact activation lifecycle mutations. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemHumanActionProofSource(source: TeamSystemHumanActionProofSource): () => void',
+        description: 'Register one Host owner that privately resolves opaque proofs for exact approval or question action mutations. Registration is effect-scoped: disposing the contributing fiber immediately makes all proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerHumanActorProofSource(source: TeamHumanActorProofSource): () => void',
+        description: 'Register one authenticated-human binder that privately resolves opaque proofs for exact product Team mutations. Registration is effect-scoped: disposal immediately invalidates every outstanding proof from this source.',
+        parameters: [{ name: 'source', description: 'named resolver that owns human proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemChannelAdmissionProofSource(source: TeamSystemChannelAdmissionProofSource): () => void',
+        description: 'Register a named endpoint or expiry owner and revoke its proofs with its effect lifetime.',
+        parameters: [{ name: 'source', description: 'owner retaining exact runtime operation scopes.' }],
+        returns: 'an HMR-safe disposer for this registration.',
+      },
+      {
+        signature: 'registerSystemTaskLeaseProofSource(source: TeamSystemTaskLeaseProofSource): () => void',
+        description: 'Register one scheduler owner that privately resolves opaque proofs for exact task assignment and elapsed lease expiry. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by that source.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemWorkflowProofSource(source: TeamSystemWorkflowProofSource): () => void',
+        description: 'Register one workflow compiler owner that privately resolves opaque proofs for exact workflow channel openings, bindings, phase transitions, and orphan-channel cleanup. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemTaskControlProofSource(source: TeamSystemTaskControlProofSource): () => void',
+        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact default-worker owner proposals and current-coordinator cancellations. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemRootCreationProofSource(source: TeamSystemRootCreationProofSource): () => void',
+        description: 'Register one owner that privately resolves opaque proofs for exact root Team creation. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemChildCreationProofSource(source: TeamSystemChildCreationProofSource): () => void',
+        description: 'Register one owner that privately resolves opaque proofs for exact child Team creation. No shipped product composition registers this source until parent-task delegation has an owning consumer.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemChannelSummaryProofSource(source: TeamSystemChannelSummaryProofSource): () => void',
+        description: 'Register one owner that privately resolves opaque proofs for exact durable channel summary appends. No shipped product composition registers this source until a summarization consumer owns the operation.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemChannelLifecycleProofSource(source: TeamSystemChannelLifecycleProofSource): () => void',
+        description: 'Register one owner that privately resolves opaque proofs for exact generic channel openings and closures. Shipped product compositions register no generic lifecycle source until an owning consumer needs this route.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemWorkspaceAllocationProofSource(source: TeamSystemWorkspaceAllocationProofSource): () => void',
+        description: 'Register one owner that privately resolves opaque proofs for exact workspace allocation bindings and cleanup transitions.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemArchiveProofSource(source: TeamSystemArchiveProofSource): () => void',
+        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact terminal Team archive. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemTopologyProofSource(source: TeamSystemTopologyProofSource): () => void',
+        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact bootstrap, worker, and reviewer topology mutations. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemSchedulerChannelProofSource(source: TeamSystemSchedulerChannelProofSource): () => void',
+        description: 'Register one scheduler owner that privately resolves opaque proofs for exact review and task-assignment channel lifecycle mutations. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemCancellationCleanupProofSource(source: TeamSystemCancellationCleanupProofSource): () => void',
+        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact post-release cleanup after a durable cancellation intent. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemFinalizationCleanupProofSource(source: TeamSystemFinalizationCleanupProofSource): () => void',
+        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact post-release channel cleanup after a durable human-receipted final result. Registration is effect-scoped: disposal immediately invalidates every proof.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemFinalReceiptProofSource(source: TeamSystemFinalReceiptProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact coordinator-final human receipts. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemEnvelopePostProofSource(source: TeamSystemEnvelopePostProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact ordinary Envelope admissions. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemTaskReviewProofSource(source: TeamSystemTaskReviewProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact durable task-review recovery. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemClosureProofSource(source: TeamSystemClosureProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact Team closure commands. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemClosureDriverProofSource(source: TeamSystemClosureDriverProofSource): () => void',
+        description: 'Register one closure driver that privately resolves opaque proofs for exact already-durable lifecycle continuation passes.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'requireSystemClosureDriverProof( proof: TeamSystemClosureDriverProof, ): TeamSystemClosureDriverProofResolution',
+        description: 'Resolve one current closure-driver proof. A source owns the opaque token in private memory; this runtime validates and freezes its durable scope before a provider continues lifecycle settlement.',
+        parameters: [{ name: 'proof', description: 'runtime-only proof supplied by a registered closure driver.' }],
+        returns: 'immutable source attribution and the exact durable recovery scope.',
+        throws: ['{@link TeamError} with `TEAM_ACTOR_PROOF_INVALID` when no live source owns the proof or its scope is invalid.'],
+      },
+      {
+        signature: 'registerSystemPhaseProofSource(source: TeamSystemPhaseProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact Team phase transitions. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemMaintenanceProofSource(source: TeamSystemMaintenanceProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact destructive Team-maintenance operations. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'registerSystemInterruptProofSource(source: TeamSystemInterruptProofSource): () => void',
+        description: 'Register one system owner that privately resolves opaque proofs for exact TeamRun human-to-coordinator soft-interrupt requests. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
+        parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
+        returns: 'an HMR-safe disposer that removes exactly this source.',
+        throws: ['{@link TeamError} when the source name is invalid or already registered.'],
+      },
+      {
+        signature: 'abstract createTeam(request: TeamCreateRequest): Promise<TeamStateSnapshot>',
+        description: 'Create one Team, mint its identity, and commit its initial durable state. A nested request names both its parent Team and the parent task; a provider resolves its separate runtime proof and persists the resulting depth under its deployment policy.',
+        parameters: [{ name: 'request', description: 'JSON-only Team payload plus root or child runtime authority.' }],
+        returns: 'the detached state committed for the new Team.',
+      },
+      {
+        signature: 'abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>',
+        description: 'Read the complete detached state of one Team.',
+        parameters: [{ name: 'request', description: 'Team identity to read.' }],
+        returns: 'the current Team state and its journal cursor.',
+      },
+      {
+        signature: 'upsertHumanAction(request: TeamHumanActionUpsertRequest): Promise<TeamHumanActionSnapshot>',
+        description: 'Retain one host-mediated approval/question in the Team journal. Providers that do not offer durable interaction records fail explicitly so callers cannot mistake a transient mux frame for Team truth. The Host source derives the pending action, policy actor, and timestamps; callers provide only runtime proof and JSON routing fields.',
+        parameters: [{ name: 'request', description: 'Host runtime authority, Team identity, and observed cursor.' }],
+        returns: 'the accepted or idempotently replayed interaction snapshot.',
+      },
+      {
+        signature: 'resolveHumanAction(request: TeamHumanActionResolveRequest): Promise<TeamHumanActionSnapshot>',
+        description: 'Settle one durable Team human action through its cursor fence. The Host source derives the action identity, terminal outcome, and policy actor; callers provide only runtime proof and JSON routing fields.',
+        parameters: [{ name: 'request', description: 'Host runtime authority, Team identity, and observed cursor.' }],
+        returns: 'the settled interaction snapshot.',
+      },
+      {
+        signature: 'recordUsage(request: TeamUsageRecordRequest): Promise<TeamUsageSnapshot>',
+        description: 'Record one activation-authorized provider usage sample for Team-subtree budget accounting. Providers derive Team, Participant, and Session from the runtime proof; a child Team\'s sample is charged to each parent before more child work proceeds. Unsupported providers fail explicitly instead of silently presenting process-local estimates.',
+        parameters: [{ name: 'request', description: 'runtime activation authority plus JSON-only cursor and provider/model usage facts; callers do not select durable Team, participant, Session, or observed-time provenance because the Hub derives them.' }],
+        returns: 'the durable aggregate after accepting or replaying the sample.',
+      },
+      {
+        signature: 'async inspectQuiescence(teamId: TeamId): Promise<TeamQuiescenceSnapshot>',
+        description: 'Inspect durable Team state for a completion-policy-safe quiescence result. This read never mutates state and intentionally reports blocked tasks, resident activations, and open channels instead of treating incomplete work as completed.',
+        parameters: [{ name: 'teamId', description: 'Team identity to inspect.' }],
+        returns: 'detached quiescence diagnostics derived from current Team state.',
+      },
+      {
+        signature: 'abstract listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage>',
+        description: 'List a bounded page of visible Team summaries for product and transport consumers.',
+        parameters: [{ name: 'request', description: 'provider-order cursor and page limit.' }],
+        returns: 'detached Team summaries and an optional continuation cursor.',
+      },
+      {
+        signature: 'abstract archiveTeam(request: TeamArchiveRequest): Promise<TeamStateSnapshot>',
+        description: 'Archive one terminal Team without deleting its journals or descendants.',
+        parameters: [{ name: 'request', description: 'JSON-only Team/cursor fields plus a current runtime archive proof.' }],
+        returns: 'the complete detached state after archival.',
+      },
+      {
+        signature: 'authorizeHumanResume(request: TeamHumanResumeRequest): Promise<TeamHumanResumeAuthorization>',
+        description: 'Authorize one authenticated human to recover local ownership of an active or stalled Team.',
+        parameters: [{ name: 'request', description: 'Team cursor fence and runtime-only authenticated-human proof.' }],
+        returns: 'an opaque authorization that must remain live through coordinator recovery.',
+      },
+      {
+        signature: 'abstract readAudit(request: TeamAuditReadRequest): Promise<TeamAuditReadResult>',
+        description: 'Read a bounded provider-owned audit projection for the Team journal or one attached channel WAL.',
+        parameters: [{ name: 'request', description: 'selected Team/source, cursor, and page limit.' }],
+        returns: 'source records projected without changing authoritative state.',
+      },
+      {
+        signature: 'abstract watchTeam(request: TeamWatchRequest): Promise<TeamWatchResult>',
+        description: 'Wait until a Team journal moves beyond a caller-observed cursor, closes, or the caller aborts its local wait. Providers omit `request.signal` before parsing the JSON-only request fields; cancellation changes no durable data.',
+        parameters: [{ name: 'request', description: 'Team identity, last observed journal cursor, and optional local cancellation.' }],
+        returns: 'whether the cursor advanced or the provider closed the watch.',
+        throws: ['when `request.signal` aborts before the watch resolves.'],
+      },
+      {
+        signature: 'abstract transitionTeamPhase(request: TeamPhaseTransitionRequest): Promise<TeamStateSnapshot>',
+        description: 'Compare-and-set one Team lifecycle transition.',
+        parameters: [{ name: 'request', description: 'Team identity, observed cursor, and next lifecycle phase.' }],
+        returns: 'the complete detached state after the committed transition.',
+      },
+      {
+        signature: 'validateHumanSinkProof(proof: TeamHumanSinkProof, scope: TeamHumanSinkScope): void',
+        description: 'Validate a Consumer call against its live provider-owned sink capability.',
+        parameters: [{ name: 'proof', description: 'Runtime-only capability supplied by the Hub command.' }, { name: 'scope', description: 'Complete operation and exact data selected for this storage call.' }],
+      },
+      {
+        signature: 'registerSystemHumanDeliveryProofSource(source: TeamSystemHumanDeliveryProofSource): () => void | Promise<void>',
+        description: 'Register an exact ordinary-human-delivery proof owner.',
+        parameters: [{ name: 'source', description: 'Consumer that retains proof construction and lifetime.' }],
+        returns: 'Effect disposer that immediately revokes the source.',
+      },
+      {
+        signature: 'admitHumanChannelDelivery(request: TeamHumanChannelDeliveryRequest): Promise<TeamHumanChannelDeliveryResult>',
+        description: 'Persist one ordinary human delivery and then its receipt under exact source authority.',
+        parameters: [{ name: 'request', description: 'Current source proof and observed pending-delivery selection.' }],
+        returns: 'Durable inbox item and recipient receipt.',
+      },
+      {
+        signature: 'acceptHumanActionResponse(request: TeamHumanActionResolveRequest): Promise<TeamHumanActionSnapshot>',
+        description: 'Accept a live Host-owned answer before invoking its callback.',
+        parameters: [{ name: 'request', description: 'Exact source proof and Team cursor.' }],
+        returns: 'Durable action with response acceptance.',
+      },
+      {
+        signature: 'unavailableHumanAction(request: TeamHumanActionResolveRequest): Promise<TeamHumanActionSnapshot>',
+        description: 'Cancel an unrecoverable action and stall its Team without inventing a callback.',
+        parameters: [{ name: 'request', description: 'Failure-only Host proof.' }],
+        returns: 'Explicit unavailable action.',
+      },
+      {
+        signature: 'admitTeamFinalResult(request: TeamFinalAdmissionRequest): Promise<TeamFinalAdmission>',
+        description: 'Persist final acceptance through the closed TeamRun result owner.',
+        parameters: [{ name: 'request', description: 'exact WAL content selection and current source-owned proof.' }],
+        returns: 'the flushed admission, or its original value for an identical retry.',
+      },
+      {
+        signature: 'completeTeam(request: TeamCompleteRequest): Promise<TeamStateSnapshot>',
+        description: 'Accept an authenticated completion intent; receipt repair requires separate durable final admission.',
+        parameters: [{ name: 'request', description: 'exact authorized closure selection.' }],
+        returns: 'the durable completion intent state.',
+      },
+      {
+        signature: 'failTeam(request: TeamFailRequest): Promise<TeamStateSnapshot>',
+        description: 'Accept one Team failure intent through the provider\'s failure policy.',
+        parameters: [{ name: 'request', description: 'authenticated structured failure command.' }],
+        returns: 'the durable quiescing state; a closure driver commits terminal failure after owned work settles.',
+      },
+      {
+        signature: 'cancelTeam(request: TeamCancelRequest): Promise<TeamStateSnapshot>',
+        description: 'Cancel one Team through the provider\'s admission and quiescence policy.',
+        parameters: [{ name: 'request', description: 'authenticated structured cancellation command.' }],
+        returns: 'the terminal Team state, or the durable quiescing/stalled state while an owned resource still needs to settle.',
+      },
+      {
+        signature: 'continueTeamClosure(request: TeamClosureContinuationRequest): Promise<TeamStateSnapshot>',
+        description: 'Continue one source-owned Team lifecycle observation or already durable closure/cancellation through a runtime-only recovery proof.',
+        parameters: [{ name: 'request', description: 'cursor-fenced durable Team selection plus recovery proof.' }],
+        returns: 'the current Team state after one provider-owned recovery pass.',
+      },
+      {
+        signature: 'abstract updateTeamGoal(request: TeamGoalUpdateRequest): Promise<TeamStateSnapshot>',
+        description: 'Compare-and-set a Team objective\'s text and/or goal-specific resource limits through one exact activation or authenticated-human proof.',
+        parameters: [{ name: 'request', description: 'runtime authority, Team identity, observed goal revision, and at least one replacement field.' }],
+        returns: 'the complete detached state after the committed objective update.',
+      },
+      {
+        signature: 'abstract transitionTeamGoalPhase(request: TeamGoalPhaseTransitionRequest): Promise<TeamStateSnapshot>',
+        description: 'Compare-and-set a Team objective lifecycle transition through one exact activation or authenticated-human proof.',
+        parameters: [{ name: 'request', description: 'runtime authority, Team identity, observed goal revision, next objective phase, and optional blocker.' }],
+        returns: 'the complete detached state after the committed objective transition.',
+      },
+      {
+        signature: 'abstract inviteParticipant(request: ParticipantInviteRequest): Promise<ParticipantSnapshot>',
+        description: 'Invite one participant, mint its identity, and commit its initial phase.',
+        parameters: [{ name: 'request', description: 'topology or authenticated-human proof plus Team identity, observed cursor, and participant descriptor.' }],
+        returns: 'the detached participant projection after invitation.',
+      },
+      {
+        signature: 'abstract listParticipantsPage(request: TeamMemberListPageRequest): Promise<TeamMemberListPage>',
+        description: 'List a bounded page of detached participant projections for one Team.',
+        parameters: [{ name: 'request', description: 'Team identity, provider-order cursor, and page limit.' }],
+        returns: 'participant projections and an optional continuation cursor.',
+      },
+      {
+        signature: 'abstract transitionParticipantPhase(request: ParticipantPhaseTransitionRequest): Promise<ParticipantSnapshot>',
+        description: 'Compare-and-set one participant-membership lifecycle transition.',
+        parameters: [{ name: 'request', description: 'topology or authenticated-human proof plus Team/participant identities, observed cursor, and next phase.' }],
+        returns: 'the detached participant projection after the transition.',
+      },
+      {
+        signature: 'abstract bindActivation(request: ActivationBindRequest): Promise<ActivationBindingSnapshot>',
+        description: 'Persist a published activation\'s immutable Session and provider binding.',
+        parameters: [{ name: 'request', description: 'source-owned runtime proof, observed Team cursor, and published activation binding.' }],
+        returns: 'the detached durable binding after acceptance.',
+      },
+      {
+        signature: 'abstract updateActivationStatus(request: ActivationStatusUpdateRequest): Promise<ActivationBindingSnapshot>',
+        description: 'Persist one permitted residency-status transition for a bound activation.',
+        parameters: [{ name: 'request', description: 'source-owned runtime proof, Team/activation identity, observed cursor, and next status.' }],
+        returns: 'the detached binding after its durable status update.',
+      },
+      {
+        signature: 'abstract fenceActivation(request: ActivationFenceRequest): Promise<TeamStateSnapshot>',
+        description: 'Atomically release task leases held by one externally fenced activation, record its offline fence proof, and retire any recorded wake channels. Callers must prove process termination before invoking this trusted recovery operation.',
+        parameters: [{ name: 'request', description: 'source-owned runtime proof, exact activation relation, and current Team cursor.' }],
+        returns: 'the complete detached Team state after lease release and offline transition.',
+      },
+      {
+        signature: 'abstract quiesceActivation(request: ActivationQuiesceRequest): Promise<TeamStateSnapshot>',
+        description: 'Release task leases held by one locally settled activation and persist its quiescence proof before another epoch can use the same Session.',
+        parameters: [{ name: 'request', description: 'source-owned runtime proof, exact activation relation, and current Team cursor.' }],
+        returns: 'the complete detached Team state after quiescence settles.',
+      },
+      {
+        signature: 'abstract getActivation(request: ActivationGetRequest): Promise<ActivationBindingSnapshot>',
+        description: 'Read one durable activation binding.',
+        parameters: [{ name: 'request', description: 'Team and activation identities.' }],
+        returns: 'the current durable binding.',
+      },
+      {
+        signature: 'abstract requestParticipantInterrupt(request: ParticipantInterruptRequest): Promise<ParticipantInterruptSnapshot>',
+        description: 'Resolve the current TeamRun human/coordinator topology from one source-owned proof and commit its soft interrupt request. A matching unacknowledged target returns its existing durable request without another append.',
+        parameters: [{ name: 'request', description: 'runtime TeamRun authority, Team identity, and observed cursor.' }],
+        returns: 'the durable request bound to the resolved activation, Session, and provider.',
+      },
+      {
+        signature: 'abstract listPendingParticipantInterrupts( request: ParticipantInterruptListPendingRequest, ): Promise<readonly ParticipantInterruptSnapshot[]>',
+        description: 'List unacknowledged soft interrupts for one exact current activation proof.',
+        parameters: [{ name: 'request', description: 'runtime target authority without caller-selected binding identities.' }],
+        returns: 'detached pending interrupts in durable request order.',
+      },
+      {
+        signature: 'abstract acknowledgeParticipantInterrupt( request: ParticipantInterruptAcknowledgeRequest, ): Promise<ParticipantInterruptSnapshot>',
+        description: 'Acknowledge one soft interrupt from the exact current activation it targets. Repeating an acknowledgement returns the original durable acknowledgement.',
+        parameters: [{ name: 'request', description: 'runtime target authority and selected interrupt identity.' }],
+        returns: 'the acknowledged durable interrupt.',
+      },
+      {
+        signature: 'abstract createTask(request: TeamTaskCreateRequest): Promise<TeamTaskSnapshot>',
+        description: 'Create one Team task, mint its identity, and commit its initial phase. The runtime proof derives either an activation creator or an authenticated human creator; the provider replays its original task before cursor comparison. A conflicting command reuse rejects.',
+        parameters: [{ name: 'request', description: 'Team identity, observed cursor, complete task fields, retry command, and runtime proof.' }],
+        returns: 'the detached task projection after creation or matching command replay.',
+      },
+      {
+        signature: 'proposeTaskOwner(request: TeamTaskOwnerProposalRequest): Promise<TeamTaskSnapshot>',
+        description: 'Compare-and-set an advisory preferred owner for one pending task. The proposal is a scheduler hint only; it does not grant task or Participant authority and a provider may select another eligible owner.',
+        parameters: [{ name: 'request', description: 'Team/task identity, observed task revision, and optional preferred Participant.' }],
+        returns: 'the detached task projection after the proposal change.',
+      },
+      {
+        signature: 'admitWorkflowPlan(request: TeamWorkflowPlanAdmissionRequest): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Admit one complete JSON workflow plan before any compiled task or channel record is created. Providers retain the plan in `compiling` so recovery can resume the compiler from durable bindings.',
+        parameters: [{ name: 'request', description: 'Team cursor, retry identity, complete workflow plan, and current coordinator proof.' }],
+        returns: 'the accepted or idempotently replayed workflow plan.',
+      },
+      {
+        signature: 'getWorkflowPlan(request: TeamWorkflowPlanGetRequest): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Read one durable workflow plan and its compiled task/channel bindings.',
+        parameters: [{ name: 'request', description: 'owning Team and workflow plan identities.' }],
+        returns: 'the current detached workflow plan projection.',
+      },
+      {
+        signature: 'listWorkflowPlansPage(request: TeamWorkflowPlanListPageRequest): Promise<TeamWorkflowPlanListPage>',
+        description: 'List a bounded page of workflow plans in durable admission order.',
+        parameters: [{ name: 'request', description: 'Team identity, provider-order cursor, and page limit.' }],
+        returns: 'detached workflow plan projections and an optional continuation cursor.',
+      },
+      {
+        signature: 'bindWorkflowPlanTask(request: TeamWorkflowPlanTaskBindRequest): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Bind one durable Team task to its plan-local template.',
+        parameters: [{ name: 'request', description: 'TeamRun workflow proof plus JSON-only Team/plan cursor fences and task binding.' }],
+        returns: 'the updated detached workflow plan projection.',
+      },
+      {
+        signature: 'bindWorkflowPlanChannel(request: TeamWorkflowPlanChannelBindRequest): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Bind one durable workflow channel to its plan.',
+        parameters: [{ name: 'request', description: 'TeamRun workflow proof plus JSON-only Team/plan cursor fences and channel identity.' }],
+        returns: 'the updated detached workflow plan projection.',
+      },
+      {
+        signature: 'transitionWorkflowPlan(request: TeamWorkflowPlanPhaseRequest): Promise<TeamWorkflowPlanSnapshot>',
+        description: 'Advance a workflow plan to `ready` or retain one terminal result/failure.',
+        parameters: [{ name: 'request', description: 'TeamRun workflow proof plus JSON-only Team/plan cursor fences and next durable phase.' }],
+        returns: 'the updated detached workflow plan projection.',
+      },
+      {
+        signature: 'abstract getTask(request: TeamTaskGetRequest): Promise<TeamTaskSnapshot>',
+        description: 'Read one detached Team task projection, including a deleted tombstone.',
+        parameters: [{ name: 'request', description: 'Team and task identities to read.' }],
+        returns: 'the current task projection.',
+      },
+      {
+        signature: 'abstract beginTaskDelegation(request: TeamTaskDelegationBeginRequest): Promise<TeamTaskSnapshot>',
+        description: 'Reserve one child identity and complete creation payload under parent-task CAS.',
+        parameters: [{ name: 'request', description: 'exact source-owned reservation and resolved child template.' }],
+        returns: 'the running parent task retaining its child reservation.',
+      },
+      {
+        signature: 'abstract bindTaskDelegation(request: TeamTaskDelegationBindRequest): Promise<TeamTaskSnapshot>',
+        description: 'Bind a published child runtime to its existing parent reservation.',
+        parameters: [{ name: 'request', description: 'current task/delegation/child identities and revision.' }],
+        returns: 'the active parent delegation projection.',
+      },
+      {
+        signature: 'abstract settleTaskDelegation(request: TeamTaskDelegationSettleRequest): Promise<TeamTaskSnapshot>',
+        description: 'Settle a child task only after terminal child execution and parent charging.',
+        parameters: [{ name: 'request', description: 'exact child reservation and current parent task revision.' }],
+        returns: 'the terminal parent task retaining child result and failure provenance.',
+      },
+      {
+        signature: 'abstract stallTaskDelegation(request: TeamTaskDelegationStallRequest): Promise<TeamTaskSnapshot>',
+        description: 'Retain a child operational stall without releasing its concurrency or scopes.',
+        parameters: [{ name: 'request', description: 'current parent task and exact stall reason.' }],
+        returns: 'the stalled delegation projection.',
+      },
+      {
+        signature: 'abstract authorizeChildRun(request: TeamChildRunAuthorizeRequest): Promise<TeamChildRunAuthorization>',
+        description: 'Authorize one child startup or cancellation with live parent and workspace checks.',
+        parameters: [{ name: 'request', description: 'source-owned exact operation and parent revision.' }],
+        returns: 'a provider-owned runtime capability whose caller must close after settlement.',
+      },
+      {
+        signature: 'abstract listTasksPage(request: TeamTaskListPageRequest): Promise<TeamTaskListPage>',
+        description: 'List a bounded page of current detached task projections for one Team.',
+        parameters: [{ name: 'request', description: 'Team identity, provider-order cursor, and page limit.' }],
+        returns: 'detached task projections and an optional continuation cursor.',
+      },
+      {
+        signature: 'getArtifact(request: TeamArtifactGetRequest): Promise<TeamArtifactReference | undefined>',
+        description: 'Resolve one visible, unambiguous Team artifact reference.',
+        parameters: [{ name: 'request', description: 'Team identity and artifact id selected by the caller.' }],
+        returns: 'the visible reference, or `undefined` for missing, private, or ambiguous identities.',
+      },
+      {
+        signature: 'listArtifactsPage(request: TeamArtifactListPageRequest): Promise<TeamArtifactListPage>',
+        description: 'List a bounded page of visible, unambiguous Team artifact references.',
+        parameters: [{ name: 'request', description: 'Team identity, provider-order cursor, and page limit.' }],
+        returns: 'visible artifact references and an optional continuation cursor.',
+      },
+      {
+        signature: 'abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot>',
+        description: 'Compare-and-set a lease-free task details edit without changing phase, scheduler facts, or attempts.',
+        parameters: [{ name: 'request', description: 'current coordinator proof plus JSON-only task detail fields.' }],
+        returns: 'the detached task projection after the committed details edit.',
+      },
+      {
+        signature: 'abstract cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot>',
+        description: 'Persist a single-task cancellation while exact live work retains ownership.',
+        parameters: [{ name: 'request', description: 'Team/task identities and the observed task revision.' }],
+        returns: 'accepted stop progress or the settled task after owner cleanup.',
+      },
+      {
+        signature: 'abstract reconcileTaskCancellation(request: TeamTaskCancellationReconcileRequest): Promise<TeamTaskSnapshot>',
+        description: 'Continue an accepted lease-free cancellation after interrupted channel cleanup.',
+        parameters: [{ name: 'request', description: 'scheduler proof and the exact retained cancellation revision.' }],
+        returns: 'the task after its corresponding review channel closes.',
+      },
+      {
+        signature: 'cancelTeamCancellationTask(request: TeamCancellationTaskCancelRequest): Promise<TeamTaskSnapshot>',
+        description: 'Cancel one exact pending task only while a durable TeamRun cancellation intent still owns the selected Team. This narrow post-release cleanup command deliberately does not grant generic task-cancellation authority.',
+        parameters: [{ name: 'request', description: 'TeamRun cancellation-cleanup proof plus Team/task/cancellation cursor fences.' }],
+        returns: 'the detached cancelled task projection.',
+      },
+      {
+        signature: 'abstract deleteTask(request: TeamTaskDeleteRequest): Promise<TeamTaskSnapshot>',
+        description: 'Replace a lease-free non-review task with its deleted tombstone after provider DAG and policy checks.',
+        parameters: [{ name: 'request', description: 'current coordinator proof plus JSON-only task tombstone fields.' }],
+        returns: 'the detached deleted task projection after the committed tombstone.',
+      },
+      {
+        signature: 'abstract resolveTaskReview(request: TeamTaskReviewResolveRequest): Promise<TeamTaskSnapshot>',
+        description: 'Resolve a lease-free review task through task-mutate policy for the reviewer derived from its current activation proof.',
+        parameters: [{ name: 'request', description: 'runtime reviewer proof plus JSON-only task/revision/decision fields.' }],
+        returns: 'the detached task projection after the committed review resolution.',
+      },
+      {
+        signature: 'abstract resolveTaskReviewFromResponse(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot>',
+        description: 'Recover one task review from the exact durable consult response selected by a registered system source. The source scope, rather than caller fields, identifies the Team, reviewer, request, response, decision, and reason.',
+        parameters: [{ name: 'request', description: 'runtime-only system recovery proof.' }],
+        returns: 'the detached task projection after the recovered review decision.',
+      },
+      {
+        signature: 'abstract assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot>',
+        description: 'Assign a pending task, mint its next non-reusable attempt id, and commit its bounded lease. The scheduler source selects the exact task, participant, optional activation, wake channel, and lease duration through runtime-only authority.',
+        parameters: [{ name: 'request', description: 'scheduler proof plus JSON-only assignment identifiers and bounds.' }],
+        returns: 'the detached assigned task projection with its current lease.',
+      },
+      {
+        signature: 'abstract startTaskAttempt(request: TeamTaskAttemptStartRequest): Promise<TeamTaskSnapshot>',
+        description: 'Start the exact current attempt after checking its revision, id, participant, and optional activation epoch.',
+        parameters: [{ name: 'request', description: 'current activation proof plus JSON-only task attempt fence.' }],
+        returns: 'the detached running task projection with its current lease.',
+      },
+      {
+        signature: 'abstract claimTaskAttemptStart(request: TeamTaskAttemptStartClaimRequest): Promise<TeamTaskSnapshot>',
+        description: 'Claim and start the exact assigned attempt after its durable assignment Envelope reaches the activation bound to the request\'s runtime-only actor proof. Providers derive the Team, Participant, activation, and Session from that proof. Repeating the same current claim after it starts returns the running task without another durable transition.',
+        parameters: [{ name: 'request', description: 'Runtime actor proof, lease identity, assignment revision, assignment channel, and accepted Envelope.' }],
+        returns: 'the detached running task projection for the current attempt.',
+      },
+      {
+        signature: 'abstract heartbeatTaskAttempt(request: TeamTaskAttemptHeartbeatRequest): Promise<TeamTaskSnapshot>',
+        description: 'Renew the exact current attempt for its fixed lease duration after resolving its runtime-only actor proof. Providers derive the Team, Participant, activation, and Session from that proof before renewing the lease.',
+        parameters: [{ name: 'request', description: 'Runtime actor proof, task-attempt identity, and observed revision.' }],
+        returns: 'the detached task projection with its renewed current lease.',
+      },
+      {
+        signature: 'abstract settleTaskAttempt(request: TeamTaskAttemptSettleRequest): Promise<TeamTaskSnapshot>',
+        description: 'Settle the exact current attempt once, retaining its closed outcome and removing its lease. The provider maps completed to direct completion or review from the frozen route, cancelled to cancelled, and released or failed to pending until maxAttempts, then failed. Providers resolve the runtime-only actor proof and derive the Team, Participant, activation, and Session before mapping the closed outcome.',
+        parameters: [{ name: 'request', description: 'Runtime actor proof, task-attempt identity, observed revision, and closed outcome.' }],
+        returns: 'the detached task projection with the settled attempt in its bounded history.',
+      },
+      {
+        signature: 'abstract expireTaskAttempt(request: TeamTaskAttemptExpireRequest): Promise<TeamTaskSnapshot>',
+        description: 'Expire an elapsed current lease once, retaining a lease-expired outcome before retry or failure. The provider returns the task to pending until maxAttempts, then fails it.',
+        parameters: [{ name: 'request', description: 'scheduler proof plus JSON-only task-attempt fence.' }],
+        returns: 'the detached task projection with the expired attempt in its bounded history.',
+      },
+      {
+        signature: 'abstract recordWorkspaceObservation(request: TeamWorkspaceObservationRequest): Promise<TeamWorkspaceObservation>',
+        description: 'Commit a provider-owned bounded workspace observation against its exact allocation and prior scan.',
+        parameters: [{ name: 'request', description: 'Live provider proof and complete scan facts with allocation revision and prior observation CAS.' }],
+        returns: 'The durable observation with derived task/attempt identity and scope classifications.',
+      },
+      {
+        signature: 'abstract reserveWorkspaceAllocation(request: TeamWorkspaceAllocationReserveRequest): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Reserve one provider allocation before its filesystem root is materialized.',
+        parameters: [{ name: 'request', description: 'source-owned allocation reservation scope.' }],
+        returns: 'the durable allocation snapshot after reservation.',
+      },
+      {
+        signature: 'abstract activateWorkspaceAllocation(request: TeamWorkspaceAllocationActivateRequest): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Mark one reserved or preserved allocation active after provider materialization or restore.',
+        parameters: [{ name: 'request', description: 'source-owned allocation activation scope.' }],
+        returns: 'the durable allocation snapshot after activation.',
+      },
+      {
+        signature: 'abstract requestWorkspaceAllocationRelease(request: TeamWorkspaceAllocationReleaseRequest): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Persist release intent before the provider starts physical cleanup.',
+        parameters: [{ name: 'request', description: 'source-owned allocation release-intent scope.' }],
+        returns: 'the durable allocation snapshot after release intent.',
+      },
+      {
+        signature: 'abstract preserveWorkspaceAllocation(request: TeamWorkspaceAllocationPreserveRequest): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Preserve one source-owned provider allocation that cannot yet be released.',
+        parameters: [{ name: 'request', description: 'source-owned allocation preservation scope.' }],
+        returns: 'the durable allocation snapshot after preservation.',
+      },
+      {
+        signature: 'abstract recordWorkspaceAllocationLoss(request: TeamWorkspaceAllocationLossRequest): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Persist exact provider loss without inferring resource release.',
+        parameters: [{ name: 'request', description: 'source-owned allocation/world/revision and retained artifacts.' }],
+        returns: 'the unavailable allocation retaining its exact loss observation.',
+      },
+      {
+        signature: 'abstract confirmWorkspaceAllocationRelease( request: TeamWorkspaceAllocationReleaseConfirmRequest, ): Promise<TeamWorkspaceAllocationSnapshot>',
+        description: 'Confirm successful release of one source-owned provider allocation.',
+        parameters: [{ name: 'request', description: 'source-owned allocation release-confirmation scope.' }],
+        returns: 'the durable allocation snapshot after release.',
+      },
+      {
+        signature: 'abstract openChannel(request: ChannelOpenRequest): Promise<ChannelSnapshot>',
+        description: 'Open one channel, mint its identity, and commit its immutable manifest. TeamRun bootstrap and workflow-plan channels require their exact runtime proofs; other generic channels retain their existing JSON-only request form.',
+        parameters: [{ name: 'request', description: 'Team identity, observed cursor, adapter identity, manifest fields, and runtime proof when applicable.' }],
+        returns: 'the detached channel projection after opening.',
+      },
+      {
+        signature: 'getChannelAdmission(request: ChannelGetRequest): Promise<ChannelAdmissionSnapshot>',
+        description: 'Read durable channel invitations without acknowledging endpoint support.',
+        parameters: [{ name: 'request', description: 'channel whose admission is inspected.' }],
+        returns: 'exact channel and invitation projection.',
+      },
+      {
+        signature: 'listTeamChannels(request: TeamChannelListRequest): Promise<TeamChannelListPage>',
+        description: 'List attached channels for the current authenticated human Team member.',
+        parameters: [{ name: 'request', description: 'Exact actor-free page selection plus its runtime membership proof.' }],
+        returns: 'Bounded channel projections and an optional insertion-index continuation.',
+      },
+      {
+        signature: 'getHumanChannelEnvelope(request: ChannelHumanEnvelopeGetRequest): Promise<TeamEnvelope>',
+        description: 'Read one retained Envelope after checking current Team-human membership.',
+        parameters: [{ name: 'request', description: 'Exact Team, channel, Envelope and current source-owned proof.' }],
+        returns: 'Immutable accepted content; missing or compacted Envelopes reject.',
+      },
+      {
+        signature: 'getHumanChannelAdmission(request: ChannelHumanAdmissionGetRequest): Promise<ChannelHumanAdmissionSnapshot>',
+        description: 'Read an attached channel\'s invitation status for an authenticated Team human.',
+        parameters: [{ name: 'request', description: 'Team, channel and current payload-bound principal proof.' }],
+        returns: 'Complete admission state without granting endpoint consent authority.',
+      },
+      {
+        signature: 'getHumanChannelInvitation(request: ChannelHumanInvitationGetRequest): Promise<ChannelHumanInvitationSnapshot>',
+        description: 'Read only the authenticated human\'s invitation without accepting the protocol.',
+        parameters: [{ name: 'request', description: 'channel identity and current payload-bound human proof.' }],
+        returns: 'manifest and the caller\'s own invitation.',
+      },
+      {
+        signature: 'acknowledgeChannelInvitation(request: ChannelInvitationAcknowledgeRequest): Promise<ChannelAdmissionSnapshot>',
+        description: 'Confirm a manifest using the invited endpoint\'s current activation proof.',
+        parameters: [{ name: 'request', description: 'exact invitation revision, accepted manifest and retry identity.' }],
+        returns: 'the durable acknowledgement and possibly activated channel.',
+      },
+      {
+        signature: 'expireChannelInvitations(request: ChannelInvitationExpireRequest): Promise<ChannelAdmissionSnapshot>',
+        description: 'End due invitations using an admission-owned clock and exact durable cursors.',
+        parameters: [{ name: 'request', description: 'source proof and bounded channel selection.' }],
+        returns: 'the durable invitations and resulting channel phase.',
+      },
+      {
+        signature: 'openSchedulerReviewChannel(request: SchedulerReviewChannelOpenRequest): Promise<ChannelSnapshot>',
+        description: 'Open one exact scheduler-owned consult channel for a participant-review task.',
+        parameters: [{ name: 'request', description: 'scheduler channel proof plus Team/task/review binding fences.' }],
+        returns: 'the detached opened consult channel projection.',
+      },
+      {
+        signature: 'openSchedulerWakeChannel(request: SchedulerWakeChannelOpenRequest): Promise<ChannelSnapshot>',
+        description: 'Open one exact scheduler-owned self-addressed task-assignment wake channel.',
+        parameters: [{ name: 'request', description: 'scheduler channel proof plus Team/task/activation binding fences.' }],
+        returns: 'the detached opened wake channel projection.',
+      },
+      {
+        signature: 'abstract postChannelEnvelope(request: ChannelEnvelopePostRequest): Promise<TeamEnvelope>',
+        description: 'Authenticate, authorize, stamp, and atomically append one channel Envelope. The JSON input carries only the observed cursor, optional retry key, and unstamped draft. An activation proof derives a current sender; an authenticated-human proof derives an active product human sender; a registered system proof derives only its scoped TeamRun human input or scheduler-owned assignment/review post. Task-assignment and review-request drafts reject an activation proof before policy or WAL admission.',
+        parameters: [{ name: 'request', description: 'runtime actor proof plus JSON-only channel post fields.' }],
+        returns: 'the immutable Envelope accepted by the durable channel WAL.',
+      },
+      {
+        signature: 'abstract postChannelFinalEnvelope(request: ChannelFinalPostRequest): Promise<TeamEnvelope>',
+        description: 'Atomically prepare and append one protocol-owned final Envelope. The provider derives the sender, peer, draft, and cursor under its channel write lock.',
+        parameters: [{ name: 'request', description: 'runtime actor proof plus selected channel, retry key, and final text.' }],
+        returns: 'the immutable final Envelope accepted by the durable channel WAL.',
+      },
+      {
+        signature: 'abstract ackChannelEnvelope(request: ChannelEnvelopeReceiptRequest): Promise<ChannelReceiptRecord>',
+        description: 'Append one durable receipt after an authenticated recipient persists the referenced Envelope in its own delivery target. A duplicate receipt returns the original durable record without another channel-WAL append. The runtime-only actor derives the recipient; providers resolve it before policy evaluation or pending-delivery removal.',
+        parameters: [{ name: 'request', description: 'runtime authority plus JSON-only accepted Envelope and cursor fields.' }],
+        returns: 'the immutable receipt accepted by the durable channel WAL.',
+      },
+      {
+        signature: 'abstract claimChannelDelivery(request: ChannelDeliveryClaimRequest): Promise<ChannelDeliveryClaim | undefined>',
+        description: 'Atomically claim one unacknowledged Envelope delivery through an opaque activation proof. The provider resolves the proof under its Team/channel serializers before it derives the recipient binding and treatment. A defined claim neither reserves a model turn nor promises exactly-once delivery; it is ephemeral and has no claim identifier or settlement operation.',
+        parameters: [{ name: 'request', description: 'runtime-only activation proof plus JSON-only channel and Envelope identities.' }],
+        returns: 'the claim, or `undefined` when the recipient already durably acknowledged the Envelope.',
+      },
+      {
+        signature: 'abstract listChannelPendingDeliveries(request: ChannelPendingDeliveryListRequest): Promise<ChannelPendingDeliveryPage>',
+        description: 'List a bounded page of currently pending deliveries for one recipient. `afterCursor` is an exclusive source channel-WAL cursor, never a receipt high-water. This discovery read neither claims nor acknowledges a delivery; a consumer must call claimChannelDelivery before delivery.',
+        parameters: [{ name: 'request', description: 'channel, recipient, exclusive source cursor, and page limit.' }],
+        returns: 'detached pending deliveries and the cursor for the next page or watch.',
+      },
+      {
+        signature: 'expireSchedulerChannelDeliveries(request: SchedulerChannelDeliveryExpireRequest): Promise<ChannelDeliveryExpireResult>',
+        description: 'Durably expire one exact bounded TTL delivery batch through a scheduler-owned proof.',
+        parameters: [{ name: 'request', description: 'scheduler channel proof plus Team/channel cursors, clock observation, and bound.' }],
+        returns: 'the channel projection and expiry records committed by the authorized batch.',
+      },
+      {
+        signature: 'abstract readChannelSummarySource(request: ChannelSummarySourceRequest): Promise<ChannelSummarySource>',
+        description: 'Read bounded channel-wide source content for an authenticated explicit summary selection.',
+        parameters: [{ name: 'request', description: 'Current coordinator/human proof and exact channel/range/retry selection.' }],
+        returns: 'The ordered source content and fingerprint, or the matching committed result.',
+      },
+      {
+        signature: 'abstract summarizeChannel(request: ChannelSummarizeRequest): Promise<ChannelSummaryRecord>',
+        description: 'Append one idempotent durable summary over a bounded channel source range.',
+        parameters: [{ name: 'request', description: 'runtime summary proof plus JSON-only channel source and retry fields.' }],
+        returns: 'the committed channel summary record.',
+      },
+      {
+        signature: 'abstract getChannel(request: ChannelGetRequest): Promise<ChannelSnapshot>',
+        description: 'Read one detached channel projection.',
+        parameters: [{ name: 'request', description: 'channel identity to read.' }],
+        returns: 'the current channel projection and WAL cursor.',
+      },
+      {
+        signature: 'getChannelForActor(request: ChannelActorGetRequest): Promise<ChannelSnapshot>',
+        description: 'Read channel metadata only for a current member activation, including pending admission.',
+        parameters: [{ name: 'request', description: 'current actor proof and channel identity, without caller-selected member identity.' }],
+        returns: 'manifest, phase and cursors; no messages, summaries or adapter state.',
+      },
+      {
+        signature: 'abstract readChannel(request: ChannelReadRequest): Promise<ChannelReadResult>',
+        description: 'Read records committed after one caller-observed channel-WAL cursor.',
+        parameters: [{ name: 'request', description: 'channel identity and last observed WAL cursor.' }],
+        returns: 'the detached channel projection and ordered record suffix.',
+      },
+      {
+        signature: 'abstract readChannelPage(request: ChannelReadPageRequest): Promise<ChannelReadPageResult>',
+        description: 'Read a bounded page of records committed after one channel-WAL cursor.',
+        parameters: [{ name: 'request', description: 'channel identity, cursor, and page limit.' }],
+        returns: 'the detached channel projection, page records, and continuation cursor.',
+      },
+      {
+        signature: 'abstract compactChannel(request: TeamChannelCompactRequest): Promise<TeamChannelCompactResult>',
+        description: 'Compact a terminal channel\'s obsolete WAL prefix after durable delivery and checkpoint watermarks prove the prefix is no longer required.',
+        parameters: [{ name: 'request', description: 'Team/channel identity, observed cursor, and prefix bound.' }],
+        returns: 'the channel projection and compaction watermarks.',
+      },
+      {
+        signature: 'abstract compactTeam(request: TeamJournalCompactRequest): Promise<TeamJournalCompactResult>',
+        description: 'Compact a terminal Team journal\'s obsolete prefix after durable audit and checkpoint watermarks prove the prefix is no longer required.',
+        parameters: [{ name: 'request', description: 'Team identity, maintenance actor, observed cursor, and prefix bound.' }],
+        returns: 'the Team projection and compaction watermarks.',
+      },
+      {
+        signature: 'abstract closeChannel(request: ChannelCloseRequest): Promise<ChannelSnapshot>',
+        description: 'Compare-and-set closure of one channel.',
+        parameters: [{ name: 'request', description: 'channel identity, observed WAL cursor, and optional reason.' }],
+        returns: 'the detached terminal channel projection.',
+      },
+      {
+        signature: 'closeSchedulerFailedWakeChannel(request: SchedulerFailedWakeChannelCloseRequest): Promise<ChannelSnapshot>',
+        description: 'Close one exact scheduler-owned wake channel only when no current lease owns it.',
+        parameters: [{ name: 'request', description: 'scheduler channel proof plus immutable wake-manifest and channel cursor fences.' }],
+        returns: 'the detached terminal wake channel projection.',
+      },
+      {
+        signature: 'closeTeamCancellationChannel(request: TeamCancellationChannelCloseRequest): Promise<ChannelSnapshot>',
+        description: 'Close one exact active channel only while a durable TeamRun cancellation intent still owns the selected Team. This narrow post-release cleanup command deliberately does not grant generic channel-close authority.',
+        parameters: [{ name: 'request', description: 'TeamRun cancellation-cleanup proof plus Team/channel/cancellation cursor fences and reason.' }],
+        returns: 'the detached terminal channel projection.',
+      },
+      {
+        signature: 'closeTeamFinalizationChannel(request: TeamFinalizationChannelCloseRequest): Promise<ChannelSnapshot>',
+        description: 'Close one exact active channel only while a durable human-receipted TeamRun final result still owns the selected Team. This narrow post-release cleanup command deliberately does not grant generic channel-close authority.',
+        parameters: [{ name: 'request', description: 'TeamRun finalization-cleanup proof plus Team/final/channel cursor fences and completion reason.' }],
+        returns: 'the detached terminal channel projection.',
+      },
+      {
+        signature: 'closeWorkflowChannel(request: TeamWorkflowChannelCloseRequest): Promise<ChannelSnapshot>',
+        description: 'Close one exact active workflow channel only while its compiling plan has not bound that channel. TeamRun uses this narrow cleanup command after a failed compiler open/bind attempt so no orphaned workflow channel remains.',
+        parameters: [{ name: 'request', description: 'TeamRun workflow proof plus Team/plan/channel cursor fences and optional reason.' }],
+        returns: 'the detached terminal channel projection.',
+      },
+      {
+        signature: 'abstract watchChannel(request: ChannelWatchRequest): Promise<ChannelWatchResult>',
+        description: 'Wait until a channel WAL moves beyond a caller-observed cursor, closes, or the caller aborts its local wait. Providers omit `request.signal` before parsing the JSON-only request fields; cancellation changes no durable data.',
+        parameters: [{ name: 'request', description: 'channel identity, last observed WAL cursor, and optional local cancellation.' }],
+        returns: 'whether the cursor advanced or the provider closed the watch.',
+        throws: ['when `request.signal` aborts before the watch resolves.'],
+      },
+      {
+        signature: 'registerAdapter(adapter: TeamChannelAdapter): () => void',
+        description: 'Register one synchronous pure channel adapter. Registration is effect-scoped and duplicate accepting `(type, version)` identities reject before publication.',
+        parameters: [{ name: 'adapter', description: 'adapter implementation for future channel openings.' }],
+        returns: 'an HMR-safe disposer that retires exactly this registration while existing leases retain its object.',
+      },
+      {
+        signature: 'getAdapter(ref: TeamAdapterRef): TeamChannelAdapter',
+        description: 'Resolve one exact adapter implementation that still accepts new work.',
+        parameters: [{ name: 'ref', description: 'type and version frozen in a channel manifest.' }],
+        returns: 'the accepting registered adapter.',
+        throws: ['{@link TeamError} when no accepting exact adapter remains registered.'],
+      },
+      {
+        signature: 'acquireAdapter(ref: TeamAdapterRef): TeamAdapterLease',
+        description: 'Acquire one exact adapter object for an already admitted channel. Retiring its registration blocks later acquisitions but does not invalidate this handle.',
+        parameters: [{ name: 'ref', description: 'type and version frozen in a channel manifest.' }],
+        returns: 'a release-once handle retaining the exact adapter object.',
+        throws: ['{@link TeamError} when no accepting exact adapter is registered.'],
+      },
+      {
+        signature: 'listAdapters(): TeamAdapterRef[]',
+        description: 'List registered adapter identities in registration order.',
+        parameters: [],
+        returns: 'detached adapter references.',
+      },
+      {
+        signature: 'registerViewPolicy(policy: TeamViewPolicy): () => void',
+        description: 'Register one pure versioned channel view policy through a Cordis effect.',
+        parameters: [{ name: 'policy', description: 'view-policy implementation.' }],
+        returns: 'an HMR-safe disposer that retires the registration while existing leases retain its object.',
+      },
+      {
+        signature: 'getViewPolicy(ref: TeamViewPolicyRef): TeamViewPolicy',
+        description: 'Resolve one exact durable channel view policy identity that still accepts new work.',
+        parameters: [{ name: 'ref', description: 'versioned view-policy identity.' }],
+        returns: 'the accepting registered pure view-policy implementation.',
+        throws: ['{@link TeamError} when no accepting exact view policy remains registered.'],
+      },
+      {
+        signature: 'acquireViewPolicy(ref: TeamViewPolicyRef): TeamViewPolicyLease',
+        description: 'Acquire one exact view-policy object for an already admitted channel. Retiring its registration blocks later acquisitions but does not invalidate this handle.',
+        parameters: [{ name: 'ref', description: 'type and version frozen in a channel manifest.' }],
+        returns: 'a release-once handle retaining the exact policy object.',
+        throws: ['{@link TeamError} when no accepting exact view policy is registered.'],
+      },
+      {
+        signature: 'listViewPolicies(): TeamViewPolicyRef[]',
+        description: 'List registered channel view policies in registration order.',
+        parameters: [],
+        returns: 'detached view-policy identities.',
+      },
+      {
+        signature: 'getImplementationLeaseMetrics(): TeamImplementationLeaseMetrics',
+        description: 'Return process-local counts for accepting and retired implementation registrations plus the channel leases retaining them.',
+        parameters: [],
+        returns: 'a detached snapshot for HMR and runtime diagnostics.',
+      },
+      {
+        signature: 'getMetrics(): TeamMetricsSnapshot',
+        description: 'Return a detached operational counter/gauge snapshot for dashboards and alerts.',
+        parameters: [],
+        returns: 'current in-process Team metrics.',
+      },
+      {
+        signature: 'reportWorkspaceConflict(): void',
+        description: 'Record one workspace integration conflict observed by a Team provider.',
+        parameters: [],
+      },
+      {
+        signature: 'registerPolicy(hook: TeamPolicyHook, policy: TeamPolicy): () => void',
+        description: 'Register one named policy for exactly one Team operation. Matching requests reach it through the `team/policy` waterfall; nonmatching hooks delegate.',
+        parameters: [{ name: 'hook', description: 'Team operation this policy intercepts.' }, { name: 'policy', description: 'named policy implementation.' }],
+        returns: 'an HMR-safe disposer that removes exactly this policy.',
+      },
+      {
+        signature: 'listPolicies(): TeamPolicyRegistration[]',
+        description: 'List current policy registrations in hook and registration order.',
+        parameters: [],
+        returns: 'detached diagnostic identities.',
+      },
+      {
+        signature: 'async authorize(request: TeamPolicyRequest): Promise<TeamPolicyDecision>',
+        description: 'Run the policy waterfall for one provider-validated Team operation.',
+        parameters: [{ name: 'request', description: 'operation facts to authorize or govern.' }],
+        returns: 'the final allow or deny decision.',
+      },
+    ],
+  },
+  {
+    key: 'teamTelemetry',
+    summary: 'Team telemetry backend Service Definition.',
+    description: 'Team telemetry backend Service Definition. A deployment provider extends this class and composes TeamTelemetryCoordinator; the coordinator owns capture and correlation, while batching, retry, loss, and export stay with the provider.',
+    methods: [
+      {
+        signature: 'abstract emit(record: TeamTelemetryRecord): void',
+        description: 'See TeamTelemetrySink.emit.',
+        parameters: [{ name: 'record', description: 'detached telemetry record owned by the backend.' }],
+      },
+      {
+        signature: 'flush?(): void',
+        description: 'See TeamTelemetrySink.flush.',
+        parameters: [],
+      },
+      {
+        signature: 'abstract shutdown(): Promise<void>',
+        description: 'See TeamTelemetrySink.shutdown.',
+        parameters: [],
+        returns: 'completion after the backend reaches quiescence.',
+      },
+    ],
+  },
+  {
+    key: 'teamWorkspaces',
+    summary: 'Named Team execution-root registry.',
+    description: 'Named Team execution-root registry. Providers retain all allocation ownership.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: TeamWorkspaceProvider): () => void',
+        description: 'Register one provider for one or more exact workspace modes. Registration is effect-scoped; disposing it removes only this provider instance.',
+        parameters: [{ name: 'provider', description: 'local, worktree, sandbox, or remote execution-root provider.' }],
+        returns: 'HMR-safe disposer for this registration.',
+      },
+      {
+        signature: 'registerAllocationPublisher(owner: object, publisher: TeamWorkspaceAllocationPublisher): () => void',
+        description: 'Register one current delivery owner\'s exact task-allocation publisher without exposing live handles.',
+        parameters: [{ name: 'owner', description: 'Same-process Agent object used by the actual tool execution.' }, { name: 'publisher', description: 'Owner that verifies Session claim, running lease and allocation identity.' }],
+        returns: 'Effect-owned disposer for the exact registration.',
+      },
+      {
+        signature: 'async publishForOwner(owner: object, request: TeamWorkspaceOwnerPublicationRequest): Promise<TeamWorkspacePublishResult | undefined>',
+        description: 'Publish through the actual allocation owner before a task outcome may settle.',
+        parameters: [{ name: 'owner', description: 'Exact current Agent object, never an id or ambient context slot.' }, { name: 'request', description: 'Authoritative retained allocation and active tool cancellation.' }],
+        returns: 'The provider result; undefined only when a valid owner\'s provider does not support publication.',
+      },
+      {
+        signature: 'getProvider(name: string): TeamWorkspaceProvider | undefined',
+        description: 'Resolve one provider by its registered name.',
+        parameters: [{ name: 'name', description: 'provider registry name.' }],
+        returns: 'the live provider, or `undefined` when no matching provider remains.',
+      },
+      {
+        signature: 'listProviders(): TeamWorkspaceProviderRef[]',
+        description: 'List provider identities in registration order.',
+        parameters: [],
+        returns: 'detached provider references.',
+      },
+      {
+        signature: 'resolve(mode: TeamTaskWorkspaceMode): TeamWorkspaceProvider',
+        description: 'Resolve the sole live provider for one workspace mode.',
+        parameters: [{ name: 'mode', description: 'task workspace mode selected by an immutable task snapshot.' }],
+        returns: 'the provider registered for the exact mode.',
+        throws: ['{@link TeamWorkspaceError} when no provider currently owns the mode.'],
+      },
+      {
+        signature: 'async eligible(mode: TeamTaskWorkspaceMode, request: TeamWorkspaceEligibilityRequest): Promise<boolean>',
+        description: 'Delegate a scheduler eligibility check to the exact selected mode provider.',
+        parameters: [{ name: 'mode', description: 'immutable workspace mode selected by the task.' }, { name: 'request', description: 'current task and activation binding proposed by the scheduler.' }],
+        returns: 'whether the provider can execute this task binding without allocation.',
+      },
+      {
+        signature: 'async preflight(mode: TeamTaskWorkspaceMode, request: TeamWorkspacePreflightRequest): Promise<boolean>',
+        description: 'Check provider-owned route compatibility before a Participant activation exists.',
+        parameters: [{ name: 'mode', description: 'task workspace mode selecting the provider.' }, { name: 'request', description: 'task, Participant, and candidate runtime route.' }],
+        returns: 'the provider\'s compatibility result, or `true` when it exposes no preflight.',
+      },
+      {
+        signature: 'async prepare( mode: TeamTaskWorkspaceMode, request: TeamWorkspacePrepareRequest, ): Promise<TeamWorkspacePreparation>',
+        description: 'Reserve provider-owned metadata before a Team command durably binds it.',
+        parameters: [{ name: 'mode', description: 'immutable workspace mode selected by the task.' }, { name: 'request', description: 'exact lease and activation facts the provider must revalidate.' }],
+        returns: 'a root-less provider reservation.',
+      },
+      {
+        signature: 'async materialize( mode: TeamTaskWorkspaceMode, request: TeamWorkspacePrepareRequest, preparation: TeamWorkspacePreparation, ): Promise<TeamWorkspaceAllocation>',
+        description: 'Materialize one metadata reservation only after its Team owner accepted it.',
+        parameters: [{ name: 'mode', description: 'immutable workspace mode selected by the task.' }, { name: 'request', description: 'exact lease and activation facts captured by the reservation.' }, { name: 'preparation', description: 'root-less provider reservation returned by {@link prepare}.' }],
+        returns: 'the provider-owned live execution-root allocation.',
+      },
+      {
+        signature: 'async restore( mode: TeamTaskWorkspaceMode, request: TeamWorkspacePrepareRequest, metadata: TeamWorkspaceAllocationMetadata, ): Promise<TeamWorkspaceAllocation>',
+        description: 'Reopen one exact durable provider allocation during local recovery.',
+        parameters: [{ name: 'mode', description: 'immutable workspace mode selected by the task.' }, { name: 'request', description: 'exact current lease and activation facts.' }, { name: 'metadata', description: 'Team-retained provider metadata without a root.' }],
+        returns: 'the provider-owned live execution-root allocation.',
+      },
+      {
+        signature: 'async reconcileRelease( mode: TeamTaskWorkspaceMode, request: TeamWorkspacePrepareRequest, metadata: TeamWorkspaceAllocationMetadata, ): Promise<void>',
+        description: 'Ask the metadata-owning provider to prove physical cleanup without materializing a root that a prior process already released.',
+        parameters: [{ name: 'mode', description: 'immutable workspace mode selected by the task.' }, { name: 'request', description: 'exact task-attempt ownership retained by the allocation.' }, { name: 'metadata', description: 'Team-retained provider metadata without a root.' }],
+        returns: 'resolution after provider cleanup is proven or completed.',
+      },
+      {
+        signature: 'async publish( mode: TeamTaskWorkspaceMode, request: TeamWorkspacePublishRequest, ): Promise<TeamWorkspacePublishResult>',
+        description: 'Delegate an explicit publish/integrate operation to the selected provider.',
+        parameters: [{ name: 'mode', description: 'task workspace mode selecting the provider.' }, { name: 'request', description: 'exact allocation and optional integration target.' }],
+        returns: 'provider-owned publish provenance.',
+      },
+      {
+        signature: 'async integrate( mode: TeamTaskWorkspaceMode, request: TeamWorkspaceIntegrateRequest, ): Promise<TeamWorkspaceIntegrateResult>',
+        description: 'Delegate an explicit proposal or integration operation to the selected provider.',
+        parameters: [{ name: 'mode', description: 'workspace mode selecting the provider.' }, { name: 'request', description: 'exact allocation, target, and operation mode.' }],
+        returns: 'provider-owned integration provenance.',
+      },
+      {
+        signature: 'async integrateSource( providerName: string, request: TeamWorkspaceSourceIntegrateRequest, ): Promise<TeamWorkspaceSourceIntegrateResult>',
+        description: 'Delegate an integration sourced from a durable artifact manifest.',
+        parameters: [{ name: 'providerName', description: 'exact provider identity selected by the integration task.' }, { name: 'request', description: 'source provenance, integration attempt, target, and operation mode.' }],
+        returns: 'provider-owned integration provenance with every source identity preserved.',
       },
     ],
   },
@@ -2313,6 +4013,43 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workflowExtensions',
+    summary: 'Effect-scoped registry for deployment-defined workflow conditions and targets.',
+    description: 'Effect-scoped registry for deployment-defined workflow conditions and targets.',
+    methods: [
+      {
+        signature: 'register(extension: WorkflowExtension): () => void',
+        description: 'Register one condition or target implementation.',
+        parameters: [{ name: 'extension', description: 'validated implementation.' }],
+        returns: 'an effect-scoped disposer.',
+      },
+      {
+        signature: 'get(kind: WorkflowExtension[\'kind\'], name: string, version: number): WorkflowExtension | undefined',
+        description: 'Resolve one exact extension identity.',
+        parameters: [{ name: 'kind', description: 'condition or target.' }, { name: 'name', description: 'implementation name.' }, { name: 'version', description: 'behavior version.' }],
+        returns: 'the extension, or undefined when no exact implementation is registered.',
+      },
+      {
+        signature: 'list(): WorkflowExtensionRef[]',
+        description: 'List extension identities in registration order.',
+        parameters: [],
+        returns: 'detached extension identities.',
+      },
+      {
+        signature: 'acquireForGraph(graph: TransitionGraph): WorkflowExtensionLeaseSet',
+        description: 'Retain every exact condition and target extension referenced by one graph.',
+        parameters: [{ name: 'graph', description: 'graph to validate against extensions currently accepting work.' }],
+        returns: 'a release-once resolver for the exact acquired implementations.',
+      },
+      {
+        signature: 'getLeaseMetrics(): WorkflowExtensionLeaseMetrics',
+        description: 'Return process-local registration and lease counts for HMR diagnostics.',
+        parameters: [],
+        returns: 'detached current extension retention counts.',
+      },
+    ],
+  },
+  {
     key: 'workspaceRegistry',
     summary: 'Durable workspace registry.',
     description: 'Durable workspace registry. Startup waits for `sessionPersistence`, builds one canonical-cwd header index, and completes the one-time history bootstrap before the service becomes active. The persistence dependency is mandatory so an unavailable peer can never be mistaken for an empty history and commit the initialized marker.',
@@ -2380,6 +4117,30 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'One session committed a different agent preset to its durable log.',
     description: 'One session committed a different agent preset to its durable log. Consumers invalidate only state derived from that session\'s composition.',
     parameters: [{ name: 'sessionId', description: 'the session whose composition changed.' }, { name: 'agentPreset', description: 'the preset recorded by the committed selection.' }],
+  },
+  {
+    name: 'agent-runtime/activation-changed',
+    mode: 'emit',
+    signature: '\'agent-runtime/activation-changed\'(this: AgentRuntime, activation: ActivationSnapshot): void',
+    summary: 'A provider published one Participant activation handle or observed a later status change for that exact epoch.',
+    description: 'A provider published one Participant activation handle or observed a later status change for that exact epoch. Listener failure cannot revoke the accepted handle.',
+    parameters: [{ name: 'activation', description: 'immutable activation projection.' }],
+  },
+  {
+    name: 'agent-runtime/provider-added',
+    mode: 'emit',
+    signature: '\'agent-runtime/provider-added\'(this: AgentRuntime, provider: AgentRuntimeProviderRef): void',
+    summary: 'An activation provider became available for new Participant activations.',
+    description: 'An activation provider became available for new Participant activations.',
+    parameters: [{ name: 'provider', description: 'registered provider identity.' }],
+  },
+  {
+    name: 'agent-runtime/provider-removed',
+    mode: 'emit',
+    signature: '\'agent-runtime/provider-removed\'(this: AgentRuntime, provider: AgentRuntimeProviderRef): void',
+    summary: 'An activation provider stopped accepting new activations.',
+    description: 'An activation provider stopped accepting new activations. Existing handles remain owned by the caller that received them.',
+    parameters: [{ name: 'provider', description: 'removed provider identity.' }],
   },
   {
     name: 'agent/created',
@@ -2492,6 +4253,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'One authorization attempt has finished and released its key.',
     description: 'One authorization attempt has finished and released its key. Fires for every terminal outcome, failures included, so a surface watching a key it did not start (a second browser tab) learns the attempt is over.',
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
+  },
+  {
+    name: 'channel/changed',
+    mode: 'emit',
+    signature: '\'channel/changed\'(this: TeamRuntime, event: ChannelEvent): void',
+    summary: 'A provider committed a channel WAL record.',
+    description: 'A provider committed a channel WAL record. Listener failure cannot roll back the already committed fact.',
+    parameters: [{ name: 'event', description: 'identified committed channel record.' }],
   },
   {
     name: 'commands/change',
@@ -2734,6 +4503,102 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [],
   },
   {
+    name: 'team-link/enrollment-provider-added',
+    mode: 'emit',
+    signature: '\'team-link/enrollment-provider-added\'(this: TeamLinkRegistry, provider: TeamLinkEnrollmentProviderRef): void',
+    summary: 'An enrollment issuer became available for new remote Link credentials.',
+    description: 'An enrollment issuer became available for new remote Link credentials.',
+    parameters: [{ name: 'provider', description: 'registered issuer identity.' }],
+  },
+  {
+    name: 'team-link/enrollment-provider-removed',
+    mode: 'emit',
+    signature: '\'team-link/enrollment-provider-removed\'(this: TeamLinkRegistry, provider: TeamLinkEnrollmentProviderRef): void',
+    summary: 'An enrollment issuer stopped accepting credentials.',
+    description: 'An enrollment issuer stopped accepting credentials. Existing credentials may no longer attach after the issuer\'s transport listener is replaced.',
+    parameters: [{ name: 'provider', description: 'removed issuer identity.' }],
+  },
+  {
+    name: 'team-scheduler/assigned',
+    mode: 'emit',
+    signature: '\'team-scheduler/assigned\'(this: TeamDagScheduler, notice: TeamTaskAssignmentNotice): void',
+    summary: 'The scheduler committed a task lease and its durable assignment Envelope.',
+    description: 'The scheduler committed a task lease and its durable assignment Envelope. This observation remains advisory; a task-delivery Consumer pulls the channel WAL after restart before it starts an owner-fenced attempt.',
+    parameters: [{ name: 'notice', description: 'immutable assignment task, activation, channel, and Envelope.' }],
+  },
+  {
+    name: 'team-telemetry/record',
+    mode: 'waterfall',
+    signature: '\'team-telemetry/record\'(record: TeamTelemetryRecord, next: () => TeamTelemetryRecord): TeamTelemetryRecord',
+    summary: 'Transform one Team telemetry record before export.',
+    description: 'Transform one Team telemetry record before export. A listener must call `next()` to preserve lower redaction or enrichment layers.',
+    parameters: [{ name: 'record', description: 'detached candidate record.' }, { name: 'next', description: 'remaining telemetry policy waterfall.' }],
+  },
+  {
+    name: 'team/adapter-added',
+    mode: 'emit',
+    signature: '\'team/adapter-added\'(this: TeamRuntime, adapter: TeamAdapterRef): void',
+    summary: 'A Team channel adapter became available for future channel openings.',
+    description: 'A Team channel adapter became available for future channel openings.',
+    parameters: [{ name: 'adapter', description: 'registered adapter identity.' }],
+  },
+  {
+    name: 'team/adapter-removed',
+    mode: 'emit',
+    signature: '\'team/adapter-removed\'(this: TeamRuntime, adapter: TeamAdapterRef): void',
+    summary: 'A Team channel adapter stopped accepting new channels.',
+    description: 'A Team channel adapter stopped accepting new channels. Existing leases retain the exact implementation until their owners release them.',
+    parameters: [{ name: 'adapter', description: 'removed adapter identity.' }],
+  },
+  {
+    name: 'team/changed',
+    mode: 'emit',
+    signature: '\'team/changed\'(this: TeamRuntime, event: TeamEvent): void',
+    summary: 'A provider committed a Team-journal record.',
+    description: 'A provider committed a Team-journal record. Listener failure cannot roll back the already committed fact.',
+    parameters: [{ name: 'event', description: 'committed Team record projection.' }],
+  },
+  {
+    name: 'team/policy',
+    mode: 'waterfall',
+    signature: '\'team/policy\'(this: TeamRuntime, request: TeamPolicyRequest, next: () => Promise<TeamPolicyDecision>): Promise<TeamPolicyDecision>',
+    summary: 'Authorize one Team operation.',
+    description: 'Authorize one Team operation. An allowing listener must call `next()`; a denial returns a decision without delegating.',
+    parameters: [{ name: 'request', description: 'provider-validated operation facts.' }],
+  },
+  {
+    name: 'team/policy-added',
+    mode: 'emit',
+    signature: '\'team/policy-added\'(this: TeamRuntime, policy: TeamPolicyRegistration): void',
+    summary: 'A policy began intercepting one Team operation.',
+    description: 'A policy began intercepting one Team operation.',
+    parameters: [{ name: 'policy', description: 'registered policy identity.' }],
+  },
+  {
+    name: 'team/policy-removed',
+    mode: 'emit',
+    signature: '\'team/policy-removed\'(this: TeamRuntime, policy: TeamPolicyRegistration): void',
+    summary: 'A policy no longer intercepts future Team operations.',
+    description: 'A policy no longer intercepts future Team operations.',
+    parameters: [{ name: 'policy', description: 'removed policy identity.' }],
+  },
+  {
+    name: 'team/view-policy-added',
+    mode: 'emit',
+    signature: '\'team/view-policy-added\'(this: TeamRuntime, policy: TeamViewPolicyRef): void',
+    summary: 'A pure channel view policy became available for future channel reads.',
+    description: 'A pure channel view policy became available for future channel reads.',
+    parameters: [{ name: 'policy', description: 'registered view-policy identity.' }],
+  },
+  {
+    name: 'team/view-policy-removed',
+    mode: 'emit',
+    signature: '\'team/view-policy-removed\'(this: TeamRuntime, policy: TeamViewPolicyRef): void',
+    summary: 'A channel view policy stopped accepting new channels; existing leases retain its exact implementation.',
+    description: 'A channel view policy stopped accepting new channels; existing leases retain its exact implementation.',
+    parameters: [{ name: 'policy', description: 'removed view-policy identity.' }],
+  },
+  {
     name: 'tools/change',
     mode: 'emit',
     signature: '\'tools/change\'(): void',
@@ -2814,6 +4679,22 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'result', description: 'the outcome data (stop reason, error, agent count) — deliberately WITHOUT the result value (see {@link WorkflowResultInfo}).' }],
   },
   {
+    name: 'workflow/extension-added',
+    mode: 'emit',
+    signature: '\'workflow/extension-added\'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, \'validate\'>): void',
+    summary: 'A workflow graph extension became available.',
+    description: 'A workflow graph extension became available.',
+    parameters: [{ name: 'extension', description: 'extension identity.' }],
+  },
+  {
+    name: 'workflow/extension-removed',
+    mode: 'emit',
+    signature: '\'workflow/extension-removed\'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, \'validate\'>): void',
+    summary: 'A workflow graph extension was removed from future graph admission.',
+    description: 'A workflow graph extension was removed from future graph admission.',
+    parameters: [{ name: 'extension', description: 'extension identity.' }],
+  },
+  {
     name: 'workflow/log',
     mode: 'emit',
     signature: '\'workflow/log\'(info: WorkflowRunInfo, message: string): void',
@@ -2842,6 +4723,126 @@ export const EVENT_API: readonly EventApiEntry[] = [
 /** Shapes of every exported type the Service and Event signatures reference (transitively), sorted by name. */
 export const TYPE_API: readonly TypeApiEntry[] = [
   {
+    name: 'AcpActivationRecoverySnapshot',
+    declaration: 'export interface AcpActivationRecoverySnapshot extends ActivationRecoveryBase {\n    readonly kind: \'acp-local-cold-replace\';\n    readonly cwd: string;\n}',
+  },
+  {
+    name: 'ActivationActorProofIssuer',
+    declaration: 'export interface ActivationActorProofIssuer {\n    issue(binding: ActivationBindingSnapshot): TeamActorProofLease;\n    close(): void;\n}',
+  },
+  {
+    name: 'ActivationBindingSnapshot',
+    declaration: 'export interface ActivationBindingSnapshot {\n    readonly activation: ActivationSnapshot;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly selection?: {\n        readonly preset?: string | undefined;\n        readonly provider?: string | undefined;\n        readonly model?: string | undefined;\n    } | undefined;\n    readonly recovery?: ActivationRecoverySnapshot | undefined;\n    readonly fencedAt?: number | undefined;\n    readonly quiescedAt?: number | undefined;\n    readonly quiescenceSource?: \'fenced\' | \'quiesced\' | undefined;\n    readonly quiescedWakeChannelIds?: readonly ChannelId[] | undefined;\n}',
+  },
+  {
+    name: 'ActivationBindInput',
+    declaration: 'export interface ActivationBindInput {\n    readonly expectedCursor: number;\n    readonly binding: ActivationBindingSnapshot;\n}',
+  },
+  {
+    name: 'ActivationBindRequest',
+    declaration: 'export interface ActivationBindRequest extends ActivationBindInput {\n    readonly actor: TeamSystemActivationProof;\n}',
+  },
+  {
+    name: 'ActivationControllerBindScope',
+    declaration: 'export interface ActivationControllerBindScope {\n    readonly kind: \'activation-controller-bind\';\n    readonly expectedCursor: number;\n    readonly binding: ActivationBindingSnapshot;\n}',
+  },
+  {
+    name: 'ActivationControllerCancellationStallPhaseScope',
+    declaration: 'export interface ActivationControllerCancellationStallPhaseScope {\n    readonly kind: \'activation-controller-cancellation-stall\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'stalled\';\n    readonly reason: TeamStallReason;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n}',
+  },
+  {
+    name: 'ActivationControllerClosureStallPhaseScope',
+    declaration: 'export interface ActivationControllerClosureStallPhaseScope {\n    readonly kind: \'activation-controller-closure-stall\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'stalled\';\n    readonly closureKind: \'complete\' | \'fail\' | \'cancel\';\n    readonly idempotencyKey: TeamClosureIdempotencyKey;\n    readonly requestedAt: number;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'ActivationControllerFenceScope',
+    declaration: 'export interface ActivationControllerFenceScope {\n    readonly kind: \'activation-controller-fence\';\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ActivationControllerQuiesceScope',
+    declaration: 'export interface ActivationControllerQuiesceScope {\n    readonly kind: \'activation-controller-quiesce\';\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ActivationControllerRecoveryStallPhaseScope',
+    declaration: 'export interface ActivationControllerRecoveryStallPhaseScope {\n    readonly kind: \'activation-controller-recovery-stall\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'stalled\';\n    readonly reason: TeamStallReason;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly supervisor?: ActivationSupervisorDescriptor | undefined;\n}',
+  },
+  {
+    name: 'ActivationControllerStatusScope',
+    declaration: 'export interface ActivationControllerStatusScope {\n    readonly kind: \'activation-controller-status\';\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n    readonly status: ActivationStatus;\n}',
+  },
+  {
+    name: 'ActivationFenceInput',
+    declaration: 'export interface ActivationFenceInput {\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ActivationFenceRequest',
+    declaration: 'export interface ActivationFenceRequest extends ActivationFenceInput {\n    readonly actor: TeamSystemActivationProof;\n}',
+  },
+  {
+    name: 'ActivationGetRequest',
+    declaration: 'export interface ActivationGetRequest {\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n}',
+  },
+  {
+    name: 'ActivationHandle',
+    declaration: 'export interface ActivationHandle {\n    readonly activation: ActivationSnapshot;\n    readonly sessionId: SessionId;\n    readonly localAgent: Agent | undefined;\n    readonly recovery?: ActivationRecoverySnapshot | undefined;\n    health(): Promise<ActivationSnapshot>;\n    onStatus(listener: (activation: ActivationSnapshot) => void): () => void;\n    interrupt(cause: AgentCancelCause): void;\n    dispose(): Promise<void>;\n}',
+  },
+  {
+    name: 'ActivationId',
+    declaration: 'export type ActivationId = Branded<\'ActivationId\'>;',
+  },
+  {
+    name: 'ActivationQuiesceInput',
+    declaration: 'export type ActivationQuiesceInput = ActivationFenceInput;',
+  },
+  {
+    name: 'ActivationQuiesceRequest',
+    declaration: 'export interface ActivationQuiesceRequest extends ActivationQuiesceInput {\n    readonly actor: TeamSystemActivationProof;\n}',
+  },
+  {
+    name: 'ActivationRecoveryQuiesceScope',
+    declaration: 'export interface ActivationRecoveryQuiesceScope {\n    readonly kind: \'activation-recovery-quiesce\';\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ActivationRecoverySnapshot',
+    declaration: 'export type ActivationRecoverySnapshot = SdkActivationRecoverySnapshot | AcpActivationRecoverySnapshot;',
+  },
+  {
+    name: 'ActivationSnapshot',
+    declaration: 'export interface ActivationSnapshot {\n    readonly id: ActivationId;\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly status: ActivationStatus;\n}',
+  },
+  {
+    name: 'ActivationStatus',
+    declaration: 'export type ActivationStatus = \'starting\' | \'running\' | \'idle\' | \'offline\' | \'stopping\';',
+  },
+  {
+    name: 'ActivationStatusUpdateInput',
+    declaration: 'export interface ActivationStatusUpdateInput {\n    readonly teamId: TeamId;\n    readonly activationId: ActivationId;\n    readonly expectedCursor: number;\n    readonly status: ActivationStatus;\n}',
+  },
+  {
+    name: 'ActivationStatusUpdateRequest',
+    declaration: 'export interface ActivationStatusUpdateRequest extends ActivationStatusUpdateInput {\n    readonly actor: TeamSystemActivationProof;\n}',
+  },
+  {
+    name: 'ActivationSupervisorDescriptor',
+    declaration: 'export interface ActivationSupervisorDescriptor {\n    readonly name: string;\n    readonly version: number;\n    readonly hostId: string;\n    readonly endpointId: string;\n    readonly generation: ActivationId;\n    readonly terminationMode: ActivationTerminationMode;\n}',
+  },
+  {
+    name: 'ActivationSupervisorHealth',
+    declaration: 'export type ActivationSupervisorHealth = \'reachable\' | \'unreachable\' | \'terminated\' | \'unknown\';',
+  },
+  {
+    name: 'ActivationSupervisorObservation',
+    declaration: 'export interface ActivationSupervisorObservation {\n    readonly descriptor: ActivationSupervisorDescriptor;\n    readonly status: ActivationSupervisorHealth;\n}',
+  },
+  {
+    name: 'ActivationSupervisorProvider',
+    declaration: 'export interface ActivationSupervisorProvider {\n    readonly name: string;\n    readonly version: number;\n    admitOwned?(binding: ActivationBindingSnapshot): Promise<void>;\n    validate(binding: ActivationBindingSnapshot): void;\n    health(binding: ActivationBindingSnapshot, signal: AbortSignal): Promise<ActivationSupervisorObservation>;\n    fence(binding: ActivationBindingSnapshot, signal: AbortSignal): Promise<ActivationSupervisorObservation>;\n}',
+  },
+  {
+    name: 'ActivationTerminationMode',
+    declaration: 'export type ActivationTerminationMode = \'owned-process\' | \'externally-fenced\' | \'cooperative\';',
+  },
+  {
     name: 'AdapterRegistrationHandle',
     declaration: 'export interface AdapterRegistrationHandle {\n    (): void;\n    replace(providers: string[]): void;\n}',
   },
@@ -2868,6 +4869,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentPreset',
     declaration: 'export interface AgentPreset {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly path: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly broken?: string;\n}',
+  },
+  {
+    name: 'AgentRuntime',
+    declaration: 'export class AgentRuntime extends Service {\n    constructor(ctx: Context);\n    registerProvider(provider: AgentRuntimeProvider): () => void;\n    getProvider(name: string): AgentRuntimeProvider | undefined;\n    registerFencer(fencer: AgentRuntimeFencer): () => void;\n    getFencer(provider: string): AgentRuntimeFencer | undefined;\n    listProviders(): AgentRuntimeProviderRef[];\n    async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>;\n}',
+  },
+  {
+    name: 'AgentRuntimeActivationRequest',
+    declaration: 'export interface AgentRuntimeActivationRequest {\n    readonly provider: string;\n    readonly teamId: TeamId;\n    readonly participant: ParticipantSnapshot;\n    readonly sessionId: SessionId;\n    readonly seed: AgentRuntimeSeed;\n    readonly agent: AgentRuntimeAgentSpec;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'AgentRuntimeAgentSpec',
+    declaration: 'export interface AgentRuntimeAgentSpec {\n    readonly preset?: string;\n    readonly cwd?: string;\n    readonly options: AgentOptions;\n}',
+  },
+  {
+    name: 'AgentRuntimeFencer',
+    declaration: 'export interface AgentRuntimeFencer {\n    readonly provider: string;\n    validate(binding: ActivationBindingSnapshot): void;\n    fence(binding: ActivationBindingSnapshot): Promise<void>;\n}',
+  },
+  {
+    name: 'AgentRuntimeProvider',
+    declaration: 'export interface AgentRuntimeProvider {\n    readonly name: string;\n    readonly terminationMode: ActivationTerminationMode;\n    activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>;\n}',
+  },
+  {
+    name: 'AgentRuntimeProviderRef',
+    declaration: 'export interface AgentRuntimeProviderRef {\n    readonly name: string;\n}',
+  },
+  {
+    name: 'AgentRuntimeSeed',
+    declaration: 'export type AgentRuntimeSeed = {\n    readonly kind: \'fresh\';\n} | {\n    readonly kind: \'fork\';\n    readonly sourceSessionId: SessionId;\n    readonly events: readonly SessionEvent[];\n} | {\n    readonly kind: \'resume\';\n};',
   },
   {
     name: 'AgentSetup',
@@ -2950,6 +4979,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type AttachmentId = Branded<\'AttachmentId\'>;',
   },
   {
+    name: 'AuthenticatedProductCall',
+    declaration: 'export interface AuthenticatedProductCall {\n    readonly principal: ProductPrincipal;\n    readonly credentialGeneration: number;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'AuthenticatedProductPrincipalLease',
+    declaration: 'export interface AuthenticatedProductPrincipalLease {\n    withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>, signal?: AbortSignal): Promise<T>;\n    revoke(): Promise<void>;\n}',
+  },
+  {
     name: 'AuthorizationEntry',
     declaration: 'export interface AuthorizationEntry {\n    key: CredentialKey;\n    label: string;\n    methods: readonly AuthorizationMethod[];\n    inFlight: boolean;\n}',
   },
@@ -3019,7 +5056,299 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CancelOptions',
-    declaration: 'export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n}',
+    declaration: 'export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n    resumePending?: boolean | undefined;\n}',
+  },
+  {
+    name: 'ChannelActorGetRequest',
+    declaration: 'export interface ChannelActorGetRequest extends ChannelGetRequest {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'ChannelAdapterRecord',
+    declaration: 'export interface ChannelAdapterRecord {\n    readonly type: \'channel/adapter\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly adapter: TeamAdapterRef;\n    readonly payload: JsonObject;\n}',
+  },
+  {
+    name: 'ChannelAdapterRecordDraft',
+    declaration: 'export interface ChannelAdapterRecordDraft {\n    readonly payload: JsonObject;\n}',
+  },
+  {
+    name: 'ChannelAdmissionSnapshot',
+    declaration: 'export interface ChannelAdmissionSnapshot {\n    readonly channel: ChannelSnapshot;\n    readonly invitations: readonly ChannelInvitationSnapshot[];\n}',
+  },
+  {
+    name: 'ChannelAdmissionWaitRequest',
+    declaration: 'export interface ChannelAdmissionWaitRequest {\n    readonly channelId: ChannelId;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'ChannelClosedRecord',
+    declaration: 'export interface ChannelClosedRecord {\n    readonly type: \'channel/closed\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly phase: \'closed\' | \'expired\' | \'failed\';\n    readonly reason?: string;\n}',
+  },
+  {
+    name: 'ChannelCloseInput',
+    declaration: 'export interface ChannelCloseInput {\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason?: string;\n}',
+  },
+  {
+    name: 'ChannelCloseRequest',
+    declaration: 'export interface ChannelCloseRequest extends ChannelCloseInput {\n    readonly actor: TeamSystemChannelLifecycleProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelConsultRequestMetadata',
+    declaration: 'export interface ChannelConsultRequestMetadata {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelopeSequence: number;\n    readonly taskId?: TeamTaskId | undefined;\n    readonly review: boolean;\n}',
+  },
+  {
+    name: 'ChannelDeliveryClaim',
+    declaration: 'export interface ChannelDeliveryClaim {\n    readonly binding: ActivationBindingSnapshot;\n    readonly channel: ChannelSnapshot;\n    readonly envelopeId: EnvelopeId;\n    readonly delivery: EnvelopeDelivery;\n    readonly view?: TeamChannelViewEventData;\n}',
+  },
+  {
+    name: 'ChannelDeliveryClaimInput',
+    declaration: 'export interface ChannelDeliveryClaimInput {\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'ChannelDeliveryClaimRequest',
+    declaration: 'export interface ChannelDeliveryClaimRequest extends ChannelDeliveryClaimInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'ChannelDeliveryExpiredRecord',
+    declaration: 'export interface ChannelDeliveryExpiredRecord {\n    readonly type: \'channel/delivery-expired\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly participantId: ParticipantId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelopeSequence: number;\n    readonly reason?: \'cancellation\' | \'closure\' | undefined;\n}',
+  },
+  {
+    name: 'ChannelDeliveryExpireResult',
+    declaration: 'export interface ChannelDeliveryExpireResult {\n    readonly channel: ChannelSnapshot;\n    readonly expired: readonly ChannelDeliveryExpiredRecord[];\n}',
+  },
+  {
+    name: 'ChannelEnvelopePostActor',
+    declaration: 'export type ChannelEnvelopePostActor = TeamActorProof | TeamHumanActorProof | TeamSystemEnvelopePostProof;',
+  },
+  {
+    name: 'ChannelEnvelopePostInput',
+    declaration: 'export interface ChannelEnvelopePostInput {\n    readonly expectedCursor: number;\n    readonly idempotencyKey?: ChannelPostIdempotencyKey | undefined;\n    readonly draft: TeamEnvelopeDraft;\n}',
+  },
+  {
+    name: 'ChannelEnvelopePostRequest',
+    declaration: 'export interface ChannelEnvelopePostRequest extends ChannelEnvelopePostInput {\n    readonly actor: ChannelEnvelopePostActor;\n}',
+  },
+  {
+    name: 'ChannelEnvelopeReceiptActor',
+    declaration: 'export type ChannelEnvelopeReceiptActor = TeamActorProof | TeamSystemFinalReceiptProof;',
+  },
+  {
+    name: 'ChannelEnvelopeReceiptInput',
+    declaration: 'export interface ChannelEnvelopeReceiptInput {\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ChannelEnvelopeReceiptRequest',
+    declaration: 'export interface ChannelEnvelopeReceiptRequest extends ChannelEnvelopeReceiptInput {\n    readonly actor: ChannelEnvelopeReceiptActor;\n}',
+  },
+  {
+    name: 'ChannelEnvelopeRecord',
+    declaration: 'export interface ChannelEnvelopeRecord {\n    readonly deliveryIntents: readonly DeliveryIntent[];\n    readonly type: \'channel/envelope\';\n    readonly envelope: TeamEnvelope;\n    readonly idempotencyKey?: ChannelPostIdempotencyKey;\n}',
+  },
+  {
+    name: 'ChannelEvent',
+    declaration: 'export interface ChannelEvent {\n    readonly channelId: ChannelId;\n    readonly record: ChannelRecord;\n}',
+  },
+  {
+    name: 'ChannelExpectedNext',
+    declaration: 'export type ChannelExpectedNext = {\n    readonly kind: \'none\';\n} | {\n    readonly kind: \'participant\';\n    readonly participantId: ParticipantId;\n};',
+  },
+  {
+    name: 'ChannelFinalPostInput',
+    declaration: 'export interface ChannelFinalPostInput {\n    readonly channelId: ChannelId;\n    readonly idempotencyKey: ChannelPostIdempotencyKey;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'ChannelFinalPostRequest',
+    declaration: 'export interface ChannelFinalPostRequest extends ChannelFinalPostInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'ChannelGetRequest',
+    declaration: 'export interface ChannelGetRequest {\n    readonly channelId: ChannelId;\n}',
+  },
+  {
+    name: 'ChannelHumanAdmissionGetRequest',
+    declaration: 'export interface ChannelHumanAdmissionGetRequest extends ChannelGetRequest {\n    readonly teamId: TeamId;\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelHumanAdmissionSnapshot',
+    declaration: 'export interface ChannelHumanAdmissionSnapshot extends ChannelAdmissionSnapshot {\n    readonly expectedNext: ChannelExpectedNext;\n    readonly protocolStatus: ChannelProtocolStatus;\n}',
+  },
+  {
+    name: 'ChannelHumanEnvelopeGetInput',
+    declaration: 'export interface ChannelHumanEnvelopeGetInput {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelopeSequence: number;\n}',
+  },
+  {
+    name: 'ChannelHumanEnvelopeGetRequest',
+    declaration: 'export interface ChannelHumanEnvelopeGetRequest extends ChannelHumanEnvelopeGetInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelHumanInvitationGetRequest',
+    declaration: 'export interface ChannelHumanInvitationGetRequest extends ChannelGetRequest {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelHumanInvitationSnapshot',
+    declaration: 'export interface ChannelHumanInvitationSnapshot {\n    readonly channel: ChannelSnapshot;\n    readonly invitation: ChannelInvitationSnapshot;\n}',
+  },
+  {
+    name: 'ChannelId',
+    declaration: 'export type ChannelId = Branded<\'ChannelId\'>;',
+  },
+  {
+    name: 'ChannelInvitationAcknowledgeInput',
+    declaration: 'export interface ChannelInvitationAcknowledgeInput {\n    readonly channelId: ChannelId;\n    readonly revision: number;\n    readonly manifestFingerprint: ChannelManifestFingerprint;\n    readonly idempotencyKey: ChannelInvitationIdempotencyKey;\n}',
+  },
+  {
+    name: 'ChannelInvitationAcknowledgeRequest',
+    declaration: 'export interface ChannelInvitationAcknowledgeRequest extends ChannelInvitationAcknowledgeInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof | TeamSystemChannelAdmissionProof;\n}',
+  },
+  {
+    name: 'ChannelInvitationEndpoint',
+    declaration: 'export type ChannelInvitationEndpoint = {\n    readonly kind: \'activation\';\n    readonly activationId?: ActivationId | undefined;\n    readonly sessionId?: SessionId | undefined;\n} | {\n    readonly kind: \'human\';\n} | {\n    readonly kind: \'service\';\n    readonly name: string;\n};',
+  },
+  {
+    name: 'ChannelInvitationExpireInput',
+    declaration: 'export interface ChannelInvitationExpireInput {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly expectedTeamCursor: number;\n    readonly expectedChannelCursor: number;\n}',
+  },
+  {
+    name: 'ChannelInvitationExpireRequest',
+    declaration: 'export interface ChannelInvitationExpireRequest extends ChannelInvitationExpireInput {\n    readonly actor: TeamSystemChannelAdmissionProof;\n}',
+  },
+  {
+    name: 'ChannelInvitationIdempotencyKey',
+    declaration: 'export type ChannelInvitationIdempotencyKey = Branded<\'ChannelInvitationIdempotencyKey\'>;',
+  },
+  {
+    name: 'ChannelInvitationOptions',
+    declaration: 'export interface ChannelInvitationOptions {\n    readonly participantId: ParticipantId;\n    readonly required: boolean;\n}',
+  },
+  {
+    name: 'ChannelInvitationRecord',
+    declaration: 'export interface ChannelInvitationRecord {\n    readonly type: \'channel/invitation\' | \'channel/acknowledged\' | \'channel/invitation-ended\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly invitation: ChannelInvitationSnapshot;\n}',
+  },
+  {
+    name: 'ChannelInvitationSnapshot',
+    declaration: 'export interface ChannelInvitationSnapshot {\n    readonly participantId: ParticipantId;\n    readonly role: string;\n    readonly visibility: \'channel\';\n    readonly required: boolean;\n    readonly deadline: number;\n    readonly endpoint: ChannelInvitationEndpoint;\n    readonly revision: number;\n    readonly manifestFingerprint: ChannelManifestFingerprint;\n    readonly status: \'pending\' | \'acknowledged\' | \'expired\' | \'cancelled\';\n    readonly reason?: TeamStallReason | undefined;\n    readonly acknowledgementKey?: ChannelInvitationIdempotencyKey | undefined;\n    readonly settledAt?: number | undefined;\n}',
+  },
+  {
+    name: 'ChannelManifest',
+    declaration: 'export interface ChannelManifest {\n    readonly id: ChannelId;\n    readonly teamId: TeamId;\n    readonly adapter: TeamAdapterRef;\n    readonly viewPolicy?: TeamViewPolicyRef | undefined;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly participants: readonly ChannelParticipant[];\n    readonly limits: JsonObject;\n}',
+  },
+  {
+    name: 'ChannelManifestFingerprint',
+    declaration: 'export type ChannelManifestFingerprint = Branded<\'ChannelManifestFingerprint\'>;',
+  },
+  {
+    name: 'ChannelOpenedRecord',
+    declaration: 'export interface ChannelOpenedRecord {\n    readonly type: \'channel/opened\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly manifest: ChannelManifest;\n}',
+  },
+  {
+    name: 'ChannelOpenInput',
+    declaration: 'export interface ChannelOpenInput {\n    readonly invitations?: readonly ChannelInvitationOptions[] | undefined;\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly adapter: TeamAdapterRef;\n    readonly viewPolicy?: TeamViewPolicyRef | undefined;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly expectedPlanRevision?: number | undefined;\n    readonly participants: readonly ChannelParticipant[];\n    readonly limits: JsonObject;\n}',
+  },
+  {
+    name: 'ChannelOpenRequest',
+    declaration: 'export type ChannelOpenRequest = ChannelOpenInput & ({\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamSystemChannelLifecycleProof;\n    readonly authorityKind: \'channel-lifecycle\';\n} | {\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamHumanActorProof;\n    readonly authorityKind: \'human\';\n} | {\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamSystemTopologyProof;\n    readonly authorityKind?: undefined;\n} | {\n    readonly workflowPlanId: TeamWorkflowPlanId;\n    readonly expectedPlanRevision: number;\n    readonly actor: TeamSystemWorkflowProof;\n    readonly authorityKind?: undefined;\n});',
+  },
+  {
+    name: 'ChannelParticipant',
+    declaration: 'export interface ChannelParticipant {\n    readonly id: ParticipantId;\n    readonly role: string;\n}',
+  },
+  {
+    name: 'ChannelPendingDeliveryListRequest',
+    declaration: 'export interface ChannelPendingDeliveryListRequest {\n    readonly channelId: ChannelId;\n    readonly participantId: ParticipantId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'ChannelPendingDeliveryPage',
+    declaration: 'export interface ChannelPendingDeliveryPage {\n    readonly channel: ChannelSnapshot;\n    readonly deliveries: readonly ChannelPendingEnvelopeDelivery[];\n    readonly nextCursor: number;\n}',
+  },
+  {
+    name: 'ChannelPendingEnvelopeDelivery',
+    declaration: 'export interface ChannelPendingEnvelopeDelivery {\n    readonly envelope: TeamEnvelope;\n    readonly delivery: EnvelopeDelivery;\n}',
+  },
+  {
+    name: 'ChannelPhase',
+    declaration: 'export type ChannelPhase = \'pending\' | \'active\' | \'closing\' | \'closed\' | \'expired\' | \'failed\';',
+  },
+  {
+    name: 'ChannelPhaseRecord',
+    declaration: 'export interface ChannelPhaseRecord {\n    readonly type: \'channel/phase\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly phase: ChannelPhase;\n}',
+  },
+  {
+    name: 'ChannelPostIdempotencyKey',
+    declaration: 'export type ChannelPostIdempotencyKey = Branded<\'ChannelPostIdempotencyKey\'>;',
+  },
+  {
+    name: 'ChannelProtocolStatus',
+    declaration: 'export type ChannelProtocolStatus = {\n    readonly kind: \'consult\';\n    readonly phase: \'request\' | \'response\' | \'complete\';\n    readonly request?: ChannelConsultRequestMetadata | undefined;\n} | {\n    readonly kind: \'discussion\';\n    readonly turnCount: number;\n    readonly maxTurns: number;\n    readonly speakerPolicy: \'round-robin\' | \'free-form\';\n} | {\n    readonly kind: \'other\';\n};',
+  },
+  {
+    name: 'ChannelReadPageRequest',
+    declaration: 'export interface ChannelReadPageRequest {\n    readonly channelId: ChannelId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'ChannelReadPageResult',
+    declaration: 'export interface ChannelReadPageResult extends ChannelReadResult {\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'ChannelReadRequest',
+    declaration: 'export interface ChannelReadRequest {\n    readonly channelId: ChannelId;\n    readonly afterCursor: number;\n}',
+  },
+  {
+    name: 'ChannelReadResult',
+    declaration: 'export interface ChannelReadResult {\n    readonly channel: ChannelSnapshot;\n    readonly records: readonly ChannelRecord[];\n    readonly view?: JsonObject | undefined;\n}',
+  },
+  {
+    name: 'ChannelReceiptRecord',
+    declaration: 'export interface ChannelReceiptRecord {\n    readonly type: \'channel/receipt\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly participantId: ParticipantId;\n    readonly envelopeId: EnvelopeId;\n    readonly cursor: number;\n}',
+  },
+  {
+    name: 'ChannelRecord',
+    declaration: 'export type ChannelRecord = ChannelInvitationRecord | ChannelOpenedRecord | ChannelPhaseRecord | ChannelEnvelopeRecord | ChannelReceiptRecord | ChannelDeliveryExpiredRecord | ChannelSummaryRecord | ChannelAdapterRecord | ChannelClosedRecord;',
+  },
+  {
+    name: 'ChannelSnapshot',
+    declaration: 'export interface ChannelSnapshot {\n    readonly manifest: ChannelManifest;\n    readonly phase: ChannelPhase;\n    readonly cursor: number;\n    readonly firstCursor?: number | undefined;\n    readonly replayWatermark?: number | undefined;\n}',
+  },
+  {
+    name: 'ChannelSummarizeInput',
+    declaration: 'export interface ChannelSummarizeInput {\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly coveredSequenceRange: {\n        readonly from: number;\n        readonly to: number;\n    };\n    readonly sourceEnvelopeIds: readonly EnvelopeId[];\n    readonly sourceFingerprint: ChannelSummarySourceFingerprint;\n    readonly text: string;\n    readonly policy: TeamViewPolicyRef;\n    readonly idempotencyKey: ChannelSummaryIdempotencyKey;\n}',
+  },
+  {
+    name: 'ChannelSummarizeRequest',
+    declaration: 'export interface ChannelSummarizeRequest extends ChannelSummarizeInput {\n    readonly actor: TeamSystemChannelSummaryProof;\n    readonly requester: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelSummaryCapabilities',
+    declaration: 'export interface ChannelSummaryCapabilities {\n    readonly allowedPolicies: readonly string[];\n    readonly maxSourceEnvelopes: number;\n    readonly maxSourceBytes: number;\n    readonly maxSummaryBytes: number;\n    readonly maxHistorySpan: number;\n}',
+  },
+  {
+    name: 'ChannelSummaryIdempotencyKey',
+    declaration: 'export type ChannelSummaryIdempotencyKey = Branded<\'ChannelSummaryIdempotencyKey\'>;',
+  },
+  {
+    name: 'ChannelSummaryRecord',
+    declaration: 'export interface ChannelSummaryRecord {\n    readonly type: \'channel/summary\';\n    readonly sequence: number;\n    readonly createdAt: number;\n    readonly coveredSequenceRange: {\n        readonly from: number;\n        readonly to: number;\n    };\n    readonly sourceEnvelopeIds: readonly EnvelopeId[];\n    readonly sourceFingerprint: ChannelSummarySourceFingerprint;\n    readonly text: string;\n    readonly policy: TeamViewPolicyRef;\n    readonly idempotencyKey: ChannelSummaryIdempotencyKey;\n}',
+  },
+  {
+    name: 'ChannelSummarySelectionInput',
+    declaration: 'export interface ChannelSummarySelectionInput {\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly coveredSequenceRange: {\n        readonly from: number;\n        readonly to: number;\n    };\n    readonly idempotencyKey: ChannelSummaryIdempotencyKey;\n}',
+  },
+  {
+    name: 'ChannelSummarySource',
+    declaration: 'export interface ChannelSummarySource {\n    readonly channel: ChannelSnapshot;\n    readonly envelopes: readonly TeamEnvelope[];\n    readonly sourceFingerprint: ChannelSummarySourceFingerprint;\n    readonly existing?: ChannelSummaryRecord;\n}',
+  },
+  {
+    name: 'ChannelSummarySourceFingerprint',
+    declaration: 'export type ChannelSummarySourceFingerprint = Branded<\'ChannelSummarySourceFingerprint\'>;',
+  },
+  {
+    name: 'ChannelSummarySourceRequest',
+    declaration: 'export interface ChannelSummarySourceRequest extends ChannelSummarySelectionInput {\n    readonly requester: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ChannelWatchRequest',
+    declaration: 'export interface ChannelWatchRequest {\n    readonly channelId: ChannelId;\n    readonly afterCursor: number;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'ChannelWatchResult',
+    declaration: 'export type ChannelWatchResult = {\n    readonly kind: \'changed\';\n    readonly cursor: number;\n} | {\n    readonly kind: \'closed\';\n};',
   },
   {
     name: 'ClientResponse',
@@ -3195,7 +5524,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CreateAgentOptions',
-    declaration: 'export interface CreateAgentOptions {\n    readonly sessionId: SessionId;\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly parentSession?: SessionId;\n        readonly seedLength?: number;\n        readonly origin?: \'subagent\';\n        readonly delegationDepth?: number;\n        readonly agentPreset?: string;\n    };\n    readonly seed?: readonly SessionEvent[];\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
+    declaration: 'export interface CreateAgentOptions {\n    readonly sessionId: SessionId;\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly teamId?: string;\n        readonly participantId?: string;\n        readonly parentSession?: SessionId;\n        readonly seedLength?: number;\n        readonly agentPreset?: string;\n    };\n    readonly seed?: readonly SessionEvent[];\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
   },
   {
     name: 'CreateGoalRequest',
@@ -3207,11 +5536,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CreateSessionOptions',
-    declaration: 'export interface CreateSessionOptions {\n    readonly seed?: readonly SessionEvent[];\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly parentSession?: SessionId;\n        readonly createdAt?: number;\n        readonly seedLength?: number;\n        readonly origin?: \'subagent\';\n        readonly delegationDepth?: number;\n        readonly agentPreset?: string;\n    };\n}',
-  },
-  {
-    name: 'CreateTeamTaskRequest',
-    declaration: 'export interface CreateTeamTaskRequest {\n    readonly subject: string;\n    readonly description: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n    readonly writeScopes?: readonly string[];\n}',
+    declaration: 'export interface CreateSessionOptions {\n    readonly seed?: readonly SessionEvent[];\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly teamId?: string;\n        readonly participantId?: string;\n        readonly parentSession?: SessionId;\n        readonly createdAt?: number;\n        readonly seedLength?: number;\n        readonly agentPreset?: string;\n    };\n}',
   },
   {
     name: 'CredentialInfo',
@@ -3238,12 +5563,28 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CredentialRef = Branded<\'CredentialRef\'>;',
   },
   {
+    name: 'DeliveryIntent',
+    declaration: 'export interface DeliveryIntent {\n    readonly participantId: ParticipantId;\n    readonly envelopeId: EnvelopeId;\n    readonly delivery: EnvelopeDelivery;\n}',
+  },
+  {
     name: 'DiffCallView',
     declaration: 'export interface DiffCallView {\n    card: \'diff\';\n    title: string;\n    diffs: FileDiff[];\n    locations?: FileLocation[];\n}',
   },
   {
     name: 'DiffResultView',
     declaration: 'export interface DiffResultView {\n    card: \'diff\';\n    title?: string;\n    diffs: FileDiff[];\n}',
+  },
+  {
+    name: 'DirectChannelHumanContentBlock',
+    declaration: 'export type DirectChannelHumanContentBlock = DirectChannelHumanTextBlock | DirectChannelHumanImageBlock;',
+  },
+  {
+    name: 'DirectChannelHumanImageBlock',
+    declaration: 'export interface DirectChannelHumanImageBlock {\n    readonly type: \'image\';\n    readonly attachment: ImageAttachmentRef;\n}',
+  },
+  {
+    name: 'DirectChannelHumanTextBlock',
+    declaration: 'export interface DirectChannelHumanTextBlock {\n    readonly type: \'text\';\n    readonly text: string;\n}',
   },
   {
     name: 'DirectoryPickerBrowseCapability',
@@ -3336,6 +5677,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'EncodedImageAttachment',
     declaration: 'export interface EncodedImageAttachment {\n    mediaType: ImageMediaType;\n    data: string;\n    name?: string;\n}',
+  },
+  {
+    name: 'EnvelopeDelivery',
+    declaration: 'export type EnvelopeDelivery = \'context\' | \'turn\' | \'steer\';',
+  },
+  {
+    name: 'EnvelopeId',
+    declaration: 'export type EnvelopeId = Branded<\'EnvelopeId\'>;',
+  },
+  {
+    name: 'EnvelopePriority',
+    declaration: 'export type EnvelopePriority = \'background\' | \'normal\' | \'urgent\';',
   },
   {
     name: 'EpochHeader',
@@ -3450,6 +5803,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
   },
   {
+    name: 'HostHumanActionResolveScope',
+    declaration: 'export interface HostHumanActionResolveScope {\n    readonly kind: \'host-human-action-resolve\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly action: TeamHumanActionSnapshot;\n    readonly phase: Extract<TeamHumanActionPhase, \'resolved\' | \'cancelled\'>;\n    readonly outcome: JsonObject;\n}',
+  },
+  {
+    name: 'HostHumanActionResponseScope',
+    declaration: 'export interface HostHumanActionResponseScope {\n    readonly kind: \'host-human-action-response-accept\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly action: TeamHumanActionSnapshot;\n    readonly input: import(\'./human-delivery-types.ts\').TeamHumanActionResponseInput;\n    readonly principalId: Branded<\'ProductPrincipalId\'>;\n    readonly humanId: ParticipantId;\n}',
+  },
+  {
+    name: 'HostHumanActionUnavailableScope',
+    declaration: 'export interface HostHumanActionUnavailableScope {\n    readonly kind: \'host-human-action-unavailable\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly action: TeamHumanActionSnapshot;\n}',
+  },
+  {
+    name: 'HostHumanActionUpsertScope',
+    declaration: 'export interface HostHumanActionUpsertScope {\n    readonly kind: \'host-human-action-upsert\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly action: TeamHumanActionSnapshot;\n}',
+  },
+  {
+    name: 'HumanChannelAdmission',
+    declaration: 'export type HumanChannelAdmission = (request: HumanChannelAdmissionRequest) => Promise<void>;',
+  },
+  {
+    name: 'HumanChannelAdmissionRequest',
+    declaration: 'export interface HumanChannelAdmissionRequest {\n    readonly admission: ChannelAdmissionSnapshot;\n    readonly participantId: ParticipantId;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
     name: 'ImageAttachmentLimits',
     declaration: 'export interface ImageAttachmentLimits {\n    maxImageBytes: number;\n    maxImagesPerMessage: number;\n    maxMessageImageBytes: number;\n    maxImagePixels: number;\n    maxImageDimension: number;\n    mediaTypes: readonly ImageMediaType[];\n}',
   },
@@ -3562,6 +5939,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type JobStatus = \'running\' | \'stopping\' | \'completed\' | \'killed\' | \'failed\';',
   },
   {
+    name: 'JsonObject',
+    declaration: 'export interface JsonObject {\n    readonly [key: string]: JsonValue;\n}',
+  },
+  {
     name: 'JsonSchemaNode',
     declaration: 'export interface JsonSchemaNode {\n    type?: JsonSchemaType;\n    oneOf?: JsonSchemaNode[];\n    properties?: Record<string, JsonSchemaNode>;\n    required?: string[];\n    additionalProperties?: boolean;\n    items?: JsonSchemaNode;\n    enum?: JsonSchemaScalar[];\n    const?: JsonSchemaScalar;\n    description?: string;\n    title?: string;\n    default?: JsonValue;\n    examples?: JsonValue;\n}',
   },
@@ -3572,10 +5953,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'JsonSchemaType',
     declaration: 'export type JsonSchemaType = \'object\' | \'array\' | \'string\' | \'number\' | \'integer\' | \'boolean\' | \'null\';',
-  },
-  {
-    name: 'JsonValue',
-    declaration: 'export type JsonValue = null | boolean | number | string | JsonValue[] | {\n    [key: string]: JsonValue;\n};',
   },
   {
     name: 'KnobState',
@@ -3652,6 +6029,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LlmRuntime',
     declaration: 'export class LlmRuntime extends Service {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
+  },
+  {
+    name: 'LogAppendResult',
+    declaration: 'export interface LogAppendResult {\n    readonly tailSequence: number;\n}',
+  },
+  {
+    name: 'LogCheckpoint',
+    declaration: 'export interface LogCheckpoint {\n    readonly sequence: number;\n    readonly value: unknown;\n}',
+  },
+  {
+    name: 'LogCompactionRequest',
+    declaration: 'export interface LogCompactionRequest {\n    readonly throughSequence: number;\n    readonly expectedCheckpointSequence: number;\n}',
+  },
+  {
+    name: 'LogEntry',
+    declaration: 'export interface LogEntry {\n    readonly sequence: number;\n    readonly value: unknown;\n}',
+  },
+  {
+    name: 'LogFacet',
+    declaration: 'export interface LogFacet {\n    open(descriptor: LogStreamDescriptor): Promise<LogStream>;\n    list(): Promise<readonly LogStreamInfo[]>;\n}',
+  },
+  {
+    name: 'LogStream',
+    declaration: 'export interface LogStream extends LogStreamDescriptor {\n    readonly firstSequence: number;\n    readonly tailSequence: number;\n    append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult>;\n    read(afterSequence: number, limit: number): Promise<readonly LogEntry[]>;\n    readCheckpoint(): Promise<LogCheckpoint | undefined>;\n    writeCheckpoint(checkpoint: LogCheckpoint): Promise<void>;\n    compact(request: LogCompactionRequest): Promise<void>;\n    close(): Promise<void>;\n}',
+  },
+  {
+    name: 'LogStreamDescriptor',
+    declaration: 'export interface LogStreamDescriptor {\n    readonly name: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'LogStreamInfo',
+    declaration: 'export interface LogStreamInfo extends LogStreamDescriptor {\n    readonly tailSequence: number;\n    readonly checkpointSequence?: number;\n}',
   },
   {
     name: 'LspHover',
@@ -3810,6 +6219,74 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n}',
   },
   {
+    name: 'ParticipantId',
+    declaration: 'export type ParticipantId = Branded<\'ParticipantId\'>;',
+  },
+  {
+    name: 'ParticipantInterruptAcknowledgeInput',
+    declaration: 'export interface ParticipantInterruptAcknowledgeInput {\n    readonly interruptId: TeamInterruptId;\n}',
+  },
+  {
+    name: 'ParticipantInterruptAcknowledgeRequest',
+    declaration: 'export interface ParticipantInterruptAcknowledgeRequest extends ParticipantInterruptAcknowledgeInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'ParticipantInterruptListPendingInput',
+    declaration: 'export interface ParticipantInterruptListPendingInput {\n}',
+  },
+  {
+    name: 'ParticipantInterruptListPendingRequest',
+    declaration: 'export interface ParticipantInterruptListPendingRequest extends ParticipantInterruptListPendingInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'ParticipantInterruptRequest',
+    declaration: 'export interface ParticipantInterruptRequest extends ParticipantInterruptRequestInput {\n    readonly actor: TeamSystemInterruptProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ParticipantInterruptRequestInput',
+    declaration: 'export interface ParticipantInterruptRequestInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participantId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'ParticipantInterruptSnapshot',
+    declaration: 'export interface ParticipantInterruptSnapshot {\n    readonly id: TeamInterruptId;\n    readonly actorId: ParticipantId;\n    readonly target: ParticipantInterruptTarget;\n    readonly requestedAt: number;\n    readonly acknowledgedAt?: number;\n}',
+  },
+  {
+    name: 'ParticipantInterruptTarget',
+    declaration: 'export interface ParticipantInterruptTarget {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n}',
+  },
+  {
+    name: 'ParticipantInviteInput',
+    declaration: 'export interface ParticipantInviteInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n}',
+  },
+  {
+    name: 'ParticipantInviteRequest',
+    declaration: 'export interface ParticipantInviteRequest extends ParticipantInviteInput {\n    readonly actor: TeamSystemTopologyProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ParticipantKind',
+    declaration: 'export type ParticipantKind = \'human\' | \'local-agent\' | \'remote-agent\' | \'service\';',
+  },
+  {
+    name: 'ParticipantPhase',
+    declaration: 'export type ParticipantPhase = \'invited\' | \'provisioning\' | \'active\' | \'left\' | \'failed\';',
+  },
+  {
+    name: 'ParticipantPhaseTransitionInput',
+    declaration: 'export interface ParticipantPhaseTransitionInput {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly phase: ParticipantPhase;\n}',
+  },
+  {
+    name: 'ParticipantPhaseTransitionRequest',
+    declaration: 'export interface ParticipantPhaseTransitionRequest extends ParticipantPhaseTransitionInput {\n    readonly actor: TeamSystemTopologyProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'ParticipantSnapshot',
+    declaration: 'export interface ParticipantSnapshot {\n    readonly id: ParticipantId;\n    readonly teamId: TeamId;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly phase: ParticipantPhase;\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    readonly stats?: ParticipantStats | undefined;\n}',
+  },
+  {
+    name: 'ParticipantStats',
+    declaration: 'export interface ParticipantStats {\n    readonly activeAttempts: number;\n    readonly completedAttempts: number;\n    readonly failedAttempts: number;\n    readonly totalLatencyMs: number;\n    readonly taskOutcomes?: readonly TeamTaskExecutionStats[] | undefined;\n    readonly updatedAt: number;\n}',
+  },
+  {
     name: 'PermissionSelect',
     declaration: 'export interface PermissionSelect {\n    options: PresetOption[];\n    currentValue: string;\n}',
   },
@@ -3852,6 +6329,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PreToolDecision',
     declaration: 'export type PreToolDecision = {\n    kind: \'allow\';\n} | {\n    kind: \'deny\';\n    reason: string;\n} | {\n    kind: \'ask\';\n    reason?: string;\n};',
+  },
+  {
+    name: 'ProductPrincipal',
+    declaration: 'export interface ProductPrincipal {\n    readonly id: ProductPrincipalId;\n    readonly issuer: string;\n    readonly subject: string;\n    readonly assurance: string;\n    readonly credentialGeneration: number;\n}',
+  },
+  {
+    name: 'ProductPrincipalAuthenticateRequest',
+    declaration: 'export interface ProductPrincipalAuthenticateRequest extends ProductPrincipalProviderAuthenticateRequest {\n    readonly provider: string;\n}',
+  },
+  {
+    name: 'ProductPrincipalId',
+    declaration: 'export type ProductPrincipalId = Branded<\'ProductPrincipalId\'>;',
+  },
+  {
+    name: 'ProductPrincipalProvider',
+    declaration: 'export interface ProductPrincipalProvider {\n    readonly name: string;\n    authenticate(request: ProductPrincipalProviderAuthenticateRequest): Promise<ProductPrincipalProviderLease>;\n}',
+  },
+  {
+    name: 'ProductPrincipalProviderAuthenticateRequest',
+    declaration: 'export interface ProductPrincipalProviderAuthenticateRequest {\n    readonly credential?: string | undefined;\n    readonly signal?: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'ProductPrincipalProviderLease',
+    declaration: 'export interface ProductPrincipalProviderLease {\n    readonly principal: ProductPrincipal;\n    readonly signal: AbortSignal;\n    validate?(): void | Promise<void>;\n    revoke(): void | Promise<void>;\n}',
+  },
+  {
+    name: 'ProductPrincipalProviderRef',
+    declaration: 'export interface ProductPrincipalProviderRef {\n    readonly name: string;\n}',
   },
   {
     name: 'ProjectionChangeListener',
@@ -3983,7 +6488,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'RpcErrorDetailsMap',
-    declaration: 'export interface RpcErrorDetailsMap {\n    \'bad-request\': {\n        issues: ZodIssue[];\n    };\n    \'cancelled\': {};\n    \'session-not-found\': {\n        sessionId: SessionId;\n    };\n    \'model-unavailable\': {\n        provider: string;\n        model: string;\n    };\n    \'model-not-configured\': {};\n    \'session-conflict\': {\n        sessionId: SessionId;\n        requestedCwd: string;\n        existingCwd?: string;\n    };\n    \'invalid-time-zone\': {\n        value: string;\n    };\n    \'workspace-attach-failed\': {\n        sessionId: SessionId;\n        workspaceId: string;\n    };\n    \'workspace-not-found\': {\n        workspaceId: string;\n    };\n    \'workspace-invalid-path\': {\n        path: string;\n    };\n    \'workspace-name-conflict\': {\n        name: string;\n    };\n    \'workspace-move-invalid\': {\n        workspaceId: string;\n        sessionId: SessionId;\n        beforeSessionId?: SessionId;\n    };\n    \'directory-unreadable\': {\n        path: string;\n    };\n    \'directory-exists\': {\n        path: string;\n    };\n    \'directory-create-failed\': {\n        path: string;\n    };\n    \'directory-picker-unavailable\': {\n        capability: string;\n    };\n    \'agent-preset-read-only\': {\n        agentPreset: string;\n        reason: string;\n    };\n    \'agent-preset-locked\': {\n        sessionId: SessionId;\n        agentPreset: string;\n    };\n    \'agent-preset-conflict\': {\n        sessionId: SessionId;\n        requestedPreset: string;\n        existingPreset?: string;\n    };\n    \'agent-preset-not-found\': {\n   /* …truncated — full shape in source */',
+    declaration: 'export interface RpcErrorDetailsMap {\n    \'bad-request\': {\n        issues: ZodIssue[];\n    };\n    \'cancelled\': {};\n    \'session-not-found\': {\n        sessionId: SessionId;\n    };\n    \'model-unavailable\': {\n        provider: string;\n        model: string;\n    };\n    \'model-not-configured\': {};\n    \'invalid-time-zone\': {\n        value: string;\n    };\n    \'workspace-not-found\': {\n        workspaceId: string;\n    };\n    \'workspace-invalid-path\': {\n        path: string;\n    };\n    \'workspace-name-conflict\': {\n        name: string;\n    };\n    \'workspace-move-invalid\': {\n        workspaceId: string;\n        sessionId: SessionId;\n        beforeSessionId?: SessionId;\n    };\n    \'directory-unreadable\': {\n        path: string;\n    };\n    \'directory-exists\': {\n        path: string;\n    };\n    \'directory-create-failed\': {\n        path: string;\n    };\n    \'directory-picker-unavailable\': {\n        capability: string;\n    };\n    \'agent-preset-read-only\': {\n        agentPreset: string;\n        reason: string;\n    };\n    \'agent-preset-locked\': {\n        sessionId: SessionId;\n        agentPreset: string;\n    };\n    \'agent-preset-not-found\': {\n        agentPreset: string;\n        available: string[];\n    };\n    \'agent-preset-invalid\': {\n        agentPreset: string;\n        reason: string;\n    };\n    \'agent-busy\': {\n        reason: string;\n    };\n    \'attachment-error\': {\n        reason: string;\n    };\n    \'queue-item-not-found\': {\n        itemId: MessageId;\n    };\n    \'steer-unavailable\': {\n     /* …truncated — full shape in source */',
   },
   {
     name: 'RpcId',
@@ -3992,6 +6497,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RpcReceipt',
     declaration: 'export type RpcReceipt = {\n    accepted: true;\n} | {\n    accepted: false;\n    reason: \'not-pending\' | \'bad-response\';\n};',
+  },
+  {
+    name: 'RpcRequest',
+    declaration: 'export interface RpcRequest<P> {\n    rpcId: RpcId;\n    payload: P;\n}',
+  },
+  {
+    name: 'RpcResponse',
+    declaration: 'export interface RpcResponse<T> {\n    rpcId: RpcId;\n    result: RpcResult<T>;\n}',
   },
   {
     name: 'RpcResult',
@@ -4019,7 +6532,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SandboxPolicyRequest',
-    declaration: 'export interface SandboxPolicyRequest {\n    session?: Session;\n    mode?: SandboxMode;\n}',
+    declaration: 'export interface SandboxPolicyRequest {\n    session?: Session;\n    agent?: Pick<Agent, \'ctx\' | \'session\'>;\n    mode?: SandboxMode;\n}',
   },
   {
     name: 'SaveImageAttachment',
@@ -4038,12 +6551,100 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type ScheduledToolPreparation = {\n    kind: \'dispatch\';\n    exec: ToolRunContext;\n} | {\n    kind: \'post-result\';\n    exec: ToolRunContext;\n    result: ToolExecutionResult;\n} | {\n    kind: \'final-result\';\n    exec: ToolRunContext;\n    result: ToolExecutionResult;\n};',
   },
   {
+    name: 'SchedulerAssignmentEnvelopePostScope',
+    declaration: 'export interface SchedulerAssignmentEnvelopePostScope {\n    readonly kind: \'scheduler-assignment\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly assigneeId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SchedulerChannelCompactionScope',
+    declaration: 'export interface SchedulerChannelCompactionScope {\n    readonly kind: \'scheduler-channel-compaction\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly throughSequence: number;\n}',
+  },
+  {
+    name: 'SchedulerChannelDeliveryExpireInput',
+    declaration: 'export interface SchedulerChannelDeliveryExpireInput {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly expectedTeamCursor: number;\n    readonly expectedChannelCursor: number;\n    readonly now: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'SchedulerChannelDeliveryExpireRequest',
+    declaration: 'export interface SchedulerChannelDeliveryExpireRequest extends SchedulerChannelDeliveryExpireInput {\n    readonly actor: TeamSystemSchedulerChannelProof;\n}',
+  },
+  {
+    name: 'SchedulerChannelDeliveryExpireScope',
+    declaration: 'export interface SchedulerChannelDeliveryExpireScope {\n    readonly kind: \'scheduler-channel-delivery-expire\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly expectedTeamCursor: number;\n    readonly expectedChannelCursor: number;\n    readonly now: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'SchedulerFailedWakeChannelCloseInput',
+    declaration: 'export interface SchedulerFailedWakeChannelCloseInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly channelId: ChannelId;\n    readonly expectedChannelCursor: number;\n}',
+  },
+  {
+    name: 'SchedulerFailedWakeChannelCloseRequest',
+    declaration: 'export interface SchedulerFailedWakeChannelCloseRequest extends SchedulerFailedWakeChannelCloseInput {\n    readonly actor: TeamSystemSchedulerChannelProof;\n}',
+  },
+  {
+    name: 'SchedulerFailedWakeChannelCloseScope',
+    declaration: 'export interface SchedulerFailedWakeChannelCloseScope {\n    readonly kind: \'scheduler-failed-wake-channel-close\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly channelId: ChannelId;\n    readonly expectedChannelCursor: number;\n    readonly reason: \'Task assignment did not commit\';\n}',
+  },
+  {
+    name: 'SchedulerReviewChannelOpenInput',
+    declaration: 'export interface SchedulerReviewChannelOpenInput {\n    readonly teamId: TeamId;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n    readonly initiatorId: ParticipantId;\n    readonly reviewerId: ParticipantId;\n    readonly reviewerActivationId: ActivationId;\n    readonly reviewerSessionId: SessionId;\n    readonly reviewerProvider: string;\n}',
+  },
+  {
+    name: 'SchedulerReviewChannelOpenRequest',
+    declaration: 'export interface SchedulerReviewChannelOpenRequest extends SchedulerReviewChannelOpenInput {\n    readonly actor: TeamSystemSchedulerChannelProof;\n}',
+  },
+  {
+    name: 'SchedulerReviewChannelOpenScope',
+    declaration: 'export interface SchedulerReviewChannelOpenScope {\n    readonly kind: \'scheduler-review-channel-open\';\n    readonly teamId: TeamId;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n    readonly initiatorId: ParticipantId;\n    readonly reviewerId: ParticipantId;\n    readonly reviewerActivationId: ActivationId;\n    readonly reviewerSessionId: SessionId;\n    readonly reviewerProvider: string;\n}',
+  },
+  {
+    name: 'SchedulerReviewRequestEnvelopePostScope',
+    declaration: 'export interface SchedulerReviewRequestEnvelopePostScope {\n    readonly kind: \'scheduler-review-request\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly reviewRevision: number;\n    readonly initiatorId: ParticipantId;\n    readonly reviewerId: ParticipantId;\n    readonly reviewerActivationId: ActivationId;\n    readonly reviewerSessionId: SessionId;\n    readonly reviewerProvider: string;\n}',
+  },
+  {
+    name: 'SchedulerReviewResponseTaskReviewScope',
+    declaration: 'export interface SchedulerReviewResponseTaskReviewScope {\n    readonly kind: \'scheduler-review-response\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n    readonly initiatorId: ParticipantId;\n    readonly channelId: ChannelId;\n    readonly requestEnvelopeId: EnvelopeId;\n    readonly responseEnvelopeId: EnvelopeId;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'SchedulerStallPhaseScope',
+    declaration: 'export interface SchedulerStallPhaseScope {\n    readonly kind: \'scheduler-stall\';\n    readonly teamId: TeamId;\n    readonly phase: \'stalled\';\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'SchedulerTaskAssignLeaseScope',
+    declaration: 'export interface SchedulerTaskAssignLeaseScope {\n    readonly kind: \'scheduler-task-assign\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId | undefined;\n    readonly wakeChannelId?: ChannelId | undefined;\n    readonly leaseDurationMs: number;\n}',
+  },
+  {
+    name: 'SchedulerTaskCancellationReconcileScope',
+    declaration: 'export interface SchedulerTaskCancellationReconcileScope extends TeamTaskCancellationReconcileInput {\n    readonly kind: \'scheduler-task-cancellation-reconcile\';\n}',
+  },
+  {
+    name: 'SchedulerTaskExpireLeaseScope',
+    declaration: 'export interface SchedulerTaskExpireLeaseScope {\n    readonly kind: \'scheduler-task-expire\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n}',
+  },
+  {
+    name: 'SchedulerTeamJournalCompactionScope',
+    declaration: 'export interface SchedulerTeamJournalCompactionScope {\n    readonly kind: \'scheduler-team-journal-compaction\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly throughSequence: number;\n}',
+  },
+  {
+    name: 'SchedulerWakeChannelOpenInput',
+    declaration: 'export interface SchedulerWakeChannelOpenInput {\n    readonly teamId: TeamId;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SchedulerWakeChannelOpenRequest',
+    declaration: 'export interface SchedulerWakeChannelOpenRequest extends SchedulerWakeChannelOpenInput {\n    readonly actor: TeamSystemSchedulerChannelProof;\n}',
+  },
+  {
+    name: 'SchedulerWakeChannelOpenScope',
+    declaration: 'export interface SchedulerWakeChannelOpenScope {\n    readonly kind: \'scheduler-wake-channel-open\';\n    readonly teamId: TeamId;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n}',
+  },
+  {
     name: 'Scoped',
     declaration: 'export type Scoped<T extends object> = object & {\n    readonly [ScopedBrand]: T;\n};',
   },
   {
     name: 'ScopeKey',
     declaration: 'export type ScopeKey = object;',
+  },
+  {
+    name: 'SdkActivationRecoverySnapshot',
+    declaration: 'export interface SdkActivationRecoverySnapshot extends ActivationRecoveryBase {\n    readonly kind: \'sdk-local-cold-replace\';\n    readonly agent: {\n        readonly provider: string;\n        readonly model: string;\n        readonly maxTokens?: number | undefined;\n    };\n}',
   },
   {
     name: 'SearchFileMatches',
@@ -4066,14 +6667,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SearchResultView = SearchMatchesResultView | SearchPathsResultView;',
   },
   {
-    name: 'SendTeamMessageRequest',
-    declaration: 'export interface SendTeamMessageRequest {\n    readonly target: string;\n    readonly content: ContentBlock[];\n    readonly delivery: \'quiet\' | \'wakeup\';\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'SendTeamMessageResult',
-    declaration: 'export interface SendTeamMessageResult {\n    readonly messageId: TeamMessageId;\n    readonly status: \'accepted\' | \'queued\';\n}',
-  },
-  {
     name: 'ServerResponse',
     declaration: 'export interface ServerResponse {\n    type: \'server-response\';\n    rpcId: RpcId;\n    result: RpcResult<unknown>;\n}',
   },
@@ -4083,11 +6676,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SessionEvent',
-    declaration: 'export type SessionEvent<T extends SessionEventType = SessionEventType> = {\n    [K in SessionEventType]: {\n        type: K;\n        seq: number;\n        time: number;\n        data: SessionEventMap[K];\n        ignorable?: true;\n    } & (K extends SurfaceEventType ? {\n        sourceEventSeqs?: number[];\n        surfaceOp?: SurfaceOp;\n    } : object);\n}[T];',
+    declaration: 'export type SessionEvent<T extends SessionEventType = SessionEventType> = {\n    [K in SessionEventType]: {\n        type: K;\n        seq: number;\n        time: number;\n        data: SessionEventMap[K];\n        ignorable?: K extends \'team/channel-view\' ? never : true;\n    } & (K extends SurfaceEventType ? {\n        sourceEventSeqs?: number[];\n        surfaceOp?: SurfaceOp;\n    } : object);\n}[T];',
   },
   {
     name: 'SessionEventMap',
-    declaration: 'export interface SessionEventMap {\n    \'turn/start\': {\n        turn: number;\n    };\n    \'turn/end\': {\n        turn: number;\n        reason: TurnEndReason;\n    };\n    \'step/start\': {\n        turn: number;\n        step: number;\n    };\n    \'step/end\': {\n        turn: number;\n        step: number;\n    };\n    \'user/message\': UserMessage;\n    \'assistant/chunk\': {\n        turn: number;\n        step: number;\n        chunk: StreamChunk;\n    };\n    \'assistant/message\': {\n        turn: number;\n        step: number;\n        message: AssistantMessage;\n        usage?: TokenUsage;\n        interrupted?: true;\n    };\n    \'tool/call\': {\n        turn: number;\n        step: number;\n        callId: CallId;\n        name: string;\n        arguments: string;\n    };\n    \'tool/result\': {\n        turn: number;\n        step: number;\n        message: ToolResultMessage;\n        error?: {\n            name: string;\n            code: string;\n        };\n        meta?: JsonValue;\n    };\n    \'todo/write\': {\n        todos: TodoItem[];\n    };\n    \'request/header\': {\n        header: EpochHeader;\n        reason: RequestHeaderReason;\n    };\n    \'request/context\': RequestContext;\n    \'session/end-seed\': Record<string, never>;\n}',
+    declaration: 'export interface SessionEventMap {\n    \'turn/start\': {\n        turn: number;\n    };\n    \'turn/end\': {\n        turn: number;\n        reason: TurnEndReason;\n    };\n    \'step/start\': {\n        turn: number;\n        step: number;\n    };\n    \'step/end\': {\n        turn: number;\n        step: number;\n    };\n    \'user/message\': UserMessage;\n    \'team/channel-view\': TeamChannelViewEventData;\n    \'assistant/chunk\': {\n        turn: number;\n        step: number;\n        chunk: StreamChunk;\n    };\n    \'assistant/message\': {\n        turn: number;\n        step: number;\n        message: AssistantMessage;\n        usage?: TokenUsage;\n        interrupted?: true;\n    };\n    \'tool/call\': {\n        turn: number;\n        step: number;\n        callId: CallId;\n        name: string;\n        arguments: string;\n    };\n    \'tool/result\': {\n        turn: number;\n        step: number;\n        message: ToolResultMessage;\n        error?: {\n            name: string;\n            code: string;\n        };\n        meta?: JsonValue;\n    };\n    \'todo/write\': {\n        todos: TodoItem[];\n    };\n    \'request/header\': {\n        header: EpochHeader;\n        reason: RequestHeaderReason;\n    };\n    \'request/context\': RequestContext;\n    \'session/end-seed\': Record<string, never>;\n}',
   },
   {
     name: 'SessionEventMetadataFilter',
@@ -4151,7 +6744,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SessionHeader',
-    declaration: 'export interface SessionHeader {\n    readonly version: number;\n    readonly id: SessionId;\n    readonly createdAt: number;\n    readonly cwd?: string;\n    readonly parentSession?: SessionId;\n    readonly seedLength?: number;\n    readonly origin?: \'subagent\';\n    readonly delegationDepth?: number;\n    readonly agentPreset?: string;\n}',
+    declaration: 'export interface SessionHeader {\n    readonly version: number;\n    readonly id: SessionId;\n    readonly createdAt: number;\n    readonly cwd?: string;\n    readonly teamId?: string;\n    readonly participantId?: string;\n    readonly parentSession?: SessionId;\n    readonly seedLength?: number;\n    readonly agentPreset?: string;\n}',
   },
   {
     name: 'SessionId',
@@ -4426,14 +7019,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SkillViewOptions extends SkillLookupOptions {\n    readonly scope?: ScopeKey | undefined;\n}',
   },
   {
-    name: 'SpawnTeammateRequest',
-    declaration: 'export interface SpawnTeammateRequest {\n    readonly name: string;\n    readonly description: string;\n    readonly prompt: ContentBlock[];\n    readonly context: \'fresh\' | \'fork\';\n    readonly provider: string;\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'SpawnTeammateResult',
-    declaration: 'export interface SpawnTeammateResult {\n    readonly member: TeamMemberView;\n}',
-  },
-  {
     name: 'SpillLocator',
     declaration: 'export type SpillLocator = Branded<\'SpillLocator\'>;',
   },
@@ -4451,7 +7036,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'StorageBackend',
-    declaration: 'export interface StorageBackend {\n    readonly kv?: KvFacet;\n    close(): Promise<void>;\n}',
+    declaration: 'export interface StorageBackend {\n    readonly kv?: KvFacet;\n    readonly log?: LogFacet;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'StorageForms',
@@ -4484,6 +7069,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SubagentInterruptAuthority',
     declaration: 'export type SubagentInterruptAuthority = {\n    readonly kind: \'user\';\n    readonly parentSessionId: SessionId;\n} | {\n    readonly kind: \'ancestor\';\n    readonly agent: Agent;\n};',
+  },
+  {
+    name: 'SubagentListEntry',
+    declaration: 'export type SubagentListEntry = {\n    readonly kind: \'child\';\n    readonly id: SessionId;\n    readonly activity: \'running\' | \'inactive\';\n    readonly hasChildren: boolean;\n} & ({\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n} | {\n    readonly mode: \'continuable\';\n    readonly label: string;\n}) | {\n    readonly kind: \'diagnostic\';\n    readonly id: SessionId;\n    readonly reason: \'corrupt\' | \'unsupported\' | \'unavailable\';\n};',
   },
   {
     name: 'SubagentProvider',
@@ -4595,11 +7184,19 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SurfaceEventType',
-    declaration: 'export type SurfaceEventType = \'user/message\' | \'assistant/message\' | \'tool/result\';',
+    declaration: 'export type SurfaceEventType = \'user/message\' | \'team/channel-view\' | \'assistant/message\' | \'tool/result\';',
   },
   {
     name: 'SurfaceOp',
     declaration: 'export type SurfaceOp = \'append\' | {\n    op: \'replace\';\n    start: number;\n    end: number;\n};',
+  },
+  {
+    name: 'SystemChannelInvitationAcknowledgeScope',
+    declaration: 'export interface SystemChannelInvitationAcknowledgeScope extends ChannelInvitationAcknowledgeInput {\n    readonly kind: \'channel-invitation-acknowledge\';\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n}',
+  },
+  {
+    name: 'SystemChannelInvitationExpireScope',
+    declaration: 'export interface SystemChannelInvitationExpireScope extends ChannelInvitationExpireInput {\n    readonly kind: \'channel-invitations-expire\';\n    readonly now: number;\n}',
   },
   {
     name: 'SystemPrompt',
@@ -4614,40 +7211,2080 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
   },
   {
+    name: 'TaskAssignmentChannelLimits',
+    declaration: 'export interface TaskAssignmentChannelLimits {\n    readonly taskId: TeamTaskId;\n    readonly activationId: ActivationId;\n    readonly sessionId: ActivationBindingSnapshot[\'sessionId\'];\n}',
+  },
+  {
+    name: 'TaskAssignmentEnvelope',
+    declaration: 'export interface TaskAssignmentEnvelope extends TaskAssignmentEnvelopePayload {\n    readonly envelopeId: EnvelopeId;\n    readonly teamId: ChannelManifest[\'teamId\'];\n    readonly channelId: ChannelManifest[\'id\'];\n    readonly assigneeId: ParticipantId;\n}',
+  },
+  {
+    name: 'TaskAssignmentEnvelopePayload',
+    declaration: 'export interface TaskAssignmentEnvelopePayload extends TaskAssignmentChannelLimits {\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n}',
+  },
+  {
+    name: 'TaskAttemptFailure',
+    declaration: 'export interface TaskAttemptFailure {\n    readonly code: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'TaskAttemptId',
+    declaration: 'export type TaskAttemptId = Branded<\'TaskAttemptId\'>;',
+  },
+  {
+    name: 'TaskAttemptIntegrationResult',
+    declaration: 'export interface TaskAttemptIntegrationResult {\n    readonly target: string;\n    readonly expectedTarget?: string | undefined;\n    readonly status: \'proposed\' | \'integrated\' | \'conflict\';\n    readonly targetVersion?: string | undefined;\n    readonly proposalArtifact?: TeamArtifactReference | undefined;\n    readonly conflictPaths?: readonly string[] | undefined;\n    readonly verification?: string | undefined;\n    readonly artifacts?: readonly TeamArtifactReference[] | undefined;\n}',
+  },
+  {
+    name: 'TaskAttemptOutcome',
+    declaration: 'export type TaskAttemptOutcome = {\n    readonly kind: \'released\';\n} | {\n    readonly kind: \'lease-expired\';\n} | {\n    readonly kind: \'failed\';\n    readonly failure: TaskAttemptFailure;\n} | {\n    readonly kind: \'completed\';\n    readonly result: TaskAttemptResult;\n} | {\n    readonly kind: \'cancelled\';\n};',
+  },
+  {
+    name: 'TaskAttemptResult',
+    declaration: 'export interface TaskAttemptResult {\n    readonly summary: string;\n    readonly evidence?: readonly string[] | undefined;\n    readonly artifacts?: readonly TeamArtifactReference[] | undefined;\n    readonly changedPaths?: readonly string[] | undefined;\n    readonly verification?: string | undefined;\n    readonly integration?: TaskAttemptIntegrationResult | undefined;\n}',
+  },
+  {
+    name: 'TaskAttemptSnapshot',
+    declaration: 'export interface TaskAttemptSnapshot {\n    readonly id: TaskAttemptId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly ordinal: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId;\n    readonly wakeChannelId?: ChannelId;\n    readonly assignedAt: number;\n    readonly startedAt?: number;\n    readonly leaseExpiresAt: number;\n    readonly settledAt: number;\n    readonly outcome: TaskAttemptOutcome;\n}',
+  },
+  {
+    name: 'TaskLeaseSnapshot',
+    declaration: 'export interface TaskLeaseSnapshot {\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly ordinal: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId;\n    readonly wakeChannelId?: ChannelId;\n    readonly assignedAt: number;\n    readonly startedAt?: number;\n    readonly durationMs: number;\n    readonly renewedAt: number;\n    readonly expiresAt: number;\n}',
+  },
+  {
+    name: 'TeamActivationColdReplaceRequest',
+    declaration: 'export interface TeamActivationColdReplaceRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly signal: AbortSignal;\n    readonly authorization?: TeamHumanResumeAuthorization;\n}',
+  },
+  {
+    name: 'TeamActivationLease',
+    declaration: 'export interface TeamActivationLease {\n    readonly binding: ActivationBindingSnapshot;\n    readonly localAgent: Agent | undefined;\n    health(): Promise<ActivationBindingSnapshot>;\n    interrupt(cause: AgentCancelCause): void;\n    dispose(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamActivationRequest',
+    declaration: 'export interface TeamActivationRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly provider: string;\n    readonly sessionId: SessionId;\n    readonly seed: AgentRuntimeSeed;\n    readonly agent: AgentRuntimeAgentSpec;\n    readonly signal: AbortSignal;\n    readonly authorization?: TeamHumanResumeAuthorization;\n}',
+  },
+  {
+    name: 'TeamActivationResumePreflightRequest',
+    declaration: 'export interface TeamActivationResumePreflightRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly provider: string;\n    readonly sessionId: SessionId;\n    readonly authorization: TeamHumanResumeAuthorization;\n}',
+  },
+  {
+    name: 'TeamActivationStaleFenceRequest',
+    declaration: 'export interface TeamActivationStaleFenceRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly authorization: TeamHumanResumeAuthorization;\n}',
+  },
+  {
+    name: 'TeamActorProof',
+    declaration: 'export interface TeamActorProof {\n    readonly [teamActorProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamActorProofLease',
+    declaration: 'export interface TeamActorProofLease {\n    readonly proof: TeamActorProof;\n    revoke(): void;\n}',
+  },
+  {
+    name: 'TeamAdapterLease',
+    declaration: 'export interface TeamAdapterLease {\n    readonly adapter: TeamChannelAdapter;\n    isRetired(): boolean;\n    release(): void;\n}',
+  },
+  {
+    name: 'TeamAdapterRef',
+    declaration: 'export interface TeamAdapterRef {\n    readonly type: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'TeamArchiveInput',
+    declaration: 'export interface TeamArchiveInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamArchiveRequest',
+    declaration: 'export interface TeamArchiveRequest extends TeamArchiveInput {\n    readonly actor: TeamSystemArchiveProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamArtifactCollectionFailure',
+    declaration: 'export interface TeamArtifactCollectionFailure {\n    readonly id: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'TeamArtifactCollectRequest',
+    declaration: 'export interface TeamArtifactCollectRequest {\n    readonly reachable: readonly TeamArtifactReference[];\n    readonly reclaimableIds: readonly string[];\n    readonly afterCursor?: string | undefined;\n    readonly limit: number;\n    readonly signal?: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'TeamArtifactCollectResult',
+    declaration: 'export interface TeamArtifactCollectResult {\n    readonly scanned: number;\n    readonly retained: number;\n    readonly unreachable: readonly string[];\n    readonly deleted: readonly string[];\n    readonly failures: readonly TeamArtifactCollectionFailure[];\n    readonly nextCursor?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamArtifactData',
+    declaration: 'export type TeamArtifactData = Uint8Array | string;',
+  },
+  {
+    name: 'TeamArtifactDeleteRequest',
+    declaration: 'export interface TeamArtifactDeleteRequest {\n    readonly reference: TeamArtifactReference;\n    readonly signal?: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'TeamArtifactGetRequest',
+    declaration: 'export interface TeamArtifactGetRequest {\n    readonly teamId: TeamId;\n    readonly artifactId: string;\n}',
+  },
+  {
+    name: 'TeamArtifactListPage',
+    declaration: 'export interface TeamArtifactListPage {\n    readonly items: readonly TeamArtifactReference[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamArtifactListPageRequest',
+    declaration: 'export interface TeamArtifactListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamArtifactProvider',
+    declaration: 'export interface TeamArtifactProvider {\n    readonly name: string;\n    save(request: TeamArtifactWriteRequest): Promise<TeamArtifactReference>;\n    read(request: TeamArtifactReadRequest): Promise<Uint8Array>;\n    delete?(request: TeamArtifactDeleteRequest): Promise<void>;\n    collect?(request: TeamArtifactCollectRequest): Promise<TeamArtifactCollectResult>;\n}',
+  },
+  {
+    name: 'TeamArtifactProviderRef',
+    declaration: 'export interface TeamArtifactProviderRef {\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamArtifactReadRequest',
+    declaration: 'export interface TeamArtifactReadRequest {\n    readonly reference: TeamArtifactReference;\n    readonly signal?: AbortSignal | undefined;\n}',
+  },
+  {
+    name: 'TeamArtifactReference',
+    declaration: 'export interface TeamArtifactReference {\n    readonly id: string;\n    readonly provider?: string | undefined;\n    readonly kind: \'file\' | \'patch\' | \'log\' | \'screenshot\' | \'report\';\n    readonly uri: string;\n    readonly contentHash?: string | undefined;\n    readonly sourceAttemptId?: TaskAttemptId | undefined;\n    readonly visibility: \'private\' | \'team\' | \'human\';\n}',
+  },
+  {
+    name: 'TeamArtifactWriteRequest',
+    declaration: 'export interface TeamArtifactWriteRequest {\n    readonly teamId: TeamId;\n    readonly taskId?: TeamTaskId | undefined;\n    readonly sourceAttemptId?: TaskAttemptId | undefined;\n    readonly kind: TeamArtifactReference[\'kind\'];\n    readonly visibility: TeamArtifactReference[\'visibility\'];\n    readonly name?: string | undefined;\n    readonly data: TeamArtifactData;\n    readonly metadata?: JsonObject | undefined;\n}',
+  },
+  {
+    name: 'TeamAuditReadRequest',
+    declaration: 'export interface TeamAuditReadRequest {\n    readonly teamId: TeamId;\n    readonly channelId?: ChannelId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamAuthorityGrant',
+    declaration: 'export interface TeamAuthorityGrant {\n    readonly operations: readonly TeamPolicyHook[];\n    readonly workspaceModes: readonly TeamTaskWorkspaceMode[];\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly budgets: TeamResourceBudget;\n}',
+  },
+  {
+    name: 'TeamCancelInput',
+    declaration: 'export type TeamCancelInput = TeamClosureInput;',
+  },
+  {
+    name: 'TeamCancellationChannelCloseInput',
+    declaration: 'export interface TeamCancellationChannelCloseInput {\n    readonly teamId: TeamId;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n    readonly expectedTeamCursor: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'TeamCancellationChannelCloseRequest',
+    declaration: 'export interface TeamCancellationChannelCloseRequest extends TeamCancellationChannelCloseInput {\n    readonly actor: TeamSystemCancellationCleanupProof;\n}',
+  },
+  {
+    name: 'TeamCancellationSnapshot',
+    declaration: 'export interface TeamCancellationSnapshot {\n    readonly teamId: TeamId;\n    readonly idempotencyKey: TeamClosureIdempotencyKey;\n    readonly actor: TeamClosureActor;\n    readonly reason: TeamStallReason;\n    readonly requestedAt: number;\n}',
+  },
+  {
+    name: 'TeamCancellationTaskCancelInput',
+    declaration: 'export interface TeamCancellationTaskCancelInput {\n    readonly teamId: TeamId;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamCancellationTaskCancelRequest',
+    declaration: 'export interface TeamCancellationTaskCancelRequest extends TeamCancellationTaskCancelInput {\n    readonly actor: TeamSystemCancellationCleanupProof;\n}',
+  },
+  {
+    name: 'TeamCancelRequest',
+    declaration: 'export interface TeamCancelRequest extends TeamCancelInput {\n    readonly actor: TeamClosureAuthority;\n}',
+  },
+  {
+    name: 'TeamChannelAdapter',
+    declaration: 'export interface TeamChannelAdapter extends TeamAdapterRef {\n    validateCreate(manifest: ChannelManifest): void;\n    allowParticipantRemoval?(input: {\n        readonly manifest: ChannelManifest;\n        readonly state: JsonValue;\n        readonly participantId: ParticipantId;\n        readonly retainedParticipantIds: readonly ParticipantId[];\n    }): boolean;\n    initialState(manifest: ChannelManifest): JsonValue;\n    validateSend(input: {\n        readonly manifest: ChannelManifest;\n        readonly state: JsonValue;\n        readonly senderId: ParticipantId;\n        readonly draft: TeamEnvelopeDraft;\n    }): void;\n    prepareFinal?(input: {\n        readonly manifest: ChannelManifest;\n        readonly state: JsonValue;\n        readonly senderId: ParticipantId;\n        readonly text: string;\n    }): {\n        readonly audience: readonly ParticipantId[];\n        readonly kind: string;\n        readonly payload: JsonObject;\n        readonly delivery: EnvelopeDelivery;\n    };\n    fold(state: JsonValue, record: ChannelRecord): JsonValue;\n    afterAccept(input: {\n        readonly manifest: ChannelManifest;\n        readonly state: JsonValue;\n        readonly record: ChannelEnvelopeRecord;\n    }): readonly ChannelAdapterRecordDraft[];\n    closeAfterAccept?(input: {\n        readonly manifest: ChannelManifest;\n        readonly state: JsonValue;\n        readonly record: ChannelEnvelopeRecord;\n    }): string | undefined;\n    allowsClosedDelivery?(input: {\n        readonly manifest: Channel /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamChannelCloseScope',
+    declaration: 'export interface TeamChannelCloseScope extends ChannelCloseInput {\n    readonly kind: \'channel-close\';\n    readonly teamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamChannelCompactInput',
+    declaration: 'export interface TeamChannelCompactInput {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly throughSequence: number;\n}',
+  },
+  {
+    name: 'TeamChannelCompactRequest',
+    declaration: 'export interface TeamChannelCompactRequest extends TeamChannelCompactInput {\n    readonly actor: TeamSystemMaintenanceProof;\n}',
+  },
+  {
+    name: 'TeamChannelCompactResult',
+    declaration: 'export interface TeamChannelCompactResult {\n    readonly channel: ChannelSnapshot;\n    readonly compactedThrough: number;\n    readonly auditCompactedThrough?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamChannelListInput',
+    declaration: 'export interface TeamChannelListInput {\n    readonly teamId: TeamId;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamChannelListRequest',
+    declaration: 'export interface TeamChannelListRequest extends TeamChannelListInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamChannelOpenScope',
+    declaration: 'export interface TeamChannelOpenScope extends ChannelOpenInput {\n    readonly kind: \'channel-open\';\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n}',
+  },
+  {
+    name: 'TeamChannelSummaryScope',
+    declaration: 'export interface TeamChannelSummaryScope extends ChannelSummarizeInput {\n    readonly kind: \'channel-summary\';\n}',
+  },
+  {
+    name: 'TeamChannelViewEventData',
+    declaration: 'export interface TeamChannelViewEventData {\n    readonly teamId: string;\n    readonly channelId: string;\n    readonly adapter: TeamChannelViewImplementationRef;\n    readonly viewPolicy: TeamChannelViewImplementationRef;\n    readonly triggeringEnvelopeId: string;\n    readonly sourceEnvelopeIds: string[];\n    readonly delivery: \'context\' | \'turn\' | \'steer\';\n    readonly content: ContentBlock[];\n    readonly causationId?: string | undefined;\n    readonly taskId?: string | undefined;\n    readonly review?: TeamChannelViewReviewFence | undefined;\n}',
+  },
+  {
+    name: 'TeamChannelViewImplementationRef',
+    declaration: 'export interface TeamChannelViewImplementationRef {\n    readonly type: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'TeamChannelViewReviewFence',
+    declaration: 'export interface TeamChannelViewReviewFence {\n    readonly attemptId: string;\n    readonly reviewRevision: number;\n    readonly reviewerId: string;\n    readonly initiatorId?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamChildCancelRequest',
+    declaration: 'export interface TeamChildCancelRequest {\n    readonly authorization: TeamChildRunAuthorization;\n    readonly childTeamId: TeamId;\n    readonly expectedCursor: number;\n    readonly idempotencyKey: TeamClosureIdempotencyKey;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamChildCreateInput',
+    declaration: 'export interface TeamChildCreateInput extends TeamRootCreateInput {\n    readonly delegationId: TeamDelegationId;\n    readonly parentTeamId: TeamId;\n    readonly parentTaskId: TeamTaskId;\n}',
+  },
+  {
+    name: 'TeamChildCreateRequest',
+    declaration: 'export interface TeamChildCreateRequest extends TeamChildCreateInput {\n    readonly actor: TeamSystemChildCreationProof;\n}',
+  },
+  {
+    name: 'TeamChildCreationScope',
+    declaration: 'export interface TeamChildCreationScope extends TeamChildCreateInput {\n    readonly kind: \'team-child-create\';\n    readonly expectedParentCursor: number;\n}',
+  },
+  {
+    name: 'TeamChildResultAdmission',
+    declaration: 'export interface TeamChildResultAdmission {\n    readonly parent: TeamDelegationResultAdmission;\n    readonly admittedAt: number;\n}',
+  },
+  {
+    name: 'TeamChildResultCommandRequest',
+    declaration: 'export interface TeamChildResultCommandRequest {\n    readonly actor: TeamSystemChildResultProof;\n    readonly childTeamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamChildResultCompleteScope',
+    declaration: 'export interface TeamChildResultCompleteScope {\n    readonly kind: \'child-result-complete\';\n    readonly binding: TeamChildRunBinding;\n    readonly admission: TeamDelegationResultAdmission;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamChildResultFingerprint',
+    declaration: 'export type TeamChildResultFingerprint = Branded<\'TeamChildResultFingerprint\'>;',
+  },
+  {
+    name: 'TeamChildResultMissingScope',
+    declaration: 'export interface TeamChildResultMissingScope {\n    readonly kind: \'child-result-missing\';\n    readonly binding: TeamChildRunBinding;\n    readonly expectedCursor: number;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly turn: number;\n}',
+  },
+  {
+    name: 'TeamChildRunAuthorization',
+    declaration: 'export interface TeamChildRunAuthorization {\n    readonly [teamChildRunAuthorizationBrand]: never;\n    assertCurrent(): Promise<TeamChildRunScope>;\n    close(): void;\n}',
+  },
+  {
+    name: 'TeamChildRunAuthorizeInput',
+    declaration: 'export interface TeamChildRunAuthorizeInput extends TeamTaskDelegationInput {\n    readonly operation: \'start\' | \'cancel\';\n}',
+  },
+  {
+    name: 'TeamChildRunAuthorizeRequest',
+    declaration: 'export interface TeamChildRunAuthorizeRequest extends TeamChildRunAuthorizeInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamChildRunBinding',
+    declaration: 'export interface TeamChildRunBinding extends TeamChildRunIdentity {\n    readonly parentServiceId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n    readonly channelId: ChannelId;\n}',
+  },
+  {
+    name: 'TeamChildRunBindRequest',
+    declaration: 'export interface TeamChildRunBindRequest {\n    readonly authorization: TeamChildRunAuthorization;\n    readonly expectedCursor: number;\n    readonly binding: TeamChildRunBinding;\n}',
+  },
+  {
+    name: 'TeamChildRunIdentity',
+    declaration: 'export interface TeamChildRunIdentity {\n    readonly parentTeamId: TeamId;\n    readonly parentTaskId: TeamTaskId;\n    readonly childTeamId: TeamId;\n    readonly delegationId: TeamDelegationId;\n}',
+  },
+  {
+    name: 'TeamChildRunScope',
+    declaration: 'export type TeamChildRunScope = (TeamChildRunIdentity & {\n    readonly operation: \'start\';\n    readonly workspacePath: string;\n}) | (TeamChildRunIdentity & {\n    readonly operation: \'cancel\';\n});',
+  },
+  {
+    name: 'TeamClosureActor',
+    declaration: 'export type TeamClosureActor = {\n    readonly kind: \'participant\';\n    readonly participantId: ParticipantId;\n} | {\n    readonly kind: \'system\';\n    readonly name: string;\n};',
+  },
+  {
+    name: 'TeamClosureAuthority',
+    declaration: 'export type TeamClosureAuthority = TeamActorProof | TeamSystemClosureProof;',
+  },
+  {
+    name: 'TeamClosureContinuationInput',
+    declaration: 'export interface TeamClosureContinuationInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamClosureContinuationRequest',
+    declaration: 'export interface TeamClosureContinuationRequest extends TeamClosureContinuationInput {\n    readonly actor: TeamSystemClosureDriverProof;\n}',
+  },
+  {
+    name: 'TeamClosureDriveBackend',
+    declaration: 'export interface TeamClosureDriveBackend {\n    readonly name: string;\n    drive(request: TeamClosureDriveRequest): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamClosureDriveBackendRef',
+    declaration: 'export interface TeamClosureDriveBackendRef {\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamClosureDriverBudgetStallRequest',
+    declaration: 'export interface TeamClosureDriverBudgetStallRequest {\n    readonly teamId: TeamId;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamClosureDriverDriveRequest',
+    declaration: 'export interface TeamClosureDriverDriveRequest {\n    readonly teamId?: TeamId;\n}',
+  },
+  {
+    name: 'TeamClosureDriveRequest',
+    declaration: 'export interface TeamClosureDriveRequest {\n    readonly state: TeamStateSnapshot;\n    readonly triggers: readonly TeamClosureDriveTrigger[];\n    readonly actor: TeamSystemClosureDriverProof;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamClosureDriverTurnEndRequest',
+    declaration: 'export type TeamClosureDriverTurnEndRequest = {\n    readonly teamId: TeamId;\n    readonly coordinatorId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly turn: number;\n    readonly finalChannelId?: ChannelId | undefined;\n    readonly humanId?: ParticipantId | undefined;\n    readonly reason: TeamStallReason;\n    readonly outcome: \'missing-final\' | \'failure\';\n};',
+  },
+  {
+    name: 'TeamClosureDriveTrigger',
+    declaration: 'export type TeamClosureDriveTrigger = \'startup\' | \'team-event\' | \'channel-event\' | \'turn-end\' | \'pulse\' | \'manual\';',
+  },
+  {
+    name: 'TeamClosureFailTurnScope',
+    declaration: 'export interface TeamClosureFailTurnScope {\n    readonly kind: \'closure-fail-turn\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly coordinatorId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly turn: number;\n    readonly finalChannelId?: ChannelId | undefined;\n    readonly humanId?: ParticipantId | undefined;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamClosureIdempotencyKey',
+    declaration: 'export type TeamClosureIdempotencyKey = Branded<\'TeamClosureIdempotencyKey\'>;',
+  },
+  {
+    name: 'TeamClosureInput',
+    declaration: 'export interface TeamClosureInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly idempotencyKey: TeamClosureIdempotencyKey;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamClosureKind',
+    declaration: 'export type TeamClosureKind = \'complete\' | \'fail\' | \'cancel\';',
+  },
+  {
+    name: 'TeamClosureRecoverCancelScope',
+    declaration: 'export interface TeamClosureRecoverCancelScope {\n    readonly kind: \'closure-recover-cancel\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n}',
+  },
+  {
+    name: 'TeamClosureRecoverCompleteScope',
+    declaration: 'export interface TeamClosureRecoverCompleteScope {\n    readonly kind: \'closure-recover-complete\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly closureIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly closureRequestedAt: number;\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamClosureRecoverFailScope',
+    declaration: 'export interface TeamClosureRecoverFailScope {\n    readonly kind: \'closure-recover-fail\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly closureIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly closureRequestedAt: number;\n}',
+  },
+  {
+    name: 'TeamClosureSnapshot',
+    declaration: 'export interface TeamClosureSnapshot {\n    readonly teamId: TeamId;\n    readonly kind: TeamClosureKind;\n    readonly idempotencyKey: TeamClosureIdempotencyKey;\n    readonly actor: TeamClosureActor;\n    readonly reason: TeamStallReason;\n    readonly finalChannelId?: ChannelId | undefined;\n    readonly finalEnvelopeId?: EnvelopeId | undefined;\n    readonly requestedAt: number;\n}',
+  },
+  {
+    name: 'TeamClosureStallBudgetScope',
+    declaration: 'export interface TeamClosureStallBudgetScope {\n    readonly kind: \'closure-stall-budget\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamClosureStallMissingFinalScope',
+    declaration: 'export interface TeamClosureStallMissingFinalScope {\n    readonly kind: \'closure-stall-missing-final\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly coordinatorId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly turn: number;\n    readonly finalChannelId?: ChannelId | undefined;\n    readonly humanId?: ParticipantId | undefined;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamClosureStallQuiescingScope',
+    declaration: 'export interface TeamClosureStallQuiescingScope {\n    readonly kind: \'closure-stall-quiescing\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamCompleteInput',
+    declaration: 'export interface TeamCompleteInput extends TeamClosureInput {\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamCompleteRequest',
+    declaration: 'export interface TeamCompleteRequest extends TeamCompleteInput {\n    readonly actor: TeamClosureAuthority;\n}',
+  },
+  {
+    name: 'TeamCreateRequest',
+    declaration: 'export type TeamCreateRequest = TeamRootCreateRequest | TeamChildCreateRequest;',
+  },
+  {
+    name: 'TeamCreationActor',
+    declaration: 'export interface TeamCreationActor {\n    readonly kind: \'system\';\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamDagScheduler',
+    declaration: 'export class TeamDagScheduler {\n    readonly envelopePostProofSource: TeamSystemEnvelopePostProofSource;\n    readonly taskReviewProofSource: TeamSystemTaskReviewProofSource;\n    readonly phaseProofSource: TeamSystemPhaseProofSource;\n    readonly maintenanceProofSource: TeamSystemMaintenanceProofSource;\n    readonly taskLeaseProofSource: TeamSystemTaskLeaseProofSource;\n    readonly schedulerChannelProofSource: TeamSystemSchedulerChannelProofSource;\n    constructor(private readonly ctx: Context, config: Config);\n    start(): void;\n    drive(request: TeamSchedulerDriveRequest = {}): Promise<void>;\n    close(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamDelegationEnvelopePostScope',
+    declaration: 'export interface TeamDelegationEnvelopePostScope {\n    readonly kind: \'team-delegation-request\';\n    readonly binding: TeamChildRunBinding;\n    readonly objective: string;\n}',
+  },
+  {
+    name: 'TeamDelegationId',
+    declaration: 'export type TeamDelegationId = Branded<\'TeamDelegationId\'>;',
+  },
+  {
+    name: 'TeamDelegationResultAdmission',
+    declaration: 'export interface TeamDelegationResultAdmission {\n    readonly binding: TeamChildRunBinding;\n    readonly requestEnvelopeId: EnvelopeId;\n    readonly requestSequence: number;\n    readonly responseEnvelopeId: EnvelopeId;\n    readonly responseSequence: number;\n    readonly contentFingerprint: TeamChildResultFingerprint;\n    readonly text: string;\n    readonly artifacts: readonly TeamArtifactReference[];\n    readonly parentTaskRevision: number;\n    readonly parentCursor: number;\n    readonly admittedAt: number;\n}',
+  },
+  {
+    name: 'TeamEnvelope',
+    declaration: 'export interface TeamEnvelope extends TeamEnvelopeDraft {\n    readonly id: EnvelopeId;\n    readonly teamId: TeamId;\n    readonly sequence: number;\n    readonly senderId: ParticipantId;\n    readonly priority: EnvelopePriority;\n    readonly createdAt: number;\n}',
+  },
+  {
+    name: 'TeamEnvelopeDraft',
+    declaration: 'export interface TeamEnvelopeDraft {\n    readonly channelId: ChannelId;\n    readonly audience: readonly ParticipantId[] | null;\n    readonly kind: string;\n    readonly payload: JsonObject;\n    readonly delivery: EnvelopeDelivery;\n    readonly causationId?: EnvelopeId;\n    readonly correlationId?: string;\n    readonly taskId?: TeamTaskId;\n    readonly traceId?: string;\n    readonly priority?: EnvelopePriority;\n    readonly ttlMs?: number;\n}',
+  },
+  {
+    name: 'TeamEvent',
+    declaration: 'export type TeamEvent = {\n    readonly type: \'team/created\';\n    readonly team: TeamSnapshot;\n} | {\n    readonly type: \'team/changed\';\n    readonly team: TeamSnapshot;\n} | {\n    readonly type: \'goal/changed\';\n    readonly goal: TeamGoalSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'participant/changed\';\n    readonly participant: ParticipantSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'activation/changed\';\n    readonly binding: ActivationBindingSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'participant-interrupt/changed\';\n    readonly interrupt: ParticipantInterruptSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'human-action/changed\';\n    readonly action: TeamHumanActionSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'usage/changed\';\n    readonly teamId: TeamId;\n    readonly usage: TeamUsageSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'workflow-plan/changed\';\n    readonly plan: TeamWorkflowPlanSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'task/changed\';\n    readonly task: TeamTaskSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'workspace/observed\';\n    readonly observation: TeamWorkspac /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamFailInput',
+    declaration: 'export type TeamFailInput = TeamClosureInput;',
+  },
+  {
+    name: 'TeamFailRequest',
+    declaration: 'export interface TeamFailRequest extends TeamFailInput {\n    readonly actor: TeamClosureAuthority;\n}',
+  },
+  {
+    name: 'TeamFinalAdmission',
+    declaration: 'export interface TeamFinalAdmission extends TeamFinalAdmissionInput {\n    readonly sink: \'team-run-result\' | \'principal-inbox\';\n    readonly inboxSequence?: number | undefined;\n    readonly recipientId: ParticipantId;\n    readonly owner: TeamParticipantOwner;\n    readonly admittedAt: number;\n}',
+  },
+  {
+    name: 'TeamFinalAdmissionIdempotencyKey',
+    declaration: 'export type TeamFinalAdmissionIdempotencyKey = Branded<\'TeamFinalAdmissionIdempotencyKey\'>;',
+  },
+  {
+    name: 'TeamFinalAdmissionInput',
+    declaration: 'export interface TeamFinalAdmissionInput {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelopeSequence: number;\n    readonly contentFingerprint: TeamFinalContentFingerprint;\n    readonly idempotencyKey: TeamFinalAdmissionIdempotencyKey;\n}',
+  },
+  {
+    name: 'TeamFinalAdmissionRequest',
+    declaration: 'export interface TeamFinalAdmissionRequest extends TeamFinalAdmissionInput {\n    readonly actor: TeamSystemFinalReceiptProof;\n}',
+  },
+  {
+    name: 'TeamFinalContentFingerprint',
+    declaration: 'export type TeamFinalContentFingerprint = Branded<\'TeamFinalContentFingerprint\'>;',
+  },
+  {
+    name: 'TeamFinalizationChannelCloseInput',
+    declaration: 'export interface TeamFinalizationChannelCloseInput {\n    readonly teamId: TeamId;\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n    readonly expectedTeamCursor: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'TeamFinalizationChannelCloseRequest',
+    declaration: 'export interface TeamFinalizationChannelCloseRequest extends TeamFinalizationChannelCloseInput {\n    readonly actor: TeamSystemFinalizationCleanupProof;\n}',
+  },
+  {
+    name: 'TeamGetRequest',
+    declaration: 'export interface TeamGetRequest {\n    readonly teamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamGoalBlocker',
+    declaration: 'export interface TeamGoalBlocker {\n    readonly code: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'TeamGoalPhase',
+    declaration: 'export type TeamGoalPhase = \'active\' | \'paused\' | \'blocked\' | \'complete\';',
+  },
+  {
+    name: 'TeamGoalPhaseTransitionInput',
+    declaration: 'export interface TeamGoalPhaseTransitionInput {\n    readonly teamId: TeamId;\n    readonly expectedRevision: number;\n    readonly phase: TeamGoalPhase;\n    readonly blocker?: TeamGoalBlocker;\n}',
+  },
+  {
+    name: 'TeamGoalPhaseTransitionRequest',
+    declaration: 'export interface TeamGoalPhaseTransitionRequest extends TeamGoalPhaseTransitionInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamGoalSeed',
+    declaration: 'export interface TeamGoalSeed {\n    readonly objective: string;\n    readonly budgets: JsonObject;\n}',
+  },
+  {
+    name: 'TeamGoalSnapshot',
+    declaration: 'export interface TeamGoalSnapshot {\n    readonly teamId: TeamId;\n    readonly revision: number;\n    readonly objective: string;\n    readonly phase: TeamGoalPhase;\n    readonly blocker?: TeamGoalBlocker;\n    readonly budgets: JsonObject;\n}',
+  },
+  {
+    name: 'TeamGoalUpdateInput',
+    declaration: 'export interface TeamGoalUpdateInput {\n    readonly teamId: TeamId;\n    readonly expectedRevision: number;\n    readonly objective?: string;\n    readonly budgets?: JsonObject;\n}',
+  },
+  {
+    name: 'TeamGoalUpdateRequest',
+    declaration: 'export interface TeamGoalUpdateRequest extends TeamGoalUpdateInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamHumanActionAnswer',
+    declaration: 'export type TeamHumanActionAnswer = {\n    readonly kind: \'approval\';\n    readonly outcome: \'allowed-once\' | \'rejected\';\n} | {\n    readonly kind: \'question\';\n    readonly answers: readonly {\n        readonly id: string;\n        readonly selected: readonly string[];\n        readonly custom?: string | undefined;\n    }[];\n};',
+  },
+  {
+    name: 'TeamHumanActionId',
+    declaration: 'export type TeamHumanActionId = Branded<\'TeamHumanActionId\'>;',
+  },
+  {
+    name: 'TeamHumanActionKind',
+    declaration: 'export type TeamHumanActionKind = \'approval\' | \'question\';',
+  },
+  {
+    name: 'TeamHumanActionPhase',
+    declaration: 'export type TeamHumanActionPhase = \'pending\' | \'resolved\' | \'cancelled\';',
+  },
+  {
+    name: 'TeamHumanActionResolveInput',
+    declaration: 'export interface TeamHumanActionResolveInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamHumanActionResolveRequest',
+    declaration: 'export interface TeamHumanActionResolveRequest extends TeamHumanActionResolveInput {\n    readonly actor: TeamSystemHumanActionProof;\n}',
+  },
+  {
+    name: 'TeamHumanActionResponder',
+    declaration: 'export interface TeamHumanActionResponder {\n    respond(call: AuthenticatedProductCall, input: TeamHumanActionResponseInput): Promise<TeamHumanActionResponseResult | undefined>;\n    unavailable(call: AuthenticatedProductCall, input: TeamHumanActionResponseInput): Promise<TeamHumanActionResponseResult>;\n}',
+  },
+  {
+    name: 'TeamHumanActionResponseIdempotencyKey',
+    declaration: 'export type TeamHumanActionResponseIdempotencyKey = import(\'@clocky/clocky-brand\').Branded<\'TeamHumanActionResponseIdempotencyKey\'>;',
+  },
+  {
+    name: 'TeamHumanActionResponseInput',
+    declaration: 'export interface TeamHumanActionResponseInput {\n    readonly teamId: TeamId;\n    readonly actionId: TeamHumanActionId;\n    readonly expectedUpdatedAt: number;\n    readonly idempotencyKey: TeamHumanActionResponseIdempotencyKey;\n    readonly answer: TeamHumanActionAnswer;\n}',
+  },
+  {
+    name: 'TeamHumanActionResponseResult',
+    declaration: 'export interface TeamHumanActionResponseResult {\n    readonly kind: \'accepted\' | \'unavailable\';\n    readonly action: TeamHumanActionSnapshot;\n}',
+  },
+  {
+    name: 'TeamHumanActionResponseSnapshot',
+    declaration: 'export interface TeamHumanActionResponseSnapshot {\n    readonly expectedUpdatedAt: number;\n    readonly idempotencyKey: TeamHumanActionResponseIdempotencyKey;\n    readonly answer: TeamHumanActionAnswer;\n    readonly respondedBy: ParticipantId;\n    readonly acceptedAt: number;\n}',
+  },
+  {
+    name: 'TeamHumanActionSnapshot',
+    declaration: 'export interface TeamHumanActionSnapshot {\n    readonly id: TeamHumanActionId;\n    readonly teamId: TeamId;\n    readonly kind: TeamHumanActionKind;\n    readonly phase: TeamHumanActionPhase;\n    readonly sessionId: SessionId;\n    readonly participantId: ParticipantId;\n    readonly taskId?: TeamTaskId | undefined;\n    readonly attemptId?: TaskAttemptId | undefined;\n    readonly sourceId: TeamHumanActionSourceId;\n    readonly details: JsonObject;\n    readonly outcome?: JsonObject | undefined;\n    readonly response?: import(\'./human-delivery-types.ts\').TeamHumanActionResponseSnapshot | undefined;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n}',
+  },
+  {
+    name: 'TeamHumanActionSourceId',
+    declaration: 'export type TeamHumanActionSourceId = Branded<\'TeamHumanActionSourceId\'>;',
+  },
+  {
+    name: 'TeamHumanActionUpsertInput',
+    declaration: 'export interface TeamHumanActionUpsertInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamHumanActionUpsertRequest',
+    declaration: 'export interface TeamHumanActionUpsertRequest extends TeamHumanActionUpsertInput {\n    readonly actor: TeamSystemHumanActionProof;\n}',
+  },
+  {
+    name: 'TeamHumanActorPayloadFingerprint',
+    declaration: 'export type TeamHumanActorPayloadFingerprint = Branded<\'TeamHumanActorPayloadFingerprint\'>;',
+  },
+  {
+    name: 'TeamHumanActorProof',
+    declaration: 'export interface TeamHumanActorProof {\n    readonly [teamHumanActorProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamHumanActorProofFence',
+    declaration: 'export type TeamHumanActorProofFence = {\n    readonly kind: \'read\';\n} | {\n    readonly kind: \'cursor\';\n    readonly cursor: number;\n} | {\n    readonly kind: \'revision\';\n    readonly revision: number;\n};',
+  },
+  {
+    name: 'TeamHumanActorProofInput',
+    declaration: 'export interface TeamHumanActorProofInput {\n    readonly teamId: TeamId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\';\n    readonly fence: TeamHumanActorProofFence;\n    readonly payload: JsonValue;\n}',
+  },
+  {
+    name: 'TeamHumanActorProofSource',
+    declaration: 'export interface TeamHumanActorProofSource {\n    readonly name: string;\n    resolveHumanActorProof(proof: TeamHumanActorProof): TeamHumanActorScope | undefined;\n}',
+  },
+  {
+    name: 'TeamHumanActorScope',
+    declaration: 'export interface TeamHumanActorScope {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\';\n    readonly payloadFingerprint: TeamHumanActorPayloadFingerprint;\n    readonly fence: TeamHumanActorProofFence;\n}',
+  },
+  {
+    name: 'TeamHumanChannelDeliveryRequest',
+    declaration: 'export interface TeamHumanChannelDeliveryRequest extends TeamSystemHumanDeliveryScope {\n    readonly actor: TeamSystemHumanDeliveryProof;\n}',
+  },
+  {
+    name: 'TeamHumanChannelDeliveryResult',
+    declaration: 'export interface TeamHumanChannelDeliveryResult {\n    readonly item: TeamHumanInboxMessage;\n    readonly receipt: ChannelReceiptRecord;\n}',
+  },
+  {
+    name: 'TeamHumanFinalInput',
+    declaration: 'export interface TeamHumanFinalInput extends TeamFinalAdmissionInput {\n    readonly principalId: ProductPrincipalId;\n    readonly recipientId: ParticipantId;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'TeamHumanInboxAcknowledgeInput',
+    declaration: 'export interface TeamHumanInboxAcknowledgeInput {\n    readonly throughCursor: number;\n}',
+  },
+  {
+    name: 'TeamHumanInboxAcknowledgement',
+    declaration: 'export interface TeamHumanInboxAcknowledgement {\n    readonly displayCursor: number;\n}',
+  },
+  {
+    name: 'TeamHumanInboxAction',
+    declaration: 'export interface TeamHumanInboxAction {\n    readonly kind: \'action\';\n    readonly sequence: number;\n    readonly principalId: ProductPrincipalId;\n    readonly recipientId: ParticipantId;\n    readonly teamId: TeamId;\n    readonly action: TeamHumanActionSnapshot;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'TeamHumanInboxFinal',
+    declaration: 'export interface TeamHumanInboxFinal extends TeamHumanFinalInput {\n    readonly kind: \'final\';\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'TeamHumanInboxItem',
+    declaration: 'export type TeamHumanInboxItem = TeamHumanInboxFinal | TeamHumanInboxMessage | TeamHumanInboxAction;',
+  },
+  {
+    name: 'TeamHumanInboxMessage',
+    declaration: 'export interface TeamHumanInboxMessage extends TeamHumanMessageInput {\n    readonly kind: \'message\';\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'TeamHumanInboxPage',
+    declaration: 'export interface TeamHumanInboxPage {\n    readonly items: readonly TeamHumanInboxItem[];\n    readonly displayCursor: number;\n    readonly cursor: number;\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamHumanInboxReadInput',
+    declaration: 'export interface TeamHumanInboxReadInput {\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamHumanMessageInput',
+    declaration: 'export interface TeamHumanMessageInput {\n    readonly principalId: ProductPrincipalId;\n    readonly recipientId: ParticipantId;\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelope: TeamEnvelope;\n    readonly view?: TeamChannelViewEventData | undefined;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'TeamHumanResumeAuthorization',
+    declaration: 'export interface TeamHumanResumeAuthorization {\n    readonly [teamHumanResumeAuthorizationBrand]: never;\n    isLive(): boolean;\n    assert(): Promise<TeamStateSnapshot>;\n    close(): void;\n}',
+  },
+  {
+    name: 'TeamHumanResumeRequest',
+    declaration: 'export interface TeamHumanResumeRequest extends TeamResumeInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamHumanSinkProof',
+    declaration: 'export interface TeamHumanSinkProof {\n    readonly [teamHumanSinkProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamHumanSinkScope',
+    declaration: 'export type TeamHumanSinkScope = {\n    readonly kind: \'final\';\n    readonly input: TeamHumanFinalInput;\n} | {\n    readonly kind: \'message\';\n    readonly input: TeamHumanMessageInput;\n} | {\n    readonly kind: \'message-read\';\n    readonly input: Pick<TeamHumanMessageInput, \'principalId\' | \'teamId\' | \'envelopeId\'>;\n};',
+  },
+  {
+    name: 'TeamHumanTaskCreator',
+    declaration: 'export interface TeamHumanTaskCreator {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n}',
+  },
+  {
     name: 'TeamId',
     declaration: 'export type TeamId = Branded<\'TeamId\'>;',
   },
   {
-    name: 'TeamMembership',
-    declaration: 'export interface TeamMembership {\n    readonly root: Agent;\n    readonly id: TeamId;\n    readonly role: \'lead\' | \'teammate\';\n    readonly name: string;\n}',
+    name: 'TeamImplementationLeaseMetrics',
+    declaration: 'export interface TeamImplementationLeaseMetrics {\n    readonly acceptingAdapterImplementations: number;\n    readonly retiredAdapterImplementations: number;\n    readonly activeAdapterLeases: number;\n    readonly acceptingViewPolicyImplementations: number;\n    readonly retiredViewPolicyImplementations: number;\n    readonly activeViewPolicyLeases: number;\n}',
   },
   {
-    name: 'TeamMemberView',
-    declaration: 'export interface TeamMemberView {\n    readonly id: SessionId;\n    readonly name: string;\n    readonly role: \'lead\' | \'teammate\';\n    readonly status: \'running\' | \'idle\' | \'inactive\' | \'provisioning\' | \'failed\';\n    readonly description?: string;\n    readonly provider?: string;\n    readonly context?: \'fresh\' | \'fork\';\n    readonly model?: string;\n    readonly diagnostics: string[];\n}',
+    name: 'TeamInterruptId',
+    declaration: 'export type TeamInterruptId = Branded<\'TeamInterruptId\'>;',
   },
   {
-    name: 'TeamMessageId',
-    declaration: 'export type TeamMessageId = Branded<\'TeamMessageId\'>;',
+    name: 'TeamJournalCompactInput',
+    declaration: 'export interface TeamJournalCompactInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly throughSequence: number;\n}',
   },
   {
-    name: 'TeamTaskAction',
-    declaration: 'export type TeamTaskAction = \'claim\' | \'release\' | \'edit\' | \'set_dependencies\' | \'complete\' | \'reopen\' | \'reassign\' | \'delete\';',
+    name: 'TeamJournalCompactRequest',
+    declaration: 'export interface TeamJournalCompactRequest extends TeamJournalCompactInput {\n    readonly actor: TeamSystemMaintenanceProof;\n}',
+  },
+  {
+    name: 'TeamJournalCompactResult',
+    declaration: 'export interface TeamJournalCompactResult {\n    readonly team: TeamStateSnapshot;\n    readonly compactedThrough: number;\n    readonly auditCompactedThrough?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamLatencyBucket',
+    declaration: 'export interface TeamLatencyBucket {\n    readonly upperBoundMs: number | null;\n    readonly count: number;\n}',
+  },
+  {
+    name: 'TeamLatencyHistogram',
+    declaration: 'export interface TeamLatencyHistogram {\n    readonly count: number;\n    readonly sumMs: number;\n    readonly buckets: readonly TeamLatencyBucket[];\n}',
+  },
+  {
+    name: 'TeamLink',
+    declaration: 'export interface TeamLink {\n    getChannel(channelId: ChannelId): Promise<ChannelSnapshot>;\n    onInvitation(listener: (notification: TeamLinkInvitationNotification) => Promise<void>): () => void;\n    acknowledgeChannelInvitation(request: ChannelInvitationAcknowledgeInput): Promise<ChannelAdmissionSnapshot>;\n    readonly provider: string;\n    readonly binding: ActivationBindingSnapshot;\n    readonly done: Promise<void>;\n    onNotify(listener: (envelope: TeamEnvelope) => Promise<void>): () => void;\n    onInterrupt(listener: (notification: TeamLinkInterruptNotification) => Promise<void>): () => void;\n    onTaskCancellation(listener: (notification: TeamLinkTaskCancellationNotification) => Promise<void>): () => void;\n    acknowledgeTaskCancellation(request: TeamLinkTaskCancellationAcknowledgeRequest): Promise<TeamTaskSnapshot>;\n    post(request: TeamLinkPostRequest): Promise<TeamEnvelope>;\n    postFinalResult(request: TeamLinkFinalResultRequest): Promise<TeamEnvelope>;\n    claim(channelId: ChannelId, envelopeId: EnvelopeId): Promise<ChannelDeliveryClaim | undefined>;\n    claimTaskAttemptStart(request: TeamLinkTaskAttemptStartClaimRequest): Promise<TeamTaskSnapshot>;\n    settleTaskAttempt(request: TeamLinkTaskAttemptSettleRequest): Promise<TeamTaskSnapshot>;\n    integrateTask(request: TeamLinkTaskIntegrationRequest): Promise<TeamTaskSnapshot>;\n    heartbeatTaskAttempt(request: TeamLinkTaskAttemptHeartbeatRequest): Promise<TeamTaskSnapshot>;\n    resolveTaskReview(request: TeamLinkT /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamLinkBoundLinkBorrower',
+    declaration: 'export interface TeamLinkBoundLinkBorrower {\n    withLink<T>(operation: (link: TeamLink) => Promise<T>): Promise<T>;\n}',
+  },
+  {
+    name: 'TeamLinkConnectRequest',
+    declaration: 'export interface TeamLinkConnectRequest {\n    readonly provider: string;\n    readonly binding: ActivationBindingSnapshot;\n    readonly signal?: AbortSignal;\n    readonly onTerminate?: (reason: TeamLinkTerminationReason) => Promise<void>;\n}',
+  },
+  {
+    name: 'TeamLinkDeliveryId',
+    declaration: 'export type TeamLinkDeliveryId = Branded<\'TeamLinkDeliveryId\'>;',
+  },
+  {
+    name: 'TeamLinkEnrollment',
+    declaration: 'export interface TeamLinkEnrollment {\n    readonly provider: string;\n    readonly endpoint: string;\n    readonly capability: string;\n    revoke(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamLinkEnrollmentProvider',
+    declaration: 'export interface TeamLinkEnrollmentProvider {\n    readonly name: string;\n    reserve(binding: ActivationBindingSnapshot): Promise<TeamLinkEnrollment>;\n}',
+  },
+  {
+    name: 'TeamLinkEnrollmentProviderRef',
+    declaration: 'export interface TeamLinkEnrollmentProviderRef {\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamLinkEnrollmentRequest',
+    declaration: 'export interface TeamLinkEnrollmentRequest {\n    readonly provider: string;\n    readonly binding: ActivationBindingSnapshot;\n}',
+  },
+  {
+    name: 'TeamLinkFinalResultRequest',
+    declaration: 'export interface TeamLinkFinalResultRequest {\n    readonly channelId: ChannelId;\n    readonly idempotencyKey: ChannelPostIdempotencyKey;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'TeamLinkInterruptNotification',
+    declaration: 'export interface TeamLinkInterruptNotification {\n    readonly deliveryId: TeamLinkDeliveryId;\n    readonly interrupt: ParticipantInterruptSnapshot;\n}',
+  },
+  {
+    name: 'TeamLinkInvitationNotification',
+    declaration: 'export interface TeamLinkInvitationNotification {\n    readonly channel: ChannelSnapshot;\n    readonly invitation: ChannelInvitationSnapshot;\n}',
+  },
+  {
+    name: 'TeamLinkPostRequest',
+    declaration: 'export interface TeamLinkPostRequest {\n    readonly expectedCursor?: number;\n    readonly idempotencyKey: ChannelPostIdempotencyKey;\n    readonly draft: TeamEnvelopeDraft;\n}',
+  },
+  {
+    name: 'TeamLinkProvider',
+    declaration: 'export interface TeamLinkProvider {\n    readonly name: string;\n    connect(request: TeamLinkConnectRequest): Promise<TeamLink>;\n}',
+  },
+  {
+    name: 'TeamLinkProviderRef',
+    declaration: 'export interface TeamLinkProviderRef {\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamLinkRegistry',
+    declaration: 'export class TeamLinkRegistry extends Service {\n    constructor(ctx: Context);\n    registerProvider(provider: TeamLinkProvider): () => void;\n    getProvider(name: string): TeamLinkProvider | undefined;\n    listProviders(): TeamLinkProviderRef[];\n    registerBoundLinkBorrower(owner: object, borrower: TeamLinkBoundLinkBorrower): () => void;\n    getBoundLinkBorrower(owner: object): TeamLinkBoundLinkBorrower | undefined;\n    registerEnrollmentProvider(provider: TeamLinkEnrollmentProvider): () => void;\n    getEnrollmentProvider(name: string): TeamLinkEnrollmentProvider | undefined;\n    listEnrollmentProviders(): TeamLinkEnrollmentProviderRef[];\n    async reserveEnrollment(request: TeamLinkEnrollmentRequest): Promise<TeamLinkEnrollment>;\n    async connect(request: TeamLinkConnectRequest): Promise<TeamLink>;\n}',
+  },
+  {
+    name: 'TeamLinkTaskAttemptHeartbeatRequest',
+    declaration: 'export interface TeamLinkTaskAttemptHeartbeatRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamLinkTaskAttemptSettleRequest',
+    declaration: 'export interface TeamLinkTaskAttemptSettleRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n    readonly outcome: {\n        readonly kind: \'released\';\n    } | {\n        readonly kind: \'failed\';\n        readonly failure: TaskAttemptFailure;\n    } | {\n        readonly kind: \'completed\';\n        readonly result: TaskAttemptResult;\n    };\n}',
+  },
+  {
+    name: 'TeamLinkTaskAttemptStartClaimRequest',
+    declaration: 'export interface TeamLinkTaskAttemptStartClaimRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamLinkTaskCancellationAcknowledgeRequest',
+    declaration: 'export interface TeamLinkTaskCancellationAcknowledgeRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamLinkTaskCancellationNotification',
+    declaration: 'export interface TeamLinkTaskCancellationNotification {\n    readonly taskId: TeamTaskId;\n    readonly phase: \'assigned\' | \'running\';\n    readonly revision: number;\n    readonly cancellation: TeamTaskCancellationSnapshot;\n}',
+  },
+  {
+    name: 'TeamLinkTaskIntegrationRequest',
+    declaration: 'export interface TeamLinkTaskIntegrationRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n    readonly verification?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamLinkTerminationReason',
+    declaration: 'export interface TeamLinkTerminationReason {\n    readonly code: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'TeamList',
+    declaration: 'export type TeamList = TeamListPage;',
+  },
+  {
+    name: 'TeamListPage',
+    declaration: 'export interface TeamListPage {\n    readonly items: readonly TeamSnapshot[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamListPageRequest',
+    declaration: 'export interface TeamListPageRequest {\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMemberListPage',
+    declaration: 'export interface TeamMemberListPage {\n    readonly items: readonly ParticipantSnapshot[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamMemberListPageRequest',
+    declaration: 'export interface TeamMemberListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMetricsSnapshot',
+    declaration: 'export interface TeamMetricsSnapshot {\n    readonly activeAdmissions: number;\n    readonly pendingDeliveries: number;\n    readonly activeActivations: number;\n    readonly activeTasks: number;\n    readonly stalledTeams: number;\n    readonly replayLag: number;\n    readonly lastTaskLatencyMs: number;\n    readonly lastReceiptLatencyMs: number;\n    readonly taskLatency: TeamLatencyHistogram;\n    readonly receiptLatency: TeamLatencyHistogram;\n    readonly workspaceConflicts: number;\n    readonly teamEvents: number;\n    readonly channelEvents: number;\n    readonly policyDenials: number;\n    readonly adapterFailures: number;\n    readonly deliveryClaims: number;\n    readonly taskAssignments: number;\n    readonly taskRetries: number;\n    readonly teamCompactions: number;\n    readonly channelCompactions: number;\n    readonly checkpointFailures: number;\n    readonly auditProjectionRepairs: number;\n    readonly auditProjectionFailures: number;\n    readonly updatedAt: number;\n}',
+  },
+  {
+    name: 'TeamParticipantOwner',
+    declaration: 'export type TeamParticipantOwner = {\n    readonly kind: \'product-principal\';\n    readonly principalId: Branded<\'ProductPrincipalId\'>;\n} | {\n    readonly kind: \'system\';\n};',
+  },
+  {
+    name: 'TeamPhase',
+    declaration: 'export type TeamPhase = \'provisioning\' | \'active\' | \'quiescing\' | \'stalled\' | \'completed\' | \'failed\' | \'cancelled\';',
+  },
+  {
+    name: 'TeamPhaseTransitionInput',
+    declaration: 'export interface TeamPhaseTransitionInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: TeamPhase;\n    readonly reason?: TeamStallReason | undefined;\n}',
+  },
+  {
+    name: 'TeamPhaseTransitionRequest',
+    declaration: 'export interface TeamPhaseTransitionRequest extends TeamPhaseTransitionInput {\n    readonly actor: TeamSystemPhaseProof;\n}',
+  },
+  {
+    name: 'TeamPolicy',
+    declaration: 'export interface TeamPolicy {\n    readonly name: string;\n    apply(request: TeamPolicyRequest, next: () => Promise<TeamPolicyDecision>): Promise<TeamPolicyDecision>;\n}',
+  },
+  {
+    name: 'TeamPolicyDecision',
+    declaration: 'export type TeamPolicyDecision = {\n    readonly kind: \'allow\';\n} | {\n    readonly kind: \'deny\';\n    readonly code: string;\n    readonly message: string;\n};',
+  },
+  {
+    name: 'TeamPolicyHook',
+    declaration: 'export type TeamPolicyHook = \'register\' | \'invite\' | \'activate\' | \'channel-open\' | \'send\' | \'human-action\' | \'usage\' | \'dispatch\' | \'goal-mutate\' | \'task-mutate\' | \'task-assign\' | \'interrupt\' | \'workspace-allocate\' | \'workspace-integrate\' | \'close\';',
+  },
+  {
+    name: 'TeamPolicyRegistration',
+    declaration: 'export interface TeamPolicyRegistration {\n    readonly hook: TeamPolicyHook;\n    readonly name: string;\n}',
+  },
+  {
+    name: 'TeamPolicyRequest',
+    declaration: 'export interface TeamPolicyRequest {\n    readonly hook: TeamPolicyHook;\n    readonly teamId?: TeamId;\n    readonly actorId?: ParticipantId;\n    readonly facts: JsonObject;\n}',
+  },
+  {
+    name: 'TeamQuiescenceSnapshot',
+    declaration: 'export interface TeamQuiescenceSnapshot {\n    readonly teamId: TeamId;\n    readonly quiescent: boolean;\n    readonly reasons: readonly string[];\n    readonly activeTaskIds: readonly TeamTaskId[];\n    readonly activeActivationIds: readonly ActivationId[];\n    readonly activeWorkspaceAllocationIds: readonly TeamWorkspaceAllocationId[];\n    readonly openChannelIds: readonly ChannelId[];\n}',
+  },
+  {
+    name: 'TeamResourceBudget',
+    declaration: 'export interface TeamResourceBudget {\n    readonly maxInputTokens?: number;\n    readonly maxOutputTokens?: number;\n    readonly maxTotalTokens?: number;\n    readonly maxTurns?: number;\n    readonly maxWallTimeMs?: number;\n    readonly maxCostUnits?: number;\n    readonly maxRetries?: number;\n    readonly maxConcurrency?: number;\n    readonly maxArtifactBytes?: number;\n    readonly extensions?: JsonObject;\n}',
+  },
+  {
+    name: 'TeamResumeInput',
+    declaration: 'export interface TeamResumeInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamRootCreateInput',
+    declaration: 'export interface TeamRootCreateInput {\n    readonly goal: TeamGoalSeed;\n    readonly rules: JsonObject;\n    readonly budgets: JsonObject;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n}',
+  },
+  {
+    name: 'TeamRootCreateRequest',
+    declaration: 'export interface TeamRootCreateRequest extends TeamRootCreateInput {\n    readonly actor: TeamSystemRootCreationProof;\n}',
+  },
+  {
+    name: 'TeamRunBootstrapChannelOpenScope',
+    declaration: 'export interface TeamRunBootstrapChannelOpenScope {\n    readonly kind: \'team-run-bootstrap-channel-open\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n    readonly adapter: TeamAdapterRef;\n    readonly viewPolicy?: TeamViewPolicyRef | undefined;\n    readonly participants: readonly ChannelParticipant[];\n    readonly limits: JsonObject;\n}',
+  },
+  {
+    name: 'TeamRunBootstrapParticipantInviteScope',
+    declaration: 'export interface TeamRunBootstrapParticipantInviteScope {\n    readonly kind: \'team-run-bootstrap-participant-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+  },
+  {
+    name: 'TeamRunBootstrapParticipantPhaseScope',
+    declaration: 'export interface TeamRunBootstrapParticipantPhaseScope {\n    readonly kind: \'team-run-bootstrap-participant-phase\';\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly expectedPhase: \'invited\' | \'provisioning\';\n    readonly phase: \'provisioning\' | \'active\';\n}',
+  },
+  {
+    name: 'TeamRunCancelClosureScope',
+    declaration: 'export interface TeamRunCancelClosureScope {\n    readonly kind: \'team-run-cancel\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamRunCancellationChannelCleanupScope',
+    declaration: 'export interface TeamRunCancellationChannelCleanupScope {\n    readonly kind: \'team-run-cancellation-channel-close\';\n    readonly teamId: TeamId;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n    readonly expectedTeamCursor: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'TeamRunCancellationTaskCleanupScope',
+    declaration: 'export interface TeamRunCancellationTaskCleanupScope {\n    readonly kind: \'team-run-cancellation-task-cancel\';\n    readonly teamId: TeamId;\n    readonly cancellationIdempotencyKey: TeamClosureIdempotencyKey;\n    readonly cancellationRequestedAt: number;\n    readonly expectedTeamCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamRunChildRequest',
+    declaration: 'export interface TeamRunChildRequest extends TeamChildRunIdentity {\n    readonly authorization: TeamChildRunAuthorization;\n}',
+  },
+  {
+    name: 'TeamRunCompleteClosureScope',
+    declaration: 'export interface TeamRunCompleteClosureScope {\n    readonly kind: \'team-run-complete\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n    readonly finalEnvelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamRunCoordinatorGoalAuthority',
+    declaration: 'export interface TeamRunCoordinatorGoalAuthority {\n    readonly [coordinatorGoalAuthorityToken]: undefined;\n}',
+  },
+  {
+    name: 'TeamRunCoordinatorGoalPhaseRequest',
+    declaration: 'export interface TeamRunCoordinatorGoalPhaseRequest {\n    readonly expectedRevision: number;\n    readonly phase: TeamGoalPhase;\n    readonly blocker?: TeamGoalBlocker;\n}',
+  },
+  {
+    name: 'TeamRunCoordinatorGoalUpdateRequest',
+    declaration: 'export interface TeamRunCoordinatorGoalUpdateRequest {\n    readonly expectedRevision: number;\n    readonly objective: string;\n}',
+  },
+  {
+    name: 'TeamRunCoordinatorTaskAuthority',
+    declaration: 'export interface TeamRunCoordinatorTaskAuthority {\n    readonly [coordinatorTaskAuthorityToken]: undefined;\n}',
+  },
+  {
+    name: 'TeamRunCreateFailureClosureScope',
+    declaration: 'export interface TeamRunCreateFailureClosureScope {\n    readonly kind: \'team-run-create-failure\';\n    readonly teamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamRunCreateRequest',
+    declaration: 'export interface TeamRunCreateRequest {\n    readonly admitHumanChannel?: HumanChannelAdmission | undefined;\n    readonly objective: string;\n    readonly cwd: string;\n    readonly selection?: ModelSelection;\n    readonly preset?: string;\n    readonly maxTokens?: number;\n    readonly humanOwner?: Extract<TeamParticipantOwner, {\n        readonly kind: \'product-principal\';\n    }>;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerCancelScope',
+    declaration: 'export interface TeamRunDefaultWorkerCancelScope {\n    readonly kind: \'team-run-default-worker-cancel\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerOwnerProposalScope',
+    declaration: 'export interface TeamRunDefaultWorkerOwnerProposalScope {\n    readonly kind: \'team-run-default-worker-owner-proposal\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTask',
+    declaration: 'export interface TeamRunDefaultWorkerTask extends TeamRunDefaultWorkerTaskStatus {\n    readonly id: TeamTaskId;\n    readonly phase: TeamTaskSnapshot[\'phase\'];\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskCancelRequest',
+    declaration: 'export interface TeamRunDefaultWorkerTaskCancelRequest {\n    readonly taskId: TeamTaskId;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskList',
+    declaration: 'export interface TeamRunDefaultWorkerTaskList {\n    readonly tasks: readonly TeamRunDefaultWorkerTask[];\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskOwnerProposal',
+    declaration: 'export interface TeamRunDefaultWorkerTaskOwnerProposal {\n    readonly id: TeamTaskId;\n    readonly phase: TeamTaskSnapshot[\'phase\'];\n    readonly proposedOwnerId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskOwnerProposalRequest',
+    declaration: 'export interface TeamRunDefaultWorkerTaskOwnerProposalRequest {\n    readonly taskId: TeamTaskId;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskReview',
+    declaration: 'export interface TeamRunDefaultWorkerTaskReview {\n    readonly reviewPolicy: TeamTaskSnapshot[\'reviewPolicy\'];\n    readonly reviewResult: {\n        readonly attemptId: TaskAttemptId;\n        readonly decision: \'accepted\' | \'rework\';\n    } | null;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskStartRequest',
+    declaration: 'export interface TeamRunDefaultWorkerTaskStartRequest {\n    readonly idempotencyKey: TeamTaskCreateIdempotencyKey;\n    readonly subject: string;\n    readonly instructions: string;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskStatus',
+    declaration: 'export interface TeamRunDefaultWorkerTaskStatus extends TeamRunDefaultWorkerTaskReview {\n    readonly childTeamId?: TeamId;\n    readonly delegationResult?: {\n        readonly text: string;\n        readonly artifacts: readonly TeamArtifactReference[];\n    };\n    readonly cancellation: {\n        readonly requestedRevision: number;\n        readonly attemptId: TaskAttemptId | null;\n        readonly expired: boolean;\n    } | null;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskTerminal',
+    declaration: 'export type TeamRunDefaultWorkerTaskTerminal = TeamRunDefaultWorkerTaskStatus & ({\n    readonly id: TeamTaskId;\n    readonly phase: \'completed\';\n    readonly result: TaskAttemptResult;\n} | {\n    readonly id: TeamTaskId;\n    readonly phase: \'failed\';\n    readonly outcome: Extract<TaskAttemptOutcome, {\n        readonly kind: \'failed\' | \'released\' | \'lease-expired\';\n    }>;\n} | {\n    readonly id: TeamTaskId;\n    readonly phase: \'cancelled\';\n} | {\n    readonly id: TeamTaskId;\n    readonly phase: \'deleted\';\n});',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskWaitRequest',
+    declaration: 'export interface TeamRunDefaultWorkerTaskWaitRequest {\n    readonly taskId: TeamTaskId;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskWatch',
+    declaration: 'export interface TeamRunDefaultWorkerTaskWatch {\n    readonly cursor: number;\n    readonly tasks: readonly TeamRunDefaultWorkerTask[];\n}',
+  },
+  {
+    name: 'TeamRunDefaultWorkerTaskWatchRequest',
+    declaration: 'export interface TeamRunDefaultWorkerTaskWatchRequest {\n    readonly afterCursor?: number;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunDelegatedTaskStartRequest',
+    declaration: 'export interface TeamRunDelegatedTaskStartRequest extends TeamRunDefaultWorkerTaskStartRequest {\n    readonly budget: TeamResourceBudget;\n    readonly templateId?: string;\n    readonly templateVersion?: number;\n}',
+  },
+  {
+    name: 'TeamRunFinal',
+    declaration: 'export interface TeamRunFinal {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: TeamEnvelope[\'id\'];\n    readonly text: string;\n}',
+  },
+  {
+    name: 'TeamRunFinalizationChannelCleanupScope',
+    declaration: 'export interface TeamRunFinalizationChannelCleanupScope {\n    readonly kind: \'team-run-finalization-channel-close\';\n    readonly teamId: TeamId;\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n    readonly expectedTeamCursor: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'TeamRunFinalizationQuiescePhaseScope',
+    declaration: 'export interface TeamRunFinalizationQuiescePhaseScope {\n    readonly kind: \'team-run-finalization-quiesce\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'quiescing\';\n    readonly finalChannelId: ChannelId;\n    readonly finalEnvelopeId: EnvelopeId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamRunFinalWaitRequest',
+    declaration: 'export interface TeamRunFinalWaitRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor?: number;\n    readonly signal?: AbortSignal;\n    readonly humanOwner?: Extract<TeamParticipantOwner, {\n        readonly kind: \'product-principal\';\n    }>;\n}',
+  },
+  {
+    name: 'TeamRunHandle',
+    declaration: 'export interface TeamRunHandle {\n    readonly members: readonly ParticipantSnapshot[];\n    readonly teamId: TeamId;\n    readonly team: TeamSnapshot;\n    readonly recipient: ParticipantSnapshot;\n    readonly coordinator: ParticipantSnapshot;\n    readonly worker: ParticipantSnapshot | undefined;\n    readonly workers: readonly ParticipantSnapshot[];\n    readonly channel: ChannelSnapshot;\n    readonly coordinatorLease: TeamActivationLease;\n}',
+  },
+  {
+    name: 'TeamRunHumanInputEnvelopePostScope',
+    declaration: 'export interface TeamRunHumanInputEnvelopePostScope {\n    readonly kind: \'team-run-human-input\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamRunHumanInputRequest',
+    declaration: 'export interface TeamRunHumanInputRequest {\n    readonly teamId: TeamId;\n    readonly content: readonly DirectChannelHumanContentBlock[];\n    readonly idempotencyKey?: ChannelPostIdempotencyKey;\n    readonly delivery?: \'context\' | \'turn\' | \'steer\';\n    readonly humanOwner?: Extract<TeamParticipantOwner, {\n        readonly kind: \'product-principal\';\n    }>;\n}',
+  },
+  {
+    name: 'TeamRunHumanInterruptScope',
+    declaration: 'export interface TeamRunHumanInterruptScope {\n    readonly kind: \'team-run-human-interrupt\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamRunResumePhaseScope',
+    declaration: 'export interface TeamRunResumePhaseScope {\n    readonly kind: \'team-run-resume\';\n    readonly teamId: TeamId;\n    readonly phase: \'active\';\n}',
+  },
+  {
+    name: 'TeamRunResumeRequest',
+    declaration: 'export interface TeamRunResumeRequest {\n    readonly admitHumanChannel?: HumanChannelAdmission | undefined;\n    readonly teamId: TeamId;\n    readonly cwd?: string;\n    readonly preset?: string;\n    readonly selection?: ModelSelection;\n    readonly maxTokens?: number;\n    readonly authorization?: TeamHumanResumeAuthorization;\n    readonly humanOwner?: Extract<TeamParticipantOwner, {\n        readonly kind: \'product-principal\';\n    }>;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunReviewerInviteScope',
+    declaration: 'export interface TeamRunReviewerInviteScope {\n    readonly kind: \'team-run-reviewer-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+  },
+  {
+    name: 'TeamRunReviewerPhaseScope',
+    declaration: 'export interface TeamRunReviewerPhaseScope {\n    readonly kind: \'team-run-reviewer-phase\';\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly expectedPhase: \'invited\' | \'provisioning\';\n    readonly phase: \'provisioning\' | \'active\';\n}',
+  },
+  {
+    name: 'TeamRunRootCreationScope',
+    declaration: 'export interface TeamRunRootCreationScope extends TeamRootCreateInput {\n    readonly kind: \'team-run-root-create\';\n}',
+  },
+  {
+    name: 'TeamRunStartRequest',
+    declaration: 'export interface TeamRunStartRequest extends TeamRunCreateRequest {\n    readonly idempotencyKey: ChannelPostIdempotencyKey;\n    readonly content: readonly DirectChannelHumanContentBlock[];\n    readonly delivery?: \'context\' | \'turn\' | \'steer\';\n}',
+  },
+  {
+    name: 'TeamRunStartResult',
+    declaration: 'export interface TeamRunStartResult {\n    readonly handle: TeamRunHandle;\n    readonly input: TeamEnvelope;\n}',
+  },
+  {
+    name: 'TeamRunTerminalArchiveScope',
+    declaration: 'export interface TeamRunTerminalArchiveScope {\n    readonly kind: \'team-run-terminal-archive\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamRuntime',
+    declaration: 'export abstract class TeamRuntime extends Service {\n    constructor(ctx: Context);\n    async assertChildRunAuthorization(token: TeamChildRunAuthorization): Promise<TeamChildRunScope>;\n    registerSystemDelegationProofSource(source: TeamSystemDelegationProofSource): () => void;\n    bindChildRun(_request: import(\'./types.ts\').TeamChildRunBindRequest): Promise<import(\'./types.ts\').TeamChildRunBinding>;\n    registerSystemChildResultProofSource(source: TeamSystemChildResultProofSource): () => void | Promise<void>;\n    admitTaskDelegationResult(_request: TeamTaskDelegationResultAdmitRequest): Promise<TeamDelegationResultAdmission>;\n    completeChildTeam(_request: TeamChildResultCommandRequest): Promise<TeamStateSnapshot>;\n    cancelChildTeam(_request: TeamChildCancelRequest): Promise<TeamStateSnapshot>;\n    recordChildResultMissing(_request: TeamChildResultCommandRequest): Promise<TeamStateSnapshot>;\n    openActivationActorProofIssuer(): ActivationActorProofIssuer;\n    registerSystemActivationProofSource(source: TeamSystemActivationProofSource): () => void;\n    registerSystemHumanActionProofSource(source: TeamSystemHumanActionProofSource): () => void;\n    registerHumanActorProofSource(source: TeamHumanActorProofSource): () => void;\n    registerSystemChannelAdmissionProofSource(source: TeamSystemChannelAdmissionProofSource): () => void;\n    registerSystemTaskLeaseProofSource(source: TeamSystemTaskLeaseProofSource): () => void;\n    registerSystemWorkflowProofSource(source: TeamSystem /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamRunWorkerActivateScope',
+    declaration: 'export interface TeamRunWorkerActivateScope {\n    readonly kind: \'team-run-worker-activate\';\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly expectedPhase: \'invited\' | \'provisioning\';\n    readonly phase: \'provisioning\' | \'active\';\n}',
+  },
+  {
+    name: 'TeamRunWorkerInviteScope',
+    declaration: 'export interface TeamRunWorkerInviteScope {\n    readonly kind: \'team-run-worker-invite\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly participant: {\n        readonly kind: ParticipantKind;\n        readonly displayName: string;\n        readonly role: string;\n        readonly capabilities: readonly string[];\n        readonly owner?: TeamParticipantOwner | undefined;\n        readonly provider?: string | undefined;\n        readonly preset?: string | undefined;\n        readonly model?: string | undefined;\n        readonly authScheme?: string | undefined;\n        readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    };\n}',
+  },
+  {
+    name: 'TeamRunWorkerPoolSetRequest',
+    declaration: 'export interface TeamRunWorkerPoolSetRequest {\n    readonly targetCount: number;\n}',
+  },
+  {
+    name: 'TeamRunWorkerPoolStatus',
+    declaration: 'export interface TeamRunWorkerPoolStatus {\n    readonly requestedCount: number;\n    readonly targetCount: number;\n    readonly maxCount: number;\n    readonly workerCount: number;\n    readonly activeCount: number;\n    readonly idleCount: number;\n    readonly busyCount: number;\n    readonly queuedTaskCount: number;\n    readonly saturated: boolean;\n}',
+  },
+  {
+    name: 'TeamRunWorkerRetireScope',
+    declaration: 'export interface TeamRunWorkerRetireScope {\n    readonly kind: \'team-run-worker-retire\';\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly expectedCursor: number;\n    readonly expectedPhase: \'invited\' | \'provisioning\' | \'active\';\n    readonly phase: \'left\';\n}',
+  },
+  {
+    name: 'TeamRunWorkflowChannelBindScope',
+    declaration: 'export interface TeamRunWorkflowChannelBindScope {\n    readonly kind: \'team-run-workflow-channel-bind\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly channelId: ChannelId;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowChannelCloseScope',
+    declaration: 'export interface TeamRunWorkflowChannelCloseScope {\n    readonly kind: \'team-run-workflow-channel-close\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedTeamCursor: number;\n    readonly expectedRevision: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowChannelOpenScope',
+    declaration: 'export interface TeamRunWorkflowChannelOpenScope {\n    readonly kind: \'team-run-workflow-channel-open\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly adapter: TeamAdapterRef;\n    readonly viewPolicy?: TeamViewPolicyRef | undefined;\n    readonly participants: readonly ChannelParticipant[];\n    readonly limits: JsonObject;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowPlanPhaseScope',
+    declaration: 'export interface TeamRunWorkflowPlanPhaseScope {\n    readonly kind: \'team-run-workflow-plan-phase\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly phase: \'ready\' | \'completed\' | \'failed\';\n    readonly result?: TeamWorkflowPlanResult | undefined;\n    readonly failure?: TeamStallReason | undefined;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowPlanStartRequest',
+    declaration: 'export interface TeamRunWorkflowPlanStartRequest {\n    readonly idempotencyKey: TeamWorkflowPlanIdempotencyKey;\n    readonly plan: TeamWorkflowPlan;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowPlanTerminal',
+    declaration: 'export type TeamRunWorkflowPlanTerminal = {\n    readonly id: TeamWorkflowPlanId;\n    readonly phase: \'completed\';\n    readonly result: TeamWorkflowPlanResult;\n} | {\n    readonly id: TeamWorkflowPlanId;\n    readonly phase: \'failed\';\n    readonly failure: NonNullable<TeamWorkflowPlanSnapshot[\'failure\']>;\n    readonly result?: TeamWorkflowPlanResult;\n} | {\n    readonly id: TeamWorkflowPlanId;\n    readonly phase: \'cancelled\';\n    readonly cancellation?: NonNullable<TeamWorkflowPlanSnapshot[\'cancellation\']>;\n    readonly result?: TeamWorkflowPlanResult;\n};',
+  },
+  {
+    name: 'TeamRunWorkflowPlanWaitRequest',
+    declaration: 'export interface TeamRunWorkflowPlanWaitRequest {\n    readonly planId: TeamWorkflowPlanId;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowTaskBindScope',
+    declaration: 'export interface TeamRunWorkflowTaskBindScope {\n    readonly kind: \'team-run-workflow-task-bind\';\n    readonly teamId: TeamId;\n    readonly coordinator: TeamTaskCreator;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowTaskCancelRequest',
+    declaration: 'export interface TeamRunWorkflowTaskCancelRequest {\n    readonly planId: TeamWorkflowPlanId;\n    readonly templateId: TeamWorkflowTaskTemplate[\'id\'];\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowTaskCancelResult',
+    declaration: 'export interface TeamRunWorkflowTaskCancelResult extends TeamRunDefaultWorkerTask {\n    readonly planId: TeamWorkflowPlanId;\n    readonly templateId: TeamWorkflowTaskTemplate[\'id\'];\n    readonly blockedByOutcome: NonNullable<TeamTaskSnapshot[\'blockedByOutcome\']> | null;\n}',
+  },
+  {
+    name: 'TeamRunWorkflowTaskCancelScope',
+    declaration: 'export interface TeamRunWorkflowTaskCancelScope extends Omit<TeamRunDefaultWorkerCancelScope, \'kind\'> {\n    readonly kind: \'team-run-workflow-task-cancel\';\n    readonly planId: TeamWorkflowPlanId;\n}',
+  },
+  {
+    name: 'TeamsApi',
+    declaration: 'export interface TeamsApi {\n    inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>;\n    inboxRead(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxWatch(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>;\n    list(request: RpcRequest<{\n        afterCursor?: number;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamList>>;\n    get(request: RpcRequest<{\n        teamId: TeamId;\n    }>): Promise<RpcResponse<TeamStateSnapshot>>;\n    create(request: RpcRequest<{\n        objective: string;\n        cwd?: string;\n        agentPreset?: string;\n        selection?: ModelSelection;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStateSnapshot>>;\n    resume(request: RpcRequest<{\n        teamId: TeamId;\n        expectedCursor: number;\n        cwd?: string;\n        agentPreset?: string;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStateSnapshot>>;\n    start(request: RpcRequest<{\n        objective: string;\n        text: string;\n        idempotencyKey: ChannelPostIdempotencyKey;\n        cwd?: string;\n        agentPreset?: string;\n        selection?: ModelSelection;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStartResult>>;\n    postInput(request: RpcRequest<{\n        teamId: TeamId;\n      /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamSchedulerDriveRequest',
+    declaration: 'export interface TeamSchedulerDriveRequest {\n    readonly teamId?: TeamId;\n}',
+  },
+  {
+    name: 'TeamSnapshot',
+    declaration: 'export interface TeamSnapshot {\n    readonly id: TeamId;\n    readonly parentTeamId?: TeamId;\n    readonly parentTaskId?: TeamTaskId;\n    readonly childRun?: TeamChildRunBinding | undefined;\n    readonly childResultAdmission?: import(\'./child-result-types.ts\').TeamChildResultAdmission | undefined;\n    readonly depth: number;\n    readonly maxTeamDepth: number;\n    readonly goal: TeamGoalSnapshot;\n    readonly workspacePath?: string | undefined;\n    readonly phase: TeamPhase;\n    readonly stallReason?: TeamStallReason | undefined;\n    readonly closure?: TeamClosureSnapshot | undefined;\n    readonly cancellation?: TeamCancellationSnapshot | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    readonly createdBy?: TeamCreationActor | undefined;\n    readonly cursor: number;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly archivedAt?: number;\n}',
+  },
+  {
+    name: 'TeamStallReason',
+    declaration: 'export interface TeamStallReason {\n    readonly code: string;\n    readonly message: string;\n}',
+  },
+  {
+    name: 'TeamStartResult',
+    declaration: 'export interface TeamStartResult {\n    readonly state: TeamStateSnapshot;\n    readonly envelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamStateSnapshot',
+    declaration: 'export interface TeamStateSnapshot {\n    readonly team: TeamSnapshot;\n    readonly goal: TeamGoalSnapshot;\n    readonly rules: JsonObject;\n    readonly budgets: JsonObject;\n    readonly participants: readonly ParticipantSnapshot[];\n    readonly activations: readonly ActivationBindingSnapshot[];\n    readonly tasks: readonly TeamTaskSnapshot[];\n    readonly workspaceAllocations: readonly TeamWorkspaceAllocationSnapshot[];\n    readonly channelIds: readonly ChannelId[];\n    readonly humanActions?: readonly TeamHumanActionSnapshot[];\n    readonly usage?: TeamUsageSnapshot;\n    readonly workflowPlans?: readonly TeamWorkflowPlanSnapshot[];\n}',
+  },
+  {
+    name: 'TeamSystemActivationProof',
+    declaration: 'export interface TeamSystemActivationProof {\n    readonly [teamSystemActivationProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemActivationProofSource',
+    declaration: 'export interface TeamSystemActivationProofSource {\n    readonly name: string;\n    resolveActivationProof(proof: TeamSystemActivationProof): TeamSystemActivationScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemActivationScope',
+    declaration: 'export type TeamSystemActivationScope = ActivationControllerBindScope | ActivationControllerStatusScope | ActivationControllerFenceScope | ActivationControllerQuiesceScope | ActivationRecoveryQuiesceScope;',
+  },
+  {
+    name: 'TeamSystemArchiveProof',
+    declaration: 'export interface TeamSystemArchiveProof {\n    readonly [teamSystemArchiveProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemArchiveProofSource',
+    declaration: 'export interface TeamSystemArchiveProofSource {\n    readonly name: string;\n    resolveArchiveProof(proof: TeamSystemArchiveProof): TeamSystemArchiveScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemArchiveScope',
+    declaration: 'export type TeamSystemArchiveScope = TeamRunTerminalArchiveScope;',
+  },
+  {
+    name: 'TeamSystemCancellationCleanupProof',
+    declaration: 'export interface TeamSystemCancellationCleanupProof {\n    readonly [teamSystemCancellationCleanupProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemCancellationCleanupProofSource',
+    declaration: 'export interface TeamSystemCancellationCleanupProofSource {\n    readonly name: string;\n    resolveCancellationCleanupProof(proof: TeamSystemCancellationCleanupProof): TeamSystemCancellationCleanupScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemCancellationCleanupScope',
+    declaration: 'export type TeamSystemCancellationCleanupScope = TeamRunCancellationTaskCleanupScope | TeamRunCancellationChannelCleanupScope;',
+  },
+  {
+    name: 'TeamSystemChannelAdmissionProof',
+    declaration: 'export interface TeamSystemChannelAdmissionProof {\n    readonly [teamSystemChannelAdmissionProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemChannelAdmissionProofSource',
+    declaration: 'export interface TeamSystemChannelAdmissionProofSource {\n    readonly name: string;\n    resolveChannelAdmissionProof(proof: TeamSystemChannelAdmissionProof): TeamSystemChannelAdmissionScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemChannelAdmissionScope',
+    declaration: 'export type TeamSystemChannelAdmissionScope = SystemChannelInvitationAcknowledgeScope | SystemChannelInvitationExpireScope;',
+  },
+  {
+    name: 'TeamSystemChannelLifecycleProof',
+    declaration: 'export interface TeamSystemChannelLifecycleProof {\n    readonly [teamSystemChannelLifecycleProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemChannelLifecycleProofSource',
+    declaration: 'export interface TeamSystemChannelLifecycleProofSource {\n    readonly name: string;\n    resolveChannelLifecycleProof(proof: TeamSystemChannelLifecycleProof): TeamSystemChannelLifecycleScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemChannelLifecycleScope',
+    declaration: 'export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | TeamChannelCloseScope;',
+  },
+  {
+    name: 'TeamSystemChannelSummaryProof',
+    declaration: 'export interface TeamSystemChannelSummaryProof {\n    readonly [teamSystemChannelSummaryProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemChannelSummaryProofSource',
+    declaration: 'export interface TeamSystemChannelSummaryProofSource {\n    readonly name: string;\n    resolveChannelSummaryProof(proof: TeamSystemChannelSummaryProof): TeamSystemChannelSummaryScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemChannelSummaryScope',
+    declaration: 'export type TeamSystemChannelSummaryScope = TeamChannelSummaryScope;',
+  },
+  {
+    name: 'TeamSystemChildCreationProof',
+    declaration: 'export interface TeamSystemChildCreationProof {\n    readonly [teamSystemChildCreationProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemChildCreationProofSource',
+    declaration: 'export interface TeamSystemChildCreationProofSource {\n    readonly name: string;\n    resolveChildCreationProof(proof: TeamSystemChildCreationProof): TeamSystemChildCreationScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemChildCreationScope',
+    declaration: 'export type TeamSystemChildCreationScope = TeamChildCreationScope;',
+  },
+  {
+    name: 'TeamSystemChildResultProof',
+    declaration: 'export interface TeamSystemChildResultProof {\n    readonly [teamSystemChildResultProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemChildResultProofSource',
+    declaration: 'export interface TeamSystemChildResultProofSource {\n    readonly name: \'team-run\' | \'team-delegation\';\n    resolveChildResultProof(proof: TeamSystemChildResultProof): TeamSystemChildResultScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemChildResultScope',
+    declaration: 'export type TeamSystemChildResultScope = TeamChildResultCompleteScope | TeamChildResultMissingScope;',
+  },
+  {
+    name: 'TeamSystemClosureDriverProof',
+    declaration: 'export interface TeamSystemClosureDriverProof {\n    readonly [teamSystemClosureDriverProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemClosureDriverProofResolution',
+    declaration: 'export interface TeamSystemClosureDriverProofResolution {\n    readonly sourceName: string;\n    readonly scope: TeamSystemClosureDriverScope;\n}',
+  },
+  {
+    name: 'TeamSystemClosureDriverProofSource',
+    declaration: 'export interface TeamSystemClosureDriverProofSource {\n    readonly name: string;\n    resolveClosureDriverProof(proof: TeamSystemClosureDriverProof): TeamSystemClosureDriverScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemClosureDriverScope',
+    declaration: 'export type TeamSystemClosureDriverScope = TeamClosureRecoverCompleteScope | TeamClosureRecoverFailScope | TeamClosureRecoverCancelScope | TeamClosureStallMissingFinalScope | TeamClosureFailTurnScope | TeamClosureStallBudgetScope | TeamClosureStallQuiescingScope;',
+  },
+  {
+    name: 'TeamSystemClosureProof',
+    declaration: 'export interface TeamSystemClosureProof {\n    readonly [teamSystemClosureProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemClosureProofSource',
+    declaration: 'export interface TeamSystemClosureProofSource {\n    readonly name: string;\n    resolveClosureProof(proof: TeamSystemClosureProof): TeamSystemClosureScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemClosureScope',
+    declaration: 'export type TeamSystemClosureScope = TeamRunCompleteClosureScope | TeamRunCancelClosureScope | TeamRunCreateFailureClosureScope;',
+  },
+  {
+    name: 'TeamSystemDelegationProof',
+    declaration: 'export interface TeamSystemDelegationProof {\n    readonly [teamSystemDelegationProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemDelegationProofSource',
+    declaration: 'export interface TeamSystemDelegationProofSource {\n    readonly name: string;\n    resolveDelegationProof(proof: TeamSystemDelegationProof): TeamSystemDelegationScope | undefined;\n    resolveChildWorkspace(proof: TeamSystemDelegationProof): Promise<string>;\n}',
+  },
+  {
+    name: 'TeamSystemDelegationScope',
+    declaration: 'export type TeamSystemDelegationScope = import(\'./child-result-types.ts\').TeamTaskDelegationResultAdmitScope | (TeamTaskDelegationBeginInput & {\n    readonly kind: \'delegation-begin\';\n}) | (TeamTaskDelegationBindInput & {\n    readonly kind: \'delegation-bind\';\n}) | (TeamTaskDelegationSettleInput & {\n    readonly kind: \'delegation-settle\';\n}) | (TeamTaskDelegationStallInput & {\n    readonly kind: \'delegation-stall\';\n}) | (TeamChildRunAuthorizeInput & {\n    readonly kind: \'delegation-authorize-run\';\n});',
+  },
+  {
+    name: 'TeamSystemEnvelopePostProof',
+    declaration: 'export interface TeamSystemEnvelopePostProof {\n    readonly [teamSystemEnvelopePostProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemEnvelopePostProofSource',
+    declaration: 'export interface TeamSystemEnvelopePostProofSource {\n    readonly name: string;\n    resolveEnvelopePostProof(proof: TeamSystemEnvelopePostProof): TeamSystemEnvelopePostScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemEnvelopePostScope',
+    declaration: 'export type TeamSystemEnvelopePostScope = TeamDelegationEnvelopePostScope | TeamRunHumanInputEnvelopePostScope | SchedulerAssignmentEnvelopePostScope | SchedulerReviewRequestEnvelopePostScope;',
+  },
+  {
+    name: 'TeamSystemFinalizationCleanupProof',
+    declaration: 'export interface TeamSystemFinalizationCleanupProof {\n    readonly [teamSystemFinalizationCleanupProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemFinalizationCleanupProofSource',
+    declaration: 'export interface TeamSystemFinalizationCleanupProofSource {\n    readonly name: string;\n    resolveFinalizationCleanupProof(proof: TeamSystemFinalizationCleanupProof): TeamSystemFinalizationCleanupScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemFinalizationCleanupScope',
+    declaration: 'export type TeamSystemFinalizationCleanupScope = TeamRunFinalizationChannelCleanupScope;',
+  },
+  {
+    name: 'TeamSystemFinalReceiptProof',
+    declaration: 'export interface TeamSystemFinalReceiptProof {\n    readonly [teamSystemFinalReceiptProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemFinalReceiptProofSource',
+    declaration: 'export interface TeamSystemFinalReceiptProofSource {\n    readonly name: string;\n    resolveFinalReceiptProof(proof: TeamSystemFinalReceiptProof): TeamSystemFinalReceiptScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemFinalReceiptScope',
+    declaration: 'export interface TeamSystemFinalReceiptScope {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly humanId: ParticipantId;\n    readonly coordinatorId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamSystemHumanActionProof',
+    declaration: 'export interface TeamSystemHumanActionProof {\n    readonly [teamSystemHumanActionProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemHumanActionProofSource',
+    declaration: 'export interface TeamSystemHumanActionProofSource {\n    readonly name: string;\n    resolveHumanActionProof(proof: TeamSystemHumanActionProof): TeamSystemHumanActionScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemHumanActionScope',
+    declaration: 'export type TeamSystemHumanActionScope = HostHumanActionUpsertScope | HostHumanActionResolveScope | HostHumanActionResponseScope | HostHumanActionUnavailableScope;',
+  },
+  {
+    name: 'TeamSystemHumanDeliveryProof',
+    declaration: 'export interface TeamSystemHumanDeliveryProof {\n    readonly [teamSystemHumanDeliveryProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemHumanDeliveryProofSource',
+    declaration: 'export interface TeamSystemHumanDeliveryProofSource {\n    readonly name: \'team-human-client\';\n    resolveHumanDeliveryProof(proof: TeamSystemHumanDeliveryProof): TeamSystemHumanDeliveryScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemHumanDeliveryScope',
+    declaration: 'export interface TeamSystemHumanDeliveryScope {\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly recipientId: ParticipantId;\n    readonly principalId: ProductPrincipalId;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'TeamSystemInterruptProof',
+    declaration: 'export interface TeamSystemInterruptProof {\n    readonly [teamSystemInterruptProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemInterruptProofSource',
+    declaration: 'export interface TeamSystemInterruptProofSource {\n    readonly name: string;\n    resolveInterruptProof(proof: TeamSystemInterruptProof): TeamSystemInterruptScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemInterruptScope',
+    declaration: 'export type TeamSystemInterruptScope = TeamRunHumanInterruptScope;',
+  },
+  {
+    name: 'TeamSystemMaintenanceProof',
+    declaration: 'export interface TeamSystemMaintenanceProof {\n    readonly [teamSystemMaintenanceProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemMaintenanceProofSource',
+    declaration: 'export interface TeamSystemMaintenanceProofSource {\n    readonly name: string;\n    resolveMaintenanceProof(proof: TeamSystemMaintenanceProof): TeamSystemMaintenanceScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemMaintenanceScope',
+    declaration: 'export type TeamSystemMaintenanceScope = SchedulerTeamJournalCompactionScope | SchedulerChannelCompactionScope;',
+  },
+  {
+    name: 'TeamSystemPhaseProof',
+    declaration: 'export interface TeamSystemPhaseProof {\n    readonly [teamSystemPhaseProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemPhaseProofSource',
+    declaration: 'export interface TeamSystemPhaseProofSource {\n    readonly name: string;\n    resolvePhaseProof(proof: TeamSystemPhaseProof): TeamSystemPhaseScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemPhaseScope',
+    declaration: 'export type TeamSystemPhaseScope = TeamRunResumePhaseScope | TeamRunFinalizationQuiescePhaseScope | SchedulerStallPhaseScope | ActivationControllerCancellationStallPhaseScope | ActivationControllerClosureStallPhaseScope | ActivationControllerRecoveryStallPhaseScope;',
+  },
+  {
+    name: 'TeamSystemRootCreationProof',
+    declaration: 'export interface TeamSystemRootCreationProof {\n    readonly [teamSystemRootCreationProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemRootCreationProofSource',
+    declaration: 'export interface TeamSystemRootCreationProofSource {\n    readonly name: string;\n    resolveRootCreationProof(proof: TeamSystemRootCreationProof): TeamSystemRootCreationScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemRootCreationScope',
+    declaration: 'export type TeamSystemRootCreationScope = TeamRunRootCreationScope;',
+  },
+  {
+    name: 'TeamSystemSchedulerChannelProof',
+    declaration: 'export interface TeamSystemSchedulerChannelProof {\n    readonly [teamSystemSchedulerChannelProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemSchedulerChannelProofSource',
+    declaration: 'export interface TeamSystemSchedulerChannelProofSource {\n    readonly name: string;\n    resolveSchedulerChannelProof(proof: TeamSystemSchedulerChannelProof): TeamSystemSchedulerChannelScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemSchedulerChannelScope',
+    declaration: 'export type TeamSystemSchedulerChannelScope = SchedulerReviewChannelOpenScope | SchedulerWakeChannelOpenScope | SchedulerFailedWakeChannelCloseScope | SchedulerChannelDeliveryExpireScope;',
+  },
+  {
+    name: 'TeamSystemTaskControlProof',
+    declaration: 'export interface TeamSystemTaskControlProof {\n    readonly [teamSystemTaskControlProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemTaskControlProofSource',
+    declaration: 'export interface TeamSystemTaskControlProofSource {\n    readonly name: string;\n    resolveTaskControlProof(proof: TeamSystemTaskControlProof): TeamSystemTaskControlScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemTaskControlScope',
+    declaration: 'export type TeamSystemTaskControlScope = TeamRunDefaultWorkerOwnerProposalScope | TeamRunDefaultWorkerCancelScope | TeamRunWorkflowTaskCancelScope;',
+  },
+  {
+    name: 'TeamSystemTaskLeaseProof',
+    declaration: 'export interface TeamSystemTaskLeaseProof {\n    readonly [teamSystemTaskLeaseProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemTaskLeaseProofSource',
+    declaration: 'export interface TeamSystemTaskLeaseProofSource {\n    readonly name: string;\n    resolveTaskLeaseProof(proof: TeamSystemTaskLeaseProof): TeamSystemTaskLeaseScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemTaskLeaseScope',
+    declaration: 'export type TeamSystemTaskLeaseScope = SchedulerTaskAssignLeaseScope | SchedulerTaskExpireLeaseScope | SchedulerTaskCancellationReconcileScope;',
+  },
+  {
+    name: 'TeamSystemTaskReviewProof',
+    declaration: 'export interface TeamSystemTaskReviewProof {\n    readonly [teamSystemTaskReviewProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemTaskReviewProofSource',
+    declaration: 'export interface TeamSystemTaskReviewProofSource {\n    readonly name: string;\n    resolveTaskReviewProof(proof: TeamSystemTaskReviewProof): TeamSystemTaskReviewScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemTaskReviewScope',
+    declaration: 'export type TeamSystemTaskReviewScope = SchedulerReviewResponseTaskReviewScope;',
+  },
+  {
+    name: 'TeamSystemTopologyProof',
+    declaration: 'export interface TeamSystemTopologyProof {\n    readonly [teamSystemTopologyProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemTopologyProofSource',
+    declaration: 'export interface TeamSystemTopologyProofSource {\n    readonly name: string;\n    resolveTopologyProof(proof: TeamSystemTopologyProof): TeamSystemTopologyScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemTopologyScope',
+    declaration: 'export type TeamSystemTopologyScope = TeamRunBootstrapParticipantInviteScope | TeamRunBootstrapParticipantPhaseScope | TeamRunBootstrapChannelOpenScope | TeamRunWorkerInviteScope | TeamRunWorkerActivateScope | TeamRunWorkerRetireScope | TeamRunReviewerInviteScope | TeamRunReviewerPhaseScope;',
+  },
+  {
+    name: 'TeamSystemWorkflowProof',
+    declaration: 'export interface TeamSystemWorkflowProof {\n    readonly [teamSystemWorkflowProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemWorkflowProofSource',
+    declaration: 'export interface TeamSystemWorkflowProofSource {\n    readonly name: string;\n    resolveWorkflowProof(proof: TeamSystemWorkflowProof): TeamSystemWorkflowScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemWorkflowScope',
+    declaration: 'export type TeamSystemWorkflowScope = TeamRunWorkflowChannelOpenScope | TeamRunWorkflowChannelBindScope | TeamRunWorkflowTaskBindScope | TeamRunWorkflowPlanPhaseScope | TeamRunWorkflowChannelCloseScope;',
+  },
+  {
+    name: 'TeamSystemWorkspaceAllocationProof',
+    declaration: 'export interface TeamSystemWorkspaceAllocationProof {\n    readonly [teamSystemWorkspaceAllocationProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamSystemWorkspaceAllocationProofSource',
+    declaration: 'export interface TeamSystemWorkspaceAllocationProofSource {\n    readonly name: string;\n    resolveWorkspaceAllocationProof(proof: TeamSystemWorkspaceAllocationProof): TeamSystemWorkspaceAllocationScope | undefined;\n}',
+  },
+  {
+    name: 'TeamSystemWorkspaceAllocationScope',
+    declaration: 'export type TeamSystemWorkspaceAllocationScope = TeamWorkspaceAllocationReserveScope | TeamWorkspaceAllocationActivateScope | TeamWorkspaceAllocationReleaseRequestScope | TeamWorkspaceAllocationPreserveScope | TeamWorkspaceAllocationReleaseScope | TeamWorkspaceAllocationLossScope | (TeamWorkspaceObservationInput & {\n    readonly kind: \'workspace-observe\';\n});',
+  },
+  {
+    name: 'TeamTaskAssignInput',
+    declaration: 'export type TeamTaskAssignInput = TaskAttemptActivationSelection & {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly wakeChannelId?: ChannelId;\n    readonly leaseDurationMs: number;\n};',
+  },
+  {
+    name: 'TeamTaskAssignmentNotice',
+    declaration: 'export interface TeamTaskAssignmentNotice {\n    readonly task: TeamTaskSnapshot;\n    readonly activation: ActivationBindingSnapshot;\n    readonly channel: ChannelSnapshot;\n    readonly envelope: TaskAssignmentEnvelope;\n}',
+  },
+  {
+    name: 'TeamTaskAssignRequest',
+    declaration: 'export type TeamTaskAssignRequest = TeamTaskAssignInput & {\n    readonly actor: TeamSystemTaskLeaseProof;\n};',
+  },
+  {
+    name: 'TeamTaskAttemptExpireInput',
+    declaration: 'export interface TeamTaskAttemptExpireInput extends TeamTaskAttemptFence {\n}',
+  },
+  {
+    name: 'TeamTaskAttemptExpireRequest',
+    declaration: 'export interface TeamTaskAttemptExpireRequest extends TeamTaskAttemptExpireInput {\n    readonly actor: TeamSystemTaskLeaseProof;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptFence',
+    declaration: 'export interface TeamTaskAttemptFence {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptHeartbeatInput',
+    declaration: 'export interface TeamTaskAttemptHeartbeatInput {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptHeartbeatRequest',
+    declaration: 'export interface TeamTaskAttemptHeartbeatRequest extends TeamTaskAttemptHeartbeatInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptSettleInput',
+    declaration: 'export interface TeamTaskAttemptSettleInput {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n    readonly outcome: {\n        readonly kind: \'released\';\n    } | {\n        readonly kind: \'failed\';\n        readonly failure: TaskAttemptFailure;\n    } | {\n        readonly kind: \'completed\';\n        readonly result: TaskAttemptResult;\n    } | {\n        readonly kind: \'cancelled\';\n    };\n}',
+  },
+  {
+    name: 'TeamTaskAttemptSettleRequest',
+    declaration: 'export interface TeamTaskAttemptSettleRequest extends TeamTaskAttemptSettleInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptStartClaimInput',
+    declaration: 'export interface TeamTaskAttemptStartClaimInput {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptStartClaimRequest',
+    declaration: 'export interface TeamTaskAttemptStartClaimRequest extends TeamTaskAttemptStartClaimInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptStartInput',
+    declaration: 'export interface TeamTaskAttemptStartInput {\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly attemptId: TaskAttemptId;\n}',
+  },
+  {
+    name: 'TeamTaskAttemptStartRequest',
+    declaration: 'export interface TeamTaskAttemptStartRequest extends TeamTaskAttemptStartInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskCancelInput',
+    declaration: 'export interface TeamTaskCancelInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskCancellationReconcileInput',
+    declaration: 'export interface TeamTaskCancellationReconcileInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly requestedRevision: number;\n}',
+  },
+  {
+    name: 'TeamTaskCancellationReconcileRequest',
+    declaration: 'export interface TeamTaskCancellationReconcileRequest extends TeamTaskCancellationReconcileInput {\n    readonly actor: TeamSystemTaskLeaseProof;\n}',
+  },
+  {
+    name: 'TeamTaskCancellationSnapshot',
+    declaration: 'export interface TeamTaskCancellationSnapshot {\n    readonly requestedRevision: number;\n    readonly requestedBy: ParticipantId;\n    readonly reason?: string | undefined;\n    readonly requestedAt: number;\n    readonly target: TeamTaskCancellationTarget;\n    readonly expiredAt?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskCancellationTarget',
+    declaration: 'export type TeamTaskCancellationTarget = {\n    readonly kind: \'delegation\';\n    readonly delegationId: TeamDelegationId;\n    readonly childTeamId?: TeamId | undefined;\n} | {\n    readonly kind: \'pending\';\n} | {\n    readonly kind: \'review\';\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n} | {\n    readonly kind: \'attempt\';\n    readonly attemptId: TaskAttemptId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n};',
+  },
+  {
+    name: 'TeamTaskCancelRequest',
+    declaration: 'export interface TeamTaskCancelRequest extends TeamTaskCancelInput {\n    readonly actor: TeamSystemTaskControlProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskCommandCreator',
+    declaration: 'export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator;',
+  },
+  {
+    name: 'TeamTaskCreateCommand',
+    declaration: 'export interface TeamTaskCreateCommand {\n    readonly creator: TeamTaskCommandCreator;\n    readonly idempotencyKey: TeamTaskCreateIdempotencyKey;\n}',
+  },
+  {
+    name: 'TeamTaskCreateCommandInput',
+    declaration: 'export interface TeamTaskCreateCommandInput {\n    readonly idempotencyKey: TeamTaskCreateIdempotencyKey;\n}',
+  },
+  {
+    name: 'TeamTaskCreateIdempotencyKey',
+    declaration: 'export type TeamTaskCreateIdempotencyKey = Branded<\'TeamTaskCreateIdempotencyKey\'>;',
+  },
+  {
+    name: 'TeamTaskCreateInput',
+    declaration: 'export interface TeamTaskCreateInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly createCommand: TeamTaskCreateCommandInput;\n    readonly execution?: TeamTaskExecution | undefined;\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly parentTaskId?: TeamTaskId;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly workflowTemplateId?: TeamWorkflowTaskTemplateId | undefined;\n    readonly subject: string;\n    readonly description: string;\n    readonly integration?: TeamTaskIntegrationSpec | undefined;\n    readonly blockedBy: readonly TeamTaskId[];\n    readonly requiredCapabilities: readonly string[];\n    readonly priority: number;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly workspaceMode: TeamTaskWorkspaceMode;\n    readonly budget: JsonObject;\n    readonly reviewPolicy: TeamTaskReviewPolicy;\n    readonly maxAttempts: number;\n}',
+  },
+  {
+    name: 'TeamTaskCreateRequest',
+    declaration: 'export interface TeamTaskCreateRequest extends TeamTaskCreateInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskCreator',
+    declaration: 'export interface TeamTaskCreator {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationBeginInput',
+    declaration: 'export interface TeamTaskDelegationBeginInput extends TeamTaskDelegationInput {\n    readonly child: TeamRootCreateInput;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationBeginRequest',
+    declaration: 'export interface TeamTaskDelegationBeginRequest extends TeamTaskDelegationBeginInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationBindInput',
+    declaration: 'export interface TeamTaskDelegationBindInput extends TeamTaskDelegationInput {\n    readonly childTeamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationBindRequest',
+    declaration: 'export interface TeamTaskDelegationBindRequest extends TeamTaskDelegationBindInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationInput',
+    declaration: 'export interface TeamTaskDelegationInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly delegationId: TeamDelegationId;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationPhase',
+    declaration: 'export type TeamTaskDelegationPhase = \'requested\' | \'creating\' | \'active\' | \'settling\' | \'completed\' | \'failed\' | \'cancelled\' | \'stalled\';',
+  },
+  {
+    name: 'TeamTaskDelegationResultAdmitInput',
+    declaration: 'export interface TeamTaskDelegationResultAdmitInput extends TeamTaskDelegationInput {\n    readonly childTeamId: TeamId;\n    readonly responseEnvelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationResultAdmitRequest',
+    declaration: 'export interface TeamTaskDelegationResultAdmitRequest extends TeamTaskDelegationResultAdmitInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationResultAdmitScope',
+    declaration: 'export interface TeamTaskDelegationResultAdmitScope extends TeamTaskDelegationResultAdmitInput {\n    readonly kind: \'delegation-result-admit\';\n}',
+  },
+  {
+    name: 'TeamTaskDelegationSettleInput',
+    declaration: 'export interface TeamTaskDelegationSettleInput extends TeamTaskDelegationInput {\n    readonly childTeamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationSettleRequest',
+    declaration: 'export interface TeamTaskDelegationSettleRequest extends TeamTaskDelegationSettleInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationSnapshot',
+    declaration: 'export interface TeamTaskDelegationSnapshot {\n    readonly id: TeamDelegationId;\n    readonly phase: TeamTaskDelegationPhase;\n    readonly requestedAt: number;\n    readonly updatedAt: number;\n    readonly startedAt?: number | undefined;\n    readonly childTeamId?: TeamId | undefined;\n    readonly creation?: TeamChildCreateInput | undefined;\n    readonly childCursor?: number | undefined;\n    readonly failure?: TeamStallReason | undefined;\n    readonly result?: import(\'./child-result-types.ts\').TeamDelegationResultAdmission | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationStallInput',
+    declaration: 'export interface TeamTaskDelegationStallInput extends TeamTaskDelegationInput {\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamTaskDelegationStallRequest',
+    declaration: 'export interface TeamTaskDelegationStallRequest extends TeamTaskDelegationStallInput {\n    readonly actor: TeamSystemDelegationProof;\n}',
+  },
+  {
+    name: 'TeamTaskDeleteInput',
+    declaration: 'export interface TeamTaskDeleteInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamTaskDeleteRequest',
+    declaration: 'export interface TeamTaskDeleteRequest extends TeamTaskDeleteInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskDependencyOutcome',
+    declaration: 'export interface TeamTaskDependencyOutcome {\n    readonly taskId: TeamTaskId;\n    readonly revision: number;\n    readonly phase: \'failed\' | \'cancelled\' | \'deleted\';\n}',
+  },
+  {
+    name: 'TeamTaskDetailsUpdateInput',
+    declaration: 'export interface TeamTaskDetailsUpdateInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly subject?: string;\n    readonly description?: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n}',
+  },
+  {
+    name: 'TeamTaskDetailsUpdateRequest',
+    declaration: 'export interface TeamTaskDetailsUpdateRequest extends TeamTaskDetailsUpdateInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskExecution',
+    declaration: 'export type TeamTaskExecution = {\n    readonly kind: \'participant\';\n} | {\n    readonly kind: \'child-team\';\n    readonly templateId: string;\n    readonly templateVersion: number;\n    readonly authorityGrant: TeamAuthorityGrant;\n    readonly budget: TeamResourceBudget;\n};',
+  },
+  {
+    name: 'TeamTaskExecutionStats',
+    declaration: 'export interface TeamTaskExecutionStats {\n    readonly participantId: ParticipantId;\n    readonly requiredCapabilities: readonly string[];\n    readonly completedAttempts: number;\n    readonly failedAttempts: number;\n    readonly totalLatencyMs: number;\n    readonly latencyBucketCounts: readonly number[];\n}',
+  },
+  {
+    name: 'TeamTaskGetRequest',
+    declaration: 'export interface TeamTaskGetRequest {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n}',
   },
   {
     name: 'TeamTaskId',
     declaration: 'export type TeamTaskId = Branded<\'TeamTaskId\'>;',
   },
   {
-    name: 'TeamTaskStatus',
-    declaration: 'export type TeamTaskStatus = \'pending\' | \'in_progress\' | \'completed\' | \'deleted\';',
+    name: 'TeamTaskIntegrationSpec',
+    declaration: 'export interface TeamTaskIntegrationSpec {\n    readonly sourceTaskId: TeamTaskId;\n    readonly sourceAttemptId: TaskAttemptId;\n    readonly provider: string;\n    readonly target: string;\n    readonly expectedTarget?: string | undefined;\n    readonly mode: \'proposal\' | \'integrate\';\n}',
   },
   {
-    name: 'TeamTaskView',
-    declaration: 'export interface TeamTaskView {\n    readonly id: TeamTaskId;\n    readonly revision: number;\n    readonly subject: string;\n    readonly description: string;\n    readonly status: TeamTaskStatus;\n    readonly blockedBy: TeamTaskId[];\n    readonly writeScopes: string[];\n    readonly ownerName?: string;\n    readonly ready: boolean;\n    readonly writeScopeWarnings: string[];\n}',
+    name: 'TeamTaskListPage',
+    declaration: 'export interface TeamTaskListPage {\n    readonly items: readonly TeamTaskSnapshot[];\n    readonly nextCursor?: number | undefined;\n}',
   },
   {
-    name: 'TeamWaitResult',
-    declaration: 'export interface TeamWaitResult {\n    readonly timedOut: boolean;\n}',
+    name: 'TeamTaskListPageRequest',
+    declaration: 'export interface TeamTaskListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamTaskOwnerProposalInput',
+    declaration: 'export interface TeamTaskOwnerProposalInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskOwnerProposalRequest',
+    declaration: 'export interface TeamTaskOwnerProposalRequest extends TeamTaskOwnerProposalInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
+  },
+  {
+    name: 'TeamTaskPhase',
+    declaration: 'export type TeamTaskPhase = \'pending\' | \'assigned\' | \'running\' | \'review\' | \'completed\' | \'failed\' | \'cancelled\' | \'deleted\';',
+  },
+  {
+    name: 'TeamTaskPlacement',
+    declaration: 'export interface TeamTaskPlacement {\n    readonly participantIds?: readonly ParticipantId[] | undefined;\n    readonly roles?: readonly string[] | undefined;\n    readonly providers?: readonly string[] | undefined;\n    readonly presets?: readonly string[] | undefined;\n    readonly models?: readonly string[] | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskReviewDecision',
+    declaration: 'export interface TeamTaskReviewDecision {\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n    readonly decidedAt: number;\n}',
+  },
+  {
+    name: 'TeamTaskReviewPolicy',
+    declaration: 'export type TeamTaskReviewPolicy = {\n    readonly kind: \'none\';\n} | {\n    readonly kind: \'participant\';\n    readonly reviewerId: ParticipantId;\n};',
+  },
+  {
+    name: 'TeamTaskReviewRecoverRequest',
+    declaration: 'export interface TeamTaskReviewRecoverRequest {\n    readonly actor: TeamSystemTaskReviewProof;\n}',
+  },
+  {
+    name: 'TeamTaskReviewResolveInput',
+    declaration: 'export interface TeamTaskReviewResolveInput {\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'TeamTaskReviewResolveRequest',
+    declaration: 'export interface TeamTaskReviewResolveRequest extends TeamTaskReviewResolveInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskSnapshot',
+    declaration: 'export interface TeamTaskSnapshot {\n    readonly id: TeamTaskId;\n    readonly teamId: TeamId;\n    readonly revision: number;\n    readonly execution: TeamTaskExecution;\n    readonly delegation?: TeamTaskDelegationSnapshot | undefined;\n    readonly parentTaskId?: TeamTaskId;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly workflowTemplateId?: TeamWorkflowTaskTemplateId | undefined;\n    readonly createCommand: TeamTaskCreateCommand;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly subject: string;\n    readonly description: string;\n    readonly integration?: TeamTaskIntegrationSpec | undefined;\n    readonly phase: TeamTaskPhase;\n    readonly blockedBy: readonly TeamTaskId[];\n    readonly requiredCapabilities: readonly string[];\n    readonly priority: number;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly workspaceMode: TeamTaskWorkspaceMode;\n    readonly budget: JsonObject;\n    readonly reviewPolicy: TeamTaskReviewPolicy;\n    readonly reviewHistory: readonly TeamTaskReviewDecision[];\n    readonly maxAttempts: number;\n    readonly attemptCount: number;\n    readonly attemptHistory: readonly TaskAttemptSnapshot[];\n    readonly blockedByOutcome?: TeamTaskDependencyOutcome | undefined;\n    readonly cancellation?: TeamTaskCancellationSnapshot | undefined;\n    readonly lease?: TaskLeaseSnapshot;\n}',
+  },
+  {
+    name: 'TeamTaskWorkspaceMode',
+    declaration: 'export type TeamTaskWorkspaceMode = \'shared\' | \'worktree\' | \'sandbox\' | \'remote\';',
+  },
+  {
+    name: 'TeamTelemetryRecord',
+    declaration: 'export interface TeamTelemetryRecord {\n    readonly channel: \'team\' | \'channel\' | \'session\' | \'ops\';\n    readonly time: number;\n    readonly severity: TeamTelemetrySeverity;\n    readonly attributes: Record<string, string | number>;\n    readonly body: unknown;\n}',
+  },
+  {
+    name: 'TeamTelemetrySeverity',
+    declaration: 'export type TeamTelemetrySeverity = \'info\' | \'warn\' | \'error\';',
+  },
+  {
+    name: 'TeamTokenUsage',
+    declaration: 'export interface TeamTokenUsage {\n    readonly inputTokens: number;\n    readonly outputTokens: number;\n    readonly cacheReadTokens?: number | undefined;\n    readonly cacheWriteTokens?: number | undefined;\n    readonly reasoningTokens?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamUsageRecordInput',
+    declaration: 'export interface TeamUsageRecordInput {\n    readonly expectedCursor: number;\n    readonly sample: TeamUsageSampleInput;\n}',
+  },
+  {
+    name: 'TeamUsageRecordRequest',
+    declaration: 'export interface TeamUsageRecordRequest extends TeamUsageRecordInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamUsageSampleId',
+    declaration: 'export type TeamUsageSampleId = Branded<\'TeamUsageSampleId\'>;',
+  },
+  {
+    name: 'TeamUsageSampleInput',
+    declaration: 'export interface TeamUsageSampleInput {\n    readonly id: TeamUsageSampleId;\n    readonly provider?: string | undefined;\n    readonly model?: string | undefined;\n    readonly turn: number;\n    readonly step: number;\n    readonly taskId?: TeamTaskId | undefined;\n    readonly attemptId?: TaskAttemptId | undefined;\n    readonly usage: TeamTokenUsage;\n    readonly costUnits?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamUsageSnapshot',
+    declaration: 'export interface TeamUsageSnapshot {\n    readonly inputTokens: number;\n    readonly outputTokens: number;\n    readonly cacheReadTokens: number;\n    readonly cacheWriteTokens: number;\n    readonly turns: number;\n    readonly costUnits: number;\n    readonly updatedAt: number;\n}',
+  },
+  {
+    name: 'TeamViewPolicy',
+    declaration: 'export interface TeamViewPolicy extends TeamViewPolicyRef {\n    project(input: {\n        readonly manifest: ChannelManifest;\n        readonly records: readonly ChannelRecord[];\n    }): JsonObject;\n}',
+  },
+  {
+    name: 'TeamViewPolicyLease',
+    declaration: 'export interface TeamViewPolicyLease {\n    readonly policy: TeamViewPolicy;\n    isRetired(): boolean;\n    release(): void;\n}',
+  },
+  {
+    name: 'TeamViewPolicyRef',
+    declaration: 'export interface TeamViewPolicyRef {\n    readonly type: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'TeamWatchRequest',
+    declaration: 'export interface TeamWatchRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamWatchResult',
+    declaration: 'export type TeamWatchResult = {\n    readonly kind: \'changed\';\n    readonly cursor: number;\n} | {\n    readonly kind: \'closed\';\n};',
+  },
+  {
+    name: 'TeamWorkflowChannelCloseInput',
+    declaration: 'export interface TeamWorkflowChannelCloseInput {\n    readonly teamId: TeamId;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedTeamCursor: number;\n    readonly expectedRevision: number;\n    readonly channelId: ChannelId;\n    readonly expectedCursor: number;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkflowChannelCloseRequest',
+    declaration: 'export interface TeamWorkflowChannelCloseRequest extends TeamWorkflowChannelCloseInput {\n    readonly actor: TeamSystemWorkflowProof;\n}',
+  },
+  {
+    name: 'TeamWorkflowChannelPlan',
+    declaration: 'export interface TeamWorkflowChannelPlan {\n    readonly participantRoles: readonly string[];\n    readonly graph: TeamWorkflowGraph;\n    readonly viewPolicy?: TeamViewPolicyRef | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkflowCondition',
+    declaration: 'export type TeamWorkflowCondition = {\n    readonly kind: \'always\';\n} | {\n    readonly kind: \'envelope-kind\';\n    readonly value: string;\n} | {\n    readonly kind: \'payload-present\';\n    readonly path: string;\n} | {\n    readonly kind: \'payload-equals\';\n    readonly path: string;\n    readonly value: JsonValue;\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
+  },
+  {
+    name: 'TeamWorkflowGraph',
+    declaration: 'export interface TeamWorkflowGraph {\n    readonly initial: TeamWorkflowTarget;\n    readonly transitions: readonly TeamWorkflowTransition[];\n    readonly defaultTarget?: TeamWorkflowTarget | undefined;\n    readonly maxTurns: number;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlan',
+    declaration: 'export interface TeamWorkflowPlan {\n    readonly version: 1;\n    readonly name: string;\n    readonly tasks: readonly TeamWorkflowTaskTemplate[];\n    readonly bounds: TeamWorkflowPlanBounds;\n    readonly channel: TeamWorkflowChannelPlan;\n    readonly result: TeamWorkflowResultProjection;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanAdmissionInput',
+    declaration: 'export interface TeamWorkflowPlanAdmissionInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly idempotencyKey: TeamWorkflowPlanIdempotencyKey;\n    readonly plan: TeamWorkflowPlan;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanAdmissionRequest',
+    declaration: 'export interface TeamWorkflowPlanAdmissionRequest extends TeamWorkflowPlanAdmissionInput {\n    readonly actor: TeamActorProof;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanBounds',
+    declaration: 'export interface TeamWorkflowPlanBounds {\n    readonly maxTasks: number;\n    readonly maxParallelism: number;\n    readonly maxTotalAttempts: number;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanChannelBindInput',
+    declaration: 'export interface TeamWorkflowPlanChannelBindInput {\n    readonly teamId: TeamId;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly channelId: ChannelId;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanChannelBindRequest',
+    declaration: 'export interface TeamWorkflowPlanChannelBindRequest extends TeamWorkflowPlanChannelBindInput {\n    readonly actor: TeamSystemWorkflowProof;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanGetRequest',
+    declaration: 'export interface TeamWorkflowPlanGetRequest {\n    readonly teamId: TeamId;\n    readonly planId: TeamWorkflowPlanId;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanId',
+    declaration: 'export type TeamWorkflowPlanId = Branded<\'TeamWorkflowPlanId\'>;',
+  },
+  {
+    name: 'TeamWorkflowPlanIdempotencyKey',
+    declaration: 'export type TeamWorkflowPlanIdempotencyKey = Branded<\'TeamWorkflowPlanIdempotencyKey\'>;',
+  },
+  {
+    name: 'TeamWorkflowPlanListPage',
+    declaration: 'export interface TeamWorkflowPlanListPage {\n    readonly items: readonly TeamWorkflowPlanSnapshot[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanListPageRequest',
+    declaration: 'export interface TeamWorkflowPlanListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanPhase',
+    declaration: 'export type TeamWorkflowPlanPhase = \'compiling\' | \'ready\' | \'completed\' | \'failed\' | \'cancelled\';',
+  },
+  {
+    name: 'TeamWorkflowPlanPhaseInput',
+    declaration: 'export interface TeamWorkflowPlanPhaseInput {\n    readonly teamId: TeamId;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly phase: Exclude<TeamWorkflowPlanPhase, \'compiling\'>;\n    readonly result?: TeamWorkflowPlanResult | undefined;\n    readonly failure?: TeamStallReason | undefined;\n    readonly cancellation?: TeamStallReason | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanPhaseRequest',
+    declaration: 'export interface TeamWorkflowPlanPhaseRequest extends TeamWorkflowPlanPhaseInput {\n    readonly actor: TeamSystemWorkflowProof;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanResult',
+    declaration: 'export interface TeamWorkflowPlanResult {\n    readonly kind: \'task-results\';\n    readonly tasks: readonly TeamWorkflowProjectedTaskResult[];\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanSnapshot',
+    declaration: 'export interface TeamWorkflowPlanSnapshot {\n    readonly id: TeamWorkflowPlanId;\n    readonly teamId: TeamId;\n    readonly revision: number;\n    readonly idempotencyKey: TeamWorkflowPlanIdempotencyKey;\n    readonly actor?: TeamTaskCreator | undefined;\n    readonly plan: TeamWorkflowPlan;\n    readonly phase: TeamWorkflowPlanPhase;\n    readonly taskBindings: readonly TeamWorkflowTaskBinding[];\n    readonly channelId?: ChannelId | undefined;\n    readonly result?: TeamWorkflowPlanResult | undefined;\n    readonly failure?: TeamStallReason | undefined;\n    readonly cancellation?: TeamStallReason | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanTaskBindInput',
+    declaration: 'export interface TeamWorkflowPlanTaskBindInput {\n    readonly teamId: TeamId;\n    readonly planId: TeamWorkflowPlanId;\n    readonly expectedCursor: number;\n    readonly expectedRevision: number;\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n}',
+  },
+  {
+    name: 'TeamWorkflowPlanTaskBindRequest',
+    declaration: 'export interface TeamWorkflowPlanTaskBindRequest extends TeamWorkflowPlanTaskBindInput {\n    readonly actor: TeamSystemWorkflowProof;\n}',
+  },
+  {
+    name: 'TeamWorkflowProjectedTaskResult',
+    declaration: 'export type TeamWorkflowProjectedTaskResult = {\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n    readonly phase: \'completed\';\n    readonly result: TaskAttemptResult;\n} | {\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n    readonly phase: \'failed\';\n    readonly failure?: TaskAttemptFailure | undefined;\n} | {\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n    readonly phase: \'cancelled\' | \'deleted\';\n    readonly blockedByOutcome?: TeamTaskDependencyOutcome | undefined;\n};',
+  },
+  {
+    name: 'TeamWorkflowResultProjection',
+    declaration: 'export interface TeamWorkflowResultProjection {\n    readonly kind: \'task-results\';\n    readonly taskTemplateIds: readonly TeamWorkflowTaskTemplateId[];\n}',
+  },
+  {
+    name: 'TeamWorkflowTarget',
+    declaration: 'export type TeamWorkflowTarget = {\n    readonly kind: \'participant\';\n    readonly role: string;\n} | {\n    readonly kind: \'round-robin\';\n} | {\n    readonly kind: \'stay\';\n} | {\n    readonly kind: \'return-to-initiator\';\n} | {\n    readonly kind: \'terminate\';\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
+  },
+  {
+    name: 'TeamWorkflowTaskBinding',
+    declaration: 'export interface TeamWorkflowTaskBinding {\n    readonly templateId: TeamWorkflowTaskTemplateId;\n    readonly taskId: TeamTaskId;\n}',
+  },
+  {
+    name: 'TeamWorkflowTaskReviewPolicy',
+    declaration: 'export type TeamWorkflowTaskReviewPolicy = {\n    readonly kind: \'none\';\n} | {\n    readonly kind: \'participant\';\n    readonly reviewerRole: string;\n};',
+  },
+  {
+    name: 'TeamWorkflowTaskTemplate',
+    declaration: 'export interface TeamWorkflowTaskTemplate {\n    readonly id: TeamWorkflowTaskTemplateId;\n    readonly subject: string;\n    readonly description: string;\n    readonly blockedBy: readonly TeamWorkflowTaskTemplateId[];\n    readonly requiredCapabilities: readonly string[];\n    readonly priority: number;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly workspaceMode: TeamTaskWorkspaceMode;\n    readonly budget: JsonObject;\n    readonly reviewPolicy: TeamWorkflowTaskReviewPolicy;\n    readonly maxAttempts: number;\n}',
+  },
+  {
+    name: 'TeamWorkflowTaskTemplateId',
+    declaration: 'export type TeamWorkflowTaskTemplateId = Branded<\'TeamWorkflowTaskTemplateId\'>;',
+  },
+  {
+    name: 'TeamWorkflowTransition',
+    declaration: 'export interface TeamWorkflowTransition {\n    readonly condition: TeamWorkflowCondition;\n    readonly target: TeamWorkflowTarget;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocation',
+    declaration: 'export interface TeamWorkspaceAllocation extends TeamWorkspaceAllocationMetadata {\n    readonly root: string;\n    onLoss?(listener: (loss: TeamWorkspaceLoss) => Promise<void>): () => void;\n    release(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationActivateInput',
+    declaration: 'export interface TeamWorkspaceAllocationActivateInput extends TeamWorkspaceAllocationLifecycleInput {\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationActivateRequest',
+    declaration: 'export interface TeamWorkspaceAllocationActivateRequest extends TeamWorkspaceAllocationActivateInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationActivateScope',
+    declaration: 'export interface TeamWorkspaceAllocationActivateScope extends TeamWorkspaceAllocationActivateInput {\n    readonly kind: \'workspace-allocation-activate\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationBindingInput',
+    declaration: 'export interface TeamWorkspaceAllocationBindingInput {\n    readonly id: TeamWorkspaceAllocationId;\n    readonly provider: string;\n    readonly mode: TeamTaskWorkspaceMode;\n    readonly assignedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly baseVersion?: string | undefined;\n    readonly executionWorld?: TeamWorkspaceExecutionWorld | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationId',
+    declaration: 'export type TeamWorkspaceAllocationId = Branded<\'TeamWorkspaceAllocationId\'>;',
+  },
+  {
+    name: 'TeamWorkspaceAllocationLifecycle',
+    declaration: 'export type TeamWorkspaceAllocationLifecycle = \'reserved\' | \'active\' | \'release-requested\' | \'released\' | \'preserved\' | \'unavailable\';',
+  },
+  {
+    name: 'TeamWorkspaceAllocationLifecycleInput',
+    declaration: 'export interface TeamWorkspaceAllocationLifecycleInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly allocationId: TeamWorkspaceAllocationId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationLossInput',
+    declaration: 'export interface TeamWorkspaceAllocationLossInput extends TeamWorkspaceAllocationLifecycleInput {\n    readonly loss: TeamWorkspaceLoss;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationLossRequest',
+    declaration: 'export interface TeamWorkspaceAllocationLossRequest extends TeamWorkspaceAllocationLossInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationLossScope',
+    declaration: 'export interface TeamWorkspaceAllocationLossScope extends TeamWorkspaceAllocationLossInput {\n    readonly kind: \'workspace-allocation-loss\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationMetadata',
+    declaration: 'export interface TeamWorkspaceAllocationMetadata {\n    readonly id: TeamWorkspaceAllocationId;\n    readonly provider: string;\n    readonly mode: TeamTaskWorkspaceMode;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly baseVersion?: string | undefined;\n    readonly executionWorld?: TeamWorkspaceExecutionWorld | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationPreserveInput',
+    declaration: 'export interface TeamWorkspaceAllocationPreserveInput extends TeamWorkspaceAllocationLifecycleInput {\n    readonly reason: TeamStallReason;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationPreserveRequest',
+    declaration: 'export interface TeamWorkspaceAllocationPreserveRequest extends TeamWorkspaceAllocationPreserveInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationPreserveScope',
+    declaration: 'export interface TeamWorkspaceAllocationPreserveScope extends TeamWorkspaceAllocationPreserveInput {\n    readonly kind: \'workspace-allocation-preserve\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationPublisher',
+    declaration: 'export interface TeamWorkspaceAllocationPublisher {\n    publish(request: TeamWorkspaceOwnerPublicationRequest): Promise<TeamWorkspacePublishResult | undefined>;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseConfirmRequest',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseConfirmRequest extends TeamWorkspaceAllocationReleaseInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseInput',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseInput extends TeamWorkspaceAllocationLifecycleInput {\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseRequest',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseRequest extends TeamWorkspaceAllocationReleaseRequestInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseRequestInput',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseRequestInput extends TeamWorkspaceAllocationLifecycleInput {\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseRequestScope',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseRequestScope extends TeamWorkspaceAllocationReleaseRequestInput {\n    readonly kind: \'workspace-allocation-release-request\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReleaseScope',
+    declaration: 'export interface TeamWorkspaceAllocationReleaseScope extends TeamWorkspaceAllocationReleaseInput {\n    readonly kind: \'workspace-allocation-release\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReserveInput',
+    declaration: 'export interface TeamWorkspaceAllocationReserveInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly taskId: TeamTaskId;\n    readonly expectedTaskRevision: number;\n    readonly attemptId: TaskAttemptId;\n    readonly allocation: TeamWorkspaceAllocationBindingInput;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReserveRequest',
+    declaration: 'export interface TeamWorkspaceAllocationReserveRequest extends TeamWorkspaceAllocationReserveInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationReserveScope',
+    declaration: 'export interface TeamWorkspaceAllocationReserveScope extends TeamWorkspaceAllocationReserveInput {\n    readonly kind: \'workspace-allocation-reserve\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceAllocationSnapshot',
+    declaration: 'export interface TeamWorkspaceAllocationSnapshot {\n    readonly id: TeamWorkspaceAllocationId;\n    readonly revision: number;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly mode: TeamTaskWorkspaceMode;\n    readonly baseVersion?: string | undefined;\n    readonly executionWorld?: TeamWorkspaceExecutionWorld | undefined;\n    readonly loss?: TeamWorkspaceLossSnapshot | undefined;\n    readonly lifecycle: TeamWorkspaceAllocationLifecycle;\n    readonly reservedAt: number;\n    readonly updatedAt: number;\n    readonly activatedAt?: number | undefined;\n    readonly releaseRequestedAt?: number | undefined;\n    readonly preservedAt?: number | undefined;\n    readonly releasedAt?: number | undefined;\n    readonly preservationReason?: TeamStallReason | undefined;\n    readonly observation?: TeamWorkspaceObservation | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceContentVersion',
+    declaration: 'export type TeamWorkspaceContentVersion = Branded<\'TeamWorkspaceContentVersion\'>;',
+  },
+  {
+    name: 'TeamWorkspaceEligibilityRequest',
+    declaration: 'export interface TeamWorkspaceEligibilityRequest {\n    readonly task: TeamTaskSnapshot;\n    readonly binding: ActivationBindingSnapshot;\n}',
+  },
+  {
+    name: 'TeamWorkspaceExecutionWorld',
+    declaration: 'export interface TeamWorkspaceExecutionWorld {\n    readonly kind: \'e2b\';\n    readonly id: TeamWorkspaceExecutionWorldId;\n}',
+  },
+  {
+    name: 'TeamWorkspaceExecutionWorldId',
+    declaration: 'export type TeamWorkspaceExecutionWorldId = Branded<\'TeamWorkspaceExecutionWorldId\'>;',
+  },
+  {
+    name: 'TeamWorkspaceIntegrateRequest',
+    declaration: 'export interface TeamWorkspaceIntegrateRequest {\n    readonly allocation: TeamWorkspaceAllocation;\n    readonly target: string;\n    readonly expectedTarget?: string | undefined;\n    readonly mode: \'proposal\' | \'integrate\';\n    readonly actorId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceIntegrateResult',
+    declaration: 'export interface TeamWorkspaceIntegrateResult {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly target: string;\n    readonly status: \'proposed\' | \'integrated\' | \'conflict\';\n    readonly targetVersion?: string | undefined;\n    readonly accepted: boolean;\n    readonly artifact?: TeamArtifactReference | undefined;\n    readonly conflictPaths?: readonly string[] | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceLoss',
+    declaration: 'export interface TeamWorkspaceLoss {\n    readonly executionWorld: TeamWorkspaceExecutionWorld;\n    readonly reason: \'sandbox-expired\' | \'manifest-missing\' | \'world-changed\';\n    readonly terminationProven: boolean;\n    readonly artifacts: readonly TeamArtifactReference[];\n}',
+  },
+  {
+    name: 'TeamWorkspaceLossSnapshot',
+    declaration: 'export interface TeamWorkspaceLossSnapshot extends TeamWorkspaceLoss {\n    readonly observedAt: number;\n}',
+  },
+  {
+    name: 'TeamWorkspaceObservation',
+    declaration: 'export interface TeamWorkspaceObservation extends TeamWorkspaceObservationInput {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly truncated: boolean;\n    readonly paths: readonly (TeamWorkspaceObservedPath & {\n        readonly classification: \'declared\' | \'undeclared\' | \'external-window\';\n    })[];\n    readonly observedAt: number;\n}',
+  },
+  {
+    name: 'TeamWorkspaceObservationId',
+    declaration: 'export type TeamWorkspaceObservationId = Branded<\'TeamWorkspaceObservationId\'>;',
+  },
+  {
+    name: 'TeamWorkspaceObservationInput',
+    declaration: 'export interface TeamWorkspaceObservationInput {\n    readonly teamId: TeamId;\n    readonly allocationId: TeamWorkspaceAllocationId;\n    readonly expectedRevision: number;\n    readonly previousObservationId?: TeamWorkspaceObservationId | undefined;\n    readonly id: TeamWorkspaceObservationId;\n    readonly stage: \'baseline\' | \'restore\' | \'periodic\' | \'publish\' | \'release\' | \'integration\';\n    readonly base: TeamWorkspaceScanVersion | null;\n    readonly baselineAvailable: boolean;\n    readonly final: TeamWorkspaceScanVersion;\n    readonly paths: readonly TeamWorkspaceObservedPath[];\n    readonly omittedPaths: number;\n}',
+  },
+  {
+    name: 'TeamWorkspaceObservationRequest',
+    declaration: 'export interface TeamWorkspaceObservationRequest extends TeamWorkspaceObservationInput {\n    readonly actor: TeamSystemWorkspaceAllocationProof;\n}',
+  },
+  {
+    name: 'TeamWorkspaceObservedPath',
+    declaration: 'export interface TeamWorkspaceObservedPath {\n    readonly path: string;\n    readonly change: \'added\' | \'modified\' | \'deleted\';\n}',
+  },
+  {
+    name: 'TeamWorkspaceOwnerPublicationRequest',
+    declaration: 'export interface TeamWorkspaceOwnerPublicationRequest {\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly allocationId: TeamWorkspaceAllocationId;\n    readonly expectedRevision: number;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'TeamWorkspacePreflightRequest',
+    declaration: 'export interface TeamWorkspacePreflightRequest {\n    readonly task: TeamTaskSnapshot;\n    readonly participant: ParticipantSnapshot;\n    readonly route: {\n        readonly provider: string;\n        readonly model: string;\n        readonly preset?: string | undefined;\n        readonly cwd: string;\n    };\n}',
+  },
+  {
+    name: 'TeamWorkspacePreparation',
+    declaration: 'export interface TeamWorkspacePreparation extends TeamWorkspaceAllocationMetadata {\n    materialize(): Promise<TeamWorkspaceAllocation>;\n    abandon(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamWorkspacePrepareRequest',
+    declaration: 'export interface TeamWorkspacePrepareRequest {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'TeamWorkspaceProvider',
+    declaration: 'export interface TeamWorkspaceProvider {\n    readonly name: string;\n    readonly modes: readonly TeamTaskWorkspaceMode[];\n    preflight?(request: TeamWorkspacePreflightRequest): Promise<boolean>;\n    eligible(request: TeamWorkspaceEligibilityRequest): Promise<boolean>;\n    prepare(request: TeamWorkspacePrepareRequest): Promise<TeamWorkspacePreparation>;\n    restore(request: TeamWorkspacePrepareRequest, metadata: TeamWorkspaceAllocationMetadata): Promise<TeamWorkspaceAllocation>;\n    reconcileRelease(request: TeamWorkspacePrepareRequest, metadata: TeamWorkspaceAllocationMetadata): Promise<void>;\n    publish?(request: TeamWorkspacePublishRequest): Promise<TeamWorkspacePublishResult>;\n    integrate?(request: TeamWorkspaceIntegrateRequest): Promise<TeamWorkspaceIntegrateResult>;\n    integrateSource?(request: TeamWorkspaceSourceIntegrateRequest): Promise<TeamWorkspaceSourceIntegrateResult>;\n}',
+  },
+  {
+    name: 'TeamWorkspaceProviderRef',
+    declaration: 'export interface TeamWorkspaceProviderRef {\n    readonly name: string;\n    readonly modes: readonly TeamTaskWorkspaceMode[];\n}',
+  },
+  {
+    name: 'TeamWorkspacePublishRequest',
+    declaration: 'export interface TeamWorkspacePublishRequest {\n    readonly signal?: AbortSignal;\n    readonly allocation: TeamWorkspaceAllocation;\n    readonly target?: string | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspacePublishResult',
+    declaration: 'export interface TeamWorkspacePublishResult {\n    readonly observation?: TeamWorkspaceObservation;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly changedPaths: readonly string[];\n    readonly artifacts: readonly TeamArtifactReference[];\n    readonly accepted: boolean;\n}',
+  },
+  {
+    name: 'TeamWorkspaceScanVersion',
+    declaration: 'export interface TeamWorkspaceScanVersion {\n    readonly digest: TeamWorkspaceContentVersion;\n    readonly complete: boolean;\n    readonly startedAt: number;\n    readonly finishedAt: number;\n    readonly scannedEntries: number;\n    readonly hashedBytes: number;\n    readonly knownOmittedEntries: number;\n    readonly incompleteReasons: readonly string[];\n}',
+  },
+  {
+    name: 'TeamWorkspaceSourceArtifactInput',
+    declaration: 'export interface TeamWorkspaceSourceArtifactInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly artifacts: readonly TeamArtifactReference[];\n}',
+  },
+  {
+    name: 'TeamWorkspaceSourceIntegrateRequest',
+    declaration: 'export interface TeamWorkspaceSourceIntegrateRequest {\n    readonly source: TeamWorkspaceSourceArtifactInput;\n    readonly integrationTaskId: TeamTaskId;\n    readonly integrationAttemptId: TaskAttemptId;\n    readonly target: string;\n    readonly expectedTarget?: string | undefined;\n    readonly mode: \'proposal\' | \'integrate\';\n    readonly actorId?: ParticipantId | undefined;\n}',
+  },
+  {
+    name: 'TeamWorkspaceSourceIntegrateResult',
+    declaration: 'export interface TeamWorkspaceSourceIntegrateResult {\n    readonly teamId: TeamId;\n    readonly sourceTaskId: TeamTaskId;\n    readonly sourceAttemptId: TaskAttemptId;\n    readonly integrationTaskId: TeamTaskId;\n    readonly integrationAttemptId: TaskAttemptId;\n    readonly target: string;\n    readonly status: \'proposed\' | \'integrated\' | \'conflict\';\n    readonly targetVersion?: string | undefined;\n    readonly artifact?: TeamArtifactReference | undefined;\n    readonly conflictPaths?: readonly string[] | undefined;\n}',
   },
   {
     name: 'TerminalBackend',
@@ -4862,6 +9499,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
   },
   {
+    name: 'TransitionGraph',
+    declaration: 'export interface TransitionGraph {\n    readonly initial: WorkflowTarget;\n    readonly transitions: readonly WorkflowTransition[];\n    readonly defaultTarget?: WorkflowTarget;\n    readonly maxTurns: number;\n}',
+  },
+  {
     name: 'TurnEndCancelCause',
     declaration: 'export type TurnEndCancelCause = AgentCancelCause | {\n    readonly kind: \'legacy\';\n};',
   },
@@ -4932,10 +9573,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TypertTypeModel',
     declaration: 'export interface TypertTypeModel {\n    readonly name: string;\n    readonly declaration: string;\n}',
-  },
-  {
-    name: 'UpdateTeamTaskRequest',
-    declaration: 'export interface UpdateTeamTaskRequest {\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly action: TeamTaskAction;\n    readonly subject?: string;\n    readonly description?: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n    readonly writeScopes?: readonly string[];\n    readonly owner?: string;\n}',
   },
   {
     name: 'UserMessage',
@@ -5026,12 +9663,44 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type WorkflowAgentOutcome = \'completed\' | \'failed\' | \'cancelled\';',
   },
   {
+    name: 'WorkflowCondition',
+    declaration: 'export type WorkflowCondition = {\n    readonly kind: \'always\';\n} | {\n    readonly kind: \'envelope-kind\';\n    readonly value: string;\n} | {\n    readonly kind: \'payload-present\';\n    readonly path: string;\n} | {\n    readonly kind: \'payload-equals\';\n    readonly path: string;\n    readonly value: JsonValue;\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
+  },
+  {
+    name: 'WorkflowExtension',
+    declaration: 'export interface WorkflowExtension {\n    readonly kind: \'condition\' | \'target\';\n    readonly name: string;\n    readonly version: number;\n    validate(value: JsonValue): void;\n    evaluate?(input: {\n        readonly config: JsonValue;\n        readonly envelope: TeamEnvelope;\n        readonly state: JsonValue;\n    }): boolean;\n    resolve?(input: {\n        readonly config: JsonValue;\n        readonly state: JsonValue;\n    }): WorkflowResolvedTarget;\n}',
+  },
+  {
+    name: 'WorkflowExtensionLeaseMetrics',
+    declaration: 'export interface WorkflowExtensionLeaseMetrics {\n    readonly acceptingExtensions: number;\n    readonly retiredExtensions: number;\n    readonly activeExtensionLeases: number;\n}',
+  },
+  {
+    name: 'WorkflowExtensionLeaseSet',
+    declaration: 'export interface WorkflowExtensionLeaseSet extends WorkflowExtensionResolver {\n    release(): void;\n}',
+  },
+  {
+    name: 'WorkflowExtensionRef',
+    declaration: 'export interface WorkflowExtensionRef {\n    readonly kind: WorkflowExtension[\'kind\'];\n    readonly name: string;\n    readonly version: number;\n}',
+  },
+  {
+    name: 'WorkflowExtensionRegistry',
+    declaration: 'export class WorkflowExtensionRegistry extends Service {\n    constructor(ctx: Context);\n    register(extension: WorkflowExtension): () => void;\n    get(kind: WorkflowExtension[\'kind\'], name: string, version: number): WorkflowExtension | undefined;\n    list(): WorkflowExtensionRef[];\n    acquireForGraph(graph: TransitionGraph): WorkflowExtensionLeaseSet;\n    getLeaseMetrics(): WorkflowExtensionLeaseMetrics;\n}',
+  },
+  {
+    name: 'WorkflowExtensionResolver',
+    declaration: 'export interface WorkflowExtensionResolver {\n    get(kind: \'condition\' | \'target\', name: string, version: number): {\n        validate(value: JsonValue): void;\n        evaluate?: (input: {\n            readonly config: JsonValue;\n            readonly envelope: TeamEnvelope;\n            readonly state: JsonValue;\n        }) => boolean;\n        resolve?: (input: {\n            readonly config: JsonValue;\n            readonly state: JsonValue;\n        }) => WorkflowResolvedTarget;\n    } | undefined;\n}',
+  },
+  {
     name: 'WorkflowMeta',
     declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
   },
   {
     name: 'WorkflowPhase',
     declaration: 'export interface WorkflowPhase {\n    title: string;\n    detail?: string;\n    provider?: string;\n    model?: string;\n}',
+  },
+  {
+    name: 'WorkflowResolvedTarget',
+    declaration: 'export type WorkflowResolvedTarget = {\n    readonly kind: \'participant\';\n    readonly participantId: ParticipantId;\n} | {\n    readonly kind: \'terminate\';\n};',
   },
   {
     name: 'WorkflowResult',
@@ -5060,6 +9729,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowStopReason',
     declaration: 'export type WorkflowStopReason = \'completed\' | \'cancelled\' | \'error\';',
+  },
+  {
+    name: 'WorkflowTarget',
+    declaration: 'export type WorkflowTarget = {\n    readonly kind: \'participant\';\n    readonly participantId: ParticipantId;\n} | {\n    readonly kind: \'round-robin\';\n} | {\n    readonly kind: \'stay\';\n} | {\n    readonly kind: \'return-to-initiator\';\n} | {\n    readonly kind: \'terminate\';\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
+  },
+  {
+    name: 'WorkflowTransition',
+    declaration: 'export interface WorkflowTransition {\n    readonly condition: WorkflowCondition;\n    readonly target: WorkflowTarget;\n}',
   },
 ]
 

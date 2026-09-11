@@ -24,6 +24,18 @@
       "path": "../../core/agent"
     },
     {
+      "path": "../../core/agent-default-model"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../team/team-channel-direct"
+    },
+    {
+      "path": "../../team/team-run"
+    },
+    {
       "path": "../../interaction/user-approval"
     },
     {

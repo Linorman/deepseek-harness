@@ -1,13 +1,13 @@
 /** Assembled keyless snapshot for the default `clocky web` browser handoff. */
 
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
+const snapshotTempRoot = join(repoRoot, '.tmp', 'web-browser-open-snapshot')
 const builtBin = join(repoRoot, 'apps/cli/lib/bin.js')
 const frontendIndex = join(repoRoot, 'apps/web/dist/index.html')
 const openerHook = new URL('./fixtures/web-browser-open/register.mjs', import.meta.url).href
@@ -26,6 +26,10 @@ afterEach(() => {
 interface BrowserOpenRecord {
   url: string
   status: number
+  handoffStatus: number | null
+  cookieAttributes: boolean
+  apiAuthenticated: boolean
+  handoffConsumed: boolean
   bootManifest: boolean
   apiKeyPresent: boolean
   clockyHomePresent: boolean
@@ -35,9 +39,14 @@ function normalizeLocalUrl(url: string): string {
   return url.replace(/:\d+$/, ':{{port}}')
 }
 
+function normalizeHandoffUrl(url: string): string {
+  return url.replace(/file:\/\/.*\/browser-handoffs\/handoff-[^/]+\/index\.html/u, 'file://{{root}}/browser-handoffs/handoff-{{id}}/index.html')
+}
+
 describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapshot', () => {
   it('hands the reachable page to the default browser after the shipped tree settles', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'clocky-web-browser-open-snapshot-'))
+    mkdirSync(snapshotTempRoot, { recursive: true, mode: 0o700 })
+    const root = mkdtempSync(join(snapshotTempRoot, 'clocky-web-browser-open-'))
     tempRoots.push(root)
     const result = await execa(process.execPath, [
       '--import', openerHook,
@@ -73,19 +82,27 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
       exitCode: result.exitCode,
       opening,
       readyUrl: normalizeLocalUrl(readyUrl),
-      openedUrl: normalizeLocalUrl(opened.url),
+      openedUrl: normalizeHandoffUrl(opened.url),
       status: opened.status,
+      handoffStatus: opened.handoffStatus,
+      cookieAttributes: opened.cookieAttributes,
+      apiAuthenticated: opened.apiAuthenticated,
+      handoffConsumed: opened.handoffConsumed,
       bootManifest: opened.bootManifest,
       apiKeyPresent: opened.apiKeyPresent,
       clockyHomePresent: opened.clockyHomePresent,
       stderr: result.stderr,
     }).toMatchInlineSnapshot(`
       {
+        "apiAuthenticated": true,
         "apiKeyPresent": false,
         "bootManifest": true,
         "clockyHomePresent": false,
+        "cookieAttributes": true,
         "exitCode": 0,
-        "openedUrl": "http://127.0.0.1:{{port}}",
+        "handoffConsumed": true,
+        "handoffStatus": 303,
+        "openedUrl": "file://{{root}}/browser-handoffs/handoff-{{id}}/index.html",
         "opening": true,
         "readyUrl": "http://127.0.0.1:{{port}}",
         "status": 200,
@@ -94,8 +111,9 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
     `)
   })
 
-  it('prints the launcher reason and manual URL after the Web app is ready', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'clocky-web-browser-open-failure-snapshot-'))
+  it('prints a credential-safe launcher reason while retaining the handoff document', async () => {
+    mkdirSync(snapshotTempRoot, { recursive: true, mode: 0o700 })
+    const root = mkdtempSync(join(snapshotTempRoot, 'clocky-web-browser-open-failure-'))
     tempRoots.push(root)
     const result = await execa(process.execPath, [
       '--import', openerHook,
@@ -125,6 +143,7 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
     const diagnostic = result.stderr.split(/\r?\n/u)
       .find(line => line.startsWith('web-app: could not open the default browser because '))
       ?.replace(/http:\/\/127\.0\.0\.1:\d+/u, 'http://127.0.0.1:{{port}}')
+      .replace(/file:\/\/.*\/browser-handoffs\/handoff-[^/]+\/index\.html/u, 'file://{{root}}/browser-handoffs/handoff-{{id}}/index.html')
 
     expect({
       diagnostic,
@@ -134,7 +153,7 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
       readyUrl: readyUrl === undefined ? undefined : normalizeLocalUrl(readyUrl),
     }).toMatchInlineSnapshot(`
       {
-        "diagnostic": "web-app: could not open the default browser because fixture desktop unavailable; visit http://127.0.0.1:{{port}} manually",
+        "diagnostic": "web-app: could not open the default browser because fixture desktop unavailable; open file://{{root}}/browser-handoffs/handoff-{{id}}/index.html manually before it expires",
         "exitCode": 0,
         "opened": false,
         "opening": true,
@@ -144,7 +163,8 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
   })
 
   it('prints the host URL without launching a browser in a VS Code Remote SSH session', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'clocky-web-browser-open-ssh-snapshot-'))
+    mkdirSync(snapshotTempRoot, { recursive: true, mode: 0o700 })
+    const root = mkdtempSync(join(snapshotTempRoot, 'clocky-web-browser-open-ssh-'))
     tempRoots.push(root)
     const result = await execa(process.execPath, [
       '--import', openerHook,
@@ -190,7 +210,8 @@ describe.skipIf(!builtArtifactsExist)('clocky web browser-open assembled snapsho
   })
 
   it('rejects a project browser command before starting the Web app', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'clocky-web-browser-open-env-snapshot-'))
+    mkdirSync(snapshotTempRoot, { recursive: true, mode: 0o700 })
+    const root = mkdtempSync(join(snapshotTempRoot, 'clocky-web-browser-open-env-'))
     tempRoots.push(root)
     writeFileSync(join(root, '.env'), 'BROWSER=./project-browser\n')
     const result = await execa(process.execPath, [

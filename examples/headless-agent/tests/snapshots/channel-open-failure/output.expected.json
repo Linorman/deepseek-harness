@@ -1,0 +1,57 @@
+{
+  "scenario": "channel-open-failure",
+  "cases": [
+    {
+      "failureAt": "before-append",
+      "order": [
+        "runtime-acquired",
+        "wal-opened",
+        "append-error",
+        "close-entered",
+        "wal-closed",
+        "runtime-released"
+      ],
+      "errors": [
+        "CHANNEL_APPEND_EIO",
+        "CHANNEL_CLOSE_EIO",
+        "ADAPTER_RUNTIME_RELEASE_FAILED"
+      ],
+      "errorsRetainedOnce": true,
+      "leasesHeldUntilClose": true,
+      "remainingImplementationLeases": 0,
+      "channelPublications": 0,
+      "teamAttachments": 0,
+      "wal": "empty-wal-removed",
+      "team": "failed",
+      "goal": "active",
+      "activations": 0
+    },
+    {
+      "failureAt": "after-append",
+      "order": [
+        "runtime-acquired",
+        "wal-opened",
+        "wal-appended",
+        "append-error",
+        "close-entered",
+        "wal-closed",
+        "runtime-released"
+      ],
+      "errors": [
+        "CHANNEL_APPEND_EIO",
+        "CHANNEL_CLOSE_EIO",
+        "ADAPTER_RUNTIME_RELEASE_FAILED"
+      ],
+      "errorsRetainedOnce": true,
+      "leasesHeldUntilClose": true,
+      "remainingImplementationLeases": 0,
+      "channelPublications": 0,
+      "teamAttachments": 0,
+      "wal": "committed-orphan-retained",
+      "team": "failed",
+      "goal": "active",
+      "activations": 0
+    }
+  ],
+  "modelRequests": 0
+}

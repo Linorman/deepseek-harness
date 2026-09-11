@@ -1,10 +1,10 @@
-# dsh-session
+# clocky-session
 
 [English](README.md) | 中文
 
 事件溯源的会话日志和内存存储。`Session` 是 agent（智能体）全部交互历史的仅追加真源，LLM（大语言模型）消息历史由它*派生*。原始日志之上维护一个 **surface** 层（产生消息事件的有序投影），以便高效派生和压缩（compaction）。
 
-可选配套入口 `@deepseek-ai/dsh-session/invariant` 将此包的关系轨迹检查注册到 `ctx.invariants`：序号单调递增、轮次／步骤闭合，以及同一步骤内的工具调用／结果配对。加载或重新加载时，它会回放现有会话；存储校验、快照、冻结、被引用的源事件校验和 surface 准入仍始终由根会话包负责。
+可选配套入口 `@clocky/clocky-session/invariant` 将此包的关系轨迹检查注册到 `ctx.invariants`：序号单调递增、轮次／步骤闭合，以及同一步骤内的工具调用／结果配对。加载或重新加载时，它会回放现有会话；存储校验、快照、冻结、被引用的源事件校验和 surface 准入仍始终由根会话包负责。
 
 ## 服务：`SessionStore`（ctx 键：`sessions`）
 
@@ -12,7 +12,7 @@
 
 ### 公共 API
 
-- `ctx.sessions.create(id?, { seed?, meta? }?)` 校验持久种子／头部数据并生成脱离副本，补齐版本和 id，在未提供 `createdAt` 时使用当前时间，发布会话并将其绑定到调用方 fiber。持久化重建会提供原始的 `createdAt`、`seedLength` 和 `delegationDepth`。
+- `ctx.sessions.create(id?, { seed?, meta? }?)` 校验持久种子／头部数据并生成脱离副本，补齐版本和 id，在未提供 `createdAt` 时使用当前时间，发布会话并将其绑定到调用方 fiber。持久化重建会提供原始的 `createdAt`、Team／Participant provenance 和 `seedLength`；subagent 身份与委托深度由 model-hidden 的 `subagent/descriptor` 事件携带。
 - `ctx.sessions.flush(session)` 通过会话捕获的作用域分发一个需等待完成的并行持久性检查点。每个监听器都会启动；调用会等待全部结算后才报告失败。未发布、已脱离和陈旧的对象会被拒绝。
 - `ctx.sessions.fork(source, boundary?, childSessionId?): Session`：解析实时会话对象或 id，选取截至 `boundary` 事件序号（含该事件）的种子（默认为当前最后一个事件），要求所选前缀结束时没有开放轮次，再创建带谱系元数据的实时子会话。
 - `ctx.sessions.get(id: SessionId): Session | undefined`
@@ -26,7 +26,7 @@
 - `enter(session)` 执行冲突检查，在不通知的情况下发布，并返回一个绑定到该条目的幂等脱离函数。允许并发准备相同 id，但只有一个条目能够成功进入；陈旧的脱离函数无法移除其替代项。
 - `announce(session)` 发出唯一一次创建边，并拒绝重复或重入通知。该次分发期间请求的脱离操作会延后，之后再发出成对的释放边；未通知的条目不会发出任何生命周期边。
 
-`dsh-agent-loop` 使用这一拆分，以保证循环的最终刷新先于会话脱离；详见[所有权 Agent Note](../../../.agents/notes/implemented/architecture/2026-06-18-agent-lifecycle-and-ownership-contracts.zh.md)。
+`clocky-agent-loop` 使用这一拆分，以保证循环的最终刷新先于会话脱离；详见[所有权 Agent Note](../../../.agents/notes/implemented/architecture/2026-06-18-agent-lifecycle-and-ownership-contracts.zh.md)。
 
 ### 实时服务事件
 
@@ -42,7 +42,7 @@
 - `session.surface` 暴露只读 `SessionSurface` 视图，由会话唯一的增量 surface 管理器所有；每次提交重写，`replaceGeneration` 都会变化。
 - `session.events` 是按追加失效的缓存冻结快照；已接受事件保持深度冻结。
 - `session.seq`、`session.id`：当前序号和只读类型化身份。
-- `session.header: SessionHeader`：脱离、深冻结的创建元数据（`version`、`id`、`createdAt`，以及可选的 `cwd`／`parentSession`／`seedLength`／`delegationDepth`）。构造时会校验持久记录，并要求其中的 id 与 `session.id` 一致。
+- `session.header: SessionHeader`：脱离、深冻结的创建元数据（`version`、`id`、`createdAt`，以及可选的 `cwd`／成对的 `teamId` + `participantId`／`parentSession`／`seedLength`）。构造时会拒绝已退出的 subagent `origin` 与 `delegationDepth` 字段，并要求其中的 id 与 `session.id` 一致。
 
 ### 无损 JSON 工具
 
@@ -84,13 +84,13 @@
 
 ### 元数据类型（`types.ts`）
 
-- `SessionHeader`：会话元数据，在发布为 `Session.header` 时写入一次；脱离和深冻结保证运行时不可变：`{ version, id, createdAt, cwd?, parentSession?, seedLength?, delegationDepth? }`。持久化 loader 可返回相同数据类型的可变脱离副本。该类型与 `SessionId` 一同归此包所有，因为 `Session.header` 以它为类型；持久化后端只是重新导出而不拥有它，否则会形成包循环依赖。
+- `SessionHeader`：会话元数据，在发布为 `Session.header` 时写入一次；脱离和深冻结保证运行时不可变：`{ version, id, createdAt, cwd?, teamId?, participantId?, parentSession?, seedLength?, agentPreset? }`。`teamId`和`participantId`是成对的 opaque Team 引用，而非由 Session 所有的成员关系真相。Subagent 分类与委托深度属于 `subagent/descriptor` 事件，而不是 product header。持久化 loader 可返回相同数据类型的可变脱离副本。该类型与 `SessionId` 一同归此包所有，因为 `Session.header` 以它为类型；持久化后端只是重新导出而不拥有它，否则会形成包循环依赖。
 
 ### 扩展点
 
 - 持久化插件：订阅 `session/event`（延后写入），并在 `session/flush`（受等待）及 fiber dispose（资源释放）时排空。持久后端读取日志并重新加载到实时会话；这类后端会把元数据约定（`SessionHeader`、`session.header`）与日志一同存储。
 - 回放／fork：`create(id, { seed })` 校验并冻结连续的当前格式日志，再重建 surface；请求头必须包含提供方／模型，assistant 消息必须包含提供方／模型溯源信息。持久化层在构造该当前格式 seed 前负责读取兼容性处理。`fork(source, boundary?, childSessionId?)` 选择已完成轮次前缀并记录谱系。
-- 压缩：`dsh-compaction-basic` 为摘要检查点追加一个替换用 `user/message`，而 `dsh-compaction-tool-result-pruner` 追加仅修改内容的 `tool/result` 替换。工具配对边界策略及其缓存归 [`dsh-compaction` seam](../../compaction/compaction/README.zh.md) 所有；此包拥有有序 surface 成员关系、替换校验与 `replaceGeneration`。
+- 压缩：`clocky-compaction-basic` 为摘要检查点追加一个替换用 `user/message`，而 `clocky-compaction-tool-result-pruner` 追加仅修改内容的 `tool/result` 替换。工具配对边界策略及其缓存归 [`clocky-compaction` seam](../../compaction/compaction/README.zh.md) 所有；此包拥有有序 surface 成员关系、替换校验与 `replaceGeneration`。
 
 ## 模型体验
 
@@ -98,7 +98,7 @@
 
 #### 模型看到的内容
 
-模型会原样接收 `user/message`、`assistant/message` 和 `tool/result` surface 条目中的完整消息。其标识、角色、来源和内容块都与创建时确定的值相同；投影不会生成标识。直接提示词与注入上下文仍是彼此独立的 `user/message` 事件，各事件的来源会保留其出处。提示词封装只改变面向人的呈现；其前缀上下文和请求分隔符已经位于事件内容中。工具调用包含在 assistant 消息内。分片、边界、用量、钩子记录、todo 记录以及其他仅日志事件不会添加消息。
+模型会接收 `user/message`、`team/channel-view`、`assistant/message` 和 `tool/result` surface 条目中的完整消息。`team/channel-view` 只从存储的 content 与 provenance 派生一条 user-role 消息，不会重新渲染实时 Team channel；其余条目保留既有消息值。直接提示词与注入上下文仍是彼此独立的 `user/message` 事件，各事件的来源会保留其出处。提示词封装只改变面向人的呈现；其前缀上下文和请求分隔符已经位于事件内容中。工具调用包含在 assistant 消息内。分片、边界、用量、钩子记录、todo 记录以及其他仅日志事件不会添加消息。
 
 #### Token 影响
 

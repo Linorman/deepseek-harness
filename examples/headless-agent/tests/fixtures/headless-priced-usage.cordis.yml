@@ -1,0 +1,37 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: priced-usage-model
+    model: priced-usage-model
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_USAGE_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_USAGE_BACKEND
+    routes: {}
+
+- id: team-hub
+  config:
+    usageRates:
+      priced-usage-model/priced-usage-model:
+        input: 2
+        output: 3
+        cacheRead: 0
+        cacheWrite: 0
+
+- insert:
+    - id: priced-usage-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_USAGE_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: priced-usage-driver
+      name: './snapshot-fixtures/headless-priced-usage-driver.ts'

@@ -1,9 +1,9 @@
 // Modal: controlled full-viewport dialog (create-workspace and similar).
 // The overlay portals to this document's body so ancestor stacking contexts
 // cannot leave sticky page controls above the mask. This is still an in-page
-// WebUI dialog; it never creates or targets another browser/native window.
+// WebUI dialog; its native modal top layer owns focus containment and background inertness.
 
-import { useEffect } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import clsx from 'clsx'
@@ -20,6 +20,7 @@ import css from './Modal.module.css'
  * @param props.children - body (inputs, etc.).
  * @param props.footer - action row (Cancel / Create).
  * @param props.contentClassName - optional class for a scrollable content region.
+ * @param props.bodyClassName - optional geometry for a scrollable body with persistent header and footer.
  * @param props.headless - render children directly in the card (no default
  * header/close/body chrome) for dialogs whose figma frame owns its own
  * header structure; mask, card, Escape, and aria-label remain.
@@ -28,7 +29,7 @@ import css from './Modal.module.css'
  * @returns null when closed; otherwise the overlay tree.
  */
 export function Modal({
-  open, onClose, title, closeLabel = 'Close', description, children, footer, className, contentClassName, headless = false,
+  open, onClose, title, closeLabel = 'Close', description, children, footer, className, contentClassName, bodyClassName, headless = false,
 }: {
   open: boolean
   onClose: () => void
@@ -39,27 +40,39 @@ export function Modal({
   footer?: ReactNode
   className?: string
   contentClassName?: string
+  bodyClassName?: string
   headless?: boolean
 }) {
-  useEffect(() => {
+  const dialogRef = useRef<HTMLDialogElement | null>(null)
+  useLayoutEffect(() => {
     if (!open) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+    const dialog = dialogRef.current
+    if (dialog === null) return
+    const previous = document.activeElement
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
     }
-    document.addEventListener('keydown', onKeyDown)
-    return () => { document.removeEventListener('keydown', onKeyDown) }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
   return createPortal((
     <div className={css.root} role="presentation">
       <div className={css.mask} aria-hidden="true" onClick={onClose} />
-      <div
+      <dialog
+        ref={dialogRef}
         className={clsx(css.dialog, className)}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        onCancel={(event) => { event.preventDefault(); event.stopPropagation(); onClose() }}
+        onClick={(event) => {
+          if (event.target !== event.currentTarget) return
+          const rect = event.currentTarget.getBoundingClientRect()
+          if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose()
+        }}
       >
         {headless
           ? children
@@ -75,12 +88,12 @@ export function Modal({
                 {description !== undefined && description !== '' && (
                   <p className={css.description}>{description}</p>
                 )}
-                {children !== undefined && <div className={css.body}>{children}</div>}
+                {children !== undefined && <div className={clsx(css.body, bodyClassName)}>{children}</div>}
               </div>
               {footer !== undefined && <div className={css.footer}>{footer}</div>}
             </>
           )}
-      </div>
+      </dialog>
     </div>
   ), document.body)
 }

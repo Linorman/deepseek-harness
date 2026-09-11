@@ -40,7 +40,6 @@ async function seedDescriptorlessChild(root: string, cwd: string): Promise<void>
     id: parentId,
     createdAt: 1,
     cwd,
-    delegationDepth: 0,
   }
   const parentEvents: SessionEvent[] = [
     { type: 'turn/start', seq: 0, time: 10, data: { turn: 1 } },
@@ -53,8 +52,6 @@ async function seedDescriptorlessChild(root: string, cwd: string): Promise<void>
     createdAt: 2,
     cwd,
     parentSession: parentId,
-    origin: 'subagent',
-    delegationDepth: 1,
   }
   const childEvents: SessionEvent[] = [
     { type: 'turn/start', seq: 0, time: 20, data: { turn: 1 } },

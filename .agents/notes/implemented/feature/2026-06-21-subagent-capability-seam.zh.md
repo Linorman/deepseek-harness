@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-06-21-subagent-capability-seam.md) | 中文
 
-> 完整 seam 已交付：`dsh-subagent` 接口与 `dsh-tool-subagent` 消费方；两个进程内后端（`dsh-subagent-spawn-in-process`、`dsh-subagent-fork-in-process`）；嵌套 agent（智能体）快照基础设施（[逐会话快照回放](../testing/2026-06-22-subagent-snapshot-replay.zh.md)）；以及进程外的 ACP（Agent Client Protocol）、Codex 与 Claude Code 后端（[ACP Agent Note](2026-06-22-acp-subagent-backend.zh.md)、[产品提供方 Agent Note](2026-08-04-claude-code-and-codex-subagent-backends.zh.md)）。
+> 完整 seam 已交付：`clocky-subagent` 接口与 `clocky-tool-subagent` 消费方；两个进程内后端（`clocky-subagent-spawn-in-process`、`clocky-subagent-fork-in-process`）；嵌套 agent（智能体）快照基础设施（[逐会话快照回放](../testing/2026-06-22-subagent-snapshot-replay.zh.md)）；以及进程外的 ACP（Agent Client Protocol）与 Clocky SDK 后端（[ACP Agent Note](2026-06-22-acp-subagent-backend.zh.md)）。
 
 ## 问题
 
@@ -14,7 +14,7 @@ harness 有一个长期搁置的 seam 用于 **subagent**：一个 agent 将工�
 
 - **进程内**：在同一个 `Context` 上创建一个具体的子 `Agent`（最廉价，且鉴于现有 agent 工厂几乎零成本）；
 - **ACP**：作为 ACP *客户端*驱动另一个 agent 进程（可以是自身的另一个实例）；
-- **Codex app-server 与 Claude Code Agent SDK**：当前的一次性同类提供方，将同一个命名提供方约定应用于官方产品进程（[产品提供方 Agent Note](2026-08-04-claude-code-and-codex-subagent-backends.zh.md)）；
+- **Clocky SDK**：使用同一个命名提供方约定运行进程外 Harness 子 agent；
 - 后续：**A2A**，采用同样的进程外形态：「启动子 agent、发送提示词、结算、取消」。
 
 ## 曾考虑的替代方案
@@ -31,13 +31,11 @@ bash seam（[能力 seam](../architecture/2026-06-13-capability-seams.zh.md)）�
 
 | 包 | 角色 |
 |---|---|
-| `@deepseek-ai/dsh-subagent` | 接口：`SubagentRuntime`（`ctx.subagents`）、`SubagentProvider`、`SubagentRun`、请求、结果、能力词汇、`subagent/*` 事件 |
-| `@deepseek-ai/dsh-subagent-spawn-in-process` | 实现：通过 `ctx.agents.create` 创建全新的进程内子 agent |
-| `@deepseek-ai/dsh-subagent-fork-in-process` | 实现：用父 agent 日志快照初始化的进程内子 agent |
-| `@deepseek-ai/dsh-subagent-acp` | 实现：作为 ACP 客户端驱动已配置的子进程 |
-| `@deepseek-ai/dsh-subagent-codex` | 实现：一次性官方 Codex app-server 进程 |
-| `@deepseek-ai/dsh-subagent-claude-code` | 实现：通过 Agent SDK 运行的一次性官方 Claude Code 进程 |
-| `@deepseek-ai/dsh-tool-subagent` | 消费方：基于 `ctx.subagents` 的面向模型的 `subagent` 工具 |
+| `@clocky/clocky-subagent` | 接口：`SubagentRuntime`（`ctx.subagents`）、`SubagentProvider`、`SubagentRun`、请求、结果、能力词汇、`subagent/*` 事件 |
+| `@clocky/clocky-subagent-spawn-in-process` | 实现：通过 `ctx.agents.create` 创建全新的进程内子 agent |
+| `@clocky/clocky-subagent-fork-in-process` | 实现：用父 agent 日志快照初始化的进程内子 agent |
+| `@clocky/clocky-subagent-acp` | 实现：作为 ACP 客户端驱动已配置的子进程 |
+| `@clocky/clocky-tool-subagent` | 消费方：基于 `ctx.subagents` 的面向模型的 `subagent` 工具 |
 
 ### 原语：异步 `start → SubagentRun`
 
@@ -50,19 +48,19 @@ bash seam（[能力 seam](../architecture/2026-06-13-capability-seams.zh.md)）�
 
 ### Fork 与 fresh 是独立后端，而非一个 flag
 
-全新子 agent 与 fork 子 agent 是独立的提供方，而非请求中的一个 flag。`dsh-subagent-spawn-in-process` 启动隔离的子 agent；`dsh-subagent-fork-in-process` 用一个平衡前缀初始化子 agent，该前缀仅包含已完成的父轮次。进行中的轮次被排除，因为其 subagent 调用尚无结果，无法构成有效的回放历史。
+全新子 agent 与 fork 子 agent 是独立的提供方，而非请求中的一个 flag。`clocky-subagent-spawn-in-process` 启动隔离的子 agent；`clocky-subagent-fork-in-process` 用一个平衡前缀初始化子 agent，该前缀仅包含已完成的父轮次。进行中的轮次被排除，因为其 subagent 调用尚无结果，无法构成有效的回放历史。
 
 ### 子 agent 隔离与父日志
 
-每个进程内 subagent 运行在**自己的 `Session`** 中（独立 id、`parentSession` 谱系），独立持久化。远端 ACP 和一次性产品提供方则会生成一个父级作用域的生命周期 id，且不暴露本地 `Agent` 或子 `Session`；其内部状态留在远端进程中。两种形式下，父日志都仅记录 spawn `tool/call` 及其 `tool/result`（子 agent 的最终输出，或带可选提供方诊断的失败结果），而子 agent 的步骤和工具调用均留在父日志之外。
+每个进程内 subagent 运行在**自己的 `Session`** 中（独立 id、`parentSession` 谱系），独立持久化。远端 ACP 和 Clocky SDK 提供方则会生成一个父级作用域的生命周期 id，且不暴露本地 `Agent` 或子 `Session`；其内部状态留在远端进程中。两种形式下，父日志都仅记录 spawn `tool/call` 及其 `tool/result`（子 agent 的最终输出，或带可选提供方诊断的失败结果），而子 agent 的步骤和工具调用均留在父日志之外。
 
 ### 同步收集（首版）
 
-`dsh-tool-subagent` 将其执行信号传给 `start()`，等待子 agent 结果，并在报告前 dispose 该 run。非完成态的结果变为错误结果，而非成功的部分输出；它会把由[非交互权限决策](2026-08-15-product-subagent-noninteractive-permissions.zh.md)负责的可选安全诊断与部分 assistant 文本分开呈现。结果与 dispose 的拒绝仍可彼此独立地观察。
+`clocky-tool-subagent` 将其执行信号传给 `start()`，等待子 agent 结果，并在报告前 dispose 该 run。非完成态的结果变为错误结果，而非成功的部分输出；当提供方提供安全诊断时，工具会将它与部分 assistant 文本分开呈现。结果与 dispose 的拒绝仍可彼此独立地观察。
 
 ### 提供方选择是配置，不面向模型
 
-`dsh-tool-subagent` 绑定到恰好一个提供方名称（`Config.provider`）；模型只看到 `{ description, prompt }`。若要暴露多种传输方式，请多次加载该工具插件，每次绑定不同的提供方和不同的 `toolName`（工具注册表拒绝重名）。*服务*持有多提供方注册表；*工具*选择其中一个——schema 中没有提供方/type 参数。
+`clocky-tool-subagent` 绑定到恰好一个提供方名称（`Config.provider`）；模型只看到 `{ description, prompt }`。若要暴露多种传输方式，请多次加载该工具插件，每次绑定不同的提供方和不同的 `toolName`（工具注册表拒绝重名）。*服务*持有多提供方注册表；*工具*选择其中一个——schema 中没有提供方/type 参数。
 
 ## 测试
 

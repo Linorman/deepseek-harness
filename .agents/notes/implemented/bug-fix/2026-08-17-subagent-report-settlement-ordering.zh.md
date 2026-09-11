@@ -6,7 +6,7 @@ Status: implemented
 
 ## 问题
 
-可继续 child 可以显式上报选中内容，之后还会产生一条由管理器撰写且无条件投递的结算通知。报告投递曾使用 `Agent.followup()` 并进入 parent 的 `next-turn` 队列，而面向运行中 parent 的结算投递使用 `Agent.steer()` 并进入 `next-step`。一个轮次的第一个 step 会先领取完整 `next-step` 批次，再领取一条 `next-turn` 消息，因此较晚的结算通知可能先于较早的报告到达模型。整体组装的报告场景必须使用 `reportDelivery: quiet`，才能避开这种不确定交错。[Issue #2600](https://github.com/deepseek-harness/deepseek-harness/issues/2600)记录了该缺陷。
+可继续 child 可以显式上报选中内容，之后还会产生一条由管理器撰写且无条件投递的结算通知。报告投递曾使用 `Agent.followup()` 并进入 parent 的 `next-turn` 队列，而面向运行中 parent 的结算投递使用 `Agent.steer()` 并进入 `next-step`。一个轮次的第一个 step 会先领取完整 `next-step` 批次，再领取一条 `next-turn` 消息，因此较晚的结算通知可能先于较早的报告到达模型。整体组装的报告场景必须使用 `reportDelivery: quiet`，才能避开这种不确定交错。[Issue #2600](https://github.com/clocky/clocky/issues/2600)记录了该缺陷。
 
 report 工具要求 child 在发现会改变 parent 下一步动作的信息时上报。把这条消息推迟到后续轮次，既违背了工具的调度含义，也让具有因果顺序的消息分散到领取优先级不同的队列中。
 
@@ -26,7 +26,7 @@ parent 处于 maintenance 时，报告占据 `next-step` 并锁存一次唤醒�
 
 report 包把 parent 保持在一个活动模型请求中，提交 child 报告，再让该 child 结算，并断言等待中的 parent 批次按 `subagent-report`、`subagent-settled` 排序，且没有排队的后续轮次。独立覆盖还会固定重复报告形成一个 FIFO next-step 批次、空闲 parent 唤醒，以及可继续 parent 的唤醒准入记账。
 
-整体组装的 ACP 报告场景使用随附默认值。调度围栏让 child 等到 parent 的委派轮次之后，并让 parent 保持 maintenance，直至结算跟在报告之后到达。报告会锁存唤醒，结算通知则排入后续轮次；maintenance 结束时，parent 先领取 next-step 输入、再领取 next-turn 输入，因此无需静默投递 overlay 也能按因果顺序观察两条通知。
+包级覆盖是这一顺序的当前证明。当前没有 Team 产品快照覆盖带报告 child 的 maintenance transcript。
 
 ## 备选方案
 

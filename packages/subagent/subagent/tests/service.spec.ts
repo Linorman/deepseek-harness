@@ -119,6 +119,7 @@ describe('SubagentRuntime', () => {
         version: SUBAGENT_DESCRIPTOR_VERSION,
         mode: 'one-shot',
         provider: 'one-shot',
+        depth: 1,
       },
     })
     expect(provider.lastRequest).not.toBe(request)
@@ -329,22 +330,25 @@ describe('subagent descriptors', () => {
 
   it('omits absent fields, recovers a complete payload, and rejects unsupported versions', () => {
     expect(foldSubagentDescriptor([])).toBeUndefined()
-    const minimal = snapshotSubagentDescriptor({ mode: 'one-shot', provider: 'spawn' })
+    const minimal = snapshotSubagentDescriptor({ mode: 'one-shot', provider: 'spawn', depth: 1 })
     expect(minimal).toEqual({
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: 'one-shot',
       provider: 'spawn',
+      depth: 1,
     })
     expect(foldSubagentDescriptor([event(minimal)])).toEqual(minimal)
     expect(snapshotSubagentDescriptor({
       mode: 'one-shot',
       provider: 'spawn',
+      depth: 1,
       label: 'child work',
     })).toEqual({ ...minimal, label: 'child work' })
     const complete = {
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: 'continuable' as const,
       provider: 'spawn',
+      depth: 1,
       label: 'complete child',
       agentProvider: 'deepseek',
       agentModel: 'chat',
@@ -354,6 +358,7 @@ describe('subagent descriptors', () => {
     expect(snapshotSubagentDescriptor({
       mode: 'continuable',
       provider: complete.provider,
+      depth: complete.depth,
       label: complete.label,
       agentProvider: complete.agentProvider,
       agentModel: complete.agentModel,
@@ -366,6 +371,7 @@ describe('subagent descriptors', () => {
         version: SUBAGENT_DESCRIPTOR_VERSION,
         mode: 'continuable',
         provider: 'spawn',
+        depth: 1,
         label: 'l',
         toolFilter: { allow: ['read'] },
       }),
@@ -375,6 +381,7 @@ describe('subagent descriptors', () => {
         version: SUBAGENT_DESCRIPTOR_VERSION,
         mode: 'continuable',
         provider: 'spawn',
+        depth: 1,
         label: 'l',
         toolFilter: { deny: ['bash'] },
       }),
@@ -385,6 +392,7 @@ describe('subagent descriptors', () => {
     expect(() => snapshotSubagentDescriptor({
       mode: 'continuable',
       provider: 'spawn',
+      depth: 1,
       label: 'bad',
       toolFilter: { deny: [Symbol('not-json')] as unknown as string[] },
     })).toThrow('not losslessly JSON-serializable')

@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Reply with a one-sentence description" [disabled]
-  - img
-  - text: Standard mode
+  - text: Reply with a one-sentence description
   - button "Session log":
     - text: Session log
     - img
@@ -23,8 +20,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}}
 - textbox "Message the agent"

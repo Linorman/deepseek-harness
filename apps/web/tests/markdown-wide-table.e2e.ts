@@ -248,11 +248,12 @@ describe('web e2e: markdown tables fill the column, wide ones break out and scro
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     await seedSession(scaffold, wideTableFixture(), SEED_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     const groupRow = page.locator('[role="treeitem"]').first()
@@ -423,6 +424,7 @@ describe('web e2e: markdown tables fill the column, wide ones break out and scro
     const hidpiTripwire = watchConsole(hidpiPage)
     try {
       onTestFailed(() => saveFailureShot(hidpiPage, 'web-e2e-markdown-wide-table-hidpi'))
+      await scaffold.authenticateBrowserPage(hidpiPage)
       await hidpiPage.goto(scaffold.baseUrl, { waitUntil: 'load' })
       await hidpiPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       const groupRow = hidpiPage.locator('[role="treeitem"]').first()

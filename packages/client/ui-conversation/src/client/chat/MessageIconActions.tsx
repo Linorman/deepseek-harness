@@ -1,9 +1,9 @@
-// Shared IconActions chrome for user and assistant messages: copy
-// live, optional branch wiring, and an optional date-aware clock.
+// Shared IconActions chrome for user and assistant messages: copy and an
+// optional date-aware clock.
 
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
-  IconBranchOutline16, IconCheckOutline16, IconCopyOutline16, Tooltip, writeClipboard,
+  IconCheckOutline16, IconCopyOutline16, Tooltip, writeClipboard,
 } from '@clocky/clocky-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import { formatLatencySeconds, formatMessageClock, formatRunDuration, formatTokensPerSecond } from './message-chrome.ts'
@@ -23,15 +23,11 @@ export interface MessageIconActionsProps {
   tokensPerSecond?: number | undefined
   /** Clock before icons (user) or after (assistant). */
   clock: 'start' | 'end'
-  /** Fork the session at this message; omission hides the branch action. */
-  onBranch?: (() => void) | undefined
-  /** The message is not a completed transcript tail, so branch stays visible but unavailable. */
-  branchUnavailable?: boolean | undefined
   /** Parent layout class composed onto the actions row. */
   className?: string | undefined
   /**
    * Slot-rendered actions owned by independent plugins, placed between the
-   * built-in copy and branch controls.
+   * built-in copy control and the clock.
    */
   extraActions?: ReactNode
   /** The owning view's locale seat, passed down as a plain prop. */
@@ -39,16 +35,15 @@ export interface MessageIconActionsProps {
 }
 
 /**
- * Copy / branch (/ clock) IconActions row shared by user and assistant chrome.
- * @param props - Copy text, event time, clock side, branch callback, className.
+ * Copy / clock IconActions row shared by user and assistant chrome.
+ * @param props - Copy text, event time, clock side, and className.
  * @returns The actions row element.
  */
 export function MessageIconActions({
-  text, time, runMs, ttftMs, tokensPerSecond, clock, onBranch, branchUnavailable = false, className,
+  text, time, runMs, ttftMs, tokensPerSecond, clock, className,
   extraActions, t,
 }: MessageIconActionsProps) {
   const day = useCalendarDay()
-  const reasonId = useId()
   // Same success chrome as CodeBlock: a short check swap after the write,
   // gated so re-clicks during the window neither re-copy nor stack timers.
   const [copied, setCopied] = useState(false)
@@ -116,25 +111,6 @@ export function MessageIconActions({
         </button>
       </Tooltip>
       {extraActions}
-      {onBranch !== undefined && (
-        <Tooltip label={branchUnavailable ? t('message.branchUnavailable') : t('message.branch')} side="bottom">
-          {/* Native disabled buttons do not deliver the hover/focus events Tooltip needs. */}
-          <button
-            type="button"
-            className={css.action}
-            aria-label={t('message.branch')}
-            aria-disabled={branchUnavailable || undefined}
-            aria-describedby={branchUnavailable ? reasonId : undefined}
-            data-unavailable={branchUnavailable || undefined}
-            onClick={branchUnavailable ? undefined : onBranch}
-          >
-            <IconBranchOutline16 />
-          </button>
-        </Tooltip>
-      )}
-      {onBranch !== undefined && branchUnavailable && (
-        <span id={reasonId} className={css.visuallyHidden}>{t('message.branchUnavailable')}</span>
-      )}
       {clock === 'end' ? clockEl : null}
     </div>
   )

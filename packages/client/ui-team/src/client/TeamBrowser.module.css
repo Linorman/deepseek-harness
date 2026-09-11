@@ -1,0 +1,919 @@
+.root {
+  flex: none;
+  min-height: 0;
+  max-height: min(70vh, 720px);
+  margin: 2px 8px 8px 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  /* The Team list/detail scrolls inside the elevated sidebar surface. Keep
+     its scrollbar pair aligned with the l2 surface contract. */
+  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+}
+
+/* Frame-wide Environment-style trigger and detail surface. The parent shell
+   overlay is click-through; this root opts back into pointer events. */
+.floatingRoot {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px));
+  max-width: calc(100vw - 16px);
+  pointer-events: auto;
+}
+
+.floatingTrigger {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--clocky-alias-border-l2);
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: var(--clocky-alias-button-floating-fill);
+  box-shadow: var(--clocky-shadow-lv2);
+  color: var(--clocky-alias-label-primary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.floatingTrigger:hover {
+  background: var(--clocky-alias-button-floating-hover);
+}
+
+.floatingTrigger:focus-visible,
+.floatingClose:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.floatingTriggerTitle {
+  flex: none;
+  font-weight: 600;
+}
+
+.floatingTriggerMeta {
+  min-width: 0;
+  margin-left: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--clocky-alias-label-tertiary);
+}
+
+.floatingPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: min(68vh, 600px);
+  overflow: auto;
+  border: 1px solid var(--clocky-alias-border-l2);
+  border-radius: 14px;
+  background: var(--clocky-alias-bg-layer-1);
+  box-shadow: var(--clocky-shadow-lv3);
+  scrollbar-gutter: stable;
+}
+
+.floatingPanelHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  padding: 7px 10px 6px 12px;
+  border-bottom: 1px solid var(--clocky-alias-border-l1);
+  background: var(--clocky-alias-bg-layer-1);
+  color: var(--clocky-alias-label-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.floatingHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.floatingReset,
+.floatingClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.floatingReset:hover,
+.floatingClose:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.floatingReset:focus-visible,
+.floatingClose:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.floatingResize {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: end;
+  justify-content: start;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 0 7px 7px;
+  background: transparent;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: nesw-resize;
+  touch-action: none;
+}
+
+.floatingResize span,
+.floatingResize span::after {
+  display: block;
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+  content: '';
+  transform: rotate(-45deg);
+  transform-origin: left center;
+}
+
+.floatingResize span::after {
+  width: 5px;
+  margin: 3px 0 0 3px;
+}
+
+.floatingResize:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.floatingResize:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.floatingResizing,
+.floatingResizing * {
+  user-select: none;
+}
+
+.floatingError {
+  margin: 8px 12px 0;
+  color: var(--clocky-alias-state-error-primary);
+  font-size: 11px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.floatingPanel > .page {
+  border-top: 0;
+  padding: 10px 12px 14px;
+}
+
+@media (max-width: 680px) {
+  .floatingRoot {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  .floatingTrigger {
+    align-self: flex-end;
+  }
+
+  .floatingPanel {
+    max-height: min(78vh, 680px);
+  }
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  border-top: 1px solid var(--clocky-alias-border-l1);
+}
+
+.pageHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+}
+
+.pageHeader h1,
+.section h2 {
+  margin: 0;
+  color: var(--clocky-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.pageHeader h1 {
+  overflow-wrap: anywhere;
+}
+
+.pageHeader .phase {
+  display: inline-block;
+  margin-top: 3px;
+}
+
+.actions,
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.actions {
+  align-items: start;
+  justify-content: end;
+}
+
+.actions button,
+.sectionHeader button,
+.participant button,
+.channelList button {
+  min-height: 28px;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--clocky-alias-label-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.actions button:hover,
+.sectionHeader button:hover,
+.participant button:hover,
+.channelList button:hover,
+.channelList button[aria-pressed='true'] {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.actions button:focus-visible,
+.sectionHeader button:focus-visible,
+.participant button:focus-visible,
+.channelList button:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.actions button:disabled,
+.participant button:disabled,
+.channelList button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sectionHeader small,
+.muted,
+.participant small,
+.taskMeta,
+.record small,
+.result small {
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.list,
+.channelList,
+.audit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant,
+.task,
+.record,
+.notice {
+  min-width: 0;
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: var(--clocky-alias-bg-layer-2);
+}
+
+.participant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.participant > span:first-child,
+.result,
+.record {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.participantTasks {
+  overflow: hidden;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 11px;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant strong,
+.task strong,
+.record strong,
+.result strong {
+  overflow-wrap: anywhere;
+  color: var(--clocky-alias-label-primary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.phase {
+  margin: 0;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.task p,
+.result p {
+  margin: 2px 0;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 12px;
+  line-height: 17px;
+  overflow-wrap: anywhere;
+}
+
+.taskHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.taskTitle {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.taskTitle strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskDelete {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.taskDelete:hover {
+  background: var(--clocky-alias-interactive-bg-hover-danger);
+  color: var(--clocky-alias-state-error-primary);
+}
+
+.taskStop {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.taskStop:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.taskDelete:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.taskStop:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.taskDelete:disabled,
+.taskStop:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.details {
+  min-width: 0;
+}
+
+.details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 15px;
+  list-style: none;
+}
+
+.details summary::-webkit-details-marker {
+  display: none;
+}
+
+.details summary:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.details .json {
+  margin-top: 4px;
+}
+
+.details > small {
+  display: block;
+}
+
+.taskDetailDescription {
+  margin: 4px 0;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.taskDeleteConfirm {
+  color: var(--clocky-alias-state-error-primary) !important;
+}
+
+.taskStopConfirm {
+  color: var(--clocky-alias-label-primary) !important;
+}
+
+.badge {
+  flex: none;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.json {
+  max-width: 100%;
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--clocky-alias-label-secondary);
+  font-family: var(--ds-font-family-code);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.records,
+.audit {
+  max-height: 240px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--clocky-alias-state-error-primary);
+  font-size: 11px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  color: var(--clocky-alias-label-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  overflow-wrap: anywhere;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.workspaceToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 8px;
+  color: var(--clocky-alias-label-secondary);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.workspaceAdd,
+.workspaceAddTask {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 7px;
+  padding: 3px 7px;
+  background: transparent;
+  color: var(--clocky-alias-label-secondary);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.workspaceAdd:hover,
+.workspaceAddTask:hover,
+.workspaceButton:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.workspaceAdd:disabled,
+.workspaceAddTask:disabled {
+  cursor: default;
+  opacity: .6;
+}
+
+.workspaceAdd:focus-visible,
+.workspaceAddTask:focus-visible,
+.workspaceButton:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.workspaceList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.workspaceGroup {
+  min-width: 0;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 9px;
+  padding: 4px;
+  background: var(--clocky-alias-bg-layer-2);
+}
+
+.workspaceHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+  padding: 1px 2px 3px;
+}
+
+.workspaceButton {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 5px;
+  border: 0;
+  padding: 3px 4px;
+  background: transparent;
+  color: var(--clocky-alias-label-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: left;
+}
+
+.workspaceName,
+.workspaceUnassigned {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceCount {
+  flex: none;
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 10px;
+}
+
+.workspaceAddTask {
+  flex: none;
+  border: 0;
+  padding: 4px;
+}
+
+.workspaceGroup .list {
+  padding: 0;
+}
+
+.workspaceEmpty {
+  margin: 0;
+  padding: 4px 6px 5px;
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.workspaceUnassigned {
+  padding: 3px 4px;
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  color: var(--clocky-alias-label-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.row:hover,
+.row.selected {
+  background: var(--clocky-alias-interactive-bg-hover);
+}
+
+.row:active,
+.rail:active {
+  background: var(--clocky-alias-interactive-bg-active);
+}
+
+.row:focus-visible,
+.rail:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.archive {
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--clocky-alias-label-tertiary);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 22px;
+}
+
+.archive:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-primary);
+}
+
+.archive:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+.archive:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.objective {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phase {
+  align-self: start;
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: var(--clocky-alias-interactive-bg-hover);
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.empty,
+.error {
+  padding: 0 8px;
+  color: var(--clocky-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.error {
+  color: var(--clocky-alias-state-error-primary);
+}
+
+.rail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: var(--clocky-alias-label-primary);
+  cursor: pointer;
+}
+
+.rail:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+}
+
+.managementContent {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.managementForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.managementChoices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+  padding: 8px 0;
+  margin: 0;
+}
+
+.managementChoices label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.managementText {
+  resize: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100px;
+  padding: 8px;
+  border: 1px solid var(--clocky-alias-border-l2);
+  border-radius: 8px;
+  background: var(--clocky-alias-bg-base);
+  color: var(--clocky-alias-label-primary);
+  font: inherit;
+}
+
+:global(.clocky-resize-none) {
+  resize: none;
+}
+
+.humanAction,
+.inboxEntry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding-block: 12px;
+  overflow-wrap: anywhere;
+}
+
+.inboxEntry + .inboxEntry {
+  border-top: 1px solid var(--clocky-alias-border-l2);
+}
+
+.humanText {
+  white-space: pre-wrap;
+}
+
+.channelDraftPart {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.channelDraftImage {
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+}
+
+.channelMessage {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.managementChoices small {
+  display: block;
+  color: var(--clocky-alias-label-secondary);
+}

@@ -1,0 +1,29 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+- id: team-closure-driver
+  disabled: true
+- id: agent-default-model
+  config:
+    provider: channel-summary-mock
+    model: channel-summary-mock
+- insert:
+    - id: summary-human-actor
+      name: '@clocky/clocky-team-human-actor'
+    - id: headless-channel-summary-llm
+      name: './snapshot-fixtures/headless-channel-summary-llm.ts'
+    - id: headless-channel-summary-driver
+      name: './snapshot-fixtures/headless-channel-summary-driver.ts'
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_SUMMARY_BACKEND === 'json'
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_SUMMARY_BACKEND
+    routes: {}
+- insert:
+    - id: summary-json-storage
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_SUMMARY_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')

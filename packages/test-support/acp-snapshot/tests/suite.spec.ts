@@ -136,12 +136,12 @@ function staleRefreshFixtures(dir: string): void {
   writeFileSync(plainBehaviorFile, `${JSON.stringify(plainBehavior, null, 2)}\n`)
 
   writeFileSync(join(dir, 'blocked-log', 'session.jsonl'), [
-    '{"type":"session","id":"99999999-8888-4777-8666-555555555555","createdAt":13,"cwd":"/rec/blocked-cwd","delegationDepth":0}',
+    '{"type":"session","id":"99999999-8888-4777-8666-555555555555","createdAt":13,"cwd":"/rec/blocked-cwd"}',
     '{"type":"hook/result","seq":1,"time":13,"data":{"decision":"stale","durationMs":99}}',
     '',
   ].join('\n'))
   writeFileSync(join(dir, 'authored-error', 'session.jsonl'), [
-    '{"type":"session","id":"77777777-8888-4777-8666-555555555555","createdAt":13,"cwd":"/rec/error-cwd","delegationDepth":0}',
+    '{"type":"session","id":"77777777-8888-4777-8666-555555555555","createdAt":13,"cwd":"/rec/error-cwd"}',
     '{"type":"turn/end","seq":1,"time":9,"data":{"error":"stale"}}',
     '',
   ].join('\n'))
@@ -819,6 +819,54 @@ describe('stabilizeFixtureMessageIds', () => {
   it('leaves fresh fixtures unchanged when no committed counterpart exists', () => {
     const fresh = '{"type":"session","id":"new"}\n'
     expect(stabilizeFixtureMessageIds([fresh], [''])).toEqual([fresh])
+  })
+
+  it('reconstructs Team channel views and accepts their stable non-UUID message ids', () => {
+    const view = {
+      type: 'team/channel-view',
+      data: {
+        teamId: 'team-view',
+        channelId: 'channel-view',
+        adapter: { type: 'discussion', version: 1 },
+        viewPolicy: { type: 'recent-window', version: 1 },
+        triggeringEnvelopeId: 'envelope-trigger',
+        sourceEnvelopeIds: ['envelope-trigger'],
+        delivery: 'turn',
+        content: [{ type: 'text', text: 'stored view' }],
+      },
+    }
+    const stableId = 'team-channel-view:["team-view","channel-view","envelope-trigger"]'
+    const message = (id: string): Record<string, unknown> => ({
+      type: 'agent/inbox/spliced',
+      data: {
+        inserted: [{
+          id,
+          role: 'user',
+          content: [{ type: 'text', text: 'stored view' }],
+          source: {
+            kind: 'team-channel-view',
+            teamId: 'team-view',
+            channelId: 'channel-view',
+            adapter: { type: 'discussion', version: 1 },
+            viewPolicy: { type: 'recent-window', version: 1 },
+            triggeringEnvelopeId: 'envelope-trigger',
+            sourceEnvelopeIds: ['envelope-trigger'],
+            delivery: 'turn',
+          },
+        }],
+      },
+    })
+    const log = (extra: Record<string, unknown>): string => [
+      JSON.stringify({ type: 'session', id: 'same', cwd: '{{cwd}}' }),
+      JSON.stringify(view),
+      JSON.stringify(extra),
+      '',
+    ].join('\n')
+
+    expect(() => stabilizeFixtureMessageIds(
+      [log(message('team-channel-view:fresh'))],
+      [log(message(stableId))],
+    )).not.toThrow()
   })
 })
 

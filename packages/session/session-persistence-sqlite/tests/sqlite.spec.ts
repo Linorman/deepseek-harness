@@ -372,11 +372,11 @@ describe('SessionPersistenceSqlite physical packing', () => {
   it('rejects an older SQLite physical schema', async () => {
     const path = await freshDbPath('clocky-sqlite-old-schema-')
     const seed = await openDatabase(DatabaseSync, path, 'wal', DEFAULT_BUSY_TIMEOUT_MS)
-    seed.exec(testSql('set-user-version-16'))
+    seed.exec(testSql('set-user-version-17'))
     seed.close()
     await chmod(path, 0o600)
     await expect(openDatabase(DatabaseSync, path, 'wal', DEFAULT_BUSY_TIMEOUT_MS))
-      .rejects.toThrow(/schema version 16.*incompatible/)
+      .rejects.toThrow(/schema version 17.*incompatible/)
   })
 
   it('rejects a stale physical append without replacing the winning tail', async () => {
@@ -528,7 +528,7 @@ describe('SessionPersistenceSqlite schema ownership', () => {
 
     const foreignPath = await freshDbPath('clocky-sqlite-foreign-')
     const foreign = new DatabaseSync(foreignPath)
-    foreign.exec(testSql('set-user-version-17'))
+    foreign.exec(testSql('set-user-version-19'))
     foreign.exec(testSql('set-application-id-12345'))
     foreign.close()
     await expect(openDatabase(DatabaseSync, foreignPath, 'wal', DEFAULT_BUSY_TIMEOUT_MS)).rejects.toThrow(/has application id 12345/)
@@ -558,7 +558,7 @@ describe('SessionPersistenceSqlite schema ownership', () => {
 
   it('rejects schema ownership changes observed at mutation time', async () => {
     const changedVersion = await openDatabase(DatabaseSync, ':memory:', 'wal', DEFAULT_BUSY_TIMEOUT_MS)
-    changedVersion.exec(testSql('set-user-version-16'))
+    changedVersion.exec(testSql('set-user-version-17'))
     expect(() => { validateSchemaForMutation(DatabaseSync, changedVersion, ':memory:') })
       .toThrow(/schema changed before mutation/)
     changedVersion.close()
@@ -576,25 +576,25 @@ describe('SessionPersistenceSqlite schema ownership', () => {
       version: 0,
       created_at: 1,
       cwd: '/project',
+      team_id: 'team-stored',
+      participant_id: 'participant-stored',
       parent_session: 'parent',
       seed_length: 4,
-      origin: 'subagent',
       incarnation: '00000000-0000-4000-8000-000000000000',
       revision: 1,
-      delegation_depth: 2,
       agent_preset: 'minimal',
     }
     expect(rowToMeta(decodeSessionRow(base))).toMatchObject({
       cwd: '/project',
+      teamId: 'team-stored',
+      participantId: 'participant-stored',
       parentSession: 'parent',
       seedLength: 4,
-      origin: 'subagent',
-      delegationDepth: 2,
       agentPreset: 'minimal',
     })
     expect(() => decodeSessionRow({ ...base, created_at: -1 })).toThrow(/created_at/)
-    expect(() => decodeSessionRow({ ...base, origin: 'external' })).toThrow(/origin/)
-    expect(() => decodeSessionRow({ ...base, delegation_depth: -1 })).toThrow(/delegation_depth/)
+    expect(() => decodeSessionRow({ ...base, origin: 'subagent' })).toThrow(/retired subagent header fields/)
+    expect(() => decodeSessionRow({ ...base, delegation_depth: 1 })).toThrow(/retired subagent header fields/)
   })
 
   it('rejects malformed SQLite row primitives generically', () => {
@@ -603,12 +603,12 @@ describe('SessionPersistenceSqlite schema ownership', () => {
       version: 0,
       created_at: 1,
       cwd: '/project',
+      team_id: null,
+      participant_id: null,
       parent_session: null,
       seed_length: null,
-      origin: null,
       incarnation: '00000000-0000-4000-8000-000000000000',
       revision: 1,
-      delegation_depth: null,
       agent_preset: null,
     }
     for (const [value, message] of [
@@ -618,12 +618,21 @@ describe('SessionPersistenceSqlite schema ownership', () => {
       [{ ...base, version: '0' }, /version.*safe integer/],
       [{ ...base, cwd: 'relative' }, /cwd.*absolute/],
       [{ ...base, cwd: 1 }, /cwd.*string or null/],
+      [{ ...base, team_id: 'team', participant_id: null }, /team_id and participant_id/],
+      [{ ...base, team_id: null, participant_id: 'participant' }, /team_id and participant_id/],
+      [{ ...base, team_id: '', participant_id: 'participant' }, /team_id.*empty/],
+      [{ ...base, team_id: 'team', participant_id: '' }, /participant_id.*empty/],
+      [{ ...base, team_id: 1, participant_id: 'participant' }, /team_id.*string or null/],
+      [{ ...base, team_id: 'team', participant_id: 1 }, /participant_id.*string or null/],
       [{ ...base, incarnation: 'invalid' }, /incarnation.*UUID/],
       [{ ...base, seed_length: '1' }, /seed_length.*safe integer or null/],
       [{ ...base, agent_preset: 1 }, /agent_preset.*string or null/],
     ] as const) {
       expect(() => decodeSessionRow(value)).toThrow(message)
     }
+    const decoded = rowToMeta(decodeSessionRow(base))
+    expect(decoded.teamId).toBeUndefined()
+    expect(decoded.participantId).toBeUndefined()
 
     const eventRow = {
       seq: 0, type: 'turn/start', time: 1, data: '{}',
@@ -651,8 +660,38 @@ describe('SessionPersistenceSqlite schema ownership', () => {
     const db = new DatabaseSync(path)
     db.prepare(testSql('update-invalid-session-metadata')).run(header.id)
     db.close()
-    await expect(store.list()).rejects.toThrow(/seed_length|origin|delegation_depth/)
-    await expect(store.loadStored(header.id)).rejects.toThrow(/seed_length|origin|delegation_depth/)
+    await expect(store.list()).rejects.toThrow(/seed_length/)
+    await expect(store.loadStored(header.id)).rejects.toThrow(/seed_length/)
+    await store.close()
+  })
+
+  it('round-trips paired Team and Participant header references through physical storage', async () => {
+    const path = await freshDbPath('clocky-sqlite-team-participant-')
+    const store = new SqliteStore({ path, journalMode: 'wal', busyTimeoutMs: DEFAULT_BUSY_TIMEOUT_MS })
+    const header = {
+      ...meta('team-participant', '/project'),
+      teamId: 'team-physical',
+      participantId: 'participant-physical',
+    }
+
+    await store.appendBatch(header, [chunk(0)], false)
+    expect((await store.loadStored(header.id))?.meta).toMatchObject({
+      teamId: 'team-physical',
+      participantId: 'participant-physical',
+    })
+    await store.close()
+  })
+
+  it('rejects a physical one-sided Team and Participant binding', async () => {
+    const path = await freshDbPath('clocky-sqlite-one-sided-team-participant-')
+    const store = new SqliteStore({ path, journalMode: 'wal', busyTimeoutMs: DEFAULT_BUSY_TIMEOUT_MS })
+    const header = meta('one-sided-team-participant')
+
+    await store.appendBatch(header, [chunk(0)], false)
+    const db = new DatabaseSync(path)
+    expect(() => db.prepare(testSql('update-one-sided-team-binding')).run(header.id))
+      .toThrow(/CHECK constraint/)
+    db.close()
     await store.close()
   })
 
@@ -712,7 +751,7 @@ describe('SessionPersistenceSqlite edge behavior', () => {
     await ctx.fiber.dispose()
   })
 
-  it('keeps empty mutations inert and rolls back a repair without metadata', async () => {
+  it('materializes an empty initial batch and rejects a repair without a torn tail', async () => {
     const store = new SqliteStore({
       path: ':memory:',
       journalMode: 'wal',
@@ -721,8 +760,8 @@ describe('SessionPersistenceSqlite edge behavior', () => {
     const header = meta('empty-store')
     await store.appendBatch(header, [], false)
     await store.commitRepair(header, undefined, [])
-    expect(await store.readStoredRevision(header.id)).toBeUndefined()
-    await expect(store.commitRepair(header, 0, [])).rejects.toThrow(/metadata row is missing/)
+    expect(await store.readStoredRevision(header.id)).toBeDefined()
+    await expect(store.commitRepair(header, 0, [])).rejects.toThrow(/repair is stale/)
     await store.close()
   })
 

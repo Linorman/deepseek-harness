@@ -29,7 +29,6 @@ async function seedInterruptedSession(root: string, cwd: string): Promise<string
     id: sessionId,
     createdAt: 1,
     cwd,
-    delegationDepth: 0,
   }
   const events: SessionEvent[] = [
     { type: 'turn/start', seq: 0, time: 10, data: { turn: 1 } },

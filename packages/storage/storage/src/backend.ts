@@ -6,8 +6,15 @@
  * @module @clocky/clocky-storage/src/backend
  */
 
-/** Allowed format for unit and table names: safe as a file name and as a SQL identifier segment without escaping. */
+import type { LogFacet } from './log.ts'
+
+/** Allowed format for KV unit and table names: safe as a file name and as a SQL identifier segment without escaping. */
 export const UNIT_NAME_RE = /^[a-z][a-z0-9_]*$/
+
+export type {
+  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogFacet, LogStream,
+  LogStreamDescriptor, LogStreamInfo,
+} from './log.ts'
 
 /**
  * One registered backend. A backend owns exactly one medium and shares its
@@ -17,6 +24,9 @@ export const UNIT_NAME_RE = /^[a-z][a-z0-9_]*$/
 export interface StorageBackend {
   /** Key-value operations; absent when this backend cannot serve them. */
   readonly kv?: KvFacet
+
+  /** Append-only stream operations; absent when this backend cannot serve them. */
+  readonly log?: LogFacet
 
   /**
    * Drain in-flight writes across all open units and release the medium.

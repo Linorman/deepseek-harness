@@ -4,7 +4,7 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
+import { lstatSync, realpathSync, rmSync, unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 /** Where and with what environment a release step runs a command. */
@@ -98,6 +98,22 @@ export function run(command: string, args: readonly string[], options: RunOption
   const result = spawnSync(command, [...args], { cwd: options.cwd, env: options.env, stdio: 'inherit' })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${String(result.status)}`)
+}
+
+/** Remove one release-owned output path without following a link-shaped root. */
+export function removeOwnedTree(path: string): void {
+  let metadata: ReturnType<typeof lstatSync>
+  try {
+    metadata = lstatSync(path)
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw error
+  }
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
+    unlinkSync(path)
+    return
+  }
+  rmSync(path, { recursive: true, force: true })
 }
 
 /**

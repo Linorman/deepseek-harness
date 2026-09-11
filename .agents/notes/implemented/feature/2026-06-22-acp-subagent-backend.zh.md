@@ -10,7 +10,7 @@ subagent seam（[seam Agent Note](2026-06-21-subagent-capability-seam.zh.md)）�
 
 ## 决策
 
-`@deepseek-ai/dsh-subagent-acp` 注册一个 `SubagentProvider`，将每个子 agent 运行在一个通过 spawn 启动的子进程中，并以 ACP *客户端*身份驱动它。它是现有服务端桥接 `@deepseek-ai/dsh-acp`（ACP *agent*）的方向反转孪生体：桥接应答 `initialize`/`newSession`/`prompt`；本后端调用它们并实现 `Client` 回调（`sessionUpdate`、`requestPermission`）。将配置的 spawn 命令指向 `acp-agent` 示例，即可让 harness 与自身进程通信。
+`@clocky/clocky-subagent-acp` 注册一个 `SubagentProvider`，将每个子 agent 运行在一个通过 spawn 启动的子进程中，并以 ACP *客户端*身份驱动它。它是现有服务端桥接 `@clocky/clocky-acp`（ACP *agent*）的方向反转孪生体：桥接应答 `initialize`/`newSession`/`prompt`；本后端调用它们并实现 `Client` 回调（`sessionUpdate`、`requestPermission`）。将配置的 spawn 命令指向 `acp-agent` 示例，即可让 harness 与自身进程通信。
 
 ### 每次运行启动全新进程
 
@@ -57,6 +57,6 @@ ACP `StopReason` → harness `SubagentStopReason`：`end_turn`→`completed`、`
 
 每次运行都要付出一个全新子进程的代价（spawn + `initialize` + `newSession`）。父进程仅暴露子 agent 的最终回答：`session/update` 中的思考和工具调用卡片被消费后丢弃，权限提示从不到达人类——由配置的策略应答。子进程环境默认经过凭证清洗，因此其自身的模型密钥需通过 `config.env` 显式提供。
 
-## 兄弟产品提供方
+## 兄弟传输方式
 
-[Codex app-server 与 Claude Code Agent SDK 提供方](2026-08-04-claude-code-and-codex-subagent-backends.zh.md)作为按名称注册的兄弟提供方，采用同样的进程外启动/提示词/结算/取消边界。A2A 仍是未来的兄弟传输方式；ACP 后端证明了 subagent seam 能够支持这项边界，而无需负责产品私有协议。
+A2A 仍是未来的兄弟传输方式；ACP 后端证明了 subagent seam 能够支持进程外的启动／提示词／结算／取消边界，而无需负责提供方私有协议。

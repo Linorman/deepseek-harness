@@ -27,6 +27,9 @@ import { createProcessInspector } from './process-inspector.ts'
 import type { ProcessInspector } from './process-inspector.ts'
 import { LocalTerminalHandle } from './terminal.ts'
 
+export { createProcessInspector } from './process-inspector.ts'
+export type { ProcessIdentity, ProcessInspector } from './process-inspector.ts'
+
 /**
  * Local subprocess service: detached process trees, Node-shaped stdio
  * dispositions (raw pipes, inherit, bounded tail-keep collection with spill

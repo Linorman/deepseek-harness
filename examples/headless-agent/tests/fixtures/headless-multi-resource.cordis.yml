@@ -1,0 +1,25 @@
+- id: human-approval-driver
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: multi-resource-model
+    model: multi-resource-model
+
+- id: team-run
+  config:
+    workerCount: 2
+    workerPreset: standard
+    reviewerPreset: standard
+
+# Source changes and startup drive cleanup without a discovery pulse.
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: multi-resource-driver
+      name: './snapshot-fixtures/headless-multi-resource-driver.ts'

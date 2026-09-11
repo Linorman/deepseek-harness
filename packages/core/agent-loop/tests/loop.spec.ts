@@ -4,7 +4,7 @@ import LlmRuntime, { createUserMessage, CallId, LlmError, StreamChunk  } from '@
 import SessionStore, { SessionId, TurnEndReason } from '@clocky/clocky-session'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import ToolRuntime, { defineContentToolFixture } from '@clocky/clocky-tools'
-import AgentRegistry, { type Agent } from '@clocky/clocky-agent'
+import AgentRegistry, { openAgentWorkspaceLease, type Agent } from '@clocky/clocky-agent'
 
 import AgentLoop from '@clocky/clocky-agent-loop'
 import { MockAdapter, maxTokensResponse, textResponse, toolCallResponse } from './mock-adapter.ts'
@@ -270,6 +270,25 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
 
     expect(adapter.requests[0]!.system).toBe('You are an AI agent running in a plugin-based harness.\n\nWorking in /work/space.')
+  })
+
+  it('renders a scoped Team workspace root instead of the Session cwd', async () => {
+    const adapter = new MockAdapter([textResponse('ok')])
+    const ctx = await harness(adapter, 'Working in {{cwd}}.')
+    const handle = await ctx.agents.create({
+      sessionId: SessionId('s-team-workspace-cwd'),
+      meta: { cwd: '/session/workspace' },
+      agentOptions: { provider: 'mock', model: 'mock' },
+    })
+    const lease = openAgentWorkspaceLease(handle.agent)
+    const dispose = lease.publishRoot('/team/worktree')
+
+    send(handle.agent, 'hi')
+    await waitForIdle(ctx, handle.agent)
+
+    expect(adapter.requests[0]!.system).toBe('You are an AI agent running in a plugin-based harness.\n\nWorking in /team/worktree.')
+    dispose()
+    lease.dispose()
   })
 
   it('contains a strict-variable render failure: the turn errors, the loop keeps serving turns', async () => {

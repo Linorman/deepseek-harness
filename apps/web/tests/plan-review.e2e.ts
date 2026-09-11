@@ -14,11 +14,13 @@ import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import type { SessionEvent } from '@clocky/clocky-session'
+import { SessionId } from '@clocky/clocky-session'
+import type { TeamStateSnapshot } from '@clocky/clocky-team'
 import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/plan-review', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -29,14 +31,14 @@ const SIDEBAR_EXPECTED = join(SNAPSHOT_DIR, 'sidebar.expected.md')
 const APPROVED_EXPECTED = join(SNAPSHOT_DIR, 'approved.expected.md')
 const MODE = webSnapshotMode()
 
-// One command line: /plan enters plan mode and submits the rest as the turn's
-// message. The task is deliberately self-contained (nothing to explore in a
-// fresh workspace) so the recorded turn is a plan and its review, and the
-// approved continuation is one word.
+// The task is deliberately self-contained (nothing to explore in a fresh
+// workspace) so the recorded turn is a plan and its review, and the approved
+// continuation is one word. Setup seeds plan mode on the Team-owned
+// coordinator, so the first model-visible prompt remains exactly TASK.
 const TASK = 'Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. '
   + 'Call exit_plan_mode with a short plan of at most five bullet points. '
   + 'Once the plan is approved, reply with the single word DONE and stop.'
-const LINE = `/plan ${TASK}`
+const OBJECTIVE = 'Open the plan review task.'
 
 describe('web e2e: plan review takeover round trip', () => {
   let scaffold: WebScaffold
@@ -47,15 +49,32 @@ describe('web e2e: plan review takeover round trip', () => {
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 })
+    const created = await scaffold.authenticatedRpc<TeamStateSnapshot>('team.create', {
+      objective: OBJECTIVE,
+      cwd: scaffold.workspaceCwd,
+      agentPreset: 'standard',
+    })
+    if (!created.result.ok) throw new Error(`team.create failed: ${created.result.error.message}`)
+    const coordinator = created.result.value.participants.find(participant => participant.role === 'coordinator')
+    const activation = coordinator === undefined
+      ? undefined
+      : created.result.value.activations.find(binding => binding.activation.participantId === coordinator.id)
+    if (activation === undefined) throw new Error('plan-review Team has no coordinator activation')
+    const session = scaffold.ctx.sessions.get(SessionId(activation.sessionId))
+    if (session === undefined) throw new Error('plan-review coordinator Session was not published')
+    session.append('plan/mode', { active: true })
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     // English page: the decision copy is the surface under test, and the
     // golden pins one language.
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    await page.getByText(OBJECTIVE, { exact: true }).waitFor({ timeout: 15_000 })
+    await page.getByText(OBJECTIVE, { exact: true }).click()
+    await page.locator('section[aria-label="Tasks"] [aria-current="page"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {
@@ -71,7 +90,7 @@ describe('web e2e: plan review takeover round trip', () => {
     const input = page.locator('textarea').first()
     await input.waitFor({ timeout: 10_000 })
     const settled = scaffold.whenTurnSettled(MODE === 'record' ? 180_000 : 30_000)
-    await input.fill(LINE)
+    await input.fill(TASK)
     await input.press('Enter')
 
     // The card takes over the input area while exit_plan_mode blocks. Its
@@ -83,14 +102,13 @@ describe('web e2e: plan review takeover round trip', () => {
     expect(await page.locator('[data-question-key]').count()).toBe(0)
     await expect.poll(() => card.getByText('Plan review').count(), { timeout: 10_000 }).toBeGreaterThan(0)
 
-    const selectedRow = page.locator('[role="treeitem"][aria-selected="true"]')
-    await expect.poll(() => selectedRow.locator('[data-state="warning"]').count(), { timeout: 10_000 }).toBe(1)
-    await expect.poll(() => selectedRow.getByText('Plan awaiting review', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    const selectedTask = page.locator('section[aria-label="Tasks"] [aria-current="page"]')
+    await expect.poll(() => selectedTask.count(), { timeout: 10_000 }).toBe(1)
 
     if (MODE !== 'record') {
       const snapshot = await captureStableAria(page, '[data-plan-review-key]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(REVIEW_EXPECTED, snapshot, MODE)
-      const sidebar = await captureStableAria(page, '[role="treeitem"][aria-selected="true"]', scaffold.workspaceCwd)
+      const sidebar = await captureStableAria(page, 'section[aria-label="Tasks"] [aria-current="page"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(SIDEBAR_EXPECTED, sidebar, MODE)
     }
 
@@ -107,7 +125,7 @@ describe('web e2e: plan review takeover round trip', () => {
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     // Card gone; regular input restored.
     expect(await page.locator('[data-plan-review-key]').count()).toBe(0)
-    expect(await selectedRow.locator('[data-state="warning"]').count()).toBe(0)
+    expect(await selectedTask.count()).toBe(1)
     await expect.poll(() => page.locator('textarea').first().isEnabled(), { timeout: 10_000 }).toBe(true)
     const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(APPROVED_EXPECTED, snapshot, MODE)

@@ -1,0 +1,29 @@
+{
+  "scenario": "human-question-restart",
+  "backend": "sqlite",
+  "outcome": "cancellation",
+  "independentHost": true,
+  "initialQuestion": "cancelled",
+  "cleanupAt": "intent",
+  "originalPendingRetained": true,
+  "questionHistoryRecords": 2,
+  "recovered": {
+    "question": "question",
+    "questionPhase": "cancelled",
+    "questionOutcome": {
+      "kind": "team-cancelled"
+    },
+    "detailsRetained": true,
+    "task": "running",
+    "taskAttempt": "retained-unsettled",
+    "workspace": "active",
+    "oldEpochs": 2,
+    "quiescedEpochs": 0,
+    "team": "stalled",
+    "goal": "active",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactUnprovenEpoch": true,
+    "modelRequests": 0,
+    "newQuestionCalls": 0
+  }
+}

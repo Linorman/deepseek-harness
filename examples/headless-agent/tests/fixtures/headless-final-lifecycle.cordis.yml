@@ -1,0 +1,35 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: headless-final-lifecycle-model
+    model: headless-final-lifecycle-model
+
+# Expiry is produced by the scheduler's real deadline scan.
+- id: team-scheduler-dag
+  config:
+    leaseDurationMs: 3600000
+    maxAssignmentsPerDrive: 1
+    maxExpirationsPerDrive: 1
+    maxWakeDispatchesPerDrive: 1
+    maxConflictsPerDrive: 4
+    maxActiveAttemptsPerParticipant: 1
+    permittedWorkspaceModes: [shared]
+    pulseIntervalMs: 10
+    disposalTimeoutMs: 5000
+
+# Completion must settle the live coordinator without a closure discovery pulse.
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: headless-final-lifecycle-driver
+      name: './snapshot-fixtures/headless-final-lifecycle-driver.ts'

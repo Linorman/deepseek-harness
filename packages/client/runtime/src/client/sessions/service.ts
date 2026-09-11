@@ -16,7 +16,7 @@
  */
 import type { Context, Fiber } from '@clocky/cordis'
 import type {
-  IApiClient, RpcError, RpcResult, SessionId, SubagentAddress, JobView, WorkspaceId,
+  IApiClient, RpcResult, SessionId, JobView,
 } from '@clocky/clocky-api-remotes/client'
 // Value import from the inline-safe wire layer (not the connection plugin):
 // plugin-to-plugin value imports are a bundle purity error.
@@ -33,7 +33,7 @@ import { createScope, scopeOf as scopeTagOf } from '../agents/scope.ts'
 import type { ConversationRuntime } from './conversation-assembler.ts'
 import { SessionManager } from './manager.ts'
 import type { SessionRemotes } from './remotes.ts'
-import type { SessionListPhase, SessionSearchResultItem, SubagentCatalogSnapshot } from './manager.ts'
+import type { SessionListPhase, SessionSearchResultItem } from './manager.ts'
 import type { PendingInteractionStatus } from './pending.ts'
 import { SessionProvideChannel } from './provide.ts'
 import type { Session } from './session.ts'
@@ -52,19 +52,14 @@ export interface SessionSummary {
    * session actually runs rather than the deployment's current default.
    */
   agentPreset?: string
-  parentId?: SessionId
-  /** Coarse durable origin for navigation filtering; not a continuation capability. */
-  origin?: 'subagent'
   running: boolean
-  /** User interaction currently blocking this session (sidebar amber-dot state). */
+  /** User interaction currently blocking this session. */
   pendingInteraction?: PendingInteractionStatus
-  /** Finished while not selected and not yet opened — the sidebar's green "done" reminder. Absent = false. */
+  /** Finished while not selected and not yet opened. Absent = false. */
   completed?: boolean
   /**
-   * Empty-log bit (host summary derivation mirror). New Session reuses a blank
-   * one targeting the same workspace. Filtering stays with the consumer: the
-   * store carries every row, while the Workspace browser shows only the
-   * selected blank entry.
+   * Empty-log bit (Host summary derivation mirror). Non-product Workspace
+   * flows may reuse a blank Session targeting the same Workspace.
    */
   blank: boolean
   updatedAt: number
@@ -78,61 +73,23 @@ export interface SessionSummary {
  * sidebar highlighting and SessionProvider share one fact source).
  */
 export interface SessionListState {
-  /** Host-list order; addressed breadcrumb-only rows are excluded. */
+  /** Host-list order. */
   ids: SessionId[]
-  /** Host rows plus the current addressed subagent route used by navigation. */
+  /** Host rows keyed by Session id. */
   byId: Record<SessionId, SessionSummary>
   current: SessionId | undefined
   /** Arrival lifecycle projected 1:1 from the manager snapshot (see SessionListPhase): empty-with-ready means "truly no sessions". */
   phase: SessionListPhase
-  /** Direct durable catalogs keyed by their selected parent address. */
-  subagentsByParent: Readonly<Record<SessionId, SubagentCatalogSnapshot>>
   /**
    * Background jobs each session can see, mirrored last-wins from
    * `session/jobs`. A missing key is an empty set — the Host sends no baseline
    * for a session without tasks — so consumers read absence, never a sentinel.
    */
   jobsBySession: Readonly<Record<SessionId, readonly JobView[]>>
-  /** Current session's catalog-derived address, absent on ordinary navigation. */
-  currentAddress: SubagentAddress | undefined
 }
 
-/** Persisted navigation cell: address survives refresh for correct history routing. */
 interface SessionSelection {
   sessionId?: SessionId
-  subagentAddress?: SubagentAddress
-}
-
-/** Structured session-create failure. */
-export class SessionCreateError extends Error {
-  override readonly name = 'SessionCreateError'
-
-  /**
-   * @param rpcError - Host business or folded transport error.
-   * @param requestedSessionId - caller-preallocated id used for later stream/list reconciliation.
-   */
-  constructor(
-    readonly rpcError: RpcError,
-    readonly requestedSessionId: SessionId | undefined,
-  ) {
-    super(`session create failed: ${rpcError.code}: ${rpcError.message}`)
-  }
-}
-
-/** Structured session-fork failure. */
-export class SessionForkError extends Error {
-  override readonly name = 'SessionForkError'
-
-  /**
-   * @param rpcError - Host business or folded transport error.
-   * @param sourceSessionId - the session the fork was cut from.
-   */
-  constructor(
-    readonly rpcError: RpcError,
-    readonly sourceSessionId: SessionId,
-  ) {
-    super(`session fork failed: ${rpcError.code}: ${rpcError.message}`)
-  }
 }
 
 /** Session assembly handle for SessionProvider/inject factories (identity-stable per session). */
@@ -173,24 +130,6 @@ function displayTitleOf(title: string | undefined, cwd: string | undefined, id: 
     if (base !== '') return base
   }
   return id
-}
-
-/**
- * Increment a trailing fork number while preserving its half-width or
- * full-width parentheses; an unnumbered title starts with ` (1)`.
- * @param title - source session's durable title.
- * @returns the title assigned to the fork child.
- */
-function increasedForkTitle(title: string): string {
-  const ascii = /^(.*?)\((\d+)\)$/u.exec(title)
-  if (ascii?.[1] !== undefined && ascii[2] !== undefined) {
-    return `${ascii[1]}(${BigInt(ascii[2]) + 1n})`
-  }
-  const fullWidth = /^(.*?)（(\d+)）$/u.exec(title)
-  if (fullWidth?.[1] !== undefined && fullWidth[2] !== undefined) {
-    return `${fullWidth[1]}（${BigInt(fullWidth[2]) + 1n}）`
-  }
-  return `${title} (1)`
 }
 
 interface ScopeRecord {
@@ -296,12 +235,11 @@ export class SessionRuntime implements ISessions {
       api,
       remote,
       restored.sessionId,
-      restored.subagentAddress,
       conversation,
     )
     this.list = createSnapshotStore<SessionListState>({
       ids: [], byId: {}, current: undefined, phase: 'pending',
-      subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+      jobsBySession: {},
     })
     // The manager owns wire truth; the store is its projection. Manager
     // notifications are already microtask-batched.
@@ -373,41 +311,6 @@ export class SessionRuntime implements ISessions {
     this.manager.select(id)
   }
 
-  /**
-   * Open a healthy catalog child through its direct-parent address.
-   * @param address - catalog-derived parent and child ids.
-   */
-  openSubagent(address: SubagentAddress): void {
-    this.manager.selectSubagent(address)
-  }
-
-  /**
-   * Resolve an already discovered direct-parent address without opening it.
-   * Feature plugins use this to avoid Agent-bound RPCs in persisted child views.
-   * @param id - possible addressed child id.
-   * @returns The retained address, when present.
-   */
-  subagentAddress(id: SessionId): SubagentAddress | undefined {
-    return this.manager.subagentAddress(id)
-  }
-
-  /**
-   * Inform the runtime whether a catalog menu is consuming membership updates.
-   * @param parentSessionId - selected parent.
-   * @param open - menu state.
-   */
-  setSubagentCatalogOpen(parentSessionId: SessionId, open: boolean): void {
-    this.manager.setSubagentCatalogOpen(parentSessionId, open)
-  }
-
-  /**
-   * Refresh one direct-child catalog.
-   * @param parentSessionId - catalog owner.
-   */
-  refreshSubagents(parentSessionId: SessionId): Promise<void> {
-    return this.manager.refreshSubagents(parentSessionId)
-  }
-
   noteAgentPreset(sessionId: SessionId, agentPreset: string): void {
     this.manager.noteAgentPreset(sessionId, agentPreset)
   }
@@ -469,66 +372,6 @@ export class SessionRuntime implements ISessions {
   /** Drop generation-scoped live interaction state the moment a connection generation dies. */
   handleDisconnected(): void {
     this.manager.handleDisconnected()
-  }
-
-  /**
-   * Create a session on the host. Resolution guarantee: by the time the
-   * promise resolves, the created session is in the list store and
-   * {@link SessionRuntime.binding} resolves it — callers (New Session
-   * draft hand-off) may address the scope synchronously, without waiting a
-   * notifier flush. The synchronous projection below makes this structural
-   * rather than an accident of microtask ordering.
-   * @param opts - target workspace or directory and an optional preallocated id.
-   * @returns the new session id.
-   * @throws {SessionCreateError} with the requested id.
-   */
-  async create(opts: { workspaceId?: WorkspaceId; cwd?: string; sessionId?: SessionId } = {}): Promise<SessionId> {
-    const result = await this.manager.create(opts)
-    if (!result.ok) throw new SessionCreateError(result.error, opts.sessionId)
-    this.projectList()
-    return result.value.sessionId
-  }
-
-  /**
-   * Fork a session from a completed-turn prefix of the source (same
-   * synchronous-addressability guarantee as {@link SessionRuntime.create}:
-   * on resolution the child is in the list store and open() can target it).
-   * @param opts - source session id, the optional event seq anchoring the
-   *   cut (the boundary is the first turn/end at or after it; an in-log
-   *   anchor in an open turn is unavailable rather than clipped backward),
-   *   and whether to increment an inherited durable title before resolving.
-   *   A fractional anchor floors to a real event seq: the frozen nodes of an
-   *   interrupted turn carry flow-ordering seqs between two events, and the
-   *   wire takes integers only.
-   * @returns the child session id.
-   * @throws {SessionForkError} with the source id.
-   * @throws {Error} when a requested child-title rename fails after creation.
-   */
-  async fork(opts: {
-    sessionId: SessionId
-    atSeq?: number
-    increaseTitle?: boolean
-  }): Promise<SessionId> {
-    const sourceTitle = opts.increaseTitle
-      ? this.list.getSnapshot().byId[opts.sessionId]?.title
-      : undefined
-    const result = await this.manager.fork({
-      sessionId: opts.sessionId,
-      // Flooring lands inside the anchor's own turn (every turn opens with a
-      // turn/start), so the host's first-turn/end-at-or-after cut still ends
-      // on that turn — never clipped back to the previous one.
-      ...(opts.atSeq === undefined ? {} : { atSeq: Math.floor(opts.atSeq) }),
-    })
-    if (!result.ok) throw new SessionForkError(result.error, opts.sessionId)
-    this.projectList()
-    const childId = result.value.sessionId
-    if (sourceTitle !== undefined) {
-      const child = this.binding(childId)?.session
-      if (child === undefined) throw new Error(`fork child "${childId}" is not locally addressable`)
-      const renamed = await child.rename(increasedForkTitle(sourceTitle))
-      if (!renamed.ok) throw new Error(`fork child rename failed: ${renamed.error.code}: ${renamed.error.message}`)
-    }
-    return childId
   }
 
   /**
@@ -618,16 +461,10 @@ export class SessionRuntime implements ISessions {
      * cannot miss; kept so a future current writer cannot crash the notify. */
     if (record !== undefined) {
       void record.session.open()
-      void this.manager.refreshSubagents(current)
     }
   }
 
-  /**
-   * Lazily mint the scope + binding for an eligible session. Eligibility and
-   * prune share one predicate: listed on the host or selected
-   * through a retained subagent address. Breadcrumb-only ancestors remain
-   * summary data and do not keep scopes alive.
-   */
+  /** Lazily mint the scope and binding for a listed session. */
   private resolve(id: SessionId): ScopeRecord | undefined {
     const existing = this.scopes.get(id)
     if (existing !== undefined) return existing
@@ -658,9 +495,7 @@ export class SessionRuntime implements ISessions {
 
   /** Project the manager's list snapshot into the store (title derivation is display-only). */
   private projectList(): void {
-    const {
-      items, current, phase, subagentsByParent, jobsBySession, currentAddress,
-    } = this.manager.getListSnapshot()
+    const { items, current, phase, jobsBySession } = this.manager.getListSnapshot()
     const ids: SessionId[] = []
     const byId: Record<SessionId, SessionSummary> = {}
     for (const entry of items) {
@@ -680,38 +515,7 @@ export class SessionRuntime implements ISessions {
           : { projectionValues: entry.projectionValues }),
         ...(entry.title !== undefined ? { title: entry.title } : {}),
         ...(entry.cwd !== undefined ? { cwd: entry.cwd } : {}),
-        ...(entry.parentSessionId !== undefined ? { parentId: entry.parentSessionId } : {}),
-        ...(entry.origin !== undefined ? { origin: entry.origin } : {}),
         ...(entry.agentPreset !== undefined ? { agentPreset: entry.agentPreset } : {}),
-      }
-    }
-    if (current !== undefined && currentAddress !== undefined) {
-      const seen = new Set<SessionId>()
-      let address: SubagentAddress | undefined = currentAddress
-      while (address !== undefined && !seen.has(address.childSessionId)) {
-        const childId = address.childSessionId
-        seen.add(childId)
-        const child = subagentsByParent[address.parentSessionId]?.entries
-          .find(entry => entry.kind === 'child' && entry.id === childId)
-        if (child?.kind !== 'child') break
-        const displayTitle = child.label ?? childId
-        const summary = byId[childId]
-        if (summary === undefined) {
-          byId[childId] = {
-            id: childId,
-            displayTitle,
-            parentId: address.parentSessionId,
-            origin: 'subagent',
-            running: child.activity === 'running',
-            blank: false,
-            updatedAt: 0,
-          }
-        } else if (summary.displayTitle !== displayTitle) {
-          byId[childId] = { ...summary, displayTitle }
-        }
-        const parent = byId[address.parentSessionId]
-        if (parent !== undefined && parent.origin !== 'subagent') break
-        address = this.manager.navigationAddress(address.parentSessionId)
       }
     }
     const persisted = this.selection.getSnapshot().sessionId
@@ -719,17 +523,10 @@ export class SessionRuntime implements ISessions {
     // stays on empty; the in-memory selection still resurfaces a masked id.
     if (current === undefined) {
       if (persisted !== undefined) this.selection.set({})
-    } else if (byId[current] !== undefined
-      && (persisted !== current
-        || this.selection.getSnapshot().subagentAddress?.childSessionId !== currentAddress?.childSessionId
-        || this.selection.getSnapshot().subagentAddress?.parentSessionId !== currentAddress?.parentSessionId
-        || this.selection.getSnapshot().subagentAddress?.mode !== currentAddress?.mode)) {
-      this.selection.set({
-        sessionId: current,
-        ...(currentAddress === undefined ? {} : { subagentAddress: currentAddress }),
-      })
+    } else if (byId[current] !== undefined && persisted !== current) {
+      this.selection.set({ sessionId: current })
     }
-    this.list.set({ ids, byId, current, phase, subagentsByParent, jobsBySession, currentAddress })
+    this.list.set({ ids, byId, current, phase, jobsBySession })
     this.pruneScopes()
   }
 

@@ -38,7 +38,7 @@ function snapshotWith(queue: QueuedMessage[]): ConversationSnapshot {
     sessionId: SID, views: EMPTY_CONVERSATION_VIEWS, chat: EMPTY_CHAT_SNAPSHOT,
     nodes: [], turnTimings: new Map(), turnEnds: new Map(), partial: null, runningCalls: [],
     pending: [], queue, running: true, composerPhase: 'active', removed: false, openState: 'open', openError: null,
-    hasMore: false, loadingOlder: false, promptError: null, blank: false, subagent: null, lastAgentError: null,
+    hasMore: false, loadingOlder: false, promptError: null, blank: false, lastAgentError: null,
   }
 }
 
@@ -314,28 +314,6 @@ describe('QueueDock', () => {
     expect(rendered.getByLabelText('插话发送').getAttribute('title')).toBe('仅运行中可插话发送')
   })
 
-  it('renders a session-backed subagent Queue without unsupported actions', () => {
-    const snap = {
-      ...snapshotWith([row('i-subagent', 'pending child follow-up')]),
-      subagent: {
-        address: {
-          parentSessionId: 'parent' as SessionId,
-          childSessionId: SID,
-          mode: 'continuable' as const,
-        },
-        parentAvailable: true,
-      },
-    }
-    const source = liveSession(snap)
-    const view = render(
-      <QueueDock {...kitFor(snap)} useSession={source.useSession} />,
-    )
-
-    expect(view.getByText('pending child follow-up')).toBeTruthy()
-    expect(view.queryByLabelText('编辑排队消息')).toBeNull()
-    expect(view.queryByLabelText('删除排队消息')).toBeNull()
-    expect(view.queryByLabelText('插话发送')).toBeNull()
-  })
 
   it('keeps the row and reports a genuine steer failure', async () => {
     const snap = snapshotWith([row('i-steer-race', 'pending steer')])

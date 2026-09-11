@@ -1,0 +1,11 @@
+{
+  "coordinatorTool": "[7] Alpha source. Beta detail.",
+  "humanApi": "[7] Alpha source. Beta detail.",
+  "sameFingerprint": true,
+  "retry": "same durable record",
+  "sessionView": {
+    "summary": "[7] Shared discussion source.",
+    "tail": "Uncovered discussion tail.",
+    "sourceCount": 2
+  }
+}

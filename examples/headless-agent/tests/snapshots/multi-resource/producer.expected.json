@@ -1,0 +1,30 @@
+{
+  "scenario": "multi-resource-producer",
+  "initial": {
+    "workflow": "ready",
+    "tasks": [
+      "running",
+      "pending",
+      "review"
+    ],
+    "approval": "pending",
+    "activeAllocations": 1,
+    "releasedAllocations": 1,
+    "epochs": 4,
+    "completedReviewAttempts": 1,
+    "reviewDecisions": 0
+  },
+  "terminal": {
+    "team": "cancelled",
+    "workflow": "cancelled",
+    "tasks": [
+      "cancelled",
+      "cancelled",
+      "cancelled"
+    ],
+    "approval": "cancelled",
+    "releasedAllocations": 2,
+    "quiescedEpochs": 4,
+    "filesUnchanged": true
+  }
+}

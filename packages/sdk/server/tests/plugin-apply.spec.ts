@@ -1,16 +1,31 @@
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { PassThrough, Writable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Loader from '@clocky/cordis-plugin-loader'
+import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
+import AgentRuntime from '@clocky/clocky-agent-runtime'
+import * as InProcessRuntime from '@clocky/clocky-agent-runtime-in-process'
 import * as agentCore from '@clocky/clocky-agent-spine-demo'
 import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import Storage from '@clocky/clocky-storage'
+import * as StorageJson from '@clocky/clocky-storage-json'
+import * as StorageLog from '@clocky/clocky-storage-log'
+import * as TeamActivationController from '@clocky/clocky-team-activation-controller'
+import * as TeamAgentClient from '@clocky/clocky-team-agent-client'
+import * as DirectChannel from '@clocky/clocky-team-channel-direct'
+import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
+import TeamHub from '@clocky/clocky-team-hub'
+import TeamLinkRegistry from '@clocky/clocky-team-link'
+import * as TeamLinkLocal from '@clocky/clocky-team-link-local'
+import * as TeamRun from '@clocky/clocky-team-run'
+import * as TeamHumanActor from '@clocky/clocky-team-human-actor'
 import * as jsonrpc from '../src/index.ts'
+import { SDK_TEST_CREDENTIAL, installTestProductPrincipals } from './product-auth.ts'
 
 /**
  * Mount the real namespace plugin with in-memory stdio and exit hooks. Covers
@@ -56,6 +71,13 @@ async function settle(): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, 25))
 }
 
+/** Allocate SDK fixture storage beneath the project's scratch directory. */
+async function freshStorageRoot(prefix: string): Promise<string> {
+  const parent = join(process.cwd(), '.tmp')
+  await mkdir(parent, { recursive: true })
+  return await mkdtemp(join(parent, prefix))
+}
+
 /** Mount the real plugin on a minimal harness with in-memory stdio and exit. */
 async function mountPlugin(
   storageDir: string,
@@ -66,6 +88,7 @@ async function mountPlugin(
   } = {},
 ): Promise<ApplyHarness> {
   const ctx = new Context()
+  await installTestProductPrincipals(ctx)
   await ctx.plugin(agentCore, { workspaceContext: false })
   await ctx.plugin(LlmPiAi, {
     providers: {
@@ -78,6 +101,23 @@ async function mountPlugin(
     },
   })
   await ctx.plugin(JsonlSessionPersistence, { root: storageDir })
+  await ctx.plugin(AgentDefaultModelConfig, { provider: 'test-provider', model: 'apply-model' })
+  await ctx.plugin(Storage)
+  await ctx.plugin(StorageJson, { root: join(storageDir, 'team-hub') })
+  await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
+  await ctx.plugin(TeamHub)
+  await ctx.plugin(TeamHumanActor)
+  await ctx.plugin(DirectChannel)
+  await ctx.plugin(TeamChannelAdmission)
+  await ctx.plugin(AgentRuntime)
+  await ctx.plugin(InProcessRuntime, { providerName: 'in-process' })
+  await ctx.plugin(TeamActivationController)
+  await ctx.plugin(TeamLinkRegistry)
+  await ctx.plugin(TeamLinkLocal, {
+    providerName: 'local', pageSize: 32, disposalTimeoutMs: 100, notificationRetryDelayMs: 1,
+  })
+  await ctx.plugin(TeamAgentClient, { reconnectDelayMs: 1, disposalTimeoutMs: 100 })
+  await ctx.plugin(TeamRun)
   await new Promise(resolve => setTimeout(resolve, 50))
   await options.beforeServer?.(ctx)
 
@@ -168,11 +208,11 @@ async function mockCompletionServer(): Promise<{ url: string; requests: unknown[
 
 describe('clocky-sdk-jsonrpc-server plugin apply', () => {
   it('serves initialize over the injected stdio pair', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-init-'))
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-init-')
     vi.stubEnv('TEST_API_KEY', 'test-key')
     const harness = await mountPlugin(storageDir)
     try {
-      harness.send({ jsonrpc: '2.0', id: 'init-1', method: 'initialize', params: { cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
+      harness.send({ jsonrpc: '2.0', id: 'init-1', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
 
       const response = await harness.waitForFrame(frame => frame.id === 'init-1', 'initialize response')
       expect(response).toEqual({
@@ -188,7 +228,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
   })
 
   it('does not answer initialize until async sibling Loader entries settle', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-readiness-'))
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-readiness-')
     vi.stubEnv('TEST_API_KEY', 'test-key')
     let markStarted!: () => void
     let release!: () => void
@@ -213,7 +253,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
         jsonrpc: '2.0',
         id: 'init-delayed',
         method: 'initialize',
-        params: { cwd: storageDir, provider: 'test-provider', model: 'apply-model' },
+        params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' },
       }
       const probe = { jsonrpc: '2.0', id: 'probe-during-delay', method: 'nope/unknown' }
       harness.sendRaw(`${JSON.stringify(initialize)}\n${JSON.stringify(probe)}\n`)
@@ -239,33 +279,43 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
     }
   })
 
-  it('drives a session/prompt turn end-to-end and forwards session notifications as output frames', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-prompt-'))
+  it('creates a Team, admits its first human Envelope, and forwards coordinator notifications', async () => {
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-prompt-')
     const llmServer = await mockCompletionServer()
     vi.stubEnv('TEST_API_KEY', 'test-key')
     vi.stubEnv('TEST_BASE_URL', llmServer.url)
     const harness = await mountPlugin(storageDir)
     try {
-      harness.send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { cwd: storageDir, provider: 'test-provider', model: 'dsagent-model' } })
+      harness.send({
+        jsonrpc: '2.0', id: 1, method: 'initialize',
+        params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'dsagent-model', maxTokens: 321 },
+      })
       await harness.waitForFrame(frame => frame.id === 1, 'initialize response')
 
       harness.send({
         jsonrpc: '2.0',
         id: 2,
-        method: 'session/prompt',
-        params: { sessionId: 'main', contentBlocks: [{ type: 'text', text: 'fix it' }] },
+        method: 'team/create',
+        params: { objective: 'Fix it.', contentBlocks: [{ type: 'text', text: 'fix it' }] },
       })
-      const response = await harness.waitForFrame(frame => frame.id === 2, 'prompt response')
-      expect((response.result as { messageId?: unknown }).messageId).toBeTypeOf('string')
+      const response = await harness.waitForFrame(frame => frame.id === 2, 'Team creation response')
+      const created = response.result as { teamId: string; coordinatorSessionId: string; envelopeId: string }
+      expect(created).toMatchObject({
+        teamId: expect.any(String) as unknown,
+        coordinatorSessionId: expect.any(String) as unknown,
+        envelopeId: expect.any(String) as unknown,
+      })
       await harness.waitForFrame(
         frame => frame.method === 'session.status'
+          && (frame.params as { sessionId?: string; status?: string } | undefined)?.sessionId === created.coordinatorSessionId
           && (frame.params as { status?: string } | undefined)?.status === 'idle',
-        'idle session status',
+        'idle coordinator status',
       )
 
       expect(llmServer.requests).toHaveLength(1)
-      const body = llmServer.requests[0] as { model: string; messages: { role: string }[] }
+      const body = llmServer.requests[0] as { model: string; messages: { role: string }[]; max_completion_tokens?: number }
       expect(body.model).toBe('dsagent-model')
+      expect(body.max_completion_tokens).toBe(321)
       expect(body.messages.at(-1)?.role).toBe('user')
 
       // Notifications use the same transport and arrive as id-less frames.
@@ -273,8 +323,74 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       expect(notifications.some(frame => frame.method === 'session.event')).toBe(true)
       expect(notifications.findLast(frame => frame.method === 'session.status')).toMatchObject({
         jsonrpc: '2.0',
-        params: { sessionId: 'main', status: 'idle' },
+        params: { sessionId: created.coordinatorSessionId, status: 'idle' },
       })
+
+      await vi.waitFor(async () => {
+        const state = await harness.ctx.teams.getTeam({ teamId: created.teamId as never })
+        expect(state.activations.some(binding => binding.activation.status === 'idle')).toBe(true)
+      })
+      const state = await harness.ctx.teams.getTeam({ teamId: created.teamId as never })
+      const human = state.participants.find(participant => participant.role === 'human')
+      const coordinator = state.participants.find(participant => participant.role === 'coordinator')
+      const channelId = state.channelIds[0]
+      if (human === undefined || coordinator === undefined || channelId === undefined) {
+        throw new Error('SDK Team creation did not retain its default human/coordinator channel')
+      }
+      const channel = await harness.ctx.teams.getChannel({ channelId })
+      harness.send({
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'team/channel-post',
+        params: {
+          channelId,
+          expectedCursor: channel.cursor,
+          audience: [coordinator.id],
+          kind: 'message',
+          payload: { content: [{ type: 'text', text: 'SDK authenticated channel post.' }] },
+          delivery: 'context',
+        },
+      })
+      await expect(harness.waitForFrame(frame => frame.id === 4, 'human channel-post response')).resolves.toMatchObject({
+        result: { value: { senderId: human.id, channelId } },
+      })
+      harness.send({ jsonrpc: '2.0', id: 3, method: 'team/cancel', params: { teamId: created.teamId } })
+      await expect(harness.waitForFrame(frame => frame.id === 3, 'Team cancellation response')).resolves.toMatchObject({ result: { phase: 'cancelled' } })
+      const terminal = await harness.ctx.teams.getTeam({ teamId: created.teamId as never })
+      harness.send({
+        jsonrpc: '2.0', id: 6, method: 'team/task-create',
+        params: {
+          teamId: created.teamId,
+          expectedCursor: terminal.team.cursor,
+          idempotencyKey: 'sdk-terminal-task-mutation',
+          subject: 'Rejected terminal mutation',
+          description: 'The Hub must reject this after cancellation.',
+          blockedBy: [],
+          requiredCapabilities: [],
+          priority: 0,
+          readScopes: [],
+          writeScopes: [],
+          workspaceMode: 'shared',
+          budget: {},
+          reviewPolicy: { kind: 'none' },
+          maxAttempts: 1,
+        },
+      })
+      await expect(harness.waitForFrame(frame => frame.id === 6, 'terminal task mutation rejection')).resolves.toMatchObject({
+        error: { code: -32_603, message: 'Human task actor is invalid for this command' },
+      })
+      harness.send({
+        jsonrpc: '2.0', id: 5, method: 'team/archive',
+        params: { teamId: created.teamId, expectedCursor: terminal.team.cursor },
+      })
+      const archived = await harness.waitForFrame(frame => frame.id === 5, 'human terminal archive response')
+      const archiveResult = archived.result
+      if (typeof archiveResult !== 'object' || archiveResult === null || Array.isArray(archiveResult)) {
+        throw new Error('SDK terminal archive response has no result object')
+      }
+      const archiveRecord = archiveResult as Record<string, unknown>
+      expect(archiveRecord).toMatchObject({ teamId: created.teamId })
+      expect(archiveRecord['archivedAt']).toBeTypeOf('number')
     } finally {
       await harness.dispose()
       await rm(storageDir, { recursive: true, force: true })
@@ -282,9 +398,11 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
   })
 
   it('answers shutdown before exiting 0 exactly once, even against a racing second shutdown', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-shutdown-'))
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-shutdown-')
     const harness = await mountPlugin(storageDir, { writeDelayMs: 10 })
     try {
+      harness.send({ jsonrpc: '2.0', id: 'init-shutdown', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
+      await harness.waitForFrame(frame => frame.id === 'init-shutdown', 'authenticated initialization before shutdown')
       // One chunk makes the two deferred exit callbacks race.
       const first = { jsonrpc: '2.0', id: 'sd-1', method: 'shutdown' }
       const second = { jsonrpc: '2.0', id: 'sd-2', method: 'shutdown' }
@@ -315,7 +433,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       expect(harness.events.filter(event => event.kind === 'root-disposed')).toHaveLength(1)
 
       const before = harness.frames().length
-      harness.send({ jsonrpc: '2.0', id: 'after-exit', method: 'initialize', params: { cwd: storageDir, provider: 'test-provider', model: 'x' } })
+      harness.send({ jsonrpc: '2.0', id: 'after-exit', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'x' } })
       await settle()
       expect(harness.frames().length).toBe(before)
     } finally {
@@ -325,9 +443,11 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
   })
 
   it('still disposes and exits once when the flush callback fails', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-flush-failure-'))
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-flush-failure-')
     const harness = await mountPlugin(storageDir, { failFlush: true })
     try {
+      harness.send({ jsonrpc: '2.0', id: 'init-flush-failure', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
+      await harness.waitForFrame(frame => frame.id === 'init-flush-failure', 'authenticated initialization before shutdown')
       harness.send({ jsonrpc: '2.0', id: 'sd-fail', method: 'shutdown' })
 
       await waitFor(() => harness.exits().length > 0 ? true : undefined, 'exit after flush failure')
@@ -337,7 +457,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       expect(harness.outputErrors.map(error => error.message)).toEqual(['flush callback failed'])
 
       const before = harness.frames().length
-      harness.send({ jsonrpc: '2.0', id: 'after-flush-failure', method: 'initialize', params: { cwd: storageDir, provider: 'test-provider', model: 'x' } })
+      harness.send({ jsonrpc: '2.0', id: 'after-flush-failure', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'x' } })
       await settle()
       expect(harness.frames().length).toBe(before)
     } finally {
@@ -347,9 +467,11 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
   })
 
   it('stops serving on a bare fiber dispose (HMR-style unload) without calling exit', async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-apply-dispose-'))
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-dispose-')
     const harness = await mountPlugin(storageDir)
     try {
+      harness.send({ jsonrpc: '2.0', id: 'init-dispose', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
+      await harness.waitForFrame(frame => frame.id === 'init-dispose', 'authenticated initialization before disposal')
       // Prove the handler-rejection path is live before disposal.
       harness.send({ jsonrpc: '2.0', id: 'probe-1', method: 'nope/unknown' })
       const error = await harness.waitForFrame(frame => frame.id === 'probe-1', 'error response for unknown method')
@@ -362,7 +484,7 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       expect(harness.events.some(event => event.kind === 'root-disposed')).toBe(false)
 
       const before = harness.frames().length
-      harness.send({ jsonrpc: '2.0', id: 'probe-2', method: 'initialize', params: { cwd: storageDir, provider: 'test-provider', model: 'x' } })
+      harness.send({ jsonrpc: '2.0', id: 'probe-2', method: 'initialize', params: { credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'x' } })
       await settle()
       expect(harness.frames().length).toBe(before)
       expect(harness.exits()).toEqual([])

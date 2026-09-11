@@ -52,10 +52,12 @@ const publishedRepositoryUrl = 'git+https://github.com/Linorman/clocky.git'
 const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
 /** npm namespace reserved for private experimental packages. */
 const experimentalPackageNamePrefix = '@clocky/clocky-experimental-'
+/** Explicit legacy compatibility packages retained only for in-repository consumers. */
+const privateCompatibilityPackageDirectory = /^packages\/(?:subagent|workflow)\/[^/]+$/
 /** Directories whose packages this repository publishes: one release member each. */
-const releaseMemberDirectory = /^(?:packages\/(?!experimental\/)[^/]+\/[^/]+|apps\/[^/]+|vendor\/[^/]+)$/
+const releaseMemberDirectory = /^(?:packages\/(?!experimental\/|subagent\/|workflow\/)[^/]+\/[^/]+|apps\/[^/]+|vendor\/[^/]+)$/
 
-const localArtifactDirs = new Set(['node_modules'])
+const localArtifactDirs = new Set(['node_modules', '.tmp'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   '@clocky/clocky': ['lib/*.js', 'config'],
   // The Web build emits sourcemaps for browser debugging; publishing them is
@@ -141,6 +143,9 @@ function workspaceManifests(): WorkspaceManifest[] {
 }
 
 const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
+  '@clocky/clocky-activation-supervisor-http': ['lib/endpoint.js', 'lib/protocol.js'],
+  '@clocky/clocky-team-channel-admission': ['lib/principal.js'],
+  '@clocky/clocky-team-channel-summary': ['lib/tool.js'],
   // Statically linked client libraries keep their stylesheets next to the emitted
   // JavaScript, which imports them by relative path: the compile shell runs
   // them through its own CSS pipeline, so the sheets are published artifacts.
@@ -161,6 +166,8 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // SQLite loads every statement from immutable package resources at runtime.
   '@clocky/clocky-session-persistence-sqlite': ['resources/sql/**/*.sql'],
   '@clocky/clocky-subprocess-local': ['scripts/ensure-spawn-helper.mjs'],
+  // The closure driver exposes its registry and Hub bridge as runtime subpaths.
+  '@clocky/clocky-team-closure-driver': ['lib/registry.js', 'lib/hub.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
@@ -274,6 +281,9 @@ function checkWorkspace({ dir, manifest }: WorkspaceManifest): string[] {
       || manifest.repository.directory !== expectedDirectory) {
       errors.push(`${label}: published Landlock package repository must use ${repositoryUrl} with directory ${expectedDirectory} for trusted publishing`)
     }
+  } else if (privateCompatibilityPackageDirectory.test(dir)) {
+    if (manifest.private !== true) errors.push(`${label}: compatibility package must set "private": true`)
+    if (manifest.publishConfig !== undefined) errors.push(`${label}: compatibility package must omit publishConfig`)
   } else if (releaseMemberDirectory.test(dir)) {
     // Release members state that they are publishable: npm refuses a private
     // package, and the repository field is how a consumer finds the source of
@@ -389,6 +399,7 @@ function checkHierarchyShape(): string[] {
   const packagesRoot = join(root, 'packages')
   for (const group of readdirSync(packagesRoot, { withFileTypes: true })) {
     if (!group.isDirectory()) continue
+    if (localArtifactDirs.has(group.name)) continue
     const groupRel = join('packages', group.name)
     if (existsSync(join(packagesRoot, group.name, 'package.json'))) {
       errors.push(`${groupRel}: a group dir must not contain a package.json — packages live at packages/<group>/<pkg>, not directly under packages/`)
@@ -442,6 +453,30 @@ export function checkExperimentalDependencyIsolation(manifests: readonly Workspa
 }
 
 /**
+ * Keep private legacy compatibility packages out of release/runtime carriers.
+ * Development-only tests and explicit private examples may still compose them.
+ * @param manifests - workspace and deployment-root manifests.
+ * @returns One error per installed runtime dependency on a private compatibility package.
+ */
+export function checkPrivateCompatibilityDependencyIsolation(manifests: readonly WorkspaceManifest[]): string[] {
+  const compatibilityNames = new Set(manifests
+    .filter(entry => privateCompatibilityPackageDirectory.test(entry.dir))
+    .map(entry => entry.manifest.name)
+    .filter(name => name !== undefined))
+  const errors: string[] = []
+  for (const { dir, manifest } of manifests) {
+    if (!releaseMemberDirectory.test(dir) && dir !== 'python/sdk-runtime') continue
+    for (const section of runtimeDependencySections) {
+      for (const name of Object.keys(manifest[section] ?? {})) {
+        if (!compatibilityNames.has(name)) continue
+        errors.push(`${manifest.name ?? dir}: ${section}.${name} must not reference a private compatibility package`)
+      }
+    }
+  }
+  return errors
+}
+
+/**
  * Require the `workspace:` protocol for every reference to a workspace member.
  *
  * A hand-written range says nothing about the version the workspace actually
@@ -477,6 +512,7 @@ export function main(): void {
     ...manifests.flatMap(checkWorkspace),
     ...checkWorkspaceProtocol(manifests),
     ...checkExperimentalDependencyIsolation(dependencyManifests),
+    ...checkPrivateCompatibilityDependencyIsolation(dependencyManifests),
     ...checkHierarchyShape(),
     ...collectProjectReferenceFaceViolations(root),
   ]

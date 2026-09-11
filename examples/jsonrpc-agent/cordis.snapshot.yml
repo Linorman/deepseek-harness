@@ -26,3 +26,6 @@
                   name: Test Provider
                   models:
                     - id: test-model
+
+- id: team-snapshot-finalizer
+  name: ./tests/fixtures/team-snapshot-finalizer.ts

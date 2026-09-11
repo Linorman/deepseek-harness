@@ -51,6 +51,7 @@ import type {
 } from './types.ts'
 import { SubagentError } from './error.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
+import { resolveChildDepth } from './child-agent.ts'
 import { createActivationObserver, createLifecycleEmitter, observeRun } from './lifecycle.ts'
 import type { ActivationObserver, LifecycleEmitter } from './lifecycle.ts'
 import SubagentContinuationManager from './continuation.ts'
@@ -432,9 +433,14 @@ export class SubagentRuntime extends Service {
     this.assertCapabilities(provider, request)
     assertSubagentMaxDepth(request.maxDepth)
     if (request.outputSchema !== undefined) assertObjectJsonSchema(request.outputSchema)
+    // The provider owns enforcement of its requested cap. The service only
+    // resolves the durable descriptor depth, so out-of-process providers still
+    // receive `maxDepth: 0` and can apply their own boundary semantics.
+    const childDepth = resolveChildDepth(request.parent, undefined)
     const descriptor = snapshotSubagentDescriptor({
       mode: 'one-shot',
       provider: name,
+      depth: childDepth,
       ...request.label !== undefined ? { label: request.label } : {},
     })
     const resolved: ResolvedSubagentStartRequest = { ...request, descriptor }

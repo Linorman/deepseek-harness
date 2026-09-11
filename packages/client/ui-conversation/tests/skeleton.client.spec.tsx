@@ -1,7 +1,5 @@
 // @vitest-environment jsdom
-// ConversationRoot skeleton behavior: the ONE resident composer across the
-// hero (blank session) and active phases — same textarea DOM node, machine-
-// owned draft, and the hero workspace picker (switching = retargetWorkspace).
+// ConversationRoot skeleton behavior across hero and active phases.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
@@ -10,7 +8,7 @@ import {
   createSnapshotStore, EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS,
 } from '@clocky/clocky-client-runtime/client'
 import type {
-  ConversationSnapshot, SessionId, SessionListState, WorkspaceId, WorkspaceListState, WorkspaceView,
+  ConversationSnapshot, SessionId, SessionListState, WorkspaceListState,
 } from '@clocky/clocky-client-runtime/client'
 import type { ConversationRootProps } from '../src/client/skeleton/ConversationRoot.tsx'
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
@@ -19,6 +17,7 @@ import { en as commonEn } from '@clocky/clocky-client-locale/src/locales/en.ts'
 import { zh as commonZh } from '@clocky/clocky-client-locale/src/locales/zh.ts'
 import { createChatStore } from '../src/client/stores.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
+import type { InputNotice, InputState } from '../src/client/input/contract.ts'
 import { en, zh } from '../src/client/locales.ts'
 import { ConversationRoot } from '../src/client/skeleton/ConversationRoot.tsx'
 import { ConversationSession, ConversationSessionHeader } from '../src/client/skeleton/ConversationSession.tsx'
@@ -26,9 +25,7 @@ import { HeroShell } from '../src/client/skeleton/EmptyHero.tsx'
 import type { HeroShellProps } from '../src/client/skeleton/EmptyHero.tsx'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
 import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'
-import type {
-  ComposerBarOwnerProps, ConversationHeaderLineageOwnerProps,
-} from '../src/client/contract/slots.ts'
+import type { ComposerBarOwnerProps } from '../src/client/contract/slots.ts'
 import type { ViewTab } from '../src/client/contract/views.ts'
 
 /** Machine-backed wiring over a sink spy. */
@@ -58,18 +55,10 @@ beforeEach(() => {
 const t: ConversationRootProps['t'] = makeTranslate(zh, commonZh)
 
 const sid = (id: string) => id as SessionId
-const wid = (id: string) => id as WorkspaceId
 const SID = sid('s1')
 
-function workspace(id = 'w1'): WorkspaceView {
-  return {
-    workspaceId: wid(id), path: `/projects/${id}`, title: id, sessionIds: [],
-    createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
-  }
-}
-
-const workspaceState = (items: readonly WorkspaceView[]): WorkspaceListState => ({
-  items, archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
+const workspaceState = (): WorkspaceListState => ({
+  items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
   baselinesReady: true, recentWorkspaceId: undefined,
 })
 
@@ -79,15 +68,13 @@ function conversationSnapshot(overrides: Partial<ConversationSnapshot> = {}): Co
     nodes: [], turnTimings: new Map(), turnEnds: new Map(), partial: null, runningCalls: [],
     pending: [], queue: [], running: false, composerPhase: 'active', removed: false,
     openState: 'open', openError: null, hasMore: false, loadingOlder: false,
-    promptError: null, blank: false, subagent: null, lastAgentError: null,
+    promptError: null, blank: false, lastAgentError: null,
     ...overrides,
   }
 }
 
 function mount(
   snapshot: ConversationSnapshot,
-  workspaceRows: WorkspaceView[] = [{ ...workspace('one'), sessionIds: [SID] }],
-  retargetWorkspace = vi.fn(async (_workspaceId: WorkspaceId) => {}),
   options: {
     /** When true, mimic overlay:true chain siblings (hidden fallback + takeover). */
     overlayTakeover?: boolean
@@ -95,10 +82,6 @@ function mount(
     summaryBlank?: boolean
     /** Drop the session's summary row entirely (a session the list has not caught up with). */
     omitSummaryRow?: boolean
-    /** Classify the selected child as a subagent instead of an ordinary fork. */
-    summaryOrigin?: 'subagent'
-    /** Insert a first-level subagent between the root and selected child. */
-    nestedSubagent?: boolean
     /** A composer block another plugin raised for this session. */
     composerBlock?: { reason: string }
     /** Mutable view ledger used by registration-order regressions. */
@@ -106,31 +89,22 @@ function mount(
   } = {},
 ) {
   const root = sid('root')
-  const parent = sid('parent')
   const rootRow = { id: root, displayTitle: 'Root', running: false, blank: false, updatedAt: 1 }
-  const parentRow = {
-    id: parent, displayTitle: 'Parent', parentId: root, origin: 'subagent' as const,
-    running: false, blank: false, updatedAt: 2,
-  }
   const childRow = {
-    id: SID, displayTitle: 'Child', parentId: options.nestedSubagent === true ? parent : root,
+    id: SID, displayTitle: 'Child',
     cwd: '/projects/one', running: false, blank: options.summaryBlank ?? false, updatedAt: 3,
-    ...(options.summaryOrigin === undefined ? {} : { origin: options.summaryOrigin }),
   }
   const listed = options.omitSummaryRow !== true
   const sessions = createSnapshotStore<SessionListState>({
-    ids: listed
-      ? [root, ...options.nestedSubagent === true ? [parent] : [], SID]
-      : [root],
+    ids: listed ? [root, SID] : [root],
     byId: {
       [root]: rootRow,
-      ...listed && options.nestedSubagent === true && { [parent]: parentRow },
       ...listed && { [SID]: childRow },
     },
     current: SID,
-    phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+    phase: 'ready', jobsBySession: {},
   })
-  const workspaces = createSnapshotStore<WorkspaceListState>(workspaceState(workspaceRows))
+  const workspaces = createSnapshotStore<WorkspaceListState>(workspaceState())
   const session = createSnapshotStore<ConversationSnapshot>(snapshot)
   const useSession = bindSnapshotSelector(session)
   const chat = createChatStore().create()
@@ -138,10 +112,10 @@ function mount(
   const { wiring, sink } = fakeWiring()
   const useInput = bindSnapshotSelector(wiring.state)
   const inputActions = wiring.actions
+  const teamDraftInput = bindSnapshotSelector(createSnapshotStore<InputState | undefined>(undefined))
+  const teamDraftNotices = bindSnapshotSelector(createSnapshotStore<InputNotice | null>(null))
   const stop = vi.fn()
-  const open = vi.fn()
   const slotCalls: string[] = []
-  const lineageOwners: ConversationHeaderLineageOwnerProps[] = []
   const viewTabs = options.viewTabs ?? [
     { id: 'chat', label: 'Chat' },
     { id: 'trajectory', label: 'Trajectory' },
@@ -153,16 +127,10 @@ function mount(
   }
   /** Owner share handed to the two composer tool-row seats, per render. */
   const seatOwners: { key: string; owner: unknown }[] = []
-  let pickerOwner: unknown
   const renderSlot = ((key: string, owner: object, opts?: { only?: string; fallback?: ReactNode }) => {
     slotCalls.push(key)
     if (key === 'conversation.input.model' || key === 'conversation.input.plan') {
       seatOwners.push({ key, owner })
-    }
-    if (key === 'conversation.hero.workspace') { pickerOwner = owner; return null }
-    if (key === 'conversation.session.header.lineage') {
-      lineageOwners.push(owner as ConversationHeaderLineageOwnerProps)
-      return opts?.fallback ?? null
     }
     if (key === 'conversation.session.header') {
       return (
@@ -179,7 +147,6 @@ function mount(
           actions={chat.actions}
           renderSlot={renderSlot as never}
           views={views}
-          open={open}
           t={t}
         />
       )
@@ -227,6 +194,8 @@ function mount(
           useNotices={bindSnapshotSelector(wiring.notices)}
           useLexicon={bindSnapshotSelector(wiring.lexicon)}
           useMenuLauncher={bindSnapshotSelector(createSnapshotStore<string | null>(null))}
+          useTeamDraftInput={teamDraftInput}
+          useTeamDraftNotices={teamDraftNotices}
           stop={stop}
           command={() => Promise.resolve(true)}
           t={t}
@@ -266,13 +235,11 @@ function mount(
     inputActions,
     renderSlot,
     renderSlotChain,
-    selectWorkspace: retargetWorkspace,
     t,
   }
   const view = render(<ConversationRoot {...props} />)
   return {
-    view, chat, sink, retargetWorkspace, session, slotCalls, lineageOwners, seatOwners, open,
-    pickerOwner: () => pickerOwner,
+    view, chat, sink, session, slotCalls, seatOwners,
     rerender: () => { view.rerender(<ConversationRoot {...props} />) },
   }
 }
@@ -297,7 +264,7 @@ describe('Hero chrome', () => {
 
 describe('ConversationRoot resident composer', () => {
   it('renders the composer inert with the blocker\u2019s own reason', () => {
-    const b = mount(conversationSnapshot(), undefined, undefined, {
+    const b = mount(conversationSnapshot(), {
       composerBlock: { reason: 'select a model first' },
     })
     const box = b.view.getByRole('textbox') as HTMLTextAreaElement
@@ -312,24 +279,20 @@ describe('ConversationRoot resident composer', () => {
     // asking for the one thing it prevents — every block this contract has is
     // cleared by choosing a model.
     const seat = (key: string) => b.seatOwners.filter(call => call.key === key).at(-1)?.owner
-    expect(seat('conversation.input.model')).toEqual({ locked: false })
-    expect(seat('conversation.input.plan')).toEqual({ locked: true })
+    expect(seat('conversation.input.model')).toEqual({ locked: false, teamOwned: false })
+    expect(seat('conversation.input.plan')).toEqual({ locked: true, teamOwned: false })
   })
 
-  it('lets the no-workspace posture win over a block', () => {
-    // Picking a workspace is the earlier prerequisite; naming a model first
-    // would send the user somewhere they cannot act yet.
-    const b = mount(conversationSnapshot({ composerPhase: 'blank' }), [], undefined, {
+  it('keeps a blank-session block visible', () => {
+    const b = mount(conversationSnapshot({ composerPhase: 'blank' }), {
       summaryBlank: true,
       composerBlock: { reason: 'select a model first' },
     })
     const box = b.view.getByRole('textbox') as HTMLTextAreaElement
-    expect(box.disabled).toBe(false)
-    expect(box.readOnly).toBe(true)
-    expect(box.getAttribute('aria-haspopup')).toBe('menu')
-    expect(box.placeholder).not.toBe('select a model first')
+    expect(box.disabled).toBe(true)
+    expect(box.placeholder).toBe('select a model first')
     const modelSeat = b.seatOwners.filter(call => call.key === 'conversation.input.model').at(-1)?.owner
-    expect(modelSeat).toEqual({ locked: true })
+    expect(modelSeat).toEqual({ locked: false, teamOwned: false })
   })
 
   it('keeps composer text in the machine, mirrors to the chat store, and submits through the sink', () => {
@@ -340,32 +303,7 @@ describe('ConversationRoot resident composer', () => {
     expect(b.chat.store.getSnapshot().draft).toBe('ordinary revised')
     fireEvent.keyDown(box, { key: 'Enter' })
     expect(b.sink).toHaveBeenCalledWith('ordinary revised', [], 'queue', expect.any(AbortSignal))
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(true)
-    expect(b.view.queryByText('Root')).toBeNull()
-  })
-
-  it('shows hierarchy only for subagents and opens their ordinary owner', () => {
-    const b = mount(conversationSnapshot(), undefined, undefined, { summaryOrigin: 'subagent' })
-    const root = b.view.getByRole('button', { name: 'Root' })
-    expect((b.view.getByRole('button', { name: 'Child' }) as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(root)
-    expect(b.open).toHaveBeenCalledWith(sid('root'))
-  })
-
-  it('keeps intermediate subagent breadcrumbs at the compact title size', () => {
-    const b = mount(conversationSnapshot(), undefined, undefined, {
-      summaryOrigin: 'subagent',
-      nestedSubagent: true,
-    })
-    expect(b.view.getByRole('button', { name: 'Root' }).className).not.toContain('crumbSubagent')
-    expect(b.view.getByRole('button', { name: 'Parent' }).className).toContain('crumbSubagent')
-    expect(b.view.getByRole('button', { name: 'Child' }).className).toContain('crumbSubagent')
-    expect(b.lineageOwners.slice(-2).map(owner => owner.lineageSessionId)).toEqual([
-      sid('parent'),
-      SID,
-    ])
-    expect(b.lineageOwners.at(-2)?.openTitle).toEqual(expect.any(Function))
-    expect(b.lineageOwners.at(-1)?.openTitle).toBeUndefined()
+    expect(b.view.getByText('Child')).toBeTruthy()
   })
 
   it('active phase: fixed header outside the scrollport; sticky composer seat inside it', () => {
@@ -381,13 +319,12 @@ describe('ConversationRoot resident composer', () => {
     expect(host?.contains(header)).toBe(false)
     expect(host?.contains(seat)).toBe(true)
     expect(seat?.contains(textarea)).toBe(true)
-    expect(b.slotCalls).toContain('conversation.session.header.lineage')
     expect(b.slotCalls).toContain('conversation.session.header.actions')
     expect(b.slotCalls).toContain('conversation.session.header.utilities')
   })
 
   it('sticky composer seat wraps the whole overlay chain, not only the fallback stack', () => {
-    const b = mount(conversationSnapshot(), undefined, undefined, { overlayTakeover: true })
+    const b = mount(conversationSnapshot(), { overlayTakeover: true })
     const seat = b.view.container.querySelector('[data-composer-seat]')
     const takeover = b.view.getByTestId('composer-takeover')
     const fallback = b.view.container.querySelector('[data-chain-overlay-fallback="conversation.composer"]')
@@ -395,14 +332,8 @@ describe('ConversationRoot resident composer', () => {
     expect(seat?.contains(fallback)).toBe(true)
   })
 
-  it('hero phase: same textarea, hero chrome, no header, picker switches the workspace', () => {
-    const b = mount(
-      conversationSnapshot({ composerPhase: 'blank', blank: true }),
-      [
-        { ...workspace('one'), sessionIds: [SID] },
-        { ...workspace('second'), title: 'Selected Folder' },
-      ],
-    )
+  it('hero phase keeps the session composer and leaves the optional workspace picker empty', () => {
+    const b = mount(conversationSnapshot({ composerPhase: 'blank', blank: true }))
     // Hero chrome present, view ring absent; scroll host already wraps the
     // resident composer so the blank → active flip does not remount it.
     const host = b.view.container.querySelector('[data-conversation-scroll]')
@@ -419,14 +350,7 @@ describe('ConversationRoot resident composer', () => {
     expect(host?.contains(box)).toBe(true)
     fireEvent.change(box, { target: { value: 'draft in hero' } })
     expect(b.chat.store.getSnapshot().draft).toBe('draft in hero')
-    // Picker: open through the chip; a pick switches to the other
-    // workspace's blank session (draft carry is apply-layer wiring).
-    fireEvent.click(b.view.getByRole('button', { name: '选择工作区' }))
-    const owner = b.pickerOwner() as { open: boolean; onPick(id: WorkspaceId): void }
-    expect(owner.open).toBe(true)
-    act(() => { owner.onPick(wid('second')) })
-    expect(b.retargetWorkspace).toHaveBeenCalledWith(wid('second'))
-    expect(b.view.getByText('Selected Folder')).toBeTruthy()
+    expect(b.view.queryByRole('button', { name: '选择工作区' })).toBeNull()
   })
 
   it('settling phase: a summary that does not prove the session blank hides the composer while it opens', () => {
@@ -439,8 +363,6 @@ describe('ConversationRoot resident composer', () => {
   it('settling phase: a session the list has no row for settles conservatively', () => {
     const b = mount(
       conversationSnapshot({ composerPhase: 'blank', blank: true, openState: 'loading' }),
-      undefined,
-      undefined,
       { omitSummaryRow: true },
     )
     const root = b.view.container.querySelector('[data-phase]')
@@ -450,8 +372,6 @@ describe('ConversationRoot resident composer', () => {
   it('startup auto-selection: a summary-proven blank session opens straight into the hero', () => {
     const b = mount(
       conversationSnapshot({ composerPhase: 'blank', blank: true, openState: 'loading' }),
-      undefined,
-      undefined,
       { summaryBlank: true },
     )
     // The summary already proves the outcome, so the settling hide would only
@@ -492,7 +412,7 @@ describe('ConversationRoot resident composer', () => {
       { id: 'chat', label: 'Chat' },
       { id: 'trajectory', label: 'Trajectory' },
     ]
-    const b = mount(conversationSnapshot(), undefined, undefined, { viewTabs })
+    const b = mount(conversationSnapshot(), { viewTabs })
     // A removed dynamic view leaves its persisted id behind. The visible
     // fallback is Chat and must stay Chat when another lower-order view lands.
     act(() => { b.chat.actions.setView('removed-view') })
@@ -507,32 +427,10 @@ describe('ConversationRoot resident composer', () => {
     expect(b.view.getByRole('tab', { name: 'New view' }).getAttribute('aria-selected')).toBe('false')
   })
 
-  it('rolls the pending workspace label back when switching fails', async () => {
-    const selectWorkspace = vi.fn(async () => { throw new Error('connect failed') })
-    const b = mount(
-      conversationSnapshot({ composerPhase: 'blank', blank: true }),
-      [
-        { ...workspace('one'), sessionIds: [SID] },
-        { ...workspace('second'), title: 'Selected Folder' },
-      ],
-      selectWorkspace,
-    )
-    fireEvent.click(b.view.getByRole('button', { name: '选择工作区' }))
-    const owner = b.pickerOwner() as { onPick(id: WorkspaceId): void }
-    await act(async () => { owner.onPick(wid('second')); await Promise.resolve() })
-    expect(selectWorkspace).toHaveBeenCalledWith(wid('second'))
-    expect(b.view.queryByText('Selected Folder')).toBeNull()
-    expect(b.view.getByText('one')).toBeTruthy()
-  })
-
-  it('blank session keeps the interactive picker chip (workspace switchable until the first message)', () => {
+  it('blank sessions render no legacy workspace controls', () => {
     const b = mount(conversationSnapshot({ composerPhase: 'blank', blank: true }))
-    const chip = b.view.getByRole('button', { name: '选择工作区' })
-    expect((chip as HTMLButtonElement).disabled).toBe(false)
-    expect(b.slotCalls).toContain('conversation.hero.workspace')
-    // The agent-preset chip sits in the same row, for the same reason: both
-    // choices are only open before the first message.
-    expect(b.slotCalls).toContain('conversation.hero.agentPreset')
+    expect(b.view.queryByRole('button', { name: '选择工作区' })).toBeNull()
+    expect(b.slotCalls).not.toContain('conversation.hero.workspace')
   })
 
   it('prompt failure renders the promptError strip (ordinary failure, no transaction UI)', () => {

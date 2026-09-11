@@ -4,6 +4,8 @@ import { closeSync, openSync, readFileSync, readdirSync, readSync } from 'node:f
 import { execFileSync } from 'node:child_process'
 import type { SubprocessTerminalSignal } from '@clocky/clocky-subprocess'
 import { createWindowsProcessInspector } from './windows-inspector.ts'
+import { readDarwinProcessState } from './darwin-process-state.ts'
+import type { DarwinProcessState } from './darwin-process-state.ts'
 
 /** PID plus start identity, preventing teardown escalation after PID reuse. */
 export interface ProcessIdentity {
@@ -13,6 +15,8 @@ export interface ProcessIdentity {
 
 /** Injectable OS process operations used by one local PTY session. */
 export interface ProcessInspector {
+  /** True only when `started` distinguishes a recycled process id for stale-process fencing. */
+  readonly hasExactIdentity?: boolean
   foregroundPgid(shellPid: number): number | undefined
   isStdinWaiting(pgid: number): boolean
   /** Return the root and its current transitive descendants, children first. */
@@ -34,6 +38,8 @@ export interface ProcessInspectorInternals {
   close(fd: number): void
   exec(file: string, args: string[]): string
   kill(pid: number, signal: NodeJS.Signals): void
+  /** Read creation time and parent/liveness from one macOS kernel process record. */
+  darwinProcessState(pid: number): DarwinProcessState | undefined
 }
 
 /* v8 ignore start -- thin OS bindings; injected logic is unit-tested and real platform composition exercises them. */
@@ -45,6 +51,7 @@ const DEFAULT_INTERNALS: ProcessInspectorInternals = {
   close: closeSync,
   exec: (file, args) => execFileSync(file, args, { encoding: 'utf8' }),
   kill: (pid, signal) => process.kill(pid, signal),
+  darwinProcessState: readDarwinProcessState,
 }
 /* v8 ignore stop */
 
@@ -272,6 +279,8 @@ function processTree(entries: ProcessTreeEntry[], rootPid: number): ProcessIdent
 }
 
 class LinuxProcessInspector extends PosixProcessInspector {
+  readonly hasExactIdentity = true
+
   constructor(
     private readonly arch: NodeJS.Architecture,
     internals: ProcessInspectorInternals,
@@ -322,14 +331,17 @@ class LinuxProcessInspector extends PosixProcessInspector {
 interface PsEntry extends ProcessTreeEntry {}
 
 function macProcessTable(internals: ProcessInspectorInternals): PsEntry[] {
-  return internals.exec('/bin/ps', ['-axo', 'pid=,ppid=,lstart=']).split('\n').flatMap((line) => {
-    const match = /^\s*(\d+)\s+(\d+)\s+(.+?)\s*$/.exec(line)
-    if (match?.[1] === undefined || match[2] === undefined || match[3] === undefined) return []
-    return [{ pid: Number(match[1]), parentPid: Number(match[2]), started: match[3] }]
+  return internals.exec('/bin/ps', ['-axo', 'pid=']).split('\n').flatMap((line) => {
+    if (!/^\s*\d+\s*$/.test(line)) return []
+    const pid = Number(line.trim())
+    const state = internals.darwinProcessState(pid)
+    return state === undefined ? [] : [{ pid, parentPid: state.parentPid, started: state.started }]
   })
 }
 
 class MacProcessInspector extends PosixProcessInspector {
+  readonly hasExactIdentity = true
+
   foregroundPgid(shellPid: number): number | undefined {
     try {
       const value = Number(this.internals.exec('/bin/ps', ['-o', 'tpgid=', '-p', String(shellPid)]).trim())
@@ -352,7 +364,8 @@ class MacProcessInspector extends PosixProcessInspector {
   }
 
   isAlive(identity: ProcessIdentity): boolean {
-    return macProcessTable(this.internals).some(entry => entry.pid === identity.pid && entry.started === identity.started)
+    const state = this.internals.darwinProcessState(identity.pid)
+    return state?.active === true && state.started === identity.started
   }
 
 }

@@ -1,0 +1,18 @@
+- id: human-approval-driver
+  disabled: true
+
+- id: team-run
+  config:
+    workerPreset: standard
+    workerCount: 2
+
+- insert:
+    - id: workflow-cancel-local-principal
+      name: '@clocky/clocky-host-product-principal-local'
+      config:
+        providerName: workflow-test-local
+        path: !!js clockyHomePath('workflow-principal.json')
+    - id: workflow-cancel-human-actor
+      name: '@clocky/clocky-team-human-actor'
+    - id: workflow-task-cancellation-driver
+      name: './snapshot-fixtures/headless-workflow-task-cancellation-driver.ts'

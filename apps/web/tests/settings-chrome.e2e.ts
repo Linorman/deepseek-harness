@@ -42,6 +42,7 @@ describe('web e2e: settings modal and General preferences', () => {
     // the client derives from it (the English default has its own spec below).
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
@@ -314,6 +315,7 @@ describe('web e2e: settings modal and General preferences', () => {
     try {
       expect(second.baseUrl).not.toBe(scaffold.baseUrl)
       await secondPage.emulateMedia({ colorScheme: 'light' })
+      await second.authenticateBrowserPage(secondPage)
       await secondPage.goto(second.baseUrl, { waitUntil: 'load' })
       await secondPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       await expect.poll(async () => (await readState(secondPage)).attr, { timeout: 5_000 }).toBe(true)
@@ -372,6 +374,7 @@ describe('web e2e: settings modal and General preferences', () => {
     const secondTripwire = watchConsole(secondPage)
     try {
       expect(second.baseUrl).not.toBe(scaffold.baseUrl)
+      await second.authenticateBrowserPage(secondPage)
       await secondPage.goto(second.baseUrl, { waitUntil: 'load' })
       await secondPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       await secondPage.getByRole('button', { name: '设置', exact: true }).click()
@@ -438,6 +441,7 @@ describe('web e2e: settings modal and General preferences', () => {
     const secondTripwire = watchConsole(secondPage)
     try {
       expect(second.baseUrl).not.toBe(scaffold.baseUrl)
+      await second.authenticateBrowserPage(secondPage)
       await secondPage.goto(second.baseUrl, { waitUntil: 'load' })
       await secondPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       await secondPage.getByRole('button', { name: 'Settings', exact: true }).click()
@@ -472,6 +476,7 @@ describe('web e2e: settings modal and General preferences', () => {
     const enTripwire = watchConsole(enPage)
     onTestFailed(() => saveFailureShot(enPage, 'web-e2e-settings-browser-language'))
     try {
+      await fresh.authenticateBrowserPage(enPage)
       await enPage.goto(fresh.baseUrl, { waitUntil: 'load' })
       await enPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       expect(await enPage.evaluate(() => localStorage.getItem('clocky.locale'))).toBeNull()
@@ -498,6 +503,7 @@ describe('web e2e: settings modal and General preferences', () => {
     const frTripwire = watchConsole(frPage)
     onTestFailed(() => saveFailureShot(frPage, 'web-e2e-settings-unshipped-language'))
     try {
+      await fresh.authenticateBrowserPage(frPage)
       await frPage.goto(fresh.baseUrl, { waitUntil: 'load' })
       await frPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
       expect(await frPage.evaluate(() => localStorage.getItem('clocky.locale'))).toBeNull()

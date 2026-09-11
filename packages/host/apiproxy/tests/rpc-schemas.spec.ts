@@ -6,8 +6,8 @@ import {
 } from '../src/api/rpc.schema.ts'
 import { z } from 'zod'
 import {
-  contentBlockSchema, sessionCancelRequestSchema, sessionCancelValueSchema, sessionCreateRequestSchema,
-  sessionCreateValueSchema, sessionEventSchema, sessionHistoryRequestSchema, sessionHistoryValueSchema,
+  contentBlockSchema, sessionCancelRequestSchema, sessionCancelValueSchema, sessionEventSchema,
+  sessionHistoryRequestSchema, sessionHistoryValueSchema,
   sessionIdSchema, sessionListRequestSchema, sessionListValueSchema, sessionModelsRequestSchema,
   sessionModelsValueSchema, sessionPromptRequestSchema, sessionPromptValueSchema,
   sessionSearchRequestSchema, sessionSearchValueSchema, sessionSelectModelRequestSchema,
@@ -36,7 +36,57 @@ import { hostFrameSchema, muxFrameSchema, askUserQuestionItemSchema } from '../s
 import { approvalRequestIdSchema, approvalResponsePayloadSchema } from '../src/api/approvals.schema.ts'
 import { askUserQuestionAnswerSchema, questionResponsePayloadSchema } from '../src/api/questions.schema.ts'
 import { goalEditRequestSchema } from '../src/api/goals.schema.ts'
-import { subagentPromptRequestSchema } from '../src/api/subagents.schema.ts'
+import {
+  teamCancelRequestSchema,
+  teamCancelValueSchema,
+  teamArchiveRequestSchema,
+  teamArchiveValueSchema,
+  teamGoalTransitionRequestSchema,
+  teamGoalTransitionValueSchema,
+  teamGoalUpdateRequestSchema,
+  teamGoalUpdateValueSchema,
+  teamAuditReadRequestSchema,
+  teamAuditReadValueSchema,
+  teamChannelCloseRequestSchema,
+  teamChannelCloseValueSchema,
+  teamChannelOpenRequestSchema,
+  teamChannelOpenValueSchema,
+  teamChannelPostRequestSchema,
+  teamChannelPostValueSchema,
+  teamChannelReadRequestSchema,
+  teamChannelReadValueSchema,
+  teamChannelWatchRequestSchema,
+  teamChannelWatchValueSchema,
+  teamCreateRequestSchema,
+  teamFinalSchema,
+  teamGetRequestSchema,
+  teamInputReceiptSchema,
+  teamListRequestSchema,
+  teamListValueSchema,
+  teamMemberInterruptRequestSchema,
+  teamMemberInterruptValueSchema,
+  teamMemberInviteRequestSchema,
+  teamMemberInviteValueSchema,
+  teamMemberListRequestSchema,
+  teamMemberListValueSchema,
+  teamMemberRemoveRequestSchema,
+  teamMemberRemoveValueSchema,
+  teamPostInputRequestSchema,
+  teamResumeRequestSchema,
+  teamStartRequestSchema,
+  teamStartValueSchema,
+  teamWaitFinalRequestSchema,
+  teamTaskCreateRequestSchema,
+  teamTaskCreateValueSchema,
+  teamTaskGetRequestSchema,
+  teamTaskGetValueSchema,
+  teamTaskListRequestSchema,
+  teamTaskListValueSchema,
+  teamTaskUpdateRequestSchema,
+  teamTaskUpdateValueSchema,
+  teamTaskWatchRequestSchema,
+  teamTaskWatchValueSchema,
+} from '../src/api/teams.schema.ts'
 
 describe('RpcId', () => {
   it('brands a raw string at zero runtime cost', () => {
@@ -60,9 +110,7 @@ describe('rpcErrorSchema', () => {
     expect(rpcErrorSchema.parse({ code: 'bad-request', message: 'm', details: { issues: [] } }).code).toBe('bad-request')
     expect(rpcErrorSchema.parse({ code: 'cancelled', message: 'm', details: {} }).code).toBe('cancelled')
     expect(rpcErrorSchema.parse({ code: 'session-not-found', message: 'm', details: { sessionId: 's' } }).code).toBe('session-not-found')
-    expect(rpcErrorSchema.parse({ code: 'session-conflict', message: 'm', details: { sessionId: 's', requestedCwd: '/a', existingCwd: '/b' } }).code).toBe('session-conflict')
     expect(rpcErrorSchema.parse({ code: 'invalid-time-zone', message: 'm', details: { value: 'CST' } }).code).toBe('invalid-time-zone')
-    expect(rpcErrorSchema.parse({ code: 'workspace-attach-failed', message: 'm', details: { sessionId: 's', workspaceId: 'w' } }).code).toBe('workspace-attach-failed')
     expect(rpcErrorSchema.parse({ code: 'workspace-not-found', message: 'm', details: { workspaceId: 'w' } }).code).toBe('workspace-not-found')
     expect(rpcErrorSchema.parse({ code: 'workspace-invalid-path', message: 'm', details: { path: '/x' } }).code).toBe('workspace-invalid-path')
     expect(rpcErrorSchema.parse({ code: 'workspace-name-conflict', message: 'm', details: { name: 'x' } }).code).toBe('workspace-name-conflict')
@@ -79,6 +127,23 @@ describe('rpcErrorSchema', () => {
     expect(rpcErrorSchema.parse({ code: 'title-invalid', message: 'm', details: { sessionId: 's' } }).code).toBe('title-invalid')
     // The credentials producer still emits this code, so the branch has to stay.
     expect(rpcErrorSchema.parse({ code: 'credential-rejected', message: 'm', details: { ref: 'r' } }).code).toBe('credential-rejected')
+    expect(rpcErrorSchema.parse({ code: 'team-service-unavailable', message: 'm', details: {} }).code).toBe('team-service-unavailable')
+    expect(rpcErrorSchema.parse({ code: 'team-run-unavailable', message: 'm', details: { teamId: 'team-1' } }).code).toBe('team-run-unavailable')
+    expect(rpcErrorSchema.parse({ code: 'team-not-found', message: 'm', details: { teamId: 'team-1' } }).code).toBe('team-not-found')
+    expect(rpcErrorSchema.parse({ code: 'team-model-required', message: 'm', details: {} }).code).toBe('team-model-required')
+    expect(rpcErrorSchema.parse({ code: 'team-start-conflict', message: 'm', details: {} }).code).toBe('team-start-conflict')
+    expect(rpcErrorSchema.parse({ code: 'team-cursor-conflict', message: 'm', details: { teamId: 'team-1' } }).code).toBe('team-cursor-conflict')
+    expect(rpcErrorSchema.parse({ code: 'team-invalid-argument', message: 'Wrong protocol turn', details: {} }).code).toBe('team-invalid-argument')
+    expect(rpcErrorSchema.safeParse({ code: 'team-invalid-argument', message: 'Wrong protocol turn', details: { teamId: 42 } }).success).toBe(false)
+    expect(rpcErrorSchema.parse({ code: 'team-channel-cursor-conflict', message: 'm', details: { teamId: 'team-1', channelId: 'channel-1' } }).code).toBe('team-channel-cursor-conflict')
+    expect(rpcErrorSchema.parse({ code: 'team-final-invalid', message: 'm', details: { teamId: 'team-1' } }).code).toBe('team-final-invalid')
+    expect(rpcErrorSchema.parse({ code: 'team-not-quiescent', message: 'm', details: { teamId: 'team-1' } }).code).toBe('team-not-quiescent')
+    expect(rpcErrorSchema.parse({
+      code: 'team-channel-compacted', message: 'm', details: { teamId: 'team-1', channelId: 'channel-1', firstCursor: 4 },
+    }).code).toBe('team-channel-compacted')
+    expect(rpcErrorSchema.parse({
+      code: 'team-audit-compacted', message: 'm', details: { teamId: 'team-1', firstCursor: 7 },
+    }).code).toBe('team-audit-compacted')
     expect(rpcErrorSchema.parse({ code: 'internal', message: 'm', details: {} }).code).toBe('internal')
   })
 
@@ -139,7 +204,12 @@ describe('sessions domain schemas', () => {
     expect(sessionIdSchema.parse('s1')).toBe('s1')
     expect(() => sessionIdSchema.parse('')).toThrow()
     expect(sessionSummarySchema.parse({ sessionId: 's1', updatedAt: 1, running: false, blank: true })).toMatchObject({ sessionId: 's1', blank: true })
-    expect(sessionSummarySchema.parse({ sessionId: 's1', updatedAt: 1, running: true, blank: false, parentSessionId: 'p', cwd: '/x' }).cwd).toBe('/x')
+    const redacted = sessionSummarySchema.parse({
+      sessionId: 's1', updatedAt: 1, running: true, blank: false, parentSessionId: 'p', cwd: '/x',
+    })
+    expect(redacted).toMatchObject({ cwd: '/x' })
+    expect(redacted).not.toHaveProperty('parentSessionId')
+    expect(redacted).not.toHaveProperty('origin')
     // blank is mandatory: a summary without it fails the parse.
     expect(() => sessionSummarySchema.parse({ sessionId: 's1', updatedAt: 1, running: false })).toThrow()
     const event = sessionEventSchema.parse({
@@ -191,11 +261,6 @@ describe('sessions domain schemas', () => {
       ),
       hasMore: true,
     })).toThrow()
-    expect(sessionCreateRequestSchema.parse({ cwd: '/w' }).cwd).toBe('/w')
-    // The refine's both-sides branch: workspaceId alone passes, workspaceId+cwd rejects.
-    expect(sessionCreateRequestSchema.parse({ workspaceId: 'w1', sessionId: 's1' }).sessionId).toBe('s1')
-    expect(() => sessionCreateRequestSchema.parse({ workspaceId: 'w1', cwd: '/w' })).toThrow(/not both/)
-    expect(sessionCreateValueSchema.parse({ sessionId: 's1' }).sessionId).toBe('s1')
     expect(sessionHistoryRequestSchema.parse({ sessionId: 's1', beforeSeq: 3, maxMessages: 5 }).beforeSeq).toBe(3)
     expect(() => sessionHistoryRequestSchema.parse({ sessionId: 's1', maxMessages: 0 })).toThrow()
     expect(sessionHistoryValueSchema.parse({
@@ -287,24 +352,6 @@ describe('sessions domain schemas', () => {
     expect(sessionCancelValueSchema.parse({ accepted: true }).accepted).toBe(true)
     expect(sessionUpdateQueueValueSchema.parse({ accepted: true }).accepted).toBe(true)
     expect(contentBlockSchema.parse({ type: 'text', text: 'x', extra: 1 })).toMatchObject({ extra: 1 })
-  })
-})
-
-describe('subagent domain schemas', () => {
-  it('carries optional request-local browser-zone provenance on prompts', () => {
-    expect(subagentPromptRequestSchema.parse({
-      parentSessionId: 'parent',
-      childSessionId: 'child',
-      mode: 'continuable',
-      content: [{ type: 'text', text: 'continue' }],
-      clientTimeZone: 'Asia/Shanghai',
-    }).clientTimeZone).toBe('Asia/Shanghai')
-    expect(subagentPromptRequestSchema.parse({
-      parentSessionId: 'parent',
-      childSessionId: 'child',
-      mode: 'continuable',
-      content: [],
-    }).clientTimeZone).toBeUndefined()
   })
 })
 
@@ -515,7 +562,7 @@ describe('events frame schemas', () => {
 
   it('accepts every host frame branch', () => {
     const frames = [
-      { type: 'host/session-added', sessionId: 's', blank: true, parentSessionId: 'p' },
+      { type: 'host/session-added', sessionId: 's', blank: true, cwd: '/p' },
       { type: 'host/session-added', sessionId: 's', blank: true },
       { type: 'host/session-removed', sessionId: 's' },
       { type: 'host/session-status', sessionId: 's', running: true },
@@ -569,5 +616,179 @@ describe('agent-preset schemas', () => {
       .toEqual({ opened: false, path: '/presets/mine' })
     // A closed reply must carry the path the surface shows instead.
     expect(() => agentPresetOpenDocumentValueSchema.parse({ opened: false })).toThrow()
+  })
+})
+
+describe('Team domain schemas', () => {
+  it('validates strict requests and bounded cursors', () => {
+    expect(teamListRequestSchema.parse({})).toEqual({})
+    expect(() => teamListRequestSchema.parse({ extra: true })).toThrow()
+    expect(teamGetRequestSchema.parse({ teamId: 'team-1' }).teamId).toBe('team-1')
+    expect(teamCreateRequestSchema.parse({
+      objective: '  Coordinate the result.  ',
+      cwd: ' /workspace ',
+      agentPreset: ' coordinator ',
+    })).toEqual({
+      objective: 'Coordinate the result.',
+      cwd: '/workspace',
+      agentPreset: 'coordinator',
+    })
+    expect(() => teamCreateRequestSchema.parse({ objective: ' ', agentPreset: 'preset' })).toThrow()
+    expect(() => teamCreateRequestSchema.parse({ objective: 'x', agentPreset: ' ' })).toThrow()
+    expect(teamStartRequestSchema.parse({
+      objective: '  Coordinate the result.  ',
+      text: '  Start.  ',
+      idempotencyKey: 'team-start-1',
+    })).toEqual({
+      objective: 'Coordinate the result.',
+      text: 'Start.',
+      idempotencyKey: 'team-start-1',
+    })
+    expect(() => teamStartRequestSchema.parse({ objective: 'x', text: ' ', idempotencyKey: 'team-start-1' })).toThrow()
+    expect(teamPostInputRequestSchema.parse({ teamId: 'team-1', text: '  Start. ', idempotencyKey: 'team-input-1' }))
+      .toEqual({ teamId: 'team-1', text: 'Start.', idempotencyKey: 'team-input-1' })
+    expect(() => teamPostInputRequestSchema.parse({ teamId: 'team-1', text: '', extra: true })).toThrow()
+    expect(teamWaitFinalRequestSchema.parse({ teamId: 'team-1', afterCursor: -1 }).afterCursor).toBe(-1)
+    expect(() => teamWaitFinalRequestSchema.parse({ teamId: 'team-1', afterCursor: -2 })).toThrow()
+    expect(teamCancelRequestSchema.parse({ teamId: 'team-1' }).teamId).toBe('team-1')
+  })
+
+  it('validates receipts and finals', () => {
+    expect(teamListValueSchema.parse({ items: [] })).toEqual({ items: [] })
+    expect(teamListRequestSchema.parse({ afterCursor: -1, limit: 2 })).toEqual({ afterCursor: -1, limit: 2 })
+    expect(teamListValueSchema.parse({ items: [], nextCursor: 1 })).toEqual({ items: [], nextCursor: 1 })
+    expect(teamInputReceiptSchema.parse({ envelopeId: 'envelope-1' })).toEqual({ envelopeId: 'envelope-1' })
+    expect(teamStartValueSchema.parse({
+      state: {
+        team: {
+          id: 'team-1', depth: 0, maxTeamDepth: 0, goal: {
+            teamId: 'team-1', revision: 1, objective: 'Start.', phase: 'active', budgets: {},
+          }, phase: 'active', cursor: 0, createdAt: 1, updatedAt: 1,
+        },
+        goal: { teamId: 'team-1', revision: 1, objective: 'Start.', phase: 'active', budgets: {} },
+        rules: {}, budgets: {}, participants: [], activations: [], tasks: [], workspaceAllocations: [], channelIds: [],
+      },
+      envelopeId: 'envelope-1',
+    }).envelopeId).toBe('envelope-1')
+    expect(teamFinalSchema.parse({
+      teamId: 'team-1', channelId: 'channel-1', envelopeId: 'envelope-1', text: 'Done.',
+    }).text).toBe('Done.')
+    expect(teamCancelValueSchema.parse({ accepted: true, phase: 'cancelled' })).toEqual({ accepted: true, phase: 'cancelled' })
+    expect(teamArchiveRequestSchema.parse({ teamId: 'team-1', expectedCursor: 2 })).toEqual({ teamId: 'team-1', expectedCursor: 2 })
+    expect(teamArchiveValueSchema.parse({
+      team: {
+        id: 'team-1', depth: 0, maxTeamDepth: 0,
+        goal: { teamId: 'team-1', revision: 1, objective: 'Start.', phase: 'active', budgets: {} },
+        phase: 'completed', cursor: 2, createdAt: 1, updatedAt: 2, archivedAt: 3,
+      },
+      goal: { teamId: 'team-1', revision: 1, objective: 'Start.', phase: 'active', budgets: {} },
+      rules: {}, budgets: {}, participants: [], activations: [], tasks: [], workspaceAllocations: [], channelIds: [],
+    }).team?.archivedAt).toBe(3)
+    expect(teamAuditReadRequestSchema.parse({ teamId: 'team-1', afterCursor: -1, limit: 10 })).toEqual({
+      teamId: 'team-1', afterCursor: -1, limit: 10,
+    })
+    expect(teamAuditReadValueSchema.parse({ teamId: 'team-1', items: [], nextCursor: 5 })).toEqual({
+      teamId: 'team-1', items: [], nextCursor: 5,
+    })
+  })
+
+  it('validates participant, channel, and task management contracts', () => {
+    const participants = [{
+      id: 'p1', teamId: 'team-1', kind: 'human', displayName: 'Human', role: 'human', capabilities: [], phase: 'active',
+      owner: { kind: 'system' },
+    }]
+    const manifest = {
+      id: 'channel-1', teamId: 'team-1', adapter: { type: 'direct', version: 1 },
+      participants: [{ id: 'p1', role: 'sender' }, { id: 'p2', role: 'recipient' }], limits: {},
+    }
+    const channel = { manifest, phase: 'active', cursor: 1 }
+    const task = {
+      id: 'task-1', teamId: 'team-1', revision: 1, subject: 'Review', description: 'Review the patch.',
+      execution: { kind: 'participant' },
+      createCommand: {
+        idempotencyKey: 'task-create-1',
+        creator: {
+          teamId: 'team-1', participantId: 'p1', activationId: 'activation-1', sessionId: 'session-1', provider: 'in-process',
+        },
+      },
+      phase: 'pending', blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+      workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, reviewHistory: [], maxAttempts: 1,
+      attemptCount: 0, attemptHistory: [],
+    }
+    expect(teamMemberListRequestSchema.parse({ teamId: 'team-1', afterCursor: -1, limit: 2 })).toMatchObject({ teamId: 'team-1', limit: 2 })
+    expect(teamMemberListValueSchema.parse({ items: participants, nextCursor: 0 }).items).toHaveLength(1)
+    expect(teamMemberInviteRequestSchema.parse({ teamId: 'team-1', expectedCursor: 0, kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [] }).kind).toBe('local-agent')
+    expect(teamMemberInviteValueSchema.parse(participants[0]).id).toBe('p1')
+    expect(teamMemberRemoveRequestSchema.parse({ teamId: 'team-1', participantId: 'p1', expectedCursor: 1 }).participantId).toBe('p1')
+    expect(teamMemberRemoveValueSchema.parse(participants[0]).id).toBe('p1')
+    const interrupt = {
+      id: 'interrupt-1', actorId: 'p1', target: { teamId: 'team-1', participantId: 'p2', activationId: 'activation-1', sessionId: 'session-1', provider: 'in-process' }, requestedAt: 1,
+    }
+    expect(teamMemberInterruptRequestSchema.parse({ teamId: 'team-1', participantId: 'p2', expectedCursor: 1 }).participantId).toBe('p2')
+    expect(teamMemberInterruptValueSchema.parse(interrupt).id).toBe('interrupt-1')
+    expect(teamChannelOpenRequestSchema.parse({ teamId: 'team-1', expectedCursor: 0, adapter: manifest.adapter, participants: manifest.participants, limits: {} })).toMatchObject({ teamId: 'team-1' })
+    expect(teamChannelOpenValueSchema.parse(channel).manifest?.id).toBe('channel-1')
+    const post = {
+      channelId: 'channel-1', expectedCursor: 1, audience: ['p2'], kind: 'message', payload: { text: 'Hi' }, delivery: 'turn',
+    }
+    expect(teamChannelPostRequestSchema.parse(post).kind).toBe('message')
+    expect(teamChannelPostValueSchema.parse({
+      id: 'envelope-1', teamId: 'team-1', channelId: 'channel-1', sequence: 2, senderId: 'p1', audience: ['p2'],
+      kind: 'message', payload: { text: 'Hi' }, delivery: 'turn', priority: 'normal', createdAt: 1,
+    }).id).toBe('envelope-1')
+    expect(teamChannelReadRequestSchema.parse({ channelId: 'channel-1', afterCursor: -1, limit: 2 })).toMatchObject({ channelId: 'channel-1', limit: 2 })
+    expect(teamChannelReadValueSchema.parse({ channel, records: [], nextCursor: 1 }).nextCursor).toBe(1)
+    expect(teamChannelCloseRequestSchema.parse({ channelId: 'channel-1', expectedCursor: 1, reason: 'done' }).reason).toBe('done')
+    expect(teamChannelCloseValueSchema.parse({ ...channel, phase: 'closed', cursor: 3 }).phase).toBe('closed')
+    expect(teamChannelWatchRequestSchema.parse({ channelId: 'channel-1', afterCursor: -1 }).afterCursor).toBe(-1)
+    expect(teamChannelWatchValueSchema.parse({ kind: 'changed', cursor: 2 }).kind).toBe('changed')
+    expect(teamChannelWatchValueSchema.parse({ kind: 'closed' })).toEqual({ kind: 'closed' })
+    expect(teamTaskCreateRequestSchema.parse({
+      teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'task-create-schema', execution: { kind: 'participant' }, subject: 'Review', description: 'Review the patch.', blockedBy: [],
+      requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
+      integration: {
+        sourceTaskId: 'source-task', sourceAttemptId: 'source-attempt', provider: 'worktree', target: 'main',
+        expectedTarget: 'base-commit', mode: 'integrate',
+      },
+      reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+    })).toMatchObject({ execution: { kind: 'participant' }, subject: 'Review', integration: { mode: 'integrate', target: 'main' } })
+    const delegatedCreate = {
+      teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'child-create-schema', subject: 'Research', description: 'Return findings.',
+      execution: { kind: 'child-team', templateId: 'research', templateVersion: 1,
+        authorityGrant: { operations: ['send'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: { maxTurns: 4 } },
+        budget: { maxTurns: 4 },
+      },
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+      workspaceMode: 'shared', budget: { maxTurns: 4 }, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+    }
+    expect(teamTaskCreateRequestSchema.parse(delegatedCreate)).toMatchObject({ execution: delegatedCreate.execution })
+    expect(() => teamTaskCreateRequestSchema.parse({ ...delegatedCreate,
+      execution: { ...delegatedCreate.execution, budget: { maxTurns: -1 } },
+    })).toThrow()
+    expect(() => teamTaskCreateRequestSchema.parse({ ...delegatedCreate, actor: 'forged' })).toThrow()
+    expect(teamGoalUpdateRequestSchema.parse({ teamId: 'team-1', expectedRevision: 1, objective: 'Update the goal.' }))
+      .toMatchObject({ objective: 'Update the goal.' })
+    expect(teamGoalUpdateValueSchema.safeParse({}).success).toBe(false)
+    expect(teamGoalTransitionRequestSchema.parse({
+      teamId: 'team-1', expectedRevision: 2, phase: 'blocked', blocker: { code: 'need-input', message: 'Need a decision.' },
+    })).toMatchObject({ phase: 'blocked' })
+    expect(teamGoalTransitionValueSchema.safeParse({}).success).toBe(false)
+    expect(() => teamGoalTransitionRequestSchema.parse({ teamId: 'team-1', expectedRevision: 2, phase: 'blocked' })).toThrow()
+    expect(() => teamGoalUpdateRequestSchema.parse({ teamId: 'team-1', expectedRevision: 1, objective: 'No actor.', actor: 'forged' })).toThrow()
+    expect(() => teamGoalTransitionRequestSchema.parse({ teamId: 'team-1', expectedRevision: 2, phase: 'paused', principalId: 'forged' })).toThrow()
+    expect(teamResumeRequestSchema.parse({ teamId: 'team-1', expectedCursor: 3 })).toMatchObject({ expectedCursor: 3 })
+    expect(() => teamResumeRequestSchema.parse({ teamId: 'team-1' })).toThrow()
+    expect(() => teamResumeRequestSchema.parse({ teamId: 'team-1', expectedCursor: 3, actor: 'forged' })).toThrow()
+    expect(teamTaskCreateValueSchema.parse(task).id).toBe('task-1')
+    expect(teamTaskGetRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1' }).taskId).toBe('task-1')
+    expect(teamTaskGetValueSchema.parse(task).id).toBe('task-1')
+    expect(teamTaskListRequestSchema.parse({ teamId: 'team-1', afterCursor: -1, limit: 2 })).toMatchObject({ teamId: 'team-1', limit: 2 })
+    expect(teamTaskListValueSchema.parse({ items: [task], nextCursor: 0 }).items).toHaveLength(1)
+    expect(teamTaskUpdateRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 1, subject: 'Updated' }).subject).toBe('Updated')
+    expect(teamTaskUpdateValueSchema.parse(task).id).toBe('task-1')
+    expect(teamTaskWatchRequestSchema.parse({ teamId: 'team-1' }).afterCursor).toBeUndefined()
+    expect(teamTaskWatchValueSchema.parse({ kind: 'closed' })).toEqual({ kind: 'closed' })
+    expect(() => teamChannelPostRequestSchema.parse({ ...post, audience: 'p2' })).toThrow()
+    expect(() => teamTaskUpdateRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 1 })).toThrow()
   })
 })

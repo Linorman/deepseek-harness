@@ -1,10 +1,14 @@
 # Unattended coding-agent deployment for the bundled clocky-jsonrpc-agent runtime.
 # stdout is reserved for JSON-RPC; do not add a console logger or terminal UI.
 
+- id: product-principals
+  name: '@clocky/clocky-product-principal'
+
+- id: sdk-product-principal
+  name: './tests/fixtures/sdk-product-principal.ts'
+
 - id: sdk-jsonrpc-server
   name: '@clocky/clocky-sdk-jsonrpc-server'
-  config:
-    maxTokensAsSuccess: !!js "process.env.CLOCKY_MAX_TOKENS_AS_SUCCESS === undefined ? true : JSON.parse(process.env.CLOCKY_MAX_TOKENS_AS_SUCCESS)"
 
 # The model arrives per session over JSON-RPC, so it is not pinned here.
 - id: llm-pi-ai
@@ -17,6 +21,12 @@
         baseURL: http://127.0.0.1:9
         models:
           - id: test-model
+
+- id: agent-default-model
+  name: '@clocky/clocky-agent-default-model'
+  config:
+    provider: test-provider
+    model: test-model
 
 # Managed child-process groups for the bash executor (spawn/kill/output plumbing).
 - id: subprocess
@@ -46,23 +56,78 @@
     # Snapshot runs read the raw JSONL back; production keeps zstd frames.
     compression: !!js "process.env.CLOCKY_SNAPSHOT === undefined ? 'zstd' : 'none'"
 
+- id: team-storage
+  name: '@clocky/clocky-storage'
+
+- id: team-storage-json
+  name: '@clocky/clocky-storage-json'
+  config:
+    root: !!js "(process.env.CLOCKY_SESSION_ROOT ?? './.sessions') + '/team-hub'"
+
+- id: team-storage-log
+  name: '@clocky/clocky-storage-log'
+  config:
+    backend: json
+    routes: {}
+
+- id: team-hub
+  name: '@clocky/clocky-team-hub'
+
+- id: team-channel-direct
+  name: '@clocky/clocky-team-channel-direct'
+
+- id: team-agent-runtime
+  name: '@clocky/clocky-agent-runtime'
+
+- id: team-agent-runtime-in-process
+  name: '@clocky/clocky-agent-runtime-in-process'
+
+- id: team-activation-controller
+  name: '@clocky/clocky-team-activation-controller'
+
+- id: team-link
+  name: '@clocky/clocky-team-link'
+
+- id: team-link-local
+  name: '@clocky/clocky-team-link-local'
+
+- id: team-human-actor
+  name: '@clocky/clocky-team-human-actor'
+
+- id: team-channel-admission
+  name: '@clocky/clocky-team-channel-admission'
+
+- id: team-agent-client
+  name: '@clocky/clocky-team-agent-client'
+
+- id: tool-team
+  name: '@clocky/clocky-tool-team'
+
+- id: team-run
+  name: '@clocky/clocky-team-run'
+
+- id: team-closure-drive-registry
+  name: '@clocky/clocky-team-closure-driver/registry'
+
+- id: team-closure-driver-hub
+  name: '@clocky/clocky-team-closure-driver/hub'
+  config:
+    backend: hub
+
+- id: team-closure-driver
+  name: '@clocky/clocky-team-closure-driver'
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+    pulseIntervalMs: 1000
+
+- id: tool-team-goal
+  name: '@clocky/clocky-tool-team-goal'
+
 - id: session-checkpoints
   name: '@clocky/clocky-session-checkpoint-policy'
-
-- id: subagent
-  name: '@clocky/clocky-subagent'
-
-- id: subagent-spawn-in-process
-  name: '@clocky/clocky-subagent-spawn-in-process'
-  config:
-    providerName: spawn
-
-- id: tool-subagent
-  name: '@clocky/clocky-tool-subagent'
-  config:
-    provider: spawn
-    toolName: subagent
-    enableRunInBackground: false
 
 - id: tool-todo
   name: '@clocky/clocky-tool-todo'
@@ -90,3 +155,13 @@
     retainRatio: 0.16
     maxTokens: 8192
     compactionRetries: 1
+
+- id: team-human-client
+  name: '@clocky/clocky-team-human-client'
+  config:
+    storagePageSize: 32
+    maxPageSize: 32
+    maxDeliveryBytes: 262144
+    maxPendingOperations: 128
+    watchTimeoutMs: 30000
+    pollIntervalMs: 250

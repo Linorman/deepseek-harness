@@ -1,13 +1,9 @@
 /**
  * Adaptive chooser of the directory-picker seam: resolves the host's
  * situation once at boot (bind host, SSH launch, display session, Linux
- * chooser binary) and mounts the matching interaction — `native` or `browse`
- * — as real Loader entries in the in-memory root tree. Each interaction is a
- * pair: the Host backend serving the seam capability and the client surface
- * occupying ui-workspace's directory-flow holes. Both arrive as ordinary
- * entries, so the surface is discovered exactly as a config-row's would be
- * and one resolved choice still swaps both faces; pinning an interaction
- * remains composing that pair directly instead of this row.
+ * chooser binary) and mounts the matching host backend — `native` or `browse`
+ * — as a real Loader entry in the in-memory root tree. It does not compose a
+ * browser directory-picker interaction.
  * @module @clocky/clocky-host-directory-picker-auto
  */
 
@@ -40,23 +36,8 @@ export const BACKEND_PACKAGES: Record<DirectoryPickerBackendKind, string> = {
 }
 
 /**
- * Client surface package per resolved kind, mounted with its backend so one
- * resolved interaction still composes both faces. Declared as dependencies by
- * every composing app for the same reason as {@link BACKEND_PACKAGES}. Only the
- * specifier is referenced here — the packages belong to the Client program, so
- * no import of them exists on this side and knip needs them ignored for this
- * workspace.
- */
-export const SURFACE_PACKAGES: Record<DirectoryPickerBackendKind, string> = {
-  native: '@clocky/clocky-client-ui-directory-picker-native',
-  browse: '@clocky/clocky-client-ui-directory-picker-browse',
-}
-
-/**
- * Resolve the interaction from one boot-time sample and mount its backend and
- * surface as Loader entries; the effect's disposer removes both entries and
- * joins their fibers' teardown, so unloading this plugin returns only after
- * both faces of the mounted interaction (and their dependents) quiesced.
+ * Resolve the backend from one boot-time sample and mount it as a Loader entry.
+ * The effect's disposer removes the entry and joins its teardown.
  * @param ctx - cordis context carrying the injected `webServer` and `loader`.
  */
 export async function apply(ctx: Context): Promise<void> {
@@ -67,32 +48,9 @@ export async function apply(ctx: Context): Promise<void> {
     linuxChooser: hasLinuxChooserBinary(process.env.PATH, canExecute),
   })
   await ctx.effect(async () => {
-    // Root-tree create: the Loader root is in-memory (write() is a no-op), so
-    // the mounted rows can never be persisted back into a config file. The
-    // backend lands first: the surface's browser half drives the capability
-    // the backend registers.
-    const ids: string[] = []
-    const unmount = async () => {
-      for (const id of [...ids].reverse()) {
-        // Tree teardown (group.stop) can have removed the entry already;
-        // nothing is left to unmount or await then.
-        if (ctx.loader.store[id] === undefined) continue
-        // remove() disposes the entry transactionally, so the chooser's unload
-        // signals completion only after that face quiesced.
-        await ctx.loader.remove(id)
-      }
+    const id = await ctx.loader.create({ name: BACKEND_PACKAGES[backend] })
+    return async () => {
+      if (ctx.loader.store[id] !== undefined) await ctx.loader.remove(id)
     }
-    try {
-      for (const name of [BACKEND_PACKAGES[backend], SURFACE_PACKAGES[backend]]) {
-        ids.push(await ctx.loader.create({ name }))
-      }
-    } catch (cause) {
-      // Setup owns the entries it created until it returns the disposer: leaving
-      // the backend mounted would make a retry collide with its own
-      // directoryPicker registration.
-      await unmount()
-      throw cause
-    }
-    return unmount
-  }, 'directory-picker-auto: interaction entries')
+  }, 'directory-picker-auto: backend entry')
 }

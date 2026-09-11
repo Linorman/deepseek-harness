@@ -14,13 +14,14 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
+import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 /** Starts the shipped default on this scenario's declared reasoning model. */
 const OVERLAY = fileURLToPath(new URL('./declared-reasoning.overlay.yml', import.meta.url))
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/declared-reasoning', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('./snapshots/declared-reasoning/ui.expected.md', import.meta.url))
 const MODE = webSnapshotMode()
+const OBJECTIVE = 'Open the declared reasoning composer.'
 
 describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach the composer', () => {
   let scaffold: WebScaffold
@@ -48,12 +49,19 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
         },
       },
     })
+    const created = await scaffold.authenticatedRpc('team.create', {
+      objective: OBJECTIVE,
+      cwd: scaffold.workspaceCwd,
+    })
+    if (!created.result.ok) throw new Error(`team.create failed: ${created.result.error.message}`)
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
+    await page.getByText(OBJECTIVE, { exact: true }).waitFor({ timeout: 15_000 })
+    await page.getByText(OBJECTIVE, { exact: true }).click()
   }, 120_000)
 
   afterAll(async () => {

@@ -6,7 +6,7 @@ import { chmod, mkdtemp, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import SessionStore, { SESSION_FORMAT_VERSION, SessionId } from '@clocky/clocky-session'
-import type { SessionEvent, SessionHeader, SessionId as SessionIdType } from '@clocky/clocky-session'
+import type { Session, SessionEvent, SessionHeader, SessionId as SessionIdType } from '@clocky/clocky-session'
 import SessionPersistence, { SessionPersistenceRevision } from '@clocky/clocky-session-persistence'
 import type { SessionPersistenceSnapshot } from '@clocky/clocky-session-persistence'
 import SqliteSessionPersistence from '@clocky/clocky-session-persistence-sqlite'
@@ -117,6 +117,8 @@ class TestPersistence extends SessionPersistence {
     TestPersistence.set({ meta, events: [] })
     return Promise.resolve()
   }
+
+  materializeHeader(_session: Session): Promise<void> { return Promise.resolve() }
 
   append(id: SessionIdType, events: readonly SessionEvent[]): Promise<void> {
     const entry = TestPersistence.entries.get(id)
@@ -312,10 +314,16 @@ describe('SQLite session search', () => {
   it('searches two-character Unicode61 tokens in live-only sessions', async () => {
     const ctx = await liveContext({ path: ':memory:', snippetChars: 20 })
     const session = ctx.sessions.create(SessionId('live'), {
-      // agentPreset rides along: the index rebuilds the header a caller reads,
-      // and a session listed under the wrong composition is a lie about what it
-      // ran. The full-header comparison below is what pins every column.
-      meta: { cwd: '/work', createdAt: 10, seedLength: 1, delegationDepth: 2, agentPreset: 'minimal' },
+      // Team references and the preset are returned from index rows rather
+      // than the live Session object, so the projection must retain them.
+      meta: {
+        cwd: '/work',
+        createdAt: 10,
+        teamId: 'team-live',
+        participantId: 'participant-live',
+        seedLength: 1,
+        agentPreset: 'minimal',
+      },
     })
     session.append(
       'user/message',
@@ -1072,13 +1080,22 @@ describe('SQLite reconciliation and source lifecycle', () => {
   })
 
   it('rejects immutable header conflicts between live and persisted sources', async () => {
-    const shared = header('conflict', 10, { delegationDepth: 1 })
+    const shared = header('conflict', 10, {
+      teamId: 'team-persisted',
+      participantId: 'participant-shared',
+      agentPreset: 'persisted',
+    })
     TestPersistence.reset([{ meta: shared, events: messageEvents('persisted needle') }])
     const ctx = await liveContext()
     await ctx.plugin(TestPersistence)
     ctx.sessions.create(shared.id, {
       seed: messageEvents('live needle'),
-      meta: { createdAt: 10, delegationDepth: 2 },
+      meta: {
+        createdAt: 10,
+        teamId: 'team-live',
+        participantId: 'participant-shared',
+        agentPreset: 'live',
+      },
     })
 
     await expect(ctx.sessionQuery.searchSessions({ query: 'needle' }))
@@ -1757,7 +1774,11 @@ describe('SQLite schema, cancellation, and real persistence integration', () => 
     await ctx.plugin(SessionStore)
     const persistence = await ctx.plugin(SqliteSessionPersistence, { path: persistencePath })
     const search = await ctx.plugin(SqliteSessionQueryEngine, { path: searchPath })
-    const meta = header('real', 10, { cwd: '/work' })
+    const meta = header('real', 10, {
+      cwd: '/work',
+      teamId: 'team-real',
+      participantId: 'participant-real',
+    })
     await ctx.sessionPersistence.create(meta)
     await ctx.sessionPersistence.append(meta.id, messageEvents('real SQLite needle'))
 

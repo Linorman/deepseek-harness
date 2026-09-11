@@ -14,6 +14,7 @@ import { isAbsolute, resolve as resolvePath } from 'node:path'
 import { defineTool, TOOL_ABORTED } from '@clocky/clocky-tools'
 import type { GenericCallView, TerminalCallView, ToolExecution, ToolResult, ToolResultView } from '@clocky/clocky-tools'
 import { HarnessError } from '@clocky/clocky-llm'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import type {} from '@clocky/clocky-system-prompt'
 import type {} from '@clocky/clocky-jobs'
@@ -146,7 +147,7 @@ function resolveWorkdir(
   exec: { agent?: Agent },
   policyWorkspaceRoot?: string,
 ): string | undefined {
-  const headerCwd = exec.agent?.session.header.cwd
+  const headerCwd = exec.agent === undefined ? undefined : resolveAgentWorkspaceRoot(exec.agent)
   const sessionCwd = policyWorkspaceRoot ?? (headerCwd === undefined ? undefined : canonicalPath(headerCwd))
   if (modelWorkdir === undefined) return sessionCwd
   if (sessionCwd !== undefined && !isAbsolute(modelWorkdir)) {
@@ -197,7 +198,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   }
   /** Resolve the complete standing policy for this call when a confining executor is mounted. */
   const resolveSandboxPolicy = (exec: ToolExecution): SandboxExecutionPolicy | undefined =>
-    sandboxPolicy?.resolve(exec.agent === undefined ? {} : { session: exec.agent.session })
+    sandboxPolicy?.resolve(exec.agent === undefined ? {} : { session: exec.agent.session, agent: exec.agent })
 
   /**
    * Resolve a sandbox-escalation request through `ctx.approval` BEFORE

@@ -1,0 +1,11 @@
+# Reuse the real Host composition while replacing only its scenario driver.
+- id: human-approval-driver
+  disabled: true
+
+- insert:
+    - id: human-approval-restart-driver
+      name: './snapshot-fixtures/headless-human-approval-restart-driver.ts'
+      config:
+        stage: !!js process.env.CLOCKY_APPROVAL_STAGE
+        outcome: !!js process.env.CLOCKY_APPROVAL_OUTCOME
+        teamId: !!js process.env.CLOCKY_APPROVAL_TEAM_ID

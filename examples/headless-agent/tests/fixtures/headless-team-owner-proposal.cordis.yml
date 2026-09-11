@@ -1,0 +1,11 @@
+- id: team-scheduler-dag
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: headless-team-task-mock
+    model: headless-team-task-mock
+
+- insert:
+    - id: headless-team-run-mock-llm
+      name: './snapshot-fixtures/headless-team-run-llm.ts'

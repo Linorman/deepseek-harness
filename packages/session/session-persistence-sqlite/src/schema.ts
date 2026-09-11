@@ -15,7 +15,7 @@ import {
 import { sql } from './sql.ts'
 
 /** Current physical-record schema with packed and compressed event rows. */
-export const SCHEMA_VERSION = 17
+export const SCHEMA_VERSION = 19
 /** Application id reserved for Clocky SQLite session databases. */
 export const SESSION_PERSISTENCE_SQLITE_APPLICATION_ID = 0x44534850
 
@@ -25,12 +25,12 @@ export interface SessionRow {
   readonly version: number
   readonly created_at: number
   readonly cwd: string | null
+  readonly team_id: string | null
+  readonly participant_id: string | null
   readonly parent_session: string | null
   readonly seed_length: number | null
-  readonly origin: 'subagent' | null
   readonly incarnation: string
   readonly revision: number
-  readonly delegation_depth: number | null
   readonly agent_preset: string | null
 }
 
@@ -206,7 +206,7 @@ function initializeDatabase(db: DatabaseSync): void {
   db.exec(sql('schema'))
   db.prepare(sql('insert-persistence-state')).run(randomUUID())
   db.exec(sql('set-application-id'))
-  db.exec(sql('set-user-version-17'))
+  db.exec(sql('set-user-version-19'))
 }
 
 let canonicalSchema: readonly SchemaObjectRow[] | undefined
@@ -286,9 +286,17 @@ export function decodeSessionRow(value: unknown): SessionRow {
   const version = safeIntegerField(row, 'version')
   const cwd = nullableStringField(row, 'cwd')
   if (cwd !== null && !isAbsolute(cwd)) throw new Error('stored session cwd must be absolute')
+  const teamId = nullableStringField(row, 'team_id')
+  const participantId = nullableStringField(row, 'participant_id')
+  if ((teamId === null) !== (participantId === null)) {
+    throw new Error('stored team_id and participant_id must both be null or non-empty strings')
+  }
+  if (teamId !== null && teamId.length === 0) throw new Error('stored team_id must not be empty')
+  if (participantId !== null && participantId.length === 0) throw new Error('stored participant_id must not be empty')
   const parent = nullableStringField(row, 'parent_session')
-  const origin = nullableStringField(row, 'origin')
-  if (origin !== null && origin !== 'subagent') throw new Error('stored session origin must be subagent or null')
+  if (Object.hasOwn(row, 'origin') || Object.hasOwn(row, 'delegation_depth')) {
+    throw new Error('stored session row contains retired subagent header fields')
+  }
   const incarnation = nonemptyStringField(row, 'incarnation')
   if (!UUID.test(incarnation)) throw new Error('stored session incarnation must be a UUID')
   return {
@@ -296,10 +304,10 @@ export function decodeSessionRow(value: unknown): SessionRow {
     version,
     created_at: nonnegativeSafeIntegerField(row, 'created_at'),
     cwd,
+    team_id: teamId,
+    participant_id: participantId,
     parent_session: parent,
     seed_length: nullableNonnegativeSafeIntegerField(row, 'seed_length'),
-    origin,
-    delegation_depth: nullableNonnegativeSafeIntegerField(row, 'delegation_depth'),
     agent_preset: nullableStringField(row, 'agent_preset'),
     incarnation,
     revision: nonnegativeSafeIntegerField(row, 'revision'),
@@ -350,10 +358,10 @@ export function rowToMeta(row: SessionRow): SessionHeader {
     id: SessionId(row.id),
     createdAt: row.created_at,
     ...row.cwd === null ? {} : { cwd: row.cwd },
+    ...row.team_id === null ? {} : { teamId: row.team_id },
+    ...row.participant_id === null ? {} : { participantId: row.participant_id },
     ...row.parent_session === null ? {} : { parentSession: SessionId(row.parent_session) },
     ...row.seed_length === null ? {} : { seedLength: row.seed_length },
-    ...row.origin === null ? {} : { origin: row.origin },
-    ...row.delegation_depth === null ? {} : { delegationDepth: row.delegation_depth },
     ...row.agent_preset === null ? {} : { agentPreset: row.agent_preset },
   }
 }

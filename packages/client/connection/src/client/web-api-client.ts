@@ -5,13 +5,15 @@ import { AbstractApiClient } from './api.ts'
 import { hostFrameSchema, muxFrameSchema } from '@clocky/clocky-host-apiproxy/api/events.schema'
 import { serverRequestSchema } from '@clocky/clocky-host-apiproxy/api/rpc.schema'
 import { HOST_EVENTS_PATH, MUX_EVENTS_PATH } from '../api-path.ts'
+import { waitForProductAuthBootstrap } from './product-auth-bootstrap.ts'
 
 type SocketItem<F> = { kind: 'frame'; envelope: RpcRequest<F> } | { kind: 'end' }
 type Parser<F> = { parse(value: unknown): F }
 
 /** Browser platform subclass: unary/respond use fetch; mux/host use downlink-only WebSockets. */
 export class WebApiClient extends AbstractApiClient {
-  protected doFetch(input: URL, init?: RequestInit): Promise<Response> {
+  protected async doFetch(input: URL, init?: RequestInit): Promise<Response> {
+    await waitForProductAuthBootstrap()
     return globalThis.fetch(input, init)
   }
 
@@ -37,6 +39,7 @@ export class WebApiClient extends AbstractApiClient {
     frameSchema: Parser<F>,
     onOpen?: () => void,
   ): AsyncGenerator<RpcRequest<F>> {
+    await waitForProductAuthBootstrap()
     const url = new URL(path, this.resolveBase())
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
     const socket = new WebSocket(url)

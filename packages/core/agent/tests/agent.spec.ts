@@ -3,8 +3,12 @@ import { Context, Service, symbols } from '@clocky/cordis'
 import { createUserMessage, freezeMessage } from '@clocky/clocky-llm'
 import { Session, SessionId, type UserMessage } from '@clocky/clocky-session'
 import AgentRegistry, {
+  AgentWorkspaceUnavailableError,
   agentEvents,
   Inbox,
+  openAgentWorkspaceLease,
+  resolveAgentWorkspaceRoot,
+  settleAgentWorkspaceLease,
 } from '@clocky/clocky-agent'
 import TypertRegistry from '@clocky/clocky-typert-registry'
 
@@ -143,6 +147,84 @@ describe('Inbox', () => {
 })
 
 describe('AgentRegistry', () => {
+  it('prefers a live Team workspace allocation over the Session cwd', () => {
+    const agent = stubAgent('allocated-workspace', {
+      session: Session.create(SessionId('allocated-workspace'), undefined, {
+        version: 0,
+        id: SessionId('allocated-workspace'),
+        createdAt: 0,
+        cwd: '/session-root',
+      }),
+    })
+    const lease = openAgentWorkspaceLease(agent)
+    const dispose = lease.publishRoot('/team-allocation')
+
+    expect(resolveAgentWorkspaceRoot(agent)).toBe('/team-allocation')
+    dispose()
+    expect(resolveAgentWorkspaceRoot(agent)).toBe('/session-root')
+    lease.dispose()
+  })
+
+  it('does not silently fall back to the Session cwd for an unavailable Team workspace scope', () => {
+    const agent = stubAgent('unavailable-workspace', {
+      session: Session.create(SessionId('unavailable-workspace'), undefined, {
+        version: 0,
+        id: SessionId('unavailable-workspace'),
+        createdAt: 0,
+        cwd: '/session-root',
+      }),
+    })
+    const lease = openAgentWorkspaceLease(agent)
+    const clearUnavailable = lease.markUnavailable()
+
+    expect(() => resolveAgentWorkspaceRoot(agent)).toThrow(AgentWorkspaceUnavailableError)
+    clearUnavailable()
+    expect(resolveAgentWorkspaceRoot(agent)).toBe('/session-root')
+    lease.dispose()
+  })
+
+  it('keeps live workspace roots and unavailable markers keyed by exact Agents', () => {
+    const first = stubAgent('first-workspace-agent', {
+      session: Session.create(SessionId('first-workspace-agent'), undefined, {
+        version: 0, id: SessionId('first-workspace-agent'), createdAt: 0, cwd: '/first-session',
+      }),
+    })
+    const second = stubAgent('second-workspace-agent', {
+      session: Session.create(SessionId('second-workspace-agent'), undefined, {
+        version: 0, id: SessionId('second-workspace-agent'), createdAt: 0, cwd: '/second-session',
+      }),
+    })
+    const firstLease = openAgentWorkspaceLease(first)
+    const secondLease = openAgentWorkspaceLease(second)
+    const clearFirst = firstLease.markUnavailable()
+    const disposeSecondRoot = secondLease.publishRoot('/second-workspace')
+
+    expect(() => resolveAgentWorkspaceRoot(first)).toThrow(AgentWorkspaceUnavailableError)
+    expect(resolveAgentWorkspaceRoot(second)).toBe('/second-workspace')
+
+    clearFirst()
+    disposeSecondRoot()
+    firstLease.dispose()
+    secondLease.dispose()
+  })
+
+  it('settles only the live Agent workspace lease owner', async () => {
+    const agent = stubAgent('workspace-settler-agent')
+    const other = stubAgent('workspace-settler-other')
+    const calls: string[] = []
+    const lease = openAgentWorkspaceLease(agent, {
+      settleForActivationDisposal: async (): Promise<void> => { calls.push('settled') },
+    })
+
+    await settleAgentWorkspaceLease(other)
+    await settleAgentWorkspaceLease(agent)
+    expect(calls).toEqual(['settled'])
+
+    lease.dispose()
+    await settleAgentWorkspaceLease(agent)
+    expect(calls).toEqual(['settled'])
+  })
+
   it('contributes Agent lookup and scoped Context providers while Typert is live', async () => {
     const ctx = new Context()
     const agentFiber = ctx.plugin(AgentRegistry)

@@ -8,12 +8,22 @@
  * @module @clocky/clocky-session/surface
  */
 
-import type { Message } from '@clocky/clocky-llm'
-import type { SessionEvent, SurfaceEvent, SurfaceEventType, SurfaceOp } from './types.ts'
+import { MessageId } from '@clocky/clocky-llm/brand'
+import { freezeMessage } from '@clocky/clocky-llm/message'
+import type { Message } from '@clocky/clocky-llm/types'
+import type {
+  SessionEvent,
+  SurfaceEvent,
+  SurfaceEventType,
+  SurfaceOp,
+  TeamChannelViewEventData,
+  TeamChannelViewMessageSource,
+} from './types.ts'
 
 /** Runtime counterpart of the message-producing event union. */
 const SURFACE_EVENT_TYPES = new Set<string>([
   'user/message',
+  'team/channel-view',
   'assistant/message',
   'tool/result',
 ])
@@ -21,7 +31,7 @@ const SURFACE_EVENT_TYPES = new Set<string>([
 /**
  * Whether an event type can join the model-visible surface.
  * @param type - event type to test.
- * @returns true for one of the three message-producing event types.
+ * @returns true for one of the four message-producing event types.
  */
 export function isSurfaceEligibleType(type: string): boolean {
   return SURFACE_EVENT_TYPES.has(type)
@@ -74,9 +84,8 @@ export function isReplacementSurfaceEvent(
  * THE per-node projection rule: `Session.deriveMessages` folds it over the
  * live surface, external reconstructors and pure projections fold the same
  * function over a log prefix's surface to rebuild the exact messages any
- * request was built from. The returned message is the already frozen message
- * nested in the event wrapper and shared by delivery, durable history, and
- * model requests.
+ * request was built from. It returns the frozen message nested in ordinary
+ * message events or derives one from stored Team channel-view content.
  * @param event - the event to project.
  * @returns the derived message, or null when the event produces none.
  */
@@ -96,6 +105,9 @@ export function deriveEventMessage(event: SessionEvent): Message | null {
     case 'user/message': {
       return event.data
     }
+    case 'team/channel-view': {
+      return teamChannelViewMessage(event.data)
+    }
     case 'assistant/message': {
       // Skip an empty-content assistant/message: it exists only to host a
       // max-tokens step's usage and must not inject a content-less assistant
@@ -111,6 +123,29 @@ export function deriveEventMessage(event: SessionEvent): Message | null {
       // no message. Merge-extensible union: no assertNever here.
       return null
   }
+}
+
+/** Build the deterministic user message that one stored Team channel view represents. */
+function teamChannelViewMessage(data: TeamChannelViewEventData): Message {
+  const source: TeamChannelViewMessageSource = {
+    kind: 'team-channel-view',
+    teamId: data.teamId,
+    channelId: data.channelId,
+    adapter: data.adapter,
+    viewPolicy: data.viewPolicy,
+    triggeringEnvelopeId: data.triggeringEnvelopeId,
+    sourceEnvelopeIds: data.sourceEnvelopeIds,
+    delivery: data.delivery,
+    ...data.causationId === undefined ? {} : { causationId: data.causationId },
+    ...data.taskId === undefined ? {} : { taskId: data.taskId },
+    ...data.review === undefined ? {} : { review: data.review },
+  }
+  return freezeMessage({
+    id: MessageId(`team-channel-view:${JSON.stringify([data.teamId, data.channelId, data.triggeringEnvelopeId])}`),
+    role: 'user',
+    content: data.content,
+    source,
+  })
 }
 
 /** One replacement operation observed while folding a session surface. */

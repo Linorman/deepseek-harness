@@ -12,7 +12,6 @@ import type { PatchOptions } from '@clocky/cordis-plugin-include'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { settingsNamespace } from '@clocky/clocky-settings'
 import { resolveSessionPreset, SETTINGS_NAMESPACE } from '@clocky/clocky-agent-presets'
-import { applyChildComposition, childSessionMeta } from '@clocky/clocky-subagent'
 import type {} from '@clocky/clocky-compaction-basic'
 import type {} from '@clocky/clocky-skill'
 import type {} from '@clocky/clocky-tools'
@@ -28,6 +27,16 @@ const WEB_PATCH = join(REPO_ROOT, 'packages/bundle/web-app/cordis.patch.yml')
 /** The installation anchor whose dependency surface the preset module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
 const MINIMAL_PROMPT = 'You are a helpful software engineer assistant.'
+const LEGACY_DIRECT_ORCHESTRATION_TOOLS = [
+  'interrupt_agent',
+  'list_agents',
+  'ralph',
+  'report',
+  'send_message',
+  'subagent',
+  'workflow',
+]
+const LEGACY_GOAL_TOOLS = ['create_goal', 'get_goal', 'update_goal']
 const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
 * You don't have access to the internet via this tool.
@@ -47,6 +56,7 @@ async function bootWeb(
   extra: PatchOptions[] = [],
 ): Promise<Context> {
   const storageRoot = join(dirname(settingsFile), 'storages')
+  const storagePath = join(dirname(settingsFile), 'team-storage.sqlite')
   const overrides: PatchOptions[] = [
     // The settings row defaults to `$CLOCKY_HOME/settings.yaml`. Left alone it
     // reads the developer's own document — and since the default preset is a
@@ -54,18 +64,15 @@ async function bootWeb(
     // outcome. Point it at a temp file for the same reason the roster below
     // names only the shipped root.
     { id: 'settings', config: { path: settingsFile, watch: false } },
-    // storage-json's root is anchored to the real $CLOCKY_HOME. Unpinned, this
-    // file writes the developer's own `~/.clocky/storages/` — and then reads it
+    // Storage paths are anchored to the real $CLOCKY_HOME. Unpinned, this file
+    // writes the developer's own JSON storage and Team SQLite database — and reads them
     // back on the next run, so a stored document from any other build decides
     // this test's boot. Same reason the settings row above is pinned.
     { id: 'storage-json', config: { root: storageRoot } },
+    { id: 'storage-sqlite', config: { path: storagePath } },
     // Host rows with side effects outside this process: a bound port, a served
-    // asset tree, a telemetry exporter. `api-gateway` and `directory-picker`
-    // stay ENABLED on purpose — the api-proxy is the host row that injects
-    // `subagents`, `workspace`, and the rest of the agent plane, so disabling
-    // it would hide exactly the breakage this file exists to catch: a service
-    // moved into the presets that a host row still waits for. The boot audit
-    // is that assertion.
+    // asset tree, a telemetry exporter. The API gateway stays enabled so this
+    // boot exercises the real host/preset boundary.
     { id: 'webserver', disabled: true },
     // The web bundle's runtime row injects `webServer`, so it cannot
     // activate without the bound port disabled above. It owns dist serving
@@ -77,13 +84,11 @@ async function bootWeb(
     // The always-on reload chain waits for the browser roster and bound port
     // disabled above.
     { id: 'client-hmr', disabled: true },
-    // The shipped `-auto` chooser resolves its interaction from a running
-    // host and so waits for the webserver disabled above; the browse variant
-    // supplies `directoryPicker` without one.
+    // The adaptive picker reads webServer. This catalog test disables it and
+    // makes no directory request, so api-gateway receives the native seam provider directly.
     { id: 'directory-picker', disabled: true },
     { insert: [
-      { id: 'directory-picker-browse', name: '@clocky/clocky-host-directory-picker-browse' },
-      { id: 'ui-directory-picker-browse', name: '@clocky/clocky-client-ui-directory-picker-browse' },
+      { id: 'directory-picker-native', name: '@clocky/clocky-host-directory-picker-native' },
     ] },
     // The roster AppCLIEntry would patch in; only the shipped root, so a
     // developer's own `~/.clocky/.preset` cannot change this test's outcome.
@@ -185,11 +190,13 @@ describe('the shipped Web composition', () => {
       // excluded for the reason the TUI composition e2e excludes them — they
       // depend on ripgrep being present on the machine.
       expect(toolNames(ctx, handle.agent).filter(name => name !== 'glob' && name !== 'grep')).toEqual([
-        'ask_user_question', 'bash', 'create_goal', 'edit', 'exit_plan_mode',
-        'get_goal', 'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents', 'ralph', 'read', 'read_image', 'send_message', 'skill',
-        'subagent', 'subagent_fork', 'todo_write', 'update_goal', 'web_search',
-        'workflow', 'write',
+        'ask_user_question', 'bash', 'edit', 'exit_plan_mode', 'job_kill',
+        'job_list', 'job_output', 'read', 'read_image', 'skill', 'todo_write',
+        'web_search', 'write',
       ])
+      for (const name of [...LEGACY_DIRECT_ORCHESTRATION_TOOLS, ...LEGACY_GOAL_TOOLS]) {
+        expect(toolNames(ctx, handle.agent)).not.toContain(name)
+      }
     } finally {
       await handle.dispose()
     }
@@ -251,6 +258,7 @@ describe('the shipped Web composition', () => {
         'cordis_inspect_list', 'cordis_inspect_query', 'cordis_inspect_self',
         'cordis_define', 'cordis_run', 'cordis_stop', 'cordis_undefine',
       ]))
+      for (const name of [...LEGACY_DIRECT_ORCHESTRATION_TOOLS, ...LEGACY_GOAL_TOOLS]) expect(tools).not.toContain(name)
       // And it keeps the standard agent's own tools rather than replacing them.
       expect(tools).toEqual(expect.arrayContaining(['bash', 'read', 'edit', 'skill']))
       expect(tools).not.toContain('str_replace_editor')
@@ -281,6 +289,9 @@ describe('the shipped Web composition', () => {
       const assembly = await ctx.systemPrompt.assemble({ scope: coded.agent })
       expect(assembly.tools.map(tool => tool.name)).toEqual(['run_code'])
       expect(toolNames(ctx, coded.agent)).not.toContain('str_replace_editor')
+      for (const name of [...LEGACY_DIRECT_ORCHESTRATION_TOOLS, ...LEGACY_GOAL_TOOLS]) {
+        expect(toolNames(ctx, coded.agent)).not.toContain(name)
+      }
       const sdk = assembly.sections.find(section => section.name === 'tools:sdk')?.text ?? ''
       expect(sdk).not.toContain('str_replace_editor')
       expect(sdk).toContain('web_search')
@@ -418,59 +429,6 @@ describe('a forked session', () => {
       // for free any more.
       expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
       expect(toolNames(ctx, child.agent).length).toBeGreaterThan(0)
-    } finally {
-      await child.dispose()
-      await parent.dispose()
-    }
-  })
-})
-
-describe('a delegated child', () => {
-  it('runs on the composition its parent runs on', async () => {
-    const parent = await ctx.agents.create({
-      sessionId: SessionId('preset-child-parent'),
-      meta: { agentPreset: 'standard' },
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
-    })
-    // Exactly what an in-process subagent driver's creation window does.
-    const child = await parent.agent.ctx.agents.create({
-      sessionId: SessionId('preset-child'),
-      meta: childSessionMeta(parent.agent, 1, 0),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
-    })
-    try {
-      expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
-      // The shipped `standard` preset is the whole coding agent; an empty
-      // child here is the defect, and equality alone would not catch it.
-      expect(toolNames(ctx, child.agent)).toContain('bash')
-      expect(child.agent.session.header.agentPreset).toBe('standard')
-    } finally {
-      await child.dispose()
-      await parent.dispose()
-    }
-  })
-
-  it('follows a parent that switched preset while blank', async () => {
-    const parent = await ctx.agents.create({
-      sessionId: SessionId('preset-child-switch-parent'),
-      meta: { agentPreset: 'standard' },
-      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
-    })
-    await ctx.agentPresets.recompose(parent.agent.ctx, 'minimal')
-    const child = await parent.agent.ctx.agents.create({
-      sessionId: SessionId('preset-child-switch'),
-      meta: childSessionMeta(parent.agent, 1, 0),
-      setup: (agentCtx) => {
-        applyChildComposition(agentCtx, parent.agent, {})
-      },
-    })
-    try {
-      // The live scope chain is the authority, not the parent's creation
-      // header — which still names `standard`.
-      expect(toolNames(ctx, child.agent)).toEqual(toolNames(ctx, parent.agent))
-      expect(child.agent.session.header.agentPreset).toBe('minimal')
     } finally {
       await child.dispose()
       await parent.dispose()

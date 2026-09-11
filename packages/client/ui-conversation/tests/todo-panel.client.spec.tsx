@@ -26,7 +26,7 @@ const LIST: TodoItem[] = [
   { content: '补测试', status: 'pending' },
 ]
 
-/** A parallel plan: three tasks running at once (concurrent subagents). */
+/** A parallel plan: three tasks running at once (concurrent tasks). */
 const PARALLEL: TodoItem[] = [
   { content: '搭骨架', status: 'completed' },
   { content: '写组件', status: 'in_progress' },

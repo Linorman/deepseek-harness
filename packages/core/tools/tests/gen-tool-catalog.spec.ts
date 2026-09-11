@@ -22,22 +22,21 @@ interface JsonSchema {
 }
 
 describe('gen-tool-catalog collectToolCatalog', () => {
-  it('boots every shipped tool package and harvests its model-facing schemas', async () => {
+  it('boots every model-facing tool package and harvests its schemas', async () => {
     const catalog = await collectToolCatalog()
     const names = catalog.flatMap(entry => entry.schemas.map(s => s.name)).sort()
     expect(names).toEqual([
       'ask_user_question', 'bash', 'bash', 'cordis_define', 'cordis_inspect_list',
       'cordis_inspect_query', 'cordis_inspect_self', 'cordis_run', 'cordis_stop',
-      'cordis_undefine', 'create_goal', 'edit', 'exit_plan_mode', 'followup_task', 'get_goal', 'glob', 'grep',
-      'interrupt_agent', 'interrupt_agent', 'job_kill', 'job_list', 'job_output',
-      'list_agents', 'list_agents', 'lsp', 'pwsh', 'pwsh', 'ralph',
-      'read', 'read_image', 'report', 'run_code', 'schedule_create', 'schedule_delete',
-      'schedule_list', 'send_message', 'send_message', 'session_event_read', 'session_event_search',
-      'session_event_trace', 'session_search', 'session_trace', 'skill', 'spawn_teammate',
-      'str_replace_editor', 'subagent', 'team_task_create',
-      'team_task_get', 'team_task_list', 'team_task_update', 'terminal_close', 'terminal_list',
+      'cordis_undefine', 'create_goal', 'edit', 'exit_plan_mode', 'get_goal', 'get_goal', 'glob', 'grep',
+      'job_kill', 'job_list', 'job_output',
+      'lsp', 'pwsh', 'pwsh',
+      'read', 'read_image', 'run_code', 'schedule_create', 'schedule_delete',
+      'schedule_list', 'session_event_read', 'session_event_search',
+      'session_event_trace', 'session_search', 'session_trace', 'skill',
+      'str_replace_editor', 'team_channel_summarize', 'team_final', 'team_goal_phase', 'team_message', 'team_task_cancel', 'team_task_delegate', 'team_task_heartbeat', 'team_task_integrate', 'team_task_list', 'team_task_propose_owner', 'team_task_report', 'team_task_review', 'team_task_start', 'team_task_wait', 'team_task_watch', 'team_worker_pool_set', 'team_workflow_start', 'team_workflow_task_cancel', 'team_workflow_wait', 'terminal_close', 'terminal_list',
       'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal', 'todo_write',
-      'update_goal', 'wait_agent', 'web_fetch', 'web_search', 'workflow', 'write',
+      'update_goal', 'update_goal', 'web_fetch', 'web_search', 'write',
     ])
     // Every tool carries a JSON-Schema `parameters` object (what the model sees).
     for (const entry of catalog) {
@@ -53,7 +52,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
       .flatMap(entry => entry.schemas)
       .find(s => s.name === 'todo_write')
     // `todo-todo` writes `enum: [...STATUSES]` — a source AST would see the
-    // spread, not the values. Booting yields the shipped enum literals.
+    // spread, not the values. Booting yields the runtime enum literals.
     const status = (((todo?.parameters as unknown as JsonSchema).properties?.todos)?.items)?.properties?.status
     expect(status?.enum).toEqual(['pending', 'in_progress', 'completed'])
   })
@@ -62,11 +61,28 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const bash = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-bash')
     expect(bash?.sources.bash).toBe('packages/shell/tool-bash/src/index.ts')
-    const control = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-subagent-control')
-    expect(control?.sources).toEqual({
-      interrupt_agent: 'packages/subagent/tool-subagent-control/src/index.ts',
-      list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
-      send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-subagent-control')).toBe(false)
+    const teamTask = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-team-task')
+    expect(teamTask?.sources).toEqual({
+      team_task_cancel: 'packages/team/tool-team-task/src/index.ts',
+      team_task_delegate: 'packages/team/tool-team-task/src/index.ts',
+      team_task_list: 'packages/team/tool-team-task/src/index.ts',
+      team_task_propose_owner: 'packages/team/tool-team-task/src/index.ts',
+      team_task_start: 'packages/team/tool-team-task/src/index.ts',
+      team_task_wait: 'packages/team/tool-team-task/src/index.ts',
+      team_task_watch: 'packages/team/tool-team-task/src/index.ts',
+      team_worker_pool_set: 'packages/team/tool-team-task/src/index.ts',
+      team_workflow_start: 'packages/team/tool-team-task/src/index.ts',
+      team_workflow_task_cancel: 'packages/team/tool-team-task/src/index.ts',
+      team_workflow_wait: 'packages/team/tool-team-task/src/index.ts',
+    })
+    const team = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-team')
+    expect(team?.sources.team_task_integrate).toBe('packages/team/tool-team/src/index.ts')
+    const teamGoal = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-team-goal')
+    expect(teamGoal?.sources).toEqual({
+      get_goal: 'packages/team/tool-team-goal/src/index.ts',
+      team_goal_phase: 'packages/team/tool-team-goal/src/index.ts',
+      update_goal: 'packages/team/tool-team-goal/src/index.ts',
     })
   })
 
@@ -83,13 +99,13 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     }
   })
 
-  it('records the shipped `subagent_fork` alias in a note (config-driven tool name)', async () => {
-    // `tool-subagent`'s registered name is the load-time `toolName` config, so the shipped
-    // agents surface this one package as both `subagent` and `subagent_fork`.
+  it('omits private compatibility tools from the product catalog', async () => {
     const catalog = await collectToolCatalog()
-    const subagent = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-subagent')
-    expect(subagent?.schemas.map(s => s.name)).toEqual(['subagent'])
-    expect(subagent?.note).toMatch(/subagent_fork/)
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-subagent')).toBe(false)
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-workflow')).toBe(false)
+    expect(catalog.flatMap(entry => entry.schemas.map(schema => schema.name))).not.toEqual(expect.arrayContaining([
+      'interrupt_agent', 'list_agents', 'ralph', 'report', 'send_message', 'subagent', 'workflow',
+    ]))
   })
 })
 

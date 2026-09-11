@@ -30,10 +30,8 @@ export const sessionIdSchema = z.string().min(1) as unknown as z.ZodType<Session
 export const messageIdSchema = z.string().min(1) as unknown as z.ZodType<MessageId>
 
 /**
- * WorkspaceId: the workspace domain's one brand cast. Hosted here rather
- * than in workspace.schema because session.create references it while
- * workspace.schema references sessionIdSchema — schema modules must stay a
- * DAG (both casts used at module top level; a cycle is a load-time TDZ).
+ * WorkspaceId: the workspace domain's one brand cast. This module also owns
+ * SessionId, so workspace.schema can import both without a schema cycle.
  */
 export const workspaceIdSchema = z.string().min(1) as unknown as z.ZodType<WorkspaceId>
 
@@ -54,8 +52,6 @@ export const sessionSummarySchema = z.object({
   updatedAt: z.number(),
   running: z.boolean(),
   blank: z.boolean(),
-  parentSessionId: sessionIdSchema.optional(),
-  origin: z.literal('subagent').optional(),
   cwd: z.string().optional(),
   agentPreset: z.string().optional(),
   projections: z.lazy(() => sessionProjectionsBlockSchema).optional(),
@@ -98,23 +94,6 @@ export const sessionSearchValueSchema = z.object({
   hasMore: z.boolean(),
 }) satisfies z.ZodType<Wire<ResponseValue<'session.search'>>>
 
-/** session.create request payload (at most one of workspaceId / cwd). */
-export const sessionCreateRequestSchema = z.object({
-  workspaceId: workspaceIdSchema.optional(),
-  cwd: z.string().optional(),
-  sessionId: sessionIdSchema.optional(),
-  agentPreset: z.string().optional(),
-}).refine(
-  payload => payload.workspaceId === undefined || payload.cwd === undefined,
-  { message: 'session.create accepts workspaceId or cwd, not both' },
-) satisfies z.ZodType<Wire<RequestPayload<'session.create'>>>
-
-/** session.create response value. */
-export const sessionCreateValueSchema = z.object({
-  sessionId: sessionIdSchema,
-  agentPreset: z.string().optional(),
-}) satisfies z.ZodType<Wire<ResponseValue<'session.create'>>>
-
 /** session.rename request payload (raw title; host-side normalization decides acceptance). */
 export const sessionRenameRequestSchema = z.object({
   sessionId: sessionIdSchema,
@@ -126,17 +105,6 @@ export const sessionRenameValueSchema = z.object({
   title: z.string().min(1),
   seq: z.number().int().nonnegative(),
 }) satisfies z.ZodType<Wire<ResponseValue<'session.rename'>>>
-
-/** session.fork request payload (atSeq anchors the completed-turn cut). */
-export const sessionForkRequestSchema = z.object({
-  sessionId: sessionIdSchema,
-  atSeq: z.number().int().nonnegative().optional(),
-}) satisfies z.ZodType<Wire<RequestPayload<'session.fork'>>>
-
-/** session.fork response value (the child session id). */
-export const sessionForkValueSchema = z.object({
-  sessionId: sessionIdSchema,
-}) satisfies z.ZodType<Wire<ResponseValue<'session.fork'>>>
 
 /** session.history request payload (beforeSeq/maxMessages page backwards from the window tail). */
 export const sessionHistoryRequestSchema = z.object({

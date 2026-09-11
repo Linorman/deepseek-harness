@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 UI 服务和功能插件。编写规则见 [AGENTS.md](AGENTS.md)；宿主半侧是 [`host/`](../host/README.zh.md)。除 `test-runtime` 外，均为名为 `@deepseek-ai/dsh-client-<name>` 的**产品**包。
+clocky web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 UI 服务和功能插件。编写规则见 [AGENTS.md](AGENTS.md)；宿主半侧是 [`host/`](../host/README.zh.md)。除 `test-runtime` 外，均为名为 `@clocky/clocky-client-<name>` 的**产品**包。
 
 | 包 | 目的 |
 |---|---|
@@ -19,19 +19,17 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | [`ui-primitives/`](ui-primitives/README.zh.md) | 提供共享 React 控件、图标和内容渲染器。 |
 | [`ui-attachment/`](ui-attachment/README.zh.md) | 注册输入框与消息图片的附件呈现。 |
 | [`ui-layout/`](ui-layout/README.zh.md) | 排列应用的主要区域。 |
-| [`ui-sidebar/`](ui-sidebar/README.zh.md) | 展示工作区与会话导航。 |
-| [`ui-brand-official/`](ui-brand-official/README.zh.md) | 使用官方名称和标记填充通用浏览器品牌 slot。 |
-| [`ui-workspace/`](ui-workspace/README.zh.md) | 提供工作区选择与创建界面。 |
+| [`ui-sidebar/`](ui-sidebar/README.zh.md) | 承载 Team 导航与任务创建控件。 |
+| [`ui-team/`](ui-team/README.zh.md) | 展示持久 Team 导航并选择协调者转录。 |
+| [`ui-workspace/`](ui-workspace/README.zh.md) | 为非产品组合提供 Workspace 界面。 |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面。 |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树和按工具键控的视图。 |
-| [`ui-workflow-run/`](ui-workflow-run/README.zh.md) | 把持久工作流运行回放为 Chat 嵌套折叠项，并只为实时子 Session 提供导航。 |
 | [`ui-goal/`](ui-goal/README.zh.md) | 展示和管理当前目标。 |
 | [`ui-trajectory/`](ui-trajectory/README.zh.md) | 提供 agent（智能体）活动的其他视图。 |
 | [`ui-commands/`](ui-commands/README.zh.md) | 提供会话感知的命令发现与分发。 |
 | [`ui-input-trigger/`](ui-input-trigger/README.zh.md) | 协调内联命令和引用建议。 |
 | [`ui-skill/`](ui-skill/README.zh.md) | 向内联建议添加 skill（技能）引用。 |
 | [`ui-reference/`](ui-reference/README.zh.md) | 统一的 Web `@file` / `@session` 引用 source。 |
-| [`ui-subagent/`](ui-subagent/README.zh.md) | 提供 subagent（子 agent）导航、子级 transcript（文本记录）的状态和内联引用。 |
 | [`ui-jobs/`](ui-jobs/README.zh.md) | 在会话标题栏列出当前会话的后台任务。 |
 | [`ui-model-selection/`](ui-model-selection/README.zh.md) | 在对话界面中提供模型选择。 |
 | [`ui-permission/`](ui-permission-presets/README.zh.md) | 配置默认权限并切换当前会话的访问模式。 |
@@ -41,7 +39,7 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | [`ui-agent-preset/`](ui-agent-preset/README.zh.md) | 选择会话的 agent 预设，并编写预设组合。 |
 | [`ui-settings/`](ui-settings/README.zh.md) | 承载设置界面及其扩展区域。 |
 | [`ui-settings-general/`](ui-settings-general/README.zh.md) | 提供常规设置分区。 |
-| [`ui-settings-models/`](ui-settings-models/README.zh.md) | 提供模型提供方配置与 DeepSeek 配置引导。 |
+| [`ui-settings-models/`](ui-settings-models/README.zh.md) | 提供与提供方无关的模型配置。 |
 | [`ui-settings-plugin-inventory/`](ui-settings-plugin-inventory/README.zh.md) | 向“插件”设置贡献只读的 Host Loader 清单标签页。 |
 
 每个子文档负责自身的约定和详细行为。[slot 系统标准](../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.zh.md)与 [Web 客户端架构 Agent Note](../../.agents/notes/implemented/architecture/2026-07-19-gui-web-client-architecture.zh.md)负责跨包组合与加载决策。

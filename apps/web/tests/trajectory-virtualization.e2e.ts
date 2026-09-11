@@ -188,6 +188,7 @@ describe('web e2e: Trajectory virtualization over tail-paged history', () => {
       chunks: STREAM_CHUNKS,
     } satisfies ReplayEntry]))
     scaffold = await launchWebScaffold({
+      legacyWorkspaceSurface: true,
       paceMs: 10,
       replayFixture,
       replayOverride,
@@ -196,6 +197,7 @@ describe('web e2e: Trajectory virtualization over tail-paged history', () => {
     browser = await chromium.launch()
     page = await newEnglishPage(browser, 900)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     // The compact layout dropped group session counts; the seeded baseline is

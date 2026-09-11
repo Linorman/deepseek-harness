@@ -11,6 +11,11 @@ export type StorageErrorCode =
   | 'duplicate-mount'
   | 'version-mismatch'
   | 'malformed-medium'
+  | 'invalid-value'
+  | 'sequence-conflict'
+  | 'checkpoint-conflict'
+  | 'compacted'
+  | 'writer-locked'
   | 'closed'
 
 /**
@@ -19,6 +24,8 @@ export type StorageErrorCode =
  */
 export class StorageError extends Error {
   override readonly name = 'StorageError'
+  /** Stable discriminant for the failure class. */
+  readonly code: StorageErrorCode
 
   /**
    * @param code - Stable discriminant for the failure class.
@@ -26,10 +33,11 @@ export class StorageError extends Error {
    * @param options - Standard error options (`cause`).
    */
   constructor(
-    readonly code: StorageErrorCode,
+    code: StorageErrorCode,
     message: string,
     options?: ErrorOptions,
   ) {
     super(message, options)
+    this.code = code
   }
 }

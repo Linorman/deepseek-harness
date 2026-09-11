@@ -11,60 +11,61 @@
 
 `Requires:` 行列出插件通过 `inject` 注入的服务键：其 `cordis.yml` 树还必须加载这些服务的提供者。范围限定为 harness 层级（`packages/`）；配置树还可能加载的 vendored cordis 插件（`hmr`、控制台日志记录器等）固定为上游源代码（参见 [vendoring policy](../vendor/README.md)），未收录于此目录。
 
-<a id="deepseek-aidsh-acp"></a>
+<a id="clockyclocky-acp"></a>
 
-## `@deepseek-ai/dsh-acp`
+## `@clocky/clocky-acp`
 
-需要：`agents`
+Requires: `teamRuns` · `teams` · `agentDefaultModel`
 
 ```ts config-catalog
-/** Plugin config: the provider/model selection used for each ACP-created agent. */
+/** Runtime-only ACP transport configuration. Production uses stdin and stdout. */
 export interface AcpConfig {
-  /** Provider route for created agents. */
-  provider?: string
-  /** Model name for created agents. */
-  model?: string
-  /** Runtime-only transport override; production uses stdio. */
-  stream?: Stream
+  /** Bounded fresh-read attempts when a concurrent Team update races soft-interrupt admission. */
+  readonly interruptRetryAttempts?: number
+  /** Transport override used by in-process protocol tests. */
+  readonly stream?: Stream
 }
 ```
 
-依赖：`Stream`（`@agentclientprotocol/sdk`）
+Depends on: `Stream` (`@agentclientprotocol/sdk`)
 
-来源：[`packages/acp/acp/src/index.ts:71`](../packages/acp/acp/src/index.ts)
+Source: [`packages/acp/acp/src/index.ts:49`](../packages/acp/acp/src/index.ts)
 
-<a id="deepseek-aidsh-acp-demo"></a>
+<a id="clockyclocky-acp-demo"></a>
 
-## `@deepseek-ai/dsh-acp-demo`
+## `@clocky/clocky-acp-demo`
 
 ```ts config-catalog
 /**
- * App config: the swappable per-deployment values. `provider` and `model` configure
- * each agent the ACP bridge creates at `session/new`; `persona` is the
- * deployment persona (forwarded to the system-prompt plugin); `toolOrder` is
- * the explicit model-facing tool order (forwarded to the system-prompt plugin);
- * `tools` is the tool registry's config (its presentation `mode`, forwarded
- * through agent-spine-demo); `persistenceRoot` is the JSONL backend's directory.
+ * App config: the swappable per-deployment values. `provider` and `model`
+ * select the local Team coordinator's default model; `persona` is the
+ * deployment persona; `toolOrder` is the explicit model-facing tool order;
+ * `tools` is the tool registry's config; and `persistenceRoot` owns Session
+ * persistence plus the derived Team storage root.
  */
 export interface Config {
-  /** Provider route for ACP-created agents. */
+  /** Provider route for default local Team coordinator activations. */
   provider: string
-  /** Model name for ACP-created agents (must have a registered adapter). */
+  /** Model name for default local Team coordinator activations. */
   model: string
+  /** Fresh Team-projection reads allowed when a coordinator soft interrupt races a durable update. */
+  interruptRetryAttempts?: number
   /** Bundled agent-loop concurrency cap; `1` is serial and omission uses its default. */
   maxParallelToolCalls?: number
   /** Deployment persona (the system-prompt plugin's `persona` config). */
   persona?: string
-  /** Explicit model-facing tool order (the system-prompt plugin's `toolOrder` config; see dsh-system-prompt). */
+  /** Explicit model-facing tool order (the system-prompt plugin's `toolOrder` config; see clocky-system-prompt). */
   toolOrder?: string[]
-  /** Tool-registry config — its presentation `mode` (forwarded through agent-spine-demo; see dsh-tools). */
+  /** Tool-registry config — its presentation `mode` (forwarded through agent-spine-demo; see clocky-tools). */
   tools?: ToolsConfig
-  /** DeepSeek Harness home directory exposed to bash and used for local skill discovery. */
-  dshHome?: string
+  /** Clocky home directory exposed to bash and used for local skill discovery. */
+  clockyHome?: string
   /** Fallback session-title limits forwarded through agent-spine-demo. */
   sessionTitle?: NonNullable<agentCore.Config['sessionTitle']>
   /** Directory for JSONL sessions and the derived query index. Defaults to `./.sessions`. */
   persistenceRoot?: string
+  /** JSON storage root for Team journals and channel WALs; defaults below `persistenceRoot`. */
+  teamStorageRoot?: string
   /** Write delta-chunk runs as packed storage rows (the JSONL backend's `packChunks`). Defaults to `true`. */
   packChunks?: boolean
   /** JSONL artifact encoding; defaults to checksummed Zstandard frames. */
@@ -79,40 +80,40 @@ export interface Config {
   jobs?: NonNullable<agentCore.Config['jobs']>
   /** Generic background-job controls forwarded through agent-core; set false to omit their tools. */
   toolJobs?: NonNullable<agentCore.Config['toolJobs']>
-  /** Persisted same-session goals; owner defaults enable them, or false disables the stack and tools. */
-  goals?: agentCore.GoalConfig | false
+  /** Removed same-session Goal config; supplying it fails at load. */
+  goals?: never
 }
 ```
 
-依赖：[`agentCore`](../packages/examples/agent-spine-demo/src/index.ts) · [`JsonlCompression`](../packages/session/session-persistence-jsonl/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools)
+Depends on: [`agentCore`](../packages/examples/agent-spine-demo/src/index.ts) · [`JsonlCompression`](../packages/session/session-persistence-jsonl/src/index.ts) · [`ToolsConfig`](#clockyclocky-tools)
 
-来源：[`packages/examples/acp-demo/src/index.ts:39`](../packages/examples/acp-demo/src/index.ts)
+Source: [`packages/examples/acp-demo/src/index.ts:50`](../packages/examples/acp-demo/src/index.ts)
 
-<a id="deepseek-aidsh-agent-default-model"></a>
+<a id="clockyclocky-agent-default-model"></a>
 
-## `@deepseek-ai/dsh-agent-default-model`
+## `@clocky/clocky-agent-default-model`
 
 ```ts config-catalog
 /** Composition entry for the default model selection. */
 export interface Config {
   /** Registered provider route. */
-  provider: string
+  provider?: string
   /** Provider-owned model id. */
-  model: string
+  model?: string
 }
 ```
 
-来源：[`packages/core/agent-default-model/src/index.ts:41`](../packages/core/agent-default-model/src/index.ts)
+Source: [`packages/core/agent-default-model/src/index.ts:41`](../packages/core/agent-default-model/src/index.ts)
 
-<a id="deepseek-aidsh-agent-instructions"></a>
+<a id="clockyclocky-agent-instructions"></a>
 
-## `@deepseek-ai/dsh-agent-instructions`
+## `@clocky/clocky-agent-instructions`
 
 ```ts config-catalog
 /** User-facing workspace instruction loader configuration. */
 export interface Config {
-  /** Harness home containing the fixed user-global `AGENTS.md`; defaults to `$DSH_HOME` or `~/.dsh`. */
-  dshHome?: string
+  /** Harness home containing the fixed user-global `AGENTS.md`; defaults to `$CLOCKY_HOME` or `~/.clocky`. */
+  clockyHome?: string
   /** Directory entries that identify the project root while walking upward from the session cwd. */
   projectRootMarkers?: string[]
   /** UTF-8 byte cap for one rendered baseline or dynamic batch; non-positive or non-finite disables loading. */
@@ -132,13 +133,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/context/agent-instructions/src/config.ts:18`](../packages/context/agent-instructions/src/config.ts)
+Source: [`packages/context/agent-instructions/src/config.ts:18`](../packages/context/agent-instructions/src/config.ts)
 
-<a id="deepseek-aidsh-agent-loop"></a>
+<a id="clockyclocky-agent-loop"></a>
 
-## `@deepseek-ai/dsh-agent-loop`
+## `@clocky/clocky-agent-loop`
 
-需要：`agents` · `sessions` · `llm` · `tools` · `systemPrompt`
+Requires: `agents` · `sessions` · `llm` · `tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Agent-loop plugin configuration. */
@@ -162,15 +163,15 @@ export interface Config {
 }
 ```
 
-依赖：[`AgentOptions`](subsystems/core.zh.md) · [`SessionId`](subsystems/core.zh.md)
+Depends on: [`AgentOptions`](subsystems/core.zh.md) · [`SessionId`](subsystems/core.zh.md)
 
-来源：[`packages/core/agent-loop/src/index.ts:255`](../packages/core/agent-loop/src/index.ts)
+Source: [`packages/core/agent-loop/src/index.ts:255`](../packages/core/agent-loop/src/index.ts)
 
-<a id="deepseek-aidsh-agent-presets"></a>
+<a id="clockyclocky-agent-presets"></a>
 
-## `@deepseek-ai/dsh-agent-presets`
+## `@clocky/clocky-agent-presets`
 
-需要：`loader`
+Requires: `loader`
 
 ```ts config-catalog
 /** Plugin config: which preset is the default, and where presets live. */
@@ -202,11 +203,97 @@ export interface PresetRoot {
 export type PresetTrust = 'system' | 'user'
 ```
 
-来源：[`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
+Source: [`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
-<a id="deepseek-aidsh-agent-spine-demo"></a>
+## `@clocky/clocky-agent-runtime-acp`
 
-## `@deepseek-ai/dsh-agent-spine-demo`
+Requires: `agentRuntimes` · `subprocess`
+
+```ts config-catalog
+/** Provider configuration for an ACP child command. */
+export interface Config {
+  /** Provider registry name. */
+  readonly providerName?: string
+  /** ACP server executable. */
+  readonly command: string
+  /** ACP server arguments. */
+  readonly args?: string[]
+  /** Child environment additions. */
+  readonly env?: Record<string, string>
+  /** Grace period after stdin EOF before forced process termination. */
+  readonly disposeEofGraceMs?: number
+  /** Optional Team Link enrollment issuer used to bridge durable Team input into ACP prompts. */
+  readonly teamLinkEnrollmentProvider?: string
+  /** Prefix for the ephemeral Link provider registered for one ACP activation. */
+  readonly teamLinkProviderPrefix?: string
+  /** Delay before re-enrolling a current ACP activation after a Link transport failure. */
+  readonly teamLinkReconnectDelayMs?: number
+}
+```
+
+Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:29`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
+
+<a id="clockyclocky-agent-runtime-in-process"></a>
+
+## `@clocky/clocky-agent-runtime-in-process`
+
+Requires: `agentRuntimes` · `agents` · `sessionPersistence`
+
+```ts config-catalog
+/** Deployment configuration for the in-process placement provider. */
+export interface Config {
+  /** Provider name registered on `ctx.agentRuntimes`. */
+  readonly providerName: string
+}
+```
+
+Source: [`packages/agent-runtime/agent-runtime-in-process/src/index.ts:31`](../packages/agent-runtime/agent-runtime-in-process/src/index.ts)
+
+<a id="clockyclocky-agent-runtime-sdk"></a>
+
+## `@clocky/clocky-agent-runtime-sdk`
+
+Requires: `agentRuntimes`
+
+```ts config-catalog
+/** Deployment configuration for the SDK remote-placement provider. */
+export interface Config {
+  /** Provider name registered on `ctx.agentRuntimes`. */
+  readonly providerName: string
+  /** Executable started for every accepted remote activation. */
+  readonly command: string
+  /** Arguments passed to {@link command}. */
+  readonly args: string[]
+  /** Working directory for both the child process and its SDK initialization. */
+  readonly cwd: string
+  /** Explicit child environment layered onto a credential-scrubbed parent environment. */
+  readonly env: Record<string, string>
+  /** Opaque product credential sent only in the child SDK initialization handshake. */
+  readonly credential?: string
+  /** Per-request SDK protocol deadline; omitted means the SDK client waits without a deadline. */
+  readonly requestTimeoutMs?: number
+  /** Bound on the SDK protocol shutdown request during disposal. */
+  readonly shutdownTimeoutMs?: number
+  /** Grace after stdin EOF before the SDK client starts process termination. */
+  readonly disposeEofGraceMs?: number
+  /** Process termination-confirmation grace used by the SDK client. */
+  readonly disposeGraceMs?: number
+  /** Dynamic Team Link enrollment provider used after the Hub commits an activation binding. */
+  readonly teamLinkEnrollmentProvider?: string
+  /** Explicit non-secret SDK runtime profile required to cold-replace a persisted activation. */
+  readonly recoveryProfile?: string
+  /** Stable identity of the local host allowed to fence and replace the runtime child. */
+  readonly recoveryHostId?: string
+  /** Maximum wait after each stale-child termination tier during cold replacement. */
+  readonly recoveryFenceGraceMs?: number
+}
+```
+
+Source: [`packages/agent-runtime/agent-runtime-sdk/src/index.ts:65`](../packages/agent-runtime/agent-runtime-sdk/src/index.ts)
+
+<a id="clockyclocky-agent-spine-demo"></a>
+
+## `@clocky/clocky-agent-spine-demo`
 
 ```ts config-catalog
 /**
@@ -216,7 +303,7 @@ export type PresetTrust = 'system' | 'user'
  * `persona`, and `toolOrder` to the system-prompt plugin (the fixed opener,
  * dynamic-context policy, deployment persona, and explicit model-facing tool
  * order), the `tools` object to the tool registry (its presentation `mode`),
- * `dshHome` to bash environment and local skill discovery, `sessionTitle` to
+ * `clockyHome` to bash environment and local skill discovery, `sessionTitle` to
  * the fallback title service, `skills` to the
  * skill registry/local provider/tool consumer, `workspaceContext` to the
  * agent-instructions loader, `jobs` to the process-local job provider, and
@@ -233,7 +320,7 @@ export type PresetTrust = 'system' | 'user'
  * `bash` name.
  */
 export interface Config {
-  /** The agent-loop `agents` list (see dsh-agent-loop's `Config`). */
+  /** The agent-loop `agents` list (see clocky-agent-loop's `Config`). */
   agents?: AgentLoopConfig['agents']
   /** Agent-loop concurrency cap; `1` is serial. */
   maxParallelToolCalls?: AgentLoopConfig['maxParallelToolCalls']
@@ -241,14 +328,14 @@ export interface Config {
   includeHarnessIdentity?: SystemPromptConfig['includeHarnessIdentity']
   /** Whether model history includes dynamic runtime-context snapshots (default true). */
   includeRuntimeContext?: SystemPromptConfig['includeRuntimeContext']
-  /** The deployment persona (see dsh-system-prompt's `Config`). */
+  /** The deployment persona (see clocky-system-prompt's `Config`). */
   persona?: SystemPromptConfig['persona']
-  /** The explicit model-facing tool order (see dsh-system-prompt's `Config`). */
+  /** The explicit model-facing tool order (see clocky-system-prompt's `Config`). */
   toolOrder?: SystemPromptConfig['toolOrder']
-  /** The tool registry's config — its presentation `mode` (see dsh-tools' `Config`). */
+  /** The tool registry's config — its presentation `mode` (see clocky-tools' `Config`). */
   tools?: ToolsConfig
-  /** DeepSeek Harness home directory shared by shell context and local skill discovery. */
-  dshHome?: string
+  /** Clocky home directory shared by shell context and local skill discovery. */
+  clockyHome?: string
   /** Deterministic fallback and accepted-title limits; omission uses the bundle's example policy. */
   sessionTitle?: SessionTitleConfig
   /** Workspace-context loader controls with an explicit byte budget; set `false` for hermetic prompts. */
@@ -292,15 +379,15 @@ export interface GoalConfig {
 }
 ```
 
-依赖：[`AgentLoopConfig`](#deepseek-aidsh-agent-loop) · [`GoalDomainConfig`](#deepseek-aidsh-goal) · [`InvariantConfig`](#deepseek-aidsh-invariants) · [`JobsConfig`](#deepseek-aidsh-jobs-local) · [`SessionTitleConfig`](#deepseek-aidsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#deepseek-aidsh-skill) · [`SystemPromptConfig`](#deepseek-aidsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
+Depends on: [`AgentLoopConfig`](#clockyclocky-agent-loop) · [`GoalDomainConfig`](#clockyclocky-goal) · [`InvariantConfig`](#clockyclocky-invariants) · [`JobsConfig`](#clockyclocky-jobs-local) · [`SessionTitleConfig`](#clockyclocky-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#clockyclocky-skill) · [`SystemPromptConfig`](#clockyclocky-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#clockyclocky-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
 
-来源：[`packages/examples/agent-spine-demo/src/index.ts:92`](../packages/examples/agent-spine-demo/src/index.ts)
+Source: [`packages/examples/agent-spine-demo/src/index.ts:92`](../packages/examples/agent-spine-demo/src/index.ts)
 
-<a id="deepseek-aidsh-agent-tool-presentation"></a>
+<a id="clockyclocky-agent-tool-presentation"></a>
 
-## `@deepseek-ai/dsh-agent-tool-presentation`
+## `@clocky/clocky-agent-tool-presentation`
 
-需要：`tools`
+Requires: `tools`
 
 ```ts config-catalog
 /** Plugin config. */
@@ -316,19 +403,19 @@ export interface Config {
 }
 ```
 
-依赖：[`ToolPresentationMode`](subsystems/tools.zh.md)
+Depends on: [`ToolPresentationMode`](subsystems/tools.zh.md)
 
-来源：[`packages/core/agent-tool-presentation/src/index.ts:38`](../packages/core/agent-tool-presentation/src/index.ts)
+Source: [`packages/core/agent-tool-presentation/src/index.ts:38`](../packages/core/agent-tool-presentation/src/index.ts)
 
-<a id="deepseek-aidsh-attachment-local"></a>
+<a id="clockyclocky-attachment-local"></a>
 
-## `@deepseek-ai/dsh-attachment-local`
+## `@clocky/clocky-attachment-local`
 
 ```ts config-catalog
 /** Local attachment backend configuration. */
 export interface Config {
-  /** Explicit harness home; omitted follows `DSH_HOME`, then `~/.dsh`. */
-  dshHome?: string
+  /** Explicit harness home; omitted follows `CLOCKY_HOME`, then `~/.clocky`. */
+  clockyHome?: string
   /** Maximum encoded bytes accepted for one submitted image. Default: 20 MiB. */
   maxImageBytes?: number
   /** Maximum image count accepted in one submitted message. Default: 20. */
@@ -348,13 +435,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/attachment/attachment-local/src/index.ts:51`](../packages/attachment/attachment-local/src/index.ts)
+Source: [`packages/attachment/attachment-local/src/index.ts:51`](../packages/attachment/attachment-local/src/index.ts)
 
-<a id="deepseek-aidsh-bash-local"></a>
+<a id="clockyclocky-bash-local"></a>
 
-## `@deepseek-ai/dsh-bash-local`
+## `@clocky/clocky-bash-local`
 
-需要：`subprocess`
+Requires: `subprocess`
 
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
@@ -374,34 +461,34 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
+Source: [`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
 
-<a id="deepseek-aidsh-bash-sandbox"></a>
+<a id="clockyclocky-bash-sandbox"></a>
 
-## `@deepseek-ai/dsh-bash-sandbox`
+## `@clocky/clocky-bash-sandbox`
 
-需要：`subprocess` · `sandbox` · `sandboxPolicy`
+Requires: `subprocess` · `sandbox` · `sandboxPolicy`
 
 ```ts config-catalog
 /**
  * Plugin config: the local executor's knobs, verbatim. The sandbox policy —
  * the default mode and fallback `workspace-write` root — is NOT here: it lives
- * on `ctx.sandboxPolicy` (`@deepseek-ai/dsh-sandbox-policy`), which resolves
+ * on `ctx.sandboxPolicy` (`@clocky/clocky-sandbox-policy`), which resolves
  * each calling session's mode and cwd for every enforcing capability. The runner
  * choice is likewise the `ctx.sandbox` provider's config, not this executor's.
  */
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-bash-local)
+Depends on: [`LocalConfig`](#clockyclocky-bash-local)
 
-来源：[`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
+Source: [`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-client-connection"></a>
+<a id="clockyclocky-client-connection"></a>
 
-## `@deepseek-ai/dsh-client-connection`
+## `@clocky/clocky-client-connection`
 
-需要：`webServer`
+Requires: `webServer`
 
 ```ts config-catalog
 /** Plugin config: the deployment's non-loopback serving authorities. */
@@ -411,22 +498,24 @@ export interface ConnectionConfig {
    * port-less `host` matching any port. The /api trust fence refuses any
    * request whose Host is neither loopback nor listed here, so a
    * non-loopback (`0.0.0.0`) deployment must declare the names it is reached
-   * by (the dsh CLI derives the machine's LAN IP literals itself). An entry
+   * by (the clocky CLI derives the machine's LAN IP literals itself). An entry
    * that is not a bare, canonical authority fails the plugin load.
    */
   trustedHosts?: string[]
+  /** Named product-principal provider trusted for this Web Host's bootstrap credential. */
+  productPrincipalProvider?: string
   /** Maximum buffered JSON body for every `/api` request. Default: 300 MiB. */
   maxRequestBodyBytes?: number
 }
 ```
 
-来源：[`packages/client/connection/src/index.ts:50`](../packages/client/connection/src/index.ts)
+Source: [`packages/client/connection/src/index.ts:50`](../packages/client/connection/src/index.ts)
 
-<a id="deepseek-aidsh-client-hmr"></a>
+<a id="clockyclocky-client-hmr"></a>
 
-## `@deepseek-ai/dsh-client-hmr`
+## `@clocky/clocky-client-hmr`
 
-需要：`clientModules` · `webServer`
+Requires: `clientModules` · `webServer`
 
 ```ts config-catalog
 /** Plugin config, validated by the same-named schemastery schema. */
@@ -436,11 +525,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/client/hmr/src/index.ts:31`](../packages/client/hmr/src/index.ts)
+Source: [`packages/client/hmr/src/index.ts:31`](../packages/client/hmr/src/index.ts)
 
-<a id="deepseek-aidsh-code-runtime-worker-thread"></a>
+<a id="clockyclocky-code-runtime-worker-thread"></a>
 
-## `@deepseek-ai/dsh-code-runtime-worker-thread`
+## `@clocky/clocky-code-runtime-worker-thread`
 
 ```ts config-catalog
 /** Plugin config: every execution cap, changeable from `cordis.yml` (no hardcoded tunables). */
@@ -473,13 +562,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/code-runtime/code-runtime-worker-thread/src/index.ts:25`](../packages/code-runtime/code-runtime-worker-thread/src/index.ts)
+Source: [`packages/code-runtime/code-runtime-worker-thread/src/index.ts:25`](../packages/code-runtime/code-runtime-worker-thread/src/index.ts)
 
-<a id="deepseek-aidsh-compaction-basic"></a>
+<a id="clockyclocky-compaction-basic"></a>
 
-## `@deepseek-ai/dsh-compaction-basic`
+## `@clocky/clocky-compaction-basic`
 
-需要：`llm` · `tokenMeter` · `sessions`
+Requires: `llm` · `tokenMeter` · `sessions`
 
 ```ts config-catalog
 /** Basic compaction configuration with an optional exact-target policy table. */
@@ -519,13 +608,13 @@ export interface ModelCompactPolicyConfig extends CompactionPolicyConfig {
 }
 ```
 
-来源：[`packages/compaction/compaction-basic/src/types.ts:38`](../packages/compaction/compaction-basic/src/types.ts)
+Source: [`packages/compaction/compaction-basic/src/types.ts:38`](../packages/compaction/compaction-basic/src/types.ts)
 
-<a id="deepseek-aidsh-compaction-tool-result-pruner"></a>
+<a id="clockyclocky-compaction-tool-result-pruner"></a>
 
-## `@deepseek-ai/dsh-compaction-tool-result-pruner`
+## `@clocky/clocky-compaction-tool-result-pruner`
 
-需要：`tokenMeter`
+Requires: `tokenMeter`
 
 ```ts config-catalog
 /** Character-budget policy for deterministic tool-result pruning. */
@@ -539,13 +628,13 @@ export interface ToolResultPruneConfig {
 }
 ```
 
-来源：[`packages/compaction/compaction-tool-result-pruner/src/types.ts:4`](../packages/compaction/compaction-tool-result-pruner/src/types.ts)
+Source: [`packages/compaction/compaction-tool-result-pruner/src/types.ts:4`](../packages/compaction/compaction-tool-result-pruner/src/types.ts)
 
-<a id="deepseek-aidsh-cordis-host-runner"></a>
+<a id="clockyclocky-cordis-host-runner"></a>
 
-## `@deepseek-ai/dsh-cordis-host-runner`
+## `@clocky/clocky-cordis-host-runner`
 
-需要：`tools`
+Requires: `tools`
 
 ```ts config-catalog
 /** Runner configuration. */
@@ -555,19 +644,19 @@ export interface Config {
 }
 ```
 
-来源：[`packages/extensions/cordis-host-runner/src/index.ts:88`](../packages/extensions/cordis-host-runner/src/index.ts)
+Source: [`packages/extensions/cordis-host-runner/src/index.ts:88`](../packages/extensions/cordis-host-runner/src/index.ts)
 
-<a id="deepseek-aidsh-credentials-local"></a>
+<a id="clockyclocky-credentials-local"></a>
 
-## `@deepseek-ai/dsh-credentials-local`
+## `@clocky/clocky-credentials-local`
 
 ```ts config-catalog
 /** Plugin config: file location and hot-reload behavior. */
 export interface Config {
   /** Credentials document path; defaults to `.credentials.yaml` under the harness home. */
   path?: string
-  /** Harness home used when `path` is omitted; defaults to `$DSH_HOME` or `~/.dsh`. */
-  dshHome?: string
+  /** Harness home used when `path` is omitted; defaults to `$CLOCKY_HOME` or `~/.clocky`. */
+  clockyHome?: string
   /** Watch the document and hot-publish external edits; defaults to true. */
   watch?: boolean
   /** Watcher write-settle window in milliseconds; defaults to 100. */
@@ -575,11 +664,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/credentials/credentials-local/src/index.ts:64`](../packages/credentials/credentials-local/src/index.ts)
+Source: [`packages/credentials/credentials-local/src/index.ts:64`](../packages/credentials/credentials-local/src/index.ts)
 
-<a id="deepseek-aidsh-e2b"></a>
+<a id="clockyclocky-e2b"></a>
 
-## `@deepseek-ai/dsh-e2b`
+## `@clocky/clocky-e2b`
 
 ```ts config-catalog
 /** Configuration for the shared E2B sandbox owner. */
@@ -593,55 +682,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/e2b/e2b/src/index.ts:43`](../packages/e2b/e2b/src/index.ts)
+Source: [`packages/e2b/e2b/src/index.ts:43`](../packages/e2b/e2b/src/index.ts)
 
-<a id="deepseek-aidsh-experimental-agent-team"></a>
+<a id="clockyclocky-file-reference-local"></a>
 
-## `@deepseek-ai/dsh-experimental-agent-team`
+## `@clocky/clocky-file-reference-local`
 
-需要：`agents` · `sessions` · `sessionPersistence` · `subagents`
-
-```ts config-catalog
-/** Team-service deployment limits. */
-export interface Config {
-  /** Maximum immutable teammate names retained by one Team. */
-  readonly maxMembers?: number
-  /** Maximum non-deleted tasks retained by one Team. */
-  readonly maxTasks?: number
-  /** Maximum queued-minus-delivered messages for one target member. */
-  readonly maxPendingMessagesPerMember?: number
-  /** Maximum UTF-8 bytes in one complete sender-framed delivery. */
-  readonly maxMessageBytes?: number
-  /** Maximum milliseconds allowed for Team-owned runtime disposal. */
-  readonly disposalTimeoutMs?: number
-}
-```
-
-来源：[`packages/experimental/agent-team/src/types.ts:125`](../packages/experimental/agent-team/src/types.ts)
-
-<a id="deepseek-aidsh-experimental-tool-agent-team"></a>
-
-## `@deepseek-ai/dsh-experimental-tool-agent-team`
-
-需要：`agents` · `agentTeams` · `tools` · `systemPrompt`
-
-```ts config-catalog
-/** Tool routing configuration. */
-export interface Config {
-  /** Continuable-subagent provider used for fresh teammates. */
-  readonly freshProvider?: string
-  /** Continuable-subagent provider used for completed-prefix fork teammates. */
-  readonly forkProvider?: string
-}
-```
-
-来源：[`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
-
-<a id="deepseek-aidsh-file-reference-local"></a>
-
-## `@deepseek-ai/dsh-file-reference-local`
-
-需要：`agents`
+Requires: `agents`
 
 ```ts config-catalog
 /** Local file-reference discovery configuration. */
@@ -655,11 +702,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/context/file-reference-local/src/index.ts:35`](../packages/context/file-reference-local/src/index.ts)
+Source: [`packages/context/file-reference-local/src/index.ts:35`](../packages/context/file-reference-local/src/index.ts)
 
-<a id="deepseek-aidsh-fs-local"></a>
+<a id="clockyclocky-fs-local"></a>
 
-## `@deepseek-ai/dsh-fs-local`
+## `@clocky/clocky-fs-local`
 
 ```ts config-catalog
 /** Configuration for the local filesystem backend. */
@@ -674,13 +721,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/fs/fs-local/src/index.ts:41`](../packages/fs/fs-local/src/index.ts)
+Source: [`packages/fs/fs-local/src/index.ts:41`](../packages/fs/fs-local/src/index.ts)
 
-<a id="deepseek-aidsh-fs-sandbox"></a>
+<a id="clockyclocky-fs-sandbox"></a>
 
-## `@deepseek-ai/dsh-fs-sandbox`
+## `@clocky/clocky-fs-sandbox`
 
-需要：`sandboxPolicy`
+Requires: `sandboxPolicy`
 
 ```ts config-catalog
 /**
@@ -692,15 +739,15 @@ export interface Config {
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-fs-local)
+Depends on: [`LocalConfig`](#clockyclocky-fs-local)
 
-来源：[`packages/fs/fs-sandbox/src/index.ts:49`](../packages/fs/fs-sandbox/src/index.ts)
+Source: [`packages/fs/fs-sandbox/src/index.ts:49`](../packages/fs/fs-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-goal"></a>
+<a id="clockyclocky-goal"></a>
 
-## `@deepseek-ai/dsh-goal`
+## `@clocky/clocky-goal`
 
-需要：`agents`
+Requires: `agents`
 
 ```ts config-catalog
 /** Deployment defaults for goal creation. */
@@ -710,13 +757,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/goal/goal/src/index.ts:116`](../packages/goal/goal/src/index.ts)
+Source: [`packages/goal/goal/src/index.ts:116`](../packages/goal/goal/src/index.ts)
 
-<a id="deepseek-aidsh-headless"></a>
+<a id="clockyclocky-headless"></a>
 
-## `@deepseek-ai/dsh-headless`
+## `@clocky/clocky-headless`
 
-需要：`agentDefaultModel` · `agents` · `sessions`
+Requires: `teamRuns`
 
 ```ts config-catalog
 /** Plugin config: the task resolved from this app's injected provider service. */
@@ -726,78 +773,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/bundle/headless/src/index.ts:31`](../packages/bundle/headless/src/index.ts)
+Source: [`packages/bundle/headless/src/index.ts:22`](../packages/bundle/headless/src/index.ts)
 
-<a id="deepseek-aidsh-hooks-claude-code"></a>
+<a id="clockyclocky-host-apiproxy"></a>
 
-## `@deepseek-ai/dsh-hooks-claude-code`
+## `@clocky/clocky-host-apiproxy`
 
-需要：`shell`
-
-```ts config-catalog
-/** Plugin config: where the CC hook config lives + substitution roots. */
-export interface Config {
-  /**
-   * Path to a `hooks.json` or a settings file whose `hooks` key holds the config.
-   * Process-level: read once at load, a relative path resolves against the process
-   * launch cwd, so one config applies to the whole process.
-   * TODO(per-session-hook-config): per-session discovery of a project-local
-   * `hooks.json` from each `session/new.cwd`.
-   */
-  configPath: string
-  /**
-   * Replaces `${CLAUDE_PLUGIN_ROOT}` in command strings (the plugin's root dir).
-   */
-  pluginRoot?: string
-  /**
-   * Replaces `${CLAUDE_PROJECT_DIR}` in command strings AND is exported as the
-   * `CLAUDE_PROJECT_DIR` env var for hook processes. When omitted, the env var
-   * defaults per-run to the agent's session workspace (`session.header.cwd`, the
-   * same dir the hook runs in) — Claude Code always exports this var, and common
-   * unmodified hooks reference `$CLAUDE_PROJECT_DIR` for project-relative paths.
-   */
-  projectDir?: string
-  /** Default per-hook timeout in ms when a hook sets none (CC default: 600000). */
-  defaultTimeoutMs?: number
-  /** Character cap for the `hook/result` event's persisted stderr summary. */
-  stderrSummaryMaxChars?: number
-}
-```
-
-来源：[`packages/hooks/hooks-claude-code/src/index.ts:45`](../packages/hooks/hooks-claude-code/src/index.ts)
-
-<a id="deepseek-aidsh-hooks-codex"></a>
-
-## `@deepseek-ai/dsh-hooks-codex`
-
-需要：`shell`
-
-```ts config-catalog
-/** Plugin config: where the Codex hooks.json lives + the model name for payloads. */
-export interface Config {
-  /**
-   * Path to a Codex `hooks.json`. Process-level: read once at load, a relative
-   * path resolves against the process launch cwd.
-   * TODO(per-session-hook-config): per-session project-local discovery from each
-   * `session/new.cwd`.
-   */
-  configPath: string
-  /** The model name stamped on every payload (Codex includes `model` on each event). */
-  model?: string
-  /** Default per-hook timeout in ms when a hook sets none (Codex default: 600000). */
-  defaultTimeoutMs?: number
-  /** Character cap for the `hook/result` event's persisted stderr summary. */
-  stderrSummaryMaxChars?: number
-}
-```
-
-来源：[`packages/hooks/hooks-codex/src/index.ts:44`](../packages/hooks/hooks-codex/src/index.ts)
-
-<a id="deepseek-aidsh-host-apiproxy"></a>
-
-## `@deepseek-ai/dsh-host-apiproxy`
-
-需要：`agentDefaultModel` · `agents` · `attachments` · `directoryPicker` · `llm` · `sessions` · `subagents` · `sessionQuery` · `tools` · `userQuestions` · `workspaceRegistry`
+Requires: `agentDefaultModel` · `agents` · `attachments` · `directoryPicker` · `llm` · `sessions` · `sessionQuery` · `tools` · `userQuestions` · `workspaceRegistry`
 
 ```ts config-catalog
 /** Gateway plugin configuration. */
@@ -825,11 +807,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/host/apiproxy/src/index.ts:41`](../packages/host/apiproxy/src/index.ts)
+Source: [`packages/host/apiproxy/src/index.ts:41`](../packages/host/apiproxy/src/index.ts)
 
-<a id="deepseek-aidsh-host-directory-picker-browse"></a>
+<a id="clockyclocky-host-directory-picker-browse"></a>
 
-## `@deepseek-ai/dsh-host-directory-picker-browse`
+## `@clocky/clocky-host-directory-picker-browse`
 
 ```ts config-catalog
 /** Validated plugin configuration. */
@@ -839,13 +821,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/host/directory-picker-browse/src/index.ts:181`](../packages/host/directory-picker-browse/src/index.ts)
+Source: [`packages/host/directory-picker-browse/src/index.ts:181`](../packages/host/directory-picker-browse/src/index.ts)
 
-<a id="deepseek-aidsh-host-frontend-static"></a>
+<a id="clockyclocky-host-frontend-static"></a>
 
-## `@deepseek-ai/dsh-host-frontend-static`
+## `@clocky/clocky-host-frontend-static`
 
-需要：`webServer`
+Requires: `webServer`
 
 ```ts config-catalog
 /** Plugin config: the dist anchor. */
@@ -855,11 +837,55 @@ export interface Config {
 }
 ```
 
-来源：[`packages/host/frontend-static/src/index.ts:28`](../packages/host/frontend-static/src/index.ts)
+Source: [`packages/host/frontend-static/src/index.ts:28`](../packages/host/frontend-static/src/index.ts)
 
-<a id="deepseek-aidsh-host-webserver"></a>
+<a id="clockyclocky-host-product-principal-digest"></a>
 
-## `@deepseek-ai/dsh-host-webserver`
+## `@clocky/clocky-host-product-principal-digest`
+
+Requires: `productPrincipals`
+
+```ts config-catalog
+/** Loader configuration for one configured digest-backed principal. */
+export interface Config {
+  /** Registry name used by the SDK JSON-RPC server. */
+  readonly providerName?: string
+  /** Lowercase SHA-256 hex digest of the initialization credential. */
+  readonly credentialSha256: string
+  /** Stable non-secret principal id retained in Team ownership records. */
+  readonly principalId: string
+  /** Stable non-secret subject emitted by the authenticated principal. */
+  readonly subject: string
+  /** Non-secret credential generation used to invalidate external configuration revisions. */
+  readonly credentialGeneration?: number
+}
+```
+
+Source: [`packages/host/product-principal-digest/src/index.ts:28`](../packages/host/product-principal-digest/src/index.ts)
+
+<a id="clockyclocky-host-product-principal-local"></a>
+
+## `@clocky/clocky-host-product-principal-local`
+
+Requires: `productPrincipals`
+
+```ts config-catalog
+/** Local provider configuration. */
+export interface Config {
+  /** Registry name used by Host and SDK transport consumers. */
+  readonly providerName?: string
+  /** Private state path; defaults below the resolved harness home. */
+  readonly path?: string
+  /** Harness home used when `path` is omitted. */
+  readonly clockyHome?: string
+}
+```
+
+Source: [`packages/host/product-principal-local/src/index.ts:29`](../packages/host/product-principal-local/src/index.ts)
+
+<a id="clockyclocky-host-webserver"></a>
+
+## `@clocky/clocky-host-webserver`
 
 ```ts config-catalog
 /** Gateway config: the listen address. */
@@ -871,11 +897,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/host/webserver/src/index.ts:59`](../packages/host/webserver/src/index.ts)
+Source: [`packages/host/webserver/src/index.ts:59`](../packages/host/webserver/src/index.ts)
 
-<a id="deepseek-aidsh-invariants"></a>
+<a id="clockyclocky-invariants"></a>
 
-## `@deepseek-ai/dsh-invariants`
+## `@clocky/clocky-invariants`
 
 ```ts config-catalog
 /** Runtime invariant selection configured on the service plugin. */
@@ -889,11 +915,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/runtime-diagnostics/invariants/src/index.ts:15`](../packages/runtime-diagnostics/invariants/src/index.ts)
+Source: [`packages/runtime-diagnostics/invariants/src/index.ts:15`](../packages/runtime-diagnostics/invariants/src/index.ts)
 
-<a id="deepseek-aidsh-jobs-local"></a>
+<a id="clockyclocky-jobs-local"></a>
 
-## `@deepseek-ai/dsh-jobs-local`
+## `@clocky/clocky-jobs-local`
 
 ```ts config-catalog
 /** Configuration for the process-local job registry. */
@@ -906,96 +932,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/jobs/jobs-local/src/index.ts:31`](../packages/jobs/jobs-local/src/index.ts)
+Source: [`packages/jobs/jobs-local/src/index.ts:31`](../packages/jobs/jobs-local/src/index.ts)
 
-<a id="deepseek-aidsh-llm-deepseek"></a>
+<a id="clockyclocky-llm-pi-ai"></a>
 
-## `@deepseek-ai/dsh-llm-deepseek`
+## `@clocky/clocky-llm-pi-ai`
 
-需要：`llm`
-
-```ts config-catalog
-/**
- * Plugin config, validated by the same-named schemastery schema and doubling
- * as the `llm-deepseek` settings-section shape. Every field is optional in
- * yml: a missing API key resolves through {@link Config.apiKeyEnv} at each
- * request (a request without any key fails with `MISSING_CREDENTIAL`, not at
- * plugin load), omitted thinking mode uses the provider default, and omitted
- * reasoning effort resolves to `high`.
- */
-export interface Config {
-  /** Credential reference (environment-variable name) resolved per request; defaults to `DEEPSEEK_API_KEY`. */
-  apiKeyEnv?: string
-  /** Endpoint base; falls back to $DEEPSEEK_BASE_URL from a trusted environment layer, then the public API. */
-  baseURL?: string
-  /** Deployment thinking policy; `disabled` limits every conversation request to `off`. */
-  thinking?: 'enabled' | 'disabled'
-  /** Default thinking effort (default `high`); `off` disables thinking per request. */
-  reasoningEffort?: 'off' | 'low' | 'high' | 'max'
-  /** Default per-request output cap (default 256,000); a model's own cap and explicit request values win. */
-  maxTokens?: number
-  /** Positive context capacity used when the selected model has no exact value (default 1,000,000). */
-  defaultContextWindow?: number
-  /** Advisory models shown by discovery consumers; defaults to V4 Flash, V4 Pro, and V4 Flash Vision Exp. */
-  models?: DeepSeekCatalogModel[]
-  /** Maximum provider idle time while one stream read is outstanding (default five minutes). */
-  streamIdleTimeoutMs?: number
-  /** Maximum accumulated file-referenced image bytes per chat request (default 128 MiB). */
-  maxRequestFilesBytes?: number
-  /** Maximum accumulated base64 image payload after Files API fallback (default 20 MiB). */
-  maxInlineRequestImageBytes?: number
-  /** Maximum number of represented images per chat request (default 600). */
-  maxImagesPerRequest?: number
-  /** Raw-byte removal step after the request exceeds its file bound (default 64 MiB). */
-  imageOffloadByteQuantum?: number
-  /** Base64-byte removal step after inline fallback exceeds its bound (default 10 MiB). */
-  inlineImageOffloadByteQuantum?: number
-  /** Image-count removal step after the request exceeds its count bound (default 20). */
-  imageOffloadCountQuantum?: number
-  /** Maximum duration of one request-image Files API resolution (default one minute). */
-  filesApiTimeoutMs?: number
-  /** Explicit lifetime assigned to each uploaded image (default seven days). */
-  fileExpiresAfterSeconds?: number
-  /** Remaining lifetime below which an indexed file is replaced (default one hour). */
-  fileRefreshMarginSeconds?: number
-  /** Oldest harness-owned files deleted before one quota-recovery upload retry (default 100). */
-  fileQuotaCleanupBatch?: number
-  /** Provider-owned model-request retry policy; omission uses normal mode with five retries. */
-  retryPolicy?: RetryPolicyConfig
-}
-
-/** One optional model entry advertised by the direct-fetch adapter. */
-export interface DeepSeekCatalogModel {
-  /** Wire model id accepted by the configured endpoint. */
-  id: string
-  /** Selector label; defaults to {@link id}. */
-  name?: string
-  /** Optional selector detail for deployments with similar model variants. */
-  description?: string
-  /** Known combined request/response context capacity; omitted when deployment metadata is unavailable. */
-  contextWindow?: number
-  /** Per-request output cap for this model; omission falls back to the profile's {@link DeepSeekConnectionOptions.maxTokens}. */
-  maxTokens?: number
-  /** Accepted request modalities; omission is text-only. */
-  inputModalities?: ModelModality[]
-  /** Total-pixel budget for one deterministic request preview. */
-  imagePixelBudget?: number
-  /** Encoded-byte cap for one deterministic request preview. */
-  imageMaxBytes?: number
-  /** Provider detail tier; `low` uses the 512-by-512 total-pixel default. */
-  imageDetail?: 'auto' | 'low'
-}
-```
-
-依赖：[`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
-
-来源：[`packages/llm/llm-deepseek/src/index.ts:106`](../packages/llm/llm-deepseek/src/index.ts)
-
-<a id="deepseek-aidsh-llm-pi-ai"></a>
-
-## `@deepseek-ai/dsh-llm-pi-ai`
-
-需要：`llm`
+Requires: `llm`
 
 ```ts config-catalog
 /** Plugin configuration: the provider routes this instance owns. */
@@ -1241,25 +1184,25 @@ export type PiAiReasoningEfforts = Partial<Record<ModelThinkingLevel, string | n
 export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFormat']>
 ```
 
-依赖：`Api`（`@earendil-works/pi-ai`）· `CacheRetention`（`@earendil-works/pi-ai`）· `Model`（`@earendil-works/pi-ai`）· `ModelThinkingLevel`（`@earendil-works/pi-ai`）· `OpenAICompletionsCompat`（`@earendil-works/pi-ai`）· [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets`（`@earendil-works/pi-ai`）· `Transport`（`@earendil-works/pi-ai`)
+Depends on: `Api` (`@earendil-works/pi-ai`) · `CacheRetention` (`@earendil-works/pi-ai`) · `Model` (`@earendil-works/pi-ai`) · `ModelThinkingLevel` (`@earendil-works/pi-ai`) · `OpenAICompletionsCompat` (`@earendil-works/pi-ai`) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts) · `ThinkingBudgets` (`@earendil-works/pi-ai`) · `Transport` (`@earendil-works/pi-ai`)
 
-来源：[`packages/llm/llm-pi-ai/src/config.ts:213`](../packages/llm/llm-pi-ai/src/config.ts)
+Source: [`packages/llm/llm-pi-ai/src/config.ts:213`](../packages/llm/llm-pi-ai/src/config.ts)
 
-<a id="deepseek-aidsh-llm-replay"></a>
+<a id="clockyclocky-llm-replay"></a>
 
-## `@deepseek-ai/dsh-llm-replay`
+## `@clocky/clocky-llm-replay`
 
-需要：`llm`
+Requires: `llm`
 
 ```ts config-catalog
-/** Plugin config: the {@link ReplayConfig} inputs, each defaulting to its `DSH_SNAPSHOT_*` env var in `apply`. */
+/** Plugin config: the {@link ReplayConfig} inputs, each defaulting to its `CLOCKY_SNAPSHOT_*` env var in `apply`. */
 export interface Config {
-  /** Override the fixture path; defaults to `$DSH_SNAPSHOT_FILE`. */
+  /** Override the fixture path; defaults to `$CLOCKY_SNAPSHOT_FILE`. */
   file?: string
-  /** Override the sidecar path; defaults to `$DSH_SNAPSHOT_OVERRIDE`. */
+  /** Override the sidecar path; defaults to `$CLOCKY_SNAPSHOT_OVERRIDE`. */
   overrideFile?: string
   /**
-   * Override the child-log paths; defaults to `$DSH_SNAPSHOT_CHILD_FILES` (a
+   * Override the child-log paths; defaults to `$CLOCKY_SNAPSHOT_CHILD_FILES` (a
    * path-separator-delimited list). Each is a recorded subagent session log for
    * a nested-agent scenario; absent/empty for a single-session scenario.
    */
@@ -1309,28 +1252,28 @@ export interface ReplayModelConfig {
 }
 ```
 
-依赖：[`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
+Depends on: [`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
 
-来源：[`packages/test-support/llm-replay/src/index.ts:809`](../packages/test-support/llm-replay/src/index.ts)
+Source: [`packages/test-support/llm-replay/src/index.ts:809`](../packages/test-support/llm-replay/src/index.ts)
 
-<a id="deepseek-aidsh-llm-retry"></a>
+<a id="clockyclocky-llm-retry"></a>
 
-## `@deepseek-ai/dsh-llm-retry`
+## `@clocky/clocky-llm-retry`
 
-需要：`agents`
+Requires: `agents`
 
 ```ts config-catalog
 /** This policy executor has no config; providers own `retryPolicy`. */
 export type Config = Readonly<Record<string, never>>
 ```
 
-来源：[`packages/llm/llm-retry/src/index.ts:24`](../packages/llm/llm-retry/src/index.ts)
+Source: [`packages/llm/llm-retry/src/index.ts:24`](../packages/llm/llm-retry/src/index.ts)
 
-<a id="deepseek-aidsh-lsp-stdio"></a>
+<a id="clockyclocky-lsp-stdio"></a>
 
-## `@deepseek-ai/dsh-lsp-stdio`
+## `@clocky/clocky-lsp-stdio`
 
-需要：`fs` · `lsp` · `subprocess`
+Requires: `fs` · `lsp` · `subprocess`
 
 ```ts config-catalog
 /** Plugin configuration: provider id → local language-server configuration. */
@@ -1366,13 +1309,13 @@ export interface LspLocalServerConfig {
 }
 ```
 
-来源：[`packages/lsp/lsp-stdio/src/index.ts:82`](../packages/lsp/lsp-stdio/src/index.ts)
+Source: [`packages/lsp/lsp-stdio/src/index.ts:82`](../packages/lsp/lsp-stdio/src/index.ts)
 
-<a id="deepseek-aidsh-mcp-client"></a>
+<a id="clockyclocky-mcp-client"></a>
 
-## `@deepseek-ai/dsh-mcp-client`
+## `@clocky/clocky-mcp-client`
 
-需要：`tools`
+Requires: `tools`
 
 ```ts config-catalog
 /** Configuration for one stdio or Streamable HTTP MCP server. */
@@ -1439,13 +1382,13 @@ export interface ReconnectConfig {
 }
 ```
 
-来源：[`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+Source: [`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
 
-<a id="deepseek-aidsh-message-feedback"></a>
+<a id="clockyclocky-message-feedback"></a>
 
-## `@deepseek-ai/dsh-message-feedback`
+## `@clocky/clocky-message-feedback`
 
-需要：`storageDomain` · `sessionPersistence` · `sessions`
+Requires: `storageDomain` · `sessionPersistence` · `sessions`
 
 ```ts config-catalog
 /** Required deployment policy for optional notes. */
@@ -1455,13 +1398,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/feedback/message-feedback/src/index.ts:49`](../packages/feedback/message-feedback/src/index.ts)
+Source: [`packages/feedback/message-feedback/src/index.ts:49`](../packages/feedback/message-feedback/src/index.ts)
 
-<a id="deepseek-aidsh-permission-presets"></a>
+<a id="clockyclocky-permission-presets"></a>
 
-## `@deepseek-ai/dsh-permission-presets`
+## `@clocky/clocky-permission-presets`
 
-需要：`shell` · `approval` · `sessions`
+Requires: `shell` · `approval` · `sessions`
 
 ```ts config-catalog
 /** The {@link PermissionPresetService} config: preset table and composition default. */
@@ -1492,15 +1435,15 @@ export interface PresetSpec {
 }
 ```
 
-依赖：[`ApprovalPolicy`](subsystems/approval.zh.md) · [`SandboxMode`](subsystems/sandbox.zh.md)
+Depends on: [`ApprovalPolicy`](subsystems/approval.zh.md) · [`SandboxMode`](subsystems/sandbox.zh.md)
 
-来源：[`packages/interaction/permission-presets/src/index.ts:156`](../packages/interaction/permission-presets/src/index.ts)
+Source: [`packages/interaction/permission-presets/src/index.ts:156`](../packages/interaction/permission-presets/src/index.ts)
 
-<a id="deepseek-aidsh-persona"></a>
+<a id="clockyclocky-persona"></a>
 
-## `@deepseek-ai/dsh-persona`
+## `@clocky/clocky-persona`
 
-需要：`systemPrompt`
+Requires: `systemPrompt`
 
 ```ts config-catalog
 /** Plugin config: the persona text this composition contributes. */
@@ -1518,13 +1461,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/preset/persona/src/index.ts:34`](../packages/preset/persona/src/index.ts)
+Source: [`packages/preset/persona/src/index.ts:34`](../packages/preset/persona/src/index.ts)
 
-<a id="deepseek-aidsh-plan-mode"></a>
+<a id="clockyclocky-plan-mode"></a>
 
-## `@deepseek-ai/dsh-plan-mode`
+## `@clocky/clocky-plan-mode`
 
-需要：`tools` · `systemPrompt`
+Requires: `tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Deployment-owned plan guidance. */
@@ -1534,13 +1477,13 @@ export interface PlanModeConfig {
 }
 ```
 
-来源：[`packages/plan/plan-mode/src/index.ts:70`](../packages/plan/plan-mode/src/index.ts)
+Source: [`packages/plan/plan-mode/src/index.ts:70`](../packages/plan/plan-mode/src/index.ts)
 
-<a id="deepseek-aidsh-pwsh-local"></a>
+<a id="clockyclocky-pwsh-local"></a>
 
-## `@deepseek-ai/dsh-pwsh-local`
+## `@clocky/clocky-pwsh-local`
 
-需要：`subprocess`
+Requires: `subprocess`
 
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
@@ -1567,19 +1510,19 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/pwsh-local/src/index.ts:58`](../packages/shell/pwsh-local/src/index.ts)
+Source: [`packages/shell/pwsh-local/src/index.ts:58`](../packages/shell/pwsh-local/src/index.ts)
 
-<a id="deepseek-aidsh-pwsh-sandbox"></a>
+<a id="clockyclocky-pwsh-sandbox"></a>
 
-## `@deepseek-ai/dsh-pwsh-sandbox`
+## `@clocky/clocky-pwsh-sandbox`
 
-需要：`subprocess` · `sandbox` · `sandboxPolicy`
+Requires: `subprocess` · `sandbox` · `sandboxPolicy`
 
 ```ts config-catalog
 /**
  * Plugin config: the local executor's knobs, verbatim. The sandbox policy —
  * the default mode and fallback `workspace-write` root — is NOT here: it lives
- * on `ctx.sandboxPolicy` (`@deepseek-ai/dsh-sandbox-policy`), which resolves
+ * on `ctx.sandboxPolicy` (`@clocky/clocky-sandbox-policy`), which resolves
  * each calling session's mode and cwd for every enforcing capability. The
  * runner choice is likewise the `ctx.sandbox` provider's config, not this
  * executor's.
@@ -1587,13 +1530,13 @@ export interface Config {
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-pwsh-local)
+Depends on: [`LocalConfig`](#clockyclocky-pwsh-local)
 
-来源：[`packages/shell/pwsh-sandbox/src/index.ts:40`](../packages/shell/pwsh-sandbox/src/index.ts)
+Source: [`packages/shell/pwsh-sandbox/src/index.ts:40`](../packages/shell/pwsh-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-repeat-tool-reminder"></a>
+<a id="clockyclocky-repeat-tool-reminder"></a>
 
-## `@deepseek-ai/dsh-repeat-tool-reminder`
+## `@clocky/clocky-repeat-tool-reminder`
 
 ```ts config-catalog
 /**
@@ -1623,11 +1566,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/guard/repeat-tool-reminder/src/index.ts:28`](../packages/guard/repeat-tool-reminder/src/index.ts)
+Source: [`packages/guard/repeat-tool-reminder/src/index.ts:28`](../packages/guard/repeat-tool-reminder/src/index.ts)
 
-<a id="deepseek-aidsh-sandbox-local"></a>
+<a id="clockyclocky-sandbox-local"></a>
 
-## `@deepseek-ai/dsh-sandbox-local`
+## `@clocky/clocky-sandbox-local`
 
 ```ts config-catalog
 /** Plugin config. All optional — `static Config` supplies the defaults. */
@@ -1655,11 +1598,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/sandbox/sandbox-local/src/index.ts:44`](../packages/sandbox/sandbox-local/src/index.ts)
+Source: [`packages/sandbox/sandbox-local/src/index.ts:44`](../packages/sandbox/sandbox-local/src/index.ts)
 
-<a id="deepseek-aidsh-sandbox-policy"></a>
+<a id="clockyclocky-sandbox-policy"></a>
 
-## `@deepseek-ai/dsh-sandbox-policy`
+## `@clocky/clocky-sandbox-policy`
 
 ```ts config-catalog
 /**
@@ -1674,27 +1617,28 @@ export interface Config {
   mode?: SandboxMode
   /**
    * Fallback root for agentless calls and sessions without a cwd (default:
-   * `process.cwd()`). Normal agent calls use their session cwd instead.
+   * `process.cwd()`). Normal agent calls use their Team allocation root when
+   * one is active, then their Session cwd.
    */
   workspaceRoot?: string
 }
 ```
 
-依赖：[`SandboxMode`](subsystems/sandbox.zh.md)
+Depends on: [`SandboxMode`](subsystems/sandbox.zh.md)
 
-来源：[`packages/sandbox/sandbox-policy/src/index.ts:67`](../packages/sandbox/sandbox-policy/src/index.ts)
+Source: [`packages/sandbox/sandbox-policy/src/index.ts:67`](../packages/sandbox/sandbox-policy/src/index.ts)
 
-<a id="deepseek-aidsh-sdk-jsonrpc-server"></a>
+<a id="clockyclocky-sdk-jsonrpc-server"></a>
 
-## `@deepseek-ai/dsh-sdk-jsonrpc-server`
+## `@clocky/clocky-sdk-jsonrpc-server`
 
-需要：`agents`
+Requires: `agents` · `teamRuns` · `productPrincipals`
 
 ```ts config-catalog
 /** JSON-RPC deployment config plus runtime-only test hooks. */
 export interface JsonRpcConfig {
-  /** Report max-token turn/subagent termination as a successful SDK result. */
-  maxTokensAsSuccess?: boolean
+  /** Product-principal provider that authenticates one SDK connection handshake. */
+  productPrincipalProvider?: string
   /** Transport input override; production uses `process.stdin`. */
   input?: Readable
   /** Transport output override; production uses `process.stdout`. */
@@ -1704,15 +1648,15 @@ export interface JsonRpcConfig {
 }
 ```
 
-依赖：`Readable`（`node:stream`）· `Writable`（`node:stream`）
+Depends on: `Readable` (`node:stream`) · `Writable` (`node:stream`)
 
-来源：[`packages/sdk/server/src/index.ts:29`](../packages/sdk/server/src/index.ts)
+Source: [`packages/sdk/server/src/index.ts:26`](../packages/sdk/server/src/index.ts)
 
-<a id="deepseek-aidsh-session-persistence-jsonl"></a>
+<a id="clockyclocky-session-persistence-jsonl"></a>
 
-## `@deepseek-ai/dsh-session-persistence-jsonl`
+## `@clocky/clocky-session-persistence-jsonl`
 
-需要：`sessions`
+Requires: `sessions`
 
 ```ts config-catalog
 /** Plugin config: where the JSONL backend keeps its session logs, and the packed-row write switch. */
@@ -1745,13 +1689,13 @@ export interface Config {
 export type JsonlCompression = 'zstd' | 'none'
 ```
 
-来源：[`packages/session/session-persistence-jsonl/src/index.ts:60`](../packages/session/session-persistence-jsonl/src/index.ts)
+Source: [`packages/session/session-persistence-jsonl/src/index.ts:60`](../packages/session/session-persistence-jsonl/src/index.ts)
 
-<a id="deepseek-aidsh-session-persistence-sqlite"></a>
+<a id="clockyclocky-session-persistence-sqlite"></a>
 
-## `@deepseek-ai/dsh-session-persistence-sqlite`
+## `@clocky/clocky-session-persistence-sqlite`
 
-需要：`sessions`
+Requires: `sessions`
 
 ```ts config-catalog
 /** Plugin configuration. */
@@ -1772,13 +1716,13 @@ export interface Config {
 export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 
-来源：[`packages/session/session-persistence-sqlite/src/index.ts:36`](../packages/session/session-persistence-sqlite/src/index.ts)
+Source: [`packages/session/session-persistence-sqlite/src/index.ts:37`](../packages/session/session-persistence-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-session-projection-cache"></a>
+<a id="clockyclocky-session-projection-cache"></a>
 
-## `@deepseek-ai/dsh-session-projection-cache`
+## `@clocky/clocky-session-projection-cache`
 
-需要：`storageDomain` · `sessionProjections` · `sessionPersistence` · `sessions`
+Requires: `storageDomain` · `sessionProjections` · `sessionPersistence` · `sessions`
 
 ```ts config-catalog
 /**
@@ -1795,13 +1739,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/session/session-projection-cache/src/index.ts:42`](../packages/session/session-projection-cache/src/index.ts)
+Source: [`packages/session/session-projection-cache/src/index.ts:42`](../packages/session/session-projection-cache/src/index.ts)
 
-<a id="deepseek-aidsh-session-query-sqlite"></a>
+<a id="clockyclocky-session-query-sqlite"></a>
 
-## `@deepseek-ai/dsh-session-query-sqlite`
+## `@clocky/clocky-session-query-sqlite`
 
-需要：`sessions`
+Requires: `sessions`
 
 ```ts config-catalog
 /** Combined session-query configuration backed by SQLite full-text search. */
@@ -1839,15 +1783,15 @@ export type OpenAt = 'startup' | 'first-search' | 'never'
 export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 
-依赖：[`SessionQueryConfig`](../packages/session-query/session-query/src/index.ts)
+Depends on: [`SessionQueryConfig`](../packages/session-query/session-query/src/index.ts)
 
-来源：[`packages/session-query/session-query-sqlite/src/index.ts:89`](../packages/session-query/session-query-sqlite/src/index.ts)
+Source: [`packages/session-query/session-query-sqlite/src/index.ts:89`](../packages/session-query/session-query-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-session-reference"></a>
+<a id="clockyclocky-session-reference"></a>
 
-## `@deepseek-ai/dsh-session-reference`
+## `@clocky/clocky-session-reference`
 
-需要：`sessionQuery`
+Requires: `sessionQuery`
 
 ```ts config-catalog
 /** Session-reference service configuration. */
@@ -1861,18 +1805,18 @@ export interface Config {
 }
 ```
 
-来源：[`packages/context/session-reference/src/config.ts:11`](../packages/context/session-reference/src/config.ts)
+Source: [`packages/context/session-reference/src/config.ts:11`](../packages/context/session-reference/src/config.ts)
 
-<a id="deepseek-aidsh-session-telemetry-otel"></a>
+<a id="clockyclocky-session-telemetry-otel"></a>
 
-## `@deepseek-ai/dsh-session-telemetry-otel`
+## `@clocky/clocky-session-telemetry-otel`
 
-需要：`sessions`
+Requires: `sessions`
 
 ```ts config-catalog
 /**
  * Plugin configuration: one sharing policy, two verbatim SDK option objects,
- * and one DSH-owned shutdown bound. Uploading modes validate their endpoint
+ * and one shutdown bound. Uploading modes validate their endpoint
  * and shutdown deadline at plugin load; `DISABLED` reads neither.
  */
 export interface Config {
@@ -1905,15 +1849,15 @@ export enum SessionTelemetryMode {
 }
 ```
 
-依赖：`BatchLogRecordProcessorOptions`（`@opentelemetry/sdk-logs`）· `OTLPExporterNodeConfigBase`（`@opentelemetry/otlp-exporter-base`）
+Depends on: `BatchLogRecordProcessorOptions` (`@opentelemetry/sdk-logs`) · `OTLPExporterNodeConfigBase` (`@opentelemetry/otlp-exporter-base`)
 
-来源：[`packages/session/session-telemetry-otel/src/index.ts:91`](../packages/session/session-telemetry-otel/src/index.ts)
+Source: [`packages/session/session-telemetry-otel/src/index.ts:90`](../packages/session/session-telemetry-otel/src/index.ts)
 
-<a id="deepseek-aidsh-session-title"></a>
+<a id="clockyclocky-session-title"></a>
 
-## `@deepseek-ai/dsh-session-title`
+## `@clocky/clocky-session-title`
 
-需要：`sessions`
+Requires: `sessions`
 
 ```ts config-catalog
 /** Required deterministic fallback and accepted-title limits. */
@@ -1927,49 +1871,49 @@ export interface Config {
 }
 ```
 
-来源：[`packages/session/session-title/src/index.ts:79`](../packages/session/session-title/src/index.ts)
+Source: [`packages/session/session-title/src/index.ts:79`](../packages/session/session-title/src/index.ts)
 
-<a id="deepseek-aidsh-session-title-all-prompts-llm"></a>
+<a id="clockyclocky-session-title-all-prompts-llm"></a>
 
-## `@deepseek-ai/dsh-session-title-all-prompts-llm`
+## `@clocky/clocky-session-title-all-prompts-llm`
 
-需要：`sessionTitle` · `llm` · `sessions`
-
-```ts config-catalog
-/** Required LLM policy; this plugin adds no defaults. */
-export type Config = SessionTitleLlmConfig
-```
-
-依赖：[`SessionTitleLlmConfig`](../packages/session/session-title-llm/src/index.ts)
-
-来源：[`packages/session/session-title-all-prompts-llm/src/index.ts:15`](../packages/session/session-title-all-prompts-llm/src/index.ts)
-
-<a id="deepseek-aidsh-session-title-first-prompt-llm"></a>
-
-## `@deepseek-ai/dsh-session-title-first-prompt-llm`
-
-需要：`sessionTitle` · `llm` · `sessions`
+Requires: `sessionTitle` · `llm` · `sessions`
 
 ```ts config-catalog
 /** Required LLM policy; this plugin adds no defaults. */
 export type Config = SessionTitleLlmConfig
 ```
 
-依赖：[`SessionTitleLlmConfig`](../packages/session/session-title-llm/src/index.ts)
+Depends on: [`SessionTitleLlmConfig`](../packages/session/session-title-llm/src/index.ts)
 
-来源：[`packages/session/session-title-first-prompt-llm/src/index.ts:15`](../packages/session/session-title-first-prompt-llm/src/index.ts)
+Source: [`packages/session/session-title-all-prompts-llm/src/index.ts:15`](../packages/session/session-title-all-prompts-llm/src/index.ts)
 
-<a id="deepseek-aidsh-settings-file"></a>
+<a id="clockyclocky-session-title-first-prompt-llm"></a>
 
-## `@deepseek-ai/dsh-settings-file`
+## `@clocky/clocky-session-title-first-prompt-llm`
+
+Requires: `sessionTitle` · `llm` · `sessions`
+
+```ts config-catalog
+/** Required LLM policy; this plugin adds no defaults. */
+export type Config = SessionTitleLlmConfig
+```
+
+Depends on: [`SessionTitleLlmConfig`](../packages/session/session-title-llm/src/index.ts)
+
+Source: [`packages/session/session-title-first-prompt-llm/src/index.ts:15`](../packages/session/session-title-first-prompt-llm/src/index.ts)
+
+<a id="clockyclocky-settings-file"></a>
+
+## `@clocky/clocky-settings-file`
 
 ```ts config-catalog
 /** Plugin config: file location and hot-reload behavior. */
 export interface Config {
   /** Settings document path; defaults to `settings.yaml` under the harness home. */
   path?: string
-  /** Harness home used when `path` is omitted; defaults to `$DSH_HOME` or `~/.dsh`. */
-  dshHome?: string
+  /** Harness home used when `path` is omitted; defaults to `$CLOCKY_HOME` or `~/.clocky`. */
+  clockyHome?: string
   /** Watch the document and hot-publish external edits; defaults to true. */
   watch?: boolean
   /** Watcher write-settle window in milliseconds; defaults to 100. */
@@ -1977,25 +1921,25 @@ export interface Config {
 }
 ```
 
-来源：[`packages/settings/settings-file/src/index.ts:21`](../packages/settings/settings-file/src/index.ts)
+Source: [`packages/settings/settings-file/src/index.ts:21`](../packages/settings/settings-file/src/index.ts)
 
-<a id="deepseek-aidsh-shell-env"></a>
+<a id="clockyclocky-shell-env"></a>
 
-## `@deepseek-ai/dsh-shell-env`
+## `@clocky/clocky-shell-env`
 
 ```ts config-catalog
 /** Plugin config (all optional — the built-in facts resolve without defaults). */
 export interface Config {
-  /** DeepSeek Harness home directory exposed as `DSH_HOME`; defaults to `$DSH_HOME` or `~/.dsh`. */
-  dshHome?: string
+  /** Clocky home directory exposed as `CLOCKY_HOME`; defaults to `$CLOCKY_HOME` or `~/.clocky`. */
+  clockyHome?: string
 }
 ```
 
-来源：[`packages/shell/shell-env/src/index.ts:29`](../packages/shell/shell-env/src/index.ts)
+Source: [`packages/shell/shell-env/src/index.ts:29`](../packages/shell/shell-env/src/index.ts)
 
-<a id="deepseek-aidsh-skill"></a>
+<a id="clockyclocky-skill"></a>
 
-## `@deepseek-ai/dsh-skill`
+## `@clocky/clocky-skill`
 
 ```ts config-catalog
 /** Skill registry configuration. */
@@ -2005,13 +1949,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/skill/skill/src/index.ts:279`](../packages/skill/skill/src/index.ts)
+Source: [`packages/skill/skill/src/index.ts:279`](../packages/skill/skill/src/index.ts)
 
-<a id="deepseek-aidsh-skill-filesystem"></a>
+<a id="clockyclocky-skill-filesystem"></a>
 
-## `@deepseek-ai/dsh-skill-filesystem`
+## `@clocky/clocky-skill-filesystem`
 
-需要：`skills`
+Requires: `skills`
 
 ```ts config-catalog
 /** Local filesystem skill provider configuration. */
@@ -2020,9 +1964,9 @@ export interface Config {
   providerName?: string
   /** Whether project and user roots are included around custom roots. */
   includeDefaultRoots?: boolean
-  /** DeepSeek Harness config root. Defaults to `$DSH_HOME` or `~/.dsh`. */
-  dshHome?: string
-  /** Shared agent config root. Defaults to `$DSH_AGENTS_HOME` or `~/.agents`. */
+  /** Clocky config root. Defaults to `$CLOCKY_HOME` or `~/.clocky`. */
+  clockyHome?: string
+  /** Shared agent config root. Defaults to `$CLOCKY_AGENTS_HOME` or `~/.agents`. */
   agentsHome?: string
   /** Additional skill roots scanned after project roots and before user roots. */
   customSkillDirs?: string[]
@@ -2038,16 +1982,16 @@ export interface Config {
   watchMaxProjects?: number
   /** Whether watched symbolic links follow their target files. */
   watchFollowSymlinks?: boolean
-  /** Bundled skill root; defaults to `$DSH_BUNDLED_SKILL_DIR` when default roots are included, otherwise mounts none. */
+  /** Bundled skill root; defaults to `$CLOCKY_BUNDLED_SKILL_DIR` when default roots are included, otherwise mounts none. */
   bundledSkillDir?: string
 }
 ```
 
-来源：[`packages/skill/skill-filesystem/src/index.ts:49`](../packages/skill/skill-filesystem/src/index.ts)
+Source: [`packages/skill/skill-filesystem/src/index.ts:49`](../packages/skill/skill-filesystem/src/index.ts)
 
-<a id="deepseek-aidsh-spill-local"></a>
+<a id="clockyclocky-spill-local"></a>
 
-## `@deepseek-ai/dsh-spill-local`
+## `@clocky/clocky-spill-local`
 
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
@@ -2061,13 +2005,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/spill/spill-local/src/index.ts:22`](../packages/spill/spill-local/src/index.ts)
+Source: [`packages/spill/spill-local/src/index.ts:22`](../packages/spill/spill-local/src/index.ts)
 
-<a id="deepseek-aidsh-spill-policy"></a>
+<a id="clockyclocky-spill-policy"></a>
 
-## `@deepseek-ai/dsh-spill-policy`
+## `@clocky/clocky-spill-policy`
 
-需要：`tools`
+Requires: `tools`
 
 ```ts config-catalog
 /** Plugin config. */
@@ -2081,13 +2025,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/spill/spill-policy/src/index.ts:60`](../packages/spill/spill-policy/src/index.ts)
+Source: [`packages/spill/spill-policy/src/index.ts:60`](../packages/spill/spill-policy/src/index.ts)
 
-<a id="deepseek-aidsh-storage-domain"></a>
+<a id="clockyclocky-storage-domain"></a>
 
-## `@deepseek-ai/dsh-storage-domain`
+## `@clocky/clocky-storage-domain`
 
-需要：`storage`
+Requires: `storage`
 
 ```ts config-catalog
 /**
@@ -2104,13 +2048,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/storage/storage-domain/src/index.ts:52`](../packages/storage/storage-domain/src/index.ts)
+Source: [`packages/storage/storage-domain/src/index.ts:52`](../packages/storage/storage-domain/src/index.ts)
 
-<a id="deepseek-aidsh-storage-json"></a>
+<a id="clockyclocky-storage-json"></a>
 
-## `@deepseek-ai/dsh-storage-json`
+## `@clocky/clocky-storage-json`
 
-需要：`storage`
+Requires: `storage`
 
 ```ts config-catalog
 /**
@@ -2125,13 +2069,31 @@ export interface Config {
 }
 ```
 
-来源：[`packages/storage/storage-json/src/index.ts:27`](../packages/storage/storage-json/src/index.ts)
+Source: [`packages/storage/storage-json/src/index.ts:34`](../packages/storage/storage-json/src/index.ts)
 
-<a id="deepseek-aidsh-storage-sqlite"></a>
+<a id="clockyclocky-storage-log"></a>
 
-## `@deepseek-ai/dsh-storage-sqlite`
+## `@clocky/clocky-storage-log`
 
-需要：`storage`
+Requires: `storage`
+
+```ts config-catalog
+/** Route configuration for append-only streams. */
+export interface Config {
+  /** Default backend name for streams without a more specific route. */
+  readonly backend: string
+  /** Per-stream backend route. */
+  readonly routes: Record<string, string>
+}
+```
+
+Source: [`packages/storage/storage-log/src/index.ts:41`](../packages/storage/storage-log/src/index.ts)
+
+<a id="clockyclocky-storage-sqlite"></a>
+
+## `@clocky/clocky-storage-sqlite`
+
+Requires: `storage`
 
 ```ts config-catalog
 /** Plugin configuration. */
@@ -2165,13 +2127,13 @@ export interface Config {
 export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 
-来源：[`packages/storage/storage-sqlite/src/index.ts:24`](../packages/storage/storage-sqlite/src/index.ts)
+Source: [`packages/storage/storage-sqlite/src/index.ts:28`](../packages/storage/storage-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-acp"></a>
+<a id="clockyclocky-subagent-acp"></a>
 
-## `@deepseek-ai/dsh-subagent-acp`
+## `@clocky/clocky-subagent-acp`
 
-需要：`subagents` · `subprocess`
+Requires: `subagents` · `subprocess`
 
 ```ts config-catalog
 /** Config: how to spawn and drive the child ACP agent process. */
@@ -2186,8 +2148,8 @@ export interface Config {
    * Working directory override for the child process and its ACP session.
    * Must be non-empty; a relative path resolves against the harness launch
    * directory at load, and the result must be an existing directory. When
-   * omitted, each child inherits its delegating parent session's cwd — and
-   * starting one from a parent session that has no cwd fails.
+   * omitted, each child inherits its delegating parent's resolved workspace
+   * root — and starting one without a usable root fails.
    */
   cwd?: string
   /**
@@ -2218,82 +2180,18 @@ export interface Config {
 export type PermissionPolicy = 'allow' | 'reject'
 ```
 
-来源：[`packages/subagent/subagent-acp/src/index.ts:27`](../packages/subagent/subagent-acp/src/index.ts)
+Source: [`packages/subagent/subagent-acp/src/index.ts:27`](../packages/subagent/subagent-acp/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-claude-code"></a>
+<a id="clockyclocky-subagent-clocky-sdk"></a>
 
-## `@deepseek-ai/dsh-subagent-claude-code`
+## `@clocky/clocky-subagent-clocky-sdk`
 
-需要：`subagents` · `subprocess`
-
-```ts config-catalog
-/** Deployment-owned permission, environment, and process-release settings. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `claude-code`). */
-  providerName?: string
-  /**
-   * Explicit environment entries layered over the subprocess seam's
-   * credential-scrubbed parent environment.
-   */
-  env?: Record<string, string>
-  /**
-   * Native non-interactive mode fixed for this Provider instance. Defaults to
-   * `dontAsk`; `acceptEdits` accepts edits, `auto` uses the native classifier,
-   * `plan` returns a plan without approving execution, and
-   * `bypassPermissions` explicitly skips permission checks.
-   */
-  permissionMode?: ClaudeCodePermissionMode
-  /** Grace in milliseconds for Claude Code process-tree termination. */
-  disposeGraceMs?: number
-}
-
-/** Profile-selectable non-interactive Claude Code permission mode. */
-export type ClaudeCodePermissionMode = typeof CLAUDE_CODE_PERMISSION_MODES[number]
-```
-
-来源：[`packages/subagent/subagent-claude-code/src/index.ts:38`](../packages/subagent/subagent-claude-code/src/index.ts)
-
-<a id="deepseek-aidsh-subagent-codex"></a>
-
-## `@deepseek-ai/dsh-subagent-codex`
-
-需要：`subagents` · `subprocess`
-
-```ts config-catalog
-/** Deployment-owned permission, environment, and process-release settings. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `codex`). */
-  providerName?: string
-  /**
-   * Explicit environment entries layered over the subprocess seam's
-   * credential-scrubbed parent environment.
-   */
-  env?: Record<string, string>
-  /** Native non-interactive permission mode fixed for this Provider instance. */
-  permissionMode?: CodexPermissionMode
-  /** Grace in milliseconds for app-server process-tree termination. */
-  disposeGraceMs?: number
-}
-
-/** Profile-selectable non-interactive Codex permission mode. */
-export type CodexPermissionMode =
-  | 'never'
-  | 'approve-for-me'
-  | 'dangerously-bypass-approvals-and-sandbox'
-```
-
-来源：[`packages/subagent/subagent-codex/src/index.ts:36`](../packages/subagent/subagent-codex/src/index.ts)
-
-<a id="deepseek-aidsh-subagent-dsh-sdk"></a>
-
-## `@deepseek-ai/dsh-subagent-dsh-sdk`
-
-需要：`subagents`
+Requires: `subagents`
 
 ```ts config-catalog
 /** Config: how to spawn and drive the child SDK runtime process. */
 export interface Config {
-  /** Provider name on `ctx.subagents` (default `dsh-sdk`). */
+  /** Provider name on `ctx.subagents` (default `clocky-sdk`). */
   providerName: string
   /** The executable to spawn for each run (the child runtime bin or packaged exe). */
   command: string
@@ -2303,20 +2201,21 @@ export interface Config {
    * Working directory override for the child process and its SDK session
    * workspace. Must be non-empty; a relative path resolves against the
    * harness launch directory at load, and the result must be an existing
-   * directory. When omitted, each child inherits its delegating parent
-   * session's cwd — and starting one from a parent session that has no cwd
-   * fails.
+   * directory. When omitted, each child inherits its delegating parent's
+   * resolved workspace root — and starting one without a usable root fails.
    */
   cwd?: string
-  /** Provider route the child runtime initializes with (default `deepseek-official`). */
+  /** Provider route the child runtime initializes with. */
   provider: string
-  /** Model the child runtime initializes with (default `deepseek-v4-flash`). */
+  /** Model the child runtime initializes with. */
   model: string
+  /** Opaque product credential sent only in the child SDK initialization handshake. */
+  credential?: string
   /** Optional per-request output-token cap for the child runtime. */
   maxTokens?: number
   /**
    * Extra environment variables for the child process — e.g. the child
-   * runtime's own `DEEPSEEK_API_KEY`, or `DSH_CORDIS_CONFIG` naming its
+   * runtime's own `DEEPSEEK_API_KEY`, or `CLOCKY_CORDIS_CONFIG` naming its
    * config. Forwarded on top of a credential-scrubbed copy of the parent
    * env, so an explicit key here reaches the child while ambient secrets do
    * not leak implicitly.
@@ -2335,13 +2234,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/subagent/subagent-dsh-sdk/src/index.ts:29`](../packages/subagent/subagent-dsh-sdk/src/index.ts)
+Source: [`packages/subagent/subagent-clocky-sdk/src/index.ts:29`](../packages/subagent/subagent-clocky-sdk/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-fork-in-process"></a>
+<a id="clockyclocky-subagent-fork-in-process"></a>
 
-## `@deepseek-ai/dsh-subagent-fork-in-process`
+## `@clocky/clocky-subagent-fork-in-process`
 
-需要：`subagents`
+Requires: `subagents`
 
 ```ts config-catalog
 /** Config: the registry name to register the provider under. */
@@ -2351,13 +2250,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
+Source: [`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-spawn-in-process"></a>
+<a id="clockyclocky-subagent-spawn-in-process"></a>
 
-## `@deepseek-ai/dsh-subagent-spawn-in-process`
+## `@clocky/clocky-subagent-spawn-in-process`
 
-需要：`subagents`
+Requires: `subagents`
 
 ```ts config-catalog
 /** Config: the registry name to register the provider under. */
@@ -2367,13 +2266,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/subagent/subagent-spawn-in-process/src/index.ts:25`](../packages/subagent/subagent-spawn-in-process/src/index.ts)
+Source: [`packages/subagent/subagent-spawn-in-process/src/index.ts:25`](../packages/subagent/subagent-spawn-in-process/src/index.ts)
 
-<a id="deepseek-aidsh-subprocess-e2b"></a>
+<a id="clockyclocky-subprocess-e2b"></a>
 
-## `@deepseek-ai/dsh-subprocess-e2b`
+## `@clocky/clocky-subprocess-e2b`
 
-需要：`e2b`
+Requires: `e2b`
 
 ```ts config-catalog
 /** Configuration for the E2B subprocess adapter. */
@@ -2383,16 +2282,16 @@ export interface Config {
 }
 ```
 
-来源：[`packages/e2b/subprocess-e2b/src/index.ts:25`](../packages/e2b/subprocess-e2b/src/index.ts)
+Source: [`packages/e2b/subprocess-e2b/src/index.ts:25`](../packages/e2b/subprocess-e2b/src/index.ts)
 
-<a id="deepseek-aidsh-system-prompt"></a>
+<a id="clockyclocky-system-prompt"></a>
 
-## `@deepseek-ai/dsh-system-prompt`
+## `@clocky/clocky-system-prompt`
 
 ```ts config-catalog
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.persona} for its contract). */
 export interface Config {
-  /** Include the fixed DeepSeek Harness identity before the deployment persona (default true). */
+  /** Include the fixed generic agent identity before the deployment persona (default true). */
   includeHarnessIdentity?: boolean
   /** Include dynamic runtime-context snapshots in model history (default true). */
   includeRuntimeContext?: boolean
@@ -2410,13 +2309,585 @@ export interface Config {
 }
 ```
 
-来源：[`packages/core/system-prompt/src/index.ts:186`](../packages/core/system-prompt/src/index.ts)
+Source: [`packages/core/system-prompt/src/index.ts:186`](../packages/core/system-prompt/src/index.ts)
 
-<a id="deepseek-aidsh-terminal-bash"></a>
+<a id="clockyclocky-team-activation-controller"></a>
 
-## `@deepseek-ai/dsh-terminal-bash`
+## `@clocky/clocky-team-activation-controller`
 
-需要：`terminals` · `sandboxPolicy` · `subprocess`
+Requires: `teams` · `agentRuntimes`
+
+```ts config-catalog
+/** Controller deployment limits. */
+export interface Config {
+  /** Maximum milliseconds allowed to settle accepted activation work during unload. */
+  readonly disposalTimeoutMs?: number
+  /** Maximum Hub cursor-conflict retries while persisting one observed status. */
+  readonly statusSyncAttempts?: number
+}
+```
+
+Source: [`packages/team/team-activation-controller/src/index.ts:61`](../packages/team/team-activation-controller/src/index.ts)
+
+<a id="clockyclocky-team-activation-recovery"></a>
+
+## `@clocky/clocky-team-activation-recovery`
+
+Requires: `teams` · `teamActivations`
+
+```ts config-catalog
+/** Explicit local SDK deployment identity selected for one startup scan. */
+export interface Config {
+  /** AgentRuntime provider that owns the stale SDK activation. */
+  readonly provider: string
+  /** Non-secret SDK recovery profile configured on this host. */
+  readonly profile: string
+  /** Stable identity of the host allowed to replace the recorded process. */
+  readonly hostId: string
+  /** Optional recurring recovery pulse for epochs created after startup. */
+  readonly pulseIntervalMs?: number
+}
+```
+
+Source: [`packages/team/team-activation-recovery/src/index.ts:21`](../packages/team/team-activation-recovery/src/index.ts)
+
+<a id="clockyclocky-team-agent-client"></a>
+
+## `@clocky/clocky-team-agent-client`
+
+Requires: `teams` · `teamLinks` · `agents` · `sessions`
+
+```ts config-catalog
+/** Team Link delivery configuration. */
+export interface Config {
+  /** Team Link provider that carries direct and task-assignment notifications and receipts. */
+  readonly linkProvider?: string
+  /** Maximum milliseconds allowed to settle accepted delivery before the consumer closes. */
+  readonly disposalTimeoutMs?: number
+  /** Delay before reconnecting a still-current binding after its Link fails or closes unexpectedly. */
+  readonly reconnectDelayMs?: number
+  /** Maximum attempts for one workspace mutation when concurrent Team writes advance its cursor. */
+  readonly workspaceMutationMaxAttempts?: number
+  /** Whether task assignment delivery should consume the selected workspace allocation. */
+  readonly consumeWorkspace?: boolean
+}
+```
+
+Source: [`packages/team/team-agent-client/src/index.ts:92`](../packages/team/team-agent-client/src/index.ts)
+
+<a id="clockyclocky-team-artifact-local"></a>
+
+## `@clocky/clocky-team-artifact-local`
+
+Requires: `teamArtifacts`
+
+```ts config-catalog
+/** Local content-addressed artifact-store configuration. */
+export interface Config {
+  /** Provider name used in references and registry lookups. */
+  readonly providerName?: string
+  /** Absolute directory retaining content-addressed objects. */
+  readonly root: string
+  /** Maximum bytes accepted for one artifact. */
+  readonly maxBytes?: number
+  /** Maximum distinct artifacts accepted for one source attempt. */
+  readonly maxArtifactsPerAttempt?: number
+  /** Optional Team-aware reachability collector for this local object store. */
+  readonly retention?: RetentionConfig
+}
+
+/** Deployment bounds for the optional Team-aware local artifact collector. */
+export interface RetentionConfig {
+  /** Minimum time an object remains unreachable before collection may remove it. */
+  readonly graceMs: number
+  /** Maximum object rows inspected by one collection drive. */
+  readonly maxObjectsPerDrive: number
+  /** Optional recurring collection pulse; omission leaves collection explicitly driven. */
+  readonly pulseIntervalMs?: number
+  /** Maximum time accepted collection work may delay provider disposal. */
+  readonly disposalTimeoutMs: number
+}
+```
+
+Source: [`packages/team/team-artifact-local/src/index.ts:38`](../packages/team/team-artifact-local/src/index.ts)
+
+<a id="clockyclocky-team-channel-summary"></a>
+
+## `@clocky/clocky-team-channel-summary`
+
+Requires: `teams`
+
+```ts config-catalog
+/** Deployment bounds for the deterministic extractive implementation. */
+export interface Config {
+  /** View-policy types that this deployment permits for explicit summaries. */
+  readonly allowedPolicies: string[]
+  /** Maximum source Envelope count in one command. */
+  readonly maxSourceEnvelopes: number
+  /** Maximum UTF-8 bytes of the complete ordered source Envelope array. */
+  readonly maxSourceBytes: number
+  /** Maximum UTF-8 bytes of newly generated summary text. */
+  readonly maxSummaryBytes: number
+  /** Maximum inclusive WAL range length in one command. */
+  readonly maxHistorySpan: number
+  /** Maximum milliseconds for admitted operations to settle on disposal. */
+  readonly disposalTimeoutMs: number
+}
+```
+
+Source: [`packages/team/team-channel-summary/src/index.ts:17`](../packages/team/team-channel-summary/src/index.ts)
+
+<a id="clockyclocky-team-closure-driver"></a>
+
+## `@clocky/clocky-team-closure-driver`
+
+Requires: `teams` · `teamClosureDrives` · `teamClosureDriverHub`
+
+```ts config-catalog
+/** Explicit bounded closure-recovery configuration. */
+export interface Config {
+  /** Registered backend that translates proof-bound passes into provider-owned closure commands. */
+  readonly backend: string
+  /** Maximum Team summaries inspected by one full discovery drive. */
+  readonly maxTeamsPerDrive: number
+  /** Maximum Team summaries requested in one provider list page. */
+  readonly pageSize: number
+  /** Maximum time allowed to await accepted backend work during plugin disposal. */
+  readonly disposalTimeoutMs: number
+  /** Optional recurring discovery pulse for missed in-process notifications. */
+  readonly pulseIntervalMs?: number
+  /** Bounded retries for a current observer racing another Team-journal append. */
+  readonly observerRetryAttempts?: number
+}
+```
+
+Source: [`packages/team/team-closure-driver/src/index.ts:38`](../packages/team/team-closure-driver/src/index.ts)
+
+<a id="clockyclocky-team-hub"></a>
+
+## `@clocky/clocky-team-hub`
+
+Requires: `storageLog`
+
+```ts config-catalog
+/** Configurable Team-Hub durability, hierarchy, task, and shutdown limits. */
+export interface Config {
+  /** Maximum number of durable records replayed in one storage page. */
+  readonly recoveryPageSize?: number
+  /** Persist a projection checkpoint after each multiple of this record count. */
+  readonly checkpointEvery?: number
+  /** Number of audit entries retained at the end of a compacted Team or channel projection. */
+  readonly auditRetentionTail?: number
+  /** Maximum milliseconds allowed to settle accepted operations during disposal. */
+  readonly disposalTimeoutMs?: number
+  /** Maximum nested-Team depth; zero permits root Teams only. */
+  readonly maxTeamDepth?: number
+  /** Maximum UTF-8 bytes in one complete Hub-stamped channel Envelope. */
+  readonly maxEnvelopeBytes?: number
+  /** Maximum UTF-8 bytes in one model-facing rendered channel view. */
+  readonly maxChannelViewBytes?: number
+  /** Maximum unacknowledged recipient deliveries retained by one channel WAL. */
+  readonly maxPendingDeliveriesPerChannel?: number
+  /** Maximum unacknowledged deliveries retained for one channel participant. */
+  readonly maxPendingDeliveriesPerParticipant?: number
+  /** Maximum pending deliveries returned by one recipient page. */
+  readonly maxPendingDeliveryPageSize?: number
+  /** Maximum sender-scoped post retry keys retained by one channel. */
+  readonly maxPostIdempotencyEntriesPerChannel?: number
+  /** Maximum durable attempts that one task may retain, including a current lease. */
+  readonly maxTaskAttemptsPerTask?: number
+  /** Maximum fixed duration accepted for one task attempt lease. */
+  readonly maxTaskLeaseDurationMs?: number
+  /** Maximum durable participants admitted to one Team. */
+  readonly maxParticipantsPerTeam?: number
+  /** Maximum activation epochs retained by one Team. */
+  readonly maxActivationsPerTeam?: number
+  /** Maximum task records retained by one Team. */
+  readonly maxTasksPerTeam?: number
+  /** Maximum channel records attached to one Team. */
+  readonly maxChannelsPerTeam?: number
+  /** Maximum model-visible turns across one Team subtree. */
+  readonly maxTurnsPerTeam?: number
+  /** Maximum model output tokens across one Team subtree. */
+  readonly maxModelTokensPerTeam?: number
+  /** Maximum wall-clock lifetime of one Team in milliseconds. */
+  readonly maxWallTimeMsPerTeam?: number
+  /** Maximum deployment cost units across one Team subtree. */
+  readonly maxCostUnitsPerTeam?: number
+  /** Maximum retry attempts across one Team subtree. */
+  readonly maxRetriesPerTeam?: number
+  /** Maximum durable inbox items retained per participant. */
+  readonly maxInboxItemsPerParticipant?: number
+  /** Maximum admitted messages per participant per minute. */
+  readonly maxRatePerParticipantPerMinute?: number
+  /** Provider/model per-token rates used when usage samples omit cost units. */
+  readonly usageRates?: Readonly<Record<string, TeamUsageRate>>
+}
+```
+
+Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
+
+Source: [`packages/team/team-hub/src/index.ts:907`](../packages/team/team-hub/src/index.ts)
+
+<a id="clockyclocky-team-link-local"></a>
+
+## `@clocky/clocky-team-link-local`
+
+Requires: `teams` · `teamLinks`
+
+```ts config-catalog
+/** Deployment configuration for the local Team Link provider. */
+export interface Config {
+  /** Provider name registered on `ctx.teamLinks`. */
+  readonly providerName: string
+  /** Maximum pending deliveries read from one Team channel page. */
+  readonly pageSize: number
+  /** Maximum milliseconds allowed for accepted replay and notification work during Link close. */
+  readonly disposalTimeoutMs: number
+  /** Delay before retrying one listener notification that did not settle successfully. */
+  readonly notificationRetryDelayMs: number
+}
+```
+
+Source: [`packages/team/team-link-local/src/index.ts:50`](../packages/team/team-link-local/src/index.ts)
+
+<a id="clockyclocky-team-link-websocket"></a>
+
+## `@clocky/clocky-team-link-websocket`
+
+Requires: `teamLinks`
+
+```ts config-catalog
+/** Deployment configuration for the remote WebSocket Team Link provider. */
+export interface Config {
+  /** Registry name used to select this provider. */
+  readonly providerName: string
+  /** Full `ws:` or `wss:` URL of the authoritative Team Link Hub endpoint. */
+  readonly endpoint: string
+  /** Environment-variable name holding the opaque attach capability. */
+  readonly capabilityEnv: string
+  /** Deadline for opening, attaching, and subscribing one Link. */
+  readonly connectTimeoutMs: number
+  /** Deadline for one attach, subscribe, or Link operation response. */
+  readonly responseTimeoutMs: number
+  /** Maximum UTF-8 byte length of one incoming or outgoing protocol frame. */
+  readonly maxFrameBytes: number
+  /** Maximum concurrent attach, subscribe, or operation requests on one Link. */
+  readonly maxPendingRequests: number
+  /** Maximum accepted Envelope notifications and unacknowledged interrupt deliveries retained by one Link. */
+  readonly maxBufferedNotifications: number
+}
+```
+
+Source: [`packages/team/team-link-websocket/src/index.ts:66`](../packages/team/team-link-websocket/src/index.ts)
+
+<a id="clockyclocky-team-run"></a>
+
+## `@clocky/clocky-team-run`
+
+Requires: `teams` · `teamActivations` · `agentDefaultModel` · `systemPrompt` · `agents`
+
+```ts config-catalog
+/** Deployment-selected default Team topology and bounded receipt retry policy. */
+export interface Config {
+  /** Registered AgentRuntime provider that owns coordinator residency. */
+  readonly activationProvider?: string
+  /** Stable product template name recorded inside the initial Team rules projection. */
+  readonly templateId?: string
+  /** Positive immutable template revision recorded inside the initial Team rules projection. */
+  readonly templateVersion?: number
+  /** Display name of the durable human participant. */
+  readonly humanName?: string
+  /** Display name of the default active local coordinator participant. */
+  readonly coordinatorName?: string
+  /** Display name of the default provisioned but inactive local worker participant. */
+  readonly workerName?: string
+  /** Number of local worker Participants created for new Teams; one remains the default. */
+  readonly workerCount?: number
+  /** Exclusive capability required by default-worker tasks. */
+  readonly workerCapability?: string
+  /** Named Agent preset composed for a default worker; it must not expose delegation controls. */
+  readonly workerPreset?: string
+  /** Display name of a reviewer provisioned for mutating default-worker tasks. */
+  readonly reviewerName?: string
+  /** Capability required by the provisioned reviewer Participant. */
+  readonly reviewerCapability?: string
+  /** Named non-delegating Agent preset composed for the reviewer. */
+  readonly reviewerPreset?: string
+  /** Bounded attempt limit frozen on every default-worker task. */
+  readonly workerTaskMaxAttempts?: number
+  /** Scheduler priority frozen on every default-worker task. */
+  readonly workerTaskPriority?: number
+  /** Order of the coordinator-only explicit-final-output system-prompt section. */
+  readonly finalPromptOrder?: number
+  /** Order of the worker-only task-reporting system-prompt section. */
+  readonly workerPromptOrder?: number
+  /** Bounded retries for trusted Team mutations after a concurrent cursor change. */
+  readonly receiptRetryAttempts?: number
+  /** Bounded retries for trusted human input after a concurrent channel cursor change. */
+  readonly humanInputRetryAttempts?: number
+}
+```
+
+Source: [`packages/team/team-run/src/index.ts:196`](../packages/team/team-run/src/index.ts)
+
+<a id="clockyclocky-team-scheduler-dag"></a>
+
+## `@clocky/clocky-team-scheduler-dag`
+
+Requires: `teams` · `teamWorkspaces`
+
+```ts config-catalog
+/** Deployment choices that bound deterministic task scheduling. */
+export interface Config {
+  /** Fixed duration recorded on every lease that this scheduler assigns. */
+  readonly leaseDurationMs: number
+  /** Maximum successful task assignments committed during one Team drive. */
+  readonly maxAssignmentsPerDrive: number
+  /** Maximum task-lease or channel-delivery expiry records committed during one Team drive. */
+  readonly maxExpirationsPerDrive: number
+  /** Maximum existing assignment channels validated or repaired during one Team drive. */
+  readonly maxWakeDispatchesPerDrive: number
+  /** Maximum state-race rereads after assignment or expiry CAS conflicts. */
+  readonly maxConflictsPerDrive: number
+  /** Maximum assigned or running attempts one participant may hold. */
+  readonly maxActiveAttemptsPerParticipant: number
+  /** Task workspace modes that this deployment permits the scheduler to assign. */
+  readonly permittedWorkspaceModes: TeamTaskWorkspaceMode[]
+  /** Explicitly enable non-shared workspace providers for this deployment. */
+  readonly allowNonSharedWorkspaceModes?: boolean
+  /** Maximum milliseconds allowed to await already accepted drives during disposal. */
+  readonly disposalTimeoutMs: number
+  /** Optional recurring discovery pulse for lease expiry and stalled work. */
+  readonly pulseIntervalMs?: number
+  /** Number of consecutive drives with pending work but no eligible owner before stalling the Team. */
+  readonly stallAfterUnassignableDrives?: number
+  /** Number of records to retain for terminal Team and channel streams during an opt-in retention drive. */
+  readonly terminalChannelRetentionTail?: number
+  /** Maximum terminal Team or channel prefixes compacted during one retention drive. */
+  readonly maxCompactionsPerDrive?: number
+}
+```
+
+Depends on: [`TeamTaskWorkspaceMode`](subsystems/team.zh.md)
+
+Source: [`packages/team/team-scheduler-dag/src/index.ts:48`](../packages/team/team-scheduler-dag/src/index.ts)
+
+<a id="clockyclocky-team-telemetry-otel"></a>
+
+## `@clocky/clocky-team-telemetry-otel`
+
+```ts config-catalog
+/**
+ * Provider configuration. SDK exporter and processor objects pass through
+ * unchanged; this provider validates the URL and the outer shutdown bound.
+ */
+export interface Config {
+  /** Sharing mode; defaults to {@link TeamTelemetryMode.DISABLED}. */
+  readonly mode?: TeamTelemetryMode
+  /** OTLP/HTTP logs exporter options. `url` is required in `FULL` mode. */
+  readonly exporter?: OTLPExporterNodeConfigBase & {
+    /** Full OTLP logs endpoint; required in `FULL` mode. */
+    readonly url?: string
+  }
+  /** Batch processor options, excluding the provider-created exporter. */
+  readonly processor?: Omit<BatchLogRecordProcessorOptions, 'exporter'>
+  /** Maximum outer wait for the complete SDK shutdown sequence. */
+  readonly shutdownTimeoutMillis?: number
+  /** Optional threshold rules that emit `ops` alert records on crossings. */
+  readonly alerts?: readonly TeamTelemetryAlertRule[]
+}
+
+/** Whether the provider constructs and exports an SDK pipeline. */
+export enum TeamTelemetryMode {
+  FULL = 'FULL',
+  DISABLED = 'DISABLED',
+}
+
+/** A configurable threshold over correlated Team telemetry records. */
+export interface TeamTelemetryAlertRule {
+  /** Stable deployment-local name included in the emitted alert record. */
+  readonly name: string
+  /** Optional source family filter. */
+  readonly channel?: TeamTelemetryRecord['channel']
+  /** Optional exact `event.type` attribute filter. */
+  readonly eventType?: string
+  /** Optional minimum source severity filter. */
+  readonly severity?: TeamTelemetrySeverity
+  /** Number of matching records required inside the rolling window. */
+  readonly threshold: number
+  /** Rolling window length in milliseconds. */
+  readonly windowMillis: number
+}
+```
+
+Depends on: `BatchLogRecordProcessorOptions` (`@opentelemetry/sdk-logs`) · `OTLPExporterNodeConfigBase` (`@opentelemetry/otlp-exporter-base`) · [`TeamTelemetryRecord`](subsystems/team.zh.md) · [`TeamTelemetrySeverity`](subsystems/team.zh.md)
+
+Source: [`packages/team/team-telemetry-otel/src/index.ts:54`](../packages/team/team-telemetry-otel/src/index.ts)
+
+<a id="clockyclocky-team-workspace-e2b"></a>
+
+## `@clocky/clocky-team-workspace-e2b`
+
+Requires: `teamWorkspaces` · `teams` · `agents` · `e2b`
+
+```ts config-catalog
+/** E2B remote workspace configuration. */
+export interface Config {
+  /** Registry identity used in durable allocation metadata. */
+  readonly providerName?: string
+  /** Absolute POSIX directory under the remote E2B runtime root. */
+  readonly workspaceParent?: string
+  /** Optional artifact provider used for bounded changed-file bytes. */
+  readonly artifactProvider?: string
+  /** Maximum remote file size read for artifact publication. */
+  readonly maxArtifactBytes?: number
+  /** Maximum remote entries returned by one publish scan. */
+  readonly maxEntriesPerPublish?: number
+  /** Recursive listing depth used by one publish scan. */
+  readonly maxListDepth?: number
+  /** Absolute POSIX directory that contains provider-specific integration targets. */
+  readonly integrationRoot?: string
+  /** Explicitly enables provider-specific target-directory integration. */
+  readonly integrationEnabled?: boolean
+  /** Maximum encoded change-set and decoded file bytes accepted by integration. */
+  readonly maxIntegrationBytes?: number
+}
+```
+
+Source: [`packages/e2b/team-workspace-e2b/src/index.ts:62`](../packages/e2b/team-workspace-e2b/src/index.ts)
+
+<a id="clockyclocky-team-workspace-recovery"></a>
+
+## `@clocky/clocky-team-workspace-recovery`
+
+Requires: `teams` · `teamWorkspaces`
+
+```ts config-catalog
+/** Explicit bounded recovery configuration. */
+export interface Config {
+  /** Maximum Team records inspected in one recovery drive. */
+  readonly maxTeamsPerDrive: number
+  /** Maximum Team-list page size used while scanning durable state. */
+  readonly pageSize: number
+  /** Maximum distinct Teams retained in the event queue; overflow requests a durable scan. */
+  readonly maxPendingTeams?: number
+  /** Maximum attempts for one durable Team or Team-page read after an I/O failure. */
+  readonly readAttempts?: number
+  /** Milliseconds between retries of one failed durable read. */
+  readonly readRetryDelayMs?: number
+  /** Maximum confirmation attempts after one successful provider release. */
+  readonly confirmationAttempts?: number
+  /** Milliseconds between confirmation attempts after a failed durable append. */
+  readonly confirmationRetryDelayMs?: number
+  /** Optional interval that retries durable release requests without new events. */
+  readonly pulseIntervalMs?: number
+}
+```
+
+Source: [`packages/team/team-workspace-recovery/src/index.ts:24`](../packages/team/team-workspace-recovery/src/index.ts)
+
+<a id="clockyclocky-team-workspace-sandbox"></a>
+
+## `@clocky/clocky-team-workspace-sandbox`
+
+Requires: `teamWorkspaces` · `teams` · `agents`
+
+```ts config-catalog
+/** Local isolated sandbox configuration. */
+export interface Config {
+  /** Registry identity used in durable allocation metadata. */
+  readonly providerName?: string
+  /** Absolute existing directory under which provider-owned roots are created. */
+  readonly allocationParent: string
+  /** Optional absolute directory copied into each newly created sandbox root. */
+  readonly sourceRoot?: string
+  /** Optional artifact provider used for bounded changed-file bytes. */
+  readonly artifactProvider?: string
+  /** Maximum file size read for hashes and provider-backed artifact publication. */
+  readonly maxArtifactBytes?: number
+  /** Absolute existing directory that contains provider-specific integration targets. */
+  readonly integrationRoot?: string
+  /** Explicitly enables provider-specific target-directory integration. */
+  readonly integrationEnabled?: boolean
+  /** Maximum encoded change-set and decoded file bytes accepted by integration. */
+  readonly maxIntegrationBytes?: number
+}
+```
+
+Source: [`packages/team/team-workspace-sandbox/src/index.ts:59`](../packages/team/team-workspace-sandbox/src/index.ts)
+
+<a id="clockyclocky-team-workspace-shared"></a>
+
+## `@clocky/clocky-team-workspace-shared`
+
+Requires: `teamWorkspaces` · `teams` · `agents`
+
+```ts config-catalog
+/** Local shared-workspace provider configuration. */
+export interface Config {
+  /** Required absolute path to the existing shared execution root. */
+  readonly root: string
+  /** Registry name published for diagnostics and HMR-safe replacement. */
+  readonly providerName?: string
+  /** Optional artifact provider used for bounded changed-file and patch bytes. */
+  readonly artifactProvider?: string
+  /** Maximum file size read for hashes and provider-backed artifact publication. */
+  readonly maxArtifactBytes?: number
+  /** Absolute existing directory containing provider-specific integration targets. */
+  readonly integrationRoot?: string
+  /** Explicitly enables provider-specific target-directory integration. */
+  readonly integrationEnabled?: boolean
+  /** Maximum encoded change-set and decoded file bytes accepted by integration. */
+  readonly maxIntegrationBytes?: number
+}
+```
+
+Source: [`packages/team/team-workspace-shared/src/index.ts:60`](../packages/team/team-workspace-shared/src/index.ts)
+
+<a id="clockyclocky-team-workspace-worktree"></a>
+
+## `@clocky/clocky-team-workspace-worktree`
+
+Requires: `teamWorkspaces` · `teams` · `agents` · `subprocess`
+
+```ts config-catalog
+/** Detached local Git-worktree provider configuration. Every deployment choice is explicit. */
+export interface Config {
+  /** Registry identity used for diagnostics and HMR-safe provider replacement. */
+  readonly providerName: string
+  /** Absolute existing Git worktree root that must resolve to the repository top-level. */
+  readonly repoRoot: string
+  /** Absolute existing directory that receives only provider-minted attempt worktrees. */
+  readonly allocationParent: string
+  /** Git revision expression resolved to one detached base commit at mount. */
+  readonly baseRef: string
+  /** Absolute Git executable or bare executable name resolved through the subprocess provider. */
+  readonly gitExecutable: string
+  /** TERM-to-KILL grace supplied to each finite Git command. */
+  readonly processGraceMs: number
+  /** Maximum wall time for one Git command, including full process-tree termination after expiry. */
+  readonly commandTimeoutMs: number
+  /** Maximum stdout or stderr bytes retained from one Git command. */
+  readonly outputMaxBytes: number
+  /** Optional provider name used to persist bounded artifact bytes. */
+  readonly artifactProvider?: string
+  /** Explicitly enables this provider's repository integration authority. */
+  readonly integrationEnabled?: boolean
+  /** Commit author name used only when explicit integration is enabled. */
+  readonly integrationAuthorName?: string
+  /** Commit author email used only when explicit integration is enabled. */
+  readonly integrationAuthorEmail?: string
+}
+```
+
+Source: [`packages/team/team-workspace-worktree/src/index.ts:55`](../packages/team/team-workspace-worktree/src/index.ts)
+
+<a id="clockyclocky-terminal-bash"></a>
+
+## `@clocky/clocky-terminal-bash`
+
+Requires: `terminals` · `sandboxPolicy` · `subprocess`
 
 ```ts config-catalog
 /** Public plugin configuration. */
@@ -2460,13 +2931,13 @@ export interface Config {
 export type ShellDialect = 'bash' | 'pwsh'
 ```
 
-来源：[`packages/terminal/terminal-bash/src/config.ts:10`](../packages/terminal/terminal-bash/src/config.ts)
+Source: [`packages/terminal/terminal-bash/src/config.ts:10`](../packages/terminal/terminal-bash/src/config.ts)
 
-<a id="deepseek-aidsh-time-context"></a>
+<a id="clockyclocky-time-context"></a>
 
-## `@deepseek-ai/dsh-time-context`
+## `@clocky/clocky-time-context`
 
-需要：`agents`
+Requires: `agents`
 
 ```ts config-catalog
 /** Request-preparation clock formatting and append scheduling. Invalid values fail plugin load. */
@@ -2478,13 +2949,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/context/time-context/src/index.ts:27`](../packages/context/time-context/src/index.ts)
+Source: [`packages/context/time-context/src/index.ts:27`](../packages/context/time-context/src/index.ts)
 
-<a id="deepseek-aidsh-tmux-context"></a>
+<a id="clockyclocky-tmux-context"></a>
 
-## `@deepseek-ai/dsh-tmux-context`
+## `@clocky/clocky-tmux-context`
 
-需要：`agents`
+Requires: `agents`
 
 ```ts config-catalog
 /** Per-turn tmux-location scheduling. Invalid values fail plugin load. */
@@ -2494,24 +2965,24 @@ export interface Config {
 }
 ```
 
-来源：[`packages/context/tmux-context/src/index.ts:34`](../packages/context/tmux-context/src/index.ts)
+Source: [`packages/context/tmux-context/src/index.ts:34`](../packages/context/tmux-context/src/index.ts)
 
-<a id="deepseek-aidsh-token-meter"></a>
+<a id="clockyclocky-token-meter"></a>
 
-## `@deepseek-ai/dsh-token-meter`
+## `@clocky/clocky-token-meter`
 
 ```ts config-catalog
 /** Token-meter plugin configuration; the fixed estimator has no settings. */
 export type TokenMeterConfig = Record<string, never>
 ```
 
-来源：[`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
+Source: [`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
 
-<a id="deepseek-aidsh-tool-bash"></a>
+<a id="clockyclocky-tool-bash"></a>
 
-## `@deepseek-ai/dsh-tool-bash`
+## `@clocky/clocky-tool-bash`
 
-需要：`tools` · `shell` · `systemPrompt` · `shellEnv`
+Requires: `tools` · `shell` · `systemPrompt` · `shellEnv`
 
 ```ts config-catalog
 /** Configuration for the bash tool. */
@@ -2521,13 +2992,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/tool-bash/src/index.ts:34`](../packages/shell/tool-bash/src/index.ts)
+Source: [`packages/shell/tool-bash/src/index.ts:34`](../packages/shell/tool-bash/src/index.ts)
 
-<a id="deepseek-aidsh-tool-bash-persistent"></a>
+<a id="clockyclocky-tool-bash-persistent"></a>
 
-## `@deepseek-ai/dsh-tool-bash-persistent`
+## `@clocky/clocky-tool-bash-persistent`
 
-需要：`tools` · `terminals`
+Requires: `tools` · `terminals`
 
 ```ts config-catalog
 /** Configuration for the persistent Bash tool. */
@@ -2543,13 +3014,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
+Source: [`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-fs"></a>
+<a id="clockyclocky-tool-fs"></a>
 
-## `@deepseek-ai/dsh-tool-fs`
+## `@clocky/clocky-tool-fs`
 
-需要：`tools` · `fs` · `systemPrompt`
+Requires: `tools` · `fs` · `systemPrompt`
 
 ```ts config-catalog
 /** Plugin config (all optional — `Config` supplies the defaults). */
@@ -2565,13 +3036,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/fs/tool-fs/src/index.ts:25`](../packages/fs/tool-fs/src/index.ts)
+Source: [`packages/fs/tool-fs/src/index.ts:25`](../packages/fs/tool-fs/src/index.ts)
 
-<a id="deepseek-aidsh-tool-fs-search"></a>
+<a id="clockyclocky-tool-fs-search"></a>
 
-## `@deepseek-ai/dsh-tool-fs-search`
+## `@clocky/clocky-tool-fs-search`
 
-需要：`tools` · `systemPrompt` · `subprocess`
+Requires: `tools` · `systemPrompt` · `subprocess`
 
 ```ts config-catalog
 /** Plugin config; over-cap glob sampling is an explicit deployment choice and the remaining fields have defaults. */
@@ -2594,19 +3065,19 @@ export interface Config {
   stderrMaxBytes?: number
   /**
    * Cooperative tool-call timeout budget (ms) on both tools, enforced by
-   * `@deepseek-ai/dsh-tool-call-timeout-policy` through `exec.signal`.
+   * `@clocky/clocky-tool-call-timeout-policy` through `exec.signal`.
    */
   timeoutMs?: number
 }
 ```
 
-来源：[`packages/fs/tool-fs-search/src/index.ts:73`](../packages/fs/tool-fs-search/src/index.ts)
+Source: [`packages/fs/tool-fs-search/src/index.ts:73`](../packages/fs/tool-fs-search/src/index.ts)
 
-<a id="deepseek-aidsh-tool-goal"></a>
+<a id="clockyclocky-tool-goal"></a>
 
-## `@deepseek-ai/dsh-tool-goal`
+## `@clocky/clocky-tool-goal`
 
-需要：`agents` · `goals` · `tools` · `systemPrompt`
+Requires: `agents` · `goals` · `tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Model policy and hard lower bounds for goal-state updates. */
@@ -2616,13 +3087,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/goal/tool-goal/src/index.ts:26`](../packages/goal/tool-goal/src/index.ts)
+Source: [`packages/goal/tool-goal/src/index.ts:26`](../packages/goal/tool-goal/src/index.ts)
 
-<a id="deepseek-aidsh-tool-jobs"></a>
+<a id="clockyclocky-tool-jobs"></a>
 
-## `@deepseek-ai/dsh-tool-jobs`
+## `@clocky/clocky-tool-jobs`
 
-需要：`tools` · `jobs` · `systemPrompt`
+Requires: `tools` · `jobs` · `systemPrompt`
 
 ```ts config-catalog
 /** Configures bounded `job_output` waits and completion-notice delivery. */
@@ -2650,13 +3121,13 @@ export interface Config {
 export type CompletionDelivery = 'quiet' | 'wakeup'
 ```
 
-来源：[`packages/jobs/tool-jobs/src/index.ts:32`](../packages/jobs/tool-jobs/src/index.ts)
+Source: [`packages/jobs/tool-jobs/src/index.ts:32`](../packages/jobs/tool-jobs/src/index.ts)
 
-<a id="deepseek-aidsh-tool-lsp"></a>
+<a id="clockyclocky-tool-lsp"></a>
 
-## `@deepseek-ai/dsh-tool-lsp`
+## `@clocky/clocky-tool-lsp`
 
-需要：`tools` · `lsp` · `systemPrompt`
+Requires: `tools` · `lsp` · `systemPrompt`
 
 ```ts config-catalog
 /** Plugin configuration: result caps and the timeout budget. */
@@ -2670,13 +3141,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/lsp/tool-lsp/src/index.ts:58`](../packages/lsp/tool-lsp/src/index.ts)
+Source: [`packages/lsp/tool-lsp/src/index.ts:58`](../packages/lsp/tool-lsp/src/index.ts)
 
-<a id="deepseek-aidsh-tool-pwsh"></a>
+<a id="clockyclocky-tool-pwsh"></a>
 
-## `@deepseek-ai/dsh-tool-pwsh`
+## `@clocky/clocky-tool-pwsh`
 
-需要：`tools` · `shell` · `systemPrompt` · `shellEnv`
+Requires: `tools` · `shell` · `systemPrompt` · `shellEnv`
 
 ```ts config-catalog
 /** Configuration for the pwsh tool. */
@@ -2686,13 +3157,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/tool-pwsh/src/index.ts:52`](../packages/shell/tool-pwsh/src/index.ts)
+Source: [`packages/shell/tool-pwsh/src/index.ts:52`](../packages/shell/tool-pwsh/src/index.ts)
 
-<a id="deepseek-aidsh-tool-pwsh-persistent"></a>
+<a id="clockyclocky-tool-pwsh-persistent"></a>
 
-## `@deepseek-ai/dsh-tool-pwsh-persistent`
+## `@clocky/clocky-tool-pwsh-persistent`
 
-需要：`tools` · `terminals`
+Requires: `tools` · `terminals`
 
 ```ts config-catalog
 /** Configuration for the persistent pwsh tool. */
@@ -2708,13 +3179,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/shell/tool-pwsh-persistent/src/index.ts:472`](../packages/shell/tool-pwsh-persistent/src/index.ts)
+Source: [`packages/shell/tool-pwsh-persistent/src/index.ts:472`](../packages/shell/tool-pwsh-persistent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-ralph"></a>
+<a id="clockyclocky-tool-ralph"></a>
 
-## `@deepseek-ai/dsh-tool-ralph`
+## `@clocky/clocky-tool-ralph`
 
-需要：`tools` · `workflowEngine` · `subagents` · `systemPrompt`
+Requires: `tools` · `workflowEngine` · `subagents` · `systemPrompt`
 
 ```ts config-catalog
 /** Deployment policy for the fixed Ralph workflow. */
@@ -2730,13 +3201,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/workflow/tool-ralph/src/index.ts:23`](../packages/workflow/tool-ralph/src/index.ts)
+Source: [`packages/workflow/tool-ralph/src/index.ts:23`](../packages/workflow/tool-ralph/src/index.ts)
 
-<a id="deepseek-aidsh-tool-session-query"></a>
+<a id="clockyclocky-tool-session-query"></a>
 
-## `@deepseek-ai/dsh-tool-session-query`
+## `@clocky/clocky-tool-session-query`
 
-需要：`tools` · `systemPrompt` · `sessionQuery`
+Requires: `tools` · `systemPrompt` · `sessionQuery`
 
 ```ts config-catalog
 /** Deployment-owned search count and timeout bounds. */
@@ -2748,13 +3219,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/session-query/tool-session-query/src/index.ts:29`](../packages/session-query/tool-session-query/src/index.ts)
+Source: [`packages/session-query/tool-session-query/src/index.ts:29`](../packages/session-query/tool-session-query/src/index.ts)
 
-<a id="deepseek-aidsh-tool-skill"></a>
+<a id="clockyclocky-tool-skill"></a>
 
-## `@deepseek-ai/dsh-tool-skill`
+## `@clocky/clocky-tool-skill`
 
-需要：`agents` · `tools` · `skills`
+Requires: `agents` · `tools` · `skills`
 
 ```ts config-catalog
 /** Model-facing skill catalog configuration. */
@@ -2764,13 +3235,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/skill/tool-skill/src/index.ts:61`](../packages/skill/tool-skill/src/index.ts)
+Source: [`packages/skill/tool-skill/src/index.ts:61`](../packages/skill/tool-skill/src/index.ts)
 
-<a id="deepseek-aidsh-tool-str-replace-editor"></a>
+<a id="clockyclocky-tool-str-replace-editor"></a>
 
-## `@deepseek-ai/dsh-tool-str-replace-editor`
+## `@clocky/clocky-tool-str-replace-editor`
 
-需要：`tools` · `fs`
+Requires: `tools` · `fs`
 
 ```ts config-catalog
 /** Configuration for the string-replacement editor tool. */
@@ -2782,13 +3253,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/fs/tool-str-replace-editor/src/index.ts:497`](../packages/fs/tool-str-replace-editor/src/index.ts)
+Source: [`packages/fs/tool-str-replace-editor/src/index.ts:497`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
-<a id="deepseek-aidsh-tool-subagent"></a>
+<a id="clockyclocky-tool-subagent"></a>
 
-## `@deepseek-ai/dsh-tool-subagent`
+## `@clocky/clocky-tool-subagent`
 
-需要：`tools` · `subagents` · `systemPrompt`
+Requires: `tools` · `subagents` · `systemPrompt`
 
 ```ts config-catalog
 /** Config: which registered provider this tool delegates to, plus child defaults. */
@@ -2845,15 +3316,15 @@ export interface Config {
 }
 ```
 
-依赖：[`AgentOptions`](subsystems/core.zh.md)
+Depends on: [`AgentOptions`](subsystems/core.zh.md)
 
-来源：[`packages/subagent/tool-subagent/src/index.ts:29`](../packages/subagent/tool-subagent/src/index.ts)
+Source: [`packages/subagent/tool-subagent/src/index.ts:29`](../packages/subagent/tool-subagent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-subagent-report"></a>
+<a id="clockyclocky-tool-subagent-report"></a>
 
-## `@deepseek-ai/dsh-tool-subagent-report`
+## `@clocky/clocky-tool-subagent-report`
 
-需要：`subagents` · `tools` · `systemPrompt`
+Requires: `subagents` · `tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Config: how accepted reports are scheduled on the parent. */
@@ -2867,15 +3338,31 @@ export interface Config {
 }
 ```
 
-依赖：[`SubagentReportDelivery`](subsystems/subagent.zh.md)
+Depends on: [`SubagentReportDelivery`](subsystems/subagent.zh.md)
 
-来源：[`packages/subagent/tool-subagent-report/src/index.ts:27`](../packages/subagent/tool-subagent-report/src/index.ts)
+Source: [`packages/subagent/tool-subagent-report/src/index.ts:27`](../packages/subagent/tool-subagent-report/src/index.ts)
 
-<a id="deepseek-aidsh-tool-terminal"></a>
+<a id="clockyclocky-tool-team"></a>
 
-## `@deepseek-ai/dsh-tool-terminal`
+## `@clocky/clocky-tool-team`
 
-需要：`terminals` · `tools` · `systemPrompt`
+Requires: `teams` · `teamLinks` · `agents` · `tools`
+
+```ts config-catalog
+/** Deployment choice selecting the bound Team Link provider used by model-originated Team operations. */
+export interface Config {
+  /** Named Team Link provider used for model-originated task reports and final answers. */
+  readonly linkProvider?: string
+}
+```
+
+Source: [`packages/team/tool-team/src/index.ts:45`](../packages/team/tool-team/src/index.ts)
+
+<a id="clockyclocky-tool-terminal"></a>
+
+## `@clocky/clocky-tool-terminal`
+
+Requires: `terminals` · `tools` · `systemPrompt`
 
 ```ts config-catalog
 /** Model-facing terminal tool configuration. */
@@ -2887,13 +3374,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/terminal/tool-terminal/src/index.ts:35`](../packages/terminal/tool-terminal/src/index.ts)
+Source: [`packages/terminal/tool-terminal/src/index.ts:35`](../packages/terminal/tool-terminal/src/index.ts)
 
-<a id="deepseek-aidsh-tool-todo"></a>
+<a id="clockyclocky-tool-todo"></a>
 
-## `@deepseek-ai/dsh-tool-todo`
+## `@clocky/clocky-tool-todo`
 
-需要：`tools`
+Requires: `tools`
 
 ```ts config-catalog
 /** Model-facing todo tool configuration. */
@@ -2909,13 +3396,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/todo/tool-todo/src/index.ts:29`](../packages/todo/tool-todo/src/index.ts)
+Source: [`packages/todo/tool-todo/src/index.ts:29`](../packages/todo/tool-todo/src/index.ts)
 
-<a id="deepseek-aidsh-tool-web"></a>
+<a id="clockyclocky-tool-web"></a>
 
-## `@deepseek-ai/dsh-tool-web`
+## `@clocky/clocky-tool-web`
 
-需要：`tools` · `web` · `systemPrompt`
+Requires: `tools` · `web` · `systemPrompt`
 
 ```ts config-catalog
 /** Plugin config: which web tools to register, search bounds, per-tool budgets, and the fetch output cap. */
@@ -2937,13 +3424,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/web/tool-web/src/index.ts:37`](../packages/web/tool-web/src/index.ts)
+Source: [`packages/web/tool-web/src/index.ts:37`](../packages/web/tool-web/src/index.ts)
 
-<a id="deepseek-aidsh-tool-workflow"></a>
+<a id="clockyclocky-tool-workflow"></a>
 
-## `@deepseek-ai/dsh-tool-workflow`
+## `@clocky/clocky-tool-workflow`
 
-需要：`tools` · `workflowEngine` · `systemPrompt`
+Requires: `tools` · `workflowEngine` · `systemPrompt`
 
 ```ts config-catalog
 /** Config: the model-facing tool name plus result rendering caps. */
@@ -2955,13 +3442,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/workflow/tool-workflow/src/index.ts:33`](../packages/workflow/tool-workflow/src/index.ts)
+Source: [`packages/workflow/tool-workflow/src/index.ts:33`](../packages/workflow/tool-workflow/src/index.ts)
 
-<a id="deepseek-aidsh-tools"></a>
+<a id="clockyclocky-tools"></a>
 
-## `@deepseek-ai/dsh-tools`
+## `@clocky/clocky-tools`
 
-需要：`systemPrompt`
+Requires: `systemPrompt`
 
 ```ts config-catalog
 /** Plugin config: how the registered tools are presented to the model. */
@@ -2991,13 +3478,13 @@ export interface Config {
 export type ToolPresentationMode = 'native' | 'code' | 'both'
 ```
 
-来源：[`packages/core/tools/src/index.ts:654`](../packages/core/tools/src/index.ts)
+Source: [`packages/core/tools/src/index.ts:654`](../packages/core/tools/src/index.ts)
 
-<a id="deepseek-aidsh-typert-loader"></a>
+<a id="clockyclocky-typert-loader"></a>
 
-## `@deepseek-ai/dsh-typert-loader`
+## `@clocky/clocky-typert-loader`
 
-需要：`typert` · `loader`
+Requires: `typert` · `loader`
 
 ```ts config-catalog
 /** Additional package artifacts whose owning plugins are nested behind another Loader entry. */
@@ -3007,11 +3494,11 @@ export interface Config {
 }
 ```
 
-来源：[`packages/typert/loader/src/index.ts:47`](../packages/typert/loader/src/index.ts)
+Source: [`packages/typert/loader/src/index.ts:47`](../packages/typert/loader/src/index.ts)
 
-<a id="deepseek-aidsh-user-approval"></a>
+<a id="clockyclocky-user-approval"></a>
 
-## `@deepseek-ai/dsh-user-approval`
+## `@clocky/clocky-user-approval`
 
 ```ts config-catalog
 /** Plugin config. All optional — `static Config` supplies the defaults. */
@@ -3038,11 +3525,11 @@ export interface Config {
 export type ApprovalPolicy = 'ask' | 'never'
 ```
 
-来源：[`packages/interaction/user-approval/src/index.ts:177`](../packages/interaction/user-approval/src/index.ts)
+Source: [`packages/interaction/user-approval/src/index.ts:177`](../packages/interaction/user-approval/src/index.ts)
 
-<a id="deepseek-aidsh-web"></a>
+<a id="clockyclocky-web"></a>
 
-## `@deepseek-ai/dsh-web`
+## `@clocky/clocky-web`
 
 ```ts config-catalog
 /**
@@ -3059,13 +3546,13 @@ export interface WebRuntimeConfig {
 }
 ```
 
-来源：[`packages/web/web/src/index.ts:55`](../packages/web/web/src/index.ts)
+Source: [`packages/web/web/src/index.ts:55`](../packages/web/web/src/index.ts)
 
-<a id="deepseek-aidsh-web-app"></a>
+<a id="clockyclocky-web-app"></a>
 
-## `@deepseek-ai/dsh-web-app`
+## `@clocky/clocky-web-app`
 
-需要：`webServer`
+Requires: `webServer`
 
 ```ts config-catalog
 /** Plugin config: composed deployment settings plus per-invocation command-line values. */
@@ -3076,23 +3563,29 @@ export interface Config {
   printUrl: boolean
   /**
    * Register the model-visible surface context (the `app:web-surface` prompt
-   * section and the `DSH_WEB_URL` bash variable). A one-shot non-interactive
+   * section and the `CLOCKY_WEB_URL` bash variable). A one-shot non-interactive
    * layer can turn it off when its user is not in the GUI, so the
    * orientation text would be false.
    */
   surfaceContext: boolean
   /** Explicit `--trusted-host` authorities from this invocation. */
   trustedHosts: string[]
+  /** Product-principal provider selected by the Web transport and browser handoff. */
+  productPrincipalProvider?: string
+  /** Owner-only directory for temporary browser bootstrap handoff documents. */
+  browserHandoffDirectory?: string
+  /** Maximum lifetime of one unopened browser bootstrap handoff document. */
+  browserHandoffTtlMs?: number
 }
 ```
 
-来源：[`packages/bundle/web-app/src/index.ts:42`](../packages/bundle/web-app/src/index.ts)
+Source: [`packages/bundle/web-app/src/index.ts:42`](../packages/bundle/web-app/src/index.ts)
 
-<a id="deepseek-aidsh-web-fetch-http"></a>
+<a id="clockyclocky-web-fetch-http"></a>
 
-## `@deepseek-ai/dsh-web-fetch-http`
+## `@clocky/clocky-web-fetch-http`
 
-需要：`web`
+Requires: `web`
 
 ```ts config-catalog
 /** Plugin config: the provider's transport and size limits plus its `User-Agent` (all defaulted). */
@@ -3112,41 +3605,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/web/web-fetch-http/src/index.ts:34`](../packages/web/web-fetch-http/src/index.ts)
+Source: [`packages/web/web-fetch-http/src/index.ts:34`](../packages/web/web-fetch-http/src/index.ts)
 
-<a id="deepseek-aidsh-web-search-deepseek"></a>
+<a id="clockyclocky-web-search-exa"></a>
 
-## `@deepseek-ai/dsh-web-search-deepseek`
+## `@clocky/clocky-web-search-exa`
 
-需要：`web`
-
-```ts config-catalog
-/** Plugin config (all optional — `apply` fills env-var and constant defaults). */
-export interface Config {
-  /** Literal DeepSeek API key; prefer {@link apiKeyEnv} so no secret enters configuration files. */
-  apiKey?: string
-  /** Credential reference resolved for each search; defaults to `DEEPSEEK_API_KEY`. */
-  apiKeyEnv?: string
-  /** Anthropic-compatible endpoint base; `/messages` is appended. */
-  baseURL?: string
-  /** Anthropic-format model name. Defaults to `deepseek-v4-flash`. */
-  model?: string
-  /** `anthropic-version` header value. Defaults to `2023-06-01`. */
-  apiVersion?: string
-  /** Upper bound on generated tokens for the Messages request. Defaults to 4096. */
-  maxTokens?: number
-  /** Maximum `web_search` server-tool uses per request. Defaults to 5. */
-  maxUses?: number
-}
-```
-
-来源：[`packages/web/web-search-deepseek/src/index.ts:46`](../packages/web/web-search-deepseek/src/index.ts)
-
-<a id="deepseek-aidsh-web-search-exa"></a>
-
-## `@deepseek-ai/dsh-web-search-exa`
-
-需要：`web`
+Requires: `web`
 
 ```ts config-catalog
 /** Plugin config (all optional — `apply` fills env-var and constant defaults). */
@@ -3164,13 +3629,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/web/web-search-exa/src/index.ts:38`](../packages/web/web-search-exa/src/index.ts)
+Source: [`packages/web/web-search-exa/src/index.ts:37`](../packages/web/web-search-exa/src/index.ts)
 
-<a id="deepseek-aidsh-web-search-perplexity"></a>
+<a id="clockyclocky-web-search-perplexity"></a>
 
-## `@deepseek-ai/dsh-web-search-perplexity`
+## `@clocky/clocky-web-search-perplexity`
 
-需要：`web`
+Requires: `web`
 
 ```ts config-catalog
 /** Plugin config (all optional — `apply` fills env-var and constant defaults). */
@@ -3188,13 +3653,13 @@ export interface Config {
 }
 ```
 
-来源：[`packages/web/web-search-perplexity/src/index.ts:32`](../packages/web/web-search-perplexity/src/index.ts)
+Source: [`packages/web/web-search-perplexity/src/index.ts:32`](../packages/web/web-search-perplexity/src/index.ts)
 
-<a id="deepseek-aidsh-workflow-worker-thread"></a>
+<a id="clockyclocky-workflow-worker-thread"></a>
 
-## `@deepseek-ai/dsh-workflow-worker-thread`
+## `@clocky/clocky-workflow-worker-thread`
 
-需要：`subagents`
+Requires: `subagents`
 
 ```ts config-catalog
 /** Plugin config (all optional — `static Config` supplies the defaults). */
@@ -3218,136 +3683,148 @@ export interface Config {
 }
 ```
 
-来源：[`packages/workflow/workflow-worker-thread/src/index.ts:32`](../packages/workflow/workflow-worker-thread/src/index.ts)
+Source: [`packages/workflow/workflow-worker-thread/src/index.ts:32`](../packages/workflow/workflow-worker-thread/src/index.ts)
 
-## 无配置的可加载插件
+## Loadable plugins with no config
 
-这些插件通过 `cordis.yml` 中不含 `config:` 块的条目加载；它们未声明任何配置接口。
+These load from a `cordis.yml` entry with no `config:` block; they declare no configuration API.
 
-- `@deepseek-ai/dsh-agent`（[`packages/core/agent/src/index.ts`](../packages/core/agent/src/index.ts)）
-- `@deepseek-ai/dsh-api-gateway` — 需要 `typert`（[`packages/api/gateway/src/index.ts`](../packages/api/gateway/src/index.ts)）
-- `@deepseek-ai/dsh-api-remotes`（[`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts)）
-- `@deepseek-ai/dsh-authorization` — 需要 `credentials`（[`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts)）
-- `@deepseek-ai/dsh-client-locale`（[`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts)）
-- `@deepseek-ai/dsh-client-modules` — 需要 `webServer` · `loader`（[`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts)）
-- `@deepseek-ai/dsh-client-runtime`（[`packages/client/runtime/src/index.ts`](../packages/client/runtime/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-agent-preset`（[`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-attachment`（[`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-brand-official`（[`packages/client/ui-brand-official/src/index.ts`](../packages/client/ui-brand-official/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-commands`（[`packages/client/ui-commands/src/index.ts`](../packages/client/ui-commands/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-conversation`（[`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-cordis`（[`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-deliverables` — 需要 `systemPrompt`（[`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-directory-picker-browse`（[`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-directory-picker-native`（[`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-goal`（[`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-input-trigger`（[`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-jobs`（[`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-layout`（[`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-message-feedback`（[`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-model-selection`（[`packages/client/ui-model-selection/src/index.ts`](../packages/client/ui-model-selection/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-permission-presets`（[`packages/client/ui-permission-presets/src/index.ts`](../packages/client/ui-permission-presets/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-plan`（[`packages/client/ui-plan/src/index.ts`](../packages/client/ui-plan/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-reference`（[`packages/client/ui-reference/src/index.ts`](../packages/client/ui-reference/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-renderer`（[`packages/client/ui-renderer/src/index.ts`](../packages/client/ui-renderer/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-settings`（[`packages/client/ui-settings/src/index.ts`](../packages/client/ui-settings/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-settings-general`（[`packages/client/ui-settings-general/src/index.ts`](../packages/client/ui-settings-general/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-settings-models`（[`packages/client/ui-settings-models/src/index.ts`](../packages/client/ui-settings-models/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-settings-plugin-inventory`（[`packages/client/ui-settings-plugin-inventory/src/index.ts`](../packages/client/ui-settings-plugin-inventory/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-settings-plugins`（[`packages/client/ui-settings-plugins/src/index.ts`](../packages/client/ui-settings-plugins/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-sidebar`（[`packages/client/ui-sidebar/src/index.ts`](../packages/client/ui-sidebar/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-skill`（[`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-subagent`（[`packages/client/ui-subagent/src/index.ts`](../packages/client/ui-subagent/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-theme`（[`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-tool`（[`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-trajectory`（[`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-user-questions`（[`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-workflow-run`（[`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-workspace`（[`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts)）
-- `@deepseek-ai/dsh-command-compact` — 需要 `commands` · `compact`（[`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts)）
-- `@deepseek-ai/dsh-command-feedback` — 需要 `commands`（[`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts)）
-- `@deepseek-ai/dsh-command-goal` — 需要 `commands` · `goals`（[`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts)）
-- `@deepseek-ai/dsh-commands`（[`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts)）
-- `@deepseek-ai/dsh-cordis-client-runner`（[`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts)）
-- `@deepseek-ai/dsh-fs-e2b` — 需要 `e2b`（[`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts)）
-- `@deepseek-ai/dsh-fs-observation-policy`（[`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts)）
-- `@deepseek-ai/dsh-goal-round-driver` — 需要 `agents` · `goals` · `sessions`（[`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts)）
-- `@deepseek-ai/dsh-host-directory-picker-auto` — 需要 `webServer` · `loader`（[`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts)）
-- `@deepseek-ai/dsh-host-directory-picker-native`（[`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts)）
-- `@deepseek-ai/dsh-host-plugin-inventory` — 需要 `loader`（[`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts)）
-- `@deepseek-ai/dsh-llm`（[`packages/llm/llm/src/index.ts`](../packages/llm/llm/src/index.ts)）
-- `@deepseek-ai/dsh-lsp`（[`packages/lsp/lsp/src/index.ts`](../packages/lsp/lsp/src/index.ts)）
-- `@deepseek-ai/dsh-schedule` — 需要 `agents` · `sessions` · `tools` · `sessionPersistence`（[`packages/schedule/schedule/src/index.ts`](../packages/schedule/schedule/src/index.ts)）
-- `@deepseek-ai/dsh-session`（[`packages/core/session/src/index.ts`](../packages/core/session/src/index.ts)）
-- `@deepseek-ai/dsh-session-checkpoint-policy` — 需要 `llm` · `sessionPersistence` · `sessions` · `tools`（[`packages/session/session-checkpoint-policy/src/index.ts`](../packages/session/session-checkpoint-policy/src/index.ts)）
-- `@deepseek-ai/dsh-session-log-export` — 需要 `commands`（[`packages/session-query/session-log-export/src/index.ts`](../packages/session-query/session-log-export/src/index.ts)）
-- `@deepseek-ai/dsh-session-projection`（[`packages/session/session-projection/src/index.ts`](../packages/session/session-projection/src/index.ts)）
-- `@deepseek-ai/dsh-session-stats` — 需要 `sessionProjections`（[`packages/session/session-stats/src/index.ts`](../packages/session/session-stats/src/index.ts)）
-- `@deepseek-ai/dsh-skill-badge` — 需要 `skills`（[`packages/skill/skill-badge/src/index.ts`](../packages/skill/skill-badge/src/index.ts)）
-- `@deepseek-ai/dsh-storage`（[`packages/storage/storage/src/index.ts`](../packages/storage/storage/src/index.ts)）
-- `@deepseek-ai/dsh-subagent`（[`packages/subagent/subagent/src/index.ts`](../packages/subagent/subagent/src/index.ts)）
-- `@deepseek-ai/dsh-subprocess-local`（[`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts)）
-- `@deepseek-ai/dsh-terminal`（[`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts)）
-- `@deepseek-ai/dsh-tool-ask-user` — 需要 `tools` · `userInteraction`（[`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts)）
-- `@deepseek-ai/dsh-tool-call-timeout-policy` — 需要 `tools`（[`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts)）
-- `@deepseek-ai/dsh-tool-cordis` — 需要 `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect`（[`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)）
-- `@deepseek-ai/dsh-tool-subagent-control` — 需要 `tools` · `subagents`（[`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)）
-- `@deepseek-ai/dsh-user-questions`（[`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts)）
-- `@deepseek-ai/dsh-workspace` — 需要 `storageDomain` · `sessionPersistence`（[`packages/workspace/workspace/src/index.ts`](../packages/workspace/workspace/src/index.ts)）
+- `@clocky/clocky-agent` ([`packages/core/agent/src/index.ts`](../packages/core/agent/src/index.ts))
+- `@clocky/clocky-agent-runtime` ([`packages/core/agent-runtime/src/index.ts`](../packages/core/agent-runtime/src/index.ts))
+- `@clocky/clocky-api-gateway` — requires `typert` ([`packages/api/gateway/src/index.ts`](../packages/api/gateway/src/index.ts))
+- `@clocky/clocky-api-remotes` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
+- `@clocky/clocky-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
+- `@clocky/clocky-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
+- `@clocky/clocky-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
+- `@clocky/clocky-client-runtime` ([`packages/client/runtime/src/index.ts`](../packages/client/runtime/src/index.ts))
+- `@clocky/clocky-client-ui-agent-preset` ([`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts))
+- `@clocky/clocky-client-ui-attachment` ([`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts))
+- `@clocky/clocky-client-ui-commands` ([`packages/client/ui-commands/src/index.ts`](../packages/client/ui-commands/src/index.ts))
+- `@clocky/clocky-client-ui-conversation` ([`packages/client/ui-conversation/src/index.ts`](../packages/client/ui-conversation/src/index.ts))
+- `@clocky/clocky-client-ui-cordis` ([`packages/extensions/ui-cordis/src/index.ts`](../packages/extensions/ui-cordis/src/index.ts))
+- `@clocky/clocky-client-ui-deliverables` — requires `systemPrompt` ([`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts))
+- `@clocky/clocky-client-ui-directory-picker-browse` ([`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts))
+- `@clocky/clocky-client-ui-directory-picker-native` ([`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts))
+- `@clocky/clocky-client-ui-goal` ([`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts))
+- `@clocky/clocky-client-ui-input-trigger` ([`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts))
+- `@clocky/clocky-client-ui-jobs` ([`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts))
+- `@clocky/clocky-client-ui-layout` ([`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts))
+- `@clocky/clocky-client-ui-message-feedback` ([`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts))
+- `@clocky/clocky-client-ui-model-selection` ([`packages/client/ui-model-selection/src/index.ts`](../packages/client/ui-model-selection/src/index.ts))
+- `@clocky/clocky-client-ui-permission-presets` ([`packages/client/ui-permission-presets/src/index.ts`](../packages/client/ui-permission-presets/src/index.ts))
+- `@clocky/clocky-client-ui-plan` ([`packages/client/ui-plan/src/index.ts`](../packages/client/ui-plan/src/index.ts))
+- `@clocky/clocky-client-ui-reference` ([`packages/client/ui-reference/src/index.ts`](../packages/client/ui-reference/src/index.ts))
+- `@clocky/clocky-client-ui-renderer` ([`packages/client/ui-renderer/src/index.ts`](../packages/client/ui-renderer/src/index.ts))
+- `@clocky/clocky-client-ui-settings` ([`packages/client/ui-settings/src/index.ts`](../packages/client/ui-settings/src/index.ts))
+- `@clocky/clocky-client-ui-settings-general` ([`packages/client/ui-settings-general/src/index.ts`](../packages/client/ui-settings-general/src/index.ts))
+- `@clocky/clocky-client-ui-settings-models` ([`packages/client/ui-settings-models/src/index.ts`](../packages/client/ui-settings-models/src/index.ts))
+- `@clocky/clocky-client-ui-settings-plugin-inventory` ([`packages/client/ui-settings-plugin-inventory/src/index.ts`](../packages/client/ui-settings-plugin-inventory/src/index.ts))
+- `@clocky/clocky-client-ui-settings-plugins` ([`packages/client/ui-settings-plugins/src/index.ts`](../packages/client/ui-settings-plugins/src/index.ts))
+- `@clocky/clocky-client-ui-sidebar` ([`packages/client/ui-sidebar/src/index.ts`](../packages/client/ui-sidebar/src/index.ts))
+- `@clocky/clocky-client-ui-skill` ([`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts))
+- `@clocky/clocky-client-ui-team` ([`packages/client/ui-team/src/index.ts`](../packages/client/ui-team/src/index.ts))
+- `@clocky/clocky-client-ui-theme` ([`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts))
+- `@clocky/clocky-client-ui-tool` ([`packages/client/ui-tool/src/index.ts`](../packages/client/ui-tool/src/index.ts))
+- `@clocky/clocky-client-ui-trajectory` ([`packages/client/ui-trajectory/src/index.ts`](../packages/client/ui-trajectory/src/index.ts))
+- `@clocky/clocky-client-ui-user-questions` ([`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts))
+- `@clocky/clocky-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
+- `@clocky/clocky-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))
+- `@clocky/clocky-command-feedback` — requires `commands` ([`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts))
+- `@clocky/clocky-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
+- `@clocky/clocky-command-team-goal` — requires `agents` · `commands` · `teams` ([`packages/team/command-team-goal/src/index.ts`](../packages/team/command-team-goal/src/index.ts))
+- `@clocky/clocky-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
+- `@clocky/clocky-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
+- `@clocky/clocky-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
+- `@clocky/clocky-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
+- `@clocky/clocky-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
+- `@clocky/clocky-host-directory-picker-auto` — requires `webServer` · `loader` ([`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts))
+- `@clocky/clocky-host-directory-picker-native` ([`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts))
+- `@clocky/clocky-host-plugin-inventory` — requires `loader` ([`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts))
+- `@clocky/clocky-llm` ([`packages/llm/llm/src/index.ts`](../packages/llm/llm/src/index.ts))
+- `@clocky/clocky-lsp` ([`packages/lsp/lsp/src/index.ts`](../packages/lsp/lsp/src/index.ts))
+- `@clocky/clocky-product-principal` ([`packages/core/product-principal/src/index.ts`](../packages/core/product-principal/src/index.ts))
+- `@clocky/clocky-schedule` — requires `agents` · `sessions` · `tools` · `sessionPersistence` ([`packages/schedule/schedule/src/index.ts`](../packages/schedule/schedule/src/index.ts))
+- `@clocky/clocky-session` ([`packages/core/session/src/index.ts`](../packages/core/session/src/index.ts))
+- `@clocky/clocky-session-checkpoint-policy` — requires `llm` · `sessionPersistence` · `sessions` · `tools` ([`packages/session/session-checkpoint-policy/src/index.ts`](../packages/session/session-checkpoint-policy/src/index.ts))
+- `@clocky/clocky-session-log-export` — requires `commands` ([`packages/session-query/session-log-export/src/index.ts`](../packages/session-query/session-log-export/src/index.ts))
+- `@clocky/clocky-session-projection` ([`packages/session/session-projection/src/index.ts`](../packages/session/session-projection/src/index.ts))
+- `@clocky/clocky-session-stats` — requires `sessionProjections` ([`packages/session/session-stats/src/index.ts`](../packages/session/session-stats/src/index.ts))
+- `@clocky/clocky-storage` ([`packages/storage/storage/src/index.ts`](../packages/storage/storage/src/index.ts))
+- `@clocky/clocky-subagent` ([`packages/subagent/subagent/src/index.ts`](../packages/subagent/subagent/src/index.ts))
+- `@clocky/clocky-subprocess-local` ([`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts))
+- `@clocky/clocky-team-artifact` ([`packages/core/team-artifact/src/index.ts`](../packages/core/team-artifact/src/index.ts))
+- `@clocky/clocky-team-channel-basic` — requires `teams` ([`packages/team/team-channel-basic/src/index.ts`](../packages/team/team-channel-basic/src/index.ts))
+- `@clocky/clocky-team-channel-direct` — requires `teams` ([`packages/team/team-channel-direct/src/index.ts`](../packages/team/team-channel-direct/src/index.ts))
+- `@clocky/clocky-team-channel-task-assignment` — requires `teams` ([`packages/team/team-channel-task-assignment/src/index.ts`](../packages/team/team-channel-task-assignment/src/index.ts))
+- `@clocky/clocky-team-channel-workflow` — requires `teams` ([`packages/team/team-channel-workflow/src/index.ts`](../packages/team/team-channel-workflow/src/index.ts))
+- `@clocky/clocky-team-link` ([`packages/core/team-link/src/index.ts`](../packages/core/team-link/src/index.ts))
+- `@clocky/clocky-team-workspace` ([`packages/core/team-workspace/src/index.ts`](../packages/core/team-workspace/src/index.ts))
+- `@clocky/clocky-terminal` ([`packages/terminal/terminal/src/index.ts`](../packages/terminal/terminal/src/index.ts))
+- `@clocky/clocky-tool-ask-user` — requires `tools` · `userQuestions` ([`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts))
+- `@clocky/clocky-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))
+- `@clocky/clocky-tool-cordis` — requires `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect` ([`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts))
+- `@clocky/clocky-tool-subagent-control` — requires `tools` · `subagents` ([`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts))
+- `@clocky/clocky-tool-team-goal` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts))
+- `@clocky/clocky-tool-team-task` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts))
+- `@clocky/clocky-user-questions` ([`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts))
+- `@clocky/clocky-workspace` — requires `storageDomain` · `sessionPersistence` ([`packages/workspace/workspace/src/index.ts`](../packages/workspace/workspace/src/index.ts))
 
-## Seam 包（不可直接加载）
+## Seam packages (not directly loadable)
 
-抽象服务类——部署时应改为加载具体的实现包（参见[能力 seam](../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)）。
+Abstract service classes — a deployment loads a concrete implementation package instead ([capability seams](../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)).
 
-- `@deepseek-ai/dsh-attachment` — 抽象 `AttachmentStore`（[`packages/attachment/attachment/src/index.ts`](../packages/attachment/attachment/src/index.ts)）
-- `@deepseek-ai/dsh-code-runtime` — 抽象 `CodeRuntime`（[`packages/code-runtime/code-runtime/src/index.ts`](../packages/code-runtime/code-runtime/src/index.ts)）
-- `@deepseek-ai/dsh-compaction` — 抽象 `CompactionEngine`（[`packages/compaction/compaction/src/index.ts`](../packages/compaction/compaction/src/index.ts)）
-- `@deepseek-ai/dsh-credentials` — 抽象 `Credentials`（[`packages/credentials/credentials/src/index.ts`](../packages/credentials/credentials/src/index.ts)）
-- `@deepseek-ai/dsh-file-reference` — 抽象 `FileReferenceService`（[`packages/context/file-reference/src/index.ts`](../packages/context/file-reference/src/index.ts)）
-- `@deepseek-ai/dsh-fs` — 抽象 `FileSystem`（[`packages/fs/fs/src/index.ts`](../packages/fs/fs/src/index.ts)）
-- `@deepseek-ai/dsh-host-directory-picker` — 抽象 `DirectoryPicker`（[`packages/host/directory-picker/src/index.ts`](../packages/host/directory-picker/src/index.ts)）
-- `@deepseek-ai/dsh-jobs` — 抽象 `JobRegistry`（[`packages/jobs/jobs/src/index.ts`](../packages/jobs/jobs/src/index.ts)）
-- `@deepseek-ai/dsh-sandbox` — 抽象 `SandboxProvider`（[`packages/sandbox/sandbox/src/index.ts`](../packages/sandbox/sandbox/src/index.ts)）
-- `@deepseek-ai/dsh-session-persistence` — 抽象 `SessionPersistence`（[`packages/session/session-persistence/src/index.ts`](../packages/session/session-persistence/src/index.ts)）
-- `@deepseek-ai/dsh-session-query` — 抽象 `SessionQueryEngine`（[`packages/session-query/session-query/src/index.ts`](../packages/session-query/session-query/src/index.ts)）
-- `@deepseek-ai/dsh-settings` — 抽象 `Settings`（[`packages/settings/settings/src/index.ts`](../packages/settings/settings/src/index.ts)）
-- `@deepseek-ai/dsh-shell` — 抽象 `ShellExecutor`（[`packages/shell/shell/src/index.ts`](../packages/shell/shell/src/index.ts)）
-- `@deepseek-ai/dsh-spill` — 抽象 `SpillStore`（[`packages/spill/spill/src/index.ts`](../packages/spill/spill/src/index.ts)）
-- `@deepseek-ai/dsh-subprocess` — 抽象 `SubprocessRuntime`（[`packages/subprocess/subprocess/src/index.ts`](../packages/subprocess/subprocess/src/index.ts)）
-- `@deepseek-ai/dsh-workflow` — 抽象 `WorkflowEngine`（[`packages/workflow/workflow/src/index.ts`](../packages/workflow/workflow/src/index.ts)）
-## 库包（无插件入口）
+- `@clocky/clocky-attachment` — abstract `AttachmentStore` ([`packages/attachment/attachment/src/index.ts`](../packages/attachment/attachment/src/index.ts))
+- `@clocky/clocky-code-runtime` — abstract `CodeRuntime` ([`packages/code-runtime/code-runtime/src/index.ts`](../packages/code-runtime/code-runtime/src/index.ts))
+- `@clocky/clocky-compaction` — abstract `CompactionEngine` ([`packages/compaction/compaction/src/index.ts`](../packages/compaction/compaction/src/index.ts))
+- `@clocky/clocky-credentials` — abstract `CredentialProvider` ([`packages/credentials/credentials/src/index.ts`](../packages/credentials/credentials/src/index.ts))
+- `@clocky/clocky-file-reference` — abstract `FileReferenceService` ([`packages/context/file-reference/src/index.ts`](../packages/context/file-reference/src/index.ts))
+- `@clocky/clocky-fs` — abstract `FileSystem` ([`packages/fs/fs/src/index.ts`](../packages/fs/fs/src/index.ts))
+- `@clocky/clocky-host-directory-picker` — abstract `DirectoryPicker` ([`packages/host/directory-picker/src/index.ts`](../packages/host/directory-picker/src/index.ts))
+- `@clocky/clocky-jobs` — abstract `JobRegistry` ([`packages/jobs/jobs/src/index.ts`](../packages/jobs/jobs/src/index.ts))
+- `@clocky/clocky-sandbox` — abstract `SandboxProvider` ([`packages/sandbox/sandbox/src/index.ts`](../packages/sandbox/sandbox/src/index.ts))
+- `@clocky/clocky-session-persistence` — abstract `SessionPersistence` ([`packages/session/session-persistence/src/index.ts`](../packages/session/session-persistence/src/index.ts))
+- `@clocky/clocky-session-query` — abstract `SessionQueryEngine` ([`packages/session-query/session-query/src/index.ts`](../packages/session-query/session-query/src/index.ts))
+- `@clocky/clocky-settings` — abstract `SettingsProvider` ([`packages/settings/settings/src/index.ts`](../packages/settings/settings/src/index.ts))
+- `@clocky/clocky-shell` — abstract `ShellExecutor` ([`packages/shell/shell/src/index.ts`](../packages/shell/shell/src/index.ts))
+- `@clocky/clocky-spill` — abstract `SpillStore` ([`packages/spill/spill/src/index.ts`](../packages/spill/spill/src/index.ts))
+- `@clocky/clocky-subprocess` — abstract `SubprocessRuntime` ([`packages/subprocess/subprocess/src/index.ts`](../packages/subprocess/subprocess/src/index.ts))
+- `@clocky/clocky-workflow` — abstract `WorkflowEngine` ([`packages/workflow/workflow/src/index.ts`](../packages/workflow/workflow/src/index.ts))
 
-由其他包作为库导入；`cordis.yml` 无法加载它们。
+## Library packages (no plugin entry)
 
-- `@deepseek-ai/dsh-acp-snapshot`（[`packages/test-support/acp-snapshot/src/index.ts`](../packages/test-support/acp-snapshot/src/index.ts)）
-- `@deepseek-ai/dsh-agent-loop-testkit`（[`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts)）
-- `@deepseek-ai/dsh-anonymous-user-id`（[`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts)）
-- `@deepseek-ai/dsh-app-boot`（[`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts)）
-- `@deepseek-ai/dsh-atomic-write`（[`packages/util/atomic-write/src/index.ts`](../packages/util/atomic-write/src/index.ts)）
-- `@deepseek-ai/dsh-base`（[`packages/bundle/base/src/index.ts`](../packages/bundle/base/src/index.ts)）
-- `@deepseek-ai/dsh-brand`（[`packages/util/brand/src/index.ts`](../packages/util/brand/src/index.ts)）
-- `@deepseek-ai/dsh-client-test-runtime`（[`packages/test-support/client-runtime/src/index.ts`](../packages/test-support/client-runtime/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-primitives`（[`packages/client/ui-primitives/src/index.ts`](../packages/client/ui-primitives/src/index.ts)）
-- `@deepseek-ai/dsh-client-ui-slots`（[`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts)）
-- `@deepseek-ai/dsh-client-web`（[`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts)）
-- `@deepseek-ai/dsh-cmdline`（[`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts)）
-- `@deepseek-ai/dsh-code-runtime-python`（[`packages/code-runtime/code-runtime-python/src/index.ts`](../packages/code-runtime/code-runtime-python/src/index.ts)）
-- `@deepseek-ai/dsh-home-paths`（[`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts)）
-- `@deepseek-ai/dsh-hook-protocol`（[`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts)）
-- `@deepseek-ai/dsh-launch-environment`（[`packages/util/launch-environment/src/index.ts`](../packages/util/launch-environment/src/index.ts)）
-- `@deepseek-ai/dsh-llm-mock-server`（[`packages/test-support/llm-mock-server/src/index.ts`](../packages/test-support/llm-mock-server/src/index.ts)）
-- `@deepseek-ai/dsh-loader-smoke`（[`packages/test-support/loader-smoke/src/index.ts`](../packages/test-support/loader-smoke/src/index.ts)）
-- `@deepseek-ai/dsh-native-command`（[`packages/util/native-command/src/index.ts`](../packages/util/native-command/src/index.ts)）
-- `@deepseek-ai/dsh-output-retention`（[`packages/util/output-retention/src/index.ts`](../packages/util/output-retention/src/index.ts)）
-- `@deepseek-ai/dsh-sandbox-windows-acl`（[`packages/sandbox/sandbox-windows-acl/src/index.ts`](../packages/sandbox/sandbox-windows-acl/src/index.ts)）
-- `@deepseek-ai/dsh-scope`（[`packages/core/scope/src/index.ts`](../packages/core/scope/src/index.ts)）
-- `@deepseek-ai/dsh-sdk-client`（[`packages/sdk/client/src/index.ts`](../packages/sdk/client/src/index.ts)）
-- `@deepseek-ai/dsh-sdk-jsonrpc-demo`（[`packages/examples/jsonrpc-demo/src/index.ts`](../packages/examples/jsonrpc-demo/src/index.ts)）
-- `@deepseek-ai/dsh-sdk-protocol`（[`packages/sdk/protocol/src/index.ts`](../packages/sdk/protocol/src/index.ts)）
-- `@deepseek-ai/dsh-session-telemetry`（[`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts)）
-- `@deepseek-ai/dsh-session-title-llm`（[`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts)）
-- `@deepseek-ai/dsh-subagent-in-process-driver`（[`packages/subagent/subagent-in-process-driver/src/index.ts`](../packages/subagent/subagent-in-process-driver/src/index.ts)）
-- `@deepseek-ai/dsh-timeout`（[`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts)）
-- `@deepseek-ai/dsh-typert-generator`（[`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts)）
-- `@deepseek-ai/dsh-typert-protocol`（[`packages/typert/protocol/src/index.ts`](../packages/typert/protocol/src/index.ts)）
-- `@deepseek-ai/dsh-typert-registry`（[`packages/typert/registry/src/index.ts`](../packages/typert/registry/src/index.ts)）
+Imported as libraries by other packages; a `cordis.yml` cannot load them.
+
+- `@clocky/clocky-acp-snapshot` ([`packages/test-support/acp-snapshot/src/index.ts`](../packages/test-support/acp-snapshot/src/index.ts))
+- `@clocky/clocky-agent-loop-testkit` ([`packages/test-support/agent-loop-testkit/src/index.ts`](../packages/test-support/agent-loop-testkit/src/index.ts))
+- `@clocky/clocky-app-boot` ([`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts))
+- `@clocky/clocky-atomic-write` ([`packages/util/atomic-write/src/index.ts`](../packages/util/atomic-write/src/index.ts))
+- `@clocky/clocky-base` ([`packages/bundle/base/src/index.ts`](../packages/bundle/base/src/index.ts))
+- `@clocky/clocky-brand` ([`packages/util/brand/src/index.ts`](../packages/util/brand/src/index.ts))
+- `@clocky/clocky-client-test-runtime` ([`packages/test-support/client-runtime/src/index.ts`](../packages/test-support/client-runtime/src/index.ts))
+- `@clocky/clocky-client-ui-primitives` ([`packages/client/ui-primitives/src/index.ts`](../packages/client/ui-primitives/src/index.ts))
+- `@clocky/clocky-client-ui-slots` ([`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts))
+- `@clocky/clocky-client-web` ([`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts))
+- `@clocky/clocky-cmdline` ([`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts))
+- `@clocky/clocky-code-runtime-python` ([`packages/code-runtime/code-runtime-python/src/index.ts`](../packages/code-runtime/code-runtime-python/src/index.ts))
+- `@clocky/clocky-home-paths` ([`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts))
+- `@clocky/clocky-hook-protocol` ([`packages/hooks/hook-protocol/src/index.ts`](../packages/hooks/hook-protocol/src/index.ts))
+- `@clocky/clocky-launch-environment` ([`packages/util/launch-environment/src/index.ts`](../packages/util/launch-environment/src/index.ts))
+- `@clocky/clocky-llm-mock-server` ([`packages/test-support/llm-mock-server/src/index.ts`](../packages/test-support/llm-mock-server/src/index.ts))
+- `@clocky/clocky-loader-smoke` ([`packages/test-support/loader-smoke/src/index.ts`](../packages/test-support/loader-smoke/src/index.ts))
+- `@clocky/clocky-native-command` ([`packages/util/native-command/src/index.ts`](../packages/util/native-command/src/index.ts))
+- `@clocky/clocky-output-retention` ([`packages/util/output-retention/src/index.ts`](../packages/util/output-retention/src/index.ts))
+- `@clocky/clocky-sandbox-windows-acl` ([`packages/sandbox/sandbox-windows-acl/src/index.ts`](../packages/sandbox/sandbox-windows-acl/src/index.ts))
+- `@clocky/clocky-scope` ([`packages/core/scope/src/index.ts`](../packages/core/scope/src/index.ts))
+- `@clocky/clocky-sdk-client` ([`packages/sdk/client/src/index.ts`](../packages/sdk/client/src/index.ts))
+- `@clocky/clocky-sdk-jsonrpc-demo` ([`packages/examples/jsonrpc-demo/src/index.ts`](../packages/examples/jsonrpc-demo/src/index.ts))
+- `@clocky/clocky-sdk-protocol` ([`packages/sdk/protocol/src/index.ts`](../packages/sdk/protocol/src/index.ts))
+- `@clocky/clocky-session-telemetry` ([`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts))
+- `@clocky/clocky-session-title-llm` ([`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts))
+- `@clocky/clocky-subagent-in-process-driver` ([`packages/subagent/subagent-in-process-driver/src/index.ts`](../packages/subagent/subagent-in-process-driver/src/index.ts))
+- `@clocky/clocky-team` ([`packages/core/team/src/index.ts`](../packages/core/team/src/index.ts))
+- `@clocky/clocky-team-human-actor` ([`packages/team/team-human-actor/src/index.ts`](../packages/team/team-human-actor/src/index.ts))
+- `@clocky/clocky-team-link-websocket-hub` ([`packages/team/team-link-websocket-hub/src/index.ts`](../packages/team/team-link-websocket-hub/src/index.ts))
+- `@clocky/clocky-timeout` ([`packages/util/timeout/src/index.ts`](../packages/util/timeout/src/index.ts))
+- `@clocky/clocky-typert-generator` ([`packages/typert/generator/src/index.ts`](../packages/typert/generator/src/index.ts))
+- `@clocky/clocky-typert-protocol` ([`packages/typert/protocol/src/index.ts`](../packages/typert/protocol/src/index.ts))
+- `@clocky/clocky-typert-registry` ([`packages/typert/registry/src/index.ts`](../packages/typert/registry/src/index.ts))

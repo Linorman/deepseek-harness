@@ -45,7 +45,8 @@ describe('release families', () => {
     const members = releaseFamily('clocky').members(resolve(import.meta.dirname, '../..'))
 
     expect(members.some(member => member.directory.startsWith('packages/experimental/'))).toBe(false)
-    expect(members.map(member => member.name)).not.toContain('@clocky/clocky-experimental-agent-team')
+    expect(members.some(member => member.directory.startsWith('packages/subagent/'))).toBe(false)
+    expect(members.some(member => member.directory.startsWith('packages/workflow/'))).toBe(false)
   })
 
   it('bumps private clocky packages without adding release tags', () => {

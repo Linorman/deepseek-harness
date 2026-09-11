@@ -13,7 +13,7 @@ import SessionStore from '@clocky/clocky-session'
 import AgentRegistry from '@clocky/clocky-agent'
 import { TypertLookupFailure } from '@clocky/clocky-typert-protocol'
 import TypertRegistry from '@clocky/clocky-typert-registry'
-import { createUserMessage, MessageId } from '@clocky/clocky-llm'
+import LlmRuntime, { createUserMessage, MessageId } from '@clocky/clocky-llm'
 import type { Agent } from '@clocky/clocky-agent'
 import UserQuestionService from '@clocky/clocky-user-questions'
 import type { SessionEvent, SessionHeader, SessionId } from '@clocky/clocky-session'
@@ -53,7 +53,7 @@ describe('sessions.list cold merge', () => {
       header('small-conversation', 200),
       header('large-unknown', 300),
       header('cached-nonblank', 400),
-      header('locationless', 500, { parentSession: sid('session-parent'), origin: 'subagent' }),
+      header('locationless', 500, { parentSession: sid('session-parent') }),
       header('vanished', 600),
       header('read-failure', 700),
     ]
@@ -116,12 +116,9 @@ describe('sessions.list cold merge', () => {
     expect(byId['large-unknown']).toMatchObject({ blank: false, updatedAt: 300 })
     // false is monotonic, so this row skips stat/read and keeps cached recency.
     expect(byId['cached-nonblank']).toMatchObject({ blank: false, updatedAt: 1000 })
-    expect(byId['locationless']).toMatchObject({
-      blank: false,
-      updatedAt: 500,
-      parentSessionId: 'session-parent',
-      origin: 'subagent',
-    })
+    expect(byId['locationless']).toMatchObject({ blank: false, updatedAt: 500 })
+    expect(byId['locationless']).not.toHaveProperty('parentSessionId')
+    expect(byId['locationless']).not.toHaveProperty('origin')
     expect(byId['vanished']).toMatchObject({ blank: false, updatedAt: 600 })
     expect(byId['read-failure']).toMatchObject({ blank: false, updatedAt: 700 })
     expect(readFrom).toHaveBeenCalledTimes(3)
@@ -376,16 +373,21 @@ describe('Remote Agent and Session lookup policy', () => {
     const coldId = sid('session-remote-cold-child')
     const coldMeta = header(coldId, 1000, {
       parentSession: sid('session-parent'),
-      origin: 'subagent',
     })
-    const inspect = vi.fn(() => Promise.resolve({ meta: coldMeta, events: [] as SessionEvent[] }))
+    const inspect = vi.fn(() => Promise.resolve({ meta: coldMeta, events: [
+      { type: 'subagent/descriptor', seq: 0, time: 1, data: { version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'child' } },
+    ] as SessionEvent[] }))
     ctx.provide('sessionPersistence', {
       list: () => Promise.resolve([coldMeta]),
       inspect,
       locate: () => undefined,
     } as never)
     const liveSession = ctx.sessions.create(sid('session-remote-live-child'), {
-      meta: { cwd: '/proj', parentSession: sid('session-parent'), origin: 'subagent' },
+      meta: { cwd: '/proj', parentSession: sid('session-parent') },
+    })
+    const appendLiveDescriptor = liveSession.append.bind(liveSession) as unknown as (type: string, data: unknown) => void
+    appendLiveDescriptor('subagent/descriptor', {
+      version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'child',
     })
     const liveAgent = { id: liveSession.id, session: liveSession, status: 'idle', ctx } as Agent
     ctx.agents.register(liveAgent)
@@ -419,7 +421,7 @@ describe('Remote Agent and Session lookup policy', () => {
 })
 
 describe('subagent ownership fence', () => {
-  it('reads a cold child without an Agent and rejects generic resume or adoption', async () => {
+  it('reads a cold child without an Agent and rejects generic resume', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
     await ctx.plugin(AgentRegistry)
@@ -428,7 +430,6 @@ describe('subagent ownership fence', () => {
     const meta = header('session-child', 1000, {
       parentSession: sid('session-parent'),
       seedLength: 0,
-      origin: 'subagent',
     })
     const events = [
       { type: 'turn/start', seq: 0, time: 1, data: { turn: 1, trigger: { kind: 'message', source: { kind: 'user' } } } },
@@ -443,7 +444,7 @@ describe('subagent ownership fence', () => {
         type: 'subagent/descriptor',
         seq: 2,
         time: 3,
-        data: { version: 2, mode: 'continuable', provider: 'spawn', label: 'child' },
+        data: { version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'child' },
       },
       { type: 'turn/end', seq: 3, time: 4, data: { turn: 1, reason: { kind: 'completed' } } },
     ] as SessionEvent[]
@@ -476,15 +477,12 @@ describe('subagent ownership fence', () => {
       })
     }
 
-    const create = await api.sessions.create(request({ sessionId, cwd: '/proj' }))
-    expect(create.result.ok).toBe(false)
-    if (!create.result.ok) expect(create.result.error.code).toBe('agent-busy')
     expect(resume).not.toHaveBeenCalled()
     expect(ctx.agents.get(sessionId)).toBeUndefined()
-    expect(inspect).toHaveBeenCalledTimes(3)
+    expect(inspect).toHaveBeenCalledTimes(2)
   })
 
-  it('no longer treats a descriptor-only cold child without origin as subagent-owned', async () => {
+  it('treats a descriptor-only cold child as subagent-owned', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
     await ctx.plugin(AgentRegistry)
@@ -499,7 +497,7 @@ describe('subagent ownership fence', () => {
         type: 'subagent/descriptor',
         seq: 0,
         time: 1,
-        data: { version: 2, mode: 'continuable', provider: 'spawn', label: 'child' },
+        data: { version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'child' },
       },
     ] as SessionEvent[]
     ctx.provide('sessionPersistence', {
@@ -507,12 +505,7 @@ describe('subagent ownership fence', () => {
       inspect: () => Promise.resolve({ meta, events }),
       locate: () => undefined,
     } as never)
-    // Stores whose headers predate `origin` classify a child only through the
-    // descriptor event; the pre-release decision stops recognizing them, so
-    // the ownership fence lets generic resume reach the registry instead of
-    // answering `agent-busy`.
     const resume = vi.spyOn(ctx.agents, 'resume')
-      .mockRejectedValue(new Error('registry unavailable in this bench'))
     const api = createApiProxy(ctx, { defaultModelSelection: () => ({ provider: 'p', model: 'm' }), cwd: '/tmp' })
 
     const prompt = await api.sessions.prompt(request({
@@ -520,9 +513,9 @@ describe('subagent ownership fence', () => {
       mode: 'queue',
       content: [{ type: 'text', text: 'follow up' }],
     }))
-    expect(resume).toHaveBeenCalledTimes(1)
+    expect(resume).not.toHaveBeenCalled()
     expect(prompt.result.ok).toBe(false)
-    if (!prompt.result.ok) expect(prompt.result.error.code).toBe('internal')
+    if (!prompt.result.ok) expect(prompt.result.error.code).toBe('agent-busy')
   })
 
   it('rejects origin-marked and runtime-owned live children from generic controls', async () => {
@@ -535,7 +528,11 @@ describe('subagent ownership fence', () => {
     ctx.agents.register(parent)
 
     const originSession = ctx.sessions.create(sid('session-origin-child'), {
-      meta: { cwd: '/proj', parentSession: parent.id, origin: 'subagent' },
+      meta: { cwd: '/proj', parentSession: parent.id },
+    })
+    const appendOriginDescriptor = originSession.append.bind(originSession) as unknown as (type: string, data: unknown) => void
+    appendOriginDescriptor('subagent/descriptor', {
+      version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'child',
     })
     const cancel = vi.fn()
     const updateInbox = vi.fn(() => 'applied' as const)
@@ -574,10 +571,6 @@ describe('subagent ownership fence', () => {
     expect(models.result.ok).toBe(false)
     if (!models.result.ok) expect(models.result.error.code).toBe('agent-busy')
 
-    const create = await api.sessions.create(request({ sessionId: originChild.id, cwd: '/proj' }))
-    expect(create.result.ok).toBe(false)
-    if (!create.result.ok) expect(create.result.error.code).toBe('agent-busy')
-
     const history = await api.sessions.history(request({ sessionId: originChild.id }))
     expect(history.result.ok).toBe(true)
     expect(ctx.agents.get(originChild.id)).toBe(originChild)
@@ -593,7 +586,7 @@ describe('subagent ownership fence', () => {
         type: 'subagent/descriptor',
         seq: 0,
         time: 1,
-        data: { version: 2, mode: 'continuable', provider: 'spawn', label: 'ancestor' },
+        data: { version: 3, mode: 'continuable', provider: 'spawn', depth: 1, label: 'ancestor' },
       }],
       meta: { cwd: '/proj', parentSession: sid('session-source'), seedLength: 1 },
     })
@@ -760,11 +753,12 @@ describe('sessions.prompt synchronous rejection', () => {
     }
   })
 
-  it('classifies a raced cold-resume ID collision as agent-busy', async () => {
+  it('uses a concurrently resumed standalone fork without treating its lineage as product ownership', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(UserQuestionService)
+    await ctx.plugin(LlmRuntime)
     const sessionId = sid('race-resume')
     const meta: SessionHeader = header('race-resume', 1000)
     ctx.provide('sessionPersistence', {
@@ -772,13 +766,12 @@ describe('sessions.prompt synchronous rejection', () => {
       inspect: () => Promise.resolve({ meta, events: [] as SessionEvent[] }),
       locate: () => undefined,
     } as never)
-    // The raced winner: a live parent-owned subagent publishes the identity
-    // while the generic cold resume is in flight, so the resume collides.
+    // Fork lineage alone does not make a Session a Team or private runtime carrier.
     const parentSession = ctx.sessions.create(sid('race-parent'), { meta: { cwd: '/proj' } })
     const parent = { id: parentSession.id, session: parentSession, status: 'idle', ctx } as Agent
     ctx.agents.register(parent)
     const childSession = ctx.sessions.create(sessionId, {
-      meta: { cwd: '/proj', parentSession: parent.id, origin: 'subagent' },
+      meta: { cwd: '/proj', parentSession: parent.id },
     })
     const child = { id: sessionId, session: childSession, status: 'idle', ctx } as unknown as Agent
     vi.spyOn(ctx.agents, 'resume').mockImplementationOnce(async () => {
@@ -790,12 +783,7 @@ describe('sessions.prompt synchronous rejection', () => {
     const api = createApiProxy(ctx, { defaultModelSelection: () => ({ provider: 'p', model: 'm' }), cwd: '/tmp' })
 
     const models = await api.sessions.models(request({ sessionId }))
-    expect(models.result.ok).toBe(false)
-    if (!models.result.ok) {
-      expect(models.result.error).toMatchObject({
-        code: 'agent-busy',
-        details: { reason: 'use subagent delivery for this child session' },
-      })
-    }
+    expect(models.result).toMatchObject({ ok: true, value: { routable: false, groups: [], failures: [] } })
+    expect(ctx.agents.get(sessionId)).toBe(child)
   })
 })

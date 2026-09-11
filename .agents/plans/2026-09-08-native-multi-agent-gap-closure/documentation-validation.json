@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-08T21:33:00+0800",
+  "scope": "gap-design.md, development-plan.md, old 2026-09-05 start-here.md diff, and requested documentation gates",
+  "authority": "Root verification request; dsh-doc-standards and dsh-prose-standard",
+  "productTestsRun": false,
+  "sourceChangesMade": false,
+  "sourceChangesObserved": "Validation only; existing shared dirty source/generator/README/Note failures were reported and not changed.",
+  "commands": [
+    {
+      "id": "local-structure",
+      "command": "env TMPDIR=\"$PWD/.tmp/verification-runtime\" TSX_DISABLE_CACHE=1 node .tmp/verification-runtime/documentation-local-check.mjs",
+      "scope": "new gap-design.md and development-plan.md, old start-here.md, relative links/anchors, exact trailing newline, 47 IDs/checklist equality, G01-G33 rows, 64 audit source hashes, 30 savedLog hashes, fact-review input",
+      "exitCode": 0,
+      "result": "PASS: 21 checks",
+      "log": "evidence-logs/documentation-local-check-2026-09-08T2133-final.log",
+      "newFilesAffected": true,
+      "details": {
+        "functionalIds": 20,
+        "testIds": 8,
+        "documentationIds": 13,
+        "otherIds": 6,
+        "reportPlanIdsEqual": true,
+        "g01ToG33Complete": true,
+        "sourceHashes": "64/64 match",
+        "savedLogs": "30/30 match original logSha256"
+      }
+    },
+    {
+      "id": "verify-md-wrap",
+      "command": "env TMPDIR=\"$PWD/.tmp/verification-runtime\" TSX_DISABLE_CACHE=1 pnpm run verify-md-wrap",
+      "scope": "repository Markdown wrap gate; direct run once",
+      "exitCode": 1,
+      "result": "FAIL: hard-wrapped prose paragraphs",
+      "log": "evidence-logs/documentation-verify-md-wrap-2026-09-08T2115.log",
+      "newFilesAffected": false,
+      "failures": [
+        "packages/team/team-run/README.md:9",
+        "packages/team/team-run/README.zh.md:9"
+      ],
+      "rootCause": "Existing TeamRun package README paragraphs are physically wrapped; neither new gap document is named by the gate."
+    },
+    {
+      "id": "verify-md-links",
+      "command": "env TMPDIR=\"$PWD/.tmp/verification-runtime\" TSX_DISABLE_CACHE=1 pnpm run verify-md-links",
+      "scope": "repository Markdown relative-link and anchor gate; direct run once",
+      "exitCode": 1,
+      "result": "FAIL: one broken anchor",
+      "log": "evidence-logs/documentation-verify-md-links-2026-09-08T2116.log",
+      "newFilesAffected": false,
+      "failures": [
+        "packages/team/tool-team-task/README.zh.md:46 links to ../../../docs/tool-catalog.zh.md#team_worker_pool_set, but the target has no such anchor"
+      ],
+      "rootCause": "Existing package README points at a stale generated catalog anchor; local links/anchors for both new documents and old start-here pass."
+    },
+    {
+      "id": "verify-doc-budgets",
+      "command": "env TMPDIR=\"$PWD/.tmp/verification-runtime\" TSX_DISABLE_CACHE=1 pnpm run verify-doc-budgets",
+      "scope": "repository budgeted-doc gate; direct run once",
+      "exitCode": 0,
+      "result": "PASS: 9 budgeted docs within ceiling",
+      "log": "evidence-logs/documentation-verify-doc-budgets-2026-09-08T2117.log",
+      "newFilesAffected": "The two internal plan files are unbudgeted review documents and were not counted by this gate."
+    },
+    {
+      "id": "doc-sync",
+      "command": "env TMPDIR=\"$PWD/.tmp/verification-runtime\" TSX_DISABLE_CACHE=1 pnpm run doc-sync",
+      "scope": "repository doc-sync gate suite; one requested run, 28 child gates",
+      "exitCode": 1,
+      "result": "FAIL: 14 passed, 14 failed, 0 skipped",
+      "log": "evidence-logs/documentation-doc-sync-2026-09-08T2118.log",
+      "newFilesAffected": "No direct failure in the two new plan files; several failures are source/generated/package-doc inputs that the plan records as D/O work.",
+      "passedGates": [
+        "doc-typecheck",
+        "verify-mermaid",
+        "documentation build",
+        "scoped events",
+        "doc refs",
+        "config source ownership",
+        "package paths",
+        "public repository links",
+        "agent note classification",
+        "archived agent notes",
+        "skill invocation metadata",
+        "translation prompt",
+        "doc budgets",
+        "documentation site checks"
+      ],
+      "failedGates": [
+        {
+          "gate": "doc graphs",
+          "rootCause": "O-05: Typert rejects TeamChannelViewEventData cross-package ownership at packages/core/team/src/human-delivery-types.ts:99.",
+          "newFilesAffected": "Indirectly blocks generated graph freshness; no direct Markdown defect."
+        },
+        {
+          "gate": "markdown links",
+          "rootCause": "Existing packages/team/tool-team-task/README.zh.md:46 stale tool-catalog anchor.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "type equivalence",
+          "rootCause": "Existing docs/subsystems/core.md:184 CancelOptions block omits source resumePending field.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "cordis catalog",
+          "rootCause": "O-05 Typert cross-package type ownership failure at human-delivery-types.ts:99.",
+          "newFilesAffected": "Indirectly blocks subsystem generated freshness."
+        },
+        {
+          "gate": "client catalog",
+          "rootCause": "Generated packages/extensions/cordis-client-runner/src/client/slot-catalog.ts is stale.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "markdown wrap",
+          "rootCause": "Existing packages/team/team-run/README.md:9 and README.zh.md:9 hard-wrap prose.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "config catalog",
+          "rootCause": "14 missing JSDoc field contracts, including team-delegation Config :20-22, TeamRunMember :260-268, agent-runtime-sdk recoverySupervisor :96 and team-placement-default routes :41.",
+          "newFilesAffected": "Blocks D-07 source/catalog completion."
+        },
+        {
+          "gate": "persistence catalog",
+          "rootCause": "Existing plan/mode event is declared in both packages/plan/plan-mode/src/index.ts:53 and index.d.ts:37.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "translation pairing",
+          "rootCause": "Existing placement README lacks README.zh.md, plus pre-existing paired docs/Note drift and tool-catalog pair differences.",
+          "newFilesAffected": "D-16 is the placement README pairing item; the two internal plans are intentionally unpaired."
+        },
+        {
+          "gate": "export JSDoc",
+          "rootCause": "30 existing source/declaration JSDoc violations, including Core child methods, SDK inbox methods, ModelDirectory and TeamActivationController.fenceStale.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "tool catalog",
+          "rootCause": "Generated tool catalog contains team_task_delegate while committed docs/tool-catalog.md does not.",
+          "newFilesAffected": "Blocks D-08 catalog completion."
+        },
+        {
+          "gate": "agent note format",
+          "rootCause": "Existing implemented/feature/2026-09-06-authenticated-human-channel-invitations.md lacks required Problem, Decision, Consequences and Alternatives considered sections.",
+          "newFilesAffected": false
+        },
+        {
+          "gate": "package README model experience",
+          "rootCause": "Existing package README shape/content violations, including missing team-delegation README and placement/admission grounding, plus final-section-order violations in several package READMEs.",
+          "newFilesAffected": "Blocks D-01/D-09/D-10/D-16 package documentation completion."
+        },
+        {
+          "gate": "package README limitations",
+          "rootCause": "Existing activation supervisor READMEs lack limitation bullets and team-delegation has no README.",
+          "newFilesAffected": "Blocks D-01/D-16 package documentation completion."
+        }
+      ]
+    },
+    {
+      "id": "git-diff-check",
+      "command": "git diff --check -- .agents/plans/2026-09-05-native-multi-agent/start-here.md .agents/plans/2026-09-08-native-multi-agent-gap-closure",
+      "scope": "final documentation supplement and authorized old start-here link",
+      "exitCode": 0,
+      "result": "PASS: no whitespace errors",
+      "log": "evidence-logs/documentation-diff-check-2026-09-08T2133-final.log",
+      "newFilesAffected": true
+    },
+    {
+      "id": "git-diff-check-new-files",
+      "command": "git diff --no-index --check /dev/null <each final Markdown file> (expected new-file status is ignored only when output is empty)",
+      "scope": "new gap-design.md, development-plan.md and authorized old start-here.md content",
+      "exitCode": 0,
+      "result": "PASS: no whitespace errors; new-file diff statuses were expected and produced no check output",
+      "log": "evidence-logs/documentation-diff-check-2026-09-08T2133-new-files.log",
+      "newFilesAffected": true
+    }
+  ],
+  "overall": {
+    "localStructure": "PASS",
+    "budget": "PASS",
+    "wrap": "FAIL existing TeamRun README",
+    "links": "FAIL existing tool-team-task Chinese README anchor",
+    "docSync": "FAIL existing source/generated/package documentation inputs; new plans pass local checks",
+    "newDocumentsDirectFailures": false,
+    "requiredFollowup": [
+      "Resolve O-05 before rerunning generated Cordis/graph checks.",
+      "Resolve source JSDoc and generated catalog drift before a current doc-sync claim.",
+      "Resolve existing README pairing/wrap/link/Agent Note failures under their owning files.",
+      "Keep Hub full-suite, release closure and optional decision rows separate from documentation PASS."
+    ],
+    "diffCheck": "PASS"
+  },
+  "finalSupplementValidation": {
+    "recordedAt": "2026-09-08T21:33:00+0800",
+    "commands": [
+      "local-structure",
+      "git-diff-check",
+      "git-diff-check-new-files"
+    ],
+    "productTestsRun": false,
+    "docSyncRerun": false,
+    "result": "PASS: local links/anchors, newline, ID/checklist, counts, G01-G33, source/log hashes and final diff check"
+  },
+  "currentFollowUpValidation": {
+    "recordedAt": "2026-09-10T01:13:00+0800",
+    "commands": [
+      "pnpm run verify-md-links",
+      "pnpm run verify-package-readme-model-experience",
+      "pnpm run verify-package-readme-limitations",
+      "pnpm run doc-sync"
+    ],
+    "productTestsRun": false,
+    "docSyncRerun": true,
+    "result": "Scoped README and Markdown-link gates pass. Current doc-sync is 26 passed, 2 failed, 0 skipped after the Session legacy-header cutover and generated-catalog refresh; the remaining failures are existing translation drift and hard-wrapped prose. See verification-evidence V63–V79 and their saved logs."
+  }
+}

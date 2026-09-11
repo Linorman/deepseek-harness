@@ -9,6 +9,7 @@ import type { RpcMessage } from '../src/client/api.ts'
 import { RpcId } from '../src/client/api.ts'
 import { FixtureApiClient } from '../src/client/fixture.ts'
 import { WebApiClient } from '../src/client/web-api-client.ts'
+import { PRODUCT_AUTH_BOOTSTRAP_PROMISE } from '../src/product-auth-contract.ts'
 
 type Win = { location?: { hostname: string; search: string; origin?: string } }
 type WebSocketGlobal = { WebSocket?: typeof WebSocket }
@@ -49,6 +50,7 @@ class FakeWebSocket extends EventTarget {
 
 afterEach(() => {
   delete (globalThis as Win).location
+  Reflect.deleteProperty(globalThis, PRODUCT_AUTH_BOOTSTRAP_PROMISE)
   sockets.length = 0
   if (originalWebSocket === undefined) delete (globalThis as WebSocketGlobal).WebSocket
   else globalThis.WebSocket = originalWebSocket
@@ -192,6 +194,39 @@ describe('connection client apply', () => {
     }
     expect(seen.some(u => u.includes('/api/host.describe'))).toBe(true)
     expect(seen.some(u => u.includes('/api/respond'))).toBe(true)
+  })
+
+  it('waits for the Host-injected bootstrap exchange before browser HTTP, generic RPC, or WebSocket traffic', async () => {
+    ;(globalThis as Win).location = { hostname: 'localhost', search: '', origin: 'http://localhost:3080' }
+    ;(globalThis as WebSocketGlobal).WebSocket = FakeWebSocket as unknown as typeof WebSocket
+    let release!: () => void
+    ;(globalThis as Record<string, unknown>)[PRODUCT_AUTH_BOOTSTRAP_PROMISE] = new Promise<void>((resolve) => { release = resolve })
+    const original = globalThis.fetch
+    const calls: string[] = []
+    globalThis.fetch = (input: URL | RequestInfo) => {
+      calls.push(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url)
+      return Promise.resolve(new Response('{}', { status: 200 }))
+    }
+    try {
+      const handle = await mount()
+      const unary = (handle.api as WebApiClient).host.describe({}).catch(() => undefined)
+      const generic = handle.rpc.call('/api', 'goals/create', {}).catch(() => undefined)
+      const streamAbort = new AbortController()
+      const iterator = handle.api.events.mux({}, streamAbort.signal)[Symbol.asyncIterator]()
+      const next = iterator.next()
+      await Promise.resolve()
+      expect(calls).toEqual([])
+      expect(sockets).toEqual([])
+      release()
+      await Promise.all([unary, generic])
+      await vi.waitFor(() => { expect(sockets).toHaveLength(1) })
+      expect(calls.some(url => url.includes('/api/host.describe'))).toBe(true)
+      expect(calls.some(url => url.includes('/api/goals/create'))).toBe(true)
+      streamAbort.abort()
+      await next
+    } finally {
+      globalThis.fetch = original
+    }
   })
 
   it('opens one WebSocket per downlink, parses frames, and aborts both without using fetch', async () => {

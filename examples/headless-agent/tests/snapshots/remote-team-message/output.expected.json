@@ -1,0 +1,27 @@
+{
+  "remoteMessage": "websocket-v7-after-reconnect",
+  "admission": [
+    "pending",
+    "acknowledged",
+    "active"
+  ],
+  "pendingDispatch": "rejected",
+  "adapter": "direct-v4",
+  "members": 3,
+  "explicitToolMessages": 2,
+  "broadcastMessages": 2,
+  "fastSources": 3,
+  "delayedSources": 2,
+  "receipts": 5,
+  "orderedContent": [
+    "text",
+    "image",
+    "text"
+  ],
+  "receiverModelRequests": [
+    1,
+    1
+  ],
+  "automaticChannelReplies": 0,
+  "groupFinal": "rejected"
+}

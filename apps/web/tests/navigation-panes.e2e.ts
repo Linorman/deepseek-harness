@@ -85,7 +85,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
   let slotErrors: string[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     // The workspace-aware flow runs sessions in <workspaceCwd>/workspace;
     // the read targets must live in that session cwd (pre-creation is safe
     // because the picker adopts an existing directory by path).
@@ -115,6 +115,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     // RPC baselines succeed; arm before navigation so neither response is missed.
     const sessionBaseline = baselineResponse(page, 'session.list')
     const workspaceBaseline = baselineResponse(page, 'workspace.list')
+    await scaffold.authenticateBrowserPage(page)
     const [, sessionResponse, workspaceResponse] = await Promise.all([
       page.goto(scaffold.baseUrl, { waitUntil: 'load' }),
       sessionBaseline,
@@ -333,6 +334,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     })
     const observerSessionBaseline = baselineResponse(observer, 'session.list')
     const observerWorkspaceBaseline = baselineResponse(observer, 'workspace.list')
+    await scaffold.authenticateBrowserPage(observer)
     const [, observerSessionResponse, observerWorkspaceResponse] = await Promise.all([
       observer.goto(scaffold.baseUrl, { waitUntil: 'load' }),
       observerSessionBaseline,

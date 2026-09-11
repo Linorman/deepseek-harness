@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Begin your reply with the" [disabled]
-  - img
-  - text: Standard mode
+  - text: Begin your reply with the
   - button "Session log":
     - text: Session log
     - img
@@ -33,8 +30,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - textbox "Message the agent"

@@ -4,7 +4,7 @@ English | [中文](persistence.zh.md)
 
 The **durability seam** for the event log. [session.md](session.md) describes the in-memory `Session` — the append-only `SessionEvent` log that is the source of truth. This page describes how that log is made durable: the abstract `SessionPersistence` service, its backends, the flush checkpoint, crash recovery, and the metadata header that travels alongside the log. The event vocabulary the log carries is enumerated, member by member, in the generated [persistence log event catalog](../persistence-catalog.md).
 
-The seam is a [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md): one abstract service ([dsh-session-persistence](../../packages/session/session-persistence), `ctx.sessionPersistence`) defining locate/create/append, reusable Session preparation, logical load/inspect, physical suffix reads, and lightweight list/snapshot observation over the existing `SessionEvent` — **no parallel persisted event type** — and three interchangeable providers implementing the same contract. See the [session-persistence Agent Note](../../.agents/notes/implemented/architecture/2026-06-14-session-persistence.md).
+The seam is a [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md): one abstract service ([clocky-session-persistence](../../packages/session/session-persistence), `ctx.sessionPersistence`) defining locate/create/append, reusable Session preparation, logical load/inspect, physical suffix reads, and lightweight list/snapshot observation over the existing `SessionEvent` — **no parallel persisted event type** — and three interchangeable providers implementing the same contract. See the [session-persistence Agent Note](../../.agents/notes/implemented/architecture/2026-06-14-session-persistence.md).
 
 ## The flush checkpoint
 
@@ -14,7 +14,7 @@ The seam is a [capability seam](../../.agents/notes/implemented/architecture/202
 
 A backend that reloads a log crashed mid-turn finds an open `turn/start` with no `turn/end`. It does **not** truncate — a single turn can be huge in a long-horizon task (many steps, large tool output), and those events were durably appended before the crash. Instead it closes the orphaned turn with a synthetic `turn/end { reason: { kind: 'interrupted' } }`, keeping the interrupted execution balanced without changing any standalone events before or after it. `interrupted` is the one `TurnEndReason` no loop emits (see [session.md](session.md#why-a-turn-ended-turnendreasonmap)).
 
-Repair applies only to cold sessions. For a live id, `SessionPersistence.load(id)` waits until the authoritative in-memory snapshot is durable and returns it only when balanced; an open live turn rejects rather than receiving synthetic interruption boundaries. HMR adopts a live prefix without closing its active turn.
+Repair applies only to cold sessions. For a live id, `SessionPersistence.load(id)` waits until the authoritative in-memory snapshot is durable and returns it only when balanced; an open live turn rejects rather than receiving synthetic interruption boundaries. HMR adopts a live prefix only when its cwd and paired Team/Participant provenance match, without closing its active turn.
 
 `SessionPersistence.inspect(id)` constructs an immutable logical Session without publishing it or writing recovery. Cold inspection balances an interrupted turn in memory while leaving torn physical tails untouched; inspection of an already-live Session borrows its current immutable snapshot and may therefore contain an open turn. Coordinator-backed implementations retain the exact cold unpublished Session in a bounded LRU, so repeated history reads and a later `prepare(id)` share one read, decompression, validation, freeze, and Session construction. `prepare(id)` reserves the Session, commits pending repair, and returns a disposable publication handle; `load(id)` uses the same machinery to commit repair without publication. The [Session preparation decision](../../.agents/notes/implemented/architecture/2026-08-05-session-preparation.md) owns this lifecycle.
 
@@ -40,7 +40,7 @@ interface SessionLocation {
 
 ## `SessionHeader` — metadata beside the log
 
-Per-session metadata travels **separately** from the event log: format version, cwd, lineage, and the seed boundary are storage concerns, not conversation events, so they stay out of `SessionEventMap` and never reach `deriveMessages()`. The header is attached to a `Session` via `session.header`.
+Per-session metadata travels **separately** from the event log: format version, cwd, opaque Team/Participant provenance, lineage, and the seed boundary are storage concerns, not conversation events, so they stay out of `SessionEventMap` and never reach `deriveMessages()`. The paired Team references identify a local Session's Participant but do not make the Session a Team membership authority. `parentSession` retains fork seed lineage; subagent identity and delegation depth are model-hidden descriptor-event facts. The header is attached to a `Session` via `session.header`.
 
 Source: [`packages/core/session/src/types.ts`](../../packages/core/session/src/types.ts)
 
@@ -61,6 +61,17 @@ interface SessionHeader {
   readonly createdAt: number
   /** Absolute working directory the session was created in (if any). */
   readonly cwd?: string
+  /**
+   * Opaque Team-owned id for the Team that owns this Session's local
+   * Participant. The Session layer stores the serialized reference without
+   * resolving Team membership; it is present only with `participantId`.
+   */
+  readonly teamId?: string
+  /**
+   * Opaque Team-owned id for the local Participant represented by this Session.
+   * It is present only with `teamId`.
+   */
+  readonly participantId?: string
   /** The session this one was forked from (seed lineage), if any. */
   readonly parentSession?: SessionId
   /**
@@ -68,17 +79,6 @@ interface SessionHeader {
    * boundary lets resume and replay distinguish parent history from child work.
    */
   readonly seedLength?: number
-  /**
-   * Coarse product classification for a session created as a subagent child.
-   * This is presentation metadata, not proof that the child is continuable.
-   */
-  readonly origin?: 'subagent'
-  /**
-   * Delegation depth: absent (zero) for a top-level session, parent depth + 1
-   * for a subagent child. Persisted so a recursion budget survives restart and
-   * resume — a runtime-only depth would reset a resumed child to top-level.
-   */
-  readonly delegationDepth?: number
   /**
    * Id of the agent preset this session's agent was composed from, when the
    * deployment composes per session. Durable because the preset decides the
@@ -95,7 +95,7 @@ A backend refuses a log it cannot faithfully interpret with `SessionFormatUnsupp
 
 ## `CreateSessionOptions` — seeding and metadata
 
-Creating a `Session` through the store takes a `seed` (initial replay or fork history) and `meta` (the storage-level fields the store folds into a `SessionHeader`). The store fills in `version`/`id` and defaults `createdAt`; the caller may supply the validated absolute `cwd`, the `parentSession` lineage, the `seedLength` seed boundary, the optional coarse `origin`, the `delegationDepth`, the `agentPreset` the agent was composed from, and an existing `createdAt`. `origin: 'subagent'` lets product navigation hide duplicate child rows; it does not prove that a descriptor is valid or that the child can resume.
+Creating a `Session` through the store takes a `seed` (initial replay or fork history) and `meta` (the storage-level fields the store folds into a `SessionHeader`). The store fills in `version`/`id` and defaults `createdAt`; the caller may supply the validated absolute `cwd`, paired opaque Team/Participant references, the `parentSession` lineage, the `seedLength` seed boundary, the `agentPreset` the agent was composed from, and an existing `createdAt`. `parentSession`/`seedLength` retain trusted seed lineage; subagent identity and depth are stored in the descriptor event.
 
 ```ts type-equiv
 /**
@@ -112,17 +112,17 @@ interface CreateSessionOptions {
    */
   readonly meta?: {
     readonly cwd?: string
+    readonly teamId?: string
+    readonly participantId?: string
     readonly parentSession?: SessionId
     readonly createdAt?: number
     readonly seedLength?: number
-    readonly origin?: 'subagent'
-    readonly delegationDepth?: number
     readonly agentPreset?: string
   }
 }
 ```
 
-Replay/fork is therefore `ctx.sessions.create(id, { seed: seedEvents })`; resuming a *persisted* session into a live agent is `ctx.agents.resume({ resumeSessionId })`.
+Trusted providers, recovery, and tests use `ctx.sessions.create(id, { seed: seedEvents })` for replay/fork and `ctx.agents.resume({ resumeSessionId })` to resume a *persisted* Session into a live Agent. Shipped products enter through Team APIs, whose placement owns their Session creation.
 
 ## `SessionRawArtifact` — verbatim stored artifact text
 
@@ -230,10 +230,10 @@ interface SessionPersistenceSnapshot {
 
 ## The backends
 
-All implement the same abstract `SessionPersistence` (locate/create/append/prepare/load/inspect/readFrom/list/listSnapshots over `SessionEvent`, with optional cancellation on observation methods) and pass the shared `runPersistenceContract` suite:
+All implement the same abstract `SessionPersistence` (locate/create/materializeHeader/append/prepare/load/inspect/readFrom/list/listSnapshots over `SessionEvent`, with optional cancellation on observation methods) and pass the shared `runPersistenceContract` suite:
 
-- **[dsh-session-persistence-jsonl](../../packages/session/session-persistence-jsonl)** — an append-only logical JSONL log per session, stored as checksummed concatenated Zstandard frames by default or raw lines by configuration, with crash-safe atomic writes, interrupted-turn recovery, and a read/replay path.
-- **[dsh-session-persistence-sqlite](../../packages/session/session-persistence-sqlite)** — an opt-in `node:sqlite` backend using schema 17 to store exact same-block delta runs in bounded physical `text-chunks`, `reasoning-chunks`, and `tool-call-chunks` rows. It reconstructs the complete logical event stream before returning it, packs only newly durable batches, and rejects older schemas rather than migrating them.
+- **[clocky-session-persistence-jsonl](../../packages/session/session-persistence-jsonl)** — an append-only logical JSONL log per session, stored as checksummed concatenated Zstandard frames by default or raw lines by configuration, with crash-safe atomic writes, interrupted-turn recovery, and a read/replay path.
+- **[clocky-session-persistence-sqlite](../../packages/session/session-persistence-sqlite)** — an opt-in `node:sqlite` backend using schema 18 to store paired Team/Participant header provenance and exact same-block delta runs in bounded physical `text-chunks`, `reasoning-chunks`, and `tool-call-chunks` rows. It reconstructs the complete logical event stream before returning it, packs only newly durable batches, and rejects older schemas rather than migrating them.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -284,6 +284,15 @@ readRaw(_id: SessionId, signal?: AbortSignal): Promise<SessionRawArtifact | unde
  * @param meta - the immutable header (id, version, cwd, lineage) to record.
  */
 abstract create(meta: SessionHeader): Promise<void>
+
+/**
+ * Durably write a Session's header even when its event log is empty. A
+ * provider may use this before publishing an Agent whose header provenance
+ * must survive a process restart.
+ * @param session - Session whose immutable header must become materialized.
+ * @returns resolution after the header is durable.
+ */
+abstract materializeHeader(session: Session): Promise<void>
 
 /**
  * Durably persist a batch of events. Honors the append-only and contiguous-
@@ -379,7 +388,7 @@ abstract list(signal?: AbortSignal): Promise<SessionHeader[]>
 abstract listSnapshots(signal?: AbortSignal): Promise<SessionPersistenceSnapshot[]>
 ```
 
-Types: [SessionEvent](session.md) · [SessionId](core.md)
+Types: [Session](session.md) · [SessionEvent](session.md) · [SessionId](core.md)
 
 Source: [`packages/session/session-persistence/src/index.ts`](../../packages/session/session-persistence/src/index.ts)
 <!-- END GENERATED cordis-surface -->

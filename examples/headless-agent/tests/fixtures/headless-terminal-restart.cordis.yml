@@ -1,0 +1,41 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: headless-terminal-restart-model
+    model: headless-terminal-restart-model
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_TERMINAL_RESTART_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_TERMINAL_RESTART_BACKEND
+    routes: {}
+
+# Startup and committed changes own recovery; no closure discovery pulse is configured.
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: headless-terminal-restart-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_TERMINAL_RESTART_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: headless-terminal-restart-driver
+      name: './snapshot-fixtures/headless-terminal-restart-driver.ts'
+      config:
+        stage: !!js process.env.CLOCKY_TERMINAL_RESTART_STAGE
+        outcome: !!js process.env.CLOCKY_TERMINAL_RESTART_OUTCOME
+        window: !!js process.env.CLOCKY_TERMINAL_RESTART_WINDOW
+        teamId: !!js process.env.CLOCKY_TERMINAL_RESTART_TEAM_ID

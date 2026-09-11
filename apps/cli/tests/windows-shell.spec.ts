@@ -156,3 +156,18 @@ describe('shipped agent presets gate both shell tools by platform', () => {
     expect(byId.get('terminal-pwsh')?.config).toMatchObject({ shellDialect: 'pwsh' })
   })
 })
+
+describe('shipped Web agent presets', () => {
+  const presetRoot = resolve(fileURLToPath(new URL('../package.json', import.meta.url)), '..', 'config', 'agent-presets')
+
+  it.each(['standard', 'code', 'cordis'])('preset %s omits the fork delegation row', (preset) => {
+    const entries: unknown = yaml.load(
+      readFileSync(join(presetRoot, preset, 'agent.cordis.yml'), 'utf8'),
+      { schema: entryListSchema },
+    )
+    if (!Array.isArray(entries)) throw new TypeError(`preset ${preset} must parse to an entry array`)
+    expect(entries.some(entry => (
+      typeof entry === 'object' && entry !== null && (entry as Record<string, unknown>).id === 'tool-subagent-fork'
+    ))).toBe(false)
+  })
+})

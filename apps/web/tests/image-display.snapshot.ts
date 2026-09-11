@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Multimodal image surfaces over the BUILT client graph (the code-mode-fixture
 // idiom: real bundles via AppWebEntry, keyless FixtureApiClient transport).
-// Opens the fixture history session whose turn 73 carries an image in BOTH a
+// Opens the fixture Team coordinator transcript whose turn 73 carries an image in BOTH a
 // user message and an assistant message, and pins the product surfaces: the
 // history ImageGallery loading real fixture bytes through the authorized
 // sessions.attachment route, the single-click ImageLightbox, and the composer
@@ -12,29 +12,28 @@ import { installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
 
 installAssembledBootEnv()
 
-/** Open the fixture history session (the alpha log carrying the turn-72 image pair) and wait for its gallery. */
-async function openFixtureSession(): Promise<void> {
-  const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-  const group = (await within(tree).findAllByText('fixture'))
-    .map(el => el.closest<HTMLElement>('[role="treeitem"]'))
-    .find(el => el?.getAttribute('aria-expanded') !== null)
-  if (group === null || group === undefined) throw new Error('fixture Workspace group missing')
-  if (group.getAttribute('aria-expanded') === 'false') {
-    fireEvent.click(within(group).getByText('fixture'))
-    await waitFor(() => {
-      expect(group.getAttribute('aria-expanded')).toBe('true')
-    })
-  }
-  const session = await within(tree).findByText('Fixture 历史会话')
-  fireEvent.click(session)
+/** Open the fixture Team coordinator transcript. */
+async function openFixtureCoordinator(): Promise<void> {
+  const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+  fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
   await waitFor(() => {
-    expect(document.querySelectorAll('[data-align] img').length).toBeGreaterThan(0)
+    expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })
+}
+
+/** Open the fixture Team coordinator and settle its resident interactions. */
+async function coordinatorComposer(): Promise<HTMLTextAreaElement> {
+  await openFixtureCoordinator()
+  for (let index = 0; index < 3; index += 1) {
+    fireEvent.click(await screen.findByRole('button', { name: 'Skip this question' }))
+  }
+  fireEvent.click(await screen.findByRole('button', { name: 'Allow once' }))
+  return await screen.findByRole('textbox', {}, { timeout: 10_000 }) as HTMLTextAreaElement
 }
 
 it('renders the history image pair through the authorized attachment route and opens the lightbox', async () => {
   mountAssembledApp()
-  await openFixtureSession()
+  await openFixtureCoordinator()
 
   // Both the user-side (align=end) and assistant-side (align=start) galleries
   // load real fixture bytes over sessions.attachment. jsdom provides
@@ -80,15 +79,10 @@ it('renders the history image pair through the authorized attachment route and o
 
 it('accepts pasted images into the composer rail in order and removes them', async () => {
   mountAssembledApp()
-
-  const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-  const start = tree.querySelector<HTMLButtonElement>('button[aria-label="New session in fixture"]')
-  if (start === null) throw new Error('fixture Workspace new-session action missing')
-  fireEvent.click(start)
+  const textarea = await coordinatorComposer()
 
   // Image-only send arming is pinned at package level (input-bar.spec.tsx);
   // this assembled lane pins the intake chain over the built graph.
-  const textarea = await screen.findByPlaceholderText('Describe what you want to build', {}, { timeout: 10_000 })
   const image = new File([new Uint8Array([137, 80, 78, 71])], 'pasted.png', { type: 'image/png' })
   fireEvent.paste(textarea, {
     clipboardData: {
@@ -152,12 +146,7 @@ it('accepts pasted images into the composer rail in order and removes them', asy
 
 it('accepts a whole-page drop under the limits-labeled overlay and refuses an over-limit batch at intake', async () => {
   mountAssembledApp()
-
-  const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-  const start = tree.querySelector<HTMLButtonElement>('button[aria-label="New session in fixture"]')
-  if (start === null) throw new Error('fixture Workspace new-session action missing')
-  fireEvent.click(start)
-  const textarea = await screen.findByPlaceholderText('Describe what you want to build', {}, { timeout: 10_000 })
+  const textarea = await coordinatorComposer()
 
   // A file drag anywhere over the page raises the full-viewport overlay whose
   // desc line carries the projected limits — copy that can only render after
@@ -165,8 +154,9 @@ it('accepts a whole-page drop under the limits-labeled overlay and refuses an ov
   const image = new File([new Uint8Array([137, 80, 78, 71])], 'dropped.png', { type: 'image/png' })
   const dataTransfer = { types: ['Files'], files: [image], dropEffect: 'none' }
   fireEvent.dragEnter(document.body, { dataTransfer })
-  const overlay = await screen.findByRole('status')
-  expect(overlay.textContent).toContain('Drag images here to add them')
+  const overlayCopy = await screen.findByText('Drag images here to add them')
+  const overlay = overlayCopy.closest('[role="status"]')
+  if (overlay === null) throw new Error('image drop overlay missing status role')
   await waitFor(() => {
     expect(overlay.textContent).toContain('Up to 20 images, 5MB each')
   })
@@ -178,7 +168,7 @@ it('accepts a whole-page drop under the limits-labeled overlay and refuses an ov
     if (rail === null) throw new Error('attachment rail missing after page drop')
     expect([...rail.querySelectorAll('img')].map(img => img.getAttribute('alt'))).toEqual(['dropped.png'])
   }, { timeout: 5_000 })
-  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByText('Drag images here to add them')).toBeNull()
 
   // An intake that would exceed the projected per-message count is refused as
   // a whole batch at add time: the banner names the limit and the rail keeps
@@ -200,13 +190,7 @@ it('accepts a whole-page drop under the limits-labeled overlay and refuses an ov
 
 it('renders a host dimension rejection with the projected 2000px limit', async () => {
   mountAssembledApp('?fixture&fixturePrompt=reject')
-
-  const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-  const start = tree.querySelector<HTMLButtonElement>('button[aria-label="New session in fixture"]')
-  if (start === null) throw new Error('fixture Workspace new-session action missing')
-  fireEvent.click(start)
-
-  const textarea = await screen.findByPlaceholderText('Describe what you want to build', {}, { timeout: 10_000 })
+  const textarea = await coordinatorComposer()
   const image = new File([new Uint8Array([137, 80, 78, 71])], 'too-wide.png', { type: 'image/png' })
   fireEvent.paste(textarea, {
     clipboardData: {

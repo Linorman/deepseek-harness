@@ -1044,8 +1044,8 @@ describe('DirectoryBrowser', () => {
     expect(b.onClose).not.toHaveBeenCalled()
     // Focus was already on a surviving row, so nothing re-parks it.
     expect(document.activeElement).toBe(row)
-    // With no draft left, Escape falls through to the Modal and closes.
-    fireEvent.keyDown(row, { key: 'Escape' })
+    // jsdom requires the native cancel event after the unconsumed key gesture.
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
     expect(b.onClose).toHaveBeenCalledTimes(1)
   })
 
@@ -1231,11 +1231,11 @@ describe('DirectoryBrowser', () => {
     await waitFor(() => { expect(screen.getByRole('listitem')).toBeTruthy() })
     fireEvent.click(screen.getByRole('button', { name: 'browser.newFolder' }))
     expect(screen.getByLabelText('browser.folderName')).toBeTruthy()
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByLabelText('browser.folderName').closest('dialog')!, new Event('cancel', { cancelable: true }))
     // The nested dialog consumed Escape; the browser stays up.
     expect(screen.queryByLabelText('browser.folderName')).toBeNull()
     expect(b.onClose).not.toHaveBeenCalled()
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
     expect(b.onClose).toHaveBeenCalledOnce()
   })
 
@@ -1247,7 +1247,7 @@ describe('DirectoryBrowser', () => {
     fireEvent.click(screen.getByRole('button', { name: 'browser.newFolder' }))
     fireEvent.change(screen.getByLabelText('browser.folderName'), { target: { value: 'pending' } })
     fireEvent.click(screen.getByRole('button', { name: 'browser.create' }))
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByLabelText('browser.folderName').closest('dialog')!, new Event('cancel', { cancelable: true }))
     // The in-flight fence holds the nested dialog, and the browser must not
     // fall out from under it either.
     expect(screen.getByLabelText('browser.folderName')).toBeTruthy()
@@ -1467,7 +1467,7 @@ describe('DirectoryBrowser', () => {
   it('ignores dismissal while adoption is busy', async () => {
     const b = mount({ busy: true })
     await waitFor(() => { expect(screen.getByRole('dialog')).toBeTruthy() })
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
     expect(b.onClose).not.toHaveBeenCalled()
   })
 

@@ -1,0 +1,44 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: team-run
+  disabled: true
+
+- id: team-delegation
+  disabled: true
+
+- id: tool-team-channel-summary
+  disabled: true
+
+- id: tool-team-goal
+  disabled: true
+
+- id: tool-team-task
+  disabled: true
+
+- id: team-scheduler-dag
+  disabled: true
+
+- id: team-closure-driver
+  disabled: true
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_DIRECT_V4_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_DIRECT_V4_BACKEND
+    routes: {}
+
+- insert:
+    - id: direct-v4-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_DIRECT_V4_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: direct-v4-driver
+      name: './snapshot-fixtures/headless-channel-admission-driver.ts'

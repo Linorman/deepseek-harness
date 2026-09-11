@@ -1,0 +1,116 @@
+- id: product-principals
+  name: '@clocky/clocky-product-principal'
+
+- id: sdk-product-principal
+  name: '../sdk-product-principal.ts'
+
+- id: sdk-jsonrpc-server
+  name: '@clocky/clocky-sdk-jsonrpc-server'
+
+- id: team-final-llm
+  name: ./team-final-llm.ts
+
+- id: agent-default-model
+  name: '@clocky/clocky-agent-default-model'
+  config:
+    provider: sdk-subagent-team-snapshot
+    model: sdk-subagent-team-snapshot
+
+- id: agent-spine
+  name: '@clocky/clocky-agent-spine-demo'
+  config:
+    persona: Complete the Team task through team_final.
+    workspaceContext: false
+    skills:
+      enabled: false
+    toolBash: false
+    toolJobs: false
+
+- id: sessions
+  name: '@clocky/clocky-session-persistence-jsonl'
+  config:
+    root: !!js process.env.CLOCKY_SESSION_ROOT
+    compression: none
+
+- id: team-storage
+  name: '@clocky/clocky-storage'
+
+- id: team-storage-json
+  name: '@clocky/clocky-storage-json'
+  config:
+    root: !!js process.env.CLOCKY_TEAM_STORAGE_ROOT
+
+- id: team-storage-log
+  name: '@clocky/clocky-storage-log'
+  config:
+    backend: json
+    routes: {}
+
+- id: team-hub
+  name: '@clocky/clocky-team-hub'
+
+- id: team-channel-direct
+  name: '@clocky/clocky-team-channel-direct'
+
+- id: team-agent-runtime
+  name: '@clocky/clocky-agent-runtime'
+
+- id: team-agent-runtime-in-process
+  name: '@clocky/clocky-agent-runtime-in-process'
+
+- id: team-activation-controller
+  name: '@clocky/clocky-team-activation-controller'
+
+- id: team-link
+  name: '@clocky/clocky-team-link'
+
+- id: team-link-local
+  name: '@clocky/clocky-team-link-local'
+
+- id: team-human-actor
+  name: '@clocky/clocky-team-human-actor'
+
+- id: team-channel-admission
+  name: '@clocky/clocky-team-channel-admission'
+
+- id: team-agent-client
+  name: '@clocky/clocky-team-agent-client'
+
+- id: tool-team
+  name: '@clocky/clocky-tool-team'
+
+- id: team-run
+  name: '@clocky/clocky-team-run'
+
+- id: team-closure-drive-registry
+  name: '@clocky/clocky-team-closure-driver/registry'
+
+- id: team-closure-driver-hub
+  name: '@clocky/clocky-team-closure-driver/hub'
+  config:
+    backend: hub
+
+- id: team-closure-driver
+  name: '@clocky/clocky-team-closure-driver'
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+    pulseIntervalMs: 1000
+
+- id: tool-team-goal
+  name: '@clocky/clocky-tool-team-goal'
+
+- id: session-checkpoints
+  name: '@clocky/clocky-session-checkpoint-policy'
+
+- id: team-human-client
+  name: '@clocky/clocky-team-human-client'
+  config:
+    storagePageSize: 32
+    maxPageSize: 32
+    maxDeliveryBytes: 262144
+    maxPendingOperations: 128
+    watchTimeoutMs: 30000
+    pollIntervalMs: 250

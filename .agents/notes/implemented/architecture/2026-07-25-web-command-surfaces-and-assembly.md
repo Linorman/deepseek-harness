@@ -1,10 +1,10 @@
-# Agent Note: Web command business surfaces and assembly (ui-commands / ui-skill / ui-subagent)
+# Agent Note: Web command business surfaces and assembly (ui-commands / ui-skill)
 
 Status: implemented
 
 English | [中文](2026-07-25-web-command-surfaces-and-assembly.zh.md)
 
-> Scope: the command directory cache and three-kind dispatch (ui-commands), the popup selection flow, the two skill / subagent reference sources, and fixture command routing plus assembly acceptance (the slash-flow snapshot). The carrying wire lives in the [session scope note](2026-07-25-web-client-session-scope-and-provide-channel.md); triggers, the menu, and the input machine live in the [input machine note](2026-07-25-web-input-machine-and-slash-pipeline.md).
+> Scope: the command directory cache and three-kind dispatch (ui-commands), the popup selection flow, the skill reference source, and fixture command routing plus assembly acceptance (the slash-flow snapshot). The carrying wire lives in the [session scope note](2026-07-25-web-client-session-scope-and-provide-channel.md); triggers, the menu, and the input machine live in the [input machine note](2026-07-25-web-input-machine-and-slash-pipeline.md).
 
 ## Problem
 
@@ -29,7 +29,6 @@ The pipeline was ready but command knowledge had no landing spot: host-side `ctx
 ### Reference sources (seeing only projections plus their own apply closures, on the root ctx)
 
 - **ui-skill**: `skill.list({sessionId})` addresses by session (the host resolves the project root from the session header); the directory cache is single-flight keyed by sessionId, prewarmed at birth by the `warm` hook and fully cleared by `connection/reset`. A pick produces a text outcome (the literal `/name ` text, the plain-text-reference decision); `lexicon` supplies the roster from CatalogFetch's settled snapshot (`undefined` while not warm), and `subscribeLexicon` notifies per-session listeners on settle and on invalidation. No match hook (references never enter command adjudication). Skill references ride ordinary prompts as literal text (outside the command plane; tool-skill unchanged, with the session-prefix directory providing the cooperative association).
-- **ui-subagent**: candidates are zero-RPC (the sessions.list snapshot filtered by parentId/running); a pick produces a text outcome (the literal `@name ` text); `lexicon` derives from the same snapshot and `subscribeLexicon` forwards the list store's change feed (the model-side representation awaits its business workstream).
 
 ### Fixture command routing and assembly
 

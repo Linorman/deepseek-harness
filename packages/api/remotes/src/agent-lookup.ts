@@ -11,6 +11,7 @@ import type {} from '@clocky/clocky-typert-registry'
 export type ApiRemoteLookupError =
   | { readonly code: 'agent-busy'; readonly message: string; readonly details: { readonly reason: string } }
   | { readonly code: 'session-not-found'; readonly message: string; readonly details: { readonly sessionId: SessionId } }
+  | { readonly code: 'team-run-unavailable'; readonly message: string; readonly details: Record<never, never> }
   | { readonly code: 'internal'; readonly message: string; readonly details: Record<never, never> }
 
 /** Result of resolving one session identity to its live Agent. */
@@ -52,6 +53,29 @@ export class ApiRemoteSubagentSessionOwnership extends Error {
   }
 }
 
+/** Session identity whose lifecycle belongs to Team activation and product routing. */
+class ApiRemoteTeamSessionOwnership extends Error {
+  /**
+   * Construct the ownership fence.
+   * @param sessionId - identity reserved to Team operations.
+   */
+  constructor(readonly sessionId: SessionId) {
+    super(`session "${sessionId}" is a Team participant session; use Team operations`)
+  }
+}
+
+/**
+ * Test whether generic Host turn, command, queue, and lifecycle routing must
+ * leave an identity to Team activation and product routing. The model catalog
+ * endpoints are the explicit exception: the Team coordinator route resolves
+ * their live Agent directly for model selection.
+ * @param session - attached or inspected Session metadata.
+ * @returns whether generic Remote and legacy API calls must reject the identity.
+ */
+export function hasApiRemoteTeamOwner(session: Pick<Session, 'header'>): boolean {
+  return session.header.teamId !== undefined
+}
+
 /**
  * Test whether generic Host routing must leave an identity to subagent routing.
  * @param ctx - Host Context carrying the live Agent registry.
@@ -61,10 +85,12 @@ export class ApiRemoteSubagentSessionOwnership extends Error {
  */
 export function hasApiRemoteSubagentOwner(
   ctx: Context,
-  session: Pick<Session, 'header'>,
+  session: Pick<Session, 'header' | 'events'> | { header: SessionHeader; events?: readonly SessionEvent[] },
   agent: Agent | undefined,
 ): boolean {
-  if (session.header.origin === 'subagent') return true
+  const seedLength = session.header.seedLength ?? 0
+  if (session.events?.some(event =>
+    String(event.type) === 'subagent/descriptor' && event.seq >= seedLength) === true) return true
   const parentId = session.header.parentSession
   if (parentId === undefined || agent === undefined) return false
   const parent = ctx.agents.get(parentId)
@@ -81,6 +107,19 @@ export function apiRemoteSubagentOwnershipError(sessionId: SessionId): ApiRemote
     code: 'agent-busy',
     message: `session "${sessionId}" is owned by subagent routing`,
     details: { reason: 'use subagent delivery for this child session' },
+  }
+}
+
+/**
+ * Build the stable caller-facing Team ownership rejection.
+ * @param sessionId - identity reserved to Team activation and product operations.
+ * @returns the existing `team-run-unavailable` RPC shape.
+ */
+export function apiRemoteTeamOwnershipError(sessionId: SessionId): ApiRemoteLookupError {
+  return {
+    code: 'team-run-unavailable',
+    message: `session "${sessionId}" is a Team participant session; use Team operations`,
+    details: {},
   }
 }
 
@@ -112,8 +151,8 @@ export async function inspectApiRemoteSession(
 
 /**
  * Create the Host's shared Agent resolver and configure Agent/Session Typert lookups.
- * Live Agents are reused, ordinary cold sessions resume once per identity, and
- * subagent-owned identities retain the legacy `agent-busy` fence.
+ * Live ordinary Agents are reused, ordinary cold sessions resume once per
+ * identity, and Team- or subagent-owned identities stay with their owners.
  * @param ctx - owning Host Context.
  * @param options - defaults and Agent-scope setup used only for cold resume.
  * @returns resolver shared by legacy API Proxy methods and Typert lookups.
@@ -127,6 +166,9 @@ export function createApiRemoteAgentResolver(
   const fencedLiveAgent = (sessionId: SessionId): ApiRemoteAgentResult | undefined => {
     const live = ctx.agents.get(sessionId)
     if (live === undefined) return undefined
+    if (hasApiRemoteTeamOwner(live.session)) {
+      return { error: apiRemoteTeamOwnershipError(sessionId) }
+    }
     if (hasApiRemoteSubagentOwner(ctx, live.session, live)) {
       return { error: apiRemoteSubagentOwnershipError(sessionId) }
     }
@@ -137,6 +179,9 @@ export function createApiRemoteAgentResolver(
     const fenced = fencedLiveAgent(sessionId)
     if (fenced !== undefined) return fenced
     const attached = ctx.sessions.get(sessionId)
+    if (attached !== undefined && hasApiRemoteTeamOwner(attached)) {
+      return { error: apiRemoteTeamOwnershipError(sessionId) }
+    }
     if (attached !== undefined && hasApiRemoteSubagentOwner(ctx, attached, undefined)) {
       return { error: apiRemoteSubagentOwnershipError(sessionId) }
     }
@@ -145,7 +190,10 @@ export function createApiRemoteAgentResolver(
       resume = (async () => {
         try {
           const inspected = await inspectApiRemoteSession(ctx, sessionId)
-          if (hasApiRemoteSubagentOwner(ctx, { header: inspected.meta }, undefined)) {
+          if (hasApiRemoteTeamOwner({ header: inspected.meta })) {
+            throw new ApiRemoteTeamSessionOwnership(sessionId)
+          }
+          if (hasApiRemoteSubagentOwner(ctx, { header: inspected.meta, events: inspected.events }, undefined)) {
             throw new ApiRemoteSubagentSessionOwnership(sessionId)
           }
           // Built from the inspected session before the published re-checks
@@ -155,6 +203,9 @@ export function createApiRemoteAgentResolver(
           const setup = options.setup === undefined ? undefined : await options.setup(inspected)
           const publishedSession = ctx.sessions.get(sessionId)
           const publishedAgent = ctx.agents.get(sessionId)
+          if (publishedSession !== undefined && hasApiRemoteTeamOwner(publishedSession)) {
+            throw new ApiRemoteTeamSessionOwnership(sessionId)
+          }
           if (publishedSession !== undefined
             && hasApiRemoteSubagentOwner(ctx, publishedSession, publishedAgent)) {
             throw new ApiRemoteSubagentSessionOwnership(sessionId)
@@ -177,12 +228,18 @@ export function createApiRemoteAgentResolver(
       if (error instanceof ApiRemoteSessionNotFound) {
         return { error: { code: 'session-not-found', message: error.message, details: { sessionId } } }
       }
+      if (error instanceof ApiRemoteTeamSessionOwnership) {
+        return { error: apiRemoteTeamOwnershipError(error.sessionId) }
+      }
       if (error instanceof ApiRemoteSubagentSessionOwnership) {
         return { error: apiRemoteSubagentOwnershipError(error.sessionId) }
       }
       const fenced = fencedLiveAgent(sessionId)
       if (fenced !== undefined) return fenced
       const attached = ctx.sessions.get(sessionId)
+      if (attached !== undefined && hasApiRemoteTeamOwner(attached)) {
+        return { error: apiRemoteTeamOwnershipError(sessionId) }
+      }
       if (attached !== undefined && hasApiRemoteSubagentOwner(ctx, attached, undefined)) {
         return { error: apiRemoteSubagentOwnershipError(sessionId) }
       }

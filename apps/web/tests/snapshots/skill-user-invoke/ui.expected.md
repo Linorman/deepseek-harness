@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "/user-invoke-demo and confirm the fixtur" [disabled]
-  - img
-  - text: Standard mode
+  - text: /user-invoke-demo and confirm the fixtur
   - button "Session log":
     - text: Session log
     - img
@@ -26,8 +23,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - textbox "Message the agent"

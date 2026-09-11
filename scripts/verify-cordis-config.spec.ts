@@ -85,4 +85,20 @@ describe('workspace Bundle discovery and product dependency closures', () => {
       `${file}: @clocky/clocky-missing-plugin must be declared in ${manifestPath} dependencies`,
     ])
   })
+
+  it('requires only host backends for the adaptive directory picker', () => {
+    const manifestPath = 'packages/bundle/web-app/package.json'
+    const file = 'packages/bundle/web-app/cordis.patch.yml'
+    const manifest = {
+      name: '@clocky/clocky-web-app',
+      dependencies: {
+        '@clocky/clocky-host-directory-picker-auto': 'workspace:^',
+        '@clocky/clocky-host-directory-picker-browse': 'workspace:^',
+        '@clocky/clocky-host-directory-picker-native': 'workspace:^',
+      },
+    }
+    expect(bundlePluginDependencyErrors(manifestPath, manifest, [
+      { file, name: '@clocky/clocky-host-directory-picker-auto' },
+    ])).toEqual([])
+  })
 })

@@ -5,7 +5,7 @@ import type { AttachmentIdType, ImageAttachmentRef } from '@clocky/clocky-attach
 import type { SessionEvent } from '@clocky/clocky-session/types'
 import type {
   HistoryEntry, IApiClient, MessageId, MuxFrame, PromptContentPart, QueueAction, RpcError,
-  RpcId, RpcResponse, RpcResult, SessionId, SubagentAddress, ToolEventView,
+  RpcId, RpcResponse, RpcResult, SessionId, ToolEventView,
 } from '@clocky/clocky-api-remotes/client'
 // Value import from the inline-safe wire layer (not the connection plugin):
 // plugin-to-plugin value imports are a bundle purity error.
@@ -33,17 +33,12 @@ export const PAGE_MESSAGES = 50
 
 /** Manager-owned observers of a Session object's local state edges. */
 export interface SessionOptions {
-  /** Catalog-discovered address selecting non-activating subagent transport. */
-  address?: SubagentAddress
-  /** Whether the exact direct parent Agent was live at the latest catalog read. */
-  parentAvailable?: boolean
   /**
    * First ACCEPTED prompt on a blank session (fires at most once, on the
    * prompt RPC's success response): the manager mirrors the blank→false flip
    * into its list row so the session surfaces without waiting for a host
    * frame. Acceptance is the flip point because it proves the user message
-   * is in the host log; a rejected first prompt keeps the session blank
-   * (hidden, still reusable by connectWorkspace).
+   * is in the host log; a rejected first prompt keeps the session blank.
    */
   onEngaged?(session: Session): void
   /**
@@ -86,8 +81,6 @@ export class Session implements SessionFace {
   /** Session-owned business Context engine over the contiguous raw window. */
   private readonly conversation: ConversationNodeAssembler
   private running = false
-  private address: SubagentAddress | undefined
-  private parentAvailable = false
   /**
    * Sticky send marker, private input of the composerPhase derivation: set
    * synchronously before prompt()'s first await, never reset — the blank →
@@ -146,8 +139,6 @@ export class Session implements SessionFace {
     private readonly options: SessionOptions = {},
   ) {
     this.projections = options.projections ?? new ProjectionValueStore()
-    this.address = options.address
-    this.parentAvailable = options.parentAvailable ?? false
     this.conversation = options.conversation === undefined
       ? new ConversationNodeAssembler(
         { entries: () => [], fallbackEntry: () => undefined },
@@ -202,43 +193,12 @@ export class Session implements SessionFace {
     this.notifier.markDirty()
     let result: RpcResult<{ accepted: true }>
     try {
-      if (this.address === undefined) {
-        result = (await this.api.sessions.prompt({
-          sessionId: this.sessionId,
-          mode,
-          content,
-          clientTimeZone: resolvedClientTimeZone(),
-        }, signal)).result
-      } else if (this.address.mode === 'one-shot') {
-        result = {
-          ok: false,
-          error: {
-            code: 'subagent-not-resumable',
-            message: 'one-shot subagent conversations are read-only',
-            details: { childSessionId: this.address.childSessionId },
-          },
-        }
-      } else {
-        if (content.some(part => part.type === 'image')) {
-          result = {
-            ok: false,
-            error: {
-              code: 'attachment-error',
-              message: 'Image input is unavailable for subagent continuations.',
-              details: { reason: 'SUBAGENT_IMAGE_UNSUPPORTED' },
-            },
-          }
-        } else {
-          const routed = (await this.api.subagents.prompt({
-            ...this.address,
-            content: content.flatMap(part => part.type === 'text'
-              ? [{ type: 'text' as const, text: part.text }]
-              : []),
-            clientTimeZone: resolvedClientTimeZone(),
-          }, signal)).result
-          result = routed.ok ? { ok: true, value: { accepted: true } } : routed
-        }
-      }
+      result = (await this.api.sessions.prompt({
+        sessionId: this.sessionId,
+        mode,
+        content,
+        clientTimeZone: resolvedClientTimeZone(),
+      }, signal)).result
     } catch (error) {
       result = transportError(error)
     }
@@ -253,8 +213,7 @@ export class Session implements SessionFace {
     // events never flip it), while a rejected first prompt must keep the
     // session blank — the client-side blank mirror only ever lowers, so
     // flipping early on a failure would surface the session forever and
-    // strip its connectWorkspace reuse eligibility against the host's
-    // authority.
+    // contradict the Host summary's authority.
     if (this.blankBit) {
       this.blankBit = false
       this.options.onEngaged?.(this)
@@ -294,35 +253,11 @@ export class Session implements SessionFace {
     }
   }
 
-  /**
-   * Stop the active turn while the Host preserves pending inbox work; failures
-   * land in promptError (same error-strip display slot). A continuable
-   * subagent address routes through `subagent.interrupt`, whose durable
-   * parent-address authority works without a live parent Agent; a one-shot
-   * address stays uncancellable (the UI offers no stop action, so this arm is
-   * defensive).
-   * @returns the cancel result.
-   */
+  /** Stop the active turn while the Host preserves pending inbox work. */
   async cancel(): Promise<RpcResult<{ accepted: true }>> {
-    const address = this.address
-    if (address !== undefined && address.mode === 'one-shot') {
-      const result: RpcResult<{ accepted: true }> = {
-        ok: false,
-        error: {
-          code: 'subagent-delivery-unavailable',
-          message: 'subagent activation cancellation is unavailable',
-          details: { childSessionId: address.childSessionId },
-        },
-      }
-      this.promptError = { op: 'stop', error: result.error }
-      this.notifier.markDirty()
-      return result
-    }
     let result: RpcResult<{ accepted: true }>
     try {
-      result = address !== undefined
-        ? (await this.api.subagents.interrupt(address)).result
-        : (await this.api.sessions.cancel({ sessionId: this.sessionId })).result
+      result = (await this.api.sessions.cancel({ sessionId: this.sessionId })).result
     } catch (error) {
       result = transportError(error)
     }
@@ -536,32 +471,6 @@ export class Session implements SessionFace {
   }
 
   /**
-   * Install or clear the catalog-discovered transport address. A changed
-   * address rebuilds an already-open window through its new history route.
-   * @param address - direct parent/child address, or undefined for ordinary transport.
-   * @param parentAvailable - latest exact-parent availability hint.
-   */
-  configureSubagent(address: SubagentAddress | undefined, parentAvailable = false): void {
-    const same = this.address?.parentSessionId === address?.parentSessionId
-      && this.address?.childSessionId === address?.childSessionId
-      && this.address?.mode === address?.mode
-    this.address = address
-    this.parentAvailable = parentAvailable
-    if (!same && this.openState !== 'cold') void this.resync()
-    else this.notifier.markDirty()
-  }
-
-  /**
-   * Update only the parent availability hint from a catalog refresh.
-   * @param available - whether the exact direct parent is live.
-   */
-  handleSubagentParentAvailable(available: boolean): void {
-    if (this.parentAvailable === available) return
-    this.parentAvailable = available
-    this.notifier.markDirty()
-  }
-
-  /**
    * Blank-bit relay from the authoritative summary source (list baseline and
    * the session-added frame). Monotone: once any signal (local first send,
    * running flip, an earlier summary) cleared it, a stale true never
@@ -750,9 +659,6 @@ export class Session implements SessionFace {
       pending: this.pendingCache.value,
       queue: this.queueMirror.snapshot(),
       running: this.running,
-      subagent: this.address === undefined
-        ? null
-        : { address: this.address, parentAvailable: this.parentAvailable },
       composerPhase: derivePhase(
         hasVisibleConversationContent(chat)
           || (!this.blankBit && !this.firstPromptPendingTurn)
@@ -771,15 +677,12 @@ export class Session implements SessionFace {
     }
   }
 
-  /** Select ordinary or addressed history transport from the stored browser fact. */
   private history(payload: { beforeSeq?: number; maxMessages?: number }): Promise<RpcResponse<{
     events: HistoryEntry[]
     hasMore: boolean
     projections?: ProjectionsBaseline
   }>> {
-    return this.address === undefined
-      ? this.api.sessions.history({ sessionId: this.sessionId, ...payload })
-      : this.api.subagents.history({ ...this.address, ...payload })
+    return this.api.sessions.history({ sessionId: this.sessionId, ...payload })
   }
 }
 

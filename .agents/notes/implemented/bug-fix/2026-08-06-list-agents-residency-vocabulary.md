@@ -37,4 +37,4 @@ The service layer is unchanged. `SubagentListEntry.activity` retains `'running' 
 - The rendered line uses `<id> [running] — <label>`, `<id> [idle] — <label>`, or `<id> [ready] — <label>`.
 - The output schema's `status` enum changes with the rendered contract. The generated tool catalog picks up the new description; it renders each tool's `parameters` only and never carried the output schema.
 - Unit coverage pins all three mappings and the description clauses that direct the model to the settlement notice instead of polling this tool.
-- The assembled ACP `subagent-list-agents` scenario renders `ready` for a settled, resumable child.
+- `packages/subagent/tool-subagent-control/tests/list-agents.spec.ts` renders `ready` for a settled, resumable child.

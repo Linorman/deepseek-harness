@@ -52,6 +52,16 @@ const hasSeatbelt = process.platform === 'darwin' && spawnSync('sandbox-exec', [
   stdio: 'ignore',
 }).status === 0
 const hasRunner = hasBwrap || hasSeatbelt
+const localModelBaseURL = process.env.CLOCKY_LOCAL_MODEL_BASE_URL
+const useLocalModel = localModelBaseURL !== undefined && localModelBaseURL.length > 0
+const hasRealModel = useLocalModel || Boolean(process.env.DEEPSEEK_API_KEY)
+const localModelEnvironment = useLocalModel
+  ? {
+    CLOCKY_LOCAL_MODEL_BASE_URL: localModelBaseURL,
+    CLOCKY_LOCAL_MODEL_ID: process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit',
+    CLOCKY_LOCAL_MODEL_API_KEY: process.env.CLOCKY_LOCAL_MODEL_API_KEY ?? 'EMPTY',
+  }
+  : {}
 
 interface Spawned extends LaunchedAcpTestAgent {
   permissionRequests: RequestPermissionRequest[]
@@ -70,6 +80,7 @@ function launchExampleAcpAgent(
     // A dummy key lets the adapter boot keylessly; live tests carry the real key.
     env: {
       DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? 'sk-dummy-for-boot',
+      ...localModelEnvironment,
       CLOCKY_PERMISSION_MODE: sandboxMode,
     },
     requestPermission(params) {
@@ -120,7 +131,7 @@ describe('default sandbox composition keyless smoke (real cordis.yml via the Loa
 
 })
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY || !hasRunner)('default sandbox composition e2e: the live approval loop', () => {
+describe.skipIf(!hasRealModel || !hasRunner)('default sandbox composition e2e: the live approval loop', () => {
   it('denial → model escalation → machine allow-once → the retried write lands on disk', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'sandbox-acp-e2e-'))
     spawned = launchExampleAcpAgent(workdir, 'allow-once', 'read-only')

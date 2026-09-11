@@ -56,3 +56,4 @@ jobs:
         run: >-
           pnpm exec vitest run --config vitest.e2e.config.ts
           packages/e2b/e2b/tests/composition.e2e.ts
+          packages/e2b/team-workspace-e2b/tests/provider.e2e.ts

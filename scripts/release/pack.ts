@@ -7,11 +7,11 @@
  * ([rationale](../../.agents/notes/implemented/process/2026-08-10-npm-release-sequences.md)).
  */
 
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import { releaseFamily, tarballName, type ReleaseFamily, type ReleaseMember } from './families.ts'
-import { isEntry, run } from './process.ts'
+import { isEntry, removeOwnedTree, run } from './process.ts'
 import { PUBLISH_ORDER_FILE, tarballFiles } from './tarball.ts'
 
 /** Where pack output lands when `--out` is omitted. */
@@ -49,8 +49,8 @@ function main(): void {
   family.verifyBuildArtifacts(root)
   family.verifyVersions(members)
 
-  rmSync(destination, { recursive: true, force: true })
-  mkdirSync(destination, { recursive: true })
+  removeOwnedTree(destination)
+  mkdirSync(destination, { recursive: true, mode: 0o700 })
 
   const order: string[] = []
   for (const member of members) order.push(packMember(family, member, destination))

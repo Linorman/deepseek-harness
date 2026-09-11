@@ -1,0 +1,33 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+- id: team-closure-driver
+  disabled: true
+- id: agent-default-model
+  config:
+    provider: workspace-observation-model
+    model: workspace-observation-model
+# Observation is exercised with no artifactProvider or integrationRoot.
+- id: team-workspace-shared
+  config:
+    root: !!js process.cwd()
+    observationMaxEntries: 64
+    observationMaxHashBytes: 65536
+    observationMaxFileBytes: 65536
+    observationMaxPaths: 32
+    observationTimeoutMs: 5000
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_OBSERVATION_BACKEND === 'json'
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_OBSERVATION_BACKEND
+    routes: {}
+- insert:
+    - id: workspace-observation-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_OBSERVATION_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+    - id: workspace-observation-driver
+      name: './snapshot-fixtures/headless-workspace-observation-driver.ts'

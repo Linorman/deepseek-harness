@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-06-19-acp-snapshot-tests.md
-2026-06-19-acp-snapshot-tests.md: cd9a4903b1eaaf624166d23c25789d66b68a6e02
-2026-06-19-acp-snapshot-tests.zh.md: ce6eb812a6a9343c9c58acd205cb6e1f2e156258
+2026-06-19-acp-snapshot-tests.md: 5478c294d4d17bd89deb565d784ddd494dc8dc4d
+2026-06-19-acp-snapshot-tests.zh.md: 390cae4f7d2090c7826b8139331bf5115492f6fb

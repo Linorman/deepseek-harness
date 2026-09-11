@@ -42,7 +42,7 @@ Replay is positional and therefore permits only one in-flight model stream per s
 
 ### Recording harvests the log; keyless replay needs a providerless config
 
-Recording runs the scenario with the real `llm-deepseek` adapter and the JSONL persistence backend configured with `persistenceCompression: 'none'`, then projects the produced `.jsonl` into the scenario dir. The explicit raw mode keeps harvested logs line-readable while ordinary deployments use the backend's compressed default; eligible chunk runs still use the default packed storage rows. Per-event appends are durable, but the harness shuts the subprocess down gracefully (close stdin → `await ctx.dispose()`) before harvesting so the final events are flushed. `llm-replay` itself does no recording — it is replay-only.
+Recording runs the scenario with the real `clocky-llm-pi-ai` adapter and its configured provider profile and the JSONL persistence backend configured with `persistenceCompression: 'none'`, then projects the produced `.jsonl` into the scenario dir. The explicit raw mode keeps harvested logs line-readable while ordinary deployments use the backend's compressed default; eligible chunk runs still use the default packed storage rows. Per-event appends are durable, but the harness shuts the subprocess down gracefully (close stdin → `await ctx.dispose()`) before harvesting so the final events are flushed. `llm-replay` itself does no recording — it is replay-only.
 
 Replay uses a `cordis.snapshot.yml` overlay that replaces the real adapter with `llm-replay` while retaining the live composition. Recording uses the ordinary config and a harness-supplied persistence root. Replay mode skips `.env` loading, so a stray API key cannot trigger a live call. See the [single-source config Agent Note](../../archived/testing/2026-07-04-single-source-acp-replay-config.md).
 
@@ -63,7 +63,7 @@ Tool determinism comes from a generated cwd, scrubbed environment, fresh non-log
 
 ### The replay plugin is its own package
 
-`@deepseek-ai/dsh-llm-replay` is a support package rather than example-local glue. It replaces the real adapter by short-circuiting `llm/stream` with streams reconstructed from JSONL, and its package placement keeps the replay logic under normal coverage gates.
+`@clocky/clocky-llm-replay` is a support package rather than example-local glue. It replaces the real adapter by short-circuiting `llm/stream` with streams reconstructed from JSONL, and its package placement keeps the replay logic under normal coverage gates.
 
 ### Two subcommands, replay in the default gate
 

@@ -6,7 +6,7 @@ English | [中文](2026-07-25-session-list-browsing-and-manual-order.zh.md)
 
 ## Problem
 
-[Workspace UI Complete Product Flow](2026-07-25-workspace-ui-product-flow.md) shipped the first form of the grouped session list and explicitly scoped out operations such as Rename and drag ordering. The design file (figma 239-10458 and its companion screens) has since filled in those interactions: the list must switch to an ungrouped flat view, session rows need a hover detail card and an action menu, workspaces need renaming, and sessions need manual ordering inside their group.
+The grouped session list's first form explicitly scoped out operations such as Rename and drag ordering. The design file (figma 239-10458 and its companion screens) has since filled in those interactions: the list must switch to an ungrouped flat view, session rows need a hover detail card and an action menu, workspaces need renaming, and sessions need manual ordering inside their group.
 
 Two existing mechanisms stood in the way. First, the host durably promoted the active session to the front of its workspace account on every `session/event` (activity pinning), so any manual order would be scrambled by the next activity — two ordering authorities cannot coexist. Second, the browsing area was split across two packages: ui-sidebar owned the list, search, and header rows while ui-workspace only borrowed a picker slot for its popover; every new workspace-domain dialog required cross-package wiring, and ownership grew more twisted with each one.
 
@@ -14,7 +14,7 @@ Two existing mechanisms stood in the way. First, the host durably promoted the a
 
 ### Flat rows and viewing state
 
-The group-by menu offers two modes, WorkSpace / In one list. WorkSpace mode renders peer session rows within each group in the manual order from `WorkspaceView.sessionIds`; In one list combines every session and sorts them strictly newest-first by `updatedAt`. Neither mode projects `parentId` into a list hierarchy; fork lineage remains session data only. [Web session fork actions](2026-07-27-web-session-fork-actions.md) define the complete fork behavior. The mode choice persists in the browser (`dsh.workspace.view`) across reloads. [Workspace Sidebar Order and Folding](2026-08-11-workspace-sidebar-order-and-folding.md) later added a browser-local recent-update view without changing the Host account's manual-order authority.
+The group-by menu offers two modes, WorkSpace / In one list. WorkSpace mode renders peer session rows within each group in the manual order from `WorkspaceView.sessionIds`; In one list combines every session and sorts them strictly newest-first by `updatedAt`. Neither mode projects `parentId` into a list hierarchy; fork lineage remains session data only. The mode choice persists in the browser (`clocky.workspace.view`) across reloads. [Workspace Sidebar Order and Folding](2026-08-11-workspace-sidebar-order-and-folding.md) later added a browser-local recent-update view without changing the Host account's manual-order authority.
 
 ### Row interactions
 

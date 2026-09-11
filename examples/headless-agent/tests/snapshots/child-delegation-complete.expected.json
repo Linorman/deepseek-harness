@@ -1,0 +1,20 @@
+{
+  "scenario": "complete",
+  "parent": "completed",
+  "task": "completed",
+  "child": "completed",
+  "parentCalls": [
+    "team_task_delegate",
+    "team_task_wait",
+    "team_final"
+  ],
+  "childCalls": [
+    "team_final"
+  ],
+  "humanChildParticipants": 0,
+  "childActivationsQuiesced": true,
+  "childQuiescent": true,
+  "parentArchiveRejected": true,
+  "parentArchived": true,
+  "result": "CHILD_DELEGATION_RESULT"
+}

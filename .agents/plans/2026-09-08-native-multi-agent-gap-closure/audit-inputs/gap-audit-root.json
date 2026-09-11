@@ -1,0 +1,215 @@
+{
+  "scope": "Root independent audit: legacy cutover, system verification, performance and provenance",
+  "date": "2026-09-08",
+  "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "method": "Read current dirty worktree, no implementation changes or new product tests in this documentation task. Prior exact test logs are scoped historical evidence, not same-candidate release acceptance.",
+  "functional": [
+    {
+      "id": "F-LG-01",
+      "status": "partial",
+      "title": "Literal legacy product and release cutover is incomplete",
+      "evidence": [
+        "packages/subagent/subagent/package.json: public name @clocky/clocky-subagent, publishConfig public, no private flag",
+        "packages/subagent/tool-subagent/package.json: public tool package",
+        "python/sdk-runtime/package.json:89-93,112-113 retains subagent drivers and tool packages",
+        "scripts/release/families.ts:322 ClockyFamily.patterns excludes experimental, not a future compat group",
+        "P1 proposal Legacy product cutover:208-218 requires private renamed compat only when real consumers remain"
+      ],
+      "existing": "Headless/Web/Python default composition already mounts TeamRun; do not claim default Team-first cutover is absent. Reusable runtime internals need consumer inventory before removal.",
+      "design": "Enumerate source/config/tool catalog/snapshot/package/runtime carrier and packed-artifact reachability. Classify each old capability as actual consumed internal implementation, explicit compatibility, or dead. Extract reusable activation mechanics into AgentRuntime-owned modules. Move justified opt-in compatibility to private compat-prefixed packages and legacy-prefixed tools; delete proven unused code. Update release-family discovery and constraints to reject compat publication, prune carriers, regenerate catalogs through generators.",
+      "acceptance": "Default source boot and packed product register no direct subagent/fork/report/control or model-JS workflow tools; legitimate runtime SDK/ACP behavior and Session inspection remain; explicit compat composition passes if retained; absent imports/exports/config/deps/catalog/tarball scans are executed by a top-level gate.",
+      "dependencies": "Runtime extraction and replacement Team snapshots; paired document owner updates follow code.",
+      "risk": "Blind deletion of packages/subagent can break providers that reuse process/resume mechanisms. A grep hit alone is not proof of exposed model tool."
+    },
+    {
+      "id": "F-LG-02",
+      "status": "confirmed",
+      "title": "Product Session header still accepts legacy origin/delegationDepth",
+      "evidence": [
+        "packages/core/session/src/types.ts:94-104 SessionHeader.origin/delegationDepth",
+        "packages/core/session/src/types.ts:132 CreateSessionOptions.meta",
+        "packages/core/session/src/index.ts:136-141 validates and accepts old fields",
+        "P1 proposal:216 removes them only after direct subagent consumers move"
+      ],
+      "design": "After F-LG-01 consumer closure, move compatibility lineage to a versioned compat descriptor event; retain parentSession strictly as fork seed lineage. Remove fields from product create/header/projections and reject old pre-release headers explicitly (do not merely remove TypeScript fields while permissive JSON still admits them). Keep SESSION_FORMAT_VERSION=0 under current pre-release rule; required model-visible event changes follow SessionEventMap ignorable rules. Update both SDK carriers and persistence parsers together.",
+      "acceptance": "Current Team sessions recover and fork correctly; old origin/delegationDepth headers reject across JSONL/SQLite/compressed carriers; compatibility descriptor works only in explicit compat composition; both SDK runnable snapshot owners pass.",
+      "dependencies": "F-LG-01 precedes removal",
+      "risk": "parentSession must not be removed or turned into authorization; no silent converter/dual reader."
+    }
+  ],
+  "testing": [
+    {
+      "id": "T-01",
+      "title": "Current full Hub and full repository acceptance are not closed",
+      "status": "unverified",
+      "evidence": [
+        ".tmp/handoffs/verification-luna.json",
+        "last full Hub bail stopped on usage-replay missing parent reservation; repaired usage-replay now 4/4 passes, full suite has not rerun"
+      ],
+      "design": "Freeze relevant source/fixture inputs; run owning full Hub suite and then irreducible final matrix. Separate obsolete fixture, product defect, environmental failure and intentional skip; never relax durable admission to satisfy invalid fixtures.",
+      "acceptance": "Actual executed/pass/fail/skip counts, exact command and environment attached to one candidate; a focused repaired fixture is not full-suite PASS."
+    },
+    {
+      "id": "T-02",
+      "title": "Current per-file coverage evidence",
+      "status": "unverified",
+      "evidence": [
+        ".agents/plans/2026-09-05-native-multi-agent/current-state.md contains older partial/100% package evidence",
+        ".github/workflows/ci.yml:155 exhaustive coverage lane exists",
+        "package.json test:coverage/test:coverage:changed/test:coverage:partitioned"
+      ],
+      "design": "Select tests and coverage include independently; measure changed Core/Hub/Consumer/client modules, preserve 100% per-file repository policy. Fill genuinely untested behavior/branches, then final whole candidate coverage. Do not sum old percentages or skip important files.",
+      "acceptance": "Coverage report with same-source identities and named remaining branches; old 2026-09-06 percentages never claimed current."
+    },
+    {
+      "id": "T-03",
+      "title": "Child saga kill-point combinations and product carriers",
+      "status": "unverified",
+      "evidence": [
+        "examples/headless-agent/tests/child-delegation.snapshot.ts exists and complete/cancel passed earlier",
+        "packages/team/team-hub/tests/child-result.spec.ts 28 and task-delegation.spec.ts 4 passed",
+        "packages/team/team-delegation/tests/delegation.spec.ts 6 passed"
+      ],
+      "design": "Inventory existing tests before adding; fill every durable reservation/create/bind/start/result-admit/service-receipt/parent-charge/terminal-settle crash window across JSON and SQLite, parent and child restart, duplicate retries and cancellation. Use actual proof issuers, not synthetic final/human/lease shortcuts.",
+      "acceptance": "One child per delegation identity; one exact parent result and charge; no parent archive before settlement; actual TS/Python packaged runtime routes covered."
+    },
+    {
+      "id": "T-04",
+      "title": "Unified multi-host fault evidence",
+      "status": "unverified",
+      "evidence": [
+        "packages/team/team-link-websocket*/tests existing",
+        "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts existing",
+        "examples/headless-agent/tests/remote-team-message.snapshot.ts existing",
+        "P1 verification matrix:272-285"
+      ],
+      "design": "Reuse deterministic fault hooks for append/notify/flush/receipt/fence/bind; test duplicate/out-of-order/slow consumer/credential rotation/unknown host. Distinguish unit mock, same-machine child process, independently restarted Hub, actual separate hosts. Real remote access is an execution prerequisite, not a proven missing capability.",
+      "acceptance": "Matrix identifies each provider/transport/credential case and actual execution tier; disconnect never substitutes for termination proof."
+    },
+    {
+      "id": "T-05",
+      "title": "Fresh real-model collaboration and workflow evidence",
+      "status": "unverified",
+      "evidence": [
+        ".agents/plans/2026-09-05-native-multi-agent/wp13-system-verification.md records older keyed coordinator/worker/reviewer success",
+        "examples/headless-agent/tests/review-projection.snapshot.ts and workflow-task-cancellation.snapshot.ts exist"
+      ],
+      "design": "Run bounded attempts against a verified configured model: two workers fan-out/fan-in, reviewer accept/rework, child delegation, workflow and real files/artifacts. Assert WAL, Session, filesystem, allocations and quiescence, not final prose. Record model parameters and all failures. Do not claim local model endpoint currently available from old notes.",
+      "acceptance": "Named current candidate real-model scenarios, attempts, files/artifacts and exact terminal proofs; keyless replay remains separate evidence."
+    },
+    {
+      "id": "T-06",
+      "title": "Complete real-browser and GUI demonstration matrix",
+      "status": "unverified",
+      "evidence": [
+        "apps/web/tests/team-channel.snapshot.ts current direct/media/summary flow PASS",
+        ".tmp/handoffs/channel-ui-fourth.json says consult/discussion forms have component tests, not full UI browser paths"
+      ],
+      "design": "Add real-server browser consult request/response, discussion round-robin, child navigation, remote lifecycle, task integration/review, offline/races and keyboard tests where existing owner lacks them. Use actual service/model replay and bounded history pages; record GIFs for corresponding GUI PRs, not screenshot-only mocks.",
+      "acceptance": "Each product mutation flow links to an executed browser scenario; accessible state/error/keyboard assertions plus inspectable demo; no claim all UI covered by the one channel smoke."
+    },
+    {
+      "id": "T-07",
+      "title": "Reference performance budget harness and CI lane are absent from inspected sources",
+      "status": "confirmed",
+      "evidence": [
+        "packages/team/team-hub/tests/load.spec.ts:16-22 4096 default/16384 opt-in; no elapsed/RSS budget assertions",
+        "rg CLOCKY_TEAM_HUB_LARGE_LOAD in packages/scripts/.github finds only load.spec.ts",
+        "P1 proposal Reference budgets:222-235 specifies dedicated Linux runner and 3-sample median",
+        "Static fixture drift: load.spec.ts opens channel then posts without invitation acknowledgement; Hub create path writes pending at index.ts:12763; openTestChannel helper does not ACK. This audit did not execute that suite, so this is a static incompatibility finding, not a recorded runtime FAIL."
+      ],
+      "design": "First adapt the existing load fixture to real endpoint ACKs and refresh its post cursor; do not restore automatic consent in production. Keep load correctness suite; add fresh-process measurement of startup-to-first32, full enumeration, peak Hub RSS delta, 10000 pending/64 Activations/1000 tasks and confirmed cancel/shutdown. Explicit CI release lane runs both counts and asserts executed scenario count. Per-platform deterministic page/queue/allocation bounds; only reference runner evaluates wall time; retain raw three samples and median.",
+      "acceptance": "4096: first page <=5s, RSS growth<=128MiB, enumeration<=30s;16384:<=10s/384MiB/180s; large confirmed shutdown<=10s. Never use test timeout as performance budget or silently increase baseline."
+    },
+    {
+      "id": "T-08",
+      "title": "State-machine/property coverage expansion requires an ownership inventory",
+      "status": "unverified",
+      "evidence": [
+        "packages/team/team-hub/tests/replay-properties.spec.ts:127-179 covers arbitrary receipt interleavings/watermarks",
+        "durable-*-replay and lifecycle unit suites exist"
+      ],
+      "design": "Retain receipt property coverage; map generated models for new invitation revisions, child reservations, task cancellation, workflow target extensions and competing publication/closure. Add missing combinations with reproducible seeds and minimized counterexamples; do not state property testing is absent.",
+      "acceptance": "Each new state machine has a named model or explicit justified alternative, invalid transitions rejected, live and replay projection agreement on both storage backends."
+    }
+  ],
+  "other": [
+    {
+      "id": "O-01",
+      "title": "Reproducible candidate and evidence provenance",
+      "status": "confirmed",
+      "evidence": [
+        "HEAD fb14b0b9b1d8bfc5abebc22be2574eb691329900 does not contain current dirty implementation",
+        ".tmp/handoffs/verification-luna.json aggregates tests from multiple moments"
+      ],
+      "design": "Before release freeze a reviewable candidate/source manifest with dirty patch or isolated snapshot, environment/runtime versions, commands, artifacts and source hashes; bind each evidence row to that candidate. This document's hash manifest detects drift only and is not a restore archive or assertion that past tests ran at those hashes.",
+      "acceptance": "Another developer can obtain exact inputs and rerun; evidence survives .tmp cleanup in CI artifacts or explicit archive; no automatic commit/push authorization implied."
+    },
+    {
+      "id": "O-02",
+      "title": "Canonical packaging and platform release acceptance remains pending",
+      "status": "unverified",
+      "evidence": [
+        "latest build and NodeNext269 pass; limited publint8 exit0 with expected dev src export warnings",
+        ".github/workflows/release.yml/python-release.yml existing"
+      ],
+      "design": "Run canonical Clocky/vendor/native npm tarballs and Python wheel/bundled runtime on Linux/macOS/Windows, actual isolated installs and source/artifact tool-inventory parity. Use repository release family scripts; baseline dev ./src/* publint warnings are not errors or permission to publish sources.",
+      "acceptance": "Same-candidate artifact digests, per-platform consumer/launch/shutdown results; current local build/publint cannot substitute for release workflow."
+    },
+    {
+      "id": "O-03",
+      "title": "Source-adjacent generated artifact contamination prevention",
+      "status": "confirmed",
+      "evidence": [
+        ".tmp/source-artifact-quarantine/team-channel-basic contains preserved index/basic .js/.d.ts/maps",
+        "tsconfig.base.json exact basic alias plus quarantine needed because .ts rewrite could resolve stale adjacent basic.js"
+      ],
+      "design": "Audit exact emitted outputs against package tsconfig rootDir/outDir and existing clean script; identify generator that wrote into src, add narrowly executed hygiene detection for source-adjacent generated counterparts with explicit legitimate exceptions. Preserve evidence and other workers' files; no blanket cleaning of dirty tree.",
+      "acceptance": "Source tests resolve current source on clean checkout and fail clearly on contamination; production build writes designated outputs only."
+    },
+    {
+      "id": "O-04",
+      "title": "Principal inbox retention and long-history I/O policy",
+      "status": "partial",
+      "evidence": [
+        "packages/team/team-human-client/src/index.ts:366-397 fixed-page generator rejects firstSequence>0; display/dedup scans retain no unbounded transcript but may traverse long history"
+      ],
+      "design": "First define retention period, active action/final receipt/audit references and display semantics. If long-lived deployments require compaction, add verified checkpoint/index for dedup/display and retained cursor errors before deleting prefixes. Treat this as capacity/retention design decision, not loss of existing durable paged inbox functionality.",
+      "acceptance": "Bounded work on selected history scale; unseen deliveries and actionable references survive; old cursor gets explicit recovery response; no silent lossy cleanup."
+    },
+    {
+      "id": "O-05",
+      "title": "Documentation generation blocked by cross-package type reference ownership",
+      "status": "confirmed",
+      "evidence": [
+        ".tmp/verification-runtime/docs-verify-cordis-catalog-2026-09-08T2010.log and docs-verify-doc-graphs-2026-09-08T2010.log: TypertAnalysisError",
+        "packages/core/team/src/human-delivery-types.ts:3 imports TeamChannelViewEventData through local ./types.ts; field at99",
+        "packages/core/team/src/types.ts:10-12 imports/reexports that declaration from @clocky/clocky-session/types",
+        "packages/typert/generator/src/analyzer.ts:2365 targetForReference explicit cross-package rule"
+      ],
+      "design": "First correct the use-site type import to its declaring package where appropriate; validate generator ownership rather than suppressing the error or copying/moving the Session event type. Rerun the same generator checks, then handle genuine artifact freshness. If direct import still fails, minimize a generator ownership fixture before changing its analyzer.",
+      "acceptance": "Cordis and graph generators reach actual freshness validation without Typert ownership failure; declaring package remains Session; host/NodeNext types retain the public contract.",
+      "dependencies": "Source type ownership fix precedes D subsystem/graph regeneration; no business or format behavior change expected."
+    },
+    {
+      "id": "O-06",
+      "title": "Supervisor HTTP npm payload omits referenced shared protocol chunk",
+      "status": "confirmed",
+      "evidence": [
+        ".tmp/verification-runtime/publint-2026-09-08T2002-final.log:7-9 actual repository checker errors",
+        "packages/agent-runtime/activation-supervisor-http/tsdown.config.ts:4 multi-entry bundle creates shared chunk",
+        "packages/agent-runtime/activation-supervisor-http/lib/{index,client,endpoint}.js imports ./protocol-DDUPaXc3.js in inspected build",
+        "packages/agent-runtime/activation-supervisor-http/package.json files omits hashed chunk"
+      ],
+      "design": "Prefer independent per-entry builds using the repository single-entry bundle pattern, e.g. agent-runtime-sdk/tsdown.config.ts; alternatively emit a deliberate stable internal protocol artifact and include exactly that file in publication policy. Do not restore an indiscriminate lib/*.js wildcard or disable the transitive relative-import checker. Check shared class/state identity if bundling duplicates implementation.",
+      "acceptance": "Repository publint-all publication-closure check passes and a clean isolated install of the tarball imports index/client/endpoint/invariant without workspace files. Verify minimal authenticated supervisor health/fence with declared dependencies. Raw publint exit0 and NodeNext declaration success are insufficient.",
+      "dependencies": "Before canonical release or remote packaged deployment; artifact-plane defect, source supervisor capability exists."
+    }
+  ],
+  "implemented_non_gaps": [
+    "Core telemetry capture, correlation, OTel export and configurable count-threshold alerts exist; DISABLED is explicit privacy/config choice, not absence.",
+    "Team journal/channel retention, audit projection and metrics exist; their final performance/coverage validation remains separate.",
+    "Default Headless/Web/Python composition is Team-first; legacy release/carrier residue is narrower than default runtime not cut over.",
+    "Old-key readback of an already accepted Envelope after cancellation is not newly committing work; no evidence justifies classifying it as an authorization defect."
+  ]
+}

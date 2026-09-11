@@ -30,18 +30,23 @@
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
   "peerDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
-    "@clocky/clocky-subagent": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-attachment": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
-    "@clocky/clocky-subagent": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-attachment": "workspace:^"
   }
 }

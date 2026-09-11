@@ -4,7 +4,7 @@
  * @module @clocky/clocky-agent-instructions/state
  */
 
-import type { Agent } from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent } from '@clocky/clocky-agent'
 import { createUserMessage } from '@clocky/clocky-llm'
 import type { Message } from '@clocky/clocky-llm'
 import type { Session, UserMessage } from '@clocky/clocky-session'
@@ -261,7 +261,7 @@ export async function reconcileInstructionContext(
   const session = agent.session
   const effective = visibleInstructionChanges(agent, options.authorityMessages)
   /* v8 ignore next -- normal agents carry an absolute session cwd. */
-  const cwd = session.header.cwd ?? process.cwd()
+  const cwd = resolveAgentWorkspaceRoot(agent) ?? process.cwd()
   // TODO(frozen-project-root): retain the baseline root for the loop instance;
   // recomputing it after marker edits reinterprets the existing relative scope keys.
   const projectRoot = options.projectRoot

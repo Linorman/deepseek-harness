@@ -26,8 +26,7 @@ describe('SidebarRoot.module.css quiet column', () => {
   })
 
   it('leaves the gutter reservation to the scrolling region', () => {
-    // Hiding the thumb must not move a row: the reservation lives on the list
-    // (ui-workspace), so the column states colour only.
+    // Hiding the thumb must not move a row: the scrolling registrant reserves it.
     expect(declarationText).not.toMatch(/scrollbar-gutter/)
   })
 })

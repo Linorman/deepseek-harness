@@ -15,6 +15,8 @@ import {
 } from './sessions.schema.ts'
 import { taskViewSchema } from './jobs.schema.ts'
 import { workspaceIdSchema, workspaceViewSchema } from './workspace.schema.ts'
+import { participantIdSchema, teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team/schema'
+import { channelEventSchema, teamEventSchema } from '@clocky/clocky-team/schema'
 
 /** Question fields validated strictly against core clocky-user-questions. */
 export const askUserQuestionItemSchema = z.object({
@@ -43,13 +45,15 @@ const messageSchema = z.object({
 export const muxFrameSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session/event'), sessionId: sessionIdSchema, event: sessionEventSchema, view: toolEventViewSchema.optional() }),
   z.object({ type: z.literal('session/subscribed'), sessionId: sessionIdSchema, lastSeq: z.number().int() }),
-  z.object({ type: z.literal('approval/requested'), sessionId: sessionIdSchema, approvalId: approvalRequestIdSchema, toolName: z.string(), callId: z.string().optional(), reason: z.string().optional() }),
+  z.object({ type: z.literal('approval/requested'), sessionId: sessionIdSchema, approvalId: approvalRequestIdSchema, toolName: z.string(), callId: z.string().optional(), reason: z.string().optional(), teamId: teamIdSchema.optional(), participantId: participantIdSchema.optional(), taskId: teamTaskIdSchema.optional() }),
   z.object({ type: z.literal('approval/resolved'), sessionId: sessionIdSchema, approvalId: approvalRequestIdSchema, outcome: z.union([z.literal('allowed-once'), z.literal('rejected'), z.literal('cancelled'), z.literal('unavailable')]) }),
   // Non-empty by wire contract: the user-questions service rejects empty
   // batches at ask() (EMPTY_QUESTIONS), so an empty frame is host breakage
   // and must fail loud here, not reach the composer.
-  z.object({ type: z.literal('question/requested'), sessionId: sessionIdSchema, questions: z.array(askUserQuestionItemSchema).min(1) }),
+  z.object({ type: z.literal('question/requested'), sessionId: sessionIdSchema, questions: z.array(askUserQuestionItemSchema).min(1), teamId: teamIdSchema.optional(), participantId: participantIdSchema.optional(), taskId: teamTaskIdSchema.optional() }),
   z.object({ type: z.literal('question/resolved'), sessionId: sessionIdSchema, questionRpcId: rpcIdSchema, outcome: z.union([z.literal('answered'), z.literal('cancelled')]) }),
+  z.object({ type: z.literal('team/changed'), event: teamEventSchema }),
+  z.object({ type: z.literal('channel/changed'), event: channelEventSchema }),
   z.object({
     type: z.literal('session/queue'),
     sessionId: sessionIdSchema,
@@ -72,8 +76,6 @@ export const hostFrameSchema = z.discriminatedUnion('type', [
     type: z.literal('host/session-added'),
     sessionId: sessionIdSchema,
     blank: z.boolean(),
-    parentSessionId: sessionIdSchema.optional(),
-    origin: z.literal('subagent').optional(),
     cwd: z.string().optional(),
     agentPreset: z.string().optional(),
   }),

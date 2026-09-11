@@ -4,14 +4,11 @@
 // regression described in the external report: "increase an 800×720 browser
 // regression test and assert that the plan center hits the plan button".
 //
-// Plan mode is entered through the real /plan command with no argument:
-// the command handler commits plan/mode active on the live agent without a
-// model round (the lifecycle-chrome precedent), so the test needs no model
-// call in any mode and no API key in replay/refresh; a providers-only
-// fixture mounts the model catalog without a script to consume. Plan state
-// folds from the session log (`plan/mode`, last one wins); the chip executes
-// /plan off through commands.execute, which needs the live agent
-// connectFreshWorkspace keeps.
+// An ordinary seeded Session carries a durable `plan/mode` event before the
+// browser opens it, so this geometry lane needs no model call. Team-owned
+// Sessions deliberately reject generic command routing and are covered by the
+// Team product surface separately; this lane keeps the standalone command
+// control's click-area regression focused.
 //
 // The geometry golden records stable facts — viewport membership on both
 // axes for the chip and the trigger, and disjoint click areas — never
@@ -28,12 +25,13 @@ import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 // Type-only: pulls the plan/mode SessionEventMap merge so the discriminant
 // filter below types as the plan-mode event in the host aggregate.
 import type {} from '@clocky/clocky-plan-mode'
-import type { SessionEvent } from '@clocky/clocky-session'
+import { createUserMessage } from '@clocky/clocky-llm'
+import { SESSION_FORMAT_VERSION, Session, SessionId, type SessionEvent } from '@clocky/clocky-session'
 import {
   assertFixtureInventory, compareOrRefreshGolden,
-  launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
+  launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/plan-narrow-viewport', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -45,6 +43,29 @@ const VIEWPORT = { width: 800, height: 720 } as const
 
 /** Chip aria-label on the English page; the seat renders only while plan is the effective target. */
 const CHIP_ARIA = 'Plan mode on, press to turn off'
+const SEED_ID = 'plan-control-row-web-e2e'
+
+/** Build a closed ordinary Session with plan mode already active. */
+function planFixture(): string {
+  const session = Session.create(SessionId('plan-control-source'))
+  session.append('turn/start', { turn: 1 })
+  const user = session.append('user/message', createUserMessage({
+    content: [{ type: 'text', text: 'Inspect the plan control.' }],
+    source: { kind: 'user' },
+  }), { surfaceOp: 'append' })
+  session.append('session/title', {
+    title: 'Plan control',
+    messageSeqs: [user.seq],
+    source: { kind: 'fallback' },
+  })
+  session.append('plan/mode', { active: true })
+  session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+  return [
+    JSON.stringify({ type: 'session', version: SESSION_FORMAT_VERSION, id: '{{sessionId}}', createdAt: 0, cwd: '{{cwd}}' }),
+    ...session.events.map(event => JSON.stringify(event)),
+    '',
+  ].join('\n')
+}
 
 describe('web e2e: plan chip click area at the narrow viewport', () => {
   let scaffold: WebScaffold
@@ -58,14 +79,22 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
     // script to consume (no model call happens — the /plan command never
     // steers a message), so the model trigger renders its real long label,
     // which is what made the reported overlap measurable.
-    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, replayProvidersOnly: true })
+    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, replayProvidersOnly: true, legacyWorkspaceSurface: true })
+    await seedSession(scaffold, planFixture(), SEED_ID)
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser, VIEWPORT.height)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
     await page.setViewportSize(VIEWPORT)
   }, 120_000)
 
@@ -76,14 +105,8 @@ describe('web e2e: plan chip click area at the narrow viewport', () => {
 
   it('keeps the plan chip and model trigger disjoint and exits plan mode by click', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-plan-narrow-viewport'))
-    const input = page.locator('textarea').first()
-    await input.waitFor({ timeout: 10_000 })
-    await input.fill('/plan ')
-    await input.press('Enter')
-
-    // The command handler commits plan/mode active immediately (no model
-    // round), so the chip renders and the composer control row — the surface
-    // under test — is the one visible.
+    // The durable plan event seeded during setup makes the chip render and
+    // leaves the composer control row — the surface under test — visible.
     const chip = page.getByRole('button', { name: CHIP_ARIA })
     const trigger = page.getByRole('button', { name: /Select model/ })
     await chip.waitFor({ timeout: 30_000 })

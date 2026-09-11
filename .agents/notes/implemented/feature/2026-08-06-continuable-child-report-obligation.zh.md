@@ -33,7 +33,7 @@ Status: implemented
 
 ### 快照覆盖
 
-整体组装的 ACP `subagent-report` 场景演练随附的默认行为：child 在 parent 处于 maintenance 时上报，稍后的结算通知排在其后，而恢复的 parent 会先领取 next-step 报告、再领取 next-turn 结算。由于该 child 的作用域组合出类别 pin 无法描述的提示词，快照 harness 提供 `pinsChildSystemPrompts`，它与 `pinsChildToolSchemas` 完全对称：把一个 child fixture 的提示词移入 `system-prompt.<n>.expected.md`，其余请求 header 字段仍归类别 pin 所有，要求 sidecar 恰好在声明时存在，并拒绝与该类别 pin 完全相同的 sidecar，使冗余副本无法悄悄漂移。
+report 包测试固定投递与报告先于结算的顺序。当前没有 Team 产品快照覆盖带报告 child 的默认行为。
 
 ## 备选方案
 

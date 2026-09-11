@@ -111,6 +111,12 @@ if (coveragePartitionRaw !== undefined && coveragePartitionRaw !== '' && coverag
 }
 const coveragePartitionMode = coveragePartitionRaw === '1'
 
+const changedCoverageRaw = process.env.CLOCKY_CHANGED_COVERAGE
+if (changedCoverageRaw !== undefined && changedCoverageRaw !== '' && changedCoverageRaw !== '1') {
+  throw new Error(`vitest config: CLOCKY_CHANGED_COVERAGE must be '1' or unset, got ${JSON.stringify(changedCoverageRaw)}.`)
+}
+const changedCoverageMode = changedCoverageRaw === '1'
+
 // These suites exercise process-global state, process APIs, or timing-sensitive process I/O
 // that worker threads cannot isolate reliably under aggregate gate contention.
 // Keep the narrow exception in forks while the rest of the inventory avoids per-file processes.
@@ -128,7 +134,7 @@ const processBoundTests = [
 export default defineConfig({
   plugins: [pathsPlugin(), standardDecoratorPlugin()],
   test: {
-    setupFiles: ['./scripts/test-invariants.ts'],
+    setupFiles: ['./scripts/test-invariants.ts', './scripts/test-dom.ts'],
     // .tsx: client component specs (jsdom via per-file @vitest-environment pragma).
     include: testIncludes,
     exclude: windowsUnsupportedTests,
@@ -144,7 +150,7 @@ export default defineConfig({
           // MaybeLocal in cjs_lexer::Parse) from worker threads on macOS,
           // Linux, and Windows. Forked workers avoid that shared thread path.
           pool: 'forks',
-          setupFiles: ['./scripts/test-invariants.ts'],
+          setupFiles: ['./scripts/test-invariants.ts', './scripts/test-dom.ts'],
           include: testIncludes,
           exclude: [
             ...windowsUnsupportedTests,
@@ -159,7 +165,7 @@ export default defineConfig({
           name: 'process-bound',
           execArgv: vitestExecArgv,
           pool: 'forks',
-          setupFiles: ['./scripts/test-invariants.ts'],
+          setupFiles: ['./scripts/test-invariants.ts', './scripts/test-dom.ts'],
           include: processBoundTests,
           exclude: [
             ...windowsUnsupportedTests,
@@ -178,6 +184,7 @@ export default defineConfig({
       // Types-only files have no runtime coverage. Importing self-executing bins/workers would boot
       // them inside the unit process, so real subprocess/Worker tests cover their thin entry glue.
       exclude: [
+        ...(changedCoverageMode ? [] : [
         'packages/*/*/src/types.ts',
         'packages/*/*/src/bin.ts',
         'packages/*/*/src/worker.ts',
@@ -234,7 +241,6 @@ export default defineConfig({
         'packages/client/ui-commands/src/index.ts',
         'packages/client/ui-skill/src/index.ts',
         'packages/client/ui-input-trigger/src/index.ts',
-        'packages/client/ui-subagent/src/index.ts',
         'packages/client/ui-commands/src/client/popup.ts',
         'packages/client/ui-commands/src/client/directory.ts',
         'packages/client/ui-commands/src/client/service.ts',
@@ -270,8 +276,11 @@ export default defineConfig({
         'packages/interaction/commands/src/index.ts',
         'packages/interaction/commands/src/invariant.ts',
         'packages/session/session-projection/src/index.ts',
+        ]),
         ...windowsUnsupportedCoveragePackages.map(path => `${path}/src/**/*.ts`),
         ...windowsOnlyCoverageExclusions,
+        // libproc loads only on macOS; the native ABI and real recovery suites own this platform's coverage.
+        ...(process.platform === 'darwin' ? [] : ['packages/subprocess/subprocess-local/src/darwin-process-state.ts']),
         ...windowsRunnerCoverageExclusions,
         ...pwshCoverageExclusions,
       ],

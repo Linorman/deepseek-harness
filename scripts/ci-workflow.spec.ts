@@ -67,6 +67,14 @@ describe('CI workflow', () => {
       isRecord(step) && typeof step.run === 'string'
     ))
 
+    expect(node24Coverage.env).toMatchObject({
+      CLOCKY_CHANGE_BASE: '${{ github.event.pull_request.base.sha }}',
+    })
+    const coverageCheckout = (node24Coverage.steps as unknown[]).find(step => (
+      isRecord(step) && typeof step.uses === 'string' && step.uses.startsWith('actions/checkout@')
+    ))
+    expect(coverageCheckout).toMatchObject({ with: { 'fetch-depth': 0 } })
+
     // Required PR job: Wine on ubuntu-latest, runs wine-windows-gates.sh.
     expect(windows['runs-on']).toBe('ubuntu-latest')
     expect(windows.name).toBe('windows node 24 / wine blocking')
@@ -100,6 +108,17 @@ describe('CI workflow', () => {
     expect(serialWindows.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
     expect(serialWindows['runs-on']).toEqual(['self-hosted', 'clocky-win-ci', 'windows'])
     expect(serialWindows.name).toBe('serial / windows (self-hosted standby)')
+
+    const serialLinux = masterWorkflow.jobs['serial-linux-selfhosted']
+    if (!isRecord(serialLinux)) throw new TypeError('ci-master must define serial-linux-selfhosted')
+    if (!isUnknownArray(serialLinux.steps)) throw new TypeError('serial-linux-selfhosted must define steps')
+    const serialLinuxStep = serialLinux.steps.find(step => (
+      isRecord(step) && step.name === 'Run complete unsharded primary Node CI serially'
+    ))
+    if (!isRecord(serialLinuxStep) || !isRecord(serialLinuxStep.env)) {
+      throw new TypeError('serial-linux-selfhosted must define its complete Node CI environment')
+    }
+    expect(serialLinuxStep.env.CLOCKY_CHANGE_BASE).toBe('${{ github.event.before }}')
 
     // Aggregate: Wine `windows` required, native `windows-native` excluded.
     expect(aggregate.needs).toContain('windows')
@@ -461,11 +480,24 @@ describe('Issue lifecycle workflow', () => {
 describe('npm release workflows', () => {
   it('keeps publication dispatch-only and pack in the PR workflow', () => {
     // pack stays in the PR/master release workflows so a PR proves the set packs.
-    for (const file of ['release.yml', 'release-vendor.yml']) {
-      const workflow = loadWorkflow(`.github/workflows/${file}`)
-      if (!isRecord(workflow.jobs)) throw new TypeError(`${file} must define jobs`)
-      expect(Object.keys(workflow.jobs).sort()).toEqual(['pack'])
+    const clocky = loadWorkflow('.github/workflows/release.yml')
+    if (!isRecord(clocky.jobs)) throw new TypeError('release.yml must define jobs')
+    expect(Object.keys(clocky.jobs).sort()).toEqual(['pack', 'packed-consumer-matrix'])
+    const packedConsumer = clocky.jobs['packed-consumer-matrix']
+    if (!isRecord(packedConsumer)) throw new TypeError('release.yml must define packed-consumer-matrix')
+    expect(packedConsumer.needs).toBe('pack')
+    const strategy = packedConsumer.strategy
+    if (!isRecord(strategy) || !isRecord(strategy.matrix) || !Array.isArray(strategy.matrix.include)) {
+      throw new TypeError('release.yml packed-consumer-matrix must define an include matrix')
     }
+    expect(strategy.matrix.include.map((value) => {
+      if (!isRecord(value) || typeof value.platform !== 'string') throw new TypeError('release.yml matrix entry must name a platform')
+      return value.platform
+    }).sort()).toEqual(['linux', 'macos', 'windows'])
+
+    const vendor = loadWorkflow('.github/workflows/release-vendor.yml')
+    if (!isRecord(vendor.jobs)) throw new TypeError('release-vendor.yml must define jobs')
+    expect(Object.keys(vendor.jobs).sort()).toEqual(['pack'])
 
     // publication is workflow_dispatch-only (never a PR check) and keeps the
     // npm-publish environment plus the shared dist-tag group.
@@ -561,4 +593,8 @@ function workflowJob(workflow: Record<string, unknown>, job: string): Record<str
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isUnknownArray(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value)
 }

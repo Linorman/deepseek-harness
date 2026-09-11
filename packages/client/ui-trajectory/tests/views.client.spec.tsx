@@ -100,7 +100,6 @@ function historySnapshot(
     pending: [],
     queue: [],
     running: false,
-    subagent: null,
     composerPhase: 'active',
     removed: false,
     openState: 'open',
@@ -144,7 +143,7 @@ function fakeSession(nodes: ConversationSnapshot['nodes']) {
 /** Empty sessions-list hook; breadcrumbs therefore fall back to the raw id. */
 function emptySessions() {
   const store = createSnapshotStore<SessionListState>(
-    { ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined })
+    { ids: [], byId: {}, current: undefined, phase: 'ready', jobsBySession: {} })
   return bindSnapshotSelector(store)
 }
 
@@ -275,7 +274,6 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
         views={views}
         useInput={useInput}
         inputActions={inputActions}
-        open={vi.fn()}
         t={tConversation}
       />
       <ConversationSession

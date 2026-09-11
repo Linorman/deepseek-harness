@@ -1,17 +1,17 @@
 /**
  * Sidebar slot contract: the registrant-side props composition for the
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
- * owns column geometry (fold state machine, brand row, New Session);
+ * owns column geometry (fold state machine, brand row, New Task);
  * everything between the section header and the list bottom is the
- * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
- * `sidebar.settings` registrant's (ui-settings), followed by optional footer
- * actions in `sidebar.footer.action`.
+ * `sidebar.teamTasks` registrant's (ui-team), with an optional legacy
+ * `sidebar.workspaces` occupant for explicit custom compositions, and the
+ * foot is the `sidebar.settings` registrant's (ui-settings), followed by
+ * optional footer actions in `sidebar.footer.action`.
  */
 import type { PropsLocale, PropsRenderSlots, PropsRuntime } from '@clocky/clocky-client-ui-slots'
 // Type-only: pulls ui-layout's SlotMap merge (the 'sidebar' entry) into every
 // program that sees this contract, so PropsRuntime<'sidebar'> resolves.
 import type {} from '@clocky/clocky-client-ui-layout/client'
-import type { WorkspaceId } from '@clocky/clocky-client-runtime/client'
 
 declare module '@clocky/clocky-client-ui-slots' {
   interface SlotMap {
@@ -26,12 +26,9 @@ declare module '@clocky/clocky-client-ui-slots' {
      * package's `sidebar` entry; the shell supplies a generic text fallback.
      */
     'sidebar.brand.name': { kind: 'single'; scope: 'root'; owner: SidebarBrandNameOwnerProps }
-    /**
-     * The workspace/session browsing region: section header, search, the
-     * grouped/flat session list, and every workspace dialog. Declared by this
-     * package's 'sidebar' entry (declaring is claiming); ui-workspace
-     * registers the browser.
-     */
+    /** Team task navigation rendered in the product sidebar. */
+    'sidebar.teamTasks': { kind: 'single'; scope: 'root'; owner: SidebarSectionOwnerProps }
+    /** Legacy Workspace/Session browser slot retained for non-product composition tests. */
     'sidebar.workspaces': { kind: 'single'; scope: 'root'; owner: SidebarSectionOwnerProps }
     /**
      * The settings seat at the sidebar foot. Declared by this package's
@@ -87,16 +84,14 @@ export interface SidebarFooterActionOwnerProps {
 
 /**
  * Registrant-private injected share (arrives via the register inject
- * factory). The shell keeps only its own controls: starting a Session from
- * the New Session button and toggling the column.
+ * factory). The shell keeps only its own controls: starting a Team task from
+ * the New Task button and toggling the column.
  */
 export type SidebarRootInjected = {
   /**
-   * Start a New Session: with a workspace, reuse-or-create its blank session
-   * and open it; without one, inherit the current Session Workspace, then the
-   * recent Workspace, or clear into the New Session pure view when none exist.
+   * Start a local Team task draft without creating a Team or Session.
    */
-  startSession: (workspaceId?: WorkspaceId) => void
+  startTask: () => void
   /** Toggle the sidebar column through the layout service. */
   toggleSidebar: () => void
 }
@@ -111,6 +106,7 @@ export type SidebarRootComponentProps =
   & PropsRenderSlots<
     | 'sidebar.brand.mark'
     | 'sidebar.brand.name'
+    | 'sidebar.teamTasks'
     | 'sidebar.workspaces'
     | 'sidebar.settings'
     | 'sidebar.footer.action'

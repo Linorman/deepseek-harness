@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Assembled todo snapshot: boots the real built `packages/client/*/lib/
 // client.js` bundles through AppWebEntry's ModuleLoader path against the
-// keyless FixtureApiClient transport, opens the fixture session, and pins the
+// keyless FixtureApiClient transport, opens the fixture Team coordinator transcript, and pins the
 // two surfaces the fixture's parallel plan (turn 74, two items `in_progress`)
 // reaches — the `todo_write` tool row and the dock's plan strip.
 //
@@ -44,8 +44,11 @@ describe('assembled todo surfaces', () => {
   it('renders the parallel plan as a row summary, a separate active count, and the dock plan strip', async () => {
     mountAssembledApp()
 
-    const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-    fireEvent.click(await within(tree).findByText('Fixture 历史会话'))
+    const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+    fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+    await waitFor(() => {
+      expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
+    }, { timeout: 10_000 })
     // The todo turn is the fixture's last, so wait for its keyed row rather
     // than for chat content in general.
     const row = await waitFor(() => {

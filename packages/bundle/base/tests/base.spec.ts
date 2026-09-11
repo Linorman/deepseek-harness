@@ -32,6 +32,31 @@ describe('clocky-base bundle', () => {
     )
     expect(rows.length).toBeGreaterThan(50)
     expect(rows.some(row => row.id === 'agent-loop')).toBe(true)
+    expect(rows.some(row => [
+      'subagent',
+      'subagent-spawn-in-process',
+      'subagent-fork-in-process',
+      'tool-subagent-control',
+      'tool-subagent-list-agents',
+      'tool-subagent',
+      'tool-subagent-fork',
+      'tool-subagent-report',
+      'workflow-worker-thread',
+      'tool-workflow',
+      'tool-ralph',
+    ].includes(String(row.id)))).toBe(false)
+    for (const packageName of [
+      '@clocky/clocky-subagent',
+      '@clocky/clocky-subagent-spawn-in-process',
+      '@clocky/clocky-tool-ralph',
+      '@clocky/clocky-tool-subagent',
+      '@clocky/clocky-tool-subagent-control',
+      '@clocky/clocky-tool-subagent-report',
+      '@clocky/clocky-tool-workflow',
+      '@clocky/clocky-workflow-worker-thread',
+    ]) {
+      expect(manifest.dependencies ?? {}).not.toHaveProperty(packageName)
+    }
     expect(rows.some(row => row.id === 'session-telemetry-otel')).toBe(false)
   })
 

@@ -10,8 +10,8 @@
  */
 import { Context } from '@clocky/cordis'
 import { describe, expect, it } from 'vitest'
-import { createScope } from '@clocky/clocky-client-runtime/client'
-import type { SessionId } from '@clocky/clocky-client-runtime/client'
+import { createScope, createSnapshotStore } from '@clocky/clocky-client-runtime/client'
+import type { SessionId, TeamTaskListState } from '@clocky/clocky-client-runtime/client'
 import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
 import { TestRemote } from '@clocky/clocky-client-test-runtime'
 import type { ModelSelection } from '@clocky/clocky-api-remotes/client'
@@ -54,10 +54,16 @@ const GROUPS = [{
 }]
 
 /** Boot the plugin over fake faces + a stateful fake host (current moves on selectModel). */
-async function bench() {
+async function bench(options: { teamDraft?: boolean } = {}) {
   const ctx = new Context()
   let current: ModelSelection = { provider: 'test-provider', model: 'test-model' }
   const calls = { models: 0, select: 0 }
+  const teamState = createSnapshotStore<TeamTaskListState>({
+    items: [], current: undefined, selected: undefined, phase: 'ready', state: 'idle', error: null,
+    draft: options.teamDraft === true
+      ? { idempotencyKey: 'draft-model' as never, phase: 'ready', error: undefined, message: undefined }
+      : undefined,
+  })
   ctx.provide('connection', { api: { sessions: {
     models: () => {
       calls.models += 1
@@ -76,7 +82,28 @@ async function bench() {
       }
       return Promise.resolve({ result: { ok: true as const, value: { selected: current } } })
     },
+  }, host: {
+    describe: () => Promise.resolve({
+      result: {
+        ok: true as const,
+        value: {
+          version: 'test', cwd: '/tmp', provider: current.provider, model: current.model,
+          attachedSessions: 0, home: '/tmp', canOpenPath: false,
+        },
+      },
+    }),
+  }, llm: {
+    models: () => Promise.resolve({ result: { ok: true as const, value: { groups: GROUPS, failures: [] } } }),
   } } })
+  if (options.teamDraft === true) {
+    ctx.provide('teamTasks', {
+      list: teamState,
+      updateDraft: (selection: { selection: ModelSelection }) => {
+        const draft = teamState.getSnapshot().draft
+        if (draft !== undefined) teamState.set({ ...teamState.getSnapshot(), draft: { ...draft, ...selection } })
+      },
+    })
+  }
   // Whether the Host reports an adapter for the current route; the composer
   // block follows this, never catalog membership.
   let routable = true
@@ -94,12 +121,12 @@ async function bench() {
     },
   })
   const seats = new Map<string, {
-    inject: ((sessionId: SessionId) => ModelSelectInjected) | undefined
+    inject: ((sessionId: SessionId | undefined) => ModelSelectInjected) | undefined
     locale: string | undefined
   }>()
   ctx.provide('slots', {
     inject(_name: string, callback: () => () => void) { return callback() },
-    register(options: { name: string; locale?: string; inject?: (sessionId: SessionId) => ModelSelectInjected }) {
+    register(options: { name: string; locale?: string; inject?: (sessionId: SessionId | undefined) => ModelSelectInjected }) {
       seats.set(options.name, { inject: options.inject, locale: options.locale })
       return () => { seats.delete(options.name) }
     },
@@ -111,12 +138,8 @@ async function bench() {
   localeRuntime.setLocale('zh')
   ctx.provide('locale', localeRuntime)
   const scopes = new Map<SessionId, Context>()
-  const addressed = new Set<SessionId>()
   ctx.provide('sessions', {
     scope: (id: SessionId) => scopes.get(id),
-    subagentAddress: (id: SessionId) => addressed.has(id)
-      ? { parentSessionId: sid('parent'), childSessionId: id, mode: 'continuable' as const }
-      : undefined,
   })
   new TestRemote(ctx)
   const fiber = ctx.plugin({ inject: [...inject], apply })
@@ -133,9 +156,9 @@ async function bench() {
     seat: () => seats.get('conversation.input.model')!,
     hostCurrent: () => current,
     setHostCurrent: (selection: ModelSelection) => { current = selection },
-    address: (id: SessionId) => { addressed.add(id) },
     setRoutable: (next: boolean) => { routable = next },
     blockOf: (key: string) => blocks.get(sid(key)),
+    teamState,
   }
 }
 
@@ -149,6 +172,26 @@ describe('ui-model-selection dual entry', () => {
     expect(b.seat().inject).toBeTypeOf('function')
     // Copy rides the standard locale seat.
     expect(b.seat().locale).toBe('model')
+  })
+
+  it('uses the host catalog for a Team draft and carries the chat choice into the draft', async () => {
+    const b = await bench({ teamDraft: true })
+    const face = b.seat().inject!(undefined)
+    expect(face.available).toBe(true)
+    face.load()
+    await expect.poll(() => face.directory.getSnapshot().groups).toEqual(GROUPS)
+    expect(face.directory.getSnapshot().current).toEqual({ provider: 'test-provider', model: 'test-model' })
+    b.teamState.set({ ...b.teamState.getSnapshot(), state: 'loading' })
+    expect(face.directory.getSnapshot().current).toEqual({ provider: 'test-provider', model: 'test-model' })
+    await expect(face.select({
+      provider: 'test-provider', model: 'test-model-pro', reasoningEffort: 'max',
+    })).resolves.toBe(true)
+    expect(b.teamState.getSnapshot().draft?.selection).toEqual({
+      provider: 'test-provider', model: 'test-model-pro', reasoningEffort: 'max',
+    })
+    expect(face.directory.getSnapshot().current).toEqual({
+      provider: 'test-provider', model: 'test-model-pro', reasoningEffort: 'max',
+    })
   })
 
   it('popup options mark the host current active with the provider group in the detail', async () => {
@@ -221,8 +264,7 @@ describe('ui-model-selection dual entry', () => {
 
     b.ctx.emit('connection/reset')
     expect(face.directory.getSnapshot()).toMatchObject({ current: null, status: 'loading' })
-    await Promise.resolve()
-    expect(face.directory.getSnapshot()).toMatchObject({
+    await expect.poll(() => face.directory.getSnapshot()).toMatchObject({
       current: { provider: 'test-provider', model: 'test-model' },
       status: 'ready',
     })
@@ -300,29 +342,4 @@ describe('ui-model-selection dual entry', () => {
     expect(() => b.seat().inject!(sid('ghost'))).toThrow(/resolved no scope/)
   })
 
-  it('withholds both model entries from addressed subagent sessions without Agent-bound RPCs', async () => {
-    const b = await bench()
-    b.mint('child')
-    b.address(sid('child'))
-
-    expect(b.contribution().available(projection('child'))).toBe(false)
-    await expect(b.contribution().ui.options(
-      projection('child'),
-      new AbortController().signal,
-    )).rejects.toThrow(/unavailable for addressed subagent/)
-
-    const face = b.seat().inject!(sid('child'))
-    expect(face.available).toBe(false)
-    face.load()
-    await expect(face.select({ provider: 'unregistered-provider', model: 'test-model-pro' })).resolves.toBe(false)
-    await expect(b.ctx.modelDirectories.directoryFor(sid('child')).load())
-      .rejects.toThrow(/unavailable for addressed subagent/)
-    await expect(b.ctx.modelDirectories.directoryFor(sid('child')).select({
-      provider: 'unregistered-provider',
-      model: 'test-model-pro',
-    })).rejects.toThrow(/unavailable for addressed subagent/)
-    b.ctx.emit('connection/reset')
-    await Promise.resolve()
-    expect(b.calls).toEqual({ models: 0, select: 0 })
-  })
 })

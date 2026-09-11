@@ -1,0 +1,55 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+# Typed root budgets are supplied by the fixture's explicit deployment consumer.
+- id: team-run
+  disabled: true
+- id: tool-team-channel-summary
+  disabled: true
+
+- id: tool-team-goal
+  disabled: true
+
+- id: tool-team-task
+  disabled: true
+
+- id: team-scheduler-dag
+  disabled: true
+
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_USAGE_BOUNDARY_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_USAGE_BOUNDARY_BACKEND
+    routes: {}
+
+- id: team-hub
+  config:
+    maxModelTokensPerTeam: 1
+    usageRates:
+      '*':
+        input: 0.5
+        output: 0
+        cacheRead: 0
+        cacheWrite: 0
+
+- insert:
+    - id: usage-boundary-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_USAGE_BOUNDARY_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: usage-budget-boundaries-driver
+      name: './snapshot-fixtures/headless-usage-budget-boundaries-driver.ts'

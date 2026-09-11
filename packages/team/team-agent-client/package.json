@@ -1,0 +1,78 @@
+{
+  "name": "@clocky/clocky-team-agent-client",
+  "description": "Local direct and task-assignment Team Envelope binder for Participant-bound Agent inboxes",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/team/team-agent-client"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clocky/schemastery": "workspace:^"
+  },
+  "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-artifact": "workspace:^",
+    "@clocky/clocky-team-channel-basic": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-team-channel-task-assignment": "workspace:^",
+    "@clocky/clocky-team-channel-workflow": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-workspace": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-loop": "workspace:^",
+    "@clocky/clocky-agent-loop-testkit": "workspace:^",
+    "@clocky/clocky-host-webserver": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
+    "@clocky/clocky-storage": "workspace:^",
+    "@clocky/clocky-storage-json": "workspace:^",
+    "@clocky/clocky-storage-log": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-artifact": "workspace:^",
+    "@clocky/clocky-team-channel-basic": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-team-channel-task-assignment": "workspace:^",
+    "@clocky/clocky-team-hub": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-link-local": "workspace:^",
+    "@clocky/clocky-team-link-websocket": "workspace:^",
+    "@clocky/clocky-team-link-websocket-hub": "workspace:^",
+    "@clocky/clocky-team-scheduler-dag": "workspace:^",
+    "@clocky/clocky-team-workspace": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  }
+}

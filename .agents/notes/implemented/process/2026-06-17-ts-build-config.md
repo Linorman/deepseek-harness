@@ -36,6 +36,8 @@ In-package relative imports use explicit `.ts` specifiers.
 - Client tsc runs `tsc -b` against `tsconfig.client.json` after Host Typert has generated the Remote Client declarations; Client tsdown then reads the JavaScript emitted by the Client graph and produces the Client packages' Node loader entries and browser bundles.
 - The Web build starts only after both lib phases complete.
 
+The root tsdown config discovers package manifests only under `vendor/*`, `packages/*/*`, and `apps/cli`, then passes their directories to tsdown. This excludes the private repository root and residual directories without a manifest; otherwise tsdown can treat such a directory as a package using an ancestor manifest. Host workspaces without a package config inherit `lib/types/{index,invariant,startup}.js`. The glob includes each existing entry without requiring every companion file. Package configs override these defaults for other runtime exports. The Client pass has no inherited entry, so only packages with an explicit Client config are bundled. Setting the Host default to an empty entry silently removes configless workspaces from tsdown's build, even when the command succeeds. Direct `lib/types` exports remain TSC-owned; Typert and Remote exports remain generator-owned.
+
 `tsdown` is no longer the owner of TypeScript compilation or declaration output.
 
 `pnpm run typecheck` first runs the Host lib phase to generate the Remote declarations required by Client typechecking, then runs `tsc -b` against `tsconfig.client.json`. The two aggregates themselves check their respective examples, tests, and scripts with `noEmit`; referenced package/vendor projects retain the same emit behavior as the build.
@@ -47,9 +49,9 @@ The command orchestration shape is:
 ```sh
 pnpm run build:
 tsc -b tsconfig.host.json
-tsdown --env.DSH_BUILD_FACE host
+tsdown --env.CLOCKY_BUILD_FACE host
 tsc -b tsconfig.client.json
-tsdown --env.DSH_BUILD_FACE client
+tsdown --env.CLOCKY_BUILD_FACE client
 pnpm run build:web
 
 pnpm run verify-node-next-types:
@@ -63,7 +65,7 @@ pnpm run clean:
 tsx scripts/clean.ts
 ```
 
-The source-mode demos run through their declared TypeScript launchers and the root paths map. The `dsh` TUI chain uses Node's native transform plus its app-owned paths loader, the Web demo builds its required artifacts before entering that same CLI source chain, and the other source demos continue to use tsx.
+The source-mode demos run through their declared TypeScript launchers and the root paths map. The `clocky` TUI chain uses Node's native transform plus its app-owned paths loader, the Web demo builds its required artifacts before entering that same CLI source chain, and the other source demos continue to use tsx.
 
 ## Alternatives considered
 
@@ -76,7 +78,7 @@ The source-mode demos run through their declared TypeScript launchers and the ro
 
 Build responsibilities are clearer:
 
-- Each ordinary module under `packages/<group>/<pkg>` and `vendor/*` has one local tsconfig for build, typecheck, and tools that run source directly, such as the `dsh` source loader, `tsx`, and `vitest`. `api/remotes` is the sole exception: generated-contract ordering requires one solution and two mutually exclusive emitting projects.
+- Each ordinary module under `packages/<group>/<pkg>` and `vendor/*` has one local tsconfig for build, typecheck, and tools that run source directly, such as the `clocky` source loader, `tsx`, and `vitest`. `api/remotes` is the sole exception: generated-contract ordering requires one solution and two mutually exclusive emitting projects.
 - The `build` command runs the Host and Client Project Reference graphs in order. In each phase, `tsc -b` owns the publishable per-module `.js` and `.d.ts` output, while the bundler owns only the published runtime bundles.
     - `lib/types/*.d.ts` is the publish declaration output; `.d.ts.map` remains only as a local compilation artifact.
     - `lib/types/*.d.ts` uses explicit `.ts` relative specifiers, which TypeScript's NodeNext/Node16 resolver maps to sibling `.d.ts` files.
@@ -85,5 +87,7 @@ Build responsibilities are clearer:
 - `pnpm run verify-node-next-types` scans built declarations for relative specifiers without file extensions, then typechecks a temporary external ESM consumer with `moduleResolution: "NodeNext"` against the built `types`/`exports` surface, so declaration specifier regressions fail before publish.
 - The `typecheck` command uses `tsconfig.json`. Examples, tests, and scripts are checked by the root no-emit project, while packages and vendor modules keep the same emit behavior as `build`. Package and vendor source stays behind project-reference boundaries.
 - After changing branches or updating a checkout that deleted packages, contributors can run `pnpm run clean` to remove stale package directories before rebuilding. Unknown files in a manifest-less package directory require manual classification instead of being deleted.
+
+`scripts/tsdown-workspace.spec.ts` compiles the real Typert config dependency and fixture inputs with TypeScript, then executes the unchanged root config through tsdown's public build API. It observes resolved workspace directories and imports the resulting JavaScript under plain Node: an index-only package, optional invariant/startup companions, a package-specific entry, private-root and manifest-less-directory exclusion, and Client-only selection. The fixture starts without runtime bundles and requires no repository build artifacts.
 
 The Cordis vendor copy now has one more type-structure divergence from upstream. During upstream sync, that divergence must be reapplied or explicitly retired.

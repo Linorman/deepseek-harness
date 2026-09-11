@@ -429,7 +429,7 @@ describe('built-in conversation node Definitions', () => {
     ])
   })
 
-  it('keeps branching unavailable when a tool result follows the closing Assistant', () => {
+  it('keeps the turn footer after a tool result follows the closing Assistant', () => {
     const value = assembler([
       at(1, 'turn/start', { turn: 1 }),
       at(2, 'step/start', { turn: 1, step: 1 }),
@@ -450,7 +450,6 @@ describe('built-in conversation node Definitions', () => {
 
     const tail = node(snapshot(value), 'turn-tail')?.data as TurnTailChatData
     expect(tail.closing?.finalNode.seq).toBe(3)
-    expect(tail.branchUnavailable).toBe(true)
   })
 
   it('replays inbox predecessors after prepend and reclassifies the dependent message as steering', () => {
@@ -526,6 +525,27 @@ describe('built-in conversation node Definitions', () => {
       provenance: { role: 'inject', label: 'demo-skill' },
       form: 'instructions',
     })
+  })
+
+  it('maps Team delivery intent to user, steering, or context presentation', () => {
+    const source = (delivery: 'context' | 'turn' | 'steer') => ({
+      kind: 'team-envelope',
+      teamId: 'team-a',
+      channelId: 'channel-a',
+      envelopeId: `envelope-${delivery}`,
+      senderId: 'participant-a',
+      delivery,
+    })
+    const value = assembler([
+      at(1, 'user/message', { ...textMessage('team-turn', 'new task'), source: source('turn') }, { surfaceOp: 'append' }),
+      at(2, 'user/message', { ...textMessage('team-steer', 'change direction'), source: source('steer') }, { surfaceOp: 'append' }),
+      at(3, 'user/message', { ...textMessage('team-context', 'shared context'), source: source('context') }, { surfaceOp: 'append' }),
+    ])
+
+    const messages = [...snapshot(value).nodes.values()]
+      .filter(candidate => candidate.kind === 'user' || candidate.kind === 'steering' || candidate.kind === 'context')
+    expect(messages.map(candidate => candidate.kind)).toEqual(['user', 'steering', 'context'])
+    expect(messages[1]?.data).toMatchObject({ messageId: 'team-steer' })
   })
 
   it('associates each direct message with its immediately following session recall', () => {
@@ -952,8 +972,7 @@ describe('built-in conversation node Definitions', () => {
     const notice = node(snapshot(value), 'turn-max-tokens')
     expect(notice?.data).toMatchObject({ kind: 'turn-max-tokens', seq: 5, turn: 1, step: 1 })
     expect(node(snapshot(value), 'turn-error')).toBeUndefined()
-    // The tail stays the turn's last node so its branch action survives; the
-    // notice slots between the truncated closing Assistant and the tail.
+    // The notice slots between the truncated closing Assistant and the tail.
     const tail = node(snapshot(value), 'turn-tail')
     expect(notice?.anchorSeq).toBeLessThan(tail?.anchorSeq ?? Number.NEGATIVE_INFINITY)
     expect(notice?.anchorSeq).toBeGreaterThan(3)

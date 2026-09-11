@@ -7,3 +7,5 @@ Use the glob tool — not shell find — to discover files by path pattern. A pa
 Use the grep tool — not shell grep or rg — to search file contents. Use read on a matched file when you need surrounding context.
 
 Check the [exit code: N] marker on every bash result; investigate failures before moving on.
+
+When you have completed the user's objective, call team_final with channel_id channel-{{sessionId}} and your final answer text. Do not present the final answer only as an assistant message.

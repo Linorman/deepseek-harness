@@ -12,13 +12,15 @@ import {
 } from '@clocky/clocky-client-runtime/client'
 import { makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { zh as commonZh } from '@clocky/clocky-client-locale/src/locales/zh.ts'
-import type { ClientContext, ConversationSnapshot, SessionId } from '@clocky/clocky-client-runtime/client'
+import type {
+  ClientContext, ConversationSnapshot, SessionId, TeamId, TeamTaskListState,
+} from '@clocky/clocky-client-runtime/client'
 import type { SubmitOutcome } from '@clocky/clocky-client-ui-input-trigger/client'
 import { SessionInputShell } from '../src/client/input/facade.ts'
 import type {
   ComposerAttachment, ComposerAttachmentsOwnerProps,
 } from '../src/client/contract/slots.ts'
-import type { DraftAttachmentId } from '../src/client/input/contract.ts'
+import type { DraftAttachmentId, InputNotice, InputState } from '../src/client/input/contract.ts'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
 import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'
 import { zh } from '../src/client/locales.ts'
@@ -46,12 +48,14 @@ function snapshotOf(overrides: Partial<ConversationSnapshot> = {}): Conversation
     nodes: [], turnTimings: new Map(), turnEnds: new Map(), partial: null, runningCalls: [],
     pending: [], queue: [], running: false, composerPhase: 'active', removed: false,
     openState: 'open', openError: null, hasMore: false, loadingOlder: false,
-    promptError: null, blank: false, subagent: null, lastAgentError: null,
+    promptError: null, blank: false, lastAgentError: null,
     ...overrides,
   }
 }
 
 interface BenchOptions {
+  /** Whether the current Session is the selected Team coordinator transcript. */
+  teamOwned?: boolean
   planEntry?: React.ReactNode
   /** The `plan` projection value the standard-kit useProjection serves. */
   plan?: { active: boolean; pending: boolean }
@@ -70,11 +74,8 @@ interface BenchOptions {
   }
   draft?: string
   running?: boolean
-  subagent?: Exclude<ConversationSnapshot['subagent'], null>
   disabled?: boolean
   inert?: boolean
-  workspacePickerOpen?: boolean
-  onRequestWorkspace?: () => void
   promptError?: ConversationSnapshot['promptError']
   /** Authoritative queue rows served to the machine overlay (empty = none). */
   queue?: ConversationSnapshot['queue']
@@ -114,7 +115,6 @@ function bench(over?: BenchOptions) {
   const lex = over?.lexicon
   const session = createSnapshotStore<ConversationSnapshot>(snapshotOf({
     running: over?.running ?? false,
-    subagent: over?.subagent ?? null,
     removed: over?.disabled ?? false,
     promptError: over?.promptError ?? null,
     queue: over?.queue ?? [],
@@ -144,6 +144,15 @@ function bench(over?: BenchOptions) {
   const stop = vi.fn()
   const removeImage = vi.fn((id: DraftAttachmentId) => { shell.removeImage(id) })
   const menuLauncher = createSnapshotStore<string | null>(over?.commandMenuOpen === true ? 'command' : null)
+  const teamTasks = over?.teamOwned === undefined
+    ? undefined
+    : createSnapshotStore<TeamTaskListState>({
+      items: [], current: over.teamOwned ? 'team-1' as TeamId : undefined, selected: undefined,
+      phase: 'ready', state: 'idle', error: null, draft: undefined,
+    })
+  const teamTasksProps = teamTasks === undefined
+    ? {}
+    : { useTeamTasks: bindSnapshotSelector(teamTasks) }
   const slotCalls: { key: string; owner: unknown }[] = []
   const renderSlot = ((key: string, owner: object) => {
     slotCalls.push({ key, owner })
@@ -157,7 +166,7 @@ function bench(over?: BenchOptions) {
     useSession: bindSnapshotSelector(session),
     useSessions: bindSnapshotSelector(createSnapshotStore({
       ids: [], byId: {}, current: undefined, phase: 'ready',
-      subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+      jobsBySession: {},
     })),
     useWorkspaces: bindSnapshotSelector(createSnapshotStore({
       items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
@@ -185,6 +194,9 @@ function bench(over?: BenchOptions) {
     useNotices: bindSnapshotSelector(shell.notices),
     useLexicon: bindSnapshotSelector(shell.lexicon),
     useMenuLauncher: bindSnapshotSelector(menuLauncher),
+    ...teamTasksProps,
+    useTeamDraftInput: bindSnapshotSelector(createSnapshotStore<InputState | undefined>(undefined)),
+    useTeamDraftNotices: bindSnapshotSelector(createSnapshotStore<InputNotice | null>(null)),
     stop,
     command: over?.command ?? (() => Promise.resolve(true)),
     // Mirrors the real lookup chain (conversation namespace, then common).
@@ -192,8 +204,6 @@ function bench(over?: BenchOptions) {
     renderSlot,
     variant: over?.variant ?? 'composer',
     ...(over?.inert === true ? { disabled: true } : {}),
-    ...(over?.workspacePickerOpen !== undefined ? { workspacePickerOpen: over.workspacePickerOpen } : {}),
-    ...(over?.onRequestWorkspace !== undefined ? { onRequestWorkspace: over.onRequestWorkspace } : {}),
     ...(over?.placeholder !== undefined ? { placeholder: over.placeholder } : {}),
     ...(over?.accessory !== undefined ? { accessory: over.accessory } : {}),
     ...(over?.overlay !== undefined ? { overlay: over.overlay } : {}),
@@ -202,13 +212,12 @@ function bench(over?: BenchOptions) {
   }
   const view = render(<InputBar {...props} />)
   const textarea = view.container.querySelector('textarea')!
-  const primaryStops = over?.running === true && over.subagent === undefined
+  const primaryStops = over?.running === true
   const button = view.container.querySelector<HTMLButtonElement>(
     `button[aria-label="${primaryStops ? '停止生成' : '发送消息'}"]`,
   )!
-  const interruptButton = view.container.querySelector<HTMLButtonElement>('button[aria-label="停止生成"]')
   return {
-    view, textarea, button, interruptButton, props, sink, shell, wiring: shell, session, stop, removeImage, slotCalls,
+    view, textarea, button, props, sink, shell, wiring: shell, session, stop, removeImage, slotCalls,
     menuLauncher,
     steerQueue: over?.steerQueue,
   }
@@ -426,14 +435,6 @@ describe('Enter semantics', () => {
     expect(bench({
       running: true,
       queue: [row('q-1')],
-      subagent: {
-        address: { parentSessionId: 'parent' as SessionId, childSessionId: SID, mode: 'continuable' },
-        parentAvailable: true,
-      },
-    }).textarea.placeholder).toBe('给智能体发消息')
-    expect(bench({
-      running: true,
-      queue: [row('q-1')],
       placeholder: '上层指定提示',
     }).textarea.placeholder).toBe('上层指定提示')
     // The command menu owns Enter while open: neither the hint nor the
@@ -521,7 +522,7 @@ describe('Enter semantics', () => {
     expect(ctrl.sink).not.toHaveBeenCalled()
   })
 
-  it('queue steering stays gated: idle, subagent, plain Enter, empty queue, or steering-only rows', () => {
+  it('queue steering stays gated: idle, plain Enter, empty queue, or steering-only rows', () => {
     // Idle: the gesture falls through to the machine's empty-draft no-op.
     const idle = bench({ queue: [row('q-1')], steerQueue: vi.fn() })
     fireEvent.keyDown(idle.textarea, { key: 'Enter', metaKey: true })
@@ -533,20 +534,6 @@ describe('Enter semantics', () => {
     fireEvent.keyDown(plain.textarea, { key: 'Enter' })
     expect(plain.steerQueue).not.toHaveBeenCalled()
     expect(plain.sink).not.toHaveBeenCalled()
-
-    // Subagent sessions keep the queue transport (no steering face).
-    const subagent = {
-      address: {
-        parentSessionId: 'parent' as SessionId,
-        childSessionId: SID,
-        mode: 'continuable' as const,
-      },
-      parentAvailable: true,
-    }
-    const child = bench({ running: true, subagent, queue: [row('q-1')], steerQueue: vi.fn() })
-    fireEvent.keyDown(child.textarea, { key: 'Enter', metaKey: true })
-    expect(child.steerQueue).not.toHaveBeenCalled()
-    expect(child.sink).not.toHaveBeenCalled()
 
     // No queued rows: the empty draft stays a no-op.
     const none = bench({ running: true, steerQueue: vi.fn() })
@@ -639,86 +626,6 @@ describe('running and lock semantics', () => {
     expect(ctrl.sink).toHaveBeenCalledWith('also queue', [], 'queue', expect.any(AbortSignal))
   })
 
-  it('running continuable subagent keeps Send beside an independent Stop', () => {
-    const { button, interruptButton, textarea, sink, stop } = bench({
-      running: true,
-      draft: '后续消息',
-      subagent: {
-        address: {
-          parentSessionId: 'parent' as SessionId,
-          childSessionId: SID,
-          mode: 'continuable',
-        },
-        parentAvailable: true,
-      },
-    })
-    expect(button.getAttribute('aria-label')).toBe('发送消息')
-    expect(interruptButton).not.toBeNull()
-    expect(textarea.disabled).toBe(false)
-    fireEvent.click(button)
-    expect(sink).toHaveBeenCalledWith('后续消息', [], 'queue', expect.any(AbortSignal))
-    fireEvent.click(interruptButton!)
-    expect(stop).toHaveBeenCalledTimes(1)
-  })
-
-  it('parent-offline running continuable locks Send but keeps independent Stop usable', () => {
-    const { button, interruptButton, textarea, stop, view } = bench({
-      running: true,
-      draft: '',
-      subagent: {
-        address: {
-          parentSessionId: 'parent' as SessionId,
-          childSessionId: SID,
-          mode: 'continuable',
-        },
-        parentAvailable: false,
-      },
-    })
-    expect(textarea.disabled).toBe(true)
-    expect(textarea.placeholder).toBe('父会话已离线，无法继续发送；仍可停止当前运行')
-    expect((view.getByLabelText('命令') as HTMLButtonElement).disabled).toBe(true)
-    expect(button.getAttribute('aria-label')).toBe('发送消息')
-    expect(button.disabled).toBe(true)
-    expect(interruptButton?.disabled).toBe(false)
-    fireEvent.click(interruptButton!)
-    expect(stop).toHaveBeenCalledTimes(1)
-  })
-
-  it('running one-shot subagent never exposes Stop', () => {
-    const { button, interruptButton, stop } = bench({
-      running: true,
-      draft: '不可停止',
-      subagent: {
-        address: {
-          parentSessionId: 'parent' as SessionId,
-          childSessionId: SID,
-          mode: 'one-shot',
-        },
-        parentAvailable: true,
-      },
-    })
-    expect(button.getAttribute('aria-label')).toBe('发送消息')
-    expect(interruptButton).toBeNull()
-    expect(stop).not.toHaveBeenCalled()
-  })
-
-  it('keeps both running subagent Enter gestures on Queue transport', () => {
-    const subagent = {
-      address: {
-        parentSessionId: 'parent' as SessionId,
-        childSessionId: SID,
-        mode: 'continuable' as const,
-      },
-      parentAvailable: true,
-    }
-    const plain = bench({ running: true, busyEnter: 'steer', draft: 'plain', subagent })
-    fireEvent.keyDown(plain.textarea, { key: 'Enter' })
-    expect(plain.sink).toHaveBeenCalledWith('plain', [], 'queue', expect.any(AbortSignal))
-
-    const accelerated = bench({ running: true, draft: 'accelerated', subagent })
-    fireEvent.keyDown(accelerated.textarea, { key: 'Enter', metaKey: true })
-    expect(accelerated.sink).toHaveBeenCalledWith('accelerated', [], 'queue', expect.any(AbortSignal))
-  })
 
   it('disabled (session removed) locks the textarea and chrome', () => {
     const { textarea, view } = bench({ disabled: true })
@@ -1069,38 +976,15 @@ describe('running and lock semantics', () => {
     expect(custom.textarea.placeholder).toBe('Custom placeholder')
   })
 
-  it('the inert textarea opens the Workspace picker by pointer or keyboard', () => {
-    const onRequestWorkspace = vi.fn()
-    const { view, textarea } = bench({
-      inert: true,
-      workspacePickerOpen: false,
-      onRequestWorkspace,
-      placeholder: '选择一个工作区开始',
-    })
-    expect(textarea.disabled).toBe(false)
-    expect(textarea.readOnly).toBe(true)
-    expect(textarea.getAttribute('aria-haspopup')).toBe('menu')
-    expect(textarea.getAttribute('aria-expanded')).toBe('false')
+  it('the inert textarea stays unavailable until a task draft exists', () => {
+    const { view, textarea } = bench({ inert: true, placeholder: '请从侧边栏新建任务' })
+    expect(textarea.disabled).toBe(true)
     expect((view.getByLabelText('命令') as HTMLButtonElement).disabled).toBe(true)
-
     fireEvent.click(textarea)
     fireEvent.keyDown(textarea, { key: 'Enter' })
-    fireEvent.keyDown(textarea, { key: ' ' })
-    expect(onRequestWorkspace).toHaveBeenCalledTimes(3)
-
-    // The WHOLE capsule is the pick target, and its pointerdown never reaches
-    // the document — the open picker's outside-close must not race the reopen.
     const card = view.container.querySelector('[data-composer-card]') as HTMLElement
     fireEvent.click(card)
-    expect(onRequestWorkspace).toHaveBeenCalledTimes(4)
-    const onDocumentPointerDown = vi.fn()
-    document.addEventListener('pointerdown', onDocumentPointerDown)
-    try {
-      fireEvent.pointerDown(card)
-    } finally {
-      document.removeEventListener('pointerdown', onDocumentPointerDown)
-    }
-    expect(onDocumentPointerDown).not.toHaveBeenCalled()
+    expect(textarea.value).toBe('')
   })
 
   it('the plan projection swaps the placeholder while its effective target is plan mode', () => {
@@ -1480,6 +1364,24 @@ describe('command launcher chrome and control seats', () => {
     ])
     expect(view.queryByLabelText('Plan mode')).toBeNull()
     expect(view.queryByLabelText('Model')).toBeNull()
+  })
+
+  it('fences generic command controls for a Team-owned coordinator Session', () => {
+    const { view, slotCalls } = bench({
+      teamOwned: true,
+      permissions: {
+        options: [{ value: 'read-only', name: 'read-only' }],
+        currentValue: 'read-only',
+      },
+      planEntry: <i data-testid="plan-entry" />,
+    })
+    const launcher = view.getByLabelText('命令') as HTMLButtonElement
+    expect(launcher.disabled).toBe(true)
+    expect(view.queryByLabelText(/^访问模式/)).toBeNull()
+    expect(view.queryByTestId('plan-entry')).toBeNull()
+    expect(slotCalls.map(call => call.key)).toEqual([
+      'conversation.input.attachments', 'conversation.input.model',
+    ])
   })
 
   it('passes the textarea selection to the command menu launcher and reflects its expanded state', () => {

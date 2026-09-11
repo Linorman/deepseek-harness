@@ -3,19 +3,17 @@
  * Scripted stand-in for Clocky SDK runtime, driven entirely by
  * env vars — no model, no network, no harness imports. Speaks the runtime's
  * newline-delimited JSON-RPC protocol on stdio: answers `initialize`,
- * `session/prompt` (streaming scripted `session.event` notifications, then
- * `session.finished`, then the response), and `shutdown`.
+ * Team product methods, activation placement methods, and `shutdown`.
  *
  * Script vocabulary (all optional):
  * - `FAKE_TEXT`: assistant text for each turn (default `hello from fake runtime`).
- * - `FAKE_STATUS`: the `session.finished` status (default `ok`).
- * - `FAKE_REASON_KIND`: the `session.finished` reason kind (default `completed`; `none` omits the reason).
- * - `FAKE_SUBAGENT`: also emit a child session (subagent.started + child event + subagent.finished).
+ * - `FAKE_REASON_KIND`: the coordinator `turn/end` reason kind (default `completed`).
  * - `FAKE_ECHO_CWD`: prefix the assistant text with the process cwd.
  * - `FAKE_ECHO_ENV`: comma-separated env names to echo as `name=value` lines in the assistant text.
- * - `FAKE_MALFORMED`: `initialize` returns `{}` (no serverInfo); `prompt` returns `{}` (no accepted).
- * - `FAKE_MALFORMED_PROMPT`: `initialize` is normal; only `prompt` returns `{}` (no accepted).
+ * - `FAKE_MALFORMED`: `initialize` returns `{}` (no serverInfo); `team/create` returns `{}`.
+ * - `FAKE_MALFORMED_PROMPT`: `initialize` is normal; only `team/create` returns `{}`.
  * - `FAKE_INIT_ERROR`: `initialize` answers a JSON-RPC error response with code 7.
+ * - `FAKE_INIT_ECHO_CREDENTIAL`: `initialize` reflects its credential in a scripted error (client redaction probe).
  * - `FAKE_INIT_ERROR_ONCE_FILE`: fail `initialize` (code 7) only when this
  *   marker file does NOT exist yet, creating it — so the first runtime
  *   process fails the handshake and a respawned one succeeds (retry probe).
@@ -32,9 +30,9 @@
  * - `FAKE_INIT_READY` + `FAKE_INIT_GO`: touch the READY file when `initialize`
  *   arrives, then poll for the GO file before answering (deterministic
  *   cancel-during-handshake window).
- * - `FAKE_HANG_PROMPT`: never answer `session/prompt` (for timeout/dispose tests).
- * - `FAKE_STREAM_THEN_MALFORMED`: stream a text chunk for the prompt, then
- *   answer `{}` (no accepted) — same-pipe ordering makes the chunk arrive
+ * - `FAKE_HANG_PROMPT`: never answer `team/create` (for timeout/dispose tests).
+ * - `FAKE_STREAM_THEN_MALFORMED`: stream a text chunk for Team creation, then
+ *   answer `{}` — same-pipe ordering makes the chunk arrive
  *   before the protocol failure (partial-output retention probe).
  * - `FAKE_IGNORE_EOF` + `FAKE_SIGTERM_FILE`: keep running after stdin EOF; touch the file on SIGTERM (ladder probe).
  * - `FAKE_TRAP_SIGTERM`: with `FAKE_IGNORE_EOF`, survive SIGTERM too (SIGKILL-rung probe).
@@ -42,6 +40,10 @@
  * - `FAKE_STDERR`: write this line to stderr at boot (diagnostics-tail probe).
  * - `FAKE_STDERR_NO_NEWLINE`: write this to stderr WITHOUT a newline (buffer-flush probe).
  * - `FAKE_RECORD_INIT`: append each `initialize` params JSON to this file (handshake probe).
+ * - `FAKE_ACTIVATION_MALFORMED_OPEN_RESULT`: `activation/open` returns a malformed state.
+ * - `FAKE_ACTIVATION_MALFORMED_NOTIFICATION`: activation methods emit a malformed status notification.
+ * - `FAKE_ACTIVATION_MALFORMED_INTERRUPT_RESULT`: `activation/interrupt` returns a non-empty acknowledgement.
+ * - `FAKE_ACTIVATION_MALFORMED_DISPOSE_RESULT`: `activation/dispose` returns a malformed state.
  */
 
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
@@ -90,6 +92,10 @@ function assistantText(): string {
 
 function runTurn(sessionId: string): void {
   const text = assistantText()
+  if (env.FAKE_SESSION_EVENT_JSON !== undefined) {
+    notify('session.event', { sessionId, event: JSON.parse(env.FAKE_SESSION_EVENT_JSON) as unknown })
+    return
+  }
   if (env.FAKE_MALFORMED_EVENT !== undefined) {
     notify('session.event', { sessionId, event: 42 })
     return
@@ -127,30 +133,53 @@ function runTurn(sessionId: string): void {
   })
   const reasonKind = env.FAKE_REASON_KIND ?? 'completed'
   event(sessionId, 'turn/end', { turn: 0, reason: { kind: reasonKind } })
-  if (env.FAKE_SUBAGENT !== undefined) {
-    const childId = `${sessionId}-child`
-    notify('subagent.started', { parentSessionId: sessionId, childSessionId: childId })
-    event(childId, 'assistant/message', {
-      turn: 0,
-      step: 0,
-      content: [{ type: 'text', text: 'child says hi' }],
-      provenance: { provider: 'fake', model: 'fake' },
-    })
-    notify('subagent.finished', {
-      provider: 'spawn',
-      agentId: childId,
-      parentSessionId: sessionId,
-      childSessionId: childId,
-      status: 'ok',
-      stopReason: 'completed',
-      lastAssistantMessage: [{ type: 'text', text: 'child says hi' }],
-    })
+}
+
+interface FakeTeam {
+  readonly coordinatorSessionId: string
+  readonly channelId: string
+  readonly envelopeId: string
+}
+
+let teamSerial = 0
+const teams = new Map<string, FakeTeam>()
+
+interface FakeActivationState {
+  activationId: string
+  teamId: string
+  participantId: string
+  sessionId: string
+  status: 'starting' | 'running' | 'idle' | 'stopping' | 'offline'
+  statusSequence: number
+}
+
+const activations = new Map<string, FakeActivationState>()
+
+function activationTargetOf(params: Record<string, unknown> | undefined): Omit<FakeActivationState, 'status' | 'statusSequence'> {
+  const target = params?.target as Record<string, unknown> | undefined
+  return {
+    activationId: typeof target?.activationId === 'string' ? target.activationId : '',
+    teamId: typeof target?.teamId === 'string' ? target.teamId : '',
+    participantId: typeof target?.participantId === 'string' ? target.participantId : '',
+    sessionId: typeof target?.sessionId === 'string' ? target.sessionId : '',
   }
 }
 
-function sessionIdOf(params: Record<string, unknown> | undefined): string {
-  const value = params?.sessionId
-  return typeof value === 'string' ? value : ''
+function activationState(params: Record<string, unknown> | undefined): FakeActivationState {
+  const target = activationTargetOf(params)
+  const existing = activations.get(target.activationId)
+  if (existing !== undefined) return existing
+  const state: FakeActivationState = { ...target, status: 'idle', statusSequence: 0 }
+  activations.set(state.activationId, state)
+  return state
+}
+
+function notifyActivation(state: FakeActivationState): void {
+  if (env.FAKE_ACTIVATION_MALFORMED_NOTIFICATION !== undefined) {
+    notify('activation.status', { state: { activationId: state.activationId, status: 'unknown' } })
+    return
+  }
+  notify('activation.status', { state })
 }
 
 const reader = createInterface({ input: process.stdin })
@@ -178,6 +207,11 @@ reader.on('line', (line) => {
         write({ jsonrpc: '2.0', id: frame.id, error: { code: 7, message: 'scripted init failure', data: { hint: 'fake' } } })
         return
       }
+      if (env.FAKE_INIT_ECHO_CREDENTIAL !== undefined) {
+        const credential = typeof frame.params?.credential === 'string' ? frame.params.credential : ''
+        write({ jsonrpc: '2.0', id: frame.id, error: { code: 7, message: `credential=${credential}`, data: { credential } } })
+        return
+      }
       if (env.FAKE_INIT_ERROR_ONCE_FILE !== undefined && !existsSync(env.FAKE_INIT_ERROR_ONCE_FILE)) {
         writeFileSync(env.FAKE_INIT_ERROR_ONCE_FILE, 'failed-once\n')
         write({ jsonrpc: '2.0', id: frame.id, error: { code: 7, message: 'scripted first-boot failure' } })
@@ -193,22 +227,27 @@ reader.on('line', (line) => {
       }
       respond({ serverInfo: { name: 'clocky-sdk-runtime', version: '0.0.1' } })
       return
-    case 'session/prompt': {
-      const sessionId = sessionIdOf(frame.params)
-      const messageId = `fake-user-${seq}`
-      event(sessionId, 'agent/inbox/spliced', {
+    case 'team/create': {
+      const teamId = `fake-team-${++teamSerial}`
+      const coordinatorSessionId = `${teamId}-coordinator`
+      const team: FakeTeam = {
+        coordinatorSessionId,
+        channelId: `${teamId}-channel`,
+        envelopeId: `${teamId}-input`,
+      }
+      event(coordinatorSessionId, 'agent/inbox/spliced', {
         target: 'next-turn',
         start: 0,
         inserted: [{
-          id: messageId,
+          id: team.envelopeId,
           role: 'user',
           content: [],
           source: { kind: 'user' },
         }],
       })
-      notify('session.status', { sessionId, status: 'running' })
+      notify('session.status', { sessionId: coordinatorSessionId, status: 'running' })
       if (env.FAKE_STREAM_THEN_MALFORMED !== undefined) {
-        event(sessionId, 'assistant/chunk', { turn: 0, step: 0, chunk: { type: 'text-delta', index: 0, text: 'streamed then cut short' } })
+        event(coordinatorSessionId, 'assistant/chunk', { turn: 0, step: 0, chunk: { type: 'text-delta', index: 0, text: 'streamed then cut short' } })
         respond({})
         return
       }
@@ -217,9 +256,134 @@ reader.on('line', (line) => {
         respond({})
         return
       }
-      runTurn(sessionId)
-      notify('session.status', { sessionId, status: 'idle' })
-      respond({ messageId })
+      teams.set(teamId, team)
+      runTurn(coordinatorSessionId)
+      notify('session.status', { sessionId: coordinatorSessionId, status: 'idle' })
+      respond({ teamId, coordinatorSessionId, envelopeId: team.envelopeId })
+      return
+    }
+    case 'team/wait-final': {
+      const teamId = typeof frame.params?.teamId === 'string' ? frame.params.teamId : ''
+      const team = teams.get(teamId)
+      if (team === undefined) {
+        write({ jsonrpc: '2.0', id: frame.id, error: { code: -32_002, message: `unknown team: ${teamId}` } })
+        return
+      }
+      respond({ teamId, channelId: team.channelId, envelopeId: `${teamId}-final`, text: assistantText() })
+      return
+    }
+    case 'team/inbox-read':
+    case 'team/inbox-watch':
+      respond({ items: [], displayCursor: 4, cursor: 6 })
+      return
+    case 'team/inbox-acknowledge':
+      respond({ displayCursor: frame.params?.throughCursor })
+      return
+    case 'team/channel-input': {
+      const source = frame.params?.content
+      const content = Array.isArray(source) ? source.map((part: unknown) => {
+        const value = part as Record<string, unknown>
+        return value.type === 'text' ? value : { type: 'image', attachment: {
+          attachmentId: 'fixture-image', mediaType: 'image/png', bytes: 3, width: 1, height: 1,
+        } }
+      }) : []
+      respond({ value: { id: 'media-envelope', teamId: 'team-1', channelId: frame.params?.channelId, sequence: 3, senderId: 'human',
+        audience: frame.params?.audience, kind: 'message', payload: { content }, delivery: frame.params?.delivery, priority: 'normal', createdAt: 1 } })
+      return
+    }
+    case 'team/channel-attachment':
+      respond({ attachment: { attachmentId: frame.params?.attachmentId, mediaType: 'image/png', bytes: 3, width: 1, height: 1 }, data: 'cGl4' })
+      return
+    case 'team/channel-catalog':
+      respond({ adapters: [{ type: 'consult', version: 1 }], viewPolicies: [{ type: 'summarized-window', version: 1 }],
+        summary: { allowedPolicies: ['summarized-window'], maxSourceEnvelopes: 8, maxSourceBytes: 65536, maxSummaryBytes: 1024, maxHistorySpan: 32 } })
+      return
+    case 'team/channel-summarize':
+      respond({ value: { type: 'channel/summary', sequence: 9, createdAt: 2,
+        coveredSequenceRange: frame.params?.coveredSequenceRange, sourceFingerprint: `sha256:${'0'.repeat(64)}`,
+        sourceEnvelopeIds: ['summary-source'], text: 'Saved summary.', policy: { type: 'summarized-window', version: 1 },
+        idempotencyKey: frame.params?.idempotencyKey } })
+      return
+    case 'team/channel-list': {
+      const start = Number(frame.params?.afterCursor ?? -1) + 1
+      const limit = Math.min(Number(frame.params?.limit ?? 2), 2)
+      const all = Array.from({ length: 3 }, (_, index) => ({ manifest: { id: `listed-${index}`, teamId: frame.params?.teamId,
+        adapter: { type: 'direct', version: 4 }, participants: [], limits: {} }, phase: 'pending', cursor: 0 }))
+      respond({ items: all.slice(start, start + limit), ...start + limit < all.length ? { nextCursor: start + limit - 1 } : {} })
+      return
+    }
+    case 'team/channel-admission':
+      respond({ value: {
+        expectedNext: { kind: 'none' }, protocolStatus: { kind: 'other' },
+        channel: { manifest: { id: frame.params?.channelId, teamId: frame.params?.teamId, adapter: { type: 'direct', version: 4 },
+          participants: [{ id: 'endpoint-1', role: 'human' }], limits: {} }, phase: 'pending', cursor: 0 },
+        invitations: [{ participantId: 'endpoint-1', role: 'human', visibility: 'channel', required: true, deadline: 9,
+          endpoint: { kind: 'human' }, revision: 1, manifestFingerprint: `sha256:${'0'.repeat(64)}`, status: 'pending' }],
+      } })
+      return
+    case 'team/artifact-read':
+      respond({
+        artifact: { id: 'artifact-1', provider: 'local', kind: 'report', uri: 'artifact://report', visibility: 'team' },
+        bytes: 4,
+        data: 'dGVzdA==',
+      })
+      return
+    case 'team/cancel': {
+      const teamId = typeof frame.params?.teamId === 'string' ? frame.params.teamId : ''
+      teams.delete(teamId)
+      respond({ phase: 'cancelled' })
+      return
+    }
+    case 'team/archive': {
+      const teamId = typeof frame.params?.teamId === 'string' ? frame.params.teamId : ''
+      respond({ teamId, archivedAt: 7 })
+      return
+    }
+    case 'activation/open': {
+      const state = activationState(frame.params)
+      notifyActivation(state)
+      if (env.FAKE_ACTIVATION_MALFORMED_OPEN_RESULT !== undefined) {
+        respond({ state: { activationId: state.activationId } })
+        return
+      }
+      respond({ state })
+      return
+    }
+    case 'activation/link-enroll': {
+      if (env.FAKE_ACTIVATION_MALFORMED_LINK_ENROLL_RESULT !== undefined) {
+        respond({ unexpected: true })
+        return
+      }
+      respond({})
+      return
+    }
+    case 'activation/status': {
+      const state = activationState(frame.params)
+      respond({ state })
+      return
+    }
+    case 'activation/interrupt': {
+      const state = activationState(frame.params)
+      const next: FakeActivationState = { ...state, status: 'running', statusSequence: state.statusSequence + 1 }
+      activations.set(next.activationId, next)
+      notifyActivation(next)
+      if (env.FAKE_ACTIVATION_MALFORMED_INTERRUPT_RESULT !== undefined) {
+        respond({ unexpected: true })
+        return
+      }
+      respond({})
+      return
+    }
+    case 'activation/dispose': {
+      const state = activationState(frame.params)
+      const next: FakeActivationState = { ...state, status: 'offline', statusSequence: state.statusSequence + 1 }
+      activations.set(next.activationId, next)
+      notifyActivation(next)
+      if (env.FAKE_ACTIVATION_MALFORMED_DISPOSE_RESULT !== undefined) {
+        respond({ state: { activationId: next.activationId } })
+        return
+      }
+      respond({ state: next })
       return
     }
     case 'shutdown':

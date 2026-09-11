@@ -15,10 +15,10 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
-  launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
+  captureStableAria, closedSessionFixture, compareOrRefreshGolden, fixtureUserPrompts,
+  launchWebScaffold, recordFixture, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const FIXTURE = fileURLToPath(new URL('./snapshots/cordis-tool-round/session.jsonl', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('./snapshots/cordis-tool-round/ui.expected.md', import.meta.url))
@@ -73,15 +73,24 @@ describe('web e2e: Cordis tools use their owned cards', () => {
   beforeAll(async () => {
     scaffold = await launchWebScaffold({
       cordisTools: true,
+      legacyWorkspaceSurface: true,
       ...(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 }),
     })
+    await seedSession(scaffold, closedSessionFixture(), 'cordis-tool-round-web-e2e')
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {

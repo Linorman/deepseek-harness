@@ -1,0 +1,64 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: workspace-release-model
+    model: workspace-release-model
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_RELEASE_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_RELEASE_BACKEND
+    routes: {}
+
+# Fault observation must precede the Hub opening its real source streams.
+- id: team-hub
+  inject: [workspaceReleaseProbe]
+
+- id: team-workspace-shared
+  config:
+    root: !!js process.cwd()
+    integrationRoot: !!js process.env.CLOCKY_RELEASE_INTEGRATION_ROOT
+    integrationEnabled: false
+
+# The live Agent Client owns the first release; the next Host owns cold recovery.
+- id: team-workspace-recovery
+  disabled: !!js process.env.CLOCKY_RELEASE_STAGE === 'crash'
+  config:
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    confirmationAttempts: 4
+    confirmationRetryDelayMs: 1
+
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: workspace-release-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_RELEASE_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: workspace-release-probe
+      name: './snapshot-fixtures/headless-workspace-release-probe.ts'
+      config:
+        stage: !!js process.env.CLOCKY_RELEASE_STAGE
+        integrationRoot: !!js process.env.CLOCKY_RELEASE_INTEGRATION_ROOT
+        tracePath: !!js process.env.CLOCKY_RELEASE_TRACE_PATH
+
+    - id: workspace-release-driver
+      name: './snapshot-fixtures/headless-workspace-release-restart-driver.ts'
+      config:
+        stage: !!js process.env.CLOCKY_RELEASE_STAGE
+        teamId: !!js process.env.CLOCKY_RELEASE_TEAM_ID

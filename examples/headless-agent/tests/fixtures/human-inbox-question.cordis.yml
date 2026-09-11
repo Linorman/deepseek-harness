@@ -1,0 +1,72 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: human-question-model
+    model: human-question-model
+
+# Standard contains the actual ask_user_question tool used by the worker.
+- id: team-run
+  config:
+    workerPreset: standard
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_QUESTION_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_QUESTION_BACKEND
+    routes: {}
+
+- insert:
+    - id: human-question-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_QUESTION_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: human-question-domain
+      name: '@clocky/clocky-storage-domain'
+      config:
+        backend: !!js process.env.CLOCKY_QUESTION_BACKEND
+
+    - id: human-question-workspace
+      name: '@clocky/clocky-workspace'
+
+    - id: human-question-directory-picker
+      name: '@clocky/clocky-host-directory-picker-browse'
+      config:
+        maxEntries: 1000
+
+    # The actual transport-agnostic Host gateway owns its pending registry and proofs.
+    - id: human-question-host-api
+      name: '@clocky/clocky-host-apiproxy'
+      inject: [teams]
+      config:
+        nativeOpen: false
+
+    - id: human-question-driver
+      name: './snapshot-fixtures/human-inbox-question-driver.ts'
+
+    - id: human-inbox-auth
+      name: '@clocky/clocky-host-product-principal-digest'
+      config:
+        providerName: human-inbox-fixture
+        principalId: human-inbox-person
+        subject: human-inbox-person
+        credentialSha256: d04dbf79f69fc2b6fa16a708f4eade842bdbeaed2a973859c68e7c4b26eddda3
+    - id: human-inbox-actor
+      name: '@clocky/clocky-team-human-actor'
+    - id: human-inbox
+      name: '@clocky/clocky-team-human-client'
+      config:
+        storagePageSize: 32
+        maxPageSize: 32
+        maxDeliveryBytes: 262144
+        maxPendingOperations: 128
+        watchTimeoutMs: 1000
+        pollIntervalMs: 25

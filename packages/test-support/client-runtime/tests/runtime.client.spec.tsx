@@ -8,9 +8,9 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { stubSettingsScope } from '../src/settings-scope.ts'
-import { cleanup } from '@testing-library/react'
+import { act, cleanup } from '@testing-library/react'
 import { defineStore } from '@clocky/clocky-client-runtime/client'
-import type { SessionId, WorkspaceId } from '@clocky/clocky-client-runtime/client'
+import type { ITeamTasks, SessionId, TeamTaskListState, TeamTaskSelection, WorkspaceId } from '@clocky/clocky-client-runtime/client'
 import type { PropsRenderSlots, SessionStandardProps } from '@clocky/clocky-client-ui-slots'
 import { SlotTestRuntime } from '@clocky/clocky-client-test-runtime'
 
@@ -203,25 +203,13 @@ describe('sessions', () => {
     await runtime.dispose()
   })
 
-  it('records service-face calls and retains catalog addresses only for addressed selection', async () => {
+  it('records service-face calls and updates the selected session', async () => {
     const runtime = await runtimeWithFrame()
     await runtime.sessions.add({ id: 's1' })
     await runtime.sessions.add({ id: 's2' })
-    const address = {
-      parentSessionId: 's2' as SessionId,
-      childSessionId: 's1' as SessionId,
-      mode: 'continuable' as const,
-    }
-    runtime.sessions.openSubagent(address)
-    await runtime.flush()
-    expect(runtime.sessions.list.getSnapshot()).toMatchObject({ current: 's1', currentAddress: address })
-    expect(runtime.sessions.subagentAddress('s1' as SessionId)).toEqual(address)
-    expect(runtime.sessions.subagentAddress('s2' as SessionId)).toBeUndefined()
     await runtime.sessions.updateSummary('s1', { displayTitle: 'renamed', running: true })
     expect(runtime.sessions.list.getSnapshot().byId['s1' as SessionId])
       .toMatchObject({ displayTitle: 'renamed', running: true })
-    runtime.sessions.setSubagentCatalogOpen('s2' as SessionId, true)
-    await runtime.sessions.refreshSubagents('s2' as SessionId)
     // The confirmed-switch write-back lands on the row it names and ignores
     // one the fixture never added, exactly as production's list upsert does.
     runtime.sessions.noteAgentPreset('s1' as SessionId, 'minimal')
@@ -232,20 +220,12 @@ describe('sessions', () => {
     runtime.sessions.open('s1' as SessionId)
     await runtime.flush()
     expect(runtime.sessions.list.getSnapshot().current).toBe('s1')
-    expect(runtime.sessions.list.getSnapshot().currentAddress).toBeUndefined()
     runtime.sessions.clear()
     await runtime.flush()
     expect(runtime.sessions.list.getSnapshot().current).toBeUndefined()
-    await expect(runtime.sessions.fork({
-      sessionId: 's1' as SessionId, atSeq: 7, increaseTitle: true,
-    })).resolves.toBe('s1')
     expect(runtime.sessions.calls).toEqual([
-      { method: 'openSubagent', args: [address] },
-      { method: 'setSubagentCatalogOpen', args: ['s2', true] },
-      { method: 'refreshSubagents', args: ['s2'] },
       { method: 'open', args: ['s1'] },
       { method: 'clear', args: [] },
-      { method: 'fork', args: [{ sessionId: 's1', atSeq: 7, increaseTitle: true }] },
     ])
     await runtime.dispose()
   })
@@ -400,6 +380,53 @@ describe('workspaces', () => {
     // The stub receives the signal too, like the production face gives the wire.
     expect(listStub).toHaveBeenLastCalledWith('/x', scan.signal)
     await expect(runtime.workspaces.createDirectory('/x', 'made')).resolves.toBe('/x/made')
+    await runtime.dispose()
+  })
+})
+
+describe('Team tasks', () => {
+  it('feeds useTeamTasks, transitions local drafts, and records explicitly stubbed operations', async () => {
+    const runtime = await runtimeWithFrame()
+    runtime.slots.register(
+      { name: 'trt.panel' },
+      (props: { useTeamTasks?: <S>(selector: (state: TeamTaskListState) => S) => S }) =>
+        <span>task:{props.useTeamTasks?.(state => state.draft?.phase ?? 'none') ?? 'none'}</span>)
+    const view = runtime.renderRoot()
+    expect(view.container.textContent).toContain('task:none')
+
+    act(() => { runtime.teamTasks.startDraft({ agentPreset: 'cordis' }) })
+    expect(view.container.textContent).toContain('task:ready')
+    const firstDraft = runtime.teamTasks.list.getSnapshot().draft!
+    const firstKey = firstDraft.idempotencyKey
+    expect(firstDraft.agentPreset).toBe('cordis')
+    await runtime.teamTasks.update(() => {})
+    act(() => { runtime.teamTasks.abandonDraft() })
+    expect(view.container.textContent).toContain('task:none')
+    await runtime.teamTasks.refresh()
+
+    const teamId = 'team-1' as Parameters<ITeamTasks['open']>[0]
+    await expect(runtime.teamTasks.open(teamId)).rejects.toThrow(/open is not stubbed/)
+    await expect(runtime.teamTasks.start({ text: 'outline the release' })).rejects.toThrow(/start is not stubbed/)
+    const selection = {} as TeamTaskSelection
+    const open = vi.fn<ITeamTasks['open']>(() => Promise.resolve(selection))
+    const start = vi.fn<ITeamTasks['start']>(() => Promise.resolve(selection))
+    runtime.teamTasks.stub('open', open)
+    runtime.teamTasks.stub('start', start)
+    const controller = new AbortController()
+    await expect(runtime.teamTasks.open(teamId, controller.signal)).resolves.toBe(selection)
+    await expect(runtime.teamTasks.start({ text: 'outline the release' })).resolves.toBe(selection)
+    expect(firstKey).toContain('test-team-task-')
+    expect(open).toHaveBeenLastCalledWith(teamId, controller.signal)
+    expect(start).toHaveBeenLastCalledWith({ text: 'outline the release' }, undefined)
+    expect(runtime.teamTasks.calls).toEqual([
+      { method: 'startDraft', args: [{ agentPreset: 'cordis' }] },
+      { method: 'abandonDraft', args: [] },
+      { method: 'refresh', args: [] },
+      { method: 'open', args: [teamId, undefined] },
+      { method: 'start', args: [{ text: 'outline the release' }, undefined] },
+      { method: 'open', args: [teamId, controller.signal] },
+      { method: 'start', args: [{ text: 'outline the release' }, undefined] },
+    ])
     await runtime.dispose()
   })
 })

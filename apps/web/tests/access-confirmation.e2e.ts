@@ -1,7 +1,8 @@
 // Web e2e scenario: every visible permission picker gates Full access behind
-// the same locale-aware, in-page risk confirmation. Zero model calls: the
-// scenario boots the shipped Web composition and exercises the real
-// permission projection, client command path, HTTP RPC, and pushed update.
+// the same locale-aware, in-page risk confirmation. Zero model calls: an
+// internal ordinary Session is seeded only to exercise the real permission
+// projection, client command path, HTTP RPC, and pushed update; shipped Team
+// entry remains covered by the Team-first smoke lane.
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
@@ -9,13 +10,14 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
-  launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
+  closedSessionFixture, launchWebScaffold, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
+import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/access-confirmation', import.meta.url))
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
 const MODE = webSnapshotMode()
+const SEED_ID = 'access-confirmation-web-e2e'
 
 describe('web e2e: Full access confirmation', () => {
   let scaffold: WebScaffold
@@ -24,7 +26,8 @@ describe('web e2e: Full access confirmation', () => {
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
+    await seedSession(scaffold, closedSessionFixture(), SEED_ID)
     // CI uses Playwright's pinned browser. A developer may point this one
     // scenario at an installed Chromium when the matching browser download
     // is temporarily unavailable.
@@ -35,9 +38,16 @@ describe('web e2e: Full access confirmation', () => {
     // callback.
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="访问模式"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {

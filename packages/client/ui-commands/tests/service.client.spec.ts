@@ -38,7 +38,6 @@ interface BenchOptions {
   /** Scripted catalog per list payload; default serves the fixed catalogs by session. */
   commands?: (payload: { sessionId: SessionId }) => Promise<{ commands: CommandDescriptor[] }>
   execute?: (payload: { sessionId: SessionId; line: string }) => Promise<ExecuteValue>
-  addressed?: SessionId
 }
 
 /**
@@ -108,9 +107,6 @@ async function bench(opts: BenchOptions = {}) {
   ctx.provide('sessions', {
     scope: (id: SessionId) => scopes.get(id)?.ctx,
     scopeOf: (c: Context) => scopeOf(c),
-    subagentAddress: (id: SessionId) => id === opts.addressed
-      ? { parentSessionId: sid('parent'), childSessionId: id, mode: 'continuable' as const }
-      : undefined,
   })
   const forwarded = new Map<string, Array<(...args: never[]) => void>>()
   ctx.provide('remote', {
@@ -210,12 +206,6 @@ describe('registration', () => {
 })
 
 describe('candidates', () => {
-  it('does not fetch Agent-bound commands for an addressed child', async () => {
-    const b = await bench({ addressed: sid('child') })
-    await expect(b.warm(proj('child'))).resolves.toBeUndefined()
-    expect(b.listCalls).toEqual([])
-  })
-
   it('pulls the session catalog; fuzzy filter and hint mapping apply', async () => {
     const { source, listCalls } = await bench()
     const list = await source.candidates(proj('s1'), req('g'))

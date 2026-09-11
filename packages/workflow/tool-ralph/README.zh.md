@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-tool-ralph
+# @clocky/clocky-tool-ralph
 
 [English](README.md) | 中文
 
@@ -55,11 +55,11 @@ Use the ralph tool ONLY when the direct human explicitly asks for a Ralph loop o
 
 只要插件作用域和指导文本不变，前缀就保持稳定。启用或 dispose（资源释放）可能会使从该提示词段起的缓存复用失效。
 
-### 工具 schema
+### 工具定义
 
 #### 模型看到的内容
 
-已生成的 [`ralph` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-ralph)公开一个必填 `objective` 字符串和一个可选 `maxRounds` 数字。提供方选择、交接大小、报告 schema、工作流脚本和编排行为均由部署侧控制，不在调用 schema 中。
+`ralph` 工具定义公开一个必填 `objective` 字符串和一个可选 `maxRounds` 数字。提供方选择、交接大小、报告定义、工作流脚本和编排行为均由部署侧控制，不在调用定义中。
 
 #### Token 影响
 

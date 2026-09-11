@@ -33,7 +33,7 @@ That boundary is deliberate: prompt text can only reach a child that is still ru
 
 ### Snapshot coverage
 
-The assembled ACP `subagent-report` scenario exercises the shipped default: the child reports while the parent is in maintenance, the later settlement notice queues behind it, and the resumed parent claims the next-step report before next-turn settlement. Because the child's scope composes a prompt the class pin cannot describe, the snapshot harness has `pinsChildSystemPrompts`, the exact counterpart of `pinsChildToolSchemas`: it moves one child fixture's prompt into `system-prompt.<n>.expected.md`, leaves every other request-header field to the class pin, requires the sidecar exactly when declared, and rejects a sidecar identical to that class pin so a redundant copy cannot drift.
+The report package tests pin delivery and report-before-settlement ordering. No current Team-product snapshot covers the reported-child default.
 
 ## Alternatives considered
 

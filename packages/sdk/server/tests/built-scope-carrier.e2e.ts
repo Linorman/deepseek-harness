@@ -1,10 +1,6 @@
 /**
- * Built-artifact guard for the scope carrier shared by `clocky-subagent` and
- * `clocky-sdk-jsonrpc-server`. The carrier registry is module-local, so both bundles must
- * externalize `clocky-scope`; source-mode tests cannot expose an accidentally
- * inlined second registry. This test runs the real `lib/index.js` bundles in a
- * plain Node subprocess, disposes the child before settlement, and requires the
- * SDK completion notification to retain the delegating parent.
+ * Built-artifact guard that direct-subagent lifecycle remains absent from the
+ * SDK server wire even when both built bundles share one scope carrier.
  */
 
 import { execFile } from 'node:child_process'
@@ -87,7 +83,7 @@ try {
   await run.result;
   await Promise.resolve();
 
-  console.log(JSON.stringify(notifications.filter(({ method }) => method === "subagent.finished")));
+  console.log(JSON.stringify(notifications.filter(({ method }) => method.startsWith("subagent."))));
   await run.dispose();
   unregister();
   await parent.dispose();
@@ -99,25 +95,13 @@ try {
 `
 
 describe.skipIf(!existsSync(jsonrpcBundle))('clocky-sdk-jsonrpc-server BUILT scope carrier', () => {
-  it('preserves parent-scoped completion after child disposal', async () => {
+  it('does not project direct-subagent completion after child disposal', async () => {
     const { stdout, stderr } = await execFileAsync(process.execPath, ['--input-type=module', '-e', builtRuntimeProbe], {
       cwd: repoRoot,
       timeout: 15_000,
     })
 
     expect(stderr).not.toContain('listener threw')
-    // A result without output omits lastAssistantMessage from the wire; it
-    // never sends `[]`.
-    expect(JSON.parse(stdout) as unknown).toEqual([{
-      method: 'subagent.finished',
-      params: {
-        provider: 'built-local',
-        agentId: 'built-child',
-        parentSessionId: 'built-parent',
-        childSessionId: 'built-child',
-        status: 'ok',
-        stopReason: 'completed',
-      },
-    }])
+    expect(JSON.parse(stdout) as unknown).toEqual([])
   })
 })

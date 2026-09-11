@@ -1,0 +1,26 @@
+{
+  "scenario": "headless-final-restart",
+  "backend": "json",
+  "window": "sink",
+  "independentHost": true,
+  "initial": {
+    "teamPhase": "quiescing",
+    "goalPhase": "complete",
+    "sinkAdmissions": 1,
+    "humanReceipts": 0,
+    "quiesced": true
+  },
+  "recovered": {
+    "teamPhase": "completed",
+    "goalPhase": "complete",
+    "stallCode": null,
+    "exactActivationInStall": false,
+    "quiesced": true,
+    "recoveryDescriptor": false,
+    "finalText": "DURABLE_TEAM_FINAL_AFTER_HOST_LOSS",
+    "sinkAdmissions": 1,
+    "humanReceipts": 1,
+    "closureCount": 1,
+    "channelPhase": "closed"
+  }
+}

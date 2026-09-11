@@ -5,12 +5,19 @@
  * @module @clocky/clocky-storage-json
  */
 
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import { StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
-import type { KvFacet, KvUnit, KvUnitDescriptor, StorageBackend } from '@clocky/clocky-storage'
+import type {
+  KvFacet, KvUnit, KvUnitDescriptor, LogFacet, LogStream, LogStreamDescriptor,
+  LogStreamInfo, StorageBackend,
+} from '@clocky/clocky-storage'
+import { ensureLogDirectory, logFileName, openJsonLog } from './log.ts'
+import { parseLogInfo } from './log-format.ts'
+import { acquireJsonLogOwner } from './log-owner.ts'
+import type { JsonLogOwner } from './log-owner.ts'
 import { openJsonUnit } from './unit.ts'
 
 /** Cordis plugin name. */
@@ -40,6 +47,11 @@ export class JsonStorageBackend implements StorageBackend {
   // Reserved synchronously at open() entry so a concurrent open of the same
   // unit fails, and close() can await opens still in flight.
   private readonly opening = new Map<string, Promise<KvUnit>>()
+  private readonly openLogs = new Map<string, LogStream>()
+  /** In-flight log opens retain their names until they resolve or reject. */
+  private readonly openingLogs = new Map<string, Promise<LogStream>>()
+  /** Root-wide single-Hub reservation for JSON log operations. */
+  private logOwner: Promise<JsonLogOwner> | undefined
   private closed = false
 
   constructor(private readonly root: string) {}
@@ -60,6 +72,21 @@ export class JsonStorageBackend implements StorageBackend {
     },
   }
 
+  /** Append-only log streams under this backend's `logs/` directory. */
+  readonly log: LogFacet = {
+    open: async (descriptor: LogStreamDescriptor): Promise<LogStream> => {
+      if (this.closed) throw new StorageError('closed', 'json backend is closed')
+      validateLogDescriptor(descriptor)
+      if (this.openLogs.has(descriptor.name) || this.openingLogs.has(descriptor.name)) {
+        throw new Error(`log stream '${descriptor.name}' is already open; a stream has exactly one live handle`)
+      }
+      const opening = this.openLog(descriptor)
+      this.openingLogs.set(descriptor.name, opening)
+      return opening.finally(() => this.openingLogs.delete(descriptor.name))
+    },
+    list: async (): Promise<readonly LogStreamInfo[]> => await this.listLogs(),
+  }
+
   private async openUnit(descriptor: KvUnitDescriptor): Promise<KvUnit> {
     await mkdir(this.root, { recursive: true, mode: 0o700 })
     const path = join(this.root, `${descriptor.name}.json`)
@@ -74,14 +101,68 @@ export class JsonStorageBackend implements StorageBackend {
     return unit
   }
 
+  /** Materialize one log handle after reserving its name at `log.open()` entry. */
+  private async openLog(descriptor: LogStreamDescriptor): Promise<LogStream> {
+    const directory = await this.ensureLogOwner()
+    const stream = await openJsonLog(
+      descriptor,
+      join(directory, logFileName(descriptor.name)),
+      () => { this.openLogs.delete(descriptor.name) },
+      () => this.closed,
+    )
+    if (this.closed) {
+      await stream.close()
+      throw new StorageError('closed', 'json backend is closed')
+    }
+    this.openLogs.set(descriptor.name, stream)
+    return stream
+  }
+
+  /** Read every materialized stream header without opening a caller handle. */
+  private async listLogs(): Promise<readonly LogStreamInfo[]> {
+    if (this.closed) throw new StorageError('closed', 'json backend is closed')
+    const directory = await this.ensureLogOwner()
+    const files = await readdir(directory)
+    const infos: LogStreamInfo[] = []
+    for (const file of files.filter(file => file.endsWith('.json')).sort()) {
+      const info = parseLogInfo(await readFile(join(directory, file), 'utf8'))
+      if (logFileName(info.name) !== file) {
+        throw new StorageError('malformed-medium', `log stream file '${file}' has an invalid stream header`)
+      }
+      infos.push(info)
+    }
+    return infos.sort((left, right) => left.name.localeCompare(right.name))
+  }
+
+  /** Acquire the process-wide JSON-log owner before any log operation runs. */
+  private async ensureLogOwner(): Promise<string> {
+    if (this.logOwner === undefined) {
+      const acquiring = ensureLogDirectory(this.root).then(acquireJsonLogOwner)
+      this.logOwner = acquiring
+      acquiring.catch(() => {
+        /* v8 ignore next -- all public callers share this pending promise until rejection clears the slot. */
+        if (this.logOwner === acquiring) this.logOwner = undefined
+      })
+    }
+    const owner = this.logOwner
+    await owner
+    return join(this.root, 'logs')
+  }
+
   async close(): Promise<void> {
     if (!this.closed) {
       this.closed = true
     }
     await Promise.allSettled([...this.opening.values()])
+    await Promise.allSettled([...this.openingLogs.values()])
     for (const unit of [...this.open.values()]) {
       await unit.close()
     }
+    for (const stream of [...this.openLogs.values()]) {
+      await stream.close()
+    }
+    const owner = await this.logOwner?.catch(() => undefined)
+    await owner?.close()
   }
 }
 
@@ -93,6 +174,16 @@ function validateDescriptor(descriptor: KvUnitDescriptor): void {
     if (!UNIT_NAME_RE.test(table)) {
       throw new StorageError('malformed-medium', `invalid table name '${table}' in unit '${descriptor.name}'`)
     }
+  }
+}
+
+/** Reject invalid stream identity/version before it reaches the medium. */
+function validateLogDescriptor(descriptor: LogStreamDescriptor): void {
+  if (descriptor.name.length === 0) {
+    throw new StorageError('malformed-medium', 'log stream name must be non-empty')
+  }
+  if (!Number.isSafeInteger(descriptor.version) || descriptor.version < 0) {
+    throw new StorageError('malformed-medium', `invalid log stream version ${descriptor.version} for '${descriptor.name}'`)
   }
 }
 

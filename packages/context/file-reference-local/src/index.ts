@@ -6,7 +6,7 @@
 
 import { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import type { Agent } from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent } from '@clocky/clocky-agent'
 import FileReferenceService, {
   FILE_REFERENCE_PROMPT,
   type FileReferenceCandidate,
@@ -51,7 +51,7 @@ export class LocalFileReferenceService extends FileReferenceService {
   })
 
   private readonly config: FileSearchConfig
-  private readonly searches = new Map<Agent, WorkspaceFileSearch>()
+  private readonly searches = new Map<Agent, { readonly root: string; readonly search: WorkspaceFileSearch }>()
   private readonly promptFibers = new Map<Agent, ReturnType<Context['inject']>>()
   private readonly promptDisposals = new Set<Promise<void>>()
 
@@ -90,17 +90,17 @@ export class LocalFileReferenceService extends FileReferenceService {
     for (const agent of ctx.agents.list()) installPrompt(agent)
     ctx.on('agent/created', ({ agent }) => { installPrompt(agent) })
     ctx.on('agent/disposed', ({ agent }) => {
-      this.searches.get(agent)?.dispose()
+      this.searches.get(agent)?.search.dispose()
       this.searches.delete(agent)
       disposePrompt(agent)
     })
     ctx.on('session/event', (session, event) => {
       if (event.type !== 'tool/result') return
       const agent = ctx.agents.get(session.id)
-      if (agent !== undefined) this.searches.get(agent)?.invalidate()
+      if (agent !== undefined) this.searches.get(agent)?.search.invalidate()
     })
     ctx.effect(() => async () => {
-      for (const search of this.searches.values()) search.dispose()
+      for (const entry of this.searches.values()) entry.search.dispose()
       this.searches.clear()
       const promptFibers = [...this.promptFibers.values()]
       this.promptFibers.clear()
@@ -116,12 +116,14 @@ export class LocalFileReferenceService extends FileReferenceService {
     query: string,
     signal: AbortSignal,
   ): Promise<FileReferenceCandidate[]> {
-    let search = this.searches.get(agent)
-    if (search === undefined) {
-      search = new WorkspaceFileSearch(agent.session.header.cwd ?? process.cwd(), this.config)
-      this.searches.set(agent, search)
+    const root = resolveAgentWorkspaceRoot(agent) ?? process.cwd()
+    let entry = this.searches.get(agent)
+    if (entry?.root !== root) {
+      entry?.search.dispose()
+      entry = { root, search: new WorkspaceFileSearch(root, this.config) }
+      this.searches.set(agent, entry)
     }
-    return search.list(query, signal)
+    return entry.search.list(query, signal)
   }
 }
 

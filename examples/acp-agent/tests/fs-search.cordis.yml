@@ -25,7 +25,6 @@
     skills:
       enabled: false
     toolJobs: false
-    goals: false
     persona: You are a concise snapshot agent working in {{cwd}}.
 
 - id: tool-fs-search

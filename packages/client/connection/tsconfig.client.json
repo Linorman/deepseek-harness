@@ -11,10 +11,12 @@
     "src/client/connection.ts",
     "src/client/fixture.ts",
     "src/client/index.ts",
+    "src/client/product-auth-bootstrap.ts",
     "src/client/random-uuid.ts",
     "src/client/rpc.ts",
     "src/client/web-api-client.ts",
     "src/loopback-hostname.ts",
+    "src/product-auth-contract.ts",
     "src/rpc.ts"
   ],
   "references": [
@@ -26,6 +28,9 @@
     },
     {
       "path": "../../core/session"
+    },
+    {
+      "path": "../../core/team"
     },
     {
       "path": "../../core/tools"

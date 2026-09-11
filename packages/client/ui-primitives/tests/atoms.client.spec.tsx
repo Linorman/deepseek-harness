@@ -380,7 +380,7 @@ describe('Menu', () => {
 })
 
 describe('Modal', () => {
-  it('is absent while closed; Escape and mask click call onClose', () => {
+  it('is absent while closed; native cancel and mask click call onClose', () => {
     const onClose = vi.fn()
     const { rerender } = render(
       <Modal open={false} onClose={onClose} title="Create new workspace">body</Modal>)
@@ -399,7 +399,7 @@ describe('Modal', () => {
     expect(screen.getByText('Name it.').parentElement?.className).toContain('scrolling-content')
     fireEvent.keyDown(document, { key: 'a' })
     expect(onClose).not.toHaveBeenCalled()
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(dialog, new Event('cancel', { cancelable: true }))
     expect(onClose).toHaveBeenCalledTimes(1)
     // Mask is the presentation sibling behind the dialog.
     const mask = document.querySelector('[aria-hidden="true"]') as HTMLElement
@@ -415,4 +415,22 @@ describe('ConnectionBanner', () => {
     rerender(<ConnectionBanner reconnecting />)
     expect(container.textContent).toContain('重连')
   })
+})
+
+
+it('keeps a portaled menu inside its native modal and lets the menu consume Escape first', () => {
+  const onClose = vi.fn()
+  const onMenuClose = vi.fn()
+  const content = (open: boolean) => <Modal open onClose={onClose} title="Member settings">
+    <Menu open={open} portal anchor={<button type="button">Options</button>} items={[{ id: 'choose', label: 'Choose' }]} onSelect={() => {}} onClose={onMenuClose} />
+  </Modal>
+  const view = render(content(false))
+  view.rerender(content(true))
+  const menu = screen.getByRole('menu')
+  expect(menu.closest('dialog')).toBe(screen.getByRole('dialog'))
+  const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+  fireEvent(screen.getByRole('menuitem', { name: 'Choose' }), event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(onMenuClose).toHaveBeenCalledOnce()
+  expect(onClose).not.toHaveBeenCalled()
 })

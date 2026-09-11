@@ -78,16 +78,6 @@ declare module '@clocky/clocky-client-ui-slots' {
      */
     'conversation.session.header': { kind: 'single'; scope: 'session' }
     /**
-     * One breadcrumb title and its lineage controls. The render site keeps
-     * the ordinary title as fallback; an occupant receives plain title data
-     * and may replace a subagent title with one combined navigation control.
-     */
-    'conversation.session.header.lineage': {
-      kind: 'single'
-      scope: 'session'
-      owner: ConversationHeaderLineageOwnerProps
-    }
-    /**
      * One button in the session header's action row — the additive way to put
      * a per-session control beside the title without replacing the header.
      * Entries render by ascending `order`; negative values are reserved for
@@ -169,24 +159,13 @@ declare module '@clocky/clocky-client-ui-slots' {
      * zero owner changes.
      */
     'conversation.composer': { kind: 'chain'; scope: 'session'; owner: ComposerChainProps }
-    /**
-     * The hero-phase Workspace picker hole: rendered by ConversationRoot
-     * while the session is blank (picking another workspace switches to that
-     * workspace's blank session, draft carried). Root scope: the picker
-     * reads the global workspace list.
-     */
+    /** Legacy Workspace-picker contract for non-product compositions. */
     'conversation.hero.workspace': { kind: 'single'; scope: 'root'; owner: EmptyWorkspaceOwnerProps }
     /**
      * Brand mark leading the blank-session headline. Declared by this
      * package's `conversation` entry; the shell supplies a neutral fallback.
      */
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
-    /**
-     * The agent-preset chip beside the workspace picker on the new-session
-     * screen. Root scope: no session exists yet, so the choice is staged for
-     * the next one rather than applied to a current one.
-     */
-    'conversation.hero.agentPreset': { kind: 'single'; scope: 'root'; owner: HeroAgentPresetOwnerProps }
     // 'conversation.input.overlay' merges in ui-input-trigger (the dependency
     // direction is the hard constraint — ui-input-trigger cannot import
     // this package, while this package's input contract already imports
@@ -234,10 +213,8 @@ declare module '@clocky/clocky-client-ui-slots' {
      * chain's fallback (a real entry, not a chain rider, so a
      * takeover election hides rather than unmounts it and the textarea DOM
      * survives). Session-maybe: the bar stays mounted across the
-     * no-session/session transition — the no-workspace hero renders the SAME
-     * textarea DOM as a read-only Workspace-picker trigger instead of a
-     * parallel inert tree — with the machine hooks absent until a session is
-     * current. InputBar registers
+     * no-session/session transition; a missing Team draft leaves that same
+     * textarea disabled instead of rendering a parallel inert tree. InputBar registers
      * here from this package's apply; its machine state arrives through the
      * standard provide channel (useInput + inputActions), the keyboard
      * command face through its own inject.
@@ -252,23 +229,25 @@ declare module '@clocky/clocky-client-ui-slots' {
     /**
      * The named plan-status seat in the composer tool row, immediately right
      * of the access-mode control — one occupant, so taking it means rendering
-     * the plan affordance yourself. The owner passes only `locked` (see
-     * {@link InputControlOwnerProps}): honour it by refusing interaction, and
-     * take everything else from the framework session kit or your own inject.
-     * Unoccupied, the seat renders nothing at all — the bar paints no
-     * placeholder, so an absent plan plugin costs no layout.
+     * the plan affordance yourself. The owner passes `locked` and `teamOwned`
+     * (see {@link InputControlOwnerProps}): honour the lock and keep generic
+     * command controls absent for Team-owned coordinator Sessions. Unoccupied,
+     * the seat renders nothing at all — the bar paints no placeholder, so an
+     * absent plan plugin costs no layout.
      */
     'conversation.input.plan': { kind: 'single'; scope: 'session'; owner: InputControlOwnerProps }
     /**
      * The named model-select seat at the right end of the composer tool row,
      * left of the send button — one occupant, so taking it means rendering the
-     * whole model affordance yourself. Same `locked`-only owner share and same
-     * renders-nothing-while-empty contract as the plan seat. Note the composer
-     * deliberately keeps this seat LIVE while it refuses text for a
-     * model-related block: every such block is one the user clears by picking
-     * a model here.
+     * whole model affordance yourself. It receives the same `locked` and
+     * `teamOwned` owner share as the plan seat, but remains available to Team
+     * Sessions because model selection is not a generic command operation.
+     * The seat renders nothing while empty. Note the composer deliberately
+     * keeps this seat LIVE while it refuses text for a model-related block:
+     * every such block is one the user clears by picking a model here.
      */
-    'conversation.input.model': { kind: 'single'; scope: 'session'; owner: InputControlOwnerProps }
+    /** Model and reasoning selection for an ordinary Session or Team draft. */
+    'conversation.input.model': { kind: 'single'; scope: 'session-maybe'; owner: InputControlOwnerProps }
   }
 
   /**
@@ -290,12 +269,6 @@ declare module '@clocky/clocky-client-ui-slots' {
   }
 }
 
-/** Owner share of the hero agent-preset chip: the shell supplies nothing. */
-export interface HeroAgentPresetOwnerProps {
-  /** Marker field: the chip owns its own roster, staging, and menu state. */
-  children?: never
-}
-
 /** Owner share of the strict session content seat. */
 export interface ConversationSessionOwnerProps {
   /**
@@ -314,16 +287,6 @@ export interface ConversationSessionOwnerProps {
 
 /** Header actions derive their state from the standard session/global kit. */
 export interface ConversationHeaderActionOwnerProps {}
-
-/** Plain breadcrumb data handed to the optional lineage renderer. */
-export interface ConversationHeaderLineageOwnerProps {
-  /** Session represented by this breadcrumb title. */
-  lineageSessionId: SessionId
-  /** Display title available to a renderer that combines the title with a control. */
-  displayTitle: string
-  /** Navigate to an ancestor title when its combined control is clicked. */
-  openTitle?: () => void
-}
 
 /**
  * The input-region slot currency: dock/left/right entries read
@@ -420,7 +383,8 @@ export interface ChatNodeOwnerProps {
   cwd?: string | undefined
   openFile: (path: string) => void
   inspectCall: (callId: CallId) => void
-  forkAt: (seq: number) => void
+  /** Continue a truncated model output through the owning Session input. */
+  continueOutput?: () => void
   /** Render a historical image group through the attachment slot. */
   renderMessageImages: RenderMessageImages
   fileMentions: (owner: TurnTailOwnerProps) => MarkdownFileMentions | undefined
@@ -471,16 +435,7 @@ export type ChatStore = ReturnType<typeof createChatStore>
 
 /** Business callbacks injected into the conversation slot. */
 export interface ConversationInjected {
-  /**
-   * Connect the selected Workspace and open its reusable/new blank session.
-   * When a blank session is already current, carry its draft to the target.
-   */
-  selectWorkspace: (workspaceId: WorkspaceId) => Promise<void>
-  /**
-   * Framework-bound sources. `composerBlock` is this session's block when a
-   * plugin raised one; the reason is the blocker's own localized copy, which
-   * the root renders as the inert composer's placeholder.
-   */
+  /** Framework-bound composer blocker for this session. */
   hooks: { composerBlock: ObservableSnapshot<ComposerBlock | undefined> }
 }
 
@@ -506,8 +461,6 @@ export interface ConversationSessionHeaderInjected {
     subscribe: (fn: () => void) => () => void
     version: () => number
   }
-  /** Select a real Session through the runtime navigation owner. */
-  open: (sessionId: SessionId) => void
 }
 
 /**
@@ -527,15 +480,8 @@ export interface ComposerBarOwnerProps {
    * composer telling them to do the one thing it prevents.
    */
   blocked?: { readonly reason: string }
-  /**
-   * Inert no-workspace state: the bar locks message actions while preserving
-   * its normal DOM so the Workspace pick transitions in place.
-   */
+  /** Inert no-task state. */
   disabled?: boolean
-  /** Whether the shared Workspace picker menu is expanded, regardless of which trigger opened it. */
-  workspacePickerOpen?: boolean
-  /** Open the existing Workspace picker from the inert textarea. */
-  onRequestWorkspace?: () => void
   placeholder?: string
   /** Optional content rendered above the textarea. */
   accessory?: ReactNode
@@ -553,6 +499,8 @@ export interface ComposerBarOwnerProps {
 export interface ComposerBarInjected {
   /** The InputBar-exclusive keyboard/DOM command face (private plane); absent with the session. */
   keyboard: ComposerKeyboard | undefined
+  /** Local Team-task input actions shown while no Session is selected. */
+  teamDraftActions?: InputActions | undefined
   /** Create previews and append image ids to the session input. */
   addImages: ((files: readonly File[]) => string | null) | undefined
   /** Release one preview and remove its id from session input. */
@@ -582,6 +530,10 @@ export interface ComposerBarInjected {
    * order stays constant).
    */
   hooks: {
+    /** Local Team-task input state shown while no Session is selected. */
+    teamDraftInput: ObservableSnapshot<InputState | undefined>
+    /** Local Team-task draft notice source while no Session is selected. */
+    teamDraftNotices: ObservableSnapshot<InputNotice | null>
     /** Latest surfaced notice (null after none; seq keys re-render of repeats). */
     notices: ObservableSnapshot<InputNotice | null>
     /** Hot plain-text reference lexicon for the decoration scan (plain-text-reference decision;
@@ -594,11 +546,14 @@ export interface ComposerBarInjected {
 
 /**
  * Owner share of the two named composer control seats (plan / model): the
- * bar passes its disable state; the filling entry owns everything else.
+ * bar passes its disable state and Team ownership; the filling entry owns
+ * everything else.
  */
 export interface InputControlOwnerProps {
   /** Session-removed lock (the bar's chrome disable state). */
   locked: boolean
+  /** Whether this is a Team-owned coordinator Session whose generic command controls are fenced. */
+  teamOwned: boolean
 }
 
 /** Full composer-bar props: standard kit & owner share & control-seat render share & injected share (hooks bound) & locale seat. */
@@ -633,7 +588,7 @@ export interface HeroBrandMarkOwnerProps {
 
 /**
  * Full conversation-slot component props: runtime & child-render (view ring
- * + composer chain/bar + input-region + hero picker slots) & store & injected
+ * + composer chain/bar + input-region + hero slots) & store & injected
  * shares & the locale seat.
  */
 export type ConversationSlotProps =
@@ -644,8 +599,6 @@ export type ConversationSlotProps =
     | 'conversation.input.dock' | 'conversation.composer.dock'
     | 'conversation.input.left' | 'conversation.input.right'
     | 'conversation.hero.brand.mark'
-    | 'conversation.hero.workspace'
-    | 'conversation.hero.agentPreset'
   >
   & InjectFace<ConversationInjected>
   & PropsLocale<'conversation'>
@@ -661,8 +614,7 @@ export type ConversationSessionSlotProps =
 export type ConversationSessionHeaderSlotProps =
   PropsRuntime<'conversation.session.header'>
   & PropsRenderSlots<
-    'conversation.session.header.lineage'
-    | 'conversation.session.header.actions'
+    'conversation.session.header.actions'
     | 'conversation.session.header.utilities'
   >
   & PropsStore<ChatStore>
@@ -762,6 +714,8 @@ export interface ChatViewInjected {
   loadImage: (attachment: ImageAttachmentRef) => Promise<string>
   /** Hand a call off to the trajectory view: write the one-shot inspect target and switch tabs. */
   inspectCall: (callId: CallId) => void
+  /** Submit a safe one-click continuation after a model output reached its token cap. */
+  continueOutput?: () => void
   /**
    * Per-session scroll memory surviving view switches (in-memory, never
    * persisted): the view saves on every scroll and restores on remount; a
@@ -773,8 +727,6 @@ export interface ChatViewInjected {
     /** Last reader position, or null when pinned or never recorded. */
     read: () => ChatScrollPosition | null
   }
-  /** Fork through the completed turn ending at the eligible message `seq`, then open the child. */
-  forkAt: (seq: number) => void
   /**
    * Prose file-mention vocabulary for one closing message, from the optional
    * {@link ChatFileMentions} service (resolved lazily per call, so composing
@@ -810,11 +762,10 @@ export interface DetailsInjected {
 export type DetailsSlotProps = PropsRuntime<'details'> & PropsRenderSlots<'conversation.details.tool'>
   & PropsStore<ChatStore> & DetailsInjected & PropsLocale<'conversation'>
 
-/** Owner share common to the hero / New-Session Workspace pickers. */
+/** Owner share common to legacy Workspace picker compositions. */
 export interface EmptyWorkspaceOwnerProps {
   open: boolean
   anchorRef?: RefObject<HTMLElement>
-  /** Currently active workspace (renders a trailing check in the picker list). */
   selectedId?: WorkspaceId | undefined
   onPick: (workspaceId: WorkspaceId) => void
   onClose: () => void

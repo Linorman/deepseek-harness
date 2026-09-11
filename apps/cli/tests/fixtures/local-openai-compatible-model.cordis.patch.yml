@@ -1,0 +1,33 @@
+# Local OpenAI-compatible model overlay for real-model tests. The endpoint and
+# model are inherited from the launching environment so this fixture contains
+# no credential or machine-specific path.
+- id: llm-pi-ai
+  config:
+    providers:
+      local-vllm:
+        apiKeyEnv: CLOCKY_LOCAL_MODEL_API_KEY
+        api: openai-completions
+        baseURL: !!js process.env.CLOCKY_LOCAL_MODEL_BASE_URL ?? 'http://127.0.0.1:18000/v1'
+        compat:
+          supportsDeveloperRole: false
+          supportsReasoningEffort: true
+          maxTokensField: max_tokens
+        reasoning: !!js "process.env.CLOCKY_LOCAL_MODEL_REASONING_EFFORT ?? undefined"
+        defaultContextWindow: 131072
+        defaultMaxTokens: 5120
+        models:
+          - id: !!js process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'
+            contextWindow: 131072
+            maxTokens: 5120
+            reasoningEfforts:
+              off:
+              minimal: low
+              low: low
+              medium: medium
+              high: xhigh
+              xhigh: xhigh
+              max: xhigh
+- id: agent-default-model
+  config:
+    provider: local-vllm
+    model: !!js process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'

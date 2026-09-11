@@ -55,7 +55,3 @@
                   models:
                     - id: test-model
                     - id: test-model-pro
-          # Authored scenarios can fence a later parent action on the real
-          # child settlement edge without exposing a test-only model tool.
-          - id: subagent-settlement-marker
-            name: './tests/fixtures/subagent-settlement-marker.ts'

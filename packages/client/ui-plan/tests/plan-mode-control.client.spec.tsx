@@ -24,11 +24,12 @@ function setup(
   plan: PlanProjection | undefined,
   exitPlanMode = vi.fn(() => Promise.resolve<string | null>(null)),
   locked = false,
+  teamOwned = false,
 ) {
   const store = createSnapshotStore<{ value: PlanProjection | undefined }>({ value: plan })
   const useProjection = (_key: string, selector?: (v: unknown) => unknown) =>
     bindSnapshotSelector(store)(s => (selector ?? (v => v))(s.value))
-  const props = { useProjection, locked, exitPlanMode, t } as unknown as PlanChipProps
+  const props = { useProjection, locked, teamOwned, exitPlanMode, t } as unknown as PlanChipProps
   const view = render(<PlanChip {...props} />)
   return { store, exitPlanMode, view }
 }
@@ -73,6 +74,11 @@ describe('PlanChip', () => {
   it('disables under the locked owner prop', () => {
     setup({ active: true, pending: false }, vi.fn(), true)
     expect((chip() as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('renders no generic command chip for a Team-owned coordinator Session', () => {
+    const view = setup({ active: true, pending: false }, vi.fn(), false, true)
+    expect(view.view.container.innerHTML).toBe('')
   })
 
   it('surfaces admission and transport failures while staying visible', async () => {

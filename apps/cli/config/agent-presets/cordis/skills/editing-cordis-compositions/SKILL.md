@@ -17,15 +17,15 @@ To change what a shipped preset does, copy it and edit the copy. Locally authore
 
 Two planes, and the choice is not about how "agent-related" something feels — it is about whether the thing must be shared.
 
-**Host composition.** The registries themselves (`tools`, `systemPrompt`, `agents`, `agent-loop`, `sessions`), anything crossing sessions (persistence, session query, storage, settings, credentials, telemetry), the sandbox and approval stack, the model route, and the subagent registry with its spawn/fork backends. One instance for the process.
+**Host composition.** The registries themselves (`tools`, `systemPrompt`, `agents`, `agent-loop`, `sessions`), anything crossing sessions (persistence, session query, storage, settings, credentials, telemetry), the sandbox and approval stack, the model route, and the subagent registry with its configured providers. One instance for the process.
 
 **Agent preset.** What one session contributes to those registries: its tool plugins, its persona and prompt sections, its compaction policy. One instance per session, mounted under that session's scope and unwound with it.
 
-**A service with a consumer outside the agent plane cannot move into a preset.** `subagents` is the worked example: the registry answers cross-session queries for the host api-proxy, so a per-session copy both starves that host row — it waits forever for a service nothing provides — and collides on the second session, since a provider name registers once. The preset contributes the delegation *tools*; the registry and its backends stay host-side.
+**A service with a consumer outside the agent plane cannot move into a preset.** `subagents` is the worked example for a custom composition: host-level consumers and provider names need one process-wide registry. A per-session copy leaves that consumer without a provider and collides on the second session. The preset contributes delegation tools; the registry and its backends stay host-side.
 
 A preset is a directory holding one `agent.cordis.yml`, optionally beside a `preset.yml` carrying display metadata — `name` and `description` (and, for shipped presets, a roster `order`). Write the metadata too: a preset without it shows up in every picker as its bare directory name.
 
-Locally authored presets live one directory per preset under `${DSH_HOME:-$HOME/.dsh}/.agent-presets/`, and the shipped set sits beside the deployment's own config. Use those when the user asks where to look. A deployment can configure other roots, so the path you read or edit comes from `list()` or `resolve()` — which is also where `copy()` reports what it just created.
+Locally authored presets live one directory per preset under `${CLOCKY_HOME:-$HOME/.clocky}/.agent-presets/`, and the shipped set sits beside the deployment's own config. Use those when the user asks where to look. A deployment can configure other roots, so the path you read or edit comes from `list()` or `resolve()` — which is also where `copy()` reports what it just created.
 
 ## The roster service
 
@@ -79,28 +79,28 @@ A composition written from scratch usually forgets a group realm or a consumer r
 
 Whether a row publishes a service is not visible from its name, and package READMEs are absent from an installed deployment. Read it off the live runtime instead: `cordis_inspect what:"services"` lists every service with the fiber that owns it, so a service attributed to a fiber other than the row you are adding is one that row consumes rather than provides. For a row not in your current composition, mount-validate and read the rejection — it names the offending service.
 
-When a preset genuinely owns a service, wrap the provider **and every consumer that reaches it** in one group carrying an `isolate` realm. The shipped `standard` composition does this for `workflows`, which nothing outside an agent reads — its `delegation` group, with the delegation tools omitted here:
+When a preset genuinely owns a service, wrap the provider **and every consumer that reaches it** in one group carrying an `isolate` realm. A custom workflow composition does this for `workflowEngine`, which nothing outside the agent reads:
 
 ```yaml
 - id: delegation
   name: cordis:group
   group: true
   isolate:
-    workflows: true
+    workflowEngine: true
   config:
     - id: workflow-worker-thread
-      name: '@deepseek-ai/dsh-workflow-worker-thread'
+      name: '@clocky/clocky-workflow-worker-thread'
       config:
         provider: spawn
     - id: tool-workflow
-      name: '@deepseek-ai/dsh-tool-workflow'
+      name: '@clocky/clocky-tool-workflow'
 ```
 
 `true` means a realm private to each mounting session. A string label instead joins subtrees into one shared realm; `provide()` still throws on the second registration under that symbol, so a label does not pool instances and is not what a preset needs.
 
 A consumer left outside the group resolves the host's registry, which the preset did not populate, and then contributes nothing. Mount-validation catches that as a row that never activated.
 
-Realms are for services a preset owns, not for every group. A host capability the preset only consumes must stay outside a realm, or the row cannot resolve it: `tool-bash`, `tool-jobs`, and `tool-goal` publish nothing and sit loose in `standard`, which explains in comments which host instance each one resolves and why a realm would break it. Wrapping a consumer row in a realm of its own is the same error as leaving one outside its provider's realm.
+Realms are for services a preset owns, not for every group. A host capability the preset only consumes must stay outside a realm, or the row cannot resolve it: `tool-bash` and `tool-jobs` publish nothing and sit loose in `standard`, which explains in comments which host instance each one resolves and why a realm would break it. Wrapping a consumer row in a realm of its own is the same error as leaving one outside its provider's realm.
 
 ## Verifying a change
 
@@ -120,45 +120,6 @@ It returns normally when the composition mounts. Run it as the final check on a 
 After a clean mount-validation, ask the user to start a session on the new preset and confirm the tool list; the preset decides tool schemas and prompt sections, and only a real session shows the agent that composition produces.
 
 `cordis_mount` evaluates JavaScript against the live runtime and disappears on restart. It is for probing, not for shipping a capability: a capability belongs in a composition file.
-
-## Native product subagents
-
-Codex and Claude Code providers are independent optional Profile Bundles. Install only the products a Profile needs, then restart the Profile so its Host registers those providers:
-
-```sh
-dsh plugin --profile <name> add @deepseek-ai/dsh-subagent-codex
-dsh plugin --profile <name> add @deepseek-ai/dsh-subagent-claude-code
-dsh plugin --profile <name> remove @deepseek-ai/dsh-subagent-codex
-dsh plugin --profile <name> remove @deepseek-ai/dsh-subagent-claude-code
-```
-
-Each Bundle owns its Host availability; the preset separately grants one Agent its ordinary delegation tool. Never move a product provider into the preset and never add a product-specific settings field. Removing one package withdraws only that provider on the next Profile start.
-
-Copy these disabled templates from a shipped full preset and remove `disabled` only for the products the user requested:
-
-```yaml
-- id: tool-subagent-codex
-  name: '@deepseek-ai/dsh-tool-subagent'
-  disabled: true
-  config:
-    provider: codex
-    toolName: subagent_codex
-    backgroundMode: one-shot
-    maxDepth: provider-managed
-
-- id: tool-subagent-claude-code
-  name: '@deepseek-ai/dsh-tool-subagent'
-  disabled: true
-  config:
-    provider: claude-code
-    toolName: subagent_claude_code
-    backgroundMode: one-shot
-    maxDepth: provider-managed
-```
-
-For additional named Codex or Claude Code instances, mount a separate host-plane provider row for each instance with a unique `providerName`, then add a separate preset tool row whose `provider` exactly matches that name and whose `toolName` is also unique. Keep the shipped rows for the default `codex` and `claude-code` names; do not reuse one tool row for several providers or derive either name from permission or environment settings.
-
-The two rows are independent. Leaving both disabled preserves the copied preset, enabling one exposes only that product tool, and enabling both exposes both. Production `dsh` does not install either optional provider: before enabling a row, install the matching `@deepseek-ai/dsh-subagent-codex` or `@deepseek-ai/dsh-subagent-claude-code` Bundle in the Profile and restart it. Each Bundle registers its dormant default provider and exclusively uses its pinned package-local platform CLI; additional named instances use extra host-plane rows from the same installed package. A preset cannot provide that host dependency. `backgroundMode: one-shot` keeps omitted or `false` calls in the foreground and lets explicit `run_in_background: true` return a generic Job id. Full presets already carry `tool-jobs`, while the base host carries the job registry; retain both so `job_output`, `job_list`, `job_kill`, cancellation, and completion notices stay available. Installing a Bundle or composing a preset row does not start a product, authenticate an account, select a model, probe credentials, or manage native product settings.
 
 ## What not to move into a preset
 

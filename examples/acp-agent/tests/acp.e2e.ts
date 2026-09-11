@@ -27,6 +27,16 @@ const AGENT: AgentUnderTest = {
   tsconfigPath: fileURLToPath(new URL('../../../tsconfig.json', import.meta.url)),
 }
 const DANGER_FULL_ACCESS_ENV = { CLOCKY_PERMISSION_MODE: 'danger-full-access' }
+const localModelBaseURL = process.env.CLOCKY_LOCAL_MODEL_BASE_URL
+const useLocalModel = localModelBaseURL !== undefined && localModelBaseURL.length > 0
+const hasRealModel = useLocalModel || Boolean(process.env.DEEPSEEK_API_KEY)
+const localModelEnvironment = useLocalModel
+  ? {
+    CLOCKY_LOCAL_MODEL_BASE_URL: localModelBaseURL,
+    CLOCKY_LOCAL_MODEL_ID: process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit',
+    CLOCKY_LOCAL_MODEL_API_KEY: process.env.CLOCKY_LOCAL_MODEL_API_KEY ?? 'EMPTY',
+  }
+  : {}
 
 let spawned: LaunchedAcpTestAgent | undefined
 let workdir: string | undefined
@@ -51,6 +61,7 @@ describe('acp-agent over real stdio (no key required)', () => {
       cwd: workdir,
       env: {
         DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? 'sk-dummy-for-boot',
+        ...localModelEnvironment,
         ...DANGER_FULL_ACCESS_ENV,
       },
     })
@@ -85,6 +96,7 @@ describe('acp-agent over real stdio (no key required)', () => {
       cwd: workdir,
       env: {
         DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY ?? 'sk-dummy-for-boot',
+        ...localModelEnvironment,
         ...DANGER_FULL_ACCESS_ENV,
       },
     })
@@ -97,10 +109,10 @@ describe('acp-agent over real stdio (no key required)', () => {
   }, 60_000)
 })
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY)('acp-agent e2e: real prompt over ACP', () => {
+describe.skipIf(!hasRealModel)('acp-agent e2e: real prompt over ACP', () => {
   it('runs a real turn and the agent writes the requested file (verified on disk)', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'acp-e2e-'))
-    spawned = launchAcpTestAgent({ agent: AGENT, cwd: workdir, env: DANGER_FULL_ACCESS_ENV })
+    spawned = launchAcpTestAgent({ agent: AGENT, cwd: workdir, env: { ...localModelEnvironment, ...DANGER_FULL_ACCESS_ENV } })
     const { client, updates } = spawned
 
     await client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })

@@ -37,4 +37,4 @@ Status: implemented
 - 渲染行使用 `<id> [running] — <label>`、`<id> [idle] — <label>` 或 `<id> [ready] — <label>`。
 - 输出 schema 的 `status` 枚举与渲染契约一同变化。生成的工具目录会带上新描述；它只渲染每个工具的 `parameters`，从来不收录输出 schema。
 - 单元覆盖固定三种映射，以及引导模型等待结算通知而非轮询本工具的描述条款。
-- 整体组装的 ACP `subagent-list-agents` 场景会为已结算且可恢复的 child 渲染 `ready`。
+- `packages/subagent/tool-subagent-control/tests/list-agents.spec.ts` 会为已结算且可恢复的 child 渲染 `ready`。

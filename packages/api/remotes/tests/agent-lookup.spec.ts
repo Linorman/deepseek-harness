@@ -10,8 +10,8 @@ import TypertRegistry from '@clocky/clocky-typert-registry'
 
 const sid = (value: string): SessionId => value as SessionId
 
-function header(id: SessionId): SessionHeader {
-  return { version: 0, id, createdAt: 1, cwd: '/proj' }
+function header(id: SessionId, overrides: Partial<Omit<SessionHeader, 'id'>> = {}): SessionHeader {
+  return { version: 0, id, createdAt: 1, cwd: '/proj', ...overrides }
 }
 
 async function createContext(): Promise<Context> {
@@ -36,6 +36,14 @@ function provideSession(
 
 function stubAgent(ctx: Context, session: Session): Agent {
   return { id: session.id, session, status: 'idle', ctx } as Agent
+}
+
+/** Mark a live session with the durable subagent identity used by the owner fence. */
+function markSubagent(session: Session): void {
+  const append = session.append.bind(session) as unknown as (type: string, data: unknown) => void
+  append('subagent/descriptor', {
+    version: 3, mode: 'continuable', provider: 'test', depth: 1, label: 'test child',
+  })
 }
 
 describe('API Remote Agent resolver races', () => {
@@ -80,7 +88,8 @@ describe('API Remote Agent resolver races', () => {
     const sessionId = sid('owned-attach-race')
     const meta = header(sessionId)
     provideSession(ctx, meta, () => {
-      ctx.sessions.create(sessionId, { meta: { cwd: '/proj', origin: 'subagent' } })
+      const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj' } })
+      markSubagent(session)
       return Promise.resolve({ meta, events: [] })
     })
     const resume = vi.spyOn(ctx.agents, 'resume')
@@ -92,6 +101,28 @@ describe('API Remote Agent resolver races', () => {
     await ctx.fiber.dispose()
   })
 
+  it('keeps Team-provenanced sessions out of generic cold resume and Typert lookup', async () => {
+    const ctx = await createContext()
+    const sessionId = sid('team-cold-session')
+    const meta = header(sessionId, { teamId: 'team-1', participantId: 'participant-1' })
+    provideSession(ctx, meta, () => Promise.resolve({ meta, events: [] }))
+    const resume = vi.spyOn(ctx.agents, 'resume')
+    const resolver = createApiRemoteAgentResolver(ctx, {})
+
+    await expect(resolver(sessionId)).resolves.toMatchObject({
+      error: { code: 'team-run-unavailable', details: {} },
+    })
+    expect(resume).not.toHaveBeenCalled()
+
+    const lookup = ctx.typert.lookups.get('agent')
+    if (lookup === undefined) throw new Error('Agent lookup was not configured')
+    await expect(lookup.resolve(sessionId)).rejects.toMatchObject({
+      failure: { code: 'team-run-unavailable', details: {} },
+    })
+    expect(resume).not.toHaveBeenCalled()
+    await ctx.fiber.dispose()
+  })
+
   it('reclassifies failed resumes after a live or attached subagent wins publication', async () => {
     for (const winner of ['agent', 'session'] as const) {
       const ctx = await createContext()
@@ -99,7 +130,8 @@ describe('API Remote Agent resolver races', () => {
       const meta = header(sessionId)
       provideSession(ctx, meta, () => Promise.resolve({ meta, events: [] }))
       vi.spyOn(ctx.agents, 'resume').mockImplementationOnce(async () => {
-        const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj', origin: 'subagent' } })
+        const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj' } })
+        markSubagent(session)
         if (winner === 'agent') ctx.agents.register(stubAgent(ctx, session))
         throw new Error('session id already published')
       })
@@ -138,7 +170,8 @@ describe('API Remote Agent resolver races', () => {
   it('applies the subagent ownership fence to the Agent Host Context', async () => {
     const ctx = await createContext()
     const sessionId = sid('context-owned-subagent')
-    const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj', origin: 'subagent' } })
+    const session = ctx.sessions.create(sessionId, { meta: { cwd: '/proj' } })
+    markSubagent(session)
     ctx.agents.register(stubAgent(ctx.extend(), session))
     const defaultProvider = ctx.typert.contexts.getHost('agent')
     createApiRemoteAgentResolver(ctx, {})

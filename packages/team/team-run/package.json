@@ -1,0 +1,84 @@
+{
+  "name": "@clocky/clocky-team-run",
+  "description": "Local product-level Team run owner for default topology, human input, final output, and lifecycle settlement",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/team/team-run"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clocky/schemastery": "workspace:^",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-default-model": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-activation-controller": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-team-channel-workflow": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-team-channel-admission": "workspace:^",
+    "@clocky/clocky-team-channel-basic": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-default-model": "workspace:^",
+    "@clocky/clocky-agent-loop": "workspace:^",
+    "@clocky/clocky-agent-loop-testkit": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/clocky-agent-runtime-in-process": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
+    "@clocky/clocky-storage": "workspace:^",
+    "@clocky/clocky-storage-json": "workspace:^",
+    "@clocky/clocky-storage-log": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-activation-controller": "workspace:^",
+    "@clocky/clocky-team-agent-client": "workspace:^",
+    "@clocky/clocky-team-channel-direct": "workspace:^",
+    "@clocky/clocky-team-channel-task-assignment": "workspace:^",
+    "@clocky/clocky-team-channel-workflow": "workspace:^",
+    "@clocky/clocky-team-hub": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-link-local": "workspace:^",
+    "@clocky/clocky-team-scheduler-dag": "workspace:^",
+    "@clocky/clocky-team-workspace": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-team-channel-admission": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
+    "@clocky/clocky-team-human-actor": "workspace:^",
+    "@clocky/clocky-team-channel-basic": "workspace:^"
+  }
+}

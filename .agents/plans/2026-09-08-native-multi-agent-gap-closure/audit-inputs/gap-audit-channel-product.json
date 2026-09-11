@@ -1,0 +1,331 @@
+{
+  "scope": "Read-only channel/product audit, 2026-09-08",
+  "method": "Source inspection only; no tests, build, lint or implementation executed in this audit.",
+  "proposalSources": [
+    ".agents/notes/proposed/architecture/2026-08-27-native-multi-agent-work-system.md",
+    ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p0-safety-closure.md",
+    ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md"
+  ],
+  "completedBaseline": [
+    "channel catalog and direct/consult/discussion forms",
+    "own invitation ACK and all endpoint admission metadata",
+    "channel list and WAL bounded paging/watch/reconnect fences",
+    "ordered media drafts and exact-envelope attachment read",
+    "explicit summary ranges and durable source/summary display",
+    "closed outbox handling",
+    "ACK/selection/summary recovery races fixed",
+    "TS/Python SDK catalog/list/admission/input/attachment/summary/watch surfaces present"
+  ],
+  "existingEvidence": {
+    "source": ".tmp/handoffs/verification-luna.json",
+    "reported": [
+      "final Host/client typecheck PASS",
+      "2026-09-08T1958 full build PASS",
+      "2026-09-08T2000 formal direct channel browser PASS",
+      "2026-09-08T2001 NodeNext APIs PASS"
+    ],
+    "qualification": "Read prior evidence, not rerun. Not a claim that all repository checks pass."
+  },
+  "excludedOwners": [
+    "Root legacy cutover",
+    "Root performance/telemetry audit"
+  ],
+  "candidates": [
+    {
+      "id": "CP-01",
+      "status": "confirmed",
+      "category": "functional-defect",
+      "priority": "P0",
+      "title": "高层 channelInput 在协议推进后无法完成原请求的幂等重试",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/host/apiproxy/src/api-proxy.ts",
+          "line": 4074,
+          "symbol": "channelInput",
+          "detail": "basic resolver 先于 postChannelEnvelope；4079 direct 同样先拒绝 closed"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-channel-admission/src/principal.ts",
+          "line": 111,
+          "symbol": "resolvePrincipalChannelText",
+          "detail": "先检查 active；120 检查 expectedNext，再派生 request/response"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/sdk/server/src/server.ts",
+          "line": 1032,
+          "symbol": "inputTeamChannelWithCall",
+          "detail": "相同前置 resolver；1036 direct active gate"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "line": 12210,
+          "symbol": "admitChannelEnvelope",
+          "detail": "底层按 sender/key 找原 Envelope 并比对 draft；12227 才拒绝新 closed post"
+        }
+      ],
+      "trigger": "consult request 已提交但响应丢失，此时 expectedNext 已变 respondent；initiator 用原 key/content 重试在 resolver 被拒绝。最终 response 或 discussion 最后 turn 关闭 channel 后也会失败。direct 已提交后被关闭同样受影响。",
+      "design": [
+        "保持当前 principal/Team/channel 授权，先解析同 actor/channel/key 的已提交高层请求，再仅对新请求检查当前 phase/speaker。",
+        "重试需匹配原始用户输入及已归档媒体，不可按推进后的 phase 重新生成 kind/causation。先评估现有 durable post record 是否足够保存规范化输入，否则由单一 owner 增加高层 input receipt。",
+        "Host 与 SDK server 共用 admission seam；不能移除新消息的 active/expectedNext 检查。"
+      ],
+      "dependencies": [
+        "human actor one-shot proofs",
+        "durable post idempotency",
+        "image admission"
+      ],
+      "acceptance": [
+        "Host 与 SDK：请求提交后丢失响应、推进 phase、使用同 key 重试返回原 envelope",
+        "consult closed response/discussion bound close/direct close 后 retry",
+        "同 key 改 text/audience/content 顺序返回 conflict",
+        "重启后同结果；撤销 principal 或 membership 仍拒绝",
+        "图片重试不重复 envelope 或产生额外归档引用"
+      ],
+      "risks": [
+        "将 duplicate lookup 提前若绕过 principal/membership 可造成授权泄漏",
+        "按当前 phase 重建 draft 会把原请求变成响应并产生错误 conflict"
+      ]
+    },
+    {
+      "id": "CP-02",
+      "status": "partial",
+      "category": "product-coverage",
+      "priority": "P1",
+      "title": "成员、任务与 artifact UI 仍依赖完整 Team snapshot",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+          "line": 200,
+          "symbol": "Complete Team product UI",
+          "detail": "要求各集合 bounded Load more"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/runtime/src/client/teams/service.ts",
+          "line": 175,
+          "symbol": "open",
+          "detail": "使用 teams.get 返回完整 state"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/ui-team/src/client/TeamPage.tsx",
+          "line": 178,
+          "symbol": "TeamPage",
+          "detail": "全量 participants/tasks；187 filter；195 全量 artifact 派生；415 participants.map"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/host/apiproxy/src/api/teams.ts",
+          "line": 248,
+          "symbol": "memberList",
+          "detail": "已有分页 API"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/host/apiproxy/src/api/teams.ts",
+          "line": 360,
+          "symbol": "taskList",
+          "detail": "已有分页 API"
+        }
+      ],
+      "trigger": "大量历史任务/成员的 Team 打开页面时读取并渲染完整集合；channel 已分页，但其他集合不满足同样边界。",
+      "design": [
+        "runtime 为成员、任务、artifact 分别持有 cursor/pages/loading/error/hasNewer，显式 Load more。",
+        "详情 header 使用 bounded projection；选中任务、依赖和成员名按引用读取，避免为表单再加载全 Team。",
+        "artifact 列表需先确定服务端 bounded discovery owner；现有 artifactRead 不等于列表。"
+      ],
+      "dependencies": [
+        "既有 memberList/taskList",
+        "bounded Team detail/header API",
+        "artifact discovery API"
+      ],
+      "acceptance": [
+        "多个 provider page、空/末页/重复刷新",
+        "切 Team/断线期间响应不能污染新 selection",
+        "事件到达期间完成 read 不吞 dirty 标记",
+        "artifact 按权限分页，失败保留已读页"
+      ],
+      "risks": [
+        "只在 UI slice 仍传输全 state，不能满足 bounded 目标",
+        "计数/下拉选项可能继续隐式依赖完整数组"
+      ]
+    },
+    {
+      "id": "CP-03",
+      "status": "confirmed",
+      "category": "product-coverage",
+      "priority": "P1",
+      "title": "已委派 child task 的导航与结果 artifact 没进入 Team 页面",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+          "line": 195,
+          "symbol": "Complete Team product UI",
+          "detail": "要求 child-Team navigation"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/ui-team/src/client/TeamPage.tsx",
+          "line": 195,
+          "symbol": "taskArtifacts",
+          "detail": "仅 attemptHistory completed；204 合并 workspace loss，没有 delegation.result.artifacts；组件无 delegation/childTeam 分支"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/host/apiproxy/src/api-proxy.ts",
+          "line": 1325,
+          "symbol": "artifact read candidate collection",
+          "detail": "已识别 task.delegation.result.artifacts"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/sdk/server/src/server.ts",
+          "line": 2454,
+          "symbol": "artifact read candidate collection",
+          "detail": "SDK 已识别 child result artifacts"
+        }
+      ],
+      "trigger": "模型完成 child delegation 并返回 artifact，Host/SDK 可以读取，但父 Team 页面 artifact 区不列出；任务详情没有跳转 child Team 的显式入口。",
+      "design": [
+        "按 execution.kind 展示 child phase、stall、budget/result 与 child Team 只读导航。",
+        "将 delegation.result.artifacts 纳入正式 artifact projection，沿用 visibility 与授权 reader。",
+        "人工创建 child execution 的表单作为后续单独范围，先接真实 template discovery/budget/scopes；不假造 activation proof。"
+      ],
+      "dependencies": [
+        "已完成的 child lifecycle/result/receipt",
+        "CP-02 task/artifact projection"
+      ],
+      "acceptance": [
+        "真实 Loader child 成功后从父页面看到结果和 artifact 并读取",
+        "child stalled/cancelled/restarted 的状态与导航",
+        "private artifact 不泄漏；无 session child 可检查"
+      ],
+      "risks": [
+        "普通 open 会自动 resume offline coordinator，child 导航必须明确只读 inspect",
+        "重复 artifact id 合并不可混淆不同 provenance"
+      ]
+    },
+    {
+      "id": "CP-04",
+      "status": "partial",
+      "category": "product-observability",
+      "priority": "P2",
+      "title": "declarative workflow 已有执行入口，Web 未展示 plan 级 projection",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/tool-team-task/src/index.ts",
+          "line": 538,
+          "symbol": "team_workflow_start",
+          "detail": "已注册声明式入口；561 cancel；594 wait"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "line": 4979,
+          "symbol": "workflow plan snapshots",
+          "detail": "已有 durable plan projection"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/ui-team/src/client/TeamPage.tsx",
+          "line": 178,
+          "symbol": "TeamPage",
+          "detail": "展示 tasks，未读取 workflowPlans"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/ui-team/src/client/TeamManagementDialog.tsx",
+          "line": 267,
+          "symbol": "workflowSeparate",
+          "detail": "引导使用独立 workflow 入口"
+        }
+      ],
+      "trigger": "模型启动声明式 workflow 后，用户可见任务，但不能在 Team 页面直接识别 plan 的 aggregate phase、结果节点及失败/取消关系。",
+      "design": [
+        "先提供只读 plan 摘要与有序 task/dependency 链接，直接消费 durable workflow projection。",
+        "保持现有 declarative tool 为 authoring owner；不引入 JSON 编辑框或 JS workflow。",
+        "如需 human workflow mutation，另行设计 principal-owned API，不借模型 activation 权限。"
+      ],
+      "dependencies": [
+        "workflow plan read projection",
+        "任务详情分页"
+      ],
+      "acceptance": [
+        "plan ready/completed/failed/cancelled 显示一致",
+        "pending channel invitation 阻塞时可解释",
+        "重启后展示不依赖 Session transcript"
+      ],
+      "risks": [
+        "此项是 product observability 补齐，不是 workflow engine 缺失",
+        "独立人工 authoring 是否必须属于额外需求，当前未确认为缺陷"
+      ]
+    },
+    {
+      "id": "CP-E01",
+      "status": "unverified",
+      "category": "test-evidence",
+      "priority": "P1",
+      "title": "consult/discussion UI 尚缺真实 Host browser 端到端证据",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/apps/web/tests/team-channel.snapshot.ts",
+          "line": 64,
+          "symbol": "openPending",
+          "detail": "正式场景选择 direct4 与 summarized-window"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/client/ui-team/tests/channel-protocols.client.spec.tsx",
+          "line": 1,
+          "symbol": "protocol UI tests",
+          "detail": "已有组件层行为测试"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/examples/headless-agent/tests/closed-channel-outbox.snapshot.ts",
+          "line": 1,
+          "symbol": "closed-channel-outbox snapshot",
+          "detail": "已有真实 Loader consult/discussion outbox 覆盖，不等于 UI 入口覆盖"
+        }
+      ],
+      "trigger": "现有组件和 Loader 测试分别通过，仍无法由正式 browser 场景证明显式角色表单、expected speaker、模型普通响应和终结后显示整个链条。",
+      "design": [
+        "扩展正式 snapshot owner，以真实 Host + keyless model replay 覆盖 consult UI 创建、ACK、发请求、普通模型响应。",
+        "discussion 覆盖 ordered round-robin/free-form、maxTurns 关闭与最后消息 outbox。",
+        "保留真实截图/错误/cleanup 聚合，并按项目要求录制可见流程 GIF。"
+      ],
+      "dependencies": [
+        "现有 channel UI/API",
+        "可控模型 replay 计划"
+      ],
+      "acceptance": [
+        "UI consult 成功/非 speaker 禁用/重连",
+        "discussion 顺序及终结消息显示",
+        "原生 Host 调用与真实 durable WAL 断言，不用 ctx.plugin 手搭替代 Loader"
+      ],
+      "risks": [
+        "只缺证据，不得写成 forms/basic routing 功能未实现",
+        "脚本需显式处理未消费 model fixture，不能覆盖首个错误"
+      ]
+    }
+  ],
+  "plan": [
+    {
+      "phase": 1,
+      "ids": [
+        "CP-01"
+      ],
+      "exit": "durable high-level retry equivalence proven across protocol advancement and restart"
+    },
+    {
+      "phase": 2,
+      "ids": [
+        "CP-02",
+        "CP-03"
+      ],
+      "exit": "bounded collections and child results/navigation visible through actual product APIs"
+    },
+    {
+      "phase": 3,
+      "ids": [
+        "CP-E01"
+      ],
+      "exit": "real Host browser consult/discussion evidence; can run independently of pagination work"
+    },
+    {
+      "phase": 4,
+      "ids": [
+        "CP-04"
+      ],
+      "exit": "workflow read-only plan projection; authoring remains existing declarative owner"
+    }
+  ]
+}

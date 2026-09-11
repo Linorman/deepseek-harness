@@ -1,0 +1,16 @@
+{
+  "scenario": "queued",
+  "sameActivation": true,
+  "firstApprovalReal": true,
+  "otherApprovalRetained": true,
+  "queuedTaskWasNotRun": true,
+  "resumedOtherTask": false,
+  "clientReconstructed": false,
+  "taskOutcomes": [
+    "cancelled",
+    "cancelled"
+  ],
+  "teamBeforeCleanup": "active",
+  "allocationsReleased": true,
+  "files": "before"
+}

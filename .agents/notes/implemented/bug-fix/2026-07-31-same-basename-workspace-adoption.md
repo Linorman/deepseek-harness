@@ -14,7 +14,7 @@ A Workspace is identified by its stable id and canonical directory path, while i
 
 The Host's `workspace.create({ path })` adoption route inherits that rule. The Workspace manager, picker, grouping tree, selection, rename, deletion, and Session creation continue to use `WorkspaceId`, so equal labels neither merge records nor redirect an operation. The sidebar hover card exposes each canonical path when the labels need disambiguation.
 
-Explicit naming remains stricter. `workspace.rename` continues to reject a title already registered, as described by [manual Workspace naming](../feature/2026-07-25-session-list-browsing-and-manual-order.md). This prevents a user from deliberately introducing another ambiguous label while accepting collisions imposed by existing directory names. The path-adoption rule supersedes only the title-conflict clauses in the [Workspace product flow](../feature/2026-07-25-workspace-ui-product-flow.md) and [native directory picker](../feature/2026-07-27-native-workspace-directory-picker.md).
+Explicit naming remains stricter. `workspace.rename` continues to reject a title already registered, as described by [manual Workspace naming](../feature/2026-07-25-session-list-browsing-and-manual-order.md). This prevents a user from deliberately introducing another ambiguous label while accepting collisions imposed by existing directory names. The path-adoption rule changes only title-conflict handling; the [native directory picker](../feature/2026-07-27-native-workspace-directory-picker.md) retains its own directory behavior.
 
 The durable schema does not change: Workspace records already store id, path, and title independently, bootstrap can derive equal basenames, and startup validates duplicate paths rather than titles.
 

@@ -28,12 +28,14 @@ export interface FetchHandler {
  * @param res - node:http response the bridge writes and owns to completion.
  * @param apiHandler - fetch-shaped API carrier the request is dispatched to.
  * @param maxRequestBodyBytes - maximum body bytes buffered before dispatch.
+ * @param ownerSignal - transport authentication or carrier shutdown; aborts admitted long-running requests.
  */
 export async function bridge(
   req: IncomingMessage,
   res: ServerResponse,
   apiHandler: FetchHandler,
   maxRequestBodyBytes = DEFAULT_MAX_REQUEST_BODY_BYTES,
+  ownerSignal?: AbortSignal,
 ): Promise<void> {
   const abort = new AbortController()
   // Client-disconnect detection MUST hang off the response, not the request:
@@ -41,9 +43,31 @@ export async function bridge(
   // fully consumed (immediately for a bodyless GET), which would abort every SSE
   // stream right after open. ServerResponse 'close' fires on connection teardown;
   // writableEnded distinguishes a normal end() from the client going away.
-  res.on('close', () => {
+  const onClose = (): void => {
     if (!res.writableEnded) abort.abort()
-  })
+  }
+  const onOwnerAbort = (): void => {
+    abort.abort(ownerSignal?.reason)
+    req.destroy()
+    res.destroy()
+  }
+  res.on('close', onClose)
+  ownerSignal?.addEventListener('abort', onOwnerAbort, { once: true })
+  try {
+    if (ownerSignal?.aborted) { onOwnerAbort(); return }
+    await forward(req, res, apiHandler, maxRequestBodyBytes, abort.signal)
+  } catch (error: unknown) {
+    if (!abort.signal.aborted || (error !== abort.signal.reason && !(error instanceof Error && error.name === 'AbortError'))) throw error
+  } finally {
+    res.off('close', onClose)
+    ownerSignal?.removeEventListener('abort', onOwnerAbort)
+  }
+}
+
+/** Forward a bounded body and stream its response while the bridge retains cancellation ownership. */
+async function forward(
+  req: IncomingMessage, res: ServerResponse, apiHandler: FetchHandler, maxRequestBodyBytes: number, signal: AbortSignal,
+): Promise<void> {
   const declaredLength = req.headers['content-length']
   if (declaredLength !== undefined && Number(declaredLength) > maxRequestBodyBytes) {
     res.writeHead(413, { connection: 'close' })
@@ -70,9 +94,10 @@ export async function bridge(
     method: req.method ?? 'GET',
     headers: Object.fromEntries(Object.entries(req.headers).filter(([, v]) => typeof v === 'string') as [string, string][]),
     ...chunks.length > 0 ? { body: Buffer.concat(chunks) } : {},
-    signal: abort.signal,
+    signal,
   })
   const response = await apiHandler.fetch(request)
+  if (signal.aborted || res.destroyed) return
   res.writeHead(response.status, Object.fromEntries(response.headers.entries()))
   if (response.body === null) {
     res.end()

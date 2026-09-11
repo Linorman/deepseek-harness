@@ -30,6 +30,24 @@ interface InboxState {
 
 type MessageNode = UserMessageNode | SteeringMessageNode | ContextMessageNode
 
+/** Build the UI source projection for one persisted Team channel view. */
+function teamChannelViewSource(event: Extract<Parameters<ConversationNodeDefinition['match']>[0], { type: 'team/channel-view' }>): UserMessageNode['source'] {
+  const data = event.data
+  return {
+    kind: 'team-channel-view',
+    teamId: data.teamId,
+    channelId: data.channelId,
+    adapter: data.adapter,
+    viewPolicy: data.viewPolicy,
+    triggeringEnvelopeId: data.triggeringEnvelopeId,
+    sourceEnvelopeIds: data.sourceEnvelopeIds,
+    delivery: data.delivery,
+    ...data.causationId === undefined ? {} : { causationId: data.causationId },
+    ...data.taskId === undefined ? {} : { taskId: data.taskId },
+    ...data.review === undefined ? {} : { review: data.review },
+  }
+}
+
 function applySplice(
   previous: ConversationPreviousContext<InboxState> | undefined,
   splice: InboxSplice,
@@ -66,10 +84,19 @@ const trajectoryInboxDefinition: ConversationNodeDefinition<InboxState> = {
 const trajectoryMessageDefinition: ConversationNodeDefinition<MessageNode> = {
   kind: 'trajectory-input-message',
   target: 'trajectory',
-  match: event => event.type === 'user/message'
+  match: event => event.type === 'user/message' || event.type === 'team/channel-view'
     ? { id: String(event.seq), role: 'start' }
     : null,
   start: (_context, match, reader) => {
+    if (match.event.type === 'team/channel-view') {
+      return {
+        kind: 'user',
+        seq: match.event.seq,
+        time: match.event.time,
+        content: match.event.data.content,
+        source: teamChannelViewSource(match.event),
+      }
+    }
     if (match.event.type !== 'user/message') {
       throw new Error('trajectory-input-message start requires user/message')
     }

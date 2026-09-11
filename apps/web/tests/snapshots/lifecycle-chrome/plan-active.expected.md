@@ -1,9 +1,18 @@
-- button "New session"
+- button "New task"
 - button "Collapse sidebar":
   - img
-- button "New session":
+- button "New task":
   - img
-  - text: New Session
+  - text: New Task
+- region "Tasks":
+  - img
+  - text: Tasks
+  - button "Inbox"
+  - text: Workspaces
+  - button "Add workspace":
+    - img
+    - text: Add workspace
+  - text: No tasks yet
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -13,23 +22,25 @@
 - button "Add workspace":
   - img
 - tree "Sessions":
-  - treeitem "workspace" [expanded]:
+  - treeitem "Ungrouped" [expanded]:
     - img
-    - text: workspace
-  - treeitem "New Session" [selected]
+    - text: Ungrouped
+  - treeitem "{{workspace}} Session actions for {{workspace}}" [selected]:
+    - text: {{workspace}}
+    - button "Session actions for {{workspace}}":
+      - img
 - button "Settings":
   - img
   - text: Settings
-- text: Into the Unknown Preview
-- button "Choose workspace":
-  - img
-  - text: workspace
-  - img
-- button "Standard mode":
-  - img
-  - text: Standard mode
-  - img
-- textbox "Describe what you want to build"
+- banner:
+  - text: {{workspace}}
+  - button "Session log":
+    - text: Session log
+    - img
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- textbox "describe your task to generate plan"
 - button "Commands":
   - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write

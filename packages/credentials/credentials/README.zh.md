@@ -1,10 +1,10 @@
-# dsh-credentials
+# clocky-credentials
 
 [English](README.md) | 中文
 
 凭据 Service Definition（`ctx.credentials`）。一条准则，三个推论：
 
-**配置只携带对机密的引用，绝不携带机密本身。** settings 分节或 `cordis.yml` 条目写 `apiKeyEnv: DEEPSEEK_API_KEY`，引用背后的值存放在凭据提供方处。于是设置文档可以放心同步、放心渲染进配置界面；`describe()` 无需持有值就能回答「配置了吗、来自哪层、能否写入」；轮换机密不触碰任何配置文件。
+**配置只携带对机密的引用，绝不携带机密本身。** settings 分节或 `cordis.yml` 条目写 `apiKeyEnv: TEST_API_KEY`，引用背后的值存放在凭据提供方处。于是设置文档可以放心同步、放心渲染进配置界面；`describe()` 无需持有值就能回答「配置了吗、来自哪层、能否写入」；轮换机密不触碰任何配置文件。
 
 **消费方按操作解析。** `resolve(ref)` 在每个操作开始时调用（LLM（大语言模型）适配器每次模型请求解析一次），绝不跨操作缓存——正是这次读取让改过的凭据无需重启任何插件就作用于下一次请求。
 
@@ -25,12 +25,12 @@
 ## 接口
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { credentialKey, credentialRef } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@clocky/cordis'
+import { credentialKey, credentialRef } from '@clocky/clocky-credentials'
 
 declare const ctx: Context
 
-const ref = credentialRef('DEEPSEEK_API_KEY')            // POSIX shell identifier, branded
+const ref = credentialRef('TEST_API_KEY')                // POSIX shell identifier, branded
 const hit = await ctx.credentials.resolve(ref)           // { value, source } | undefined
 const info = await ctx.credentials.describe(ref)         // { configured, source?, writable } — never the value
 await ctx.credentials.set(ref, 'sk-…')                   // rejects while a read-only source shadows the ref
@@ -56,7 +56,7 @@ await ctx.credentials.deleteRecord(key)                  // no-op when absent
 
 ## 提供方
 
-[`dsh-credentials-local`](../credentials-local/README.zh.md) 把继承的进程环境叠加在其受管 `$DSH_HOME/.credentials.yaml` 文档之上，并以启动器的项目和用户 `.env` 层作为后备。该 seam 的接口为 keyring、辅助命令和 KMS 后端提供方预留了扩展空间；远端设置提供方永远不必携带机密。
+[`clocky-credentials-local`](../credentials-local/README.zh.md) 把继承的进程环境叠加在其受管 `$CLOCKY_HOME/.credentials.yaml` 文档之上，并以启动器的项目和用户 `.env` 层作为后备。该 seam 的接口为 keyring、辅助命令和 KMS 后端提供方预留了扩展空间；远端设置提供方永远不必携带机密。
 
 ## 模型体验
 

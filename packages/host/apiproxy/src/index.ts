@@ -68,7 +68,7 @@ export interface Config {
  */
 export class ApiProxyService extends Service implements ApiProxy {
   static inject = [
-    'agentDefaultModel', 'agents', 'attachments', 'directoryPicker', 'llm', 'sessions', 'subagents', 'sessionQuery',
+    'agentDefaultModel', 'agents', 'attachments', 'directoryPicker', 'llm', 'sessions', 'sessionQuery',
     'tools', 'userQuestions', 'workspaceRegistry',
   ]
 
@@ -80,7 +80,6 @@ export class ApiProxyService extends Service implements ApiProxy {
   })
 
   readonly sessions: ApiProxy['sessions']
-  readonly subagents: ApiProxy['subagents']
   readonly workspace: ApiProxy['workspace']
   readonly host: ApiProxy['host']
   readonly goals: ApiProxy['goals']
@@ -89,6 +88,7 @@ export class ApiProxyService extends Service implements ApiProxy {
   readonly settings: ApiProxy['settings']
   readonly credentials: ApiProxy['credentials']
   readonly llm: ApiProxy['llm']
+  readonly teams?: NonNullable<ApiProxy['teams']>
   readonly events: ApiProxy['events']
   readonly downloads: ApiProxy['downloads']
   readonly respond: ApiProxy['respond']
@@ -108,7 +108,6 @@ export class ApiProxyService extends Service implements ApiProxy {
         : { coldBlankProbeMaxBytes: config.coldBlankProbeMaxBytes }),
     })
     this.sessions = api.sessions
-    this.subagents = api.subagents
     this.workspace = api.workspace
     this.host = api.host
     this.goals = api.goals
@@ -117,6 +116,7 @@ export class ApiProxyService extends Service implements ApiProxy {
     this.settings = api.settings
     this.credentials = api.credentials
     this.llm = api.llm
+    if (api.teams !== undefined) this.teams = api.teams
     this.events = api.events
     this.downloads = api.downloads
     // createApiProxy returns closures (no `this` capture), so the bind is

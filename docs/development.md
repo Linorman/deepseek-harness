@@ -11,7 +11,7 @@ The setup tutorial takes a new contributor from prerequisites to a checked check
 - Node.js supports 22.19+ and 24+. CI covers 22.19, 24, and 26; see the [Node engine floor Agent Note](../.agents/notes/implemented/process/2026-07-06-node-engine-floor.md).
 - Corepack-enabled pnpm. The repo pins `pnpm@11.7.0` in `package.json`; run `corepack enable` if `pnpm --version` does not resolve through Corepack.
 - Git 2.26 or newer; hook setup enables Git's worktree-specific configuration extension.
-- Optional: a DeepSeek API key for the Web, headless, and ACP automation demos and real-API e2e tests.
+- Optional: a provider API key for the Web, headless, and ACP automation demos and real-API e2e tests.
 
 ### First-time setup
 
@@ -21,7 +21,7 @@ Install dependencies from the repo root:
 pnpm install
 ```
 
-The install also configures worktree-local Lefthook hooks and the `dsh-translation-pairing` Git merge driver through `scripts/install-lefthook.mjs`. The [worktree-local hooks Agent Note](../.agents/notes/implemented/process/2026-07-27-worktree-local-lefthook.md) owns the hook-path safety contract; the [automatic pairing merges Agent Note](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md) owns the merge driver.
+The install also configures worktree-local Lefthook hooks and the `clocky-translation-pairing` Git merge driver through `scripts/install-lefthook.mjs`. The [worktree-local hooks Agent Note](../.agents/notes/implemented/process/2026-07-27-worktree-local-lefthook.md) owns the hook-path safety contract; the [automatic pairing merges Agent Note](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md) owns the merge driver.
 
 If either integration is missing because dependencies were restored from cache or `postinstall` was skipped, install them manually:
 
@@ -65,17 +65,17 @@ The root build follows the generated dependency order:
 
 ```sh
 tsc -b tsconfig.host.json
-tsdown --env.DSH_BUILD_FACE host
+tsdown --env.CLOCKY_BUILD_FACE host
 tsc -b tsconfig.client.json
-tsdown --env.DSH_BUILD_FACE client
+tsdown --env.CLOCKY_BUILD_FACE client
 pnpm run build:web
 ```
 
-Both tsdown passes use the same complete workspace match. They neither scan build artifacts to discover Client packages nor maintain a Host/Client package filter list. Package-local tsdown configs select entries for the current phase through `DSH_BUILD_FACE`: an ordinary Client plugin produces both its Node loader and browser bundle during the Client phase; `api-remotes` uses `hostPhase: true` to produce its Host entry early and only its browser bundle during the Client phase. Tsdown consumes only the JavaScript emitted to `lib/types` by the preceding tsc phase.
+Both tsdown passes use the same complete workspace match. They neither scan build artifacts to discover Client packages nor maintain a Host/Client package filter list. Package-local tsdown configs select entries for the current phase through `CLOCKY_BUILD_FACE`: an ordinary Client plugin produces both its Node loader and browser bundle during the Client phase; `api-remotes` uses `hostPhase: true` to produce its Host entry early and only its browser bundle during the Client phase. Tsdown consumes only the JavaScript emitted to `lib/types` by the preceding tsc phase.
 
 Typert runs only during Host tsdown, seeded by `tsconfig.host.json`. It analyzes Host types and generates both Host reflection artifacts and the Host-for-Client Remote projection; Client tsdown does not start Typert. Consequently, `pnpm run typecheck` runs the complete Host lib phase before Client tsc, while `pnpm run build` continues through Client tsdown and the Web build. The [API Remotes generated-contract build note](../.agents/notes/implemented/process/2026-08-08-api-remotes-generated-contract-build.md) records this ordering decision.
 
-`pnpm run build` embeds the caller's exact `DSH_CLIENT_*` environment and uses no public client values when none are set. `pnpm run build:official` is the cross-platform local equivalent of the CI and release artifact build. Each successful complete build writes a gitignored record that binds those values to the Vite output and dynamic client bundles; release packing and built Web tests reject a missing record or artifacts changed by a later partial build.
+`pnpm run build` embeds the caller's exact `CLOCKY_CLIENT_*` environment and uses no public client values when none are set. `pnpm run build:clocky` is the cross-platform local equivalent of the CI and release artifact build. Each successful complete build writes a gitignored record that binds those values to the Vite output and dynamic client bundles; release packing and built Web tests reject a missing record or artifacts changed by a later partial build.
 
 Static analysis and tests resolve workspace imports through the base `paths` map to `src` and must pass on a clean tree; gates that consume built `lib/` output declare that dependency explicitly. Generated Host-for-Client Remote declarations are the deliberate exception: the public `typecheck`, `lint`, and `doc-typecheck` commands generate them first, while internal `*:contracts-ready` scripts assume that an invoking public command or scheduler gate already depends on the Typert contract-generation pass or the complete build. See the [solution-root note](../.agents/notes/implemented/process/2026-07-22-tsconfig-solution-root-two-aggregates.md) for the two-aggregate setup, the [ts-build-config note](../.agents/notes/implemented/process/2026-06-17-ts-build-config.md) for tsc-first emit ownership, and the [Typert Remote note](../.agents/notes/implemented/architecture/2026-08-02-typert-remote-method-calls.md) for the gate-preparation contract.
 
@@ -91,14 +91,18 @@ pnpm run build
 
 ### Environment variables
 
-The real DeepSeek adapter and key-backed agent demos read credentials from the environment or from a gitignored `.env` at the repo root:
+The real DeepSeek provider profile and key-backed agent demos read credentials from the environment or from a gitignored `.env` at the repo root. Headless Team, headless-agent, and text ACP live tests can instead use an explicit local OpenAI-compatible route:
 
 ```sh
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://... # optional
+CLOCKY_LOCAL_MODEL_BASE_URL=http://127.0.0.1:18000/v1
+CLOCKY_LOCAL_MODEL_ID=Qwen3.8-27B-AWQ-4bit
+CLOCKY_LOCAL_MODEL_API_KEY=EMPTY
+CLOCKY_LOCAL_MODEL_REASONING_EFFORT=high # optional; local Qwen maps high to xhigh
 ```
 
-`DEEPSEEK_BASE_URL` is optional and defaults to the public API. Never commit real credentials. The real-API e2e suites self-skip when `DEEPSEEK_API_KEY` is not set.
+`DEEPSEEK_BASE_URL` is optional and defaults to the public API. The local base URL and model id are optional, but the selected local route still requires `CLOCKY_LOCAL_MODEL_API_KEY` (use `EMPTY` for the supplied unauthenticated server). `CLOCKY_LOCAL_MODEL_REASONING_EFFORT` is optional; on the tested Qwen route, canonical `high` is sent as the endpoint's accepted `xhigh` spelling. The local base URL selects the test route; the checked-in headless and ACP examples use the canonical `http://127.0.0.1:18000/v1` endpoint. Never commit real credentials. Local suites self-skip when neither local base URL nor `DEEPSEEK_API_KEY` is set; other real-model suites retain their provider-specific skip conditions.
 
 ### Git integrations
 
@@ -134,10 +138,10 @@ Run the repository build separately before using these source-checkout demos:
 pnpm run build
 ```
 
-The one-shot Headless coding agent needs `DEEPSEEK_API_KEY` in the environment or repo-root `.env`:
+The one-shot Headless coding agent needs the API key named by its configured provider profile in the environment or repo-root `.env`:
 
 ```sh
-pnpm dsh --profile headless "summarize this workspace"
+pnpm clocky --profile headless "summarize this workspace"
 ```
 
 The self-referential cordis demo can inspect and modify its live plugin runtime and needs the same credentials (`web` by default, or `acp`):
@@ -146,7 +150,7 @@ The self-referential cordis demo can inspect and modify its live plugin runtime 
 pnpm run demo:cordis
 ```
 
-The ACP automation server exposes fresh agent sessions over JSON-RPC stdio and also needs `DEEPSEEK_API_KEY`:
+The ACP automation server exposes fresh agent sessions over JSON-RPC stdio and also needs the API key named by its configured provider profile:
 
 ```sh
 pnpm run demo:acp

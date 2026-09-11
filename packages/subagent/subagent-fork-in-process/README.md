@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-subagent-fork-in-process
+# @clocky/clocky-subagent-fork-in-process
 
 English | [中文](README.zh.md)
 
@@ -23,7 +23,7 @@ Fork advertises `{ outputSchema: true, depthLimit: true, toolFilter: true, perso
 | Key | Meaning |
 |---|---|
 | `providerName` | Registry name on `ctx.subagents` (default `fork`). |
-See [`dsh-subagent-spawn-in-process`](../subagent-spawn-in-process/README.md) for the run lifecycle, model inheritance, and depth tracking — all shared.
+See [`clocky-subagent-spawn-in-process`](../subagent-spawn-in-process/README.md) for the run lifecycle, model inheritance, and depth tracking — all shared.
 
 ## Model Experience
 
@@ -39,13 +39,13 @@ Forking duplicates retained completed history into separate child requests; the 
 
 #### KV Cache effect
 
-The child may reuse the inherited byte-identical prefix under the same provider and model. Persona, tool-filter, generated-SDK, or route changes may invalidate reuse before inherited history; later child history is append-only. Shipped compositions therefore bind this provider to `backgroundMode: one-shot`, because a continuable child additionally carries the child-scoped `report` tool and its prompt section — deltas that precede the inherited history and so invalidate all of it ([the fork-one-shot Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md)).
+The child may reuse the inherited byte-identical prefix under the same provider and model. Persona, tool-filter, generated-SDK, or route changes may invalidate reuse before inherited history; later child history is append-only. Shipped product bundles do not mount this provider. A custom composition that creates a continuable child additionally carries the child-scoped `report` tool and its prompt section — deltas that precede the inherited history and invalidate it; use a one-shot binding when prefix reuse matters ([the fork-one-shot Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md)).
 
 ### Parent tool result, indirectly
 
 #### What the model sees
 
-The parent receives only the child's own final output through `dsh-tool-subagent`, not the inherited prefix or intermediate work.
+The parent receives only the child's own final output through `clocky-tool-subagent`, not the inherited prefix or intermediate work.
 
 #### Token effect
 
@@ -58,4 +58,4 @@ Append-only; newly visible content follows the reusable request prefix and does 
 ## Known Limitations and Deferred Work
 
 - **The seed is a one-time snapshot** — the child sees the parent's completed turns as of the fork and nothing the parent logs afterwards; there is no live context sharing.
-- **No shipped composition creates a continuable fork child** — `prepareContinuable` remains implemented and the seam accepts it, but every shipped `cordis.yml` sets `backgroundMode: one-shot` on the fork delegation tool, so the provider's continuable path has no production caller. Reopening it requires the child's system prompt and tool schemas to match the parent's byte for byte, which the [`report` return channel](../tool-subagent-report/README.md) currently prevents. Rationale and the reintroduction condition: [the fork-one-shot Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md).
+- **The provider is custom-composition only in shipped products** — `prepareContinuable` remains implemented and the seam accepts it, while examples and explicit custom compositions may bind it. A continuable binding requires the child's system prompt and tool schemas to match the parent's byte for byte if it is to retain prefix reuse, which the [`report` return channel](../tool-subagent-report/README.md) otherwise prevents. Rationale and the reintroduction condition: [the fork-one-shot Agent Note](../../../.agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md).

@@ -10,7 +10,8 @@ This family persists application data other than session event logs through name
 | [`storage-json/`](storage-json/README.md) | Stores data in JSON files | registers backend `json` |
 | [`storage-sqlite/`](storage-sqlite/README.md) | Stores data in SQLite | registers backend `sqlite` |
 | [`storage-domain/`](storage-domain/README.md) | Provides validated domain-record storage | `ctx.storageDomain` |
+| [`storage-log/`](storage-log/README.md) | Provides routed append-only stream storage | `ctx.storageLog` |
 
 Consumers use a data form rather than accessing a backend directly. The [domain storage decision](../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md) records the family design.
 
-The subsystem reference — the backend contract, `StorageForms`, `DomainSpec`/`Domain`, `domain/changed` — is [docs/subsystems/storage.md](../../docs/subsystems/storage.md).
+The subsystem reference — the backend contract, `StorageForms`, `DomainSpec`/`Domain`, `LogStream`/`StorageLogFacility`, and `domain/changed` — is [docs/subsystems/storage.md](../../docs/subsystems/storage.md).

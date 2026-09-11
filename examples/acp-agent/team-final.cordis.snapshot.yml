@@ -1,0 +1,19 @@
+- id: base
+  name: '@clocky/cordis-plugin-include'
+  config:
+    path: ./cordis.yml
+    patches:
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
+        disabled: true
+      - id: acp-agent
+        name: '@clocky/clocky-acp-demo'
+        config:
+          provider: acp-team-final
+          model: acp-team-final
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          persistenceCompression: none
+          workspaceContext: false
+      - insert:
+          - id: acp-team-final-llm
+            name: ./tests/fixtures/acp-team-final-llm.ts

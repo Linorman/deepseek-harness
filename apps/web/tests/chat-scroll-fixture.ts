@@ -162,7 +162,6 @@ function fixtureLog(session: Session): string {
       id: '{{sessionId}}',
       createdAt: Date.now() - 60_000,
       cwd: '{{cwd}}',
-      delegationDepth: 0,
     }),
     ...session.events.map(event => JSON.stringify(event)),
     '',

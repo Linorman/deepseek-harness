@@ -1,0 +1,745 @@
+{
+  "audit": "runtime/child/workspace/scheduler-governance",
+  "date": "2026-09-08",
+  "mode": "只读生产源码；仅写本JSON；未运行检查",
+  "status_semantics": {
+    "confirmed": "源码可直接证实的实际剩余行为或范围",
+    "partial": "主要能力已实现，提案具体子项未完整收敛/需设计决策",
+    "unverified": "证据不足或未作验证，不等同功能不存在"
+  },
+  "items": [
+    {
+      "id": "RUNTIME-PLACEMENT-CHILD-ISOLATION",
+      "category": "功能",
+      "subcategory": "scheduler/placement",
+      "status": "confirmed",
+      "gap": "Placement readiness 未排除 execution.kind=child-team。scheduler 在每次 drive 开头调用 placement.prepare；配置匹配的 dormant participant 可被无须 Participant lease 的 child delegation 唤醒。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "ready",
+          "line": 197,
+          "detail": "仅phase/cancellation/lease/attempt/dependencies，不检查execution"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "prepareTeam",
+          "line": 126,
+          "detail": "所有ready task参与available/route选择"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-scheduler-dag/src/index.ts",
+          "symbol": "driveTeam",
+          "line": 447,
+          "detail": "placement.prepare先于本轮调度"
+        }
+      ],
+      "design": "在placement拥有者ready边界要求participant execution；其余保持真实Hub assignment条件。不要在Hub放宽child task可赋Participant lease。",
+      "dependencies": [
+        "现有child/participant execution discriminator"
+      ],
+      "acceptance": [
+        "仅child任务且有匹配离线route时controller.activate未调用",
+        "混合child/participant任务仍只为participant任务启动owner",
+        "已有真实child Loader保持通过"
+      ],
+      "risks": [
+        "不要因过滤child而漏掉其子Team内部participant tasks"
+      ]
+    },
+    {
+      "id": "RUNTIME-DELEGATION-BOUNDED-DISCOVERY",
+      "category": "功能",
+      "subcategory": "child teams/recovery",
+      "status": "confirmed",
+      "gap": "Delegation discover 每个pulse用listTeams一次取得完整Team列表并顺序drive所有Team；Config仅限制单Team drive次数和channel页大小，没有发现批次总量/游标，存量规模增长仍全量扫描。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-delegation/src/index.ts",
+          "symbol": "Config",
+          "line": 19,
+          "detail": "maxOperationsPerDrive/channelPageSize/pulseIntervalMs"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-delegation/src/index.ts",
+          "symbol": "discover",
+          "line": 132,
+          "detail": "listTeams().then逐Team drive"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-activation-recovery/src/index.ts",
+          "symbol": "recoverOnce",
+          "line": 149,
+          "detail": "现有恢复消费者已用listTeamsPage"
+        }
+      ],
+      "design": "改用Hub bounded listTeamsPage，拥有者Config新增每pulse页数/Team数，保留跨pulse cursor与event-driven单Team唤醒；结束一轮再从头扫描；关闭中止未开始批次并等accepted work。",
+      "dependencies": [
+        "Core listTeamsPage"
+      ],
+      "acceptance": [
+        "多页数据无遗漏/重复副作用",
+        "单pulse数量上界",
+        "事件到达不被长扫描饿死",
+        "关闭与page读取竞态"
+      ],
+      "risks": [
+        "列表插入与游标语义必须沿用稳定顺序；不可把每页上界误当整轮上界"
+      ]
+    },
+    {
+      "id": "RUNTIME-PLACEMENT-WORKSPACE-ELIGIBILITY",
+      "category": "功能",
+      "subcategory": "agent runtime/placement",
+      "status": "partial",
+      "gap": "Placement candidate只比较grant.workspaceModes，不调用workspace provider eligibility；route.cwd固定后即activation。真正workspace eligible由scheduler后验，故存在激活后永远不适合该task的资源浪费窗口。已有Hub/scheduler拒绝错误assignment，不是workspace授权缺失。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "candidate",
+          "line": 205,
+          "detail": "仅grant modes与capability/placement"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "activateTaskOwner",
+          "line": 155,
+          "detail": "route.cwd启动provider后只复查candidate/ready"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "inject",
+          "line": 216,
+          "detail": "无teamWorkspaces服务依赖"
+        }
+      ],
+      "design": "为pre-activation placement引入明确可判定的workspace route compatibility（不要伪造未存在activation调用现有eligible）；若provider只在live binding可判定，post-activation调用真实eligible并处置无人可用的owned lease。保留Hub最终分配校验。",
+      "dependencies": [
+        "workspace provider request/spec contract",
+        "placement/controller lifecycle"
+      ],
+      "acceptance": [
+        "不兼容shared root、unsupported worktree/E2B route不长期占lease",
+        "兼容route真实分配",
+        "post-publication取消清理仍完整"
+      ],
+      "risks": [
+        "新preflight不能声称等于最终eligible；不要重复分配workspace或制作假attempt"
+      ]
+    },
+    {
+      "id": "RUNTIME-PLACEMENT-FROZEN-DEFAULTS",
+      "category": "功能",
+      "subcategory": "scheduler/governance",
+      "status": "partial",
+      "gap": "P1明确省略placement时应冻结Team模板默认；当前normalizeTaskCreate保留undefined，createTask也仅条件拷贝，实际是无显式任务约束而非已冻结默认。需要确定模板中默认的具体含义，不能仅为追提案生成冗余空对象。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+          "symbol": "Placement Consumer",
+          "line": 135,
+          "detail": "omitted placement resolves frozen defaults at task creation"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "normalizeTaskCreate",
+          "line": 15808,
+          "detail": "request.placement undefined原样保留"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "createTask",
+          "line": 4084,
+          "detail": "只在显式placement时持久化"
+        }
+      ],
+      "design": "先确认产品语义：若模板有执行默认则在Hub task-create resolve阶段生成durable selection并验证creator grant；若undefined=无额外限制才是目标，则修设计而非加入兼容层。",
+      "dependencies": [
+        "Team productTemplate默认route定义",
+        "Core task schema/version决策"
+      ],
+      "acceptance": [
+        "模板默认变更后旧task选择不漂移",
+        "显式constraint只能收窄grant",
+        "重启读取一致"
+      ],
+      "risks": [
+        "当前授权subset并非因此失效；这项是默认行为收敛，不是证明存在越权"
+      ]
+    },
+    {
+      "id": "RUNTIME-SUPERVISED-RECOVERY-SCOPE",
+      "category": "功能",
+      "subcategory": "agent runtime/remote recovery",
+      "status": "partial",
+      "gap": "已实现SDK本地/HTTP supervisor恢复与unknown fail-closed；自动recovery匹配仍限定sdk-local-cold-replace、一个config.provider/profile。ACP owned-process未看到对应durable recovery descriptor，因此不能把多provider通用恢复标完成。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-activation-recovery/src/index.ts",
+          "symbol": "matchesLocalStartupRecovery",
+          "line": 231,
+          "detail": "kind/provider/profile/host精确SDK筛选"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-activation-controller/src/index.ts",
+          "symbol": "coldReplaceOwned",
+          "line": 581,
+          "detail": "无recovery拒绝；supervisor unknown/unreachable落stall"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/agent-runtime/agent-runtime-acp/src/index.ts",
+          "symbol": "AgentRuntimeAcpProvider.terminationMode",
+          "line": 760,
+          "detail": "owned-process实现，未等同于持久cold-replacement descriptor"
+        }
+      ],
+      "design": "若产品要所有配置provider自动恢复，改为provider拥有的versioned recovery selector/descriptor注册，逐host调度；ACP需真实process creation identity+fence proof再resume。未知descriptor继续明确stall/unsupported，绝不可把unknown判offline。",
+      "dependencies": [
+        "runtime recovery descriptor版本",
+        "activationSupervisors",
+        "controller exact-generation fence"
+      ],
+      "acceptance": [
+        "SDK现有恢复不回归",
+        "ACP真实进程重启身份/旧epoch不能send/heartbeat/integrate",
+        "host unreachable/unknown不伪取消"
+      ],
+      "risks": [
+        "ACP暂无descriptor是静态审计结果；产品是否承诺该恢复面需Root决策，不能泛称remote未实现"
+      ]
+    },
+    {
+      "id": "RUNTIME-SHARED-OBSERVATION-PULSE",
+      "category": "功能",
+      "subcategory": "workspace/observability",
+      "status": "partial",
+      "gap": "共享工作区已有baseline/publish/integration/release/restore观察与Hub分类；P1可配置观察pulse尚无Config字段或定时触发路径。运行中长任务的越scope变化只能到触发点才见，不能报整套观察缺失。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-workspace-shared/src/index.ts",
+          "symbol": "Config",
+          "line": 66,
+          "detail": "有扫描/字节/时间/path界限，无pulse字段"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-workspace-shared/src/index.ts",
+          "symbol": "observeAllocation",
+          "line": 737,
+          "detail": "按allocation串行观察"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-workspace-shared/src/index.ts",
+          "symbol": "publish",
+          "line": 311,
+          "detail": "现有观察触发点"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/workspace-observation.ts",
+          "symbol": "classifyObservationPaths",
+          "line": 43,
+          "detail": "declared/undeclared/external-window已有"
+        }
+      ],
+      "design": "若需要实时提示，增加默认关闭、显式interval与每pulse allocation上界；复用同allocation queue与停止signal，只对真实owned allocation观察，结果仍WAL并由audit派生。",
+      "dependencies": [
+        "shared observation queue/sidecars",
+        "Hub recordWorkspaceObservation"
+      ],
+      "acceptance": [
+        "长运行Bash写入在pulse内出现observation",
+        "同时publish/release不重复错序",
+        "bound truncation与关闭取消",
+        "不跟随symlink"
+      ],
+      "risks": [
+        "不可声称观察能归因写入者或阻挡文件写入；idle根目录跨attempt扫描需要额外设计，不在本项顺便实现"
+      ]
+    },
+    {
+      "id": "RUNTIME-CHILD-HIERARCHY-RESOURCE-CEILINGS",
+      "category": "功能",
+      "subcategory": "child teams/governance",
+      "status": "unverified",
+      "gap": "深度、父task reservation、token/cost父账本及task concurrency均已实现；提案另提total child count/live Activation在child创建前检查。当前发现maxActivations是每Team retained epoch数量，未查到独立总child计数/祖先live activation reservation。是否需要独立于maxTasks/maxDepth的全树上限尚需产品语义和集中预算审计。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+          "symbol": "Child-Team durable model",
+          "line": 90,
+          "detail": "total child count/live Activation before creation"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "assertChildTeamBudget",
+          "line": 14078,
+          "detail": "按parent consumption减本task concurrency计算余量"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "bindActivation",
+          "line": 3456,
+          "detail": "当前Team activations.size上限"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "resourceBudgetUsage",
+          "line": 15002,
+          "detail": "usage tokens/cost/retry/task concurrency，不含树级activation计数"
+        }
+      ],
+      "design": "先明确per-Team vs whole hierarchy资源语义；只有确认全树要求后才增加祖先reservation/settlement幂等ledger，禁止无跨journal恢复计划的递归即时求和。",
+      "dependencies": [
+        "Root预算定义决策",
+        "child cross-stream saga"
+      ],
+      "acceptance": [
+        "兄弟并发创建边界",
+        "部分bootstrap失败归还reservation",
+        "重启不双算",
+        "全部既有usage frozen price/parent charge测试"
+      ],
+      "risks": [
+        "此项未确认是功能缺口，不得据此削弱现有parent余量/charge gates"
+      ]
+    },
+    {
+      "id": "RUNTIME-RELEASE-EVIDENCE",
+      "category": "测试",
+      "subcategory": "runtime/child/governance",
+      "status": "unverified",
+      "gap": "本审计只读且未运行checks，不提供新通过声明。需把Root/Luna最终全build、focused/fullHub、真实Loader、remote process测试结果绑定到最终冻结源码，再作release acceptance；历史handoff含已过时remaining项。",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/.tmp/handoffs/native-multi-agent-root.json",
+          "symbol": "remaining_root",
+          "line": 1,
+          "detail": "历史handoff仍把已实现child列remaining，不能当当前缺口来源"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/examples/headless-agent/tests/closed-channel-outbox.snapshot.ts",
+          "symbol": "real Loader scenario",
+          "line": 11,
+          "detail": "真实consult/discussion/workflow入口已存在"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/tests/usage-replay.spec.ts",
+          "symbol": "priced child restart",
+          "line": 154,
+          "detail": "真实reservation+frozen rate回归已维护"
+        }
+      ],
+      "design": "由验证owner维护命令、日志、源码时点、pass/fail/skip与未覆盖边界；失败fixture与功能缺失分开。",
+      "dependencies": [
+        "Root/Luna final batch"
+      ],
+      "acceptance": [
+        "每个确认gap有行为测试与产品snapshot owner",
+        "失败与skip不标完成"
+      ],
+      "risks": [
+        "不得因尚未跑测试推断功能不存在"
+      ]
+    }
+  ],
+  "implemented_do_not_duplicate": [
+    {
+      "id": "CHILD-SAGA",
+      "summary": "Core execution/delegation、Consumer请求/创建/绑定/启动/结果接纳/取消/重启及parent service结果都已有，不重报child delegation未实现",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-delegation/src/index.ts",
+          "symbol": "advanceTask",
+          "line": 201,
+          "detail": "完整状态推进"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-run/src/index.ts",
+          "symbol": "startDelegatedTask",
+          "line": 1988,
+          "detail": "真实模型delegate入口"
+        }
+      ]
+    },
+    {
+      "id": "CHILD-RESULT",
+      "summary": "parent admission、service receipt、child complete与artifacts投影已有；root human final隔离",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "admitTaskDelegationResult",
+          "line": 4507,
+          "detail": "locked parent/child/channel接纳"
+        }
+      ]
+    },
+    {
+      "id": "PLACEMENT",
+      "summary": "可配置routes、多member role/preset/model/runtime、actual activation selection和scheduler ranking已实现",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default/src/index.ts",
+          "symbol": "prepareTeam",
+          "line": 118,
+          "detail": "真实controller启动"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-scheduler-dag/src/ranking.ts",
+          "symbol": "taskOwnerRank",
+          "line": 25,
+          "detail": "durable stats/median/frozen cost"
+        }
+      ]
+    },
+    {
+      "id": "SUPERVISION",
+      "summary": "HTTP supervisor与SDK fail-closed恢复、未知远端stall已实现",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-activation-controller/src/index.ts",
+          "symbol": "coldReplaceOwned",
+          "line": 581,
+          "detail": "supervisor health/fence"
+        }
+      ]
+    },
+    {
+      "id": "WORKSPACE",
+      "summary": "shared bounded fingerprint/observation、worktree隔离、integration artifacts与E2B loss存在，不重报整体缺失",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-workspace-shared/src/index.ts",
+          "symbol": "observeAllocation",
+          "line": 737,
+          "detail": "真实WAL observation"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/e2b/team-workspace-e2b/src/index.ts",
+          "symbol": "loss tracking",
+          "line": 154,
+          "detail": "losses/listeners/retainedArtifacts"
+        }
+      ]
+    },
+    {
+      "id": "MAINTENANCE",
+      "summary": "scheduler destructive compaction已有精确maintenance proof，不沿用主提案旧remaining",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-scheduler-dag/src/index.ts",
+          "symbol": "compactTeamPrefix/compactChannelPrefix",
+          "line": 672,
+          "detail": "独立scope source"
+        }
+      ]
+    },
+    {
+      "id": "CHANNEL-TERMINAL",
+      "summary": "normal consult/discussion/workflow terminal pending drain与extension终态判断刚落，不重复规划",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-channel-workflow/src/workflow.ts",
+          "symbol": "closeAfterAccept/allowsClosedDelivery",
+          "line": 268,
+          "detail": "resolveTarget语义一致"
+        }
+      ]
+    },
+    {
+      "id": "USAGE",
+      "summary": "token/cost frozen rate、child先记后父charge幂等repair、父task归属reservation现有",
+      "evidence": [
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts",
+          "symbol": "assertTaskBudgetWithinTeam",
+          "line": 13977,
+          "detail": "task ceiling reservation"
+        },
+        {
+          "path": "/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/tests/usage-replay.spec.ts",
+          "symbol": "priced usage replay",
+          "line": 154,
+          "detail": "重启冻结定价"
+        }
+      ]
+    }
+  ],
+  "documentation_followup": {
+    "category": "文档",
+    "status": "partial",
+    "scope": "最终设计文档由Root写；本审计不写Markdown。主提案与旧handoff中child/supervision/maintenance remaining已过时，需在最终四类plan中按当前源码重分类。"
+  },
+  "other_followup": {
+    "category": "其他",
+    "status": "unverified",
+    "scope": "独立remote/ACP deployment profile及release promotion是否产品本轮承诺需Root定范围；不得默认无限扩展。"
+  },
+  "excluded_claims": [
+    "不把取消后同key返回已提交事实认定新增授权gap；遵循Root语义决定",
+    "不把未运行/未通过fixture等同功能缺失",
+    "不将docs暂停视为代码任务阻塞"
+  ],
+  "references": [
+    "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-08-27-native-multi-agent-work-system.md",
+    "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p0-safety-closure.md",
+    "/Volumes/projects-mac/deepseek-harness/.agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md"
+  ],
+  "child_scope_matrix": {
+    "matrix_scope": "仅child与scheduler/workspace组合能力，不重新审计已落saga；支持=代码支持，拒绝=源码明确拒绝，不自动表示承诺缺口",
+    "rows": [
+      {
+        "candidate_id": "CHILD-SCOPE-SHARED-SAGA",
+        "combination": "独立父任务→共享root child Team→parent-service结果→父任务settlement",
+        "support": "支持",
+        "requirement": "P1明确承诺，当前已实现",
+        "status": "confirmed",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "teamTaskCreateInputSchema.superRefine",
+            3593
+          ],
+          [
+            "packages/team/team-delegation/src/index.ts",
+            "advanceTask",
+            201
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "startDelegatedTask",
+            1988
+          ]
+        ],
+        "design": "维持现有slice；补最终验证证据，不重复规划实现。",
+        "acceptance": [
+          "child成功/取消/重启/usage与artifact交付现有真实案例"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-GENERAL-DAG",
+        "combination": "父Team普通task DAG blockedBy依赖→child delegation",
+        "support": "支持（Host/Core）；模型delegate不暴露依赖",
+        "requirement": "主提案共享task DAG适用；不等于具名workflow plan支持",
+        "status": "partial",
+        "evidence": [
+          [
+            "packages/team/team-delegation/src/index.ts",
+            "advanceTask prerequisite check",
+            208
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "startDelegatedTask blockedBy",
+            2015
+          ]
+        ],
+        "design": "Core/Host现有blockedBy保留。若模型应直接编排child依赖，新增delegate request blockedBy并由Hub同样校验；否则父coordinator按显式结果顺序调用。",
+        "acceptance": [
+          "未完成依赖不创建child",
+          "依赖完成后只创建一次",
+          "terminal blocker显式诊断"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-NONSHARED",
+        "combination": "child delegation直接拥有worktree/E2B root；或child grant允许内部隔离workspace",
+        "support": "拒绝（当前明确shared slice）",
+        "requirement": "主提案承诺系统支持隔离/remote workspace；P1 child章节未明确要求child×每种workspace的笛卡尔组合，因此是范围决策，不能仅凭存在workspace字段宣称必须全部支持",
+        "status": "partial",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child task durable refinement",
+            2353
+          ],
+          [
+            "packages/core/team/src/schema.ts",
+            "child create refinement",
+            3593
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "startDelegatedTask grant/workspace",
+            2009
+          ],
+          [
+            "packages/team/team-hub/src/index.ts",
+            "assertTaskGrant shared child grant",
+            14125
+          ],
+          [
+            "packages/team/team-delegation/src/index.ts",
+            "workspace",
+            149
+          ]
+        ],
+        "design": "如果目标包括隔离子团队，先新增delegation-owned workspace lease contract：reservation引用child execution root、明确整child生命周期持有者及artifact/proposal provenance，取消/重启/集成后释放。不能拿现有Participant TaskAttemptId伪装child allocation；子团队内部participant worktree能力也需要允许其grant从父grant真实收窄而非强制shared。",
+        "dependencies": [
+          "产品明确child隔离承诺",
+          "workspace reservation owner/schema",
+          "child startup authorization/root resolver",
+          "integration责任边界"
+        ],
+        "acceptance": [
+          "真实worktree/E2B child root与parent不混写",
+          "失败/取消/重启exact lease清理",
+          "用户变化CAS保护",
+          "parent-service artifact仍可读"
+        ],
+        "risks": [
+          "父scope是权限与调度声明，不是filesystem lock；禁止以删schema校验代替workspace所有权设计"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-WORKFLOW",
+        "combination": "具名versioned workflow plan中的某个task template直接执行child Team",
+        "support": "拒绝",
+        "requirement": "P1 child-task discriminator+通用workflow描述暗示有组合价值，但原文未明确workflow template支持child execution；当前workflow template只有participant fields。应列需要决策的功能组合，不作P0安全缺陷",
+        "status": "partial",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child durable/create workflowPlan exclusion",
+            2360
+          ],
+          [
+            "packages/core/team/src/types.ts",
+            "TeamWorkflowTaskTemplate",
+            3507
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "compileWorkflowPlan",
+            2325
+          ]
+        ],
+        "design": "若纳入，扩展workflow template execution union及compiler child分支；绑定child task到plan template但不生成Participant lease，workflow outcomes从delegationResult取值；ready bounds计数统一taskConcurrencyUsage。需要更新持久schema而非让现有compiler默认为participant。",
+        "dependencies": [
+          "workflow schema/compiler",
+          "delegation task binding/settlement",
+          "workflow result聚合"
+        ],
+        "acceptance": [
+          "participant→child→participant依赖链",
+          "workflow cancel跨child等待真实结束",
+          "plan重启不重建child",
+          "并发上界不双计"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-RETRY",
+        "combination": "父delegation maxAttempts>1、一个父task产生多个顺序child generations",
+        "support": "拒绝；maxAttempts固定1",
+        "requirement": "合理当前非目标候选。P1 saga明确一delegation key不得创建第二child，且要求可重试相同创建；这不等于承诺失败后另开child执行尝试。模板内部participant task重试与父generation重试不同",
+        "status": "unverified",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child attemptCount/maxAttempts refinement",
+            2359
+          ],
+          [
+            "packages/core/team/src/schema.ts",
+            "child create refinement",
+            3593
+          ],
+          [
+            ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+            "Delegation saga",
+            103
+          ]
+        ],
+        "design": "默认保留1。若产品要求retry，另设计DelegationAttemptId/child generation历史、每generation request/result/cancel/usage provenance、全旧child终态后再start；不能复用Participant attemptHistory或将原delegationId映射第二child。",
+        "acceptance": [
+          "当前same-key幂等保持",
+          "新generation不重复计费/结果污染",
+          "旧child未终态不得重试"
+        ],
+        "risks": [
+          "不是本轮无条件必需实现；仅设计决策"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-PARENT-REVIEW",
+        "combination": "父child-task进入review phase、父reviewer接受/返工child结果",
+        "support": "拒绝；review none/reviewHistory空",
+        "requirement": "合理当前非目标候选。主提案task review能力已由participant task实现；P1 child要求service结果及receipt，不明确要求父层复审状态。可在child模板内部复审或另接review/evaluator task，不应无条件套用participant lease review",
+        "status": "unverified",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child review refinement",
+            2359
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "startDelegatedTask reviewPolicy",
+            2017
+          ]
+        ],
+        "design": "如要求父层review，明确child terminal+result admitted后父task review ownership、review request proof与rework产生新task或generation；不重用不存在的Participant attempt fence。未决前保留child内部review/独立后继任务组合。",
+        "acceptance": [
+          "父review拒绝不能伪撤回child durable结果",
+          "service receipt和review receipt权限不混用",
+          "取消/重启review pending可恢复"
+        ],
+        "risks": [
+          "不把review none本身称为安全缺口"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-PLACEMENT",
+        "combination": "父child task使用Participant placement字段指定child coordinator/provider/model",
+        "support": "拒绝；child模板是当前选择入口",
+        "requirement": "P1 placement文本描述ready task的Participant provisioning；不自动适用于child整个Team。当前禁止父placement可防把整Team误映射为一个worker",
+        "status": "unverified",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child placement exclusion",
+            2360
+          ],
+          [
+            "packages/team/team-run/src/index.ts",
+            "startDelegatedTask template selection",
+            1994
+          ]
+        ],
+        "design": "保持Participant placement与child template分离；如需多host child部署，在child execution/template独立定义versioned topology placement并校验grant，不能直接解禁父placement。",
+        "acceptance": [
+          "不能借child task placement绕grant",
+          "模板实际binding而非descriptor hint决定执行route"
+        ]
+      },
+      {
+        "candidate_id": "CHILD-SCOPE-INTEGRATION",
+        "combination": "child delegation task自身携带integration spec作为integration执行者",
+        "support": "拒绝",
+        "requirement": "当前合理角色隔离。主提案要求显式集成/CAS，不要求集成必须与delegation同一task。已有artifact结果可由后续合法integration task消费；其child artifact source admission可用性需专项验证",
+        "status": "unverified",
+        "evidence": [
+          [
+            "packages/core/team/src/schema.ts",
+            "child integration exclusion",
+            2360
+          ],
+          [
+            "packages/team/team-hub/src/index.ts",
+            "assertTaskIntegration",
+            13999
+          ]
+        ],
+        "design": "先支持显式后继integration task消费被接纳的child artifact/proposal provenance；若现有integration仅认Participant source attempt，新增child admission provenance union，不能伪造sourceAttemptId。除非产品确需，不合并delegation和integration任务角色。",
+        "acceptance": [
+          "child artifact→显式integration CAS",
+          "private/foreign artifact拒绝",
+          "无假attempt provenance"
+        ],
+        "risks": [
+          "此处只确认自身integration字段拒绝；后继integration能否完整消费child artifact仍待核验"
+        ]
+      }
+    ],
+    "overall_conclusion": "明确存在shared slice范围收窄，但P1没有要求所有execution×workspace×review×retry×workflow组合全部实现。应优先产品决策child隔离root、workflow child节点与模型DAG入口；父多generation retry/父层review/父Participant placement/自身integration保持非目标候选，禁止无条件扩任务。",
+    "tree_budget_decision": "RUNTIME-CHILD-HIERARCHY-RESOURCE-CEILINGS继续unverified，只列全树vs每Team上限设计决策，不计confirmed功能gap。"
+  }
+}

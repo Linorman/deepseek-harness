@@ -109,7 +109,7 @@
 
 /* Brand group (figma I133:7632): the full wordmark rides the text ink
    (figma flows: the main-screen instance is black; blue is brand
-   emphasis only). A button only in behavior (New Session shortcut): the
+   emphasis only). A button only in behavior (New Task shortcut): the
    pointer cursor is the sole affordance — no hover chrome on the mark. */
 .brand {
   flex: 1;
@@ -218,7 +218,7 @@
   line-height: 16px;
 }
 
-/* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
+/* New Task: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
    corners); collapsed it renders as the rail's plain icon control. */
 .newSession {
   flex: none;

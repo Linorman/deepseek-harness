@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Markdown image policy" [disabled]
+  - text: Markdown image policy
   - button "Session log":
     - text: Session log
     - img
@@ -20,8 +19,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}}
 - textbox "Message the agent"

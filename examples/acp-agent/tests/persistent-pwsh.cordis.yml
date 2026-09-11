@@ -38,7 +38,6 @@
       enabled: false
     toolBash: false
     toolJobs: false
-    goals: false
     persona: You are a concise snapshot agent working in {{cwd}}.
 
 - id: tool-pwsh-persistent

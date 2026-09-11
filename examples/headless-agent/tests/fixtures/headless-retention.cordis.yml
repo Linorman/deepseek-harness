@@ -1,0 +1,10 @@
+# The fixture owns both scheduler lifetimes so retention starts after producer assertions.
+- id: team-scheduler-dag
+  disabled: true
+
+- id: human-question-driver
+  disabled: true
+
+- insert:
+    - id: retention-driver
+      name: './snapshot-fixtures/headless-retention-driver.ts'

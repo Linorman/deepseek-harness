@@ -1,8 +1,8 @@
 # The clocky-headless bundle patch: one-shot task mode directly over clocky-base.
 # It mounts no Host, HTTP server, Web runtime, or browser plugin. An ordinary
 # provider plugin injects `cmdlineArgs`, parses the task positional
-# (`clocky --profile headless "<task>"`) and this app's --help, then the direct
-# driver creates an Agent through the core registry and prints its durable result.
+# (`clocky --profile headless "<task>"`) and this app's --help, then the Team
+# driver creates the default Team and prints its explicit human final result.
 
 - id: system-prompt
   config:
@@ -14,6 +14,18 @@
 - id: hmr
   disabled: true
 
+- id: goal
+  disabled: true
+
+- id: goal-round-driver
+  disabled: true
+
+- id: command-goal
+  disabled: true
+
+- id: tool-goal
+  disabled: true
+
 - id: tools
   config:
     # Keep the same temporary process-wide Code Mode opt-in as the Web surface.
@@ -23,6 +35,175 @@
     # Code Mode is a core execution capability, not a Web component.
     - id: code-runtime
       name: '@clocky/clocky-code-runtime-worker-thread'
+
+    - id: team-storage
+      name: '@clocky/clocky-storage'
+
+    - id: team-storage-sqlite
+      name: '@clocky/clocky-storage-sqlite'
+      config:
+        path: !!js clockyHomePath('team-storage.sqlite')
+
+    - id: team-storage-log
+      name: '@clocky/clocky-storage-log'
+      config:
+        backend: sqlite
+        routes: {}
+
+    - id: team-hub
+      name: '@clocky/clocky-team-hub'
+      config:
+        maxTeamDepth: 1
+        maxModelTokensPerTeam: 100000000
+
+    - id: team-channel-summary
+      name: '@clocky/clocky-team-channel-summary'
+      config:
+        allowedPolicies: [directed, summarized-window]
+        maxSourceEnvelopes: 64
+        maxSourceBytes: 65536
+        maxSummaryBytes: 4096
+        maxHistorySpan: 128
+        disposalTimeoutMs: 5000
+
+    - id: team-channel-direct
+      name: '@clocky/clocky-team-channel-direct'
+
+    - id: team-channel-basic
+      name: '@clocky/clocky-team-channel-basic'
+
+    - id: team-workspace
+      name: '@clocky/clocky-team-workspace'
+
+    - id: team-artifact
+      name: '@clocky/clocky-team-artifact'
+
+    - id: team-artifact-local
+      name: '@clocky/clocky-team-artifact-local'
+      config:
+        root: !!js clockyHomePath('team-artifacts')
+        retention:
+          graceMs: 86400000
+          maxObjectsPerDrive: 128
+          pulseIntervalMs: 3600000
+          disposalTimeoutMs: 5000
+
+    - id: team-workspace-shared
+      name: '@clocky/clocky-team-workspace-shared'
+      config:
+        root: !!js process.cwd()
+        allowTeamWorkspacePath: true
+        observationStateRoot: !!js clockyHomePath('team-workspace-observations')
+
+    - id: team-workspace-recovery
+      name: '@clocky/clocky-team-workspace-recovery'
+      inject: [loader]
+      intercept:
+        loader:
+          await: true
+      config:
+        maxTeamsPerDrive: 128
+        pageSize: 32
+
+    - id: team-channel-task-assignment
+      name: '@clocky/clocky-team-channel-task-assignment'
+
+    - id: team-channel-workflow
+      name: '@clocky/clocky-team-channel-workflow'
+
+    - id: team-agent-runtime
+      name: '@clocky/clocky-agent-runtime'
+
+    - id: team-agent-runtime-in-process
+      name: '@clocky/clocky-agent-runtime-in-process'
+
+    - id: team-activation-controller
+      name: '@clocky/clocky-team-activation-controller'
+
+    - id: team-link
+      name: '@clocky/clocky-team-link'
+
+    - id: team-link-local
+      name: '@clocky/clocky-team-link-local'
+
+    - id: team-channel-admission
+      name: '@clocky/clocky-team-channel-admission'
+
+    - id: team-agent-client
+      name: '@clocky/clocky-team-agent-client'
+      config:
+        consumeWorkspace: true
+        maxTaskOutputContinuations: 3
+
+    - id: tool-team
+      name: '@clocky/clocky-tool-team'
+
+    - id: team-delegation
+      name: '@clocky/clocky-team-delegation'
+      config:
+        maxOperationsPerDrive: 32
+        channelPageSize: 128
+        pulseIntervalMs: 1000
+
+    - id: team-placement-default
+      name: '@clocky/clocky-team-placement-default'
+      config:
+        routes: []
+        maxActivationsPerDrive: 8
+        maxCursorRetries: 4
+
+    - id: team-scheduler-dag
+      name: '@clocky/clocky-team-scheduler-dag'
+      config:
+        leaseDurationMs: 3600000
+        maxAssignmentsPerDrive: 8
+        maxExpirationsPerDrive: 1
+        maxWakeDispatchesPerDrive: 8
+        maxConflictsPerDrive: 4
+        maxActiveAttemptsPerParticipant: 1
+        permittedWorkspaceModes: [shared]
+        pulseIntervalMs: 1000
+        disposalTimeoutMs: 5000
+
+    - id: team-closure-drive-registry
+      name: '@clocky/clocky-team-closure-driver/registry'
+
+    - id: team-closure-driver-hub
+      name: '@clocky/clocky-team-closure-driver/hub'
+      config:
+        backend: hub
+
+    - id: team-closure-driver
+      name: '@clocky/clocky-team-closure-driver'
+      config:
+        backend: hub
+        maxTeamsPerDrive: 128
+        pageSize: 32
+        disposalTimeoutMs: 5000
+        pulseIntervalMs: 1000
+
+    - id: team-run
+      name: '@clocky/clocky-team-run'
+      config:
+        workerCount: 1
+        maxWorkerCount: 32
+        maxCoordinatorOutputContinuations: 3
+        workerPreset: minimal
+        reviewerPreset: minimal
+
+    - id: tool-team-channel-summary
+      name: '@clocky/clocky-team-channel-summary/tool'
+
+    - id: tool-team-goal
+      name: '@clocky/clocky-tool-team-goal'
+
+    - id: tool-team-task
+      name: '@clocky/clocky-tool-team-task'
+
+    - id: agent-presets
+      name: '@clocky/clocky-agent-presets'
+      config:
+        default: standard
 
     - id: headless-startup
       name: '@clocky/clocky-headless/startup'

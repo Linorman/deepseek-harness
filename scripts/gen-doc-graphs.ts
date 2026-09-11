@@ -67,7 +67,6 @@ const GROUP_ORDER = [
   'core',
   'typert',
   'goal',
-  'experimental',
   'process',
   'bash',
   'pty',
@@ -190,6 +189,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Configuration carries references to secrets; providers own the values. Consumers resolve per operation, so a rotated credential reaches the very next request; the web gateway exposes value-free views and write-only storage.',
   },
   {
+    key: 'productPrincipals',
+    pkg: 'product-principal',
+    title: 'Authenticated product-principal registry',
+    mode: 'seam',
+    implementations: ['host-product-principal-local', 'host-product-principal-digest'],
+    consumers: ['connection', 'host-apiproxy', 'sdk-client', 'sdk-server', 'team-human-actor'],
+    note: 'The core registry retains revocable authenticated-call leases; Host providers own credential validation and persistence while Host, SDK, and Team consumers derive runtime-only mutation authority.',
+  },
+  {
     key: 'authorization',
     pkg: 'authorization',
     title: 'Authorization flow registry',
@@ -213,8 +221,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Non-session storage hub',
     mode: 'seam',
     implementations: ['storage-json', 'storage-sqlite'],
-    consumers: ['storage-domain'],
-    note: 'Backends register side by side under names; data forms (domain first) mount on the hub and translate typed operations into opaque KV-unit primitives.',
+    consumers: ['storage-domain', 'storage-log'],
+    note: 'Backends register side by side under names; data forms mount on the hub and translate typed current-record or expected-tail append operations into opaque backend values.',
   },
   {
     key: 'storageDomain',
@@ -223,6 +231,13 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['workspace', 'message-feedback'],
     note: 'Waits for every configured backend, then publishes the domain form as one lifecycle-bound service for typed durable state.',
+  },
+  {
+    key: 'storageLog',
+    pkg: 'storage-log',
+    title: 'Append-only log facility',
+    mode: 'core',
+    note: 'Routes caller-owned expected-tail streams to named backends, closes admission before disposal, and drains accepted opens and handles before releasing the form.',
   },
   {
     key: 'messageFeedback',
@@ -348,6 +363,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     mode: 'core',
     consumers: ['agent-loop', 'acp', 'subagent-inprocess'],
     note: 'Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation.',
+  },
+  {
+    key: 'agentRuntimes',
+    pkg: 'agent-runtime',
+    title: 'Participant activation provider registry',
+    mode: 'seam',
+    implementations: ['agent-runtime-in-process', 'agent-runtime-sdk'],
+    note: 'Resolves named providers for a Team-resolved Participant activation, verifies returned Team, Participant, and Session identities, and leaves Team journal bindings, remote Links, and delivery separate; the SDK provider uses its status protocol for active remote-agent fresh/resume placement without a local Agent.',
   },
   {
     key: 'agentDefaultModel',
@@ -488,12 +511,147 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
   },
   {
-    key: 'agentTeams',
-    pkg: 'agent-team',
-    title: 'Agent Teams coordination domain',
+    key: 'teams',
+    pkg: 'team',
+    title: 'Team work-system Service Definition',
+    mode: 'seam',
+    implementations: ['team-hub'],
+    consumers: ['team-channel-direct', 'team-channel-task-assignment', 'team-link-local', 'team-link-websocket-hub', 'team-workspace-shared', 'team-agent-client', 'team-activation-recovery', 'command-team-goal', 'tool-team', 'tool-team-goal', 'team-run', 'team-scheduler-dag'],
+    note: 'Defines independent Team identities, durable provider operations, adapter and policy registration, and post-commit observers; team-hub owns local journals, WALs, fenced task attempts, goal state, admission, receipts, and ephemeral delivery claims, while adapters, workspace providers, local clients, scoped human commands, and scoped report tools consume the public runtime.',
+  },
+  {
+    key: 'teamHumanActors',
+    pkg: 'team-human-actor',
+    title: 'Authenticated human Team actor binder',
     mode: 'core',
-    consumers: ['tool-agent-team'],
-    note: 'Owns the implicit-root roster, durable peer mailbox, shared task DAG, and continuable-child lifecycle; tool-agent-team contributes the scoped model policy and controls.',
+    consumers: ['host-apiproxy', 'sdk-server'],
+    note: 'Maps one authenticated product principal to one active human Participant and exposes only short-lived payload-bound proofs to Host and SDK mutation consumers.',
+  },
+  {
+    key: 'teamTelemetry',
+    pkg: 'team',
+    title: 'Team telemetry backend seam',
+    mode: 'seam',
+    implementations: ['team-telemetry-otel'],
+    consumers: [],
+    note: 'The core Team package owns correlation and redaction extension points; a deployment-owned provider supplies batching, retry, loss policy, export, and alert thresholds through the backend seam.',
+  },
+  {
+    key: 'teamActivations',
+    pkg: 'team-activation-controller',
+    title: 'Durable Team activation owner',
+    mode: 'core',
+    consumers: ['team-activation-recovery', 'team-run'],
+    note: 'Binds one published AgentRuntime handle to the Team journal, mirrors residency, and owns lease disposal; Team-run uses that service instead of recreating placement lifecycle logic.',
+  },
+  {
+    key: 'activationSupervisors',
+    pkg: 'activation-supervisor',
+    title: 'Activation supervisor provider registry',
+    mode: 'seam',
+    implementations: ['activation-supervisor-http'],
+    consumers: ['team-activation-controller', 'team-activation-recovery', 'agent-runtime-sdk'],
+    note: 'Resolves exact generation- and host-bound health/fence providers; controller and recovery own admission policy, while the HTTP implementation owns authenticated endpoint transport without persisting credentials.',
+  },
+  {
+    key: 'teamChannelAdmission',
+    pkg: 'team-channel-admission',
+    title: 'Durable channel admission Consumer',
+    mode: 'core',
+    consumers: ['team-run', 'team-scheduler-dag'],
+    note: 'Discovers bounded invitation state and waits for actual endpoint activation; dispatch Consumers use it as a gate and it never acknowledges an endpoint on their behalf.',
+  },
+  {
+    key: 'teamChannelSummaries',
+    pkg: 'team-channel-summary',
+    title: 'Explicit channel-summary Consumer',
+    mode: 'core',
+    consumers: ['team-channel-summary', 'host-apiproxy', 'sdk-server'],
+    note: 'Creates deterministic bounded summaries from an authorized WAL range through Hub-owned proof and source checks; it never invokes a model or bypasses channel visibility.',
+  },
+  {
+    key: 'teamHumanDelivery',
+    pkg: 'team-human-client',
+    title: 'Principal-bound human delivery sink',
+    mode: 'core',
+    consumers: ['team-hub', 'host-apiproxy', 'sdk-server'],
+    note: 'Persists exact human inbox deliveries and display/action records behind Hub-issued proofs; Host and SDK bind actions while the sink owns bounded storage scans and retry identity.',
+  },
+  {
+    key: 'teamPlacement',
+    pkg: 'team-placement-default',
+    title: 'Task-driven participant placement Consumer',
+    mode: 'core',
+    consumers: ['team-scheduler-dag'],
+    note: 'Prepares only explicitly routed eligible participants before scheduler assignment; activation uniqueness and workspace eligibility remain owned by their respective services.',
+  },
+  {
+    key: 'teamLinks',
+    pkg: 'team-link',
+    title: 'Activation-bound Team Link registry',
+    mode: 'seam',
+    implementations: ['team-link-local', 'team-link-websocket'],
+    consumers: ['team-agent-client', 'tool-team'],
+    note: 'Registers local or remote activation-bound Links; providers own connection/replay lifecycle while the Team Hub retains journals, claims, and receipts, Agent clients retain inbox admission, and scoped tools retain worker result reporting.',
+  },
+  {
+    key: 'teamRuns',
+    pkg: 'team-run',
+    title: 'Local product Team-run owner',
+    mode: 'core',
+    consumers: ['headless', 'web-app', 'tool-team-goal', 'tool-team-task'],
+    note: 'Creates the local default human/coordinator/worker topology, accepts trusted human input, receipts explicit final output, and settles its narrow completed lifecycle without driving an Agent loop.',
+  },
+  {
+    key: 'teamClosureDrives',
+    pkg: 'team-closure-driver',
+    title: 'Team closure-drive backend registry',
+    mode: 'seam',
+    implementations: ['team-closure-driver-hub'],
+    consumers: ['team-closure-driver', 'team-closure-driver-hub'],
+    note: 'Registers the selected restart-safe closure continuation backend; the Driver owns bounded discovery while the Hub bridge forwards only source-scoped recovery proofs.',
+  },
+  {
+    key: 'teamClosureDriverHub',
+    pkg: 'team-closure-driver',
+    title: 'Team closure Hub bridge',
+    mode: 'core',
+    consumers: ['team-closure-driver'],
+    note: 'Binds the selected closure-drive backend to the mounted Team provider and forwards durable recovery passes without adding independent mutation authority.',
+  },
+  {
+    key: 'teamClosureDriver',
+    pkg: 'team-closure-driver',
+    title: 'Restart-safe Team closure driver',
+    mode: 'core',
+    consumers: ['team-run'],
+    note: 'Discovers and serializes durable closure work, then delegates each bounded recovery pass through the source-scoped Hub bridge.',
+  },
+  {
+    key: 'teamWorkspaces',
+    pkg: 'team-workspace',
+    title: 'Team task workspace registry',
+    mode: 'seam',
+    implementations: ['team-workspace-shared', 'team-workspace-worktree'],
+    consumers: ['team-scheduler-dag'],
+    note: 'Resolves immutable task workspace modes to providers; the shared provider verifies exact local Session roots, the worktree provider verifies exact current lease ownership before Git allocation, and schedulers query eligibility without allocating roots or waking Agents.',
+  },
+  {
+    key: 'teamArtifacts',
+    pkg: 'team-artifact',
+    title: 'Team artifact byte store',
+    mode: 'seam',
+    implementations: ['team-artifact-local'],
+    consumers: ['team-workspace-worktree', 'tool-team', 'client-ui-team'],
+    note: 'Stores provider-owned file, patch, log, screenshot, and report bytes behind content-addressed references; task results retain provenance while Consumers enforce Team visibility before reads.',
+  },
+  {
+    key: 'workflowExtensions',
+    pkg: 'team-channel-workflow',
+    title: 'Versioned workflow graph extensions',
+    mode: 'core',
+    consumers: ['team-channel-workflow'],
+    note: 'Registers deployment-defined workflow condition and target implementations with effect-scoped lifecycle; channel manifests retain their versioned identity for replay.',
   },
   {
     key: 'jobs',
@@ -536,8 +694,8 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'webserver',
     title: 'HTTP route registration',
     mode: 'core',
-    consumers: ['connection', 'modules', 'hmr'],
-    note: 'Plain node:http carrier: named-route registry, index transform taps, and the static dist fallback; web-transport plugins register their own routes.',
+    consumers: ['connection', 'modules', 'hmr', 'team-link-websocket-hub'],
+    note: 'Plain node:http carrier: named-route registry, index transform taps, and the static dist fallback; Web transport plugins register their own routes or upgrades.',
   },
   {
     key: 'clientModules',
@@ -746,7 +904,7 @@ const APP_EXAMPLES = [
     title: 'ACP Automation App Composition',
     label: 'examples/acp-agent',
     config: 'examples/acp-agent/cordis.yml',
-    summary: 'The ACP demo exposes fresh baseline-prompt agent sessions to programmatic clients over JSON-RPC stdio, with no stdout logger, human UI, or pre-created agent.',
+    summary: 'The ACP demo exposes TeamRun-backed tasks to programmatic clients over JSON-RPC stdio, with no stdout logger or human UI.',
   },
 ]
 
@@ -758,7 +916,30 @@ function renderAppExpansion(lines: string[], appNode: string, pluginName: string
   lines.push(`  ${appNode} --> ${agentCore}["@clocky/clocky-agent-spine-demo"]`)
   lines.push(`  ${appNode} --> ${jsonl}["@clocky/clocky-session-persistence-jsonl"]`)
   if (pluginName === '@clocky/clocky-acp-demo') {
-    lines.push(`  ${appNode} --> ${nodeId('entrypoint', 'acp')}["@clocky/clocky-acp<br/>automation-only JSON-RPC stdio<br/>fresh sessions created by client"]`)
+    const defaultModel = nodeId('bundle', 'agent_default_model')
+    const storage = nodeId('bundle', 'team_storage')
+    const hub = nodeId('bundle', 'team_hub')
+    const runtime = nodeId('bundle', 'team_runtime')
+    const link = nodeId('bundle', 'team_link_local')
+    const client = nodeId('bundle', 'team_agent_client')
+    const tools = nodeId('bundle', 'team_tools')
+    const run = nodeId('bundle', 'team_run')
+    lines.push(
+      `  ${appNode} --> ${defaultModel}["@clocky/clocky-agent-default-model"]`,
+      `  ${appNode} --> ${storage}["@clocky/clocky-storage + json + log"]`,
+      `  ${appNode} --> ${hub}["@clocky/clocky-team-hub + direct v3"]`,
+      `  ${appNode} --> ${runtime}["@clocky/clocky-agent-runtime + in-process + activation controller"]`,
+      `  ${appNode} --> ${link}["@clocky/clocky-team-link + local"]`,
+      `  ${appNode} --> ${client}["@clocky/clocky-team-agent-client"]`,
+      `  ${appNode} --> ${tools}["@clocky/clocky-tool-team"]`,
+      `  ${appNode} --> ${run}["@clocky/clocky-team-run"]`,
+      `  ${run} --> ${hub}`,
+      `  ${run} --> ${runtime}`,
+      `  ${run} --> ${link}`,
+      `  ${run} --> ${client}`,
+      `  ${run} --> ${tools}`,
+      `  ${appNode} --> ${nodeId('entrypoint', 'acp')}["@clocky/clocky-acp<br/>automation-only JSON-RPC stdio<br/>opaque Team-task handles"]`,
+    )
   }
   lines.push(
     `  ${agentCore} --> ${nodeId('spine', 'llm')}["ctx.llm"]`,

@@ -348,8 +348,7 @@ describe('BashRow terminal card', () => {
     byId: { [SID]: { id: SID, displayTitle: 'r', running: false, blank: false, updatedAt: 0 } },
     current: undefined,
     phase: 'ready',
-    subagentsByParent: {}, jobsBySession: {},
-    currentAddress: undefined,
+    jobsBySession: {},
   })
 
   const rowProps = (block: RunningToolCall | ToolResultNode): BashRowProps => ({
@@ -448,14 +447,13 @@ describe('DetailsPanel Output section', () => {
     const chat = createChatStore().create()
     if (selection !== null) chat.actions.select(selection)
     const sessions = createSnapshotStore<SessionListState>(cwd === undefined
-      ? { ids: [], byId: {}, current: undefined, phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined }
+      ? { ids: [], byId: {}, current: undefined, phase: 'ready', jobsBySession: {} }
       : {
         ids: [SID],
         byId: { [SID]: { id: SID, displayTitle: 'r', running: false, blank: false, updatedAt: 0, cwd } },
         current: SID,
         phase: 'ready',
-        subagentsByParent: {}, jobsBySession: {},
-        currentAddress: undefined,
+        jobsBySession: {},
       })
     const workspaces = createSnapshotStore<WorkspaceListState>({
       items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
@@ -489,7 +487,7 @@ describe('DetailsPanel Output section', () => {
       nodes: [], turnTimings: new Map(), turnEnds: new Map(), partial: null, runningCalls: [],
       pending: [], queue: [], running: false, composerPhase: 'active', removed: false,
       openState: 'open', openError: null, hasMore: false, loadingOlder: false,
-      promptError: null, blank: false, subagent: null, lastAgentError: null, ...over,
+      promptError: null, blank: false, lastAgentError: null, ...over,
     }
   }
 
@@ -649,7 +647,7 @@ describe('DetailsPanel Output section', () => {
         useSessions={bindSnapshotSelector(createSnapshotStore<SessionListState>(
           {
             ids: [], byId: {}, current: undefined, phase: 'ready',
-            subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+            jobsBySession: {},
           }))}
         useWorkspaces={bindSnapshotSelector(createSnapshotStore<WorkspaceListState>({
           items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,

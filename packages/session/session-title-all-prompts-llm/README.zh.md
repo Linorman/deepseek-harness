@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-session-title-all-prompts-llm
+# @clocky/clocky-session-title-all-prompts-llm
 
 [English](README.md) | 中文
 

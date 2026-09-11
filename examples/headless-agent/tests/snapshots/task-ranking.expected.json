@@ -1,0 +1,33 @@
+[
+  {
+    "stage": "train",
+    "completed": [
+      2,
+      2
+    ],
+    "latencyBuckets": [
+      [
+        2,
+        0
+      ],
+      [
+        0,
+        2
+      ]
+    ],
+    "outcomeBeatsUnseen": true,
+    "explicitProposalWins": true
+  },
+  {
+    "stage": "restart",
+    "selected": "fast-owner",
+    "samePersistedFacts": true,
+    "team": "cancelled"
+  },
+  {
+    "stage": "restart",
+    "selected": "fast-owner",
+    "samePersistedFacts": true,
+    "team": "cancelled"
+  }
+]

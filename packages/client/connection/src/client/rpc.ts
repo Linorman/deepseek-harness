@@ -7,6 +7,7 @@ import {
 } from '@clocky/clocky-host-apiproxy/api'
 import type { ClientConnectionRpc } from '../rpc.ts'
 import { randomUuid } from './random-uuid.ts'
+import { waitForProductAuthBootstrap } from './product-auth-bootstrap.ts'
 
 const INTERNAL_BASE = 'http://clocky.internal'
 const CHANNEL_PATTERN = /^\/[A-Za-z0-9._~-]+$/
@@ -25,6 +26,7 @@ export function createWebConnectionRpc(doFetch?: RpcFetch): ClientConnectionRpc 
   return {
     async call(channel, endpoint, payload, signal) {
       assertTarget(channel, endpoint)
+      await waitForProductAuthBootstrap()
       const rpcId = RpcId(randomUuid())
       const message: ClientRequest = {
         type: 'client-request',

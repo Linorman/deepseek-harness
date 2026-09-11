@@ -6,6 +6,7 @@ import { isImageAdmissionError } from '@clocky/clocky-attachment'
 import type { ImageAttachmentRef, ImageMediaType, SaveImageAttachment } from '@clocky/clocky-attachment'
 import type { Agent } from '@clocky/clocky-agent'
 import type { ContentBlock } from '@clocky/clocky-llm'
+import type { DirectChannelHumanContentBlock } from '@clocky/clocky-team-channel-direct'
 
 /** Raster formats shared by ACP image blocks and the core attachment vocabulary. */
 const IMAGE_MEDIA_TYPES: readonly ImageMediaType[] = [
@@ -119,7 +120,7 @@ function resourceLinkText(block: Extract<AcpContentBlock, { type: 'resource_link
  * @param prompt - untrusted ACP prompt blocks in wire order.
  * @param imageEnabled - capability result advertised during initialization.
  * @param signal - admission cancellation signal.
- * @returns core content with durable image references in wire order.
+ * @returns direct-v3 human content with durable image references in wire order.
  */
 export async function admitAcpPrompt(
   ctx: Context,
@@ -127,7 +128,7 @@ export async function admitAcpPrompt(
   prompt: readonly AcpContentBlock[],
   imageEnabled: boolean,
   signal: AbortSignal,
-): Promise<ContentBlock[]> {
+): Promise<DirectChannelHumanContentBlock[]> {
   const images: SaveImageAttachment[] = []
   for (const block of prompt) {
     switch (block.type) {
@@ -165,7 +166,7 @@ export async function admitAcpPrompt(
     signal.throwIfAborted()
   }
 
-  const content: ContentBlock[] = []
+  const content: DirectChannelHumanContentBlock[] = []
   let pendingText = ''
   let imageIndex = 0
   const flushText = (): void => {
@@ -198,7 +199,7 @@ export async function admitAcpPrompt(
     }
   }
   flushText()
-  if (!content.some(block => block.type === 'image' || (block.type === 'text' && block.text.trim().length > 0))) {
+  if (!content.some(block => block.type === 'image' || block.text.trim().length > 0)) {
     throw new AcpContentError('empty prompt', 'invalid')
   }
   return content

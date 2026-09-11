@@ -1,0 +1,16 @@
+{
+  "scenario": "single-task-cancellation",
+  "teamAfterTaskCancellation": "active",
+  "originalAttempt": "cancelled",
+  "exactAttemptRetained": true,
+  "cancellationReason": "Stop this operation and continue the Team.",
+  "followupTask": "completed",
+  "allAllocationsReleased": true,
+  "approval": "cancelled",
+  "mux": [
+    "approval/requested",
+    "approval/resolved"
+  ],
+  "modelSawCancellation": true,
+  "file": "before\n"
+}

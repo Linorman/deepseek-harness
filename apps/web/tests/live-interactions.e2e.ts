@@ -22,10 +22,11 @@ import { deriveReplayScript, parseSessionLog } from '@clocky/clocky-llm-replay'
 import type { ReplayEntry, ReplayOverrideDoc } from '@clocky/clocky-llm-replay'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
-  launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
+  assertFixtureInventory, captureStableAria, closedSessionFixture, compareOrRefreshGolden,
+  fixtureUserPrompts, launchWebScaffold, recordFixture, seedSession, watchConsole,
+  webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/live-interactions', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -92,18 +93,26 @@ describe('web e2e: live-turn interactions (cancel / error / retry)', () => {
       await writeFile(overridePath, JSON.stringify(buildOverride(sidecarDir)))
     }
     scaffold = await launchWebScaffold({
+      legacyWorkspaceSurface: true,
       replayFixture: FIXTURE,
       ...(overridePath === undefined ? {} : { replayOverride: overridePath }),
       ...(retryPolicy === undefined ? {} : { replayRetryPolicy: retryPolicy }),
     })
+    await seedSession(scaffold, closedSessionFixture(), 'live-interactions-web-e2e')
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    // Fresh world: connect a Workspace so the composer scenarios start live.
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
   }
 
   /**

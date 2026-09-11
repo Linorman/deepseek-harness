@@ -21,7 +21,7 @@ import {
   type SessionInspection, type SessionPersistenceRevision as PersistenceRevision, type SessionRawArtifact,
   type StoredPrefix,
 } from '@clocky/clocky-session-persistence'
-import type { SessionEvent, SessionId, SessionHeader, SessionPreparation } from '@clocky/clocky-session'
+import type { Session, SessionEvent, SessionId, SessionHeader, SessionPreparation } from '@clocky/clocky-session'
 import {
   encodeSegment, eventLines, logPath, logSuffix, parseHeaderMeta, projectDir, scanLog, sessionDir,
   SessionLogScanner, toHeaderLine,
@@ -175,6 +175,10 @@ export class JsonlSessionPersistence extends SessionPersistence implements Persi
 
   create(meta: SessionHeader): Promise<void> {
     return this.coordinator.create(meta)
+  }
+
+  override materializeHeader(session: Session): Promise<void> {
+    return this.coordinator.materializeHeader(session)
   }
 
   append(id: SessionId, events: readonly SessionEvent[]): Promise<void> {
@@ -618,6 +622,9 @@ export class JsonlSessionPersistence extends SessionPersistence implements Persi
   /** Encode the header and first batch without combining their frame boundaries. */
   private async encodeMaterialization(meta: SessionHeader, events: readonly SessionEvent[]): Promise<Buffer | string> {
     const header = JSON.stringify(toHeaderLine(meta)) + '\n'
+    if (events.length === 0) {
+      return this.compression === 'zstd' ? await compressZstdFrame(header) : header
+    }
     const body = eventLines(events, this.packChunks) + '\n'
     if (this.compression === 'none') return header + body
     const headerFrame = await compressZstdFrame(header)

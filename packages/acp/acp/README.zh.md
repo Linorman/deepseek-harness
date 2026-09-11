@@ -1,21 +1,18 @@
-# @deepseek-ai/dsh-acp
+# @clocky/clocky-acp
 
 [English](README.md) | 中文
 
-通过 JSON-RPC stdio 提供的仅面向自动化的 [ACP（Agent Client Protocol）](https://agentclientprotocol.com) 服务器。程序化客户端可以创建新 harness agent（智能体）、发送文本／图片提示词、收集已提交的 assistant 文本／图片、按策略响应一次性权限请求并取消工作。仓库中的主要客户端是 [`dsh-subagent-acp`](../../subagent/subagent-acp/README.zh.md)。
+通过 JSON-RPC stdio 提供的仅面向自动化的 [ACP（Agent Client Protocol）](https://agentclientprotocol.com) 服务器。ACP 将每个客户端会话投影为一个本地 Team run：它接收 human 文本／图片输入、流式传递已提交的 coordinator 输出、接收显式 Team final 结果、转发一次性权限请求，并请求软中断。仓库中的主要客户端是 [`clocky-subagent-acp`](../../subagent/subagent-acp/README.zh.md)。
 
 此包是传输适配器，而非 UI 集成或能力 seam。它不公开编辑器导航、transcript（文本记录）回放、命令、模式、配置选择器、信息征集、推理（reasoning）、计划、标题或工具展示。交互式渲染与向用户提问属于 Web 宿主和客户端模块。
 
 ## 插件
 
-`apply(ctx, config)` 在 stdin/stdout 上打开 `AgentSideConnection` 并驱动 `ctx.agents`。Stdout 专用于协议帧。
+`apply(ctx, config)`在 stdin/stdout 上打开 `AgentSideConnection`，并要求存在 `ctx.teamRuns`、`ctx.teams` 和 `ctx.agentDefaultModel`。stdout 专用于协议帧。TeamRun 通过当前默认模型选择来选择 coordinator 的模型。
 
 | 配置 | 默认值 | 含义 |
 |---|---|---|
-| `provider` | 无 | 每个已创建 agent 的初始提供方路由。 |
-| `model` | 无 | 每个已创建 agent 的初始模型。 |
-
-两个字段都是可选的，以便由另一个 agent/request 监听器提供目标。可运行的 ACP 组合同时要求两者。
+| `interruptRetryAttempts` | `3` | Team journal cursor 冲突后接收软中断时，有界的重新读取尝试次数，必须为正数。 |
 
 <a id="protocol-contract"></a>
 
@@ -23,27 +20,19 @@
 
 | 方法 | 行为 |
 |---|---|
-| `initialize` | 协商受支持的版本。只有挂载持久附件存储，且配置的确切提供方／模型解析后明确支持图片输入时，才公布图片提示词能力；音频与嵌入上下文保持 false。不公布会话、编辑器、终端、文件系统或 MCP 能力。 |
+| `initialize` | 协商受支持的版本。只有当前默认 provider/model 和持久附件存储都明确支持图片时，才公布图片提示词能力；音频与嵌入上下文保持 false。不公布编辑器、终端、文件系统、MCP 或会话管理能力。 |
 | `authenticate` | 空操作，因为服务器不公布身份验证方法。 |
-| `session/new` | 以绝对路径作为主 `cwd` 创建新 agent；接受空的 `additionalDirectories` 和 `mcpServers`，拒绝非空值。 |
-| `session/prompt` | 保留文本与受支持内联图片块的顺序，将资源链接渲染为带方括号的文本引用，并拒绝音频、嵌入资源、格式错误／空输入，或在未公布能力时提交图片。它会先校验完整图片批次并重新检查会话的最新确切路由，再保存任一成员；在用户事件前提交全部图片；每个会话只允许一个正在处理的请求，并等待准入，以及消息入队后的整个 Agent 空闲和有序输出交付全部停稳。正常完全停稳时报告 `end_turn`；显式 ACP 取消、资源释放，或准入被丢弃的提示词（无轮次槽位）时报告 `cancelled`。 |
-| `session/cancel` | 标记并中止正在进行的准入，但不会取消或等待同一 Agent 上无关的既有工作；该提示词进入 Agent inbox 后，才会取消指定的 Agent 并等待自有区间停稳。不发布迟到的用户消息，提示词以 `cancelled` 结算。没有进行中的提示词时会取消自主工作；未知 id 为空操作。 |
-| `session/update` | 为已提交 `assistant/message` 中的每个非空文本或图片块发出一个 `agent_message_chunk`，并保留顺序。图片在以内联 base64 交付前会重新读取并校验完整性。省略原始增量和非消息事件。 |
-| `session/request_permission` | 为携带工具调用 id、由桥接层拥有的批准请求提供一次性允许／拒绝选项。客户端可以自动回答。 |
+| `session/new` | 校验一个绝对 `cwd`，创建默认本地 TeamRun topology，并返回与 Team id 和 coordinator Session id 均不同的随机 ACP id。接受空的 `additionalDirectories` 和 `mcpServers`；非空值会被拒绝。 |
+| `session/prompt` | 先接收有序文本和受支持的内联图片块，再追加一个可信 human 的 direct-v3 Envelope。它等待 `team_final`、面向 human 的持久 receipt、coordinator release 和 Team completion。缺少 final 或模型失败时会拒绝。已完成的 ACP session 会拒绝后续提示词。 |
+| `session/cancel` | 中止本地内容／final 等待，并请求 TeamRun 签发一条持久 human-to-coordinator soft-interrupt proof。未知或已完成的 id 均为空操作。 |
+| `session/update` | 按顺序发出已提交 coordinator 文本／图片块。若 coordinator 尚未发出相同结尾，显式 final 文本会在已有输出之后发出。省略原始增量和非消息事件。 |
+| `session/request_permission` | 为携带工具调用 id、由桥接层拥有的批准请求提供一次性允许／拒绝选项。 |
 
-一个连接可以拥有多个会话。桥接层以带品牌的会话 id 作为记录键，并在路由事件或权限请求前检查 agent 是否为同一对象。每个会话都有独立的提示词槽位、工作区、取消路径和资源释放器。
-
-已提交消息输出有意牺牲逐 token 输出的低延迟，以换取干净的自动化结果。未提交的提供方分片和重试尝试无法泄漏部分文本或图片；推理与工具活动仍保留在会话日志中，以便其他界面观测。由于附件读取是异步的，每个会话会串行交付内容；已提交图片缺失或损坏时，提示词响应会失败，而不会发出占位符。
+一个连接可以拥有多个 ACP session，每个 session 表示一项 Team task。ACP record 以不透明 wire id 为键，并按确切 coordinator Agent identity 建立反向映射，因此 coordinator Session event 和权限请求不会因匹配的 wire id 而被错误路由。
 
 ## 生命周期
 
-客户端断开与 Cordis 释放共用同一个记忆化清理流程。桥接层先拒绝新会话和提示词，取消并等待提示词准入、agent 活动和有序输出交付全部停稳，然后只 drain 此连接确切拥有的 Agent 之下的可继续后代，再并行释放这些 handle，并等待全部结果结算后才报告失败。其他共享该上下文的前端会保留其可继续森林和准入。因此，仅 ACP 的插件重载不会遗留 agent。
-
-ACP 要求每个提示词响应都携带 `stopReason`，但桥接层不声称它表示提示词专属的轮次结果。操作区间从提示词进入 Agent inbox 开始，在准入、整个 Agent 空闲和有序输出交付全部停稳后结束；inbox 接收前无关 Agent 工作的失败不会归因给该提示词。已提交的 assistant 消息会在自有区间内流式输出，Agent 进入空闲状态前发生的 steering（中途引导）或注入工作也可能参与其中。结算优先级依次为显式取消、输出交付失败、区间内 Agent 失败、关联轮次结束。因 token 上限而结束时以 `end_turn` 结算；关联模型错误也只会在同一个完全停稳边界拒绝提示词。
-
-## 运行
-
-`pnpm --dir /path/to/deepseek-harness run demo:acp` 启动仓库的自动化服务器组合。父 harness 可以通过 [`@deepseek-ai/dsh-subagent-acp`](../../subagent/subagent-acp/README.zh.md) spawn 它；其他 ACP 客户端只需上述核心方法。
+客户端断开与 Cordis 释放共用同一个记忆化清理流程。桥接层拒绝新工作、中止未完成的 ACP 等待，然后对每个所属 run 调用 `ctx.teamRuns.cancel()`，并等待有序输出投影。这会先将 active 或 quiescing Team 迁移为 `cancelled`，再释放其 coordinator lease。单个成功提示词则由 TeamRun receipt 其 final Envelope 并完成 Team。
 
 ## 模型体验
 
@@ -51,21 +40,21 @@ ACP 要求每个提示词响应都携带 `stopReason`，但桥接层不声称它
 
 #### 模型看到的内容
 
-`session/prompt` 会在一条用户消息中保留文本／图片顺序；相邻文本会拼接，资源链接则表示为带方括号的 `[resource_link name=… uri=…]` 引用，模型可以使用自身工具打开它。内联图片 base64 在批量准入后即被丢弃，因此持久消息只包含经过校验的附件引用。协议元数据、客户端能力、权限选择和会话 id 绝不进入模型请求。
+coordinator 收到带 Team provenance 的 direct message：先是发送者前缀，再是由 `session/prompt` 接收的有序文本和持久图片引用。resource link 会成为带方括号的文本引用。内联图片 base64、ACP wire id、权限选择和传输元数据不会进入模型请求。TeamRun 的 coordinator prompt 要求其在 direct channel 上调用 `team_final`；assistant message 本身不是 final result。
 
 #### Token 影响
 
-提示词 token 与图片费用取决于数据，并保留在该会话的历史中直到上下文压缩（context compaction）。并发 ACP 会话保留独立上下文。
+direct-v3 message 和 coordinator system prompt 会进入 coordinator Session history。文本和图片费用取决于数据；final-result tool 与 receipt record 可以从 Team 和 Session log 重建。
 
 #### KV Cache 影响
 
-仅追加；新用户消息位于可复用请求前缀之后，不会使先前缓存条目失效。
+输入追加在可复用 coordinator prefix 之后。final-output instruction 在该 Team run 内保持稳定。
 
 ### 权限决策
 
 #### 模型看到的内容
 
-不会直接看到任何内容。所属工具通过常规工具结果路径记录其结果：允许、拒绝、取消或不可用。
+不会直接看到任何内容。所属工具通过常规工具结果路径记录其允许、拒绝、取消或不可用结果。
 
 #### Token 影响
 
@@ -77,7 +66,7 @@ ACP 要求每个提示词响应都携带 `stopReason`，但桥接层不声称它
 
 ## 已知限制与暂缓事项
 
-- **仅新会话**：不支持加载、列出、恢复、删除和 fork。
-- **仅光栅图片和一个 workspace**：图片提示词要求持久存储以及明确声明支持图片输入的确切路由；只接受 PNG、JPEG、WebP 和 GIF。音频、嵌入资源、非空附加目录和 MCP 服务器都会被拒绝；资源链接只会展平为文本引用，不会获取其内容。
+- **仅新建本地 Team run**：不支持加载、列出、恢复、归档和单 session close。
+- **每个 ACP session 只有一项终态 task**：`team_final` 会完成并释放 coordinator；另一项 Team task 需要创建新的 ACP session。
+- **仅光栅图片和一个 workspace**：图片提示词要求持久存储以及明确声明支持图片输入的默认 route；只接受 PNG、JPEG、WebP 和 GIF。音频、嵌入资源、非空附加目录和 MCP server 都会被拒绝；resource link 会展平为文本而非获取内容。
 - **仅已提交答案**：实时进度、推理、工具活动、计划、标题和用量不会通过协议传输。
-- **由连接管理的生命周期**：一个连接会释放其所有会话；尚未实现单个会话关闭功能。

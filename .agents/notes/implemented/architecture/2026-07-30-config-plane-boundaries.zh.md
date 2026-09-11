@@ -16,13 +16,13 @@ Status: implemented
 
 编辑器比「可触达」更糟——它是破坏性的。它读到的是脱敏后的 descriptor，后者按构造省略了 `role('secret')` 字段。清空其中一个字段，会用这份脱敏副本重建整个用户分节并发出 `settings.replace`，于是一个协议从未回传过的已存字面 `apiKey` 被顺带删除。这一点被直接复现：输入 `{baseURL, reasoning}`，输出时 `apiKey` 消失。删除整行走的是同一条路径。而且没有任何东西携带版本，因此两个标签页编辑同一个 namespace 会静默互相覆盖；seam 的逐 namespace 写队列只排定写入次序，分辨不出一个持有新鲜快照的写方与一个重放陈旧快照的写方。
 
-另有三个较小的缺陷与之并列。`llm/adapters-updated` 的文档写着观察者失败会被收容，却只捕获同步失败，于是异步 listener 的 rejection 作为 unhandled rejection 逃逸。llm-deepseek 更换重试策略时，先对其注册执行 dispose（资源释放）、再重新注册，在两者之间发布了一个空路由集——观察者会看到该提供方消失又回来，尽管注释宣称不存在这样的空窗。还有，页面做凭据增强时的传输层 rejection 会逃出 `load()`，把页面卡在 `loading` 且不显示任何错误。
+另有三个较小的缺陷与之并列。`llm/adapters-updated` 的文档写着观察者失败会被收容，却只捕获同步失败，于是异步 listener 的 rejection 作为 unhandled rejection 逃逸。pi-ai 适配器更换重试策略时，先对其注册执行 dispose（资源释放）、再重新注册，在两者之间发布了一个空路由集——观察者会看到该提供方消失又回来，尽管注释宣称不存在这样的空窗。还有，页面做凭据增强时的传输层 rejection 会逃出 `load()`，把页面卡在 `loading` 且不显示任何错误。
 
 ## 决策
 
 **读取配置与写入配置同样属于特权操作。**`settings.describe` 与 `credentials.describe` 加入仅限回环的集合，因此在真正的认证层出现之前，整个配置面都保持同源。模型目录（`llm.providers`、`llm.models`）刻意不在其中：它携带的是提供方 id、显示名与模型列表——没有端点、没有密钥状态——而 LAN 客户端的模型选择器正需要它。这条边界由一台真实 HTTP 服务器来断言，而不是手工拼装的请求，因为真正决定它的，是浏览器实际发出的那个 `Host` 头。
 
-**这个面恰好服务于已注册模型提供方所指向的那些 namespace。**`ctx.llm.listConfigurableProviders()` 就是允许列表，于是产品边界是被执行的，而不是从今天的插件集合里推断出来的；将来的 namespace 只有加入该目录才会变得可在 Web 上配置。未注册的 namespace 与未暴露的 namespace 得到完全相同的答复（`settings-not-exposed`），因此探测无法枚举注册表。
+**这个面服务已注册的 settings namespace，浏览器表层决定渲染什么。** settings seam 会回答插件注册的每一个 namespace；浏览器表层为自己拥有的 namespace 注册卡片，没有 settings 提供方的 namespace 会得到明确失败。代理不会从当前产品 roster 推断暴露范围，因此新增由插件拥有的设置卡片不需要修改宿主白名单。
 
 **持有局部视图的调用方，点名它真正要改的字段。**`SettingsProvider.mutate(ns, ops)` 会把 `set`/`unset` 路径 op 施加在写入排到队首那一刻的分节上。客户端通过对比自己打开时的快照与草稿来构造 op，因此它只提及自己看得见的字段：两侧都没有的机密不会产生任何 op，它的留存是构造使然，而非小心使然。`replace` 仍是那个刻意的整体重置。
 

@@ -10,6 +10,33 @@ import {
 
 const HIGH = ReasoningEffortId('high')
 const OFF = ReasoningEffortId('off')
+const FINAL_CALL = CallId('cli-smoke-final')
+
+function hasTeamFinal(messages: GenerateOptions['messages']): boolean {
+  return messages.some(message => message.role === 'assistant'
+    && message.content.some(block => block.type === 'tool-call' && block.name === 'team_final'))
+}
+
+function textChunks(text: string): StreamChunk[] {
+  return [
+    { type: 'block-start', index: 0, blockType: 'text' },
+    { type: 'text-delta', index: 0, text },
+    { type: 'block-end', index: 0, block: { type: 'text', text } },
+    { type: 'usage', usage: { inputTokens: 7, outputTokens: 5, reasoningTokens: 1 } },
+    { type: 'finish', reason: { kind: 'stop' } },
+  ]
+}
+
+function finalChunks(channelId: string, text: string): StreamChunk[] {
+  const argumentsText = JSON.stringify({ channel_id: channelId, text })
+  return [
+    { type: 'block-start', index: 0, blockType: 'tool-call' },
+    { type: 'tool-call-delta', index: 0, id: FINAL_CALL, name: 'team_final', argumentsDelta: argumentsText },
+    { type: 'block-end', index: 0, block: { type: 'tool-call', id: FINAL_CALL, name: 'team_final', arguments: argumentsText } },
+    { type: 'usage', usage: { inputTokens: 7, outputTokens: 5, reasoningTokens: 1 } },
+    { type: 'finish', reason: { kind: 'tool-calls' } },
+  ]
+}
 
 /** Keyless headless-agent adapter: one real bash call followed by a final answer. */
 class CliMockAdapter extends LlmAdapter {
@@ -33,6 +60,10 @@ class CliMockAdapter extends LlmAdapter {
       yield { type: 'finish', reason: { kind: 'error', failure: { code: 'SERVER', message: 'CLI mock provider failed' } } }
       return
     }
+    if (hasTeamFinal(options.messages)) {
+      for (const chunk of textChunks('The final result was delivered.')) yield chunk
+      return
+    }
     const toolResult = options.messages.at(-1)?.content.find(block => block.type === 'tool-result')
     if (toolResult === undefined) {
       const args = JSON.stringify({ command: 'printf CLI_TOOL_ROUND_TRIP', description: 'Prove the CLI tool round trip.' })
@@ -49,11 +80,12 @@ class CliMockAdapter extends LlmAdapter {
       .map(block => block.text)
       .join('')
     const reply = `CLI tool round trip complete: ${toolText.trim()}`
-    yield { type: 'block-start', index: 0, blockType: 'text' }
-    yield { type: 'text-delta', index: 0, text: reply }
-    yield { type: 'block-end', index: 0, block: { type: 'text', text: reply } }
-    yield { type: 'usage', usage: { inputTokens: 7, outputTokens: 5, reasoningTokens: 1 } }
-    yield { type: 'finish', reason: { kind: 'stop' } }
+    const channelId = options.system?.match(/call team_final with channel_id ([^\s]+) and/u)?.[1]
+    if (channelId === undefined) {
+      for (const chunk of textChunks(reply)) yield chunk
+      return
+    }
+    for (const chunk of finalChunks(channelId, reply)) yield chunk
   }
 }
 

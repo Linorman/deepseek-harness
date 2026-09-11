@@ -2,8 +2,10 @@
 
 import { existsSync, globSync, statSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { chromium } from 'playwright'
 import { expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
@@ -12,6 +14,10 @@ import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
 import type { SubprocessHandle, SubprocessSpawnSpec } from '@clocky/clocky-subprocess'
 import { readClientBuildRecord } from '../../../scripts/client-build-environment.ts'
 import { REPO_ROOT } from './support.ts'
+
+const PRODUCT_AUTH_CREDENTIAL = 'clocky-web-hmr-product-credential'
+const PRODUCT_AUTH_COOKIE_NAME = 'clocky_product_auth'
+const PRODUCT_AUTH_DIGEST = createHash('sha256').update(PRODUCT_AUTH_CREDENTIAL, 'utf8').digest('hex')
 
 function spawnSpec(argv: readonly string[], cwd: string, env?: Record<string, string>): SubprocessSpawnSpec {
   return {
@@ -105,8 +111,22 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
       { ...clientBuildEnvironment },
     ))
     await waitForOutput(watcher, /dev-web: watching/, 'pnpm run dev:web')
+    const productAuthPatch = join(world, 'product-auth.patch.yml')
+    await writeFile(productAuthPatch, [
+      '- id: product-principal-local',
+      '  disabled: true',
+      '- insert:',
+      '    - id: hmr-product-principal',
+      `      name: ${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'packages/host/product-principal-digest/lib/index.js')).href)}`,
+      '      config:',
+      '        providerName: local',
+      `        credentialSha256: ${PRODUCT_AUTH_DIGEST}`,
+      '        principalId: hmr-user',
+      '        subject: hmr-user',
+      '',
+    ].join('\n'))
     host = subprocessCtx.subprocess.spawn(spawnSpec(
-      [process.execPath, binPath, 'web', '--no-open', '--port', '0'],
+      [process.execPath, binPath, 'web', '--patch', productAuthPatch, '--no-open', '--port', '0'],
       world,
       {
         DEEPSEEK_API_KEY: 'keyless-hmr-no-call',
@@ -114,8 +134,21 @@ it('hot-reloads a real client-plugin source edit without refreshing the page', a
       },
     ))
     const baseUrl = await waitForOutput(host, /clocky web: (http:\/\/[^\s]+)/, 'built clocky web')
+    const bootstrap = await fetch(`${baseUrl}/api/bootstrap`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ credential: PRODUCT_AUTH_CREDENTIAL }),
+    })
+    if (bootstrap.status !== 204) throw new Error(`HMR product authentication bootstrap failed with HTTP ${String(bootstrap.status)}`)
+    const cookie = bootstrap.headers.get('set-cookie')?.split(';', 1)[0]
+    const separator = cookie?.indexOf('=') ?? -1
+    const token = cookie === undefined || separator < 1 ? '' : cookie.slice(separator + 1)
+    if (cookie === undefined || cookie.slice(0, separator) !== PRODUCT_AUTH_COOKIE_NAME || token.length === 0) {
+      throw new Error('HMR product authentication bootstrap returned an invalid cookie')
+    }
     browser = await chromium.launch()
     const page = await browser.newPage()
+    await page.context().addCookies([{ name: PRODUCT_AUTH_COOKIE_NAME, value: token, url: baseUrl }])
     const pageErrors: string[] = []
     page.on('pageerror', error => pageErrors.push(String(error)))
     await page.goto(baseUrl, { waitUntil: 'load' })

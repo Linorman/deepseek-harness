@@ -165,6 +165,9 @@ importers:
       '@clocky/clocky-fs-local':
         specifier: workspace:^
         version: link:../../packages/fs/fs-local
+      '@clocky/clocky-fs-sandbox':
+        specifier: workspace:^
+        version: link:../../packages/fs/fs-sandbox
       '@clocky/clocky-goal':
         specifier: workspace:^
         version: link:../../packages/goal/goal
@@ -258,36 +261,21 @@ importers:
       '@clocky/clocky-tool-pwsh-persistent':
         specifier: workspace:^
         version: link:../../packages/shell/tool-pwsh-persistent
-      '@clocky/clocky-tool-ralph':
-        specifier: workspace:^
-        version: link:../../packages/workflow/tool-ralph
       '@clocky/clocky-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill
       '@clocky/clocky-tool-str-replace-editor':
         specifier: workspace:^
         version: link:../../packages/fs/tool-str-replace-editor
-      '@clocky/clocky-tool-subagent':
-        specifier: workspace:^
-        version: link:../../packages/subagent/tool-subagent
-      '@clocky/clocky-tool-subagent-control':
-        specifier: workspace:^
-        version: link:../../packages/subagent/tool-subagent-control
       '@clocky/clocky-tool-todo':
         specifier: workspace:^
         version: link:../../packages/todo/tool-todo
       '@clocky/clocky-tool-web':
         specifier: workspace:^
         version: link:../../packages/web/tool-web
-      '@clocky/clocky-tool-workflow':
-        specifier: workspace:^
-        version: link:../../packages/workflow/tool-workflow
       '@clocky/clocky-web-app':
         specifier: workspace:^
         version: link:../../packages/bundle/web-app
-      '@clocky/clocky-workflow-worker-thread':
-        specifier: workspace:^
-        version: link:../../packages/workflow/workflow-worker-thread
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../vendor/cordis
@@ -340,9 +328,6 @@ importers:
       '@clocky/clocky-settings':
         specifier: workspace:^
         version: link:../../packages/settings/settings
-      '@clocky/clocky-subagent':
-        specifier: workspace:^
-        version: link:../../packages/subagent/subagent
       '@clocky/clocky-system-prompt':
         specifier: workspace:^
         version: link:../../packages/core/system-prompt
@@ -421,18 +406,33 @@ importers:
       '@clocky/clocky-agent':
         specifier: workspace:*
         version: link:../packages/core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:*
+        version: link:../packages/core/agent-default-model
       '@clocky/clocky-agent-instructions':
         specifier: workspace:*
         version: link:../packages/context/agent-instructions
       '@clocky/clocky-agent-loop':
         specifier: workspace:*
         version: link:../packages/core/agent-loop
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:*
+        version: link:../packages/core/agent-runtime
+      '@clocky/clocky-agent-runtime-acp':
+        specifier: workspace:*
+        version: link:../packages/agent-runtime/agent-runtime-acp
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:*
+        version: link:../packages/agent-runtime/agent-runtime-in-process
       '@clocky/clocky-agent-spine-demo':
         specifier: workspace:*
         version: link:../packages/examples/agent-spine-demo
       '@clocky/clocky-app-boot':
         specifier: workspace:*
         version: link:../packages/boot/app-boot
+      '@clocky/clocky-attachment':
+        specifier: workspace:*
+        version: link:../packages/attachment/attachment
       '@clocky/clocky-attachment-local':
         specifier: workspace:*
         version: link:../packages/attachment/attachment-local
@@ -472,12 +472,6 @@ importers:
       '@clocky/clocky-e2b':
         specifier: workspace:*
         version: link:../packages/e2b/e2b
-      '@clocky/clocky-experimental-agent-team':
-        specifier: workspace:*
-        version: link:../packages/experimental/agent-team
-      '@clocky/clocky-experimental-tool-agent-team':
-        specifier: workspace:*
-        version: link:../packages/experimental/tool-agent-team
       '@clocky/clocky-fs-e2b':
         specifier: workspace:*
         version: link:../packages/e2b/fs-e2b
@@ -496,6 +490,21 @@ importers:
       '@clocky/clocky-goal-round-driver':
         specifier: workspace:*
         version: link:../packages/goal/goal-round-driver
+      '@clocky/clocky-host-apiproxy':
+        specifier: workspace:*
+        version: link:../packages/host/apiproxy
+      '@clocky/clocky-host-directory-picker-browse':
+        specifier: workspace:*
+        version: link:../packages/host/directory-picker-browse
+      '@clocky/clocky-host-product-principal-digest':
+        specifier: workspace:^
+        version: link:../packages/host/product-principal-digest
+      '@clocky/clocky-host-product-principal-local':
+        specifier: workspace:*
+        version: link:../packages/host/product-principal-local
+      '@clocky/clocky-host-webserver':
+        specifier: workspace:*
+        version: link:../packages/host/webserver
       '@clocky/clocky-invariants':
         specifier: workspace:*
         version: link:../packages/runtime-diagnostics/invariants
@@ -526,6 +535,9 @@ importers:
       '@clocky/clocky-plan-mode':
         specifier: workspace:*
         version: link:../packages/plan/plan-mode
+      '@clocky/clocky-product-principal':
+        specifier: workspace:*
+        version: link:../packages/core/product-principal
       '@clocky/clocky-pwsh-local':
         specifier: workspace:*
         version: link:../packages/shell/pwsh-local
@@ -577,6 +589,9 @@ importers:
       '@clocky/clocky-session-title-first-prompt-llm':
         specifier: workspace:*
         version: link:../packages/session/session-title-first-prompt-llm
+      '@clocky/clocky-settings':
+        specifier: workspace:*
+        version: link:../packages/settings/settings
       '@clocky/clocky-settings-file':
         specifier: workspace:*
         version: link:../packages/settings/settings-file
@@ -598,6 +613,18 @@ importers:
       '@clocky/clocky-spill-policy':
         specifier: workspace:*
         version: link:../packages/spill/spill-policy
+      '@clocky/clocky-storage':
+        specifier: workspace:*
+        version: link:../packages/storage/storage
+      '@clocky/clocky-storage-domain':
+        specifier: workspace:*
+        version: link:../packages/storage/storage-domain
+      '@clocky/clocky-storage-json':
+        specifier: workspace:*
+        version: link:../packages/storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:*
+        version: link:../packages/storage/storage-log
       '@clocky/clocky-subagent':
         specifier: workspace:*
         version: link:../packages/subagent/subagent
@@ -622,6 +649,57 @@ importers:
       '@clocky/clocky-system-prompt':
         specifier: workspace:*
         version: link:../packages/core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:*
+        version: link:../packages/core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:*
+        version: link:../packages/team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:*
+        version: link:../packages/team/team-agent-client
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../packages/team/team-channel-admission
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:*
+        version: link:../packages/team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:*
+        version: link:../packages/team/team-channel-summary
+      '@clocky/clocky-team-closure-driver':
+        specifier: workspace:*
+        version: link:../packages/team/team-closure-driver
+      '@clocky/clocky-team-hub':
+        specifier: workspace:*
+        version: link:../packages/team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:*
+        version: link:../packages/team/team-human-actor
+      '@clocky/clocky-team-human-client':
+        specifier: workspace:^
+        version: link:../packages/team/team-human-client
+      '@clocky/clocky-team-link':
+        specifier: workspace:*
+        version: link:../packages/core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:*
+        version: link:../packages/team/team-link-local
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:*
+        version: link:../packages/team/team-link-websocket
+      '@clocky/clocky-team-link-websocket-hub':
+        specifier: workspace:*
+        version: link:../packages/team/team-link-websocket-hub
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../packages/team/team-placement-default
+      '@clocky/clocky-team-run':
+        specifier: workspace:*
+        version: link:../packages/team/team-run
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:*
+        version: link:../packages/team/team-scheduler-dag
       '@clocky/clocky-terminal':
         specifier: workspace:*
         version: link:../packages/terminal/terminal
@@ -691,6 +769,15 @@ importers:
       '@clocky/clocky-tool-subagent-report':
         specifier: workspace:*
         version: link:../packages/subagent/tool-subagent-report
+      '@clocky/clocky-tool-team':
+        specifier: workspace:*
+        version: link:../packages/team/tool-team
+      '@clocky/clocky-tool-team-goal':
+        specifier: workspace:*
+        version: link:../packages/team/tool-team-goal
+      '@clocky/clocky-tool-team-task':
+        specifier: workspace:*
+        version: link:../packages/team/tool-team-task
       '@clocky/clocky-tool-terminal':
         specifier: workspace:*
         version: link:../packages/terminal/tool-terminal
@@ -721,6 +808,12 @@ importers:
       '@clocky/clocky-workflow-worker-thread':
         specifier: workspace:*
         version: link:../packages/workflow/workflow-worker-thread
+      '@clocky/clocky-workspace':
+        specifier: workspace:*
+        version: link:../packages/workspace/workspace
+      '@clocky/cordis':
+        specifier: workspace:*
+        version: link:../vendor/cordis
       '@clocky/cordis-plugin-hmr':
         specifier: workspace:*
         version: link:../vendor/hmr
@@ -767,6 +860,9 @@ importers:
       '@agentclientprotocol/sdk':
         specifier: 0.25.1
         version: 0.25.1(zod@4.4.3)
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
       '@clocky/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -774,6 +870,9 @@ importers:
       '@clocky/clocky-agent':
         specifier: workspace:^
         version: link:../../core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
       '@clocky/clocky-agent-loop':
         specifier: workspace:^
         version: link:../../core/agent-loop
@@ -792,12 +891,289 @@ importers:
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-closure-driver':
+        specifier: workspace:^
+        version: link:../../team/team-closure-driver
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
+      '@clocky/clocky-tool-team':
+        specifier: workspace:^
+        version: link:../../team/tool-team
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
       '@clocky/clocky-user-approval':
         specifier: workspace:^
         version: link:../../interaction/user-approval
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/agent-runtime/activation-supervisor-http:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-activation-supervisor':
+        specifier: workspace:^
+        version: link:../../core/activation-supervisor
+      '@clocky/clocky-agent-runtime-sdk':
+        specifier: workspace:^
+        version: link:../agent-runtime-sdk
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+
+  packages/agent-runtime/agent-runtime-acp:
+    dependencies:
+      '@agentclientprotocol/sdk':
+        specifier: 0.25.1
+        version: 0.25.1(zod@4.4.3)
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-activation-supervisor':
+        specifier: workspace:^
+        version: link:../../core/activation-supervisor
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-sdk':
+        specifier: workspace:^
+        version: link:../agent-runtime-sdk
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
+      '@clocky/clocky-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../../team/team-channel-task-assignment
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:^
+        version: link:../../team/team-link-websocket
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/agent-runtime/agent-runtime-in-process:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@clocky/clocky-agent-presets':
+        specifier: workspace:^
+        version: link:../../preset/agent-presets
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+
+  packages/agent-runtime/agent-runtime-sdk:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-activation-supervisor':
+        specifier: workspace:^
+        version: link:../../core/activation-supervisor
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-sdk-client':
+        specifier: workspace:^
+        version: link:../../sdk/client
+      '@clocky/clocky-sdk-jsonrpc-server':
+        specifier: workspace:^
+        version: link:../../sdk/server
+      '@clocky/clocky-sdk-protocol':
+        specifier: workspace:^
+        version: link:../../sdk/protocol
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
+      '@clocky/clocky-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../../team/team-channel-task-assignment
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-websocket-hub':
+        specifier: workspace:^
+        version: link:../../team/team-link-websocket-hub
+      '@clocky/clocky-tool-team':
+        specifier: workspace:^
+        version: link:../../team/tool-team
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -1057,6 +1433,9 @@ importers:
       '@clocky/clocky-plan-mode':
         specifier: workspace:^
         version: link:../../plan/plan-mode
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
       '@clocky/clocky-pwsh-sandbox':
         specifier: workspace:^
         version: link:../../shell/pwsh-sandbox
@@ -1108,15 +1487,6 @@ importers:
       '@clocky/clocky-spill-policy':
         specifier: workspace:^
         version: link:../../spill/spill-policy
-      '@clocky/clocky-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@clocky/clocky-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@clocky/clocky-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
       '@clocky/clocky-subprocess-local':
         specifier: workspace:^
         version: link:../../subprocess/subprocess-local
@@ -1147,33 +1517,18 @@ importers:
       '@clocky/clocky-tool-pwsh':
         specifier: workspace:^
         version: link:../../shell/tool-pwsh
-      '@clocky/clocky-tool-ralph':
-        specifier: workspace:^
-        version: link:../../workflow/tool-ralph
       '@clocky/clocky-tool-skill':
         specifier: workspace:^
         version: link:../../skill/tool-skill
       '@clocky/clocky-tool-str-replace-editor':
         specifier: workspace:^
         version: link:../../fs/tool-str-replace-editor
-      '@clocky/clocky-tool-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent
-      '@clocky/clocky-tool-subagent-control':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent-control
-      '@clocky/clocky-tool-subagent-report':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent-report
       '@clocky/clocky-tool-todo':
         specifier: workspace:^
         version: link:../../todo/tool-todo
       '@clocky/clocky-tool-web':
         specifier: workspace:^
         version: link:../../web/tool-web
-      '@clocky/clocky-tool-workflow':
-        specifier: workspace:^
-        version: link:../../workflow/tool-workflow
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -1192,9 +1547,6 @@ importers:
       '@clocky/clocky-web':
         specifier: workspace:^
         version: link:../../web/web
-      '@clocky/clocky-workflow-worker-thread':
-        specifier: workspace:^
-        version: link:../../workflow/workflow-worker-thread
       '@clocky/cordis-plugin-hmr':
         specifier: workspace:^
         version: link:../../../vendor/hmr
@@ -1211,12 +1563,102 @@ importers:
 
   packages/bundle/headless:
     dependencies:
+      '@clocky/clocky-agent-presets':
+        specifier: workspace:^
+        version: link:../../preset/agent-presets
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
       '@clocky/clocky-cmdline':
         specifier: workspace:^
         version: link:../../boot/cmdline
       '@clocky/clocky-code-runtime-worker-thread':
         specifier: workspace:^
         version: link:../../code-runtime/code-runtime-worker-thread
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-artifact-local':
+        specifier: workspace:^
+        version: link:../../team/team-artifact-local
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../../team/team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:^
+        version: link:../../team/team-channel-summary
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../../team/team-channel-task-assignment
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../../team/team-channel-workflow
+      '@clocky/clocky-team-closure-driver':
+        specifier: workspace:^
+        version: link:../../team/team-closure-driver
+      '@clocky/clocky-team-delegation':
+        specifier: workspace:^
+        version: link:../../team/team-delegation
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../../team/team-placement-default
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:^
+        version: link:../../team/team-scheduler-dag
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/clocky-team-workspace-recovery':
+        specifier: workspace:^
+        version: link:../../team/team-workspace-recovery
+      '@clocky/clocky-team-workspace-shared':
+        specifier: workspace:^
+        version: link:../../team/team-workspace-shared
+      '@clocky/clocky-tool-team':
+        specifier: workspace:^
+        version: link:../../team/tool-team
+      '@clocky/clocky-tool-team-goal':
+        specifier: workspace:^
+        version: link:../../team/tool-team-goal
+      '@clocky/clocky-tool-team-task':
+        specifier: workspace:^
+        version: link:../../team/tool-team-task
       '@clocky/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
@@ -1224,21 +1666,9 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
     devDependencies:
-      '@clocky/clocky-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@clocky/clocky-agent-default-model':
-        specifier: workspace:^
-        version: link:../../core/agent-default-model
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
-      '@clocky/clocky-llm':
-        specifier: workspace:^
-        version: link:../../llm/llm
-      '@clocky/clocky-session':
-        specifier: workspace:^
-        version: link:../../core/session
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -1251,6 +1681,12 @@ importers:
       '@clocky/clocky-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
       '@clocky/clocky-api-remotes':
         specifier: workspace:^
         version: link:../../api/remotes
@@ -1293,12 +1729,6 @@ importers:
       '@clocky/clocky-client-ui-directory-picker-browse':
         specifier: workspace:^
         version: link:../../client/ui-directory-picker-browse
-      '@clocky/clocky-client-ui-directory-picker-native':
-        specifier: workspace:^
-        version: link:../../client/ui-directory-picker-native
-      '@clocky/clocky-client-ui-goal':
-        specifier: workspace:^
-        version: link:../../client/ui-goal
       '@clocky/clocky-client-ui-input-trigger':
         specifier: workspace:^
         version: link:../../client/ui-input-trigger
@@ -1347,9 +1777,9 @@ importers:
       '@clocky/clocky-client-ui-skill':
         specifier: workspace:^
         version: link:../../client/ui-skill
-      '@clocky/clocky-client-ui-subagent':
+      '@clocky/clocky-client-ui-team':
         specifier: workspace:^
-        version: link:../../client/ui-subagent
+        version: link:../../client/ui-team
       '@clocky/clocky-client-ui-theme':
         specifier: workspace:^
         version: link:../../client/ui-theme
@@ -1362,9 +1792,6 @@ importers:
       '@clocky/clocky-client-ui-user-questions':
         specifier: workspace:^
         version: link:../../client/ui-user-questions
-      '@clocky/clocky-client-ui-workflow-run':
-        specifier: workspace:^
-        version: link:../../client/ui-workflow-run
       '@clocky/clocky-client-ui-workspace':
         specifier: workspace:^
         version: link:../../client/ui-workspace
@@ -1374,6 +1801,9 @@ importers:
       '@clocky/clocky-code-runtime-worker-thread':
         specifier: workspace:^
         version: link:../../code-runtime/code-runtime-worker-thread
+      '@clocky/clocky-command-team-goal':
+        specifier: workspace:^
+        version: link:../../team/command-team-goal
       '@clocky/clocky-cordis-client-runner':
         specifier: workspace:^
         version: link:../../extensions/cordis-client-runner
@@ -1386,6 +1816,9 @@ importers:
       '@clocky/clocky-file-reference-local':
         specifier: workspace:^
         version: link:../../context/file-reference-local
+      '@clocky/clocky-home-paths':
+        specifier: workspace:^
+        version: link:../../util/home-paths
       '@clocky/clocky-host-apiproxy':
         specifier: workspace:^
         version: link:../../host/apiproxy
@@ -1404,6 +1837,9 @@ importers:
       '@clocky/clocky-host-plugin-inventory':
         specifier: workspace:^
         version: link:../../host/plugin-inventory
+      '@clocky/clocky-host-product-principal-local':
+        specifier: workspace:^
+        version: link:../../host/product-principal-local
       '@clocky/clocky-host-webserver':
         specifier: workspace:^
         version: link:../../host/webserver
@@ -1413,6 +1849,9 @@ importers:
       '@clocky/clocky-message-feedback':
         specifier: workspace:^
         version: link:../../feedback/message-feedback
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
       '@clocky/clocky-session-log-export':
         specifier: workspace:^
         version: link:../../session-query/session-log-export
@@ -1434,9 +1873,93 @@ importers:
       '@clocky/clocky-storage-json':
         specifier: workspace:^
         version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
       '@clocky/clocky-subprocess':
         specifier: workspace:^
         version: link:../../subprocess/subprocess
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-artifact-local':
+        specifier: workspace:^
+        version: link:../../team/team-artifact-local
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../../team/team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:^
+        version: link:../../team/team-channel-summary
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../../team/team-channel-task-assignment
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../../team/team-channel-workflow
+      '@clocky/clocky-team-closure-driver':
+        specifier: workspace:^
+        version: link:../../team/team-closure-driver
+      '@clocky/clocky-team-delegation':
+        specifier: workspace:^
+        version: link:../../team/team-delegation
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../../team/team-human-actor
+      '@clocky/clocky-team-human-client':
+        specifier: workspace:^
+        version: link:../../team/team-human-client
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../../team/team-placement-default
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:^
+        version: link:../../team/team-scheduler-dag
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/clocky-team-workspace-recovery':
+        specifier: workspace:^
+        version: link:../../team/team-workspace-recovery
+      '@clocky/clocky-team-workspace-shared':
+        specifier: workspace:^
+        version: link:../../team/team-workspace-shared
+      '@clocky/clocky-tool-team':
+        specifier: workspace:^
+        version: link:../../team/tool-team
+      '@clocky/clocky-tool-team-goal':
+        specifier: workspace:^
+        version: link:../../team/tool-team-goal
+      '@clocky/clocky-tool-team-task':
+        specifier: workspace:^
+        version: link:../../team/tool-team-task
       '@clocky/clocky-web-frontend':
         specifier: workspace:^
         version: link:../../../apps/web
@@ -1496,9 +2019,15 @@ importers:
       '@clocky/clocky-llm':
         specifier: workspace:^
         version: link:../../llm/llm
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -1722,6 +2251,9 @@ importers:
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
+      '@clocky/clocky-client-ui-team':
+        specifier: workspace:^
+        version: link:../ui-team
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -2778,7 +3310,7 @@ importers:
         specifier: ~18.3.1
         version: 18.3.31
 
-  packages/client/ui-subagent:
+  packages/client/ui-team:
     devDependencies:
       '@clocky/clocky-client-locale':
         specifier: workspace:^
@@ -2789,36 +3321,30 @@ importers:
       '@clocky/clocky-client-test-runtime':
         specifier: workspace:^
         version: link:../../test-support/client-runtime
-      '@clocky/clocky-client-ui-conversation':
+      '@clocky/clocky-client-ui-layout':
         specifier: workspace:^
-        version: link:../ui-conversation
-      '@clocky/clocky-client-ui-input-trigger':
-        specifier: workspace:^
-        version: link:../ui-input-trigger
+        version: link:../ui-layout
       '@clocky/clocky-client-ui-primitives':
         specifier: workspace:^
         version: link:../ui-primitives
+      '@clocky/clocky-client-ui-sidebar':
+        specifier: workspace:^
+        version: link:../ui-sidebar
       '@clocky/clocky-client-ui-slots':
         specifier: workspace:^
         version: link:../ui-slots
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
-      '@clocky/clocky-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@clocky/clocky-token-meter':
-        specifier: workspace:^
-        version: link:../../llm/token-meter
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
-      '@types/react-dom':
-        specifier: ~18.3.0
-        version: 18.3.7(@types/react@18.3.31)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -3024,48 +3550,6 @@ importers:
       '@clocky/clocky-user-questions':
         specifier: workspace:^
         version: link:../../interaction/user-questions
-      '@clocky/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-      '@types/react':
-        specifier: ~18.3.1
-        version: 18.3.31
-      react:
-        specifier: ^18.2.0
-        version: 18.3.1
-
-  packages/client/ui-workflow-run:
-    devDependencies:
-      '@clocky/clocky-client-locale':
-        specifier: workspace:^
-        version: link:../locale
-      '@clocky/clocky-client-runtime':
-        specifier: workspace:^
-        version: link:../runtime
-      '@clocky/clocky-client-test-runtime':
-        specifier: workspace:^
-        version: link:../../test-support/client-runtime
-      '@clocky/clocky-client-ui-conversation':
-        specifier: workspace:^
-        version: link:../ui-conversation
-      '@clocky/clocky-client-ui-primitives':
-        specifier: workspace:^
-        version: link:../ui-primitives
-      '@clocky/clocky-client-ui-slots':
-        specifier: workspace:^
-        version: link:../ui-slots
-      '@clocky/clocky-invariants':
-        specifier: workspace:^
-        version: link:../../runtime-diagnostics/invariants
-      '@clocky/clocky-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@clocky/clocky-tool-workflow':
-        specifier: workspace:^
-        version: link:../../workflow/tool-workflow
-      '@clocky/clocky-workflow':
-        specifier: workspace:^
-        version: link:../../workflow/workflow
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -3524,6 +4008,18 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
+  packages/core/activation-supervisor:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/core/agent:
     devDependencies:
       '@clocky/clocky-invariants':
@@ -3613,6 +4109,24 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
+  packages/core/agent-runtime:
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../session
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/core/agent-tool-presentation:
     dependencies:
       '@clocky/schemastery':
@@ -3640,6 +4154,18 @@ importers:
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../tools
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/core/product-principal:
+    devDependencies:
+      '@clocky/clocky-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -3692,6 +4218,80 @@ importers:
       '@clocky/clocky-scope':
         specifier: workspace:^
         version: link:../scope
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/core/team:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../product-principal
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../session
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/core/team-artifact:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/core/team-link:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../session
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/core/team-workspace:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../session
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../team
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -3847,6 +4447,43 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
+  packages/e2b/team-workspace-e2b:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-e2b':
+        specifier: workspace:^
+        version: link:../e2b
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/examples/acp-demo:
     dependencies:
       '@clocky/schemastery':
@@ -3859,9 +4496,18 @@ importers:
       '@clocky/clocky-agent':
         specifier: workspace:^
         version: link:../../core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
       '@clocky/clocky-agent-instructions':
         specifier: workspace:^
         version: link:../../context/agent-instructions
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
       '@clocky/clocky-agent-spine-demo':
         specifier: workspace:^
         version: link:../agent-spine-demo
@@ -3883,9 +4529,54 @@ importers:
       '@clocky/clocky-session-query-sqlite':
         specifier: workspace:^
         version: link:../../session-query/session-query-sqlite
+      '@clocky/clocky-settings':
+        specifier: workspace:^
+        version: link:../../settings/settings
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
       '@clocky/clocky-system-prompt':
         specifier: workspace:^
         version: link:../../core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
+      '@clocky/clocky-tool-team':
+        specifier: workspace:^
+        version: link:../../team/tool-team
+      '@clocky/clocky-tool-team-goal':
+        specifier: workspace:^
+        version: link:../../team/tool-team-goal
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -4016,114 +4707,13 @@ importers:
       '@clocky/clocky-app-boot':
         specifier: workspace:^
         version: link:../../boot/app-boot
+      '@clocky/clocky-team-human-client':
+        specifier: workspace:^
+        version: link:../../team/team-human-client
     devDependencies:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
-      '@clocky/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-
-  packages/experimental/agent-team:
-    dependencies:
-      '@clocky/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@clocky/clocky-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@clocky/clocky-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@clocky/clocky-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@clocky/clocky-brand':
-        specifier: workspace:^
-        version: link:../../util/brand
-      '@clocky/clocky-invariants':
-        specifier: workspace:^
-        version: link:../../runtime-diagnostics/invariants
-      '@clocky/clocky-llm':
-        specifier: workspace:^
-        version: link:../../llm/llm
-      '@clocky/clocky-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@clocky/clocky-session-persistence':
-        specifier: workspace:^
-        version: link:../../session/session-persistence
-      '@clocky/clocky-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@clocky/clocky-session-persistence-sqlite':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-sqlite
-      '@clocky/clocky-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@clocky/clocky-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@clocky/clocky-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@clocky/cordis':
-        specifier: workspace:^
-        version: link:../../../vendor/cordis
-
-  packages/experimental/tool-agent-team:
-    dependencies:
-      '@clocky/schemastery':
-        specifier: link:../../../vendor/schemastery
-        version: link:../../../vendor/schemastery
-    devDependencies:
-      '@clocky/clocky-agent':
-        specifier: workspace:^
-        version: link:../../core/agent
-      '@clocky/clocky-agent-loop':
-        specifier: workspace:^
-        version: link:../../core/agent-loop
-      '@clocky/clocky-agent-loop-testkit':
-        specifier: workspace:^
-        version: link:../../test-support/agent-loop-testkit
-      '@clocky/clocky-experimental-agent-team':
-        specifier: workspace:^
-        version: link:../agent-team
-      '@clocky/clocky-invariants':
-        specifier: workspace:^
-        version: link:../../runtime-diagnostics/invariants
-      '@clocky/clocky-scope':
-        specifier: workspace:^
-        version: link:../../core/scope
-      '@clocky/clocky-session':
-        specifier: workspace:^
-        version: link:../../core/session
-      '@clocky/clocky-session-persistence-jsonl':
-        specifier: workspace:^
-        version: link:../../session/session-persistence-jsonl
-      '@clocky/clocky-subagent':
-        specifier: workspace:^
-        version: link:../../subagent/subagent
-      '@clocky/clocky-subagent-fork-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-fork-in-process
-      '@clocky/clocky-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../subagent/subagent-spawn-in-process
-      '@clocky/clocky-system-prompt':
-        specifier: workspace:^
-        version: link:../../core/system-prompt
-      '@clocky/clocky-tool-subagent-control':
-        specifier: workspace:^
-        version: link:../../subagent/tool-subagent-control
-      '@clocky/clocky-tools':
-        specifier: workspace:^
-        version: link:../../core/tools
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -4844,9 +5434,15 @@ importers:
       '@clocky/clocky-skill':
         specifier: workspace:^
         version: link:../../skill/skill
-      '@clocky/clocky-subagent':
+      '@clocky/clocky-team':
         specifier: workspace:^
-        version: link:../../subagent/subagent
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -4869,21 +5465,78 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
       '@clocky/clocky-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
+      '@clocky/clocky-attachment-local':
+        specifier: workspace:^
+        version: link:../../attachment/attachment-local
       '@clocky/clocky-cordis-host-runner':
         specifier: workspace:^
         version: link:../../extensions/cordis-host-runner
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
       '@clocky/clocky-storage-domain':
         specifier: workspace:^
         version: link:../../storage/storage-domain
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../../team/team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:^
+        version: link:../../team/team-channel-summary
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../../team/team-human-actor
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
       '@clocky/clocky-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
@@ -4905,12 +5558,6 @@ importers:
 
   packages/host/directory-picker-auto:
     devDependencies:
-      '@clocky/clocky-client-ui-directory-picker-browse':
-        specifier: workspace:^
-        version: link:../../client/ui-directory-picker-browse
-      '@clocky/clocky-client-ui-directory-picker-native':
-        specifier: workspace:^
-        version: link:../../client/ui-directory-picker-native
       '@clocky/clocky-host-directory-picker':
         specifier: workspace:^
         version: link:../directory-picker
@@ -5014,6 +5661,44 @@ importers:
       '@clocky/cordis-plugin-loader':
         specifier: workspace:^
         version: link:../../../vendor/loader
+
+  packages/host/product-principal-digest:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/host/product-principal-local:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-atomic-write':
+        specifier: workspace:^
+        version: link:../../util/atomic-write
+      '@clocky/clocky-home-paths':
+        specifier: workspace:^
+        version: link:../../util/home-paths
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
 
   packages/host/webserver:
     dependencies:
@@ -5823,12 +6508,22 @@ importers:
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
   packages/sdk/protocol:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
+      '@clocky/clocky-attachment':
+        specifier: workspace:^
+        version: link:../../attachment/attachment
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -5838,46 +6533,115 @@ importers:
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
-      '@clocky/clocky-subagent':
+      '@clocky/clocky-team':
         specifier: workspace:^
-        version: link:../../subagent/subagent
+        version: link:../../core/team
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
   packages/sdk/server:
     dependencies:
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
       '@clocky/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@clocky/clocky-agent':
         specifier: workspace:^
         version: link:../../core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
       '@clocky/clocky-agent-spine-demo':
         specifier: workspace:^
         version: link:../../examples/agent-spine-demo
+      '@clocky/clocky-attachment':
+        specifier: workspace:^
+        version: link:../../attachment/attachment
+      '@clocky/clocky-attachment-local':
+        specifier: workspace:^
+        version: link:../../attachment/attachment-local
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
       '@clocky/clocky-llm':
         specifier: workspace:^
         version: link:../../llm/llm
-      '@clocky/clocky-scope':
+      '@clocky/clocky-product-principal':
         specifier: workspace:^
-        version: link:../../core/scope
+        version: link:../../core/product-principal
       '@clocky/clocky-sdk-protocol':
         specifier: workspace:^
         version: link:../protocol
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@clocky/clocky-session-persistence':
+        specifier: workspace:^
+        version: link:../../session/session-persistence
       '@clocky/clocky-session-persistence-jsonl':
         specifier: workspace:^
         version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
       '@clocky/clocky-subagent':
         specifier: workspace:^
         version: link:../../subagent/subagent
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../team/team-agent-client
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../team/team-channel-admission
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:^
+        version: link:../../team/team-channel-summary
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../../team/team-human-actor
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../team/team-link-local
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:^
+        version: link:../../team/team-link-websocket
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../team/team-run
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -7035,6 +7799,22 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
+  packages/storage/storage-log:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../storage
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/storage/storage-sqlite:
     dependencies:
       '@clocky/schemastery':
@@ -7511,6 +8291,1186 @@ importers:
       '@clocky/clocky-timeout':
         specifier: workspace:^
         version: link:../../util/timeout
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/command-team-goal:
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-commands':
+        specifier: workspace:^
+        version: link:../../interaction/commands
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-scope':
+        specifier: workspace:^
+        version: link:../../core/scope
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+
+  packages/team/team-activation-controller:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-activation-supervisor':
+        specifier: workspace:^
+        version: link:../../core/activation-supervisor
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-loader-smoke':
+        specifier: workspace:^
+        version: link:../../test-support/loader-smoke
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../team-agent-client
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/clocky-team-workspace-recovery':
+        specifier: workspace:^
+        version: link:../team-workspace-recovery
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-activation-recovery:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../team-activation-controller
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-agent-client:
+    dependencies:
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../team-channel-workflow
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@clocky/clocky-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../team-channel-task-assignment
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../team-link-local
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:^
+        version: link:../team-link-websocket
+      '@clocky/clocky-team-link-websocket-hub':
+        specifier: workspace:^
+        version: link:../team-link-websocket-hub
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:^
+        version: link:../team-scheduler-dag
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-artifact-local:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-admission:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../team-human-actor
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-basic:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-direct:
+    devDependencies:
+      '@clocky/clocky-attachment':
+        specifier: workspace:^
+        version: link:../../attachment/attachment
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-summary:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../team-run
+      '@clocky/clocky-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
+      '@clocky/clocky-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-task-assignment:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-channel-workflow:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-closure-driver:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../team-activation-controller
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-delegation:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../team-run
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-hub:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-human-actor:
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-human-client:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../team-channel-workflow
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-link-local:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-link-websocket:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      ws:
+        specifier: ^8.21.0
+        version: 8.21.0
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+
+  packages/team/team-link-websocket-hub:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      ws:
+        specifier: ^8.21.0
+        version: 8.21.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-host-webserver':
+        specifier: workspace:^
+        version: link:../../host/webserver
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../team-channel-task-assignment
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:^
+        version: link:../team-link-websocket
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
+
+  packages/team/team-placement-default:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../team-activation-controller
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-run:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../core/agent-default-model
+      '@clocky/clocky-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@clocky/clocky-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-session-persistence-jsonl':
+        specifier: workspace:^
+        version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../team-agent-client
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../team-channel-task-assignment
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../team-channel-workflow
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../team-human-actor
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../team-link-local
+      '@clocky/clocky-team-scheduler-dag':
+        specifier: workspace:^
+        version: link:../team-scheduler-dag
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-scheduler-dag:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../team-channel-task-assignment
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../team-placement-default
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-telemetry-otel:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      '@opentelemetry/api-logs':
+        specifier: ^0.220.0
+        version: 0.220.0
+      '@opentelemetry/exporter-logs-otlp-http':
+        specifier: ^0.220.0
+        version: 0.220.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/otlp-exporter-base':
+        specifier: ^0.220.0
+        version: 0.220.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/resources':
+        specifier: ^2.9.0
+        version: 2.10.0(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-logs':
+        specifier: ^0.220.0
+        version: 0.220.0(@opentelemetry/api@1.9.1)
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-workspace-recovery:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-workspace-sandbox:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-workspace-shared:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/team-workspace-worktree:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
+      '@clocky/clocky-subprocess-local':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess-local
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../core/team-artifact
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/clocky-timeout':
+        specifier: workspace:^
+        version: link:../../util/timeout
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/tool-team:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../team-agent-client
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../team-channel-direct
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../team-channel-task-assignment
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../team-hub
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../team-link-local
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
+      '@clocky/clocky-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/tool-team-goal:
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../team-run
+      '@clocky/clocky-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
+  packages/team/tool-team-task:
+    devDependencies:
+      '@clocky/clocky-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@clocky/clocky-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../team-run
+      '@clocky/clocky-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -8282,15 +10242,27 @@ importers:
       '@clocky/clocky-acp':
         specifier: workspace:^
         version: link:../../packages/acp/acp
+      '@clocky/clocky-activation-supervisor':
+        specifier: workspace:^
+        version: link:../../packages/core/activation-supervisor
       '@clocky/clocky-agent':
         specifier: workspace:^
         version: link:../../packages/core/agent
+      '@clocky/clocky-agent-default-model':
+        specifier: workspace:^
+        version: link:../../packages/core/agent-default-model
       '@clocky/clocky-agent-instructions':
         specifier: workspace:^
         version: link:../../packages/context/agent-instructions
       '@clocky/clocky-agent-loop':
         specifier: workspace:^
         version: link:../../packages/core/agent-loop
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../packages/core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../packages/agent-runtime/agent-runtime-in-process
       '@clocky/clocky-agent-spine-demo':
         specifier: workspace:^
         version: link:../../packages/examples/agent-spine-demo
@@ -8369,6 +10341,9 @@ importers:
       '@clocky/clocky-hook-protocol':
         specifier: workspace:^
         version: link:../../packages/hooks/hook-protocol
+      '@clocky/clocky-host-product-principal-digest':
+        specifier: workspace:^
+        version: link:../../packages/host/product-principal-digest
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../packages/runtime-diagnostics/invariants
@@ -8405,6 +10380,9 @@ importers:
       '@clocky/clocky-plan-mode':
         specifier: workspace:^
         version: link:../../packages/plan/plan-mode
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../packages/core/product-principal
       '@clocky/clocky-pwsh-local':
         specifier: workspace:^
         version: link:../../packages/shell/pwsh-local
@@ -8480,21 +10458,15 @@ importers:
       '@clocky/clocky-spill':
         specifier: workspace:^
         version: link:../../packages/spill/spill
-      '@clocky/clocky-subagent':
+      '@clocky/clocky-storage':
         specifier: workspace:^
-        version: link:../../packages/subagent/subagent
-      '@clocky/clocky-subagent-acp':
+        version: link:../../packages/storage/storage
+      '@clocky/clocky-storage-json':
         specifier: workspace:^
-        version: link:../../packages/subagent/subagent-acp
-      '@clocky/clocky-subagent-fork-in-process':
+        version: link:../../packages/storage/storage-json
+      '@clocky/clocky-storage-log':
         specifier: workspace:^
-        version: link:../../packages/subagent/subagent-fork-in-process
-      '@clocky/clocky-subagent-in-process-driver':
-        specifier: workspace:^
-        version: link:../../packages/subagent/subagent-in-process-driver
-      '@clocky/clocky-subagent-spawn-in-process':
-        specifier: workspace:^
-        version: link:../../packages/subagent/subagent-spawn-in-process
+        version: link:../../packages/storage/storage-log
       '@clocky/clocky-subprocess':
         specifier: workspace:^
         version: link:../../packages/subprocess/subprocess
@@ -8504,6 +10476,75 @@ importers:
       '@clocky/clocky-system-prompt':
         specifier: workspace:^
         version: link:../../packages/core/system-prompt
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../packages/core/team
+      '@clocky/clocky-team-activation-controller':
+        specifier: workspace:^
+        version: link:../../packages/team/team-activation-controller
+      '@clocky/clocky-team-agent-client':
+        specifier: workspace:^
+        version: link:../../packages/team/team-agent-client
+      '@clocky/clocky-team-artifact':
+        specifier: workspace:^
+        version: link:../../packages/core/team-artifact
+      '@clocky/clocky-team-artifact-local':
+        specifier: workspace:^
+        version: link:../../packages/team/team-artifact-local
+      '@clocky/clocky-team-channel-admission':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-admission
+      '@clocky/clocky-team-channel-basic':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-basic
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-direct
+      '@clocky/clocky-team-channel-summary':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-summary
+      '@clocky/clocky-team-channel-task-assignment':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-task-assignment
+      '@clocky/clocky-team-channel-workflow':
+        specifier: workspace:^
+        version: link:../../packages/team/team-channel-workflow
+      '@clocky/clocky-team-closure-driver':
+        specifier: workspace:^
+        version: link:../../packages/team/team-closure-driver
+      '@clocky/clocky-team-delegation':
+        specifier: workspace:^
+        version: link:../../packages/team/team-delegation
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../packages/team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../../packages/team/team-human-actor
+      '@clocky/clocky-team-human-client':
+        specifier: workspace:^
+        version: link:../../packages/team/team-human-client
+      '@clocky/clocky-team-link':
+        specifier: workspace:^
+        version: link:../../packages/core/team-link
+      '@clocky/clocky-team-link-local':
+        specifier: workspace:^
+        version: link:../../packages/team/team-link-local
+      '@clocky/clocky-team-link-websocket':
+        specifier: workspace:^
+        version: link:../../packages/team/team-link-websocket
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../../packages/team/team-placement-default
+      '@clocky/clocky-team-run':
+        specifier: workspace:^
+        version: link:../../packages/team/team-run
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../packages/core/team-workspace
+      '@clocky/clocky-team-workspace-shared':
+        specifier: workspace:^
+        version: link:../../packages/team/team-workspace-shared
       '@clocky/clocky-terminal':
         specifier: workspace:^
         version: link:../../packages/terminal/terminal
@@ -8543,30 +10584,24 @@ importers:
       '@clocky/clocky-tool-jobs':
         specifier: workspace:^
         version: link:../../packages/jobs/tool-jobs
-      '@clocky/clocky-tool-ralph':
-        specifier: workspace:^
-        version: link:../../packages/workflow/tool-ralph
       '@clocky/clocky-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill
       '@clocky/clocky-tool-str-replace-editor':
         specifier: workspace:^
         version: link:../../packages/fs/tool-str-replace-editor
-      '@clocky/clocky-tool-subagent':
+      '@clocky/clocky-tool-team':
         specifier: workspace:^
-        version: link:../../packages/subagent/tool-subagent
-      '@clocky/clocky-tool-subagent-control':
+        version: link:../../packages/team/tool-team
+      '@clocky/clocky-tool-team-task':
         specifier: workspace:^
-        version: link:../../packages/subagent/tool-subagent-control
+        version: link:../../packages/team/tool-team-task
       '@clocky/clocky-tool-todo':
         specifier: workspace:^
         version: link:../../packages/todo/tool-todo
       '@clocky/clocky-tool-web':
         specifier: workspace:^
         version: link:../../packages/web/tool-web
-      '@clocky/clocky-tool-workflow':
-        specifier: workspace:^
-        version: link:../../packages/workflow/tool-workflow
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../packages/core/tools
@@ -8591,12 +10626,6 @@ importers:
       '@clocky/clocky-web-search-perplexity':
         specifier: workspace:^
         version: link:../../packages/web/web-search-perplexity
-      '@clocky/clocky-workflow':
-        specifier: workspace:^
-        version: link:../../packages/workflow/workflow
-      '@clocky/clocky-workflow-worker-thread':
-        specifier: workspace:^
-        version: link:../../packages/workflow/workflow-worker-thread
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../vendor/cordis

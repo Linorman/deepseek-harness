@@ -31,7 +31,7 @@
  */
 // Type-only: the carrier types, the forwarded Host-event face and the ctx.remote merge.
 import type { ConnectionHandle, SessionId, SkillEntry } from '@clocky/clocky-api-remotes/client'
-import type { ClientContext, ISessions } from '@clocky/clocky-client-runtime/client'
+import type { ClientContext } from '@clocky/clocky-client-runtime/client'
 import type { InputTriggerServiceContract, InputTriggerSource } from '@clocky/clocky-client-ui-input-trigger/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@clocky/clocky-client-locale/client'
@@ -54,7 +54,7 @@ interface CatalogFetch {
 }
 
 /** Required services: reference source faces plus the tool-row and locale registries. */
-export const inject = ['inputTriggers', 'connection', 'sessions', 'slots', 'locale', 'remote']
+export const inject = ['inputTriggers', 'connection', 'slots', 'locale', 'remote']
 
 /**
  * Client plugin body: register the '/' source, dictionaries, and keyed tool row.
@@ -68,7 +68,6 @@ export function apply(ctx: ClientContext): void {
   ))
 
   const skills = (ctx.get('connection') as ConnectionHandle).api.skills
-  const sessions = ctx.get('sessions') as ISessions
   // Session-keyed catalog cache; single-flight per key. Plugin-closure state:
   // the fiber effect below is its teardown boundary.
   const fetches = new Map<SessionId, CatalogFetch>()
@@ -89,7 +88,6 @@ export function apply(ctx: ClientContext): void {
   }
 
   const fetchCatalog = (sessionId: SessionId): Promise<readonly SkillEntry[]> => {
-    if (sessions.subagentAddress(sessionId) !== undefined) return Promise.resolve([])
     const existing = fetches.get(sessionId)
     if (existing !== undefined) return existing.promise
     const abort = new AbortController()

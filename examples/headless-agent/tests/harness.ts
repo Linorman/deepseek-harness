@@ -9,6 +9,7 @@ import LocalSubprocessRuntime from '@clocky/clocky-subprocess-local'
 import * as ToolBash from '@clocky/clocky-tool-bash'
 import * as ToolTodo from '@clocky/clocky-tool-todo'
 import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
+import type { PiAiProviderProfile, PiAiReasoningEfforts } from '@clocky/clocky-llm-pi-ai'
 import TokenMeter from '@clocky/clocky-token-meter'
 import ToolResultPruner from '@clocky/clocky-compaction-tool-result-pruner'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
@@ -25,7 +26,8 @@ import type { BasicCompactionConfig } from '@clocky/clocky-compaction-basic'
 
 export const SYSTEM_PROMPT = 'You are a coding agent. Use bash for file operations '
   + 'with cat/grep/heredocs; check [exit code: N] markers, '
-  + 'and report results briefly.'
+  + 'and report results briefly. When the task names a tool, call it immediately '
+  + 'and do not replace the tool call with an explanation.'
 
 /** System prompt for the todo_write e2e: nudges the model to plan with the tool. */
 export const TODO_SYSTEM_PROMPT = 'You are a coding agent. For multi-step work, '
@@ -33,6 +35,88 @@ export const TODO_SYSTEM_PROMPT = 'You are a coding agent. For multi-step work, 
   + 'mark every task being actively worked on in_progress (several at once when '
   + 'work runs in parallel, at least one while work remains), and mark a task '
   + 'completed as soon as it is done.'
+
+const localModelBaseURL = process.env.CLOCKY_LOCAL_MODEL_BASE_URL
+const useLocalModel = localModelBaseURL !== undefined && localModelBaseURL.length > 0
+/** Canonical thinking levels mapped to the levels accepted by the local Qwen endpoint. */
+const localModelReasoningEfforts = {
+  off: null,
+  minimal: 'low',
+  low: 'low',
+  medium: 'medium',
+  high: 'xhigh',
+  xhigh: 'xhigh',
+  max: 'xhigh',
+} satisfies PiAiReasoningEfforts
+type LocalReasoningEffort = NonNullable<PiAiProviderProfile['reasoning']>
+const localModelReasoningEffort: LocalReasoningEffort | undefined = (() => {
+  const raw = process.env.CLOCKY_LOCAL_MODEL_REASONING_EFFORT
+  if (raw === undefined || raw === '') return undefined
+  switch (raw) {
+    case 'off':
+    case 'minimal':
+    case 'low':
+    case 'medium':
+    case 'high':
+    case 'xhigh':
+    case 'max':
+      return raw
+    default:
+      throw new Error('CLOCKY_LOCAL_MODEL_REASONING_EFFORT must be one of off, minimal, low, medium, high, xhigh, or max')
+  }
+})()
+
+/** Whether a keyed real-model route is available to the live e2e suites. */
+export const hasRealModel = useLocalModel || Boolean(process.env.DEEPSEEK_API_KEY)
+
+/** Provider/model identity selected by the live e2e suites. */
+export const realModel = Object.freeze({
+  provider: useLocalModel ? 'local-vllm' : 'deepseek',
+  model: useLocalModel
+    ? process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'
+    : 'deepseek-v4-flash',
+})
+
+/**
+ * Build the one real-model route used by programmatic headless e2e harnesses.
+ * The local route is explicit and OpenAI-compatible; the external route keeps
+ * the example's existing DeepSeek fallback. A context override names the
+ * selected model rather than inventing a second test-only model id.
+ * @param modelContextWindow - optional context capacity override for compaction tests.
+ * @returns provider profiles keyed by the selected route.
+ */
+export function realModelProviders(modelContextWindow?: number): Record<string, PiAiProviderProfile> {
+  if (useLocalModel) {
+    return {
+      [realModel.provider]: {
+        apiKeyEnv: 'CLOCKY_LOCAL_MODEL_API_KEY',
+        api: 'openai-completions',
+        baseURL: localModelBaseURL,
+        compat: {
+          supportsDeveloperRole: false,
+          supportsReasoningEffort: true,
+          maxTokensField: 'max_tokens',
+        },
+        defaultContextWindow: modelContextWindow ?? 131072,
+        defaultMaxTokens: 5120,
+        models: [{
+          id: realModel.model,
+          contextWindow: modelContextWindow ?? 131072,
+          maxTokens: 5120,
+          reasoningEfforts: localModelReasoningEfforts,
+        }],
+        ...localModelReasoningEffort === undefined ? {} : { reasoning: localModelReasoningEffort },
+      },
+    }
+  }
+  return {
+    deepseek: {
+      apiKeyEnv: 'DEEPSEEK_API_KEY',
+      ...process.env.DEEPSEEK_BASE_URL === undefined ? {} : { baseURL: process.env.DEEPSEEK_BASE_URL },
+      ...modelContextWindow === undefined ? {} : { models: [{ id: realModel.model, contextWindow: modelContextWindow }] },
+    },
+  }
+}
 
 /** Options for {@link codingHarness}. */
 export interface CodingHarnessOptions {
@@ -49,7 +133,7 @@ export interface CodingHarnessOptions {
    * compaction plugin (the default suites run without it).
    */
   compact?: BasicCompactionConfig
-  /** Test-only context capacity advertised for `test-model`. */
+  /** Test-only context capacity advertised for the selected real model. */
   modelContextWindow?: number
 }
 
@@ -60,15 +144,7 @@ export async function codingHarness(workdir: string, options: CodingHarnessOptio
   })
   await ctx.plugin(AgentLoop, { agents: [] })
   await ctx.plugin(LlmPiAi, {
-    providers: {
-      deepseek: {
-        apiKeyEnv: 'DEEPSEEK_API_KEY',
-        ...process.env.DEEPSEEK_BASE_URL === undefined ? {} : { baseURL: process.env.DEEPSEEK_BASE_URL },
-        ...options.modelContextWindow === undefined
-          ? {}
-          : { models: [{ id: 'test-model', contextWindow: options.modelContextWindow }] },
-      },
-    },
+    providers: realModelProviders(options.modelContextWindow),
   })
   await ctx.plugin(LocalSubprocessRuntime)
   await ctx.plugin(BashEnvPlugin)

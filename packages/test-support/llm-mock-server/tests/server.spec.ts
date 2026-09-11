@@ -49,6 +49,28 @@ function rawChat(server: MockLlmServer, chunks: readonly Buffer[]): Promise<void
   })
 }
 
+interface SseToolDelta {
+  readonly choices?: readonly {
+    readonly delta?: {
+      readonly tool_calls?: readonly {
+        readonly function?: { readonly arguments?: string }
+      }[]
+    }
+  }[]
+}
+
+function toolArgumentsFromSse(body: string): string {
+  return body.split('\n')
+    .filter(line => line.startsWith('data: {'))
+    .flatMap((line) => {
+      const payload = JSON.parse(line.slice('data: '.length)) as SseToolDelta
+      return payload.choices?.flatMap(choice => choice.delta?.tool_calls?.flatMap(call =>
+        typeof call.function?.arguments === 'string' ? [call.function.arguments] : [],
+      ) ?? []) ?? []
+    })
+    .join('')
+}
+
 describe('mock LLM server wire behaviors', () => {
   it('streams a complete text response and captures the request', async () => {
     const events: MockLlmServerEvent[] = []
@@ -245,6 +267,23 @@ describe('mock LLM server wire behaviors', () => {
     expect(contentTypes[4]).toBe('application/json')
     expect(server.requests).toHaveLength(5)
     expect(server.requests.every(record => record.outcome === 'completed')).toBe(true)
+  })
+
+  it('resolves a Team final channel placeholder from the system prompt', async () => {
+    const server = await start(['tool_call_success'], {
+      toolName: 'team_final',
+      toolArguments: '{"channel_id":"{{channel_id}}","text":"done"}',
+    })
+    const response = await chat(server, {
+      body: JSON.stringify({
+        model: 'mock',
+        messages: [{ role: 'system', content: 'call team_final with channel_id channel-placeholder and your final answer text' }],
+        stream: true,
+      }),
+    })
+    const body = await response.text()
+    expect(toolArgumentsFromSse(body)).toBe('{"channel_id":"channel-placeholder","text":"done"}')
+    expect(body).not.toContain('{{channel_id}}')
   })
 
   it.each([

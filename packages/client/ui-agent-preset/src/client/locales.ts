@@ -36,7 +36,7 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   view: 'View',
   presetStandardName: 'Standard mode',
   presetStandardDescription:
-    'Full coding agent with file editing, shell, file and web search, skills, planning, goals, subagents, and workflows.',
+    'Full coding agent with file editing, shell, file and web search, skills, planning, goals, and Team coordination.',
   presetCodeName: 'PTC mode',
   presetCodeDescription:
     'All Standard mode capabilities, with tools exposed through the Code Mode SDK so the model can combine multi-step operations in one TypeScript program.',
@@ -99,7 +99,7 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   setDefault: '设为默认',
   view: '查看',
   presetStandardName: '标准模式',
-  presetStandardDescription: '功能完整的编码 Agent，支持文件编辑、Shell、文件与网页检索、Skills、计划、目标、子代理和工作流。',
+  presetStandardDescription: '功能完整的编码 Agent，支持文件编辑、Shell、文件与网页检索、Skills、计划、目标和 Team 协作。',
   presetCodeName: 'PTC 模式',
   presetCodeDescription: '具备标准模式的全部能力，并通过 Code Mode SDK 呈现工具，让模型用一个 TypeScript 程序组合多步操作。',
   presetMinimalName: '极简模式',

@@ -12,6 +12,9 @@
       "path": "../../../vendor/cordis"
     },
     {
+      "path": "../../../vendor/loader"
+    },
+    {
       "path": "../../../vendor/schemastery"
     },
     {
@@ -24,13 +27,52 @@
       "path": "../../core/session"
     },
     {
+      "path": "../../session/session-persistence"
+    },
+    {
+      "path": "../../team/team-channel-direct"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../core/product-principal"
+    },
+    {
+      "path": "../../core/team-artifact"
+    },
+    {
+      "path": "../../core/team-link"
+    },
+    {
+      "path": "../../team/team-link-websocket"
+    },
+    {
+      "path": "../../team/team-agent-client"
+    },
+    {
+      "path": "../../team/team-run"
+    },
+    {
+      "path": "../../team/team-human-actor"
+    },
+    {
       "path": "../protocol"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../runtime-diagnostics/invariants"
     },
     {
-      "path": "../../runtime-diagnostics/invariants"
+      "path": "../../team/team-channel-admission"
+    },
+    {
+      "path": "../../attachment/attachment"
+    },
+    {
+      "path": "../../attachment/attachment-local"
+    },
+    {
+      "path": "../../team/team-channel-summary"
     }
   ]
 }

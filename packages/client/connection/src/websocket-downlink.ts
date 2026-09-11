@@ -43,6 +43,11 @@ function failureFrame(error: unknown): RpcRequest<Frame> {
   }
 }
 
+/** Normalize arbitrary callback failures for Promise rejection. */
+function rejectionError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error))
+}
+
 /**
  * Owns WebSocket negotiation and frame pumping for the connection plugin's
  * two downlinks. Client messages are a protocol violation: upstream traffic
@@ -60,12 +65,13 @@ export class WebSocketDownlinks {
    * @param req - HTTP upgrade request.
    * @param socket - Raw socket transferred by the HTTP server.
    * @param head - Bytes already read after the upgrade headers.
+   * @param productSignal - aborts when the authenticated product connection is revoked.
    */
-  handleMux(req: IncomingMessage, socket: Duplex, head: Buffer): void {
-    this.upgrade(req, socket, head, signal => this.api.events.mux({
+  handleMux(req: IncomingMessage, socket: Duplex, head: Buffer, productSignal?: AbortSignal): Promise<void> {
+    return this.upgrade(req, socket, head, signal => this.api.events.mux({
       rpcId: RpcId(randomUUID()),
       payload: {},
-    }, signal))
+    }, signal), productSignal)
   }
 
   /**
@@ -73,12 +79,13 @@ export class WebSocketDownlinks {
    * @param req - HTTP upgrade request.
    * @param socket - Raw socket transferred by the HTTP server.
    * @param head - Bytes already read after the upgrade headers.
+   * @param productSignal - aborts when the authenticated product connection is revoked.
    */
-  handleHost(req: IncomingMessage, socket: Duplex, head: Buffer): void {
-    this.upgrade(req, socket, head, signal => this.api.events.host({
+  handleHost(req: IncomingMessage, socket: Duplex, head: Buffer, productSignal?: AbortSignal): Promise<void> {
+    return this.upgrade(req, socket, head, signal => this.api.events.host({
       rpcId: RpcId(randomUUID()),
       payload: {},
-    }, signal))
+    }, signal), productSignal)
   }
 
   /**
@@ -101,17 +108,56 @@ export class WebSocketDownlinks {
     socket: Duplex,
     head: Buffer,
     open: (signal: AbortSignal) => AsyncIterable<RpcRequest<F>>,
-  ): void {
-    this.server.handleUpgrade(req, socket, head, (websocket) => {
-      const abort = new AbortController()
-      websocket.once('close', () => { abort.abort() })
-      websocket.once('error', () => { abort.abort() })
-      websocket.once('message', () => {
-        websocket.close(1008, 'downlink only')
-      })
-      const pump = this.pump(websocket, open(abort.signal), abort)
-      this.pumps.add(pump)
-      void pump.then(() => { this.pumps.delete(pump) })
+    productSignal: AbortSignal | undefined,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let accepted = false
+      const abortBeforeUpgrade = (): void => {
+        if (accepted) return
+        socket.destroy()
+        resolve()
+      }
+      if (productSignal?.aborted === true) {
+        abortBeforeUpgrade()
+        return
+      }
+      productSignal?.addEventListener('abort', abortBeforeUpgrade, { once: true })
+      try {
+        this.server.handleUpgrade(req, socket, head, (websocket) => {
+          accepted = true
+          productSignal?.removeEventListener('abort', abortBeforeUpgrade)
+          if (productSignal?.aborted === true) {
+            websocket.terminate()
+            resolve()
+            return
+          }
+          const abort = new AbortController()
+          const abortProductCall = (): void => {
+            abort.abort()
+            websocket.terminate()
+          }
+          productSignal?.addEventListener('abort', abortProductCall, { once: true })
+          websocket.once('close', () => { abort.abort() })
+          websocket.once('error', () => { abort.abort() })
+          websocket.once('message', () => {
+            websocket.close(1008, 'downlink only')
+          })
+          const pump = this.pump(websocket, open(abort.signal), abort)
+          this.pumps.add(pump)
+          void pump.then(() => {
+            this.pumps.delete(pump)
+            productSignal?.removeEventListener('abort', abortProductCall)
+            resolve()
+          }, (error: unknown) => {
+            this.pumps.delete(pump)
+            productSignal?.removeEventListener('abort', abortProductCall)
+            reject(rejectionError(error))
+          })
+        })
+      } catch (error: unknown) {
+        productSignal?.removeEventListener('abort', abortBeforeUpgrade)
+        reject(rejectionError(error))
+      }
     })
   }
 

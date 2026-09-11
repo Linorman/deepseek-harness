@@ -34,7 +34,6 @@ import css from './InputBar.module.css'
 
 /** Decoration product of the no-session state (no machine, empty draft). */
 const INERT_DECORATIONS: DraftDecorations = { token: null, chips: [], textRefs: [], hint: null }
-
 /** The selection and edit family a `beforeinput` recorded, with the draft length it applied to. */
 interface PendingEdit {
   readonly start: number
@@ -77,20 +76,24 @@ function editRangeOf(pending: PendingEdit | null, prevLength: number, nextLength
 export type InputBarProps = ComposerBarProps
 
 export function InputBar({
-  useSession, useInput, inputActions, keyboard, addImages, removeImage, draftImages,
+  useSession, useInput, inputActions, keyboard, teamDraftActions, addImages, removeImage, draftImages,
   resolveSubmitMode, toggleCommandMenu, stop, command, t,
-  renderSlot, useNotices, useLexicon, useMenuLauncher,
+  renderSlot, useNotices, useLexicon, useMenuLauncher, useTeamTasks, useTeamDraftInput, useTeamDraftNotices,
   useProjection, sessionId, variant, disabled: inert = false, blocked,
-  workspacePickerOpen = false, onRequestWorkspace,
   placeholder, accessory, overlay, leftItems, rightItems, footer,
 }: InputBarProps) {
-  const input = useInput(s => s)
-  const notice = useNotices(s => s)
+  const sessionInput = useInput(s => s)
+  const draftInput = useTeamDraftInput(s => s)
+  const input = sessionInput ?? draftInput
+  const actions = inputActions ?? teamDraftActions
+  const sessionNotice = useNotices(s => s)
+  const teamDraftNotice = useTeamDraftNotices(s => s)
+  const notice = sessionInput === undefined ? teamDraftNotice : sessionNotice
   const lexicon = useLexicon(s => s)
   const commandMenuOpen = useMenuLauncher(source => source === 'command')
+  const teamOwned = useTeamTasks?.(state => state.current !== undefined) ?? false
   const promptError = useSession(s => s.promptError) ?? null
   const running = useSession(s => s.running) ?? false
-  const subagent = useSession(s => s.subagent) ?? null
   const removed = useSession(s => s.removed) ?? false
   // Plan mode swaps the textarea placeholder (the projection is the folded
   // host value; owner-prop placeholders — hero, session-unavailable — win).
@@ -99,7 +102,7 @@ export function InputBar({
   const hasGoal = useProjection('goal', goal => goal != null)
   // Session-maybe: the machine faces are absent together while no session is
   // current; the bar renders the same DOM inert instead of a parallel tree.
-  const live = input !== undefined && keyboard !== undefined && inputActions !== undefined
+  const live = input !== undefined && keyboard !== undefined && actions !== undefined
   const draft = input?.draft ?? ''
   const attachments = useMemo(
     () => input === undefined || draftImages === undefined ? [] : draftImages(input.imageIds),
@@ -157,15 +160,10 @@ export function InputBar({
   // (undefined = capability absent → the chip renders nothing).
   const permissions = useProjection('permissions')
 
-  // A continuable child without its live parent cannot accept human input,
-  // but its independent Stop below stays available while it runs.
-  const continuable = subagent?.address.mode === 'continuable'
-  const parentOffline = continuable && !subagent.parentAvailable
-  // Running input stays free; locked = session removed, the
-  // inert no-workspace state, the machine faces absent (no session), or a
-  // parent-offline continuable child. An owner block also disables input;
-  // adjudicating and submitting render read-only so the draft stays visible.
-  const disabled = removed || inert || !live || blocked !== undefined || parentOffline
+  // Running input stays free; an owner block, removed session, inert task
+  // state, or absent machine disables it. Adjudicating and submitting keep
+  // the draft visible but read-only.
+  const disabled = removed || inert || !live || blocked !== undefined
   const locked = disabled
   // The model seat is the ONE control a block leaves live: every block this
   // contract has is cleared by choosing a model, so locking it too would leave
@@ -173,21 +171,16 @@ export function InputBar({
   // be disabled do lock it — there is no session to choose a model for.
   const modelSeatLocked = removed || inert || !live
   const machineBusy = input?.phase === 'adjudicating' || input?.phase === 'submitting'
-  // The no-workspace textarea remains the resident DOM node but acts as the
-  // existing picker trigger. Message controls stay locked until a Session
-  // exists; the trigger itself is read-only rather than disabled so pointer
-  // and keyboard users can reach the recovery action.
-  const workspaceTrigger = inert && !removed && onRequestWorkspace !== undefined
-  const textareaDisabled = removed || (locked && !workspaceTrigger)
-  const canSteerQueue = !locked && !machineBusy && !commandMenuOpen && empty && running && subagent === null
+  const textareaDisabled = removed || locked
+  const canSteerQueue = !locked && !machineBusy && !commandMenuOpen && empty && running
     && input.queue.some(row => row.placement === 'queued')
 
   useEffect(() => {
-    if (input === undefined || inputActions === undefined) return
+    if (input === undefined || actions === undefined) return
     if (attachments.length !== input.imageIds.length) {
-      inputActions.pruneImages(attachments.map(attachment => attachment.id))
+      actions.pruneImages(attachments.map(attachment => attachment.id))
     }
-  }, [attachments, input?.imageIds, inputActions])
+  }, [actions, attachments, input?.imageIds])
 
   // A native Safari edit that shortens the draft may leave the previous
   // soft-wrap layout behind after the mirror shrinks. The native-change signal
@@ -346,16 +339,7 @@ export function InputBar({
   }, [])
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (workspaceTrigger) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        onRequestWorkspace()
-      }
-      return
-    }
-    // Absent machine without a Workspace recovery action stays disabled; the
-    // guard narrows the faces for the paths below.
-    if (input === undefined || keyboard === undefined || inputActions === undefined) return
+    if (input === undefined || keyboard === undefined || actions === undefined) return
     // Shift+Enter is the native newline UNCONDITIONALLY — decided before the
     // IME guard so a composition-closing Shift+Enter still breaks the line.
     if (e.key === 'Enter' && e.shiftKey) return
@@ -431,7 +415,7 @@ export function InputBar({
     keyboard.submit(resolveSubmitMode(
       running,
       accelerated ? 'accelerated' : 'enter',
-      subagent === null,
+      true,
     ))
   }
 
@@ -553,30 +537,27 @@ export function InputBar({
   }
 
   const onToggleCommandMenu = (): void => {
+    if (teamOwned) return
     const el = inputRef.current
     if (el !== null) toggleCommandMenu?.(selectionOf(el))
   }
 
-  // Ordinary sessions retain their primary Send/Stop toggle. A continuable
-  // child keeps Send as the primary action and exposes Stop independently so
-  // pointer users can queue follow-ups while its current turn is running.
-  const primaryStops = running && subagent === null
-  const interruptible = running && continuable
+  const primaryStops = running
   const primaryLabel = primaryStops ? t('input.stop') : t('input.send')
   const onPrimary = (): void => {
     if (primaryStops) {
       stop?.()
       return
     }
-    if (inputActions === undefined) return // absent machine: the button is disabled
+    if (actions === undefined) return // absent machine: the button is disabled
     /* v8 ignore next -- defensive: the primary button is disabled while empty||disabled, so a click cannot reach the false arm. */
-    if (!empty && !disabled && !machineBusy) inputActions.submit()
+    if (!empty && !disabled && !machineBusy) actions.submit()
   }
 
   // The Access seat: the projection-fed permission chip (renders nothing
   // while the permissions key is absent — permission-less host or Draft —
   // or while the command face is absent with the session).
-  const accessSelect: ReactNode = command === undefined
+  const accessSelect: ReactNode = teamOwned || command === undefined
     ? null
     : <PermissionSelect key={sessionId} value={permissions} locked={locked} command={command} t={t} />
 
@@ -693,17 +674,10 @@ export function InputBar({
           {notice.text}
         </div>
       )}
-      {/* Trigger clicks land on the card, not the textarea: the toolbar row's
-          disabled controls swallow clicks otherwise (the CSS state disarms
-          their pointer events), so the WHOLE capsule is the pick target.
-          pointerdown stops here so the Menu's outside-close cannot race the
-          click's reopen (close-then-open flickers the chip's open echo). */}
       <div
         ref={cardRef}
-        className={clsx(css.card, workspaceTrigger && css.cardWorkspaceTrigger)}
+        className={css.card}
         data-composer-card
-        onClick={workspaceTrigger ? onRequestWorkspace : undefined}
-        onPointerDown={workspaceTrigger ? (e) => { e.stopPropagation() } : undefined}
       >
         {overlay !== undefined && <div className={css.overlayAnchor}>{overlay}</div>}
         {accessory !== undefined && <div className={css.accessory}>{accessory}</div>}
@@ -739,21 +713,16 @@ export function InputBar({
               className={css.input}
               value={draft}
               disabled={textareaDisabled}
-              readOnly={machineBusy || workspaceTrigger}
-              aria-label={workspaceTrigger ? t('hero.chooseWorkspace') : undefined}
-              aria-haspopup={workspaceTrigger ? 'menu' : undefined}
-              aria-expanded={workspaceTrigger ? workspacePickerOpen : undefined}
+              readOnly={machineBusy}
               data-phase={input?.phase ?? 'inert'}
-              placeholder={placeholder ?? (parentOffline
-                ? t('placeholder.parentOffline')
-                : disabled
-                  ? t('placeholder.unavailable')
-                  // The steer hint deliberately outranks the plan placeholder:
-                  // while it shows, the whole-queue gesture is genuinely available
-                  // (the gate never consults plan mode), so the actionable hint wins.
-                  : canSteerQueue
-                    ? t('placeholder.steerQueue')
-                    : planActive ? t('placeholder.plan') : t('placeholder.default'))}
+              placeholder={placeholder ?? (disabled
+                ? t('placeholder.unavailable')
+                // The steer hint deliberately outranks the plan placeholder:
+                // while it shows, the whole-queue gesture is genuinely available
+                // (the gate never consults plan mode), so the actionable hint wins.
+                : canSteerQueue
+                  ? t('placeholder.steerQueue')
+                  : planActive ? t('placeholder.plan') : t('placeholder.default'))}
               rows={2}
               onChange={onChange}
               onKeyDown={onKeyDown}
@@ -776,7 +745,7 @@ export function InputBar({
                 aria-label={t('input.commands')}
                 aria-haspopup="listbox"
                 aria-expanded={commandMenuOpen}
-                disabled={locked || toggleCommandMenu === undefined}
+                disabled={locked || teamOwned || toggleCommandMenu === undefined}
                 onMouseDown={keepFocus}
                 onClick={onToggleCommandMenu}
               >
@@ -785,30 +754,14 @@ export function InputBar({
             </Tooltip>
             <div className={css.modes}>
               {accessSelect}
-              {renderSlot('conversation.input.plan', { locked })}
+              {!teamOwned && renderSlot('conversation.input.plan', { locked, teamOwned })}
             </div>
             {leftItems}
           </div>
           <div className={css.trailing}>
             {rightItems}
-            {renderSlot('conversation.input.model', { locked: modelSeatLocked })}
+            {renderSlot('conversation.input.model', { locked: modelSeatLocked, teamOwned })}
             <ContextMeter useProjection={useProjection} t={t} />
-            {interruptible && (
-              <Tooltip label={t('input.stop')} side="top" delayMs={500}>
-                <button
-                  type="button"
-                  className={css.primary}
-                  aria-label={t('input.stop')}
-                  disabled={stop === undefined}
-                  onMouseDown={keepFocus}
-                  onClick={stop}
-                >
-                  <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-                    <rect x="3" y="3" width="10" height="10" rx="3" fill="currentColor" />
-                  </svg>
-                </button>
-              </Tooltip>
-            )}
             <Tooltip label={primaryLabel} side="top" delayMs={500}>
               <button
                 type="button"

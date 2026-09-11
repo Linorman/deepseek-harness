@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-settings
+# @clocky/clocky-settings
 
 English | [中文](README.zh.md)
 

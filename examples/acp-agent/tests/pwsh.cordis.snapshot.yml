@@ -29,10 +29,12 @@
       enabled: false
     # job_output/job_kill stay mounted (the bundle's toolJobs default) so
     # background pwsh runs are readable and killable.
-    goals: false
     # The pwsh tool replaces the bundle's bash tool in this composition.
     toolBash: false
     persona: You are a concise snapshot agent working in {{cwd}}.
+
+- id: team-snapshot-finalizer
+  name: ./fixtures/team-snapshot-finalizer.ts
 
 - id: tool-pwsh
   name: '@clocky/clocky-tool-pwsh'

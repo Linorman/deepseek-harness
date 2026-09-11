@@ -36,6 +36,8 @@ Status: implemented
 - Client tsc 在 Host Typert 已生成 Remote Client 声明后对 `tsconfig.client.json` 执行 `tsc -b`；Client tsdown 再读取 Client 图发射的 JS，生成 Client 包的 Node loader 入口与 browser bundle。
 - Web build 只在两个 lib 阶段完成后启动。
 
+根 tsdown 配置只发现 `vendor/*`、`packages/*/*` 和 `apps/cli` 下的包 manifest，再把对应目录传给 tsdown。这排除了私有仓库根目录和没有 manifest 的残留目录；否则 tsdown 可能使用祖先目录的 manifest，把残留目录也当作包。没有包级配置的 Host workspace 继承 `lib/types/{index,invariant,startup}.js`。该 glob 纳入每个已存在的入口，不要求所有 companion 文件都存在。包级配置可覆盖默认值，为其他 runtime export 指定入口。Client 阶段没有继承入口，因此只打包带显式 Client 配置的包。把 Host 默认值设为空入口，会使 tsdown 静默移除没有包级配置的 workspace，即使命令成功退出。直接指向 `lib/types` 的 export 仍由 TSC 生成，Typert 和 Remote export 仍由生成器负责。
+
 `tsdown` 不再负责 TypeScript 编译或声明文件输出。
 
 `pnpm run typecheck` 先执行 Host lib 阶段，以生成 Client 类型检查所需的 Remote 声明，再对 `tsconfig.client.json` 执行 `tsc -b`。两个 aggregate 本身以 `noEmit` 方式检查各自的示例、测试与脚本；被引用的包项目和 vendor 项目保持与构建相同的发射行为。
@@ -47,9 +49,9 @@ Status: implemented
 ```sh
 pnpm run build:
 tsc -b tsconfig.host.json
-tsdown --env.DSH_BUILD_FACE host
+tsdown --env.CLOCKY_BUILD_FACE host
 tsc -b tsconfig.client.json
-tsdown --env.DSH_BUILD_FACE client
+tsdown --env.CLOCKY_BUILD_FACE client
 pnpm run build:web
 
 pnpm run verify-node-next-types:
@@ -63,7 +65,7 @@ pnpm run clean:
 tsx scripts/clean.ts
 ```
 
-源码模式 demo 通过各自声明的 TypeScript 启动器和根路径映射运行。`dsh` TUI 链使用 Node 原生转换及应用自有的路径 loader，Web demo 在进入同一条 CLI 源码链路前先构建所需产物，其他源码 demo 继续使用 tsx。
+源码模式 demo 通过各自声明的 TypeScript 启动器和根路径映射运行。`clocky` TUI 链使用 Node 原生转换及应用自有的路径 loader，Web demo 在进入同一条 CLI 源码链路前先构建所需产物，其他源码 demo 继续使用 tsx。
 
 ## 曾考虑的替代方案
 
@@ -76,7 +78,7 @@ tsx scripts/clean.ts
 
 构建职责更加清晰：
 
-- `packages/<group>/<pkg>` 和 `vendor/*` 下的每个普通模块有一份本地 tsconfig，同时服务于构建、类型检查和直接运行源码的工具（如 `dsh` 源码 loader、`tsx` 和 `vitest`）。`api/remotes` 因生成约定顺序使用一个 solution 和两个互斥的 emitting project，是唯一例外。
+- `packages/<group>/<pkg>` 和 `vendor/*` 下的每个普通模块有一份本地 tsconfig，同时服务于构建、类型检查和直接运行源码的工具（如 `clocky` 源码 loader、`tsx` 和 `vitest`）。`api/remotes` 因生成约定顺序使用一个 solution 和两个互斥的 emitting project，是唯一例外。
 - `build` 命令依次运行 Host 和 Client 的 Project Reference 图。每个阶段都由 `tsc -b` 负责可发布的逐模块 `.js` 和 `.d.ts` 输出，打包器仅负责发布 runtime bundle。
     - `lib/types/*.d.ts` 是发布用的声明输出；`.d.ts.map` 只作为本地编译产物保留。
     - `lib/types/*.d.ts` 使用显式 `.ts` 相对说明符，TypeScript 的 NodeNext/Node16 解析器会将其映射到同级的 `.d.ts` 文件。
@@ -85,5 +87,7 @@ tsx scripts/clean.ts
 - `pnpm run verify-node-next-types` 扫描构建出的声明文件，检查是否存在缺少文件扩展名的相对说明符，然后以 `moduleResolution: "NodeNext"` 对构建出的 `types`/`exports` 接口进行临时外部 ESM 消费方的类型检查，确保声明说明符的回归在发布前被捕获。
 - `typecheck` 命令使用 `tsconfig.json`。示例、测试和脚本由根 no-emit 项目检查，包和 vendor 模块保持与 `build` 相同的输出行为。包和 vendor 源码始终处于 project-reference 边界之后。
 - 切换分支或更新工作副本后，如果其中删除了包，贡献者可在重新构建前运行 `pnpm run clean`，删除陈旧的包目录。不含 `package.json` 的包目录如果存在未知文件，必须手动判定其类别，不能直接删除。
+
+`scripts/tsdown-workspace.spec.ts` 用 TypeScript 编译真实的 Typert 配置依赖与 fixture 输入，再通过 tsdown 的公开 build API 执行未修改的根配置。测试观察解析出的 workspace 目录，并在 plain Node 下导入生成的 JavaScript，覆盖只有 index 的包、可选的 invariant/startup companion、包级自定义入口、私有根目录与无 manifest 目录的排除，以及仅选择 Client 包。fixture 初始没有 runtime bundle，也不依赖仓库已有构建产物。
 
 Cordis 的 vendor 副本现在与上游多了一处类型结构差异。在上游同步时，该差异必须被重新应用或明确废弃。

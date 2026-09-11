@@ -53,7 +53,6 @@ async function seedVisibleBaseline(
     id: sessionId,
     createdAt: 1,
     cwd,
-    delegationDepth: 0,
   }
   const files = options.files ?? [{ name: 'AGENTS.md', content: oldInstruction }]
   const baseline = renderWorkspaceContext(files.map(file => ({

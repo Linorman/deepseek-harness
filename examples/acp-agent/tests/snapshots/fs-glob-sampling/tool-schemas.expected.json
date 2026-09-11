@@ -34,6 +34,14 @@
       }
     },
     {
+      "name": "get_goal",
+      "description": "Read this Team’s durable objective, including its exact revision, phase, blocker, and budget.",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
       "name": "glob",
       "description": "Find files whose paths match a glob pattern. Returns matching file paths — never directories — including hidden and ignored files (VCS metadata directories are excluded). Up to 4 paths come back in modification-time order; a larger result instead returns 4 paths sampled across top-level entries, says so, and reports where the complete sorted list was saved. This tool does not enumerate directory entries.",
       "parameters": {
@@ -74,6 +82,300 @@
         },
         "required": [
           "pattern"
+        ]
+      }
+    },
+    {
+      "name": "team_final",
+      "description": "Send the final answer through one two-party direct Team channel. Use the exact channel_id of the final-answer channel; the recipient is derived from that channel.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "description": "Exact two-party direct Team channel id."
+          },
+          "text": {
+            "type": "string",
+            "description": "Non-empty final answer for the other channel participant."
+          }
+        },
+        "required": [
+          "channel_id",
+          "text"
+        ]
+      }
+    },
+    {
+      "name": "team_goal_phase",
+      "description": "Advance this Team objective to active, paused, blocked, or complete at the exact revision. A blocked objective must include a code and explanation.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "description": "Exact positive revision returned by get_goal."
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "active",
+              "paused",
+              "blocked",
+              "complete"
+            ]
+          },
+          "blocker_code": {
+            "type": "string",
+            "description": "Required with blocked."
+          },
+          "blocker_message": {
+            "type": "string",
+            "description": "Required with blocked."
+          }
+        },
+        "required": [
+          "revision",
+          "phase"
+        ]
+      }
+    },
+    {
+      "name": "team_message",
+      "description": "Send an explicit text message to a Team channel. The sender is derived from your current activation; the channel adapter validates recipients, turn order, and delivery intent.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "description": "Exact Team channel id."
+          },
+          "text": {
+            "type": "string",
+            "description": "Non-empty message text."
+          },
+          "audience": {
+            "type": "array",
+            "description": "Optional explicit recipients; omit for adapter-defined broadcast.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "delivery": {
+            "type": "string",
+            "enum": [
+              "context",
+              "turn",
+              "steer"
+            ]
+          }
+        },
+        "required": [
+          "channel_id",
+          "text",
+          "delivery"
+        ]
+      }
+    },
+    {
+      "name": "team_task_heartbeat",
+      "description": "Renew the lease for one running Team task attempt assigned to you. Use the exact task_id and attempt_id from the task assignment message before the lease expires.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Exact Team task id from the task assignment message."
+          },
+          "attempt_id": {
+            "type": "string",
+            "description": "Exact attempt id from the task assignment message."
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id"
+        ]
+      }
+    },
+    {
+      "name": "team_task_integrate",
+      "description": "Execute the current assigned Team integration task from its completed source attempt. The Hub derives the source task, provider, target, expected target revision, and operation mode from the durable task; use the exact task_id and attempt_id from the task assignment message. The provider validates the source attempt artifact manifest; integration-capable providers consume one provenance-bound patch artifact in their provider-owned format; directory providers use the portable change-set encoding.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Exact integration task id from the task assignment message."
+          },
+          "attempt_id": {
+            "type": "string",
+            "description": "Exact integration attempt id from the task assignment message."
+          },
+          "verification": {
+            "type": "string",
+            "description": "Optional verification command or summary to retain with the integration result."
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id"
+        ]
+      }
+    },
+    {
+      "name": "team_task_report",
+      "description": "Report completion, failure, or release for one running Team task attempt assigned to you. Use the exact task_id and attempt_id from the task assignment message. completed records summary and enters review only when the task names a reviewer; otherwise it completes the task directly; failed or released returns it to pending unless its attempt limit is exhausted.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Exact Team task id from the task assignment message."
+          },
+          "attempt_id": {
+            "type": "string",
+            "description": "Exact attempt id from the task assignment message."
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed",
+              "released"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Concise result summary; required only with completed."
+          },
+          "evidence": {
+            "type": "array",
+            "description": "Optional evidence statements supporting the result.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "artifacts": {
+            "type": "array",
+            "description": "Optional artifact references produced by this attempt.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "file",
+                    "patch",
+                    "log",
+                    "screenshot",
+                    "report"
+                  ]
+                },
+                "uri": {
+                  "type": "string"
+                },
+                "contentHash": {
+                  "type": "string"
+                },
+                "sourceAttemptId": {
+                  "type": "string"
+                },
+                "visibility": {
+                  "type": "string",
+                  "enum": [
+                    "private",
+                    "team",
+                    "human"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "uri",
+                "visibility"
+              ]
+            }
+          },
+          "changed_paths": {
+            "type": "array",
+            "description": "Optional changed paths from the execution workspace.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verification": {
+            "type": "string",
+            "description": "Optional verification command or summary."
+          },
+          "failure_code": {
+            "type": "string",
+            "description": "Stable failure classification; required only with failed."
+          },
+          "failure_message": {
+            "type": "string",
+            "description": "Concrete failure explanation; required only with failed."
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_id",
+          "outcome"
+        ]
+      }
+    },
+    {
+      "name": "team_task_review",
+      "description": "Accept or return one Team task result for rework when you are the configured reviewer. Use the task_id from the current review assignment and a concise reason; its durable revision fence is derived from that assignment.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Exact Team task id awaiting your review."
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rework"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Non-empty explanation for the review decision."
+          }
+        },
+        "required": [
+          "task_id",
+          "decision",
+          "reason"
+        ]
+      }
+    },
+    {
+      "name": "update_goal",
+      "description": "Replace this Team’s objective at the exact revision returned by get_goal. Use only when the current human message asks to revise the task.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "description": "Exact positive revision returned by get_goal."
+          },
+          "objective": {
+            "type": "string",
+            "description": "Replacement non-empty Team objective."
+          }
+        },
+        "required": [
+          "revision",
+          "objective"
         ]
       }
     }

@@ -44,7 +44,7 @@ const CHOOSER_PACKAGE = '@clocky/clocky-host-directory-picker-auto'
 
 /**
  * The packages the chooser mounts by runtime string (mirror of its exported
- * `BACKEND_PACKAGES` and `SURFACE_PACKAGES`), invisible to yml-row scanning: a
+ * `BACKEND_PACKAGES`), invisible to yml-row scanning: a
  * composition mounting the chooser must resolve every one, or keyless Linux CI
  * (which only ever resolves `browse`) hides a dropped `-native` dependency
  * until a macOS boot.
@@ -52,8 +52,6 @@ const CHOOSER_PACKAGE = '@clocky/clocky-host-directory-picker-auto'
 const CHOOSER_BACKEND_PACKAGES = [
   '@clocky/clocky-host-directory-picker-native',
   '@clocky/clocky-host-directory-picker-browse',
-  '@clocky/clocky-client-ui-directory-picker-browse',
-  '@clocky/clocky-client-ui-directory-picker-native',
 ]
 const errors: string[] = []
 const pluginReferences: PluginReference[] = []

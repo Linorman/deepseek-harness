@@ -3,10 +3,8 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
-import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
-import type { Agent, AgentFactory } from '@clocky/clocky-agent'
+import AgentRegistry from '@clocky/clocky-agent'
 import SessionStore, { SessionId } from '@clocky/clocky-session'
-import type { Session } from '@clocky/clocky-session'
 import Storage from '@clocky/clocky-storage'
 import { DomainFacility } from '@clocky/clocky-storage-domain'
 import UserQuestionService from '@clocky/clocky-user-questions'
@@ -39,24 +37,6 @@ async function nextHostFrame(
   return next.value
 }
 
-function stubAgent(session: Session): Agent {
-  return {
-    id: session.id,
-    options: {},
-    session,
-    inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
-    status: 'idle',
-    ctx: new Context(),
-    send: () => {},
-    followup: () => {},
-    steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),
-    inject: () => {},
-    cancel() {},
-    runMaintenance: job => job(new AbortController().signal),
-    whenIdle: () => Promise.resolve(),
-  }
-}
-
 /** Compose the API over real Session, Agent, Storage, Domain, and Workspace services. */
 async function harness(
   root = realpathSync.native(mkdtempSync(join(tmpdir(), 'clocky-apiproxy-workspace-'))),
@@ -78,27 +58,6 @@ async function harness(
   ctx.provide('sessionPersistence', { list: () => Promise.resolve([]) } as never)
   await ctx.plugin(WorkspaceRegistry)
 
-  const factory: AgentFactory = {
-    async createAgent(_ownerCtx, options) {
-      const session = ctx.sessions.create(
-        options.sessionId,
-        options.meta === undefined ? {} : { meta: options.meta },
-      )
-      const agent = stubAgent(session)
-      const unregister = ctx.agents.register(agent)
-      return {
-        agent,
-        dispose: () => {
-          unregister()
-          return Promise.resolve()
-        },
-      }
-    },
-    async resume() {
-      throw new Error('test harness has no persisted sessions')
-    },
-  }
-  ctx.agents.setFactory(factory)
   // Structural picker fake: the gateway only reads capability(); a stable
   // object per harness mirrors the seam's stability contract.
   ctx.provide('directoryPicker', { capability: () => picker } as never)
@@ -364,56 +323,8 @@ describe('workspace.insertBefore', () => {
   })
 })
 
-describe('session creation and Workspace membership', () => {
-  it('attaches a preallocated idempotent session while cwd-only sessions stay ungrouped', async () => {
-    const { api, ctx, root } = await harness()
-    const workspace = expectOk(await api.workspace.create(request({ path: stageDir(root, 'project') }))).workspace
-    const sessionId = SessionId('session-workspace-preallocated')
-
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
-    expect(expectOk(await api.workspace.list(request({}))).items[0]?.sessionIds).toEqual([sessionId])
-    expect(ctx.agents.list().filter(agent => agent.id === sessionId)).toHaveLength(1)
-
-    const ungrouped = SessionId('session-cwd-only')
-    expectOk(await api.sessions.create(request({ cwd: workspace.path, sessionId: ungrouped })))
-    expect(expectOk(await api.workspace.list(request({}))).items[0]?.sessionIds).toEqual([sessionId])
-    expect(expectOk(await api.sessions.list(request({}))).items.map(item => item.sessionId)).toContain(ungrouped)
-
-    const conflict = await api.sessions.create(request({ cwd: join(workspace.path, 'other'), sessionId }))
-    expect(conflict.result).toMatchObject({
-      ok: false,
-      error: { code: 'session-conflict', details: { sessionId, existingCwd: workspace.path } },
-    })
-    const missing = await api.sessions.create(request({
-      workspaceId: 'missing-workspace' as WorkspaceId,
-      sessionId: SessionId('session-missing-workspace'),
-    }))
-    expect(missing.result).toMatchObject({ ok: false, error: { code: 'workspace-not-found' } })
-  })
-
-  it('retains a published session when attachment fails and repairs it on retry', async () => {
-    const { api, ctx, root } = await harness()
-    const created = expectOk(await api.workspace.create(request({ path: stageDir(root, 'project') }))).workspace
-    const workspace = ctx.workspaceRegistry.list()[0]
-    if (workspace === undefined) throw new Error('workspace missing from registry')
-    vi.spyOn(workspace, 'attachSession').mockRejectedValueOnce(new Error('simulated write failure'))
-    const sessionId = SessionId('session-attach-retry')
-
-    const failed = await api.sessions.create(request({ workspaceId: created.workspaceId, sessionId }))
-    expect(failed.result).toMatchObject({
-      ok: false,
-      error: { code: 'workspace-attach-failed', details: { sessionId, workspaceId: created.workspaceId } },
-    })
-    expect(ctx.agents.get(sessionId)).toBeDefined()
-
-    expectOk(await api.sessions.create(request({ workspaceId: created.workspaceId, sessionId })))
-    expect(expectOk(await api.workspace.list(request({}))).items[0]?.sessionIds).toEqual([sessionId])
-  })
-})
-
 describe('Host Workspace increments', () => {
-  it('projects subagent origin in attached summaries and creation increments', async () => {
+  it('keeps internal child lineage out of summaries and creation increments', async () => {
     const { api, ctx } = await harness()
     const abort = new AbortController()
     const stream: AsyncIterator<RpcRequest<HostFrame>> =
@@ -425,28 +336,30 @@ describe('Host Workspace increments', () => {
       meta: {
         cwd: '/tmp',
         parentSession: SessionId('session-parent'),
-        origin: 'subagent',
       },
     })
 
-    expect(await pending).toMatchObject({
+    const added = await pending
+    expect(added).toMatchObject({
       payload: {
         type: 'host/session-added',
         sessionId: childId,
-        parentSessionId: 'session-parent',
-        origin: 'subagent',
+        cwd: '/tmp',
       },
     })
-    expect(expectOk(await api.sessions.list(request({}))).items).toContainEqual(
-      expect.objectContaining({ sessionId: childId, origin: 'subagent' }),
-    )
+    expect(added.payload).not.toHaveProperty('parentSessionId')
+    expect(added.payload).not.toHaveProperty('origin')
+    const summary = expectOk(await api.sessions.list(request({}))).items
+      .find(item => item.sessionId === childId)
+    expect(summary).toMatchObject({ sessionId: childId, cwd: '/tmp' })
+    expect(summary).not.toHaveProperty('parentSessionId')
+    expect(summary).not.toHaveProperty('origin')
     abort.abort()
   })
 
-  it('streams committed Workspace and Session increments after empty baselines', async () => {
+  it('streams a committed Workspace increment after an empty baseline', async () => {
     const { api, root } = await harness()
     expect(expectOk(await api.workspace.list(request({}))).items).toEqual([])
-    expect(expectOk(await api.sessions.list(request({}))).items).toEqual([])
 
     const abort = new AbortController()
     const stream: AsyncIterator<RpcRequest<HostFrame>> =
@@ -456,26 +369,6 @@ describe('Host Workspace increments', () => {
     expect(await workspaceIncrement).toMatchObject({
       payload: { type: 'host/workspace-changed', workspace: { workspaceId: workspace.workspaceId } },
     })
-
-    const sessionId = SessionId('session-streamed-workspace')
-    const pending = nextHostFrame(stream)
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
-    const increments: HostFrame[] = []
-    increments.push((await pending).payload)
-    while (increments.length < 2) {
-      const next = await stream.next()
-      if (next.done === true) throw new Error('Host stream ended before both increments')
-      increments.push(next.value.payload)
-    }
-    expect(increments.find(increment => increment.type === 'host/session-added')).toMatchObject({
-      // A just-created session has no events: the frame constantly carries blank:true.
-      type: 'host/session-added', sessionId, blank: true, cwd: workspace.path,
-    })
-    const workspaceChanged = increments.find(
-      (increment): increment is Extract<HostFrame, { type: 'host/workspace-changed' }> =>
-        increment.type === 'host/workspace-changed',
-    )
-    expect(workspaceChanged?.workspace.sessionIds).toEqual([sessionId])
     abort.abort()
   })
 
@@ -500,7 +393,10 @@ describe('Host Workspace increments', () => {
     const { api, ctx, root } = await harness()
     const workspace = expectOk(await api.workspace.create(request({ path: stageDir(root, 'delete-me') }))).workspace
     const sessionId = SessionId('session-kept-after-workspace-delete')
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
+    ctx.sessions.create(sessionId, { meta: { cwd: workspace.path } })
+    const workspaceEntity = ctx.workspaceRegistry.list()[0]
+    if (workspaceEntity === undefined) throw new Error('workspace missing from registry')
+    await workspaceEntity.attachSession(sessionId)
 
     const abort = new AbortController()
     const stream: AsyncIterator<RpcRequest<HostFrame>> =
@@ -512,7 +408,7 @@ describe('Host Workspace increments', () => {
     })
     expect(expectOk(await api.workspace.list(request({}))).items).toEqual([])
     expect(expectOk(await api.sessions.list(request({}))).items.map(item => item.sessionId)).toContain(sessionId)
-    expect(ctx.agents.get(sessionId)).toBeDefined()
+    expect(ctx.sessions.get(sessionId)).toBeDefined()
     expect(existsSync(workspace.path)).toBe(true)
 
     const missing = await api.workspace.delete(request({ workspaceId: workspace.workspaceId }))
@@ -530,10 +426,13 @@ describe('Host Workspace increments', () => {
   })
 
   it('archives a session into the global set, keeps its accounting, and streams the set once', async () => {
-    const { api, root } = await harness()
+    const { api, ctx, root } = await harness()
     const workspace = expectOk(await api.workspace.create(request({ path: stageDir(root, 'archive-home') }))).workspace
     const sessionId = SessionId('session-to-archive')
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
+    ctx.sessions.create(sessionId, { meta: { cwd: workspace.path } })
+    const workspaceEntity = ctx.workspaceRegistry.list()[0]
+    if (workspaceEntity === undefined) throw new Error('workspace missing from registry')
+    await workspaceEntity.attachSession(sessionId)
     expect(expectOk(await api.workspace.list(request({}))).archivedSessionIds).toEqual([])
 
     const abort = new AbortController()
@@ -552,13 +451,12 @@ describe('Host Workspace increments', () => {
     expect(listed.items[0]?.sessionIds).toEqual([sessionId])
     expect(expectOk(await api.sessions.list(request({}))).items.map(item => item.sessionId)).toContain(sessionId)
 
-    // The idempotent repeat emits no second frame: the next observed frame is
-    // the workspace-changed of a later attach, not another archive snapshot.
+    // The idempotent repeat emits no second archive frame.
     const after = nextHostFrame(stream)
     expect(expectOk(await api.workspace.archiveSession(request({ sessionId }))).archivedSessionIds)
       .toEqual([sessionId])
     const otherSession = SessionId('session-after-archive')
-    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId: otherSession })))
+    ctx.sessions.create(otherSession, { meta: { cwd: workspace.path } })
     expect((await after).payload.type).not.toBe('host/archived-sessions-changed')
 
     const missing = await api.workspace.archiveSession(request({ sessionId: SessionId('session-ghost') }))

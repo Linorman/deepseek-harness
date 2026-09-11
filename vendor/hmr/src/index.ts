@@ -1,4 +1,4 @@
-import { Context, Service, type Plugin } from '@clocky/cordis'
+import { Context, CordisError, Service, type Plugin } from '@clocky/cordis'
 import type { Dict } from '@clocky/cosmokit'
 import { ModuleLoader, type ModuleJob, type ResolveResult } from '@clocky/cordis-plugin-loader'
 import type { Include } from '@clocky/cordis-plugin-include'
@@ -59,6 +59,9 @@ interface ConfigRefresh {
 
 interface ConfigRegistration {
   watcher: FSWatcher
+  ready: Promise<void>
+  cancelReady(): void
+  close(): Promise<void>
 }
 
 async function findWatchRoot(filename: string): Promise<{ filename: string; root: string; depth: number }> {
@@ -90,6 +93,9 @@ class Hmr extends Service {
 
   private internal: ModuleLoader
   private watcher!: FSWatcher
+  private mainRegistration?: ConfigRegistration
+  private readonly closing = new AbortController()
+  private readonly registrations = new Set<Promise<() => Promise<void>>>()
   private readonly configs = new Map<string, ConfigRegistration>()
   private readonly configRefreshes = new WeakMap<object, ConfigRefresh>()
   private readonly refreshTasks = new Set<Promise<void>>()
@@ -122,6 +128,10 @@ class Hmr extends Service {
     }
     this.internal = this.ctx.loader.internal
     this.baseDir = fileURLToPath(new URL(config.base || '.', ctx.baseUrl))
+    // Fiber disposal can begin while Service.init is still awaiting a scan.
+    ctx.on('internal/plugin', (fiber) => {
+      if (fiber === ctx.fiber && fiber.uid === null) this.closeAdmission()
+    })
   }
 
   /**
@@ -129,61 +139,122 @@ class Hmr extends Service {
    * @param filename - Config path, resolved against the HMR base directory.
    * @param refresh - Refresh callback run serially on add, change, or unlink.
    * @returns an asynchronous disposer once the exact watch is ready.
-   * @throws when HMR is inactive, the path is already registered, or watcher startup fails.
+   * @throws INACTIVE_EFFECT when the owner or caller cancels registration; also rejects duplicate paths and watcher startup failures.
    */
   async registerConfig(filename: string, refresh: () => Promise<void> | void): Promise<() => Promise<void>> {
-    if (!this.watcher) throw new Error('HMR is not active')
-    filename = resolve(this.baseDir, filename)
-    const target = await findWatchRoot(filename)
-    const watchFilename = target.filename
-    if (this.configs.has(watchFilename)) throw new Error(`config path already registered: ${filename}`)
-
-    const { root, depth } = target
-    const watcher = watch(root, {
-      ...this.config,
-      cwd: undefined,
-      depth,
-      ignored: undefined,
-      ignoreInitial: false,
-    })
-    const registration = { watcher }
-    this.configs.set(watchFilename, registration)
-    const onChange = (path: string) => {
-      const observed = resolve(path)
-      if (observed !== filename && observed !== watchFilename) return
-      this.refreshConfig(registration, filename, refresh)
+    this.assertRegistrationActive()
+    const operation = this.registerConfigOwned(filename, refresh)
+    this.registrations.add(operation)
+    try {
+      return await operation
+    } finally {
+      this.registrations.delete(operation)
     }
-    watcher.on('add', onChange)
-    watcher.on('change', onChange)
-    watcher.on('unlink', onChange)
+  }
 
+  /** Require both the HMR owner and the calling plugin to retain their registration lifetime. */
+  private assertRegistrationActive(): void {
+    this.closing.signal.throwIfAborted()
+    this.ctx.fiber.assertActive()
+    if (!this.watcher) throw new Error('HMR is not active')
+  }
+
+  /** Retain lookup and readiness work until it has either published a disposer or closed its watcher. */
+  private async registerConfigOwned(filename: string, refresh: () => Promise<void> | void): Promise<() => Promise<void>> {
+    let registration: ConfigRegistration | undefined
+    const caller = this.ctx
+    const stopSetupCancellation = caller.on('internal/plugin', (fiber) => {
+      if (fiber === caller.fiber && fiber.uid === null) registration?.cancelReady()
+    })
+    try {
+      filename = resolve(this.baseDir, filename)
+      const target = await findWatchRoot(filename)
+      this.assertRegistrationActive()
+      const watchFilename = target.filename
+      if (this.configs.has(watchFilename)) throw new Error(`config path already registered: ${filename}`)
+
+      const { root, depth } = target
+      const watched = registration = this.openWatcher(root, {
+        ...this.config,
+        cwd: undefined,
+        depth,
+        ignored: undefined,
+        ignoreInitial: false,
+      })
+      this.configs.set(watchFilename, watched)
+      const onChange = (path: string) => {
+        const observed = resolve(path)
+        if (observed !== filename && observed !== watchFilename) return
+        this.refreshConfig(watched, filename, refresh)
+      }
+      watched.watcher.on('add', onChange)
+      watched.watcher.on('change', onChange)
+      watched.watcher.on('unlink', onChange)
+
+      let cleanupTask: Promise<void> | undefined
+      const cleanup = (): Promise<void> => cleanupTask ??= (async () => {
+        if (this.configs.get(watchFilename) === watched) this.configs.delete(watchFilename)
+        await watched.close()
+        await this.configRefreshes.get(watched)?.running
+      })()
+      let dispose: (() => Promise<void>) | undefined
+      try {
+        // The caller owns the watcher even before Chokidar emits ready.
+        dispose = caller.effect(() => cleanup, 'hmr.registerConfig()')
+        await watched.ready
+        this.assertRegistrationActive()
+        return dispose
+      } catch (error) {
+        await cleanup()
+        await dispose?.()
+        throw error
+      }
+    } finally {
+      stopSetupCancellation()
+    }
+  }
+
+  /** Cancel readiness as well as closing the real watcher: Chokidar does not emit ready after close. */
+  private openWatcher(root: string | string[], options: ChokidarOptions): ConfigRegistration {
+    this.closing.signal.throwIfAborted()
+    const watcher = watch(root, options)
     const ready = Promise.withResolvers<void>()
-    let readyState: 'pending' | 'resolved' | 'rejected' = 'pending'
+    let settled = Array.isArray(root) && root.length === 0
+    if (settled) ready.resolve()
     watcher.once('ready', () => {
-      readyState = 'resolved'
+      settled = true
       ready.resolve()
     })
     watcher.on('error', (error) => {
-      if (readyState === 'pending') {
-        readyState = 'rejected'
+      if (!settled) {
+        settled = true
         ready.reject(error)
       } else {
         this.ctx.logger.warn(error)
       }
     })
-
-    try {
-      await ready.promise
-      return this.ctx.effect(() => async () => {
-        if (this.configs.get(watchFilename) === registration) this.configs.delete(watchFilename)
-        await watcher.close()
-        await this.configRefreshes.get(registration)?.running
-      }, 'hmr.registerConfig()')
-    } catch (error) {
-      this.configs.delete(watchFilename)
-      await watcher.close()
-      throw error
+    const cancelReady = (): void => {
+      settled = true
+      ready.reject(new CordisError('INACTIVE_EFFECT'))
     }
+    let closingTask: Promise<void> | undefined
+    return {
+      watcher,
+      ready: ready.promise,
+      cancelReady,
+      close: () => {
+        cancelReady()
+        return closingTask ??= watcher.close()
+      },
+    }
+  }
+
+  /** Stop new registrations before any asynchronous watcher or refresh cleanup begins. */
+  private closeAdmission(): void {
+    if (this.closing.signal.aborted) return
+    this.closing.abort(new CordisError('INACTIVE_EFFECT'))
+    this.mainRegistration?.cancelReady()
+    for (const registration of this.configs.values()) registration.cancelReady()
   }
 
   /**
@@ -198,12 +269,29 @@ class Hmr extends Service {
 
   async* [Service.init]() {
     yield async () => {
-      await this.watcher?.close()
-      await Promise.allSettled([...this.configs.values()].map(registration => registration.watcher.close()))
+      this.closeAdmission()
+      const closes = await Promise.allSettled([
+        this.mainRegistration?.close(),
+        ...[...this.configs.values()].map(registration => registration.close()),
+      ])
+      await Promise.allSettled([...this.registrations])
       this.configs.clear()
       await Promise.allSettled([...this.refreshTasks])
+      const failures: unknown[] = []
+      for (const result of closes) if (result.status === 'rejected') failures.push(result.reason)
+      if (failures.length > 0) throw new AggregateError(failures, 'HMR watcher teardown failed')
     }
 
+    try {
+      await this.startWatcher()
+    } catch (error) {
+      if (!this.closing.signal.aborted || !(error instanceof CordisError) || error.code !== 'INACTIVE_EFFECT') throw error
+    }
+  }
+
+  /** Start module observation only while this service's original load is still admitted. */
+  private async startWatcher(): Promise<void> {
+    this.closing.signal.throwIfAborted()
     const { loader } = this.ctx
     const { root, ignored } = this.config
     if (!this.config.base) {
@@ -214,6 +302,7 @@ class Hmr extends Service {
 
     const match = picomatch(ignored)
     const watchBaseDir = await realpath(this.baseDir)
+    this.closing.signal.throwIfAborted()
 
     // Collect externals before opening the watcher so every post-ready change
     // is observed by listeners that already have their classification state.
@@ -225,7 +314,8 @@ class Hmr extends Service {
       this.externals = new Set()
     }
 
-    this.watcher = watch(root, {
+    this.closing.signal.throwIfAborted()
+    const registration = this.mainRegistration = this.openWatcher(root, {
       ...this.config,
       cwd: watchBaseDir,
       ignored: path => match(relative(watchBaseDir, path)),
@@ -238,6 +328,7 @@ class Hmr extends Service {
       // user patch layer present at registration must apply once.
       ignoreInitial: true,
     })
+    this.watcher = registration.watcher
 
     const partialReload = this.ctx.debounce(() => this.partialReload(), this.config.debounce)
 
@@ -273,25 +364,8 @@ class Hmr extends Service {
     this.watcher.on('change', path => onChange('change', path))
     this.watcher.on('unlink', path => onChange('unlink', path))
 
-    const ready = Promise.withResolvers<void>()
-    let readyState: 'pending' | 'resolved' | 'rejected' = root.length === 0 ? 'resolved' : 'pending'
-    if (root.length === 0) {
-      ready.resolve()
-    } else {
-      this.watcher.once('ready', () => {
-        readyState = 'resolved'
-        ready.resolve()
-      })
-    }
-    this.watcher.on('error', (error) => {
-      if (readyState === 'pending') {
-        readyState = 'rejected'
-        ready.reject(error)
-      } else {
-        this.ctx.logger.warn(error)
-      }
-    })
-    await ready.promise
+    await registration.ready
+    this.closing.signal.throwIfAborted()
   }
 
   private refreshConfig(key: object, filename: string, refresh: () => Promise<void> | void) {

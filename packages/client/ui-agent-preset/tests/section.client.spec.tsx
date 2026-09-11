@@ -374,10 +374,10 @@ describe('the copy dialog', () => {
     expect(actions.confirmCopy).not.toHaveBeenCalled()
   })
 
-  it('dismisses on Escape', () => {
+  it('dismisses on the native dialog cancel request', () => {
     const actions = renderSection({ copy: draft })
 
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
 
     expect(actions.cancelCopy).toHaveBeenCalledTimes(1)
   })
@@ -407,10 +407,10 @@ describe('the read-only viewer', () => {
     expect(actions.closeView).toHaveBeenCalledTimes(1)
   })
 
-  it('dismisses on Escape', () => {
+  it('dismisses on the native dialog cancel request', () => {
     const actions = renderSection({ view: { id: 'standard', title: '标准模式', content: '- id: x\n' } })
 
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
 
     expect(actions.closeView).toHaveBeenCalledTimes(1)
   })
@@ -436,10 +436,10 @@ describe('deleting a preset', () => {
     expect(actions.confirmDelete).toHaveBeenLastCalledWith(null)
   })
 
-  it('dismisses the confirmation on Escape', () => {
+  it('dismisses the confirmation on the native dialog cancel request', () => {
     const actions = renderSection({ pendingDelete: 'mine' })
 
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
 
     expect(actions.confirmDelete).toHaveBeenCalledWith(null)
   })

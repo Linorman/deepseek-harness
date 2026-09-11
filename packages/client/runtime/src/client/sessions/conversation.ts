@@ -12,7 +12,7 @@ import type { ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { LlmRetryEventData } from '@clocky/clocky-llm-retry/types'
 import type { TodoItem } from '@clocky/clocky-session/types'
 import type {
-  RpcError, SessionId, SubagentAddress, ToolCallView, ToolResultView,
+  RpcError, SessionId, ToolCallView, ToolResultView,
 } from '@clocky/clocky-api-remotes/client'
 import type { PendingInteraction } from './pending.ts'
 import type { ContextProvenanceView, KnownContextForm } from './context-provenance.ts'
@@ -235,7 +235,7 @@ export interface CompactionSummaryNode {
  * Fallback for surface events this UI version does not know: the documented
  * default arm of `SessionEventMap`, which is merge-extensible, so the
  * projection's switch cannot end in `assertNever`. No event produces this node
- * today — `isAppendSurfaceEvent` admits only the three types in core's
+ * today — `isAppendSurfaceEvent` admits only the four types in core's
  * `SurfaceEventType`, and each has its own arm — and it exists so widening that
  * set core-side degrades to a raw row instead of dropping the event silently.
  */
@@ -452,11 +452,6 @@ export interface ConversationSnapshot {
   /** Authoritative transient inbox snapshot, including queued and steering placements. */
   queue: readonly QueuedMessage[]
   running: boolean
-  /**
-   * Catalog-discovered continuation address. Its parent availability controls
-   * human input; null means ordinary session transport.
-   */
-  subagent: { address: SubagentAddress; parentAvailable: boolean } | null
   /** Input-area shape (see {@link ComposerPhase}); derived here, switched on by consumers. */
   composerPhase: ComposerPhase
   /** Set after host/session-removed; the UI grays out and disables input. */
@@ -474,7 +469,6 @@ export interface ConversationSnapshot {
    * user message is in the host log; a rejected first prompt keeps the
    * session blank and reusable) and by any `running: true` status remotely,
    * and re-aligned by every list re-pull (the summary stays authoritative).
-   * Blank sessions are hidden from session lists and reused by New Session.
    */
   blank: boolean
   lastAgentError: string | null

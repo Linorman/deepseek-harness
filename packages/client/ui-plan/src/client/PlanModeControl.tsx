@@ -14,9 +14,11 @@ export type PlanChipProps =
 /**
  * Plan-mode status over the host-computed `plan` projection. The chip renders
  * only while the effective target is plan mode (`pending ? !active : active`
- * — a folded host value, not client optimism) and executes /plan off.
+ * — a folded host value, not client optimism) and executes /plan off. It
+ * remains absent for a Team-owned coordinator Session because that generic
+ * Session command path is not authorized for Team control.
  */
-export function PlanChip({ useProjection, locked, exitPlanMode, t }: PlanChipProps) {
+export function PlanChip({ useProjection, locked, teamOwned, exitPlanMode, t }: PlanChipProps) {
   const plan = useProjection('plan')
   const [leaving, setLeaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +32,10 @@ export function PlanChip({ useProjection, locked, exitPlanMode, t }: PlanChipPro
   }, [])
 
   if (plan === undefined) return null
+  // Team-owned coordinator Sessions receive human input through the Team
+  // channel. The generic command RPC is fenced for that scope, so the chip
+  // stays absent until a Team control operation owns the same action.
+  if (teamOwned) return null
   const target = plan.pending ? !plan.active : plan.active
   if (!target) return null
 

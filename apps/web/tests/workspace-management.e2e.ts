@@ -48,7 +48,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
    * the click lands in the dialog with no menu in between.
    */
   async function browseTo(path: string): Promise<Locator> {
-    await page.getByRole('button', { name: 'Add workspace' }).click()
+    await page.getByLabel('Add workspace', { exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Select Workspace Directory' })
     await dialog.waitFor({ timeout: 10_000 })
     await dialog.getByRole('button', { name: 'Edit path' }).click()
@@ -76,13 +76,8 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     ).not.toBeUndefined()
   }
 
-  /**
-   * Adopt an existing directory, waiting for the adoption to settle host-side
-   * (workspace registered + the flow's New-Session agent up), so later test
-   * steps can't race the in-flight blank-session attach.
-   */
-  async function adoptDirectory(path: string, options: { waitForAgent?: boolean } = {}): Promise<void> {
-    const agentsBefore = scaffold.ctx.agents.list().length
+  /** Adopt an existing directory through the composed directory browser. */
+  async function adoptDirectory(path: string): Promise<void> {
     const dialog = await browseTo(path)
     await dialog.getByRole('button', { name: 'Open', exact: true }).click()
     await dialog.waitFor({ state: 'hidden', timeout: 10_000 })
@@ -90,14 +85,6 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
       () => scaffold.ctx.workspaceRegistry.resolveByPath(path),
       { timeout: 10_000 },
     ).not.toBeUndefined()
-    // First adoption births a blank Session+Agent whose workspace attach must
-    // settle before a test may delete the registration; re-registration after
-    // a delete mints a fresh blank Session+Agent too (no cwd-based reuse
-    // exists), so callers opt in only where a fresh attach is possible.
-    if (options.waitForAgent === true) {
-      await expect.poll(() => scaffold.ctx.agents.list().length, { timeout: 10_000 })
-        .toBeGreaterThan(agentsBefore)
-    }
   }
 
   /**
@@ -114,7 +101,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
   }
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     // Seed one cold session (Ungrouped bucket) for the flat view + hover card.
     const sessionCwd = join(scaffold.workspaceCwd, 'workspace')
     await mkdir(sessionCwd, { recursive: true })
@@ -124,6 +111,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
@@ -207,7 +195,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
       collect()
     })
     // Register the scaffold's existing project directory through the real UI.
-    await adoptDirectory(scaffold.workspaceCwd, { waitForAgent: true })
+    await adoptDirectory(scaffold.workspaceCwd)
     const workspace = await scaffold.ctx.workspaceRegistry.resolveByPath(scaffold.workspaceCwd)
     if (workspace === undefined) throw new Error('GUI did not register the existing project directory')
     await workspace.attachSession(SessionId(SEED_ID))
@@ -266,9 +254,8 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
 
     // Re-registering the exact deleted path immediately, without a reload, is
     // a supported reversible flow. It creates a fresh Workspace id and does
-    // NOT re-adopt the retained (non-blank) Session; the New Session flow
-    // mints a fresh blank session and attaches it to the new registration
-    // (no cwd-based blank reuse exists, so the account is never empty).
+    // NOT re-adopt the retained Session or create a blank Session implicitly;
+    // task creation is an explicit Team-first action.
     await adoptDirectory(scaffold.workspaceCwd)
     await expect.poll(
       () => scaffold.ctx.workspaceRegistry.resolveByPath(scaffold.workspaceCwd),
@@ -277,10 +264,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     const reregistered = await scaffold.ctx.workspaceRegistry.resolveByPath(scaffold.workspaceCwd)
     expect(reregistered?.id).toBeDefined()
     expect(reregistered?.id).not.toBe(workspace.id)
-    await expect.poll(
-      () => reregistered?.sessionIds ?? [],
-      { timeout: 10_000 },
-    ).not.toEqual([])
+    expect(reregistered?.sessionIds).toEqual([])
     expect(reregistered?.sessionIds).not.toContain(SEED_ID)
     await expect.poll(() => page.getByText('Ungrouped', { exact: true }).count(), { timeout: 10_000 })
       .toBeGreaterThanOrEqual(1)
@@ -302,10 +286,9 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
     await expect.poll(() => page.getByText('Ungrouped', { exact: true }).count(), { timeout: 15_000 })
       .toBeGreaterThanOrEqual(1)
-    await expect.poll(
-      () => page.locator('[role="treeitem"][aria-selected="true"]').count(),
-      { timeout: 15_000 },
-    ).toBe(1)
+    // Reload restores the durable ungrouped row but not the transient current
+    // Session selection; the retained log and folder are the durable contract.
+    expect(await page.locator('[role="treeitem"][aria-selected="true"]').count()).toBe(0)
     expect(scaffold.ctx.workspaceRegistry.get(workspace.id)).toBeUndefined()
     expect(await readFile(join(scaffold.workspaceCwd, 'workspace', 'a.txt'), 'utf8')).toBe('alpha\n')
     await stat(logLocation.path)
@@ -372,7 +355,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     onTestFailed(() => saveFailureShot(page, 'web-e2e-ws-flat'))
     // Grouped default: workspace group rows render (the seeded session sits
     // under Ungrouped; the created workspaces are empty groups).
-    await expect.poll(() => page.getByText('Workspaces', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    await page.getByRole('tree', { name: 'Sessions', exact: true }).waitFor({ timeout: 10_000 })
     // Grouping and ordering moved into the View options menu.
     await page.getByRole('button', { name: 'View options' }).click()
     await page.getByRole('menuitem', { name: 'In one list' }).click()
@@ -589,7 +572,7 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
-    await expect.poll(() => page.getByText('Workspaces', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
+    await page.getByRole('tree', { name: 'Sessions', exact: true }).waitFor({ timeout: 15_000 })
     // The archived row must not resurface (the Ungrouped bucket itself may
     // reappear if selection restore lands on another stray — not this test's
     // concern).
@@ -604,8 +587,8 @@ describe('web e2e: workspace management (create / rename / flat view / hover aff
     await mkdir(firstPath, { recursive: true })
     await mkdir(secondPath, { recursive: true })
 
-    await adoptDirectory(firstPath, { waitForAgent: true })
-    await adoptDirectory(secondPath, { waitForAgent: true })
+    await adoptDirectory(firstPath)
+    await adoptDirectory(secondPath)
 
     const matchingWorkspaces = scaffold.ctx.workspaceRegistry.list()
       .filter(workspace => workspace.title === 'xx')

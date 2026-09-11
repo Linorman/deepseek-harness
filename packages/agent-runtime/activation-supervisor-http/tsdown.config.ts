@@ -1,0 +1,8 @@
+import { defineConfig } from 'tsdown'
+
+/** Build the independently mounted supervisor entries. */
+export default defineConfig({
+  entry: ["lib/types/index.js", "lib/types/client.js", "lib/types/endpoint.js", "lib/types/invariant.js"],
+  outDir: 'lib', format: ['esm'], platform: 'node', target: 'es2024', unbundle: true,
+  fixedExtension: false, dts: false, clean: false,
+})

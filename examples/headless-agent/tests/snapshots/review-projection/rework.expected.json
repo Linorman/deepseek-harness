@@ -1,0 +1,48 @@
+{
+  "mode": "rework",
+  "descriptions": {
+    "team_task_start": "Start one independent, bounded Team task for the default worker. Provide a concise subject, complete instructions, and any filesystem regions the task may read or modify. The returned review_policy identifies the selected reviewer or none. The task continues after this call; use team_task_wait when its result is needed. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_list": "List the current phase and attempt review facts of every default-worker Team task started by this coordinator. The list is bounded by the durable Team task set and excludes workflow-plan tasks. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_watch": "Wait for a bounded Team cursor advance and return the compact state of this coordinator's default-worker tasks. Provide the cursor from the previous list or watch result; cancelling this call stops only the watch. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_wait": "Wait for a Team task started by this coordinator, including any configured review. The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start. Cancelling this call stops only the wait, not the task. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled."
+  },
+  "observations": [
+    {
+      "stage": "start",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "rework",
+      "review_policy": "participant",
+      "review_result": {
+        "decision": "rework",
+        "attempt": 1
+      }
+    },
+    {
+      "stage": "list",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "watch",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "wait",
+      "review_policy": "participant",
+      "review_result": {
+        "decision": "accepted",
+        "attempt": 2
+      }
+    }
+  ],
+  "attempts": 2,
+  "reviewDecisions": [
+    "pending",
+    "completed"
+  ],
+  "team": "completed"
+}

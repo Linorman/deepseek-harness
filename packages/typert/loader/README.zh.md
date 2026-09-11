@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-typert-loader
+# @clocky/clocky-typert-loader
 
 [English](README.md) | 中文
 

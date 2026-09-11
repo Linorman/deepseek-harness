@@ -1,0 +1,25 @@
+{
+  "scenario": "review-terminal-restart",
+  "backend": "sqlite",
+  "outcome": "failure",
+  "independentHost": true,
+  "initialTask": "review",
+  "cleanupAt": "recovery",
+  "completedHistoryRetained": true,
+  "reviewRequestRetained": true,
+  "singleCleanupRevision": true,
+  "recovered": {
+    "task": "cancelled",
+    "completedAttempts": 1,
+    "result": "The assigned source file requires no changes.",
+    "reviewPolicy": "participant",
+    "reviewDecisions": 0,
+    "retainedReviewRequests": 1,
+    "workspace": "released",
+    "team": "stalled",
+    "goal": "active",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactUnprovenEpoch": true,
+    "modelRequests": 0
+  }
+}

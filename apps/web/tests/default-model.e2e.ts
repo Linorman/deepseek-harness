@@ -1,6 +1,6 @@
 // Web e2e scenario: switching models in the composer is how this deployment's
 // default is chosen. The gesture writes the shared `agent-default-model` settings section, a
-// session created afterwards starts from it, and a session that already logged
+// Team coordinator created afterwards starts from it, and a coordinator that already logged
 // a route keeps deriving from its own log — the tier order the gateway
 // resolves on every read.
 // Zero model calls: the switch is settings/llm-domain traffic only, so there
@@ -19,7 +19,7 @@ import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { SessionId } from '@clocky/clocky-session'
 import { settingsNamespace } from '@clocky/clocky-settings'
 import { launchWebScaffold, watchConsole, type WebScaffold } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
+import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 /** Points the shipped shared Agent default at this scenario's own route. */
 const OVERLAY = fileURLToPath(new URL('./default-model.overlay.yml', import.meta.url))
@@ -30,21 +30,39 @@ const START_MODEL = 'origin-large'
 /** The route the switch lands on, which then becomes the saved default. */
 const ROUTE = 'acme-gateway'
 const MODEL = 'acme-large'
+const INITIAL_TEAM_OBJECTIVE = 'Open the model-selection coordinator.'
 
-describe('web e2e: the composer model switch is the default for later sessions', () => {
+type TeamState = {
+  readonly participants: readonly { readonly id: string; readonly role: string }[]
+  readonly activations: readonly {
+    readonly sessionId: string
+    readonly activation: { readonly participantId: string }
+  }[]
+}
+
+/** Resolve the Team-owned coordinator transcript from the durable Team state. */
+function coordinatorSessionId(state: TeamState): SessionId {
+  const coordinator = state.participants.find(participant => participant.role === 'coordinator')
+  if (coordinator === undefined) throw new Error('Team state has no coordinator participant')
+  const binding = state.activations.find(activation => activation.activation.participantId === coordinator.id)
+  if (binding === undefined) throw new Error('Team state has no coordinator activation')
+  return SessionId(binding.sessionId)
+}
+
+describe('web e2e: the composer model switch is the default for later Team coordinators', () => {
   let scaffold: WebScaffold
   let browser: Browser
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
 
-  /** Create one session and its agent through the same wire face the browser uses. */
-  const createSession = async (sessionId: string): Promise<string> => {
-    const response = await scaffold.ctx.apiProxy.sessions.create({
-      rpcId: `default-model-create-${sessionId}` as never,
-      payload: { sessionId: SessionId(sessionId), cwd: scaffold.workspaceCwd },
+  /** Create a Team and return the Session of its durable coordinator binding. */
+  const createCoordinator = async (objective: string): Promise<SessionId> => {
+    const response = await scaffold.authenticatedRpc<TeamState>('team.create', {
+      objective,
+      cwd: scaffold.workspaceCwd,
     })
-    if (!response.result.ok) throw new Error(`session.create failed: ${response.result.error.message}`)
-    return response.result.value.sessionId
+    if (!response.result.ok) throw new Error(`team.create failed: ${response.result.error.message}`)
+    return coordinatorSessionId(response.result.value)
   }
 
   /** The route the gateway reports for one session, through the real wire face. */
@@ -79,14 +97,14 @@ describe('web e2e: the composer model switch is the default for later sessions',
         },
       },
     })
+    await createCoordinator(INITIAL_TEAM_OBJECTIVE)
     browser = await chromium.launch()
     page = await browser.newPage({ viewport: { width: 1680, height: 1000 }, locale: ZH_BROWSER_LOCALE })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    // The composer's seats only exist once a workspace is connected: without
-    // one the input is the locked placeholder and no session scope is open.
-    await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
+    await page.getByText(INITIAL_TEAM_OBJECTIVE, { exact: true }).click()
   }, 120_000)
 
   afterAll(async () => {
@@ -96,10 +114,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
 
   it('writes the switched model as the default and leaves a logged session alone', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-default-model'))
-    // A session that has already run a turn, spelled as the fact a turn
+    // A coordinator that has already run a turn, spelled as the fact a turn
     // leaves behind: its own logged route.
-    const loggedId = await createSession('default-model-logged')
-    scaffold.ctx.sessions.get(SessionId(loggedId))?.append('request/header', {
+    const loggedId = await createCoordinator('Keep the logged model selection.')
+    scaffold.ctx.sessions.get(loggedId)?.append('request/header', {
       header: { config: { provider: START_ROUTE, model: START_MODEL } },
       reason: 'initial',
     })
@@ -120,10 +138,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
     expect(document).toContain(`provider: ${ROUTE}`)
     expect(document).toContain(`model: ${MODEL}`)
 
-    // A session created after the switch starts from it...
-    expect(await currentOf(await createSession('default-model-after')))
+    // A coordinator created after the switch starts from it...
+    expect(await currentOf(await createCoordinator('Use the switched model selection.')))
       .toEqual({ provider: ROUTE, model: MODEL })
-    // ...while the one holding a logged route keeps deriving from its log.
+    // ...while the coordinator holding a logged route keeps deriving from its log.
     expect(await currentOf(loggedId)).toEqual({ provider: START_ROUTE, model: START_MODEL })
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
@@ -144,13 +162,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
 
     // The block is an affordance; the refusal is the Host's. A client that
     // never disabled anything still cannot start a turn on a dead route.
-    const refused = await scaffold.ctx.apiProxy.sessions.prompt({
-      rpcId: 'default-model-refused' as never,
-      payload: {
-        sessionId: SessionId(await createSession('default-model-refusal')),
-        mode: 'queue' as const,
-        content: [{ type: 'text' as const, text: 'hi' }],
-      },
+    const refused = await scaffold.authenticatedRpc('session.prompt', {
+      sessionId: await createCoordinator('Refuse the unavailable model.'),
+      mode: 'queue' as const,
+      content: [{ type: 'text' as const, text: 'hi' }],
     })
     expect(refused.result).toMatchObject({ ok: false, error: { code: 'model-unavailable' } })
 

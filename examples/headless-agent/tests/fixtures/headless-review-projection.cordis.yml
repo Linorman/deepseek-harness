@@ -1,0 +1,20 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: review-projection-model
+    model: review-projection-model
+
+- id: team-run
+  config:
+    workerPreset: minimal
+    reviewerPreset: minimal
+    workerTaskMaxAttempts: 2
+
+- insert:
+    - id: review-projection-driver
+      name: './snapshot-fixtures/headless-review-projection-driver.ts'

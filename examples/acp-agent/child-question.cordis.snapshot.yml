@@ -4,7 +4,7 @@
 - id: base
   name: '@clocky/cordis-plugin-include'
   config:
-    path: ./cordis.yml
+    path: ./legacy-subagent.cordis.yml
     patches:
       - id: llm-pi-ai
         name: '@clocky/clocky-llm-pi-ai'

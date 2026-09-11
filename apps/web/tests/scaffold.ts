@@ -12,8 +12,8 @@
 // Composition divergences from `clocky web`, all deliberate, all via include
 // patches after the shipped bundle layers, over the SAME tree (never a
 // second yml): temp persistenceRoot; host-level skill roots confined to the
-// temp workspace while project skill discovery remains real; agent-instructions
-// disabled (recorded fixtures must not embed this repo's AGENTS.md);
+// temp workspace with an isolated project marker; root-level agent-instructions
+// disabled while preset-scoped discovery stays inside the fixture;
 // session-title-llm disabled (its fire-and-forget title call would race the
 // loop for the session's replay cursor); webserver pinned to port 0 with the
 // built dist; keyless modes fill the open llm seam post-boot with
@@ -25,6 +25,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Page } from 'playwright'
+import type { RpcResult } from '@clocky/clocky-host-apiproxy/api/rpc'
 import { expect } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Loader from '@clocky/cordis-plugin-loader'
@@ -51,8 +52,8 @@ import { installLlmReplay, parseSessionLog } from '@clocky/clocky-llm-replay'
 import SessionStore, {
   packChunkRuns,
   SESSION_FORMAT_VERSION,
+  Session,
   SessionId,
-  type Session,
   type SessionEvent,
   type SessionHeader,
 } from '@clocky/clocky-session'
@@ -60,6 +61,7 @@ import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 // Empty type imports carry the webServer/agents/sessionPersistence Context merges.
 import type {} from '@clocky/clocky-host-webserver'
 import type {} from '@clocky/clocky-agent'
+import type {} from '@clocky/clocky-plan-mode'
 import { provideCmdline } from '@clocky/clocky-cmdline'
 import { REPO_ROOT, requireDist } from './support.ts'
 
@@ -164,6 +166,12 @@ export interface WebScaffold {
   harnessHome: string
   /** Await a settled turn end: in-process turn/end, then the agent's idle flip (which follows the persistence flush). */
   whenTurnSettled(timeoutMs?: number): Promise<SessionId>
+  /** Admit a Playwright page through the same one-time bootstrap cookie as the shipped browser handoff. */
+  authenticateBrowserPage(page: Page): Promise<void>
+  /** Issue one HTTP request with the scaffold's authenticated product cookie. */
+  authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>
+  /** Issue one typed JSON-RPC request through the authenticated Web carrier. */
+  authenticatedRpc<T>(method: string, payload: unknown): Promise<{ readonly result: RpcResult<T> }>
   /**
    * Tear everything down; asserts the replay fixture was fully consumed first
    * (replay/refresh), unless booted with replayProvidersOnly (whose fixture
@@ -180,6 +188,8 @@ export interface LaunchOptions {
    * ordering.
    */
   extraOverlayPath?: string
+  /** Mount the non-shipped Workspace/Session browser for legacy composition owners only. */
+  legacyWorkspaceSurface?: boolean
   /**
    * Replay fixture (session.jsonl) served by the inserted clocky-llm-replay row
    * in replay/refresh modes; ignored in record mode (the real adapter
@@ -220,6 +230,8 @@ export interface LaunchOptions {
   paceMs?: number
   /** Synthetic model capacity for UI scenarios whose seeded history must remain uncompacted. */
   replayContextWindow?: number
+  /** Input modalities advertised by this scenario's replay model catalog; omitted leaves other scenarios unchanged. */
+  replayInputModalities?: readonly ('text' | 'image')[]
   /**
    * Tool presentation mode patched onto the shipped `tools` row (`code`
    * collapses the wire to run_code + the SDK prompt section). Omit for the
@@ -282,11 +294,15 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   requireDist()
   const mode = webSnapshotMode()
   const browserHost = options.remoteAuthority ?? '127.0.0.1'
+  const localModelBaseURL = process.env.CLOCKY_LOCAL_MODEL_BASE_URL
+  const localModelId = process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'
+  const localModelReasoningEffort = process.env.CLOCKY_LOCAL_MODEL_REASONING_EFFORT
+  const useLocalModel = localModelBaseURL !== undefined && localModelBaseURL.length > 0
   if (mode === 'record') {
     // Both owning vitest configs (web unconditionally, snapshot in record
     // mode) load the repo-root .env before this file runs.
-    if (process.env.DEEPSEEK_API_KEY === undefined || process.env.DEEPSEEK_API_KEY.length === 0) {
-      throw new Error('web e2e record mode needs DEEPSEEK_API_KEY (env or repo-root .env)')
+    if (!useLocalModel && (process.env.DEEPSEEK_API_KEY === undefined || process.env.DEEPSEEK_API_KEY.length === 0)) {
+      throw new Error('web e2e record mode needs DEEPSEEK_API_KEY or CLOCKY_LOCAL_MODEL_BASE_URL')
     }
   }
   const workspaceCwd = await realpath(await mkdtemp(join(tmpdir(), 'clocky-web-e2e-ws-')))
@@ -324,6 +340,8 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   Object.assign(process.env, skillRootEnvironment)
   let persistenceRoot: string
   try {
+    // Project-local TMPDIR must not expose the enclosing checkout's instructions or skills.
+    await mkdir(join(workspaceCwd, '.git'))
     persistenceRoot = await mkdtemp(join(tmpdir(), 'clocky-web-e2e-sessions-'))
   } catch (error) {
     const failures: unknown[] = [error]
@@ -351,6 +369,18 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     ...basePatches,
     ...surfacePatches,
     ...extraOverlayPatches,
+    ...(options.legacyWorkspaceSurface
+      ? [
+        { id: 'directory-picker', disabled: true },
+        { insert: [{ id: 'directory-picker-legacy', name: '@clocky/clocky-host-directory-picker-browse' }] },
+      ]
+      : []),
+    ...(options.legacyWorkspaceSurface
+      ? [{ insert: [
+        { id: 'ui-workspace', name: '@clocky/clocky-client-ui-workspace' },
+        { id: 'ui-directory-picker-browse', name: '@clocky/clocky-client-ui-directory-picker-browse' },
+      ] }]
+      : []),
     // The roster's `roots` is an assembly fact AppCLIEntry resolves and patches
     // in, exactly like `distIndex` on the webserver row — the shipped preset
     // directory sits beside the composition that names it, and no config author
@@ -368,15 +398,18 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       },
     },
     { id: 'session-persistence-jsonl', config: { root: persistenceRoot } },
+    // Shared preferences do not make two execution Hosts one bootstrap-credential owner.
+    { id: 'product-principal-local', config: { path: join(workspaceCwd, '.clocky-auth', 'product-principal.json') } },
     // Content search is enabled here although the shipped bundles default it
     // off (`openAt: never`, pinned by apps/cli/tests/lazy-search-startup):
     // the seeded-session scenarios navigate by content search, and these e2e
     // runs are the assembled coverage for the opt-in search path.
     { id: 'session-query-sqlite', config: { path: ':memory:', openAt: 'first-search' } },
-    // storage-json's yml root is anchored to the real $CLOCKY_HOME; pin the row
-    // to an absolute temp root (removed with the workspace at close) so tests
+    // Storage paths are anchored to the real $CLOCKY_HOME; pin the JSON root and
+    // Team SQLite database to the temporary workspace (removed at close) so tests
     // never write the user's harness home.
     { id: 'storage-json', config: { root: join(workspaceCwd, '.clocky-storages') } },
+    { id: 'storage-sqlite', config: { path: join(workspaceCwd, '.clocky-team-storage.sqlite') } },
     // Skill discovery is model-visible input. Pin every host-level root inside
     // the owned temp world so ~/.clocky, ~/.agents, and a bundled-root env setting
     // cannot change replay requests or conversation goldens. Project roots stay
@@ -424,17 +457,6 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       : [{ id: 'connection', config: { trustedHosts: [options.remoteAuthority] } }],
     { id: 'settings', config: { clockyHome: harnessHome } },
     { id: 'credentials', config: { clockyHome: harnessHome } },
-    // The shipped directory-picker row is the -auto chooser, which resolves
-    // the interaction from the RUNNING host (display, SSH launch, bind). The
-    // lane's goldens are interaction-specific (workspace-management drives
-    // the in-app browse dialog), so pin -browse deterministically on every
-    // host: patch `name` is an assertion, not an override, hence the
-    // disable+insert pair.
-    { id: 'directory-picker', disabled: true },
-    { insert: [
-      { id: 'directory-picker-browse', name: '@clocky/clocky-host-directory-picker-browse' },
-      { id: 'ui-directory-picker-browse', name: '@clocky/clocky-client-ui-directory-picker-browse' },
-    ] },
     ...options.agentPresets === undefined
       ? []
       // Never the derived harness-home root: a developer's own presets must not
@@ -448,13 +470,32 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         { id: 'tool-cordis', name: '@clocky/clocky-tool-cordis' },
       ] }]
       : [],
-    // Record mode uses the generic adapter's DeepSeek provider profile only
-    // for the real-provider smoke; replay and refresh use the test route.
+    // Record mode uses either the configured local OpenAI-compatible route or
+    // the generic adapter's DeepSeek route; replay and refresh use the test route.
     ...(mode === 'record'
-      ? [
-        { id: 'llm-pi-ai', config: { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } } },
-        { id: 'agent-default-model', config: { provider: 'deepseek', model: 'deepseek-chat' } },
-      ]
+      ? useLocalModel && localModelBaseURL !== undefined
+        ? [
+          { id: 'llm-pi-ai', config: { providers: { 'local-vllm': {
+            apiKeyEnv: 'CLOCKY_LOCAL_MODEL_API_KEY',
+            api: 'openai-completions',
+            baseURL: localModelBaseURL,
+            compat: { supportsDeveloperRole: false, supportsReasoningEffort: true, maxTokensField: 'max_tokens' },
+            ...(localModelReasoningEffort === undefined ? {} : { reasoning: localModelReasoningEffort }),
+            defaultContextWindow: 131_072,
+            defaultMaxTokens: 5_120,
+            models: [{
+              id: localModelId,
+              contextWindow: 131_072,
+              maxTokens: 5_120,
+              reasoningEfforts: { off: null, minimal: 'low', low: 'low', medium: 'medium', high: 'xhigh', xhigh: 'xhigh', max: 'xhigh' },
+            }],
+          } } } },
+          { id: 'agent-default-model', config: { provider: 'local-vllm', model: localModelId } },
+        ]
+        : [
+          { id: 'llm-pi-ai', config: { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } } },
+          { id: 'agent-default-model', config: { provider: 'deepseek', model: 'deepseek-chat' } },
+        ]
       : extraOverlayOwnsDefaultModel
         ? []
         : [{ id: 'agent-default-model', config: { provider: 'test-provider', model: 'test-model' } }]),
@@ -466,6 +507,8 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   const ctx = new Context()
   let port = 0
   let replayHandle: ReplayHandle | undefined
+  let browserAuthToken: string | undefined
+  let browserAuthBootstrap: Promise<string> | undefined
   try {
     process.chdir(workspaceCwd)
     // The production module-resolution setup: an empty profile root inside the temp
@@ -541,10 +584,12 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       }
     }
     if (mode !== 'record' && options.replayFixture !== undefined) {
+      const inputModalities = options.replayInputModalities
       replayHandle = installLlmReplay(ctx, {
         file: options.replayFixture,
         providers: replayProviders(options.replayContextWindow).map(provider => ({
           ...provider,
+          ...inputModalities === undefined ? {} : { models: provider.models.map(model => ({ ...model, inputModalities })) },
           ...(options.replayRetryPolicy === undefined ? {} : { retryPolicy: options.replayRetryPolicy }),
         })),
         ...(options.replayOverride === undefined ? {} : { overrideFile: options.replayOverride }),
@@ -573,13 +618,70 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     if (process.cwd() !== originalCwd) process.chdir(originalCwd)
   }
 
+  const ensureBrowserAuthToken = async (): Promise<string> => {
+    if (browserAuthToken !== undefined) return browserAuthToken
+    browserAuthBootstrap ??= (async () => {
+      const principals = ctx.get('productPrincipals')
+      if (principals === undefined) throw new Error('web e2e scaffold: product-principal registry is unavailable')
+      const credential = principals.bootstrapCredential('local')
+      const response = await fetch(`http://127.0.0.1:${String(port)}/api/bootstrap`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      })
+      if (response.status !== 204) {
+        throw new Error(`web e2e scaffold: product authentication bootstrap failed with HTTP ${String(response.status)}`)
+      }
+      const cookie = response.headers.get('set-cookie')?.split(';', 1)[0]
+      if (cookie === undefined) throw new Error('web e2e scaffold: product authentication bootstrap returned no cookie')
+      const separator = cookie.indexOf('=')
+      const token = separator < 1 ? '' : cookie.slice(separator + 1)
+      if (cookie.slice(0, separator) !== 'clocky_product_auth' || token.length === 0) {
+        throw new Error('web e2e scaffold: product authentication bootstrap returned an invalid cookie')
+      }
+      browserAuthToken = token
+      return token
+    })()
+    return await browserAuthBootstrap
+  }
+  const resolvedBaseUrl = `http://${browserHost}:${port}`
+
   return {
     harnessHome,
     mode,
-    baseUrl: `http://${browserHost}:${port}`,
+    baseUrl: resolvedBaseUrl,
     ctx,
     workspaceCwd,
     persistenceRoot,
+    async authenticateBrowserPage(page: Page): Promise<void> {
+      const token = await ensureBrowserAuthToken()
+      await page.context().addCookies([{
+        name: 'clocky_product_auth',
+        value: token,
+        url: `http://${browserHost}:${String(port)}/api`,
+      }])
+    },
+    async authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+      const token = await ensureBrowserAuthToken()
+      const headers = new Headers(init?.headers)
+      headers.set('cookie', `clocky_product_auth=${token}`)
+      return await fetch(input, { ...init, headers })
+    },
+    async authenticatedRpc<T>(method: string, payload: unknown): Promise<{ readonly result: RpcResult<T> }> {
+      const token = await ensureBrowserAuthToken()
+      const headers = new Headers({ 'content-type': 'application/json', cookie: `clocky_product_auth=${token}` })
+      const response = await fetch(`${resolvedBaseUrl}/api/${method}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          type: 'client-request',
+          rpcId: `web-scaffold-${method}`,
+          method,
+          payload,
+        }),
+      })
+      return await response.json() as { readonly result: RpcResult<T> }
+    },
     // Barrier stack: the in-process turn/end identifies the session, its
     // explicit flush makes the transcript durable, and the caller's browser
     // settled-poll comes last because host completion strictly precedes render.
@@ -658,15 +760,22 @@ export async function recordFixture(scaffold: WebScaffold, sessionId: SessionId,
 }
 
 /**
- * The user prompts recorded in a fixture, in order — the single source tying
+ * The human prompts recorded in a fixture, in order — the single source tying
  * spec drive steps to recorded reality so script and fixture cannot drift.
  * @param fixtureText - raw session.jsonl contents.
- * @returns the recorded user prompt texts.
+ * @returns the recorded human prompt texts.
  */
 export function fixtureUserPrompts(fixtureText: string): string[] {
   return parseSessionLog(fixtureText).flatMap((event) => {
-    if (event.type !== 'user/message' || event.data.source.kind !== 'user') return []
-    const text = event.data.content.filter(block => block.type === 'text').map(block => block.text).join('')
+    if (event.type !== 'user/message') return []
+    const source = event.data.source
+    if (source.kind !== 'user' && source.kind !== 'team-envelope') return []
+    const texts = event.data.content.filter(block => block.type === 'text').map(block => block.text)
+    const first = texts[0] ?? ''
+    const prefixEnd = source.kind === 'team-envelope' && first.startsWith('Direct message from ')
+      ? first.indexOf('\n') + 1
+      : 0
+    const text = `${prefixEnd > 0 ? first.slice(prefixEnd) : first}${texts.slice(1).join('')}`
     return text.length > 0 ? [text] : []
   })
 }
@@ -761,7 +870,6 @@ export async function seedSession(
     id: SessionId(id),
     createdAt: Date.now() - 60_000,
     cwd: scaffold.workspaceCwd,
-    delegationDepth: 0,
     ...agentPreset === undefined ? {} : { agentPreset },
   }
   const fixtureCreatedAt = decoded.header.createdAt
@@ -774,26 +882,17 @@ export async function seedSession(
   return meta.id
 }
 
-/** Seed one materialized cold Session whose log has no turn/start event. */
-export async function seedBlankSession(
-  scaffold: WebScaffold,
-  id: string,
-  cwd: string,
-): Promise<SessionId> {
-  const meta: SessionHeader = {
-    version: SESSION_FORMAT_VERSION,
-    id: SessionId(id),
-    createdAt: Date.now() - 60_000,
-    cwd,
-    delegationDepth: 0,
-  }
-  await persistSeedSession(scaffold, meta, [{
-    type: 'session/end-seed',
-    seq: 0,
-    time: meta.createdAt,
-    data: {},
-  }])
-  return meta.id
+/** Build a closed, model-free ordinary Session for legacy command/UI scenarios. */
+export function closedSessionFixture(options: { planActive?: boolean } = {}): string {
+  const session = Session.create(SessionId('web-bootstrap'))
+  session.append('turn/start', { turn: 1 })
+  if (options.planActive === true) session.append('plan/mode', { active: true })
+  session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+  return [
+    JSON.stringify({ type: 'session', version: SESSION_FORMAT_VERSION, id: '{{sessionId}}', createdAt: 0, cwd: '{{cwd}}' }),
+    ...session.events.map(event => JSON.stringify(event)),
+    '',
+  ].join('\n')
 }
 
 /** Materialize one detached Session fixture through the shipped JSONL provider. */

@@ -1,0 +1,546 @@
+{
+  "audit": "documentation and evidence boundary audit for native multi-agent gap closure",
+  "date": "2026-09-08",
+  "generatedAt": "2026-09-08T20:24:20+0800",
+  "owner": "/root/verification_luna",
+  "mode": "read-only corpus/source audit plus existing checks; no production, test, README, or old-plan edits",
+  "sourceFileCount": 64,
+  "verificationRecordCount": 30,
+  "sourcePlane": {
+    "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+    "worktree": "shared dirty worktree; HEAD does not reproduce the current implementation",
+    "exclusions": [
+      "vendor/",
+      ".agents/notes/archived/",
+      "production implementation changes",
+      "test-logic changes",
+      "README and website changes during this audit"
+    ]
+  },
+  "readSources": [
+    "docs/AGENTS.md",
+    ".agents/skills/dsh-doc-standards/SKILL.md",
+    ".agents/skills/dsh-prose-standard/SKILL.md",
+    ".agents/plans/2026-09-05-native-multi-agent/start-here.md",
+    ".agents/plans/2026-09-05-native-multi-agent/current-state.md",
+    ".agents/plans/2026-09-05-native-multi-agent/acceptance-map.md",
+    ".tmp/handoffs/verification-luna.json",
+    ".tmp/handoffs/channel-root-live.json",
+    ".tmp/handoffs/gap-audit-root.json",
+    ".tmp/handoffs/gap-audit-runtime.json",
+    ".tmp/handoffs/gap-audit-channel-product.json"
+  ],
+  "statusSemantics": {
+    "confirmed": "Source or executed evidence directly establishes the fact at the named boundary.",
+    "partial": "The main mechanism exists but a specified subcase, integration, or release proof is incomplete.",
+    "unverified": "The audit lacks same-candidate evidence; this does not assert that the capability is absent.",
+    "decision": "The source deliberately narrows or rejects a combination, and product scope must be decided before implementation.",
+    "historical": "Evidence belongs to an older source snapshot and cannot establish the current candidate."
+  },
+  "authoritativeAuditInputs": {
+    "root": ".tmp/handoffs/gap-audit-root.json: F-LG-01..02, T-01..08, O-01..04",
+    "runtime": ".tmp/handoffs/gap-audit-runtime.json: RUNTIME-PLACEMENT-CHILD-ISOLATION, RUNTIME-DELEGATION-BOUNDED-DISCOVERY, RUNTIME-PLACEMENT-WORKSPACE-ELIGIBILITY, RUNTIME-PLACEMENT-FROZEN-DEFAULTS, RUNTIME-SUPERVISED-RECOVERY-SCOPE, RUNTIME-SHARED-OBSERVATION-PULSE, RUNTIME-CHILD-HIERARCHY-RESOURCE-CEILINGS, RUNTIME-RELEASE-EVIDENCE and child_scope_matrix",
+    "channelProduct": ".tmp/handoffs/gap-audit-channel-product.json: CP-01..CP-04 and CP-E01",
+    "verification": ".tmp/handoffs/verification-luna.json: latest targeted tests, typechecks, build, browser, NodeNext, publint and the uncompleted Hub full-suite boundary",
+    "rootLive": ".tmp/handoffs/channel-root-live.json: current fourth-channel batch state, recent fixes, pending keyed retry and fullHub work"
+  },
+  "documentationFindings": [
+    {
+      "id": "D-01",
+      "status": "confirmed",
+      "severity": "high",
+      "subject": "team-delegation has no package README or family index entry",
+      "location": [
+        "packages/team/team-delegation/README.md (absent)",
+        "packages/team/README.md:7-33 package table",
+        "packages/team/README.md:37 composition paragraph"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-delegation/src/index.ts:18-33 Config, name, inject",
+        "packages/team/team-delegation/src/index.ts:38 TeamDelegation",
+        "packages/team/team-delegation/src/index.ts:55-123 start/close lifecycle",
+        "packages/team/team-delegation/src/index.ts:201-315 advanceTask/exchange/readExchange",
+        "packages/bundle/headless/cordis.patch.yml:141-142 team-delegation mount",
+        "packages/bundle/web-app/cordis.patch.yml:177-178 team-delegation mount"
+      ],
+      "evidenceBoundary": "team-delegation/tests/delegation.spec.ts is 6/6 in .tmp/verification-runtime/team-delegation-2026-09-08T1956-final.log; behavior evidence does not supply a package consumer contract.",
+      "impact": "A public package has no documented configuration, proof ownership, child saga lifecycle, failure behavior, or model-visible non-effects. The family composition paragraph also omits a package that both shipped bundles mount.",
+      "plannedAction": "Add the owning package contract and family links only after the source contract is stable; describe bounded discovery, proof maps, child reservation/create/bind/start/result/settle/cancel ownership, and explicit non-support for unconfirmed combinations. Pair a public package README with its existing repository README conventions; this internal plan remains unpaired.",
+      "doneWhen": "Package README exists, family table and composition links name the package, required config and failure semantics are covered, and the package consumer tests and generated catalogs point to the same source contract."
+    },
+    {
+      "id": "D-02",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "architecture map omits current channel Consumers and direct v4",
+      "location": [
+        "docs/architecture.md:109-113 capability paragraph",
+        "docs/architecture.zh.md:117 paired paragraph"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-channel-direct/README.md:5-33 direct v1-v4 and view policies",
+        "packages/team/team-channel-admission/src/index.ts:7-10 Context merge and :51-147 Consumer",
+        "packages/team/team-channel-summary/src/index.ts:42-45 Context merge and :88-179 Consumer",
+        "packages/team/team-delegation/src/index.ts:1-33 parent child Consumer"
+      ],
+      "evidenceBoundary": "The architecture paragraph names direct through v3 and basic/workflow only; it does not establish absence of the shipped v4, admission, summary, or delegation packages.",
+      "impact": "A contributor reading the required architecture map cannot discover the current admission, summary, or child delegation extension points and may infer that direct v4 is only a transport capability.",
+      "plannedAction": "Keep architecture as an ordered map: link each package by responsibility and defer protocol fields and lifecycle details to package READMEs and the Team subsystem page. Regenerate or update the paired architecture pages through the documented owner path rather than copying package contracts into the map.",
+      "doneWhen": "The map names direct v4, admission, summary, workflow, and delegation ownership with links while remaining within its architecture scope and without status narration."
+    },
+    {
+      "id": "D-03",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "Team subsystem top-level map omits admission and the delegation Consumer edge",
+      "location": [
+        "docs/subsystems/team.md:5-7 manual package map",
+        "docs/subsystems/team.md:61-67 generated-region contract",
+        "docs/subsystems/team.md:119-137 generated teamChannelSummaries entry"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-channel-admission/src/index.ts:7-10 and :51-86 declares ctx.teamChannelAdmission",
+        "packages/team/team-delegation/src/index.ts:31-38 and :55-123 declares Config/apply/TeamDelegation, not ctx.teamDelegation or a Service subclass",
+        "packages/team/team-channel-summary/src/index.ts:42-45 and :88-137 declares ctx.teamChannelSummaries"
+      ],
+      "evidenceBoundary": "teamChannelSummaries has a generated entry, while teamChannelAdmission lacks a Team subsystem entry. team-delegation is a shipped exported Consumer/plugin with no new Context service; its missing package/Consumer edge and README must be documented without inventing ctx.teamDelegation.",
+      "impact": "The subsystem's manual ownership orientation and generated Cordis API are asymmetric; developers see summary operations but not the admission wait service or parent delegation Consumer that drives parent work.",
+      "plannedAction": "Document the admission Context service and the delegation package/Consumer edge at their correct owners. Add a generator Context mapping only for an actually declared service; keep TeamDelegation as a package Consumer and never create a synthetic Context key.",
+      "doneWhen": "Every declared Team Context has one documented owner, the delegation Consumer/package edge has a README owner, generator partition checks pass, and the subsystem page links rather than restates descendant behavior."
+    },
+    {
+      "id": "D-04",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "Generated capability graph does not list new channel services or delegation Consumer",
+      "location": [
+        "docs/capability-seams.md:571-582 ctx.teams/workflow rows",
+        "docs/capability-seams.zh.md paired rows",
+        "scripts/gen-doc-graphs.ts:523-613 curated service rows"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-channel-admission/src/index.ts:7-10 ctx.teamChannelAdmission",
+        "packages/team/team-channel-summary/src/index.ts:42-45 ctx.teamChannelSummaries",
+        "packages/team/team-delegation/src/index.ts:31-33 injects teams/teamRuns/agents/teamWorkspaces",
+        "packages/bundle/headless/cordis.patch.yml:129-142 admission and delegation mounts",
+        "packages/bundle/web-app/cordis.patch.yml:165-178 admission and delegation mounts"
+      ],
+      "evidenceBoundary": "The generated graph currently shows ctx.teams and workflowExtensions but no admission or summary service row and no delegation Consumer edge. verify-doc-graphs is currently blocked earlier by a Typert cross-package type error, so graph freshness cannot be declared from that command.",
+      "impact": "Capability ownership and consumer edges are incomplete at the graph level, making the three-role seam and bundle dependency path hard to inspect.",
+      "plannedAction": "Update the generator's curated service rows and package edge source only after resolving the Typert input boundary; regenerate English and Chinese graph artifacts. Do not hand-edit generated Markdown.",
+      "doneWhen": "`verify-doc-graphs` reaches its freshness assertion and both generated graph sides contain the selected service and Consumer edges."
+    },
+    {
+      "id": "D-05",
+      "status": "confirmed",
+      "severity": "high",
+      "subject": "Generated module graph is stale for current package manifests",
+      "location": [
+        "docs/module-graph.md:314-318 package nodes",
+        "docs/module-graph.md:1720-1834 dependency table",
+        "docs/module-graph.zh.md corresponding generated regions"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-channel-admission/package.json peerDependencies",
+        "packages/team/team-channel-summary/package.json peerDependencies",
+        "packages/team/team-delegation/package.json peerDependencies",
+        "scripts/gen-module-graph.ts:collectPackageGraph(root, GROUP_ORDER, 'gen-module-graph')"
+      ],
+      "evidenceBoundary": "`pnpm run verify-module-graph` exits 1 with `docs/module-graph.md is stale`; the generated graph includes team-channel-summary but lacks current admission/delegation package nodes and edges.",
+      "impact": "Dependency review and release planning can omit packages that are actually mounted by both product bundles.",
+      "plannedAction": "Regenerate from peerDependencies after the candidate package manifests and source type graph are stable; verify the generated pair and inspect cycles instead of adding manual rows.",
+      "doneWhen": "`verify-module-graph` passes on the same candidate as the plan evidence and the table includes every current package node."
+    },
+    {
+      "id": "D-06",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "Event matrix omits team-delegation listeners",
+      "location": [
+        "docs/event-producer-consumer.md:29 channel/changed row",
+        "docs/event-producer-consumer.md:66 team/changed row",
+        "docs/event-producer-consumer.zh.md paired rows"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-delegation/src/index.ts:67-77 ctx.on('team/changed') and ctx.on('channel/changed')",
+        "docs/event-producer-consumer.md:1-2 generated-source notice",
+        "scripts/gen-doc-graphs.ts event graph generator"
+      ],
+      "evidenceBoundary": "The current rows list team-hub, scheduler and other listeners but not team-delegation. `verify-doc-graphs` cannot complete because Typert fails at packages/core/team/src/human-delivery-types.ts:99.",
+      "impact": "The event ownership map hides the wake-up path that drives parent child delegation after Team or channel records change.",
+      "plannedAction": "Fix the source import boundary, regenerate the event matrix, and verify the listener edge. Keep event details in the generated matrix and Consumer behavior in the package README.",
+      "doneWhen": "The generated row lists team-delegation for both observed event names or a documented source-level reason explains why a listener is intentionally excluded."
+    },
+    {
+      "id": "D-07",
+      "status": "confirmed",
+      "severity": "high",
+      "subject": "Config catalog cannot represent team-delegation and its source JSDoc is incomplete",
+      "location": [
+        "docs/config-catalog.md:2414-2458 admission/summary entries",
+        "docs/config-catalog.md Team package region has no team-delegation entry",
+        "docs/config-catalog.zh.md paired generated region"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-delegation/src/index.ts:18-29 Config and defaults",
+        "packages/team/team-delegation/src/index.ts:31-33 name/inject",
+        "scripts/gen-config-catalog.ts:577-766 catalog collection and violations"
+      ],
+      "evidenceBoundary": "`verify-config-catalog` exits 1 with 14 JSDoc violations: team-delegation Config fields at :20-22, agent-runtime-sdk recoverySupervisor fields at :96, team-placement-default routes at :41, and TeamRunMember fields at :260-268. The committed catalog therefore cannot be refreshed from the current source.",
+      "impact": "Operators cannot discover delegation bounds from the generated config reference, and source comments do not satisfy the catalog's field contract.",
+      "plannedAction": "The code owner adds concise field JSDoc at each reported source declaration; then regenerate both config catalogs. Do not paste a hand-written Config into generated Markdown or silently omit delegation.",
+      "doneWhen": "The source field contract passes the catalog generator, the generated entry includes maxOperationsPerDrive/channelPageSize/pulseIntervalMs, and `verify-config-catalog` passes."
+    },
+    {
+      "id": "D-08",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "Tool catalog is stale after team_task_delegate was added",
+      "location": [
+        "docs/tool-catalog.md:43 committed team-task tool row",
+        "docs/tool-catalog.zh.md paired row"
+      ],
+      "sourceEvidence": [
+        "packages/team/tool-team-task/src/index.ts:414-430 team_task_delegate definition and execution",
+        "packages/team/tool-team-task/tests/tool-team-task.spec.ts:365-395 delegation behavior",
+        "scripts/gen-tool-catalog.ts current generated row"
+      ],
+      "evidenceBoundary": "`verify-tool-catalog` reports the first difference at line 43: generated output includes `team_task_delegate`, committed output does not.",
+      "impact": "The model-facing tool inventory and package contract disagree about the available child-Team entry point.",
+      "plannedAction": "Regenerate the tool catalog after the source description and README contract are stable; keep the generated tool row as the single inventory and update the package README's operation section separately.",
+      "doneWhen": "`verify-tool-catalog` passes and both catalog sides expose the tool with its current scoped authority and result fields."
+    },
+    {
+      "id": "D-09",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "Host and SDK package READMEs omit current channel catalog/admission/input/media routes",
+      "location": [
+        "packages/host/apiproxy/README.md:29-35 Team route summary",
+        "packages/sdk/protocol/README.md:17-38 wire method table and prose",
+        "packages/sdk/client/README.md:32-42 HarnessClient surface",
+        "packages/sdk/server/README.md:25-33 wire notes and authenticated writes"
+      ],
+      "sourceEvidence": [
+        "packages/host/apiproxy/src/api/teams.ts:281-319 channelCatalog/channelList/channelAdmission/invitation/input/attachment/summarize",
+        "packages/sdk/protocol/src/types.ts:626-638 team/channel-catalog through team/channel-watch",
+        "packages/sdk/client/src/api.ts:465-550 catalog/admission/invitation/input/attachment methods",
+        "packages/sdk/client/src/client.ts:662-751 corresponding wire calls",
+        "packages/sdk/server/src/server.ts:939-1038 channel metadata/input implementation"
+      ],
+      "evidenceBoundary": "The current source and targeted SDK/Host tests cover these routes, while the README route summaries still enumerate the older Team surface. This is documentation drift, not evidence that the APIs are absent.",
+      "impact": "TypeScript, protocol, and server consumers cannot find the same channel capability, admission, ordered media, exact attachment, and summary contracts from their package entry documentation.",
+      "plannedAction": "Update each package README at its own contract level and pair existing Chinese README files; link generated protocol/config/tool catalogs instead of duplicating their tables. Keep Host/SDK behavior and authentication ownership distinct.",
+      "doneWhen": "Each package README names the routes it owns, the actor-free wire rule, bounds, retry and failure semantics, and links to generated references; paired docs stay synchronized."
+    },
+    {
+      "id": "D-10",
+      "status": "confirmed",
+      "severity": "medium",
+      "subject": "TeamRun and tool-team-task READMEs omit child delegation operation contracts",
+      "location": [
+        "packages/team/team-run/README.md:33-43 default-worker operations",
+        "packages/team/tool-team-task/README.md:7-24 operations",
+        "packages/team/tool-team-task/README.md:56-110 Model Experience"
+      ],
+      "sourceEvidence": [
+        "packages/team/team-run/src/index.ts:498-506 TeamRunDelegatedTaskStartRequest",
+        "packages/team/team-run/src/index.ts:544-553 childTeamId/delegationResult status",
+        "packages/team/team-run/src/index.ts:1982-2025 startDelegatedTask",
+        "packages/team/tool-team-task/src/index.ts:414-430 team_task_delegate",
+        "packages/team/team-delegation/src/index.ts:201-315 child saga Consumer"
+      ],
+      "evidenceBoundary": "Current source exposes a child task start method and model tool; the READMEs describe default-worker task start/list/watch/wait but do not describe the child request, child result/artifact fields, depth/grant constraints, or parent settlement.",
+      "impact": "Users may treat a child task as an ordinary worker task and miss its separate Team lifecycle, result admission, and artifact provenance rules.",
+      "plannedAction": "Add a child delegation section to TeamRun and tool-team-task with current request/result fields, model-visible naming, authority, persistence and failure boundaries. Keep child scope combinations that are still decisions out of unconditional promises.",
+      "doneWhen": "A caller can determine when to use team_task_delegate, what durable parent facts it returns, how to wait/cancel, and which child workspace/review/retry combinations are intentionally unsupported."
+    },
+    {
+      "id": "D-11",
+      "status": "historical",
+      "severity": "high",
+      "subject": "The 2026-09-05 plan status pages do not describe the current candidate",
+      "location": [
+        ".agents/plans/2026-09-05-native-multi-agent/current-state.md:18-26 implementation summary",
+        ".agents/plans/2026-09-05-native-multi-agent/current-state.md:32-34 independent increments",
+        ".agents/plans/2026-09-05-native-multi-agent/current-state.md:54-67 evidence table and caveat",
+        ".agents/plans/2026-09-05-native-multi-agent/acceptance-map.md:5 status snapshot",
+        ".agents/plans/2026-09-05-native-multi-agent/start-here.md:21-40 initial queue"
+      ],
+      "sourceEvidence": [
+        ".tmp/handoffs/channel-root-live.json:state, recent_fixes, recent_verified, pending",
+        ".tmp/handoffs/verification-luna.json:state, pending, verification.channel_admission_metadata.batch4_append.remaining_queue",
+        ".tmp/handoffs/gap-audit-root.json and gap-audit-runtime.json current functional/test decisions"
+      ],
+      "evidenceBoundary": "The old pages still say admission/final/child work is awaiting later slices and quote older Hub/full-unit/doc-sync checkpoints. The latest handoff records channel batches and targeted passes, but also keeps Hub full-suite and other release evidence incomplete.",
+      "impact": "A reader can combine old status prose with current targeted PASS results and incorrectly infer that all 33 gaps or the whole Hub are closed.",
+      "plannedAction": "Keep the old plan as historical evidence and add one top link from start-here to the new gap-closure report/plan. Put current design, status semantics, and candidate evidence in the new internal plan; do not rewrite the old chronology or archived notes.",
+      "doneWhen": "The new plan is the explicit current entry point, the old page link labels its date/status as historical, and every current claim points to same-candidate evidence or is marked unverified."
+    },
+    {
+      "id": "D-12",
+      "status": "confirmed",
+      "severity": "high",
+      "subject": "Current evidence needs a stable candidate boundary instead of accumulated PASS counts",
+      "location": [
+        ".agents/plans/2026-09-05-native-multi-agent/current-state.md:54-67 evidence limitations",
+        ".tmp/handoffs/verification-luna.json:3 and pending",
+        ".tmp/handoffs/channel-root-live.json:state and pending"
+      ],
+      "sourceEvidence": [
+        ".tmp/verification-runtime/client-six-final-2026-09-08T1956.log: 6 files, 94 tests",
+        ".tmp/verification-runtime/team-hub-usage-replay-2026-09-08T1912-after-reservation-fixture.log: 4 tests",
+        ".tmp/verification-runtime/formal-channel-browser-2026-09-08T2000-final.log: 1 selected, 2 skipped",
+        ".tmp/verification-runtime/full-build-2026-09-08T1958-final-ui.log: full build PASS",
+        ".tmp/verification-runtime/verify-node-next-types-2026-09-08T2001-final.log: 269 APIs",
+        ".tmp/verification-runtime/team-hub-full-bail-2026-09-08T1910-after-open-channel-fix.log: old first failure before the focused fixture repair"
+      ],
+      "evidenceBoundary": "Targeted client, build, browser and NodeNext checks pass, but Hub full-suite has not been rerun after the usage-replay fixture fix. The browser command intentionally selected one of three config cases. Older full-unit and doc-sync counts predate later source changes.",
+      "impact": "Release language may overstate coverage, full-suite closure, browser breadth, or same-source reproducibility.",
+      "plannedAction": "Use a candidate manifest and evidence table with source/artifact plane, command, environment, exact counts, skip reason, and boundary. Count determined and pending decision items separately; never sum historical runs into a current release claim.",
+      "doneWhen": "Every PASS/FAIL/SKIP row names its source snapshot and applicable scope, and release criteria reject a focused PASS as a substitute for required full-suite or multi-host evidence."
+    },
+    {
+      "id": "D-13",
+      "status": "confirmed",
+      "severity": "high",
+      "subject": "Documentation generators currently have source or freshness blockers",
+      "location": [
+        ".tmp/verification-runtime/docs-verify-cordis-catalog-2026-09-08T2010.log",
+        ".tmp/verification-runtime/docs-verify-config-catalog-2026-09-08T2010.log",
+        ".tmp/verification-runtime/docs-verify-doc-graphs-2026-09-08T2010.log",
+        ".tmp/verification-runtime/docs-verify-tool-catalog-2026-09-08T2010.log",
+        ".tmp/verification-runtime/docs-verify-module-graph-2026-09-08T2010.log"
+      ],
+      "sourceEvidence": [
+        "packages/core/team/src/human-delivery-types.ts:99 TeamChannelViewEventData cross-package reference",
+        "packages/agent-runtime/agent-runtime-sdk/src/index.ts:96 recoverySupervisor fields without JSDoc",
+        "packages/team/team-delegation/src/index.ts:20-22 Config fields without JSDoc",
+        "packages/team/team-placement-default/src/index.ts:41 routes without JSDoc",
+        "packages/team/team-run/src/index.ts:260-268 TeamRunMember fields without JSDoc",
+        "packages/team/tool-team-task/src/index.ts:415 team_task_delegate current source"
+      ],
+      "evidenceBoundary": "verify-cordis-catalog and verify-doc-graphs fail before freshness with a Typert cross-package type error; verify-config-catalog reports 14 JSDoc violations; verify-tool-catalog and verify-module-graph report stale generated artifacts. No current doc-sync PASS exists for this candidate.",
+      "impact": "Regenerating catalogs before source contracts are fixed can produce partial or misleading output, and a stale generated file can hide a public route.",
+      "plannedAction": "Fix source ownership/JSDoc/type import issues in their code-owner slices, regenerate only through generators, then run doc budgets, wrap/link/type-equivalence and doc-sync in the final phase. The plan must leave these checks pending until their inputs are fixed.",
+      "doneWhen": "All relevant generator checks run to completion on one candidate, generated English/Chinese artifacts agree, and doc-sync records the actual result rather than reusing older logs."
+    },
+    {
+      "id": "D-14",
+      "status": "partial",
+      "severity": "medium",
+      "subject": "Runtime source audit has real narrowed combinations that need design documentation",
+      "location": [
+        ".tmp/handoffs/gap-audit-runtime.json:items",
+        ".tmp/handoffs/gap-audit-runtime.json:child_scope_matrix"
+      ],
+      "sourceEvidence": [
+        "RUNTIME-PLACEMENT-CHILD-ISOLATION",
+        "RUNTIME-DELEGATION-BOUNDED-DISCOVERY",
+        "RUNTIME-PLACEMENT-WORKSPACE-ELIGIBILITY",
+        "RUNTIME-PLACEMENT-FROZEN-DEFAULTS",
+        "RUNTIME-SUPERVISED-RECOVERY-SCOPE",
+        "RUNTIME-SHARED-OBSERVATION-PULSE",
+        "RUNTIME-CHILD-HIERARCHY-RESOURCE-CEILINGS",
+        "child_scope_matrix rows CHILD-SCOPE-SHARED-SAGA through CHILD-SCOPE-INTEGRATION"
+      ],
+      "evidenceBoundary": "The audit distinguishes source-confirmed gaps from combinations explicitly rejected or not required by the proposal. Shared child saga is confirmed supported; nonshared child workspace, workflow child nodes, multiple child generations, parent review, parent Participant placement and child-owned integration remain partial, unverified or decision items.",
+      "impact": "A document that calls every rejected combination a missing feature would expand scope beyond the proposal; a document that calls every implementation detail complete would hide confirmed bounded discovery and placement issues.",
+      "plannedAction": "Use stable F-RT/F-SC/F-WS/F-CT IDs and a separate decision column. State current supported slice, rationale for exclusions, and the product decision required before implementation.",
+      "doneWhen": "Each combination is labeled confirmed/partial/unverified/decision, and no optional child combination is counted as an unconditional release promise."
+    },
+    {
+      "id": "D-15",
+      "status": "partial",
+      "severity": "medium",
+      "subject": "Product UI documentation does not express current child-result and bounded collection limits",
+      "location": [
+        "packages/client/ui-team/README.md:5-19 Team detail and channel forms",
+        ".tmp/handoffs/gap-audit-channel-product.json:CP-02/CP-03/CP-04"
+      ],
+      "sourceEvidence": [
+        "packages/client/runtime/README.md:17-21 Team task runtime and channel paging",
+        "packages/client/ui-team/src/client/TeamPage.tsx:178-204 current task/artifact derivation",
+        "packages/host/apiproxy/src/api-proxy.ts:1325 child artifact candidate collection",
+        "packages/sdk/server/src/server.ts:2454 child artifact candidate collection",
+        ".tmp/verification-runtime/client-six-final-2026-09-08T1956.log: current UI behavior evidence"
+      ],
+      "evidenceBoundary": "Channel list/input/browser behaviors have current targeted tests, while CP-02 identifies full participant/task/artifact collection bounds and CP-03 identifies child navigation/result artifacts as incomplete product coverage. The six-file PASS does not close those product requirements.",
+      "impact": "Users may read a compact Team page as if it includes all durable child result and artifact controls when the current UI derives a narrower snapshot.",
+      "plannedAction": "Keep package README behavior at its own level; design bounded member/task/artifact projections and child read-only navigation in F-UI, then update UI docs after the API is fixed. Link to the actual collection owner rather than embedding test inventories.",
+      "doneWhen": "The UI contract states which collections are paged, what child result/artifact facts are visible, how stale selection/errors behave, and which browser scenario proves each product path."
+    }
+  ],
+  "reclassification": {
+    "functionalBaselineMovedToTestingOrOther": [
+      "F-CH-02 summary/view/compaction provenance -> T-03/T-08",
+      "F-CH-03 direct v4 recipient/final boundaries -> T-06",
+      "F-CH-04 invitation/ack integration -> T-03/T-06",
+      "F-CT-01 shared child saga -> current baseline and T-03",
+      "F-SC-04 ranking reproducibility -> T-08",
+      "F-WS-02 artifact/provider loss/integration provenance -> T-04/O-02",
+      "F-UI-04 consult/discussion browser -> T-06",
+      "F-UI-05 human inbox retention -> O-04"
+    ],
+    "documentationFindingsRemovedFromGapCount": [
+      "D-11 old plan status pages: current start-here link is delivered; old plan remains historical",
+      "D-12 candidate evidence boundary: merged into O-01 and current evidence sections",
+      "D-13 generator blocker root cause: assigned to O-05 while D-04/D-05/D-07 retain document freshness work",
+      "D-14 child scope matrix: represented in F-CT/F-RT/F-SC decisions"
+    ],
+    "newDocumentationFinding": "D-16 team-placement-default has README.md but no README.zh.md"
+  },
+  "rootAuditAdditions": {
+    "O-05": "Typert use-site ownership at packages/core/team/src/human-delivery-types.ts:99 blocks Cordis/doc graph generators; fix import at the declaring package boundary and verify, do not suppress analyzer.",
+    "O-06": "activation-supervisor-http publication omits shared protocol chunk; limited package CLI PASS coexists with full publication closure FAIL and requires isolated tarball verification."
+  },
+  "finalClassificationForDocuments": {
+    "functionalCount": 20,
+    "functionalStatusCounts": {
+      "confirmed": 5,
+      "partial": 8,
+      "unverified": 0,
+      "decision": 7
+    },
+    "functionalDeterminedCount": 13,
+    "functionalDecisionCount": 7,
+    "removedFromFunctionalBecauseImplementedBaselineOrEvidence": [
+      "F-CH-02 summary/view/compaction provenance",
+      "F-CH-03 direct v4 recipient/final boundaries",
+      "F-CH-04 invitation/ack integration",
+      "F-CT-01 shared child saga",
+      "F-SC-04 ranking reproducibility",
+      "F-WS-02 artifact/provider loss/integration provenance",
+      "F-UI-04 real consult/discussion browser path",
+      "F-UI-05 human inbox retention"
+    ],
+    "documentationGapIds": [
+      "D-01",
+      "D-02",
+      "D-03",
+      "D-04",
+      "D-05",
+      "D-06",
+      "D-07",
+      "D-08",
+      "D-09",
+      "D-10",
+      "D-15",
+      "D-16",
+      "D-17"
+    ],
+    "rootCauseIds": [
+      "O-05",
+      "O-06",
+      "O-01",
+      "O-02",
+      "O-03",
+      "O-04"
+    ],
+    "completedThisDelivery": "The old start-here entry now links the current gap-design and development-plan documents; old plan status remains historical and is not a remaining documentation gap.",
+    "newDocumentationFinding": "D-16 team-placement-default has README.md but no README.zh.md; D-17 authenticated human channel invitation Note lacks the required Problem/Decision/Consequences/Alternatives sections."
+  },
+  "evidenceBoundaries": [
+    {
+      "id": "T-BOUND-01",
+      "status": "unverified",
+      "claim": "Current full Hub and full repository acceptance",
+      "evidence": ".tmp/handoffs/verification-luna.json state/pending; usage-replay focused file is 4/4 after fixture repair, but Hub full-suite has not rerun after that input change.",
+      "rule": "Do not use targeted PASS as full-suite PASS."
+    },
+    {
+      "id": "T-BOUND-02",
+      "status": "partial",
+      "claim": "Browser completeness",
+      "evidence": ".tmp/verification-runtime/formal-channel-browser-2026-09-08T2000-final.log reports one selected test and two skipped config tests; channel-root-live records earlier passes under other inputs.",
+      "rule": "Report the selected direct channel case and skipped cases separately; do not claim the three-case browser matrix is current PASS."
+    },
+    {
+      "id": "T-BOUND-03",
+      "status": "historical",
+      "claim": "Full unit, old doc-sync/hygiene and old coverage counts in current-state",
+      "evidence": ".agents/plans/2026-09-05-native-multi-agent/current-state.md:42-63; later source changes and latest handoffs are not represented by those logs.",
+      "rule": "Keep as dated historical evidence; bind release claims to one current source candidate."
+    },
+    {
+      "id": "T-BOUND-04",
+      "status": "partial",
+      "claim": "Package publishing readiness",
+      "evidence": "Latest limited publint runs for eight packages all exit 0 with warnings; the earlier full scripts/publint-all run failed its handcrafted publication closure for activation-supervisor-http's hashed protocol chunk.",
+      "rule": "A limited package CLI PASS does not replace canonical multi-platform tarball/wheel/install checks or the full release workflow."
+    },
+    {
+      "id": "T-BOUND-05",
+      "status": "confirmed",
+      "claim": "Child feature scope",
+      "evidence": ".tmp/handoffs/gap-audit-runtime.json child_scope_matrix and overall_conclusion.",
+      "rule": "Shared child saga is supported; optional nonshared/workflow/retry/review/placement/integration combinations require explicit decisions and must not be counted as unconditional promises."
+    },
+    {
+      "id": "T-BOUND-06",
+      "status": "confirmed",
+      "claim": "Documentation freshness",
+      "evidence": "Current verification logs: Cordis/doc graphs fail at human-delivery-types.ts:99; config catalog has 14 JSDoc violations; tool and module catalogs are stale.",
+      "rule": "No current doc-sync PASS exists; final plan must repair source/generator inputs before validation."
+    }
+  ],
+  "currentEvidenceSummary": {
+    "confirmedCurrentPasses": [
+      "team-human-client closed-outbox 10/10",
+      "closed-channel Loader 1/1",
+      "open-channel-admission 8/8",
+      "usage-replay 4/4",
+      "delegation 6/6",
+      "Hub task-delegation 4/4",
+      "Hub child-result 28/28",
+      "Hub channel-list 4/4",
+      "tool-team ordinary consult 2/2",
+      "Final client six files 94/94",
+      "Host and Client tsc",
+      "backend focused oxlint",
+      "latest full build",
+      "formal channel browser selected case 1/1",
+      "verify-node-next-types 269 APIs",
+      "limited publint eight package CLI runs"
+    ],
+    "stillOpenOrUnverified": [
+      "Hub full-suite after usage-replay fixture repair",
+      "full browser config matrix under the latest candidate",
+      "current full repository unit/coverage/release matrix",
+      "multi-host and real-model collaboration evidence",
+      "performance budget runner and CI lane",
+      "legacy cutover and Session legacy field removal",
+      "generated documentation freshness and current doc-sync"
+    ],
+    "sourceOfTruth": ".tmp/handoffs/verification-luna.json and .tmp/handoffs/channel-root-live.json"
+  },
+  "nextDocuments": {
+    "gapDesign": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/gap-design.md",
+    "developmentPlan": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/development-plan.md",
+    "classification": "internal reference/design and execution plan; unpaired Chinese documents; not README, Agent Note, generated catalog, or website content",
+    "stableIds": [
+      "F-CH",
+      "F-CT",
+      "F-RT",
+      "F-SC",
+      "F-WS",
+      "F-UI",
+      "F-LG",
+      "T",
+      "D",
+      "O"
+    ],
+    "requiredLinks": [
+      "gap-design.md ↔ development-plan.md",
+      "new plan ↔ old start-here/current-state/acceptance-map as historical references",
+      "each functional row ↔ source symbol and evidence artifact"
+    ],
+    "validationDeferredUntilFinalMarkdown": [
+      "pnpm run verify-doc-budgets",
+      "pnpm run verify-md-wrap",
+      "pnpm run verify-md-links",
+      "pnpm run doc-sync",
+      "git diff --check"
+    ]
+  }
+}

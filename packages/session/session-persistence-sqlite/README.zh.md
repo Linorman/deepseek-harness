@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-session-persistence-sqlite
+# @clocky/clocky-session-persistence-sqlite
 
 [English](README.md) | 中文
 
@@ -20,7 +20,7 @@ Schema 17 在本包内拥有 codec，不导入其他持久化格式中可变的�
 
 ## Schema 兼容性
 
-全新数据库直接初始化为 schema 17。旧 schema、外部 application identity、非空未版本化数据库以及不兼容 schema 对象都会被拒绝；这个预发布提供方不提供迁移。每条语句和固定 pragma 都位于随包发布的 `.sql` 资源中；值使用 SQLite 参数，运行时代码不会拼装查询文本。
+全新数据库直接初始化为 schema 18。`sessions` 行存储成对的可空 `team_id`／`participant_id` provenance 引用，并拒绝单侧或空值。旧 schema、外部 application identity、非空未版本化数据库以及不兼容 schema 对象都会被拒绝；这个预发布提供方不提供迁移。每条语句和固定 pragma 都位于随包发布的 `.sql` 资源中；值使用 SQLite 参数，运行时代码不会拼装查询文本。
 
 ## 配置（schemastery）
 

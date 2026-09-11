@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Inline code links" [disabled]
+  - text: Inline code links
   - button "Session log":
     - text: Session log
     - img
@@ -32,8 +31,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}}
 - textbox "Message the agent"

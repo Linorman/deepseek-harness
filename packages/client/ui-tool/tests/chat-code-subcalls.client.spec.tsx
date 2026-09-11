@@ -17,7 +17,7 @@ import {
   EMPTY_CONVERSATION_VIEWS, SlotRegistry,
 } from '@clocky/clocky-client-runtime/client'
 import type {
-  ConversationSnapshot, RunningToolCall, SessionId, SessionListState,
+  ConversationSnapshot, RunningToolCall, SessionId, SessionListState, TeamTaskListState,
   ToolCallBlock, ToolResultNode, WorkspaceListState,
 } from '@clocky/clocky-client-runtime/client'
 import { createSlotRenderer } from '@clocky/clocky-client-test-runtime'
@@ -86,7 +86,7 @@ function snapshotWith(
     runningCalls: nestedRunningCalls,
     pending: [], queue: [], running: runningCalls.length > 0, composerPhase: 'active', removed: false,
     openState: 'open', openError: null,
-    hasMore: false, loadingOlder: false, promptError: null, blank: false, subagent: null, lastAgentError: null,
+    hasMore: false, loadingOlder: false, promptError: null, blank: false, lastAgentError: null,
   }
 }
 
@@ -113,7 +113,7 @@ async function bench(snapshot: ConversationSnapshot) {
     ids: [SID],
     byId: { [SID]: { id: SID, title: 'S', displayTitle: 'S', running: false, blank: false, updatedAt: 1 } },
     current: SID,
-    phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+    phase: 'ready', jobsBySession: {},
   })
   const scoped = { send: vi.fn(async () => {}), cancel: vi.fn(async () => {}) }
   const layout = { openDetails: vi.fn(), closeDetails: vi.fn() }
@@ -157,6 +157,16 @@ async function bench(snapshot: ConversationSnapshot) {
     openPath: vi.fn(async () => {}),
   }
   ctx.provide('workspaces', workspaces)
+  ctx.provide('teamTasks', {
+    list: createSnapshotStore<TeamTaskListState>({
+      items: [], current: undefined, selected: undefined, phase: 'ready', state: 'idle', error: null, draft: undefined,
+    }),
+    startDraft: vi.fn(),
+    abandonDraft: vi.fn(),
+    refresh: vi.fn(async () => {}),
+    open: vi.fn(),
+    start: vi.fn(),
+  } as never)
   ctx.provide('layout', layout)
   ctx.provide('connection', {
     api: { settings: {} },

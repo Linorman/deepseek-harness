@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import hashlib
 import json
 import os
 import queue
+import re
 import subprocess
 import sys
 import tempfile
@@ -43,13 +45,17 @@ MINIMAL_BASH_COMMAND = (
     "if [ \"$counter\" -eq 1 ]; then cd /tmp; fi"
 )
 SNAPSHOT_PROMPT = "Run the advanced packaged-runtime snapshot scenario."
-SNAPSHOT_SESSION_ID = "advanced-executable"
 SNAPSHOT_DIRECT_CHILD_PROMPT = "Reply with exactly DIRECT_CHILD_OK and nothing else."
 SNAPSHOT_WORKFLOW_CHILD_PROMPT = "Reply with exactly WORKFLOW_CHILD_OK and nothing else."
 SNAPSHOT_FINAL_TEXT = "ADVANCED_EXECUTABLE_OK"
+SNAPSHOT_RETAINED_INPUT = "PYTHON_SDK_RETAINED_INPUT"
+SNAPSHOT_PRODUCT_CREDENTIAL = "python-sdk-snapshot-product-credential"
+TEAM_CHILD_PROMPT = "Delegate one bounded child Team and return its result."
+TEAM_CHILD_RESULT = "PYTHON_CHILD_TEAM_RESULT"
+TEAM_CHILD_FINAL = "PYTHON_PARENT_TEAM_FINAL"
 SNAPSHOT_PLUGIN_CODE = """\
 return (ctx) => {
-  harness.registerTool(ctx, harness.defineTool({
+  ctx.effect(() => harness.registerTool(ctx, harness.defineTool({
     name: 'snapshot_double',
     description: 'Double a number for executable snapshot verification.',
     parameters: { value: { type: 'number', required: true } },
@@ -62,7 +68,30 @@ return (ctx) => {
     async execute(args) {
       return args.value * 2
     }
-  }))
+  })))
+  ctx.effect(() => harness.registerTool(ctx, harness.defineTool({
+    name: 'snapshot_resume_pending',
+    description: 'Queue retained SDK input and cancel this tool turn.',
+    parameters: {},
+    output: {
+      schema: { type: 'string' },
+      render(_args, value) { return [{ type: 'text', text: value }] }
+    },
+    async execute(_args, exec) {
+      if (exec.agent === undefined) throw new Error('SDK child Agent is required')
+      return await new Promise((_resolve, reject) => {
+        exec.signal.addEventListener('abort', () => reject(exec.signal.reason), { once: true })
+        exec.agent.send({
+          id: 'retained-' + exec.callId,
+          role: 'user',
+          content: [{ type: 'text', text: 'PYTHON_SDK_RETAINED_INPUT' }],
+          source: { kind: 'plugin', plugin: 'python-sdk-resume-snapshot' }
+        }, 'next-turn', true)
+        exec.agent.cancel({ kind: 'hook', reason: 'SDK retained-input snapshot' },
+          { keepInbox: true, resumePending: true })
+      })
+    }
+  })))
 }
 """
 SNAPSHOT_WORKFLOW_SCRIPT = (
@@ -82,6 +111,65 @@ MINIMAL_SNAPSHOT_FILENAMES = ("model-visible.json",)
 # expected output cannot carry: the same composition emits it on macOS and not on Linux
 # (clocky#2488), and the file must replay on both. Everything else is compared.
 RUNTIME_CONTEXT_PREFIX = "Current runtime context"
+TEAM_RUNTIME_CORDIS = """\
+- id: agent-default-model
+  name: '@clocky/clocky-agent-default-model'
+  config:
+    provider: test-provider
+    model: smoke-model
+- id: team-storage
+  name: '@clocky/clocky-storage'
+- id: team-storage-json
+  name: '@clocky/clocky-storage-json'
+  config:
+    root: !!js "(process.env.CLOCKY_SESSION_ROOT ?? './.sessions') + '/team-hub'"
+- id: team-storage-log
+  name: '@clocky/clocky-storage-log'
+  config:
+    backend: json
+    routes: {}
+- id: team-hub
+  name: '@clocky/clocky-team-hub'
+- id: team-channel-direct
+  name: '@clocky/clocky-team-channel-direct'
+- id: team-human-client
+  name: '@clocky/clocky-team-human-client'
+- id: team-human-actor
+  name: '@clocky/clocky-team-human-actor'
+- id: team-workspace
+  name: '@clocky/clocky-team-workspace'
+- id: team-workspace-shared
+  name: '@clocky/clocky-team-workspace-shared'
+  config:
+    root: !!js process.env.CLOCKY_CWD
+    allowTeamWorkspacePath: true
+- id: team-agent-runtime
+  name: '@clocky/clocky-agent-runtime'
+- id: team-agent-runtime-in-process
+  name: '@clocky/clocky-agent-runtime-in-process'
+- id: team-activation-controller
+  name: '@clocky/clocky-team-activation-controller'
+- id: team-link
+  name: '@clocky/clocky-team-link'
+- id: team-link-local
+  name: '@clocky/clocky-team-link-local'
+- id: team-agent-client
+  name: '@clocky/clocky-team-agent-client'
+- id: tool-team
+  name: '@clocky/clocky-tool-team'
+- id: tool-team-task
+  name: '@clocky/clocky-tool-team-task'
+- id: team-channel-admission
+  name: '@clocky/clocky-team-channel-admission'
+- id: team-delegation
+  name: '@clocky/clocky-team-delegation'
+  config:
+    maxOperationsPerDrive: 32
+    channelPageSize: 128
+    pulseIntervalMs: 1000
+- id: team-run
+  name: '@clocky/clocky-team-run'
+"""
 CUSTOM_CORDIS = """\
 - id: sdk-jsonrpc-server
   name: '@clocky/clocky-sdk-jsonrpc-server'
@@ -121,7 +209,7 @@ CUSTOM_CORDIS = """\
   name: '@clocky/clocky-cordis-host-runner'
 - id: cordis-tool
   name: '@clocky/clocky-tool-cordis'
-"""
+""" + TEAM_RUNTIME_CORDIS
 FS_SEARCH_CORDIS = """\
 - id: sdk-jsonrpc-server
   name: '@clocky/clocky-sdk-jsonrpc-server'
@@ -144,7 +232,7 @@ FS_SEARCH_CORDIS = """\
   name: '@clocky/clocky-tool-fs-search'
   config:
     sampleOverCapGlobResults: false
-"""
+""" + TEAM_RUNTIME_CORDIS
 MCP_SERVER_SCRIPT = """\
 import json
 import os
@@ -223,6 +311,38 @@ for line in sys.stdin:
 """
 
 
+def team_runtime_entries(storage_root: str) -> list[dict[str, object]]:
+    """Return the local Team stack required by the SDK JSON-RPC server."""
+    return [
+        {
+            "id": "agent-default-model",
+            "name": "@clocky/clocky-agent-default-model",
+            "config": {"provider": "test-provider", "model": "smoke-model"},
+        },
+        {"id": "team-storage", "name": "@clocky/clocky-storage"},
+        {
+            "id": "team-storage-json",
+            "name": "@clocky/clocky-storage-json",
+            "config": {"root": f"{storage_root}/team-hub"},
+        },
+        {
+            "id": "team-storage-log",
+            "name": "@clocky/clocky-storage-log",
+            "config": {"backend": "json", "routes": {}},
+        },
+        {"id": "team-hub", "name": "@clocky/clocky-team-hub"},
+        {"id": "team-channel-direct", "name": "@clocky/clocky-team-channel-direct"},
+        {"id": "team-agent-runtime", "name": "@clocky/clocky-agent-runtime"},
+        {"id": "team-agent-runtime-in-process", "name": "@clocky/clocky-agent-runtime-in-process"},
+        {"id": "team-activation-controller", "name": "@clocky/clocky-team-activation-controller"},
+        {"id": "team-link", "name": "@clocky/clocky-team-link"},
+        {"id": "team-link-local", "name": "@clocky/clocky-team-link-local"},
+        {"id": "team-agent-client", "name": "@clocky/clocky-team-agent-client"},
+        {"id": "tool-team", "name": "@clocky/clocky-tool-team"},
+        {"id": "team-run", "name": "@clocky/clocky-team-run"},
+    ]
+
+
 def mcp_cordis(server_script: Path) -> str:
     """Build an external config that mounts the packaged MCP client."""
     return json.dumps([
@@ -244,6 +364,7 @@ def mcp_cordis(server_script: Path) -> str:
             "name": "@clocky/clocky-session-persistence-jsonl",
             "config": {"root": "./sessions", "compression": "none"},
         },
+        *team_runtime_entries("./sessions"),
         {
             "id": "mcp-fixture",
             "name": "@clocky/clocky-mcp-client",
@@ -294,6 +415,32 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
     if latest.get("role") == "tool":
         call_id, tool_name = latest_tool_call(messages)
         tool_text = message_text(latest.get("content"))
+        if tool_name == "team_task_delegate":
+            result = json.loads(tool_text)
+            task_id = result.get("task_id")
+            if not isinstance(task_id, str):
+                raise AssertionError(f"child delegation returned no task id: {tool_text}")
+            return tool_call_chunks("python-child-wait", "team_task_wait", {"task_id": task_id})
+        if tool_name == "team_task_wait":
+            if '"phase":"completed"' not in tool_text and '"phase": "completed"' not in tool_text:
+                raise AssertionError(f"child delegation did not complete: {tool_text}")
+            channel = re.search(r"call team_final with channel_id ([^\\s]+) and", json.dumps(body))
+            if channel is None:
+                raise AssertionError("parent child-delegation request has no final channel")
+            return tool_call_chunks("python-parent-final", "team_final", {
+                "channel_id": channel.group(1), "text": TEAM_CHILD_FINAL,
+            })
+        if tool_name == "team_final":
+            if any(
+                isinstance(message, dict) and TEAM_CHILD_PROMPT in message_text(message.get("content"))
+                for message in messages
+            ):
+                return text_chunks(TEAM_CHILD_FINAL)
+            if any(
+                isinstance(message, dict) and "Complete the delegated child objective." in message_text(message.get("content"))
+                for message in messages
+            ):
+                return text_chunks(TEAM_CHILD_RESULT)
         mcp = mcp_tool_followup(call_id, tool_name, tool_text)
         if mcp is not None:
             return mcp
@@ -315,10 +462,12 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         raise AssertionError(f"unexpected tool follow-up: {tool_name}")
 
     user_prompts = [
-        message_text(message.get("content"))
+        re.sub(r"^Direct message from \S+:\n", "", message_text(message.get("content")), count=1)
         for message in reversed(messages)
         if isinstance(message, dict) and message.get("role") == "user"
     ]
+    if SNAPSHOT_RETAINED_INPUT in user_prompts:
+        return text_chunks("DIRECT_CHILD_OK")
     minimal_prompt = next(
         (
             prompt
@@ -339,6 +488,7 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         SNAPSHOT_DIRECT_CHILD_PROMPT,
         SNAPSHOT_WORKFLOW_CHILD_PROMPT,
         SNAPSHOT_PROMPT,
+        TEAM_CHILD_PROMPT,
         CODE_PROMPT,
         WORKFLOW_PROMPT,
         FS_SEARCH_PROMPT,
@@ -348,8 +498,30 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         (candidate for candidate in user_prompts if candidate in scenario_prompts),
         message_text(latest.get("content")),
     )
+    if prompt == TEAM_CHILD_PROMPT:
+        assert_advertised_tool(body, "team_task_delegate")
+        return tool_call_chunks(
+            "python-child-delegate",
+            "team_task_delegate",
+            {
+                "subject": "Run one Python packaged child Team",
+                "instructions": "Complete the delegated child objective.",
+                "read_scopes": [],
+                "write_scopes": [],
+                "budget": {},
+            },
+        )
+    if any("Complete the delegated child objective." in prompt for prompt in user_prompts):
+        assert_advertised_tool(body, "team_final")
+        channel = re.search(r"call team_final with channel_id ([^\\s]+) and", json.dumps(body))
+        if channel is None:
+            raise AssertionError("child Team request has no final channel")
+        return tool_call_chunks("python-child-final", "team_final", {
+            "channel_id": channel.group(1), "text": TEAM_CHILD_RESULT,
+        })
     if prompt == SNAPSHOT_DIRECT_CHILD_PROMPT:
-        return text_chunks("DIRECT_CHILD_OK")
+        assert_advertised_tool(body, "snapshot_resume_pending")
+        return tool_call_chunks("advanced-resume", "snapshot_resume_pending", {})
     if prompt == SNAPSHOT_WORKFLOW_CHILD_PROMPT:
         return text_chunks("WORKFLOW_CHILD_OK")
     if prompt == SNAPSHOT_PROMPT:
@@ -498,6 +670,8 @@ def advanced_tool_followup(
     """Advance the executable snapshot's deterministic parent tool chain."""
     if not call_id.startswith("advanced-"):
         return None
+    if call_id == "advanced-final" and tool_name == "team_final":
+        return text_chunks(SNAPSHOT_FINAL_TEXT)
     if call_id == "advanced-define" and tool_name == "cordis_define":
         if "Defined snap-1/pkg-1 (Snapshot Double)" not in tool_text:
             raise AssertionError(f"cordis_define returned no dynamic Package ids: {tool_text}")
@@ -563,7 +737,15 @@ def advanced_tool_followup(
             raise AssertionError(f"cordis_undefine returned no removal result: {tool_text}")
         if "snapshot_double" in advertised_tool_names(body):
             raise AssertionError("snapshot_double remained advertised after cordis_undefine")
-        return text_chunks(SNAPSHOT_FINAL_TEXT)
+        system = "\n".join(message_text(message.get("content"))
+                           for message in body["messages"] if message.get("role") == "system")
+        channel = re.search(r"call team_final with channel_id (\S+) and", system)
+        if channel is None:
+            raise AssertionError("SDK coordinator request has no final channel")
+        assert_advertised_tool(body, "team_final")
+        return tool_call_chunks("advanced-final", "team_final", {
+            "channel_id": channel.group(1), "text": SNAPSHOT_FINAL_TEXT,
+        })
     raise AssertionError(f"unexpected advanced tool follow-up: {call_id} {tool_name}: {tool_text}")
 
 
@@ -675,18 +857,25 @@ class MockModel:
         self.thread.join(timeout=5)
 
 
+
+def project_temporary_directory(*, prefix: str) -> tempfile.TemporaryDirectory[str]:
+    """Keep each smoke runtime and its files inside the repository."""
+    root = Path(__file__).resolve().parent.parent / ".tmp" / "python-runtime-smoke"
+    root.mkdir(parents=True, exist_ok=True)
+    return tempfile.TemporaryDirectory(prefix=prefix, dir=root)
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--scenario",
-        choices=("all", "sdk-default", "sdk-custom", "sdk-minimal", "sdk-fs-search", "sdk-mcp", "sdk-snapshot", "direct"),
+        choices=("all", "sdk-default", "sdk-custom", "sdk-child-team", "sdk-minimal", "sdk-fs-search", "sdk-mcp", "sdk-snapshot", "direct"),
         default="all",
     )
     parser.add_argument("--exe", type=Path)
     parser.add_argument("--update-snapshots", action="store_true")
     args = parser.parse_args()
-    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "direct"} and args.exe is None:
-        parser.error("--exe is required for custom, minimal, snapshot, and direct scenarios")
+    if args.scenario in {"all", "sdk-custom", "sdk-child-team", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "direct"} and args.exe is None:
+        parser.error("--exe is required for custom, child-team, minimal, snapshot, and direct scenarios")
     if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-snapshot"}:
         parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-snapshot, or all")
     if args.exe is not None and not args.exe.is_file():
@@ -698,6 +887,9 @@ def main() -> None:
         if args.scenario in {"all", "sdk-custom"}:
             assert args.exe is not None
             smoke_sdk_custom(model.url, args.exe.resolve())
+        if args.scenario in {"all", "sdk-child-team"}:
+            assert args.exe is not None
+            smoke_sdk_child_team(model.url, args.exe.resolve())
         if args.scenario in {"all", "sdk-minimal"}:
             assert args.exe is not None
             smoke_sdk_minimal(model.url, args.exe.resolve(), args.update_snapshots)
@@ -720,7 +912,7 @@ def main() -> None:
 def smoke_sdk_default(base_url: str) -> None:
     from clocky import Clocky
 
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-default-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-default-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
         with Clocky(
@@ -732,7 +924,7 @@ def smoke_sdk_default(base_url: str) -> None:
             base_url=base_url,
             request_timeout_seconds=60,
         ) as harness:
-            result = harness.run("reply with the smoke text", session_id="default-smoke")
+            result = harness.run("reply with the smoke text")
         assert result.final_response == EXPECTED_TEXT, result.final_response
         assert_zstd_session_log(sessions)
 
@@ -740,7 +932,7 @@ def smoke_sdk_default(base_url: str) -> None:
 def smoke_sdk_custom(base_url: str, executable: Path) -> None:
     from clocky import Clocky
 
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-custom-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-custom-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
         cordis = root / "cordis.yml"
@@ -756,13 +948,73 @@ def smoke_sdk_custom(base_url: str, executable: Path) -> None:
             base_url=base_url,
             request_timeout_seconds=60,
         ) as harness:
-            text_result = harness.run("reply with the smoke text", session_id="custom-smoke")
-            code_result = harness.run(CODE_PROMPT, session_id="custom-smoke")
-            workflow_result = harness.run(WORKFLOW_PROMPT, session_id="custom-smoke")
+            text_result = harness.run("reply with the smoke text")
+            code_result = harness.run(CODE_PROMPT)
+            workflow_result = harness.run(WORKFLOW_PROMPT)
         assert text_result.final_response == EXPECTED_TEXT, text_result.final_response
         assert code_result.final_response == CODE_WORKER_TEXT, code_result.final_response
         assert workflow_result.final_response == WORKFLOW_WORKER_TEXT, workflow_result.final_response
-        assert_session_log(sessions, root, EXPECTED_TEXT, CODE_WORKER_TEXT, WORKFLOW_WORKER_TEXT)
+        assert_session_logs(sessions, root, EXPECTED_TEXT, CODE_WORKER_TEXT, WORKFLOW_WORKER_TEXT)
+
+
+def smoke_sdk_child_team(base_url: str, executable: Path) -> None:
+    """Exercise the packaged Python runtime's parent-to-child Team tool path."""
+    from clocky import Clocky
+
+    with project_temporary_directory(prefix="clocky-sdk-child-team-") as temporary:
+        root = Path(temporary).resolve()
+        sessions = root / "sessions"
+        runtime_root = Path(__file__).resolve().parent.parent / "python" / "sdk-runtime"
+        runtime_temp_root = runtime_root / ".tmp"
+        runtime_temp_root.mkdir(parents=True, exist_ok=True)
+        credential = "python-sdk-child-product-credential"
+        with tempfile.TemporaryDirectory(prefix="clocky-sdk-child-team-", dir=runtime_temp_root) as config_temporary:
+            cordis = Path(config_temporary) / "cordis.yml"
+            bundled_config = runtime_root / "src" / "clocky_runtime" / "runtime" / "cordis.yml"
+            cordis.write_text(bundled_config.read_text().replace(
+                "baseURL: http://127.0.0.1:9",
+                f"baseURL: {base_url}",
+                1,
+            ))
+            with Clocky(
+                credential=credential,
+                provider="test-provider",
+                model="smoke-model",
+                cwd=str(root),
+                runtime_cwd=str(runtime_root),
+                session_root=str(sessions),
+                cordis=str(cordis),
+                runtime_bin=str(executable),
+                env={
+                    "TEST_API_KEY": "sk-keyless-smoke",
+                    "TEST_BASE_URL": base_url,
+                    "TEST_MODEL": "smoke-model",
+                    "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(credential.encode()).hexdigest(),
+                },
+                request_timeout_seconds=60,
+                shutdown_timeout_seconds=2,
+            ) as harness:
+                result = harness.run(TEAM_CHILD_PROMPT)
+                page = harness.list_teams(limit=16)
+                roots = [item for item in page.items if item.get("parentTeamId") is None]
+                if len(roots) != 1:
+                    raise AssertionError(f"child Team smoke expected one root Team, got {page.items!r}")
+                parent_id = roots[0]["id"]
+                state = harness.get_team(parent_id).state
+                child_tasks = [task for task in state.get("tasks", []) if task.get("execution", {}).get("kind") == "child-team"]
+                if len(child_tasks) != 1:
+                    raise AssertionError(f"child Team smoke expected one child task, got {state.get('tasks')!r}")
+                task = child_tasks[0]
+                child_id = task.get("delegation", {}).get("childTeamId")
+                if not isinstance(child_id, str):
+                    raise AssertionError(f"child Team smoke did not retain child identity: {task!r}")
+                child_state = harness.get_team(child_id).state
+                if child_state.get("team", {}).get("phase") != "completed":
+                    raise AssertionError(f"child Team smoke did not complete child Team: {child_state!r}")
+                if task.get("delegation", {}).get("result", {}).get("text") != TEAM_CHILD_RESULT:
+                    raise AssertionError(f"child Team smoke lost admitted result: {task!r}")
+        if result.final_response != TEAM_CHILD_FINAL:
+            raise AssertionError(f"child Team smoke returned unexpected final: {result.final_response!r}")
 
 
 def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -> None:
@@ -771,7 +1023,7 @@ def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -
 
     # One mock model serves every scenario of a run, so the snapshot takes this turn's slice.
     first_request = len(MockModelHandler.requests)
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-minimal-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-minimal-") as temporary:
         root = Path(temporary).resolve()
         editor_path = root / "created.txt"
         prompt = f"{MINIMAL_PROMPT}\n{MINIMAL_EDITOR_PATH_PREFIX}{editor_path}"
@@ -787,7 +1039,7 @@ def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -
             base_url=base_url,
             request_timeout_seconds=60,
         ) as harness:
-            result = harness.run(prompt, session_id="minimal-agent-smoke")
+            result = harness.run(prompt)
 
         event_text = json.dumps(result.events)
         if MINIMAL_TEXT not in event_text:
@@ -806,7 +1058,7 @@ def smoke_sdk_fs_search(base_url: str, executable: Path) -> None:
     """Exercise real grep and glob spawns through the packaged executable."""
     from clocky import Clocky
 
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-fs-search-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-fs-search-") as temporary:
         root = Path(temporary).resolve()
         (root / "needle.txt").write_text(f"{FS_SEARCH_MARKER}\n")
         sessions = root / "sessions"
@@ -823,7 +1075,7 @@ def smoke_sdk_fs_search(base_url: str, executable: Path) -> None:
             base_url=base_url,
             request_timeout_seconds=60,
         ) as harness:
-            result = harness.run(FS_SEARCH_PROMPT, session_id="fs-search-smoke")
+            result = harness.run(FS_SEARCH_PROMPT)
 
         assert result.final_response == FS_SEARCH_TEXT, result.final_response
         assert_session_log(sessions, root, FS_SEARCH_TEXT, FS_SEARCH_MARKER, "needle.txt")
@@ -833,7 +1085,7 @@ def smoke_sdk_mcp(base_url: str, executable: Path | None) -> None:
     """Discover and call an external stdio MCP tool through the packaged client."""
     from clocky import Clocky
 
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-mcp-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-mcp-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
         server_script = root / "mcp_server.py"
@@ -852,7 +1104,7 @@ def smoke_sdk_mcp(base_url: str, executable: Path | None) -> None:
             base_url=base_url,
             request_timeout_seconds=60,
         ) as harness:
-            result = harness.run(MCP_PROMPT, session_id="mcp-smoke")
+            result = harness.run(MCP_PROMPT)
 
         assert result.final_response == MCP_TEXT, result.final_response
         assert discovery_log.read_text().splitlines() == [
@@ -868,34 +1120,79 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
     """Drive and compare the advanced SDK/executable behavioral snapshot."""
     from clocky import Clocky
 
-    with tempfile.TemporaryDirectory(prefix="clocky-sdk-snapshot-") as temporary:
+    with project_temporary_directory(prefix="clocky-sdk-snapshot-") as temporary:
         root = Path(temporary).resolve()
+        runtime_temp = root / ".tmp"
+        runtime_temp.mkdir()
         sessions = root / "sessions"
         cordis = root / "cordis.yml"
-        cordis.write_text(CUSTOM_CORDIS)
+        runtime_root = Path(__file__).resolve().parent.parent / "python" / "sdk-runtime"
+        bundled_config = runtime_root / "src" / "clocky_runtime" / "runtime" / "cordis.yml"
+        cordis.write_text(bundled_config.read_text().replace(
+            "baseURL: http://127.0.0.1:9",
+            f"baseURL: {base_url}",
+            1,
+        ) + """\
+- id: code-runtime
+  name: '@clocky/clocky-code-runtime-worker-thread'
+- id: subagents
+  name: '@clocky/clocky-subagent'
+- id: subagent-spawn-in-process
+  name: '@clocky/clocky-subagent-spawn-in-process'
+  config:
+    providerName: spawn
+- id: subagent-tool
+  name: '@clocky/clocky-tool-subagent'
+  config:
+    provider: spawn
+- id: workflow-engine
+  name: '@clocky/clocky-workflow-worker-thread'
+  config:
+    provider: spawn
+- id: workflow-tool
+  name: '@clocky/clocky-tool-workflow'
+- id: cordis-host-runner
+  name: '@clocky/clocky-cordis-host-runner'
+- id: cordis-tool
+  name: '@clocky/clocky-tool-cordis'
+- id: tools
+  name: '@clocky/clocky-tools'
+  config:
+    mode: both
+""")
         with Clocky(
+            credential=SNAPSHOT_PRODUCT_CREDENTIAL,
             provider="test-provider",
             model="smoke-model",
             cwd=str(root),
             session_root=str(sessions),
             cordis=str(cordis),
             runtime_bin=str(executable),
-            api_key="sk-keyless-smoke",
-            base_url=base_url,
+            env={
+                "CLOCKY_HOME": str(root / ".clocky"),
+                "TMPDIR": str(runtime_temp),
+                "TMP": str(runtime_temp),
+                "TEMP": str(runtime_temp),
+                "TEST_API_KEY": "sk-keyless-smoke",
+                "TEST_BASE_URL": base_url,
+                "TEST_MODEL": "smoke-model",
+                "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(SNAPSHOT_PRODUCT_CREDENTIAL.encode()).hexdigest(),
+            },
             request_timeout_seconds=60,
         ) as harness:
-            result = harness.run(SNAPSHOT_PROMPT, session_id=SNAPSHOT_SESSION_ID)
+            result = harness.run(SNAPSHOT_PROMPT)
 
         assert result.final_response == SNAPSHOT_FINAL_TEXT, result.final_response
-        methods = [notification.method for notification in result.notifications]
-        if methods.count("subagent.started") != 2 or methods.count("subagent.finished") != 2:
-            raise AssertionError(f"advanced snapshot emitted unexpected subagent lifecycle: {methods}")
         if not any(event.get("type") == "tool/code-dispatch" for event in result.events):
             raise AssertionError("advanced snapshot emitted no tool/code-dispatch event")
 
         logs = read_session_logs(sessions)
-        child_ids = snapshot_child_ids(result)
-        expected_ids = {SNAPSHOT_SESSION_ID, *child_ids}
+        coordinator_id = snapshot_coordinator_session_id(result)
+        child_ids = snapshot_child_ids(logs, coordinator_id)
+        if not any(event.get("type") == "turn/end" and event.get("data", {}).get("reason", {}).get("kind") == "aborted"
+                   for event in logs[child_ids[0]]):
+            raise AssertionError("advanced child snapshot emitted no cancelled turn")
+        expected_ids = {coordinator_id, *child_ids}
         if set(logs) != expected_ids:
             raise AssertionError(f"advanced snapshot expected parent plus two child logs: {sorted(logs)}")
         if "DIRECT_CHILD_OK" not in render_jsonl(logs[child_ids[0]]):
@@ -903,14 +1200,14 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
         if "WORKFLOW_CHILD_OK" not in render_jsonl(logs[child_ids[1]]):
             raise AssertionError("second advanced child log has no workflow-subagent result")
 
-        files = build_snapshot_files(result, logs, child_ids, root)
+        files = build_snapshot_files(result, logs, coordinator_id, child_ids, root)
         compare_snapshot_files(
             files, update_snapshots, ADVANCED_SNAPSHOT_DIRECTORY, ADVANCED_SNAPSHOT_FILENAMES,
         )
 
 
 def smoke_direct(base_url: str, executable: Path) -> None:
-    with tempfile.TemporaryDirectory(prefix="clocky-direct-") as temporary:
+    with project_temporary_directory(prefix="clocky-direct-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
         cordis = root / "cordis.yml"
@@ -1022,10 +1319,10 @@ class RuntimePeer:
 
 
 def assert_session_log(sessions: Path, cwd: Path, *expected_texts: str) -> None:
-    logs = list(sessions.rglob("*.jsonl"))
+    logs = session_log_paths(sessions)
     if len(logs) != 1:
         raise AssertionError(f"expected one JSONL session log under {sessions}, found {logs}")
-    lines = logs[0].read_text().splitlines()
+    lines = session_log_text(logs[0]).splitlines()
     header = json.loads(lines[0])
     if header.get("cwd") != str(cwd):
         raise AssertionError(f"session header cwd is not absolute/canonical: {header}")
@@ -1033,6 +1330,23 @@ def assert_session_log(sessions: Path, cwd: Path, *expected_texts: str) -> None:
     for expected in expected_texts:
         if expected not in rendered:
             raise AssertionError(f"session log has no {expected!r} response: {logs[0]}")
+
+
+def assert_session_logs(sessions: Path, cwd: Path, *expected_texts: str) -> None:
+    """Require one persisted Team coordinator log per expected completed result."""
+    logs = session_log_paths(sessions)
+    if len(logs) != len(expected_texts):
+        raise AssertionError(f"expected {len(expected_texts)} JSONL session logs under {sessions}, found {logs}")
+    rendered = []
+    for path in logs:
+        lines = session_log_text(path).splitlines()
+        header = json.loads(lines[0])
+        if header.get("cwd") != str(cwd):
+            raise AssertionError(f"session header cwd is not absolute/canonical: {header}")
+        rendered.append("\n".join(lines))
+    for expected in expected_texts:
+        if not any(expected in content for content in rendered):
+            raise AssertionError(f"no session log has {expected!r} response: {logs}")
 
 
 def assert_zstd_session_log(sessions: Path) -> None:
@@ -1043,13 +1357,27 @@ def assert_zstd_session_log(sessions: Path) -> None:
         raise AssertionError(f"session log has no Zstandard magic: {logs[0]}")
 
 
+def session_log_paths(sessions: Path) -> list[Path]:
+    """Return both plain and Zstandard JSONL carriers emitted by the selected runtime."""
+    return sorted([*sessions.rglob("*.jsonl"), *sessions.rglob("*.jsonl.zstd")])
+
+
+def session_log_text(path: Path) -> str:
+    """Decode one persisted JSONL session without assuming the carrier format."""
+    if path.name.endswith(".jsonl.zstd"):
+        return subprocess.run(
+            ["zstd", "-dc", str(path)], check=True, capture_output=True, text=True,
+        ).stdout
+    return path.read_text(encoding="utf-8")
+
+
 def read_session_logs(sessions: Path) -> dict[str, list[dict[str, object]]]:
     """Parse every persisted JSONL session into a map keyed by header id."""
     logs: dict[str, list[dict[str, object]]] = {}
-    for path in sorted(sessions.rglob("*.jsonl")):
+    for path in session_log_paths(sessions):
         records = [
             json.loads(line)
-            for line in path.read_text(encoding="utf-8").splitlines()
+            for line in session_log_text(path).splitlines()
             if line
         ]
         if not records or records[0].get("type") != "session":
@@ -1063,18 +1391,30 @@ def read_session_logs(sessions: Path) -> dict[str, list[dict[str, object]]]:
     return logs
 
 
-def snapshot_child_ids(result: "RunResult") -> list[str]:
-    """Return the two child session ids in their SDK notification order."""
-    child_ids: list[str] = []
+def snapshot_coordinator_session_id(result: "RunResult") -> str:
+    """Read the Team coordinator Session id from the scoped SDK notification stream."""
     for notification in result.notifications:
-        if notification.method != "subagent.started":
+        session_id = notification.payload.get("sessionId")
+        if isinstance(session_id, str):
+            return session_id
+    raise AssertionError("advanced snapshot emitted no coordinator session notification")
+
+
+def snapshot_child_ids(
+    logs: dict[str, list[dict[str, object]]],
+    coordinator_session_id: str,
+) -> list[str]:
+    """Return the direct child session ids in durable creation order."""
+    children: list[tuple[int, str]] = []
+    for session_id, records in logs.items():
+        header = records[0] if records else {}
+        if header.get("parentSession") != coordinator_session_id:
             continue
-        payload = notification.payload
-        if payload.get("parentSessionId") != SNAPSHOT_SESSION_ID:
-            continue
-        child_id = payload.get("childSessionId")
-        if isinstance(child_id, str) and child_id not in child_ids:
-            child_ids.append(child_id)
+        created_at = header.get("createdAt")
+        if not isinstance(created_at, int):
+            raise AssertionError(f"advanced snapshot child has no numeric createdAt: {session_id}")
+        children.append((created_at, session_id))
+    child_ids = [session_id for _, session_id in sorted(children)]
     if len(child_ids) != 2:
         raise AssertionError(f"advanced snapshot expected two child session ids: {child_ids}")
     return child_ids
@@ -1156,34 +1496,52 @@ def minimal_snapshot_text(value: object, cwd: Path) -> object:
 def build_snapshot_files(
     result: "RunResult",
     logs: dict[str, list[dict[str, object]]],
+    coordinator_session_id: str,
     child_ids: list[str],
     cwd: Path,
 ) -> dict[str, str]:
     """Render the SDK result and three persisted logs into stable expected outputs."""
-    replacements = [(str(cwd), "{{cwd}}"), (SNAPSHOT_SESSION_ID, "{{parent}}")]
+    replacements = [(str(cwd), "{{cwd}}"), (coordinator_session_id, "{{coordinator}}")]
+    replacements.extend([
+        (result.team_id, "{{team}}"),
+        (result.final.channel_id, "{{channel}}"),
+        (result.final.envelope_id, "{{final-envelope}}"),
+        (str(logs[coordinator_session_id][0]["participantId"]), "{{coordinator-participant}}"),
+    ])
+    sources = [record["data"]["source"] for record in logs[coordinator_session_id]
+               if record.get("type") == "user/message" and record["data"]["source"].get("kind") == "team-envelope"]
+    if len(sources) != 1:
+        raise AssertionError("advanced snapshot expects one admitted human input")
+    replacements.extend([
+        (sources[0]["envelopeId"], "{{input-envelope}}"),
+        (sources[0]["senderId"], "{{human-participant}}"),
+    ])
     replacements.append((snapshot_workflow_run_id(result), "{{workflow-run}}"))
     for index, child_id in enumerate(child_ids, start=1):
         replacements.append((child_id, f"{{{{child-{index}}}}}"))
-        agent_id = snapshot_agent_id(result, child_id)
-        replacements.append((agent_id, f"{{{{agent-{index}}}}}"))
     replacements.sort(key=lambda pair: len(pair[0]), reverse=True)
 
     result_value = {
-        "session_id": result.session_id,
+        "team_id": result.team_id,
         "final_response": result.final_response,
         "events": result.events,
         "notifications": [
             {"method": notification.method, "payload": notification.payload}
             for notification in result.notifications
         ],
-        "session_root": result.session_root,
+        "final": {
+            "team_id": result.final.team_id,
+            "channel_id": result.final.channel_id,
+            "envelope_id": result.final.envelope_id,
+            "text": result.final.text,
+        },
     }
     normalized_result = normalize_snapshot_value(result_value, replacements)
     files = {
         "result.json": json.dumps(normalized_result, indent=2, ensure_ascii=False) + "\n",
         "session.jsonl": render_jsonl(
             project_session_snapshot([
-                normalize_snapshot_value(record, replacements) for record in logs[SNAPSHOT_SESSION_ID]
+                normalize_snapshot_value(record, replacements) for record in logs[coordinator_session_id]
             ])
         ),
     }
@@ -1209,22 +1567,6 @@ def snapshot_workflow_run_id(result: "RunResult") -> str:
     if len(run_ids) != 1:
         raise AssertionError(f"advanced snapshot expected one workflow run id: {sorted(run_ids)}")
     return next(iter(run_ids))
-
-
-def snapshot_agent_id(result: "RunResult", child_id: str) -> str:
-    """Find the successful subagent id paired with one child session."""
-    for notification in result.notifications:
-        if notification.method != "subagent.finished":
-            continue
-        payload = notification.payload
-        if payload.get("childSessionId") != child_id:
-            continue
-        if payload.get("provider") != "spawn" or payload.get("status") != "ok":
-            raise AssertionError(f"advanced child did not finish successfully: {payload}")
-        agent_id = payload.get("agentId")
-        if isinstance(agent_id, str):
-            return agent_id
-    raise AssertionError(f"advanced snapshot has no finished agent for child {child_id}")
 
 
 def normalize_snapshot_value(

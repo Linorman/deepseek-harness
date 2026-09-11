@@ -21,6 +21,14 @@
     "@yarnpkg/cli-dist",
     "lightningcss"
   ],
+  "ignoreIssues": {
+    "examples/acp-agent/tests/fixtures/acp-team-final-llm.ts": [
+      "exports"
+    ],
+    "**/subagent-clocky-sdk-team-snapshot/team-final-llm.ts": [
+      "exports"
+    ]
+  },
   "workspaces": {
     ".": {
       "entry": [
@@ -50,6 +58,36 @@
         "headless-agent/tests/fixtures/time-context-mock-llm.ts",
         "headless-agent/tests/fixtures/session-telemetry-otel-driver.ts",
         "headless-agent/tests/fixtures/telemetry-redact-rule.ts",
+        "headless-agent/tests/fixtures/headless-team-run-llm.ts",
+        "headless-agent/tests/fixtures/headless-final-lifecycle-driver.ts",
+        "headless-agent/tests/fixtures/headless-final-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-terminal-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-review-terminal-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-priced-usage-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-open-failure-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-view-capacity-driver.ts",
+        "headless-agent/tests/fixtures/headless-human-question-driver.ts",
+        "headless-agent/tests/fixtures/headless-human-question-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-retention-driver.ts",
+        "headless-agent/tests/fixtures/headless-review-projection-driver.ts",
+        "headless-agent/tests/fixtures/headless-human-approval-driver.ts",
+        "headless-agent/tests/fixtures/headless-human-approval-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-multi-resource-driver.ts",
+        "headless-agent/tests/fixtures/headless-direct-v4-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-summary-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-admission-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-admission-websocket-driver.ts",
+        "headless-agent/tests/fixtures/headless-workspace-observation-driver.ts",
+        "headless-agent/tests/fixtures/headless-workflow-task-cancellation-driver.ts",
+        "headless-agent/tests/fixtures/headless-task-ranking-driver.ts",
+        "headless-agent/tests/fixtures/headless-remote-team-message-driver.ts",
+        "headless-agent/tests/fixtures/headless-task-cancellation-driver.ts",
+        "headless-agent/tests/fixtures/headless-task-cancellation-isolation-driver.ts",
+        "headless-agent/tests/fixtures/headless-usage-budget-boundaries-driver.ts",
+        "headless-agent/tests/fixtures/headless-workspace-release-restart-driver.ts",
+        "headless-agent/tests/fixtures/headless-workspace-release-probe.ts",
+        "headless-agent/tests/fixtures/headless-team-channel-view-driver.ts",
+        "headless-agent/tests/fixtures/headless-team-channel-view-llm.ts",
         "headless-agent/tests/fixtures/e2b/e2b/bin.ts",
         "acp-agent/tests/snapshots/lsp-definition/workspace/subject.ts",
         "acp-agent/tests/fixtures/child-question-tripwire.ts",
@@ -59,11 +97,16 @@
         "acp-agent/tests/fixtures/subagent-report-fence.ts",
         "acp-agent/tests/fixtures/subagent-settlement-marker.ts",
         "acp-agent/tests/fixtures/workspace-context-compaction.ts",
+        "acp-agent/tests/fixtures/team-snapshot-finalizer.ts",
         "acp-agent/tests/fixtures/subagent/subagent-acp/mock-delegating-llm.ts",
         "acp-agent/tests/fixtures/subagent/subagent-acp/driver.ts",
         "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/driver.ts",
         "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/child-mock-llm.ts",
         "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/mock-delegating-llm.ts",
+        "jsonrpc-agent/tests/fixtures/team-final-llm.ts",
+        "jsonrpc-agent/tests/fixtures/resume-pending-llm.ts",
+        "jsonrpc-agent/tests/fixtures/team-snapshot-finalizer.ts",
+        "jsonrpc-agent/tests/fixtures/sdk-product-principal.ts",
         "*/tests/**/*.e2e.ts",
         "*/tests/**/*.snapshot.ts"
       ],
@@ -74,10 +117,14 @@
         "@clocky/.+"
       ]
     },
-    "packages/host/directory-picker-auto": {
-      "ignoreDependencies": [
-        "@clocky/clocky-client-ui-directory-picker-browse",
-        "@clocky/clocky-client-ui-directory-picker-native"
+    "packages/boot/app-boot": {
+      "entry": [
+        "tests/**/*.spec.ts",
+        "tests/fixtures/loader-await.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
       ]
     },
     "packages/extensions/cordis-host-runner": {
@@ -163,16 +210,6 @@
         "tests/**/*.tsx"
       ]
     },
-    "packages/client/ui-workflow-run": {
-      "entry": [
-        "tests/**/*.spec.tsx"
-      ],
-      "project": [
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "tests/**/*.tsx"
-      ]
-    },
     "packages/client/ui-layout": {
       "entry": [
         "tests/**/*.spec.ts",
@@ -238,6 +275,16 @@
       ]
     },
     "packages/e2b/e2b": {
+      "entry": [
+        "tests/**/*.spec.ts",
+        "tests/**/*.e2e.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ]
+    },
+    "packages/e2b/team-workspace-e2b": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"
@@ -612,7 +659,7 @@
     },
     "packages/bundle/headless": {
       "ignoreDependencies": [
-        "@clocky/clocky-code-runtime-worker-thread"
+        "@clocky/.+"
       ]
     },
     "packages/bundle/web-app": {

@@ -9,8 +9,8 @@
  * merge-extensible `AgentOptions` object: an unrelated extension value cannot
  * make continuation fail merely because it is not JSON, and later composition
  * inputs require a deliberate {@link SUBAGENT_DESCRIPTOR_VERSION} change. It
- * omits `subagentDepth` — cold resume trusts the persisted header's
- * `delegationDepth` as the monotone floor — and `outputSchema`, which belongs
+ * records the resolved delegation depth so cold resume restores the recursion
+ * budget without consulting Session metadata, and omits `outputSchema`, which belongs
  * to one activation's result contract rather than durable child composition.
  * Per-activation knobs such as `maxTokens` are omitted for the same reason as
  * `outputSchema`: they budget one activation. Cold resume requires the exact
@@ -44,7 +44,7 @@ declare module '@clocky/clocky-session/types' {
  * Supporting another composition input is a deliberate version change, never
  * an implicit extra field.
  */
-export const SUBAGENT_DESCRIPTOR_VERSION = 2
+export const SUBAGENT_DESCRIPTOR_VERSION = 3
 
 /** Fields shared by every supported `subagent/descriptor` payload. */
 interface SubagentDescriptorBase {
@@ -54,6 +54,8 @@ interface SubagentDescriptorBase {
   readonly mode: 'one-shot' | 'continuable'
   /** The `ctx.subagents` provider name that established the child. */
   readonly provider: string
+  /** Resolved delegation depth: zero is top-level, child depth is parent + 1. */
+  readonly depth: number
 }
 
 /** A session-backed subagent that cannot be cold-resumed after its run. */
@@ -93,6 +95,8 @@ interface SubagentDescriptorInputBase {
   readonly mode: 'one-shot' | 'continuable'
   /** The `ctx.subagents` provider name that will establish the child. */
   readonly provider: string
+  /** Resolved delegation depth to retain across cold resume. */
+  readonly depth: number
 }
 
 /** Input for a one-shot child's durable identity. */
@@ -126,6 +130,7 @@ const DESCRIPTOR_BASE_KEYS = [
   'version',
   'mode',
   'provider',
+  'depth',
   'label',
 ] as const
 const ONE_SHOT_DESCRIPTOR_KEYS = new Set(DESCRIPTOR_BASE_KEYS)
@@ -218,10 +223,12 @@ function parseSubagentDescriptor(value: unknown): SubagentDescriptorData | undef
   }
   if (mode === 'one-shot') {
     const label = optionalString(value, 'label')
+    const depth = descriptorDepth(value)
     return {
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode,
       provider,
+      depth,
       ...label !== undefined ? { label } : {},
     }
   }
@@ -235,16 +242,27 @@ function parseSubagentDescriptor(value: unknown): SubagentDescriptorData | undef
   const toolFilter = Object.hasOwn(value, 'toolFilter')
     ? parseToolFilter(value['toolFilter'])
     : undefined
+  const depth = descriptorDepth(value)
   return {
     version: SUBAGENT_DESCRIPTOR_VERSION,
     mode,
     provider,
+    depth,
     label,
     ...agentProvider !== undefined ? { agentProvider } : {},
     ...agentModel !== undefined ? { agentModel } : {},
     ...persona !== undefined ? { persona } : {},
     ...toolFilter !== undefined ? { toolFilter } : {},
   }
+}
+
+/** Validate the recursion depth after the mode-specific descriptor fields. */
+function descriptorDepth(value: Record<string, unknown>): number {
+  const depth = value['depth']
+  if (typeof depth !== 'number' || !Number.isSafeInteger(depth) || depth < 0 || Object.is(depth, -0)) {
+    throw new Error('persisted subagent descriptor depth must be a non-negative safe integer')
+  }
+  return depth
 }
 
 /**
@@ -274,12 +292,14 @@ export function snapshotSubagentDescriptor(input: SubagentDescriptorInput): Suba
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: input.mode,
       provider: input.provider,
+      depth: input.depth,
       ...input.label !== undefined ? { label: input.label } : {},
     }
     : {
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: input.mode,
       provider: input.provider,
+      depth: input.depth,
       label: input.label,
       ...input.agentProvider !== undefined ? { agentProvider: input.agentProvider } : {},
       ...input.agentModel !== undefined ? { agentModel: input.agentModel } : {},

@@ -12,15 +12,13 @@ fork 与 spawn 的唯一区别是 child 的 Session 会以 parent 已完成轮�
 
 ## 决策
 
-所有随附组合都把 fork 委派工具绑定为 `backgroundMode: one-shot`：[base 组合包](../../../../packages/bundle/base/cordis.patch.yml)、[ACP 示例](../../../../examples/acp-agent/cordis.yml)与[headless 示例](../../../../examples/headless-agent/cordis.yml)。base 组合包保留 `run_in_background`，因为它挂载了 task 服务；两个示例设置 `enableRunInBackground: false`，因为它们都不挂载 task 服务，否则一次 one-shot 后台启动会在调用时因缺少 `tasks` 服务而失败。
+[base 组合包](../../../../packages/bundle/base/cordis.patch.yml)、其 headless 衍生组合，以及随附 Web 的 `standard`、`code` 与 `cordis` preset 都不挂载 fork provider，也不公开 `subagent_fork`。产品任务因此经由 Team topology 与 Team 工具进入，而非模型指挥的 Session fork。独立示例和显式自定义组合仍可在继承对话确属部署选择时挂载 fork provider 与工具。
 
-one-shot child——前台与后台皆然——经由 `SubagentRuntime.start()` 创建，该路径从不进入可继续的 activation setup 注册表，因此 `report` 与它的提示词 section 都不会被安装。于是一个 fork 出的 one-shot child 的系统提示词与工具 schema 与其 parent 相同，只差部署逐个委派工具主动选择的 `persona` 与 `toolFilter` 增量。
-
-`spawn` 保持 `backgroundMode: continuable`。对于 child 起步时本就没有继承前缀需要保护的那个提供方，可继续 child 与 report 义务随附行为不变，因此本决策没有让 report 通道付出任何代价。
+`spawn` 保持 `backgroundMode: continuable`。可继续的 spawn child 与 report 义务仍可用于已配置的 direct-child 组合；它们不再构成第二条产品任务入口。
 
 ### 该限制在于组合，不在于代码
 
-`ForkInProcessProvider.prepareContinuable` 仍然实现完好，`ctx.subagents.startContinuable()` 也仍接受 `fork`；改动的只有随附的 `cordis.yml` 行。`tool-subagent` 在挂载时同时知道提供方的 `inheritsParentContext` 与自身的 `backgroundMode`，因此一个加载期拒绝该组合的检查是可行的，而这里刻意不加：该组合并非普遍错误。它只在某个 child 作用域增量位于继承历史之前时才是错的，而产生该增量的包——[`dsh-tool-subagent-report`](../../../../packages/subagent/tool-subagent-report/README.zh.md)——是独立安装的，并且按其自身设计对 `tool-subagent` 不可见。一个不安装 report 包的部署可以在前缀完好的前提下运行可继续的 fork child。把某一份插件清单的后果写成委派工具的不变量，会让该工具断言它无法观察到的事实。
+`ForkInProcessProvider.prepareContinuable`、`ctx.subagents.startContinuable({ provider: 'fork' })` 与可信的 `ctx.sessions.fork()` 都保持实现。`tool-subagent` 不会在挂载时拒绝带继承上下文的 continuation，因为自定义组合可以省略 child-scoped report contribution 并保留字节一致的前缀。这项 provider policy 属于组合，而不属于通用 delegation tool。
 
 重新开放的条件记录为 `prepareContinuable` 方法上的 `TODO(fork-continuable-prefix-reuse)` 标记——随附组合不调用这个方法——并由 issue #2124 跟踪：当 child 的系统提示词与工具 schema 能与其 parent 逐字节一致时，可继续 fork 即可重新开放。
 
@@ -28,7 +26,9 @@ one-shot child——前台与后台皆然——经由 `SubagentRuntime.start()` 
 
 **在挂载时拒绝 `inheritsParentContext` 与 `continuable` 的组合。** 一次响亮的加载期失败可以阻止悄然的重新引入，而配置改动做不到这一点。否决的原因是委派工具看不到 report 包，且在没有它时该组合是合法的；对于从不安装任何 child 作用域增量的部署，这个不变量是假的，而 `tool-subagent` 会去断言一件由插件清单拥有的事实。
 
-**干脆不挂载 fork 提供方。** 这是该限制更彻底的形式。否决的原因是前台 fork *正是*复用前缀的那种情形，且不受 report 通道影响，因此全面禁用会在不换来任何 one-shot 绑定尚未换来的东西的同时放弃该能力——并且随附组合将没有任何一个演练 session 初始内容。
+**在产品组合中保留 fork provider 和 `subagent_fork`。** 不予采纳，因为 Team 成为任务 owner 后，模型指挥的 Session fork 会保留第二条产品编排路径。自定义组合可保留该能力，而无需让它进入随附模型目录。
+
+**删除核心 fork provider 与 Session API。** 不予采纳，因为可信测试与显式自定义组合仍需要已完成前缀 child；产品取消挂载不等于移除这项内部能力。
 
 **照常随附可继续的 fork child 并接受这份损失。** 否决的原因是这份损失是全额而非边际的：复用在继承历史之前就已中断，于是 child 为一份自己复制过来、目的恰恰是不必付费的 transcript 付了全额预填充。想要一个没有继承上下文的长期 child 的部署，本来就有 `spawn`。
 
@@ -38,12 +38,10 @@ one-shot child——前台与后台皆然——经由 `SubagentRuntime.start()` 
 
 ## 后果
 
-- 没有任何随附组合会创建可继续的 fork child；`subagent_fork` 把结果返回给调用方的轮次，而 `send_message` 只寻址 spawn 出的 child。
-- 除非部署在 fork 委派工具上配置了 `persona` 或 `toolFilter`，fork child 的请求前缀与其 parent 逐字节相同，因此初始内容的 token 成本重新换来了提供方侧的复用。
-- fork 提供方的可继续路径没有生产调用方，也没有整体组装层面的覆盖。它保留自己的包内测试，seam 也仍然接受它，因此某个组合包或 `--patch` 覆盖层可以无需改动代码、也不会有任何警告地把它重新引入。
-- `subagent_fork` 面向模型的 schema 发生变化：base 组合包中可继续的后台措辞被 one-shot 的 task 措辞取代，在两个示例中则完全消失。受影响的无密钥快照工具 schema 伴随文件在同一次改动中重新记录。
-- 在随附部署中，report 义务的覆盖范围收窄到 spawn 出的 child。它的 `next-step` 默认调度、权限模型与覆盖仍独立于 fork 组合。
+- 随附 headless 与 Web 模型目录不含 `subagent_fork`；整体组合测试会将这一缺席与 Team final 路径一并固定。
+- fork provider 及其包级测试仍可供示例、测试与自定义组合使用；它的 continuable 路径没有随附产品调用方。
+- 在随附产品组合中，report 义务仍限定于 continuable spawn child。它的调度、权限模型与覆盖独立于自定义 fork 组合。
 
 ### 已接受的风险
 
-该限制存在于三个配置文件与一处代码注释中，而不在门禁里。未来某个组合包行或 profile 补丁可以在 fork 工具上设置 `backgroundMode: continuable`，从而悄然重新引入前缀损失；没有任何东西会失败得很响亮。这就是不把某一份插件清单的后果写入 `tool-subagent` 所接受的代价。
+显式自定义 bundle 或 profile patch 可以无需修改代码地重新引入 fork provider 与工具。这是可接受的，因为该能力留在随附产品目录之外，而且通用 delegation tool 无法推断自定义组合的 child-prefix policy。

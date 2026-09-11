@@ -97,6 +97,10 @@ class MemoryPersistence extends SessionPersistence implements PersistenceBackend
     return this.coordinator.create(m)
   }
 
+  override materializeHeader(session: Session): Promise<void> {
+    return this.coordinator.materializeHeader(session)
+  }
+
   append(id: SessionId, events: readonly SessionEvent[]): Promise<void> {
     return this.coordinator.append(id, events)
   }
@@ -1855,6 +1859,26 @@ describe('SessionPersistence service registration', () => {
 
     await expect(ctx.sessionPersistence.create(invalid))
       .rejects.toThrow('session metadata must be losslessly JSON-serializable')
+    await fiber.dispose()
+  })
+
+  it('rejects malformed Team participant headers before registering lazy state', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    const fiber = await ctx.plugin(MemoryPersistence)
+    const invalid: Array<{ readonly header: SessionHeader; readonly error: RegExp }> = [
+      { header: { ...meta('team-only'), teamId: 'team-only' }, error: /teamId and participantId must be provided together/ },
+      { header: { ...meta('participant-only'), participantId: 'participant-only' }, error: /teamId and participantId must be provided together/ },
+      { header: { ...meta('empty-team'), teamId: '', participantId: 'participant' }, error: /teamId must be a non-empty string/ },
+      { header: { ...meta('nonstring-team'), teamId: 1 as unknown as string, participantId: 'participant' }, error: /teamId must be a non-empty string/ },
+      { header: { ...meta('empty-participant'), teamId: 'team', participantId: '' }, error: /participantId must be a non-empty string/ },
+      { header: { ...meta('nonstring-participant'), teamId: 'team', participantId: 1 as unknown as string }, error: /participantId must be a non-empty string/ },
+    ]
+
+    for (const { header, error } of invalid) {
+      await expect(ctx.sessionPersistence.create(header)).rejects.toThrow(error)
+    }
+    expect(await ctx.sessionPersistence.list()).toEqual([])
     await fiber.dispose()
   })
 

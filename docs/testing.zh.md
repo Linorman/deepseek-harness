@@ -2,31 +2,33 @@
 
 [English](testing.md) | 中文
 
-本文说明本仓库的分层测试方式，以及保持绿色测试套件有意义的规则。命令见根目录 [AGENTS.md](../AGENTS.md)；相关 Agent Note 承载设计动机。
+本文定义测试层级及其各自负责的证据。命令见根目录 [AGENTS.md](../AGENTS.md)；Agent Note 承载设计动机。
 
 ## 层级
 
-- **单元测试**（`pnpm run test`）：vitest 运行包和示例各自的 `tests/**` 目录下的测试，以及匹配 `scripts/**/*.spec.ts` 的仓库脚本测试；测试文件与其所覆盖的代码区域放在一起。每个注册表都有一个 HMR（热模块替换）安全测试（对向该注册表贡献内容的 fiber 执行 dispose（资源释放），并断言清理完成）。优先覆盖边界情况、错误路径、事件顺序、并发竞态，以及针对约定回归的永久测试（见 `packages/core/agent-loop/tests/contract-regressions.spec.ts`）。
-- **覆盖率门禁**（`pnpm run test:coverage`）：门禁级运行，对 `packages/*/*/src` 按文件 100% 覆盖。未覆盖的行往往是门禁正确标记出的死代码（应删除），而非需要补写的测试。行覆盖率是必要条件，但永远不是充分条件：它证明行被执行过，不证明功能按交付预期工作。`packages/shell/pwsh-local/src` 的按文件 100% 覆盖需要真实的 `pwsh`：缺少它时其执行器套件会自动跳过，`vitest.config.ts` 会豁免该文件以使无 pwsh 的主机保持绿色，而 CI runner 自带 pwsh，仍按完整标准执行门禁。
-- **真实 API e2e**（`pnpm run test:e2e`）：带密钥测试调用真实提供方 API，包括 DeepSeek 模型以及各提供方特有的冒烟测试；这些测试各自由自己的密钥控制（`EXA_API_KEY`、`PERPLEXITY_API_KEY` 等），缺少密钥时套件会自动跳过，使 keyless CI 保持绿色（[真实 API e2e Agent Note](../.agents/notes/implemented/testing/2026-06-19-real-api-e2e-ci.zh.md)）。
-- **快照**（`pnpm run test:snapshot`）：无密钥预期输出覆盖对外行为（传输约定与呈现），持久化日志则固定组装后的后端行为。ACP 启动真实的自动化服务器示例、回放录制会话，并对归一化 JSON-RPC 与重新持久化的日志执行 diff（[ACP 快照 Agent Note](../.agents/notes/implemented/testing/2026-06-19-acp-snapshot-tests.zh.md)）；headless 后端场景通过未导出的 JSONL 测试 driver 启动各自显式的示例组装，而 `apps/cli` 则单独负责产品 CLI（命令行界面）`dsh --profile headless` 的验收。当模型 transcript（文本记录）发生变化时使用 `pnpm run test:snapshot:record`，回放输入仍然有效时使用 `pnpm run test:snapshot:refresh`；请审查每一处 JSONL 与预期输出差异。一个 ACP 场景（`text-turn`）固定完整的系统提示词与工具 schema 内容；其他 fixture（测试前置数据）将其 token 化，因此修改只会扰动一行（[pinned-header Agent Note](../.agents/notes/archived/testing/2026-07-06-pin-request-header-content-in-one-scenario.md)）。
-- **Web 浏览器快照**（`pnpm run test:web`；必需的 Linux PR（Pull Request）门禁）：Chromium 将回放后的浏览器输出与 `apps/web/tests/snapshots/` 比较。CI 强制只读的 `DSH_SNAPSHOT=replay`，绝不写入预期输出；record/refresh 留在本地，每处 diff 都须评审（[web e2e 车道](../.agents/notes/implemented/testing/2026-07-24-web-gui-browser-e2e-lane.zh.md)、[CI 门禁决策](../.agents/notes/implemented/testing/2026-07-30-web-browser-snapshot-ci-gate.zh.md)）。`test:web` 会[先构建](../.agents/notes/implemented/bug-fix/2026-07-28-themed-scrollbars-and-reserved-gutter.zh.md)以交付插件 CSS。
+- **单元测试**（`pnpm run test`）：vitest 运行包/示例测试与仓库脚本测试。测试与被覆盖的代码放在一起；每个注册表测试 HMR 清理。优先覆盖边界、错误路径、顺序、竞态和永久约定回归（见 `packages/core/agent-loop/tests/contract-regressions.spec.ts`）。
+- **覆盖率门禁**（`pnpm run test:coverage`）：要求 `packages/*/*/src` 按文件 100% 覆盖。未覆盖代码通常应删除。行覆盖只证明执行，不证明交付行为。`packages/shell/pwsh-local/src` 需要真实 `pwsh`；无 pwsh 主机会跳过并豁免，CI 仍执行完整标准。
+- **真实模型 e2e**（`pnpm run test:e2e`）：带凭证测试调用各自配置的模型／提供方 route；headless Team、headless-agent 和 text ACP 套件接受通过 `CLOCKY_LOCAL_MODEL_BASE_URL`、`CLOCKY_LOCAL_MODEL_ID` 与 `CLOCKY_LOCAL_MODEL_API_KEY` 配置的本地 OpenAI 兼容 route，而提供方专用和图像套件仍使用各自 credential。每个 suite 在自身 route 不可用时跳过，使 keyless CI 保持绿色（[Agent Note](../.agents/notes/implemented/testing/2026-06-19-real-api-e2e-ci.zh.md)、[本地 Team route](../.agents/notes/implemented/testing/2026-09-04-local-team-real-model-e2e.zh.md)）。
+- **快照**（`pnpm run test:snapshot`）：无密钥预期输出覆盖传输/呈现，持久化日志覆盖组装行为。ACP 回放真实 automation-server 会话并比较归一化 JSON-RPC 与重新持久化日志（[Agent Note](../.agents/notes/implemented/testing/2026-06-19-acp-snapshot-tests.zh.md)）；headless 场景使用显式 JSONL driver，`apps/cli`负责产品 `clocky --profile headless` 验收。模型 transcript 改动后使用 `test:snapshot:record`，回放输入有效时使用 `test:snapshot:refresh`，并审查每处 diff。`text-turn`固定完整 prompt/tool-schema，其余 fixture 使用 token（[pinned-header Agent Note](../.agents/notes/archived/testing/2026-07-06-pin-request-header-content-in-one-scenario.md)）。
+- **Web 浏览器快照**（`pnpm run test:web`；必需的 Linux PR 门禁）：Chromium 比较回放输出与 `apps/web/tests/snapshots/`。CI 使用只读 `CLOCKY_SNAPSHOT=replay`；record/refresh 仅在本地运行并审查 diff（[web e2e 车道](../.agents/notes/implemented/testing/2026-07-24-web-gui-browser-e2e-lane.zh.md)、[CI 门禁决策](../.agents/notes/implemented/testing/2026-07-30-web-browser-snapshot-ci-gate.zh.md)）。`test:web`会[先构建](../.agents/notes/implemented/bug-fix/2026-07-28-themed-scrollbars-and-reserved-gutter.zh.md)以生成插件 CSS。
 
 会话 fixture 保留 header 与 payload，但省略正文序号／时间 envelope。回放会合成这些字段；运行时持久化不变。fixture 使用规范打包行；[迁移器](../scripts/migrate-packed-session-fixtures.ts)会改写旧布局。
 
+Team Hub load lane 默认覆盖 4,096 条 SQLite record；设置 `CLOCKY_TEAM_HUB_LARGE_LOAD=1` 可运行 opt-in 的 16,384-record bounded replay benchmark。两者都不定义生产 latency budget。
+
 ## 带密钥策略：推理（inference）在这里很便宜
 
-我们是 DeepSeek，不要吝惜真实 API 测试。无密钥测试只能证明底层通路；只有带密钥运行才能证明 agent（智能体）能对接真实模型正常工作。覆盖文件写入提示词、包含多个轮次的对话、工具使用和流中取消。价值最高的是**冒烟测试**：启动真实示例、发送一条提示词，并检查外部世界；它们能捕获「单元测试全绿、产品却坏了」这一类 mock 无法发现的问题（[事故复盘 0001](postmortem/0001-acp-default-export-drops-inject.zh.md)）。自动跳过让无密钥 CI 和无密钥贡献者不受阻塞；它不是成本信号。每个示例都提供无密钥和带密钥冒烟测试（[examples/AGENTS.md](../examples/AGENTS.md)）。
+真实 API 覆盖是 harness 约定：无密钥测试证明通路，带密钥运行证明模型集成。覆盖文件写入、多轮对话、工具和流中取消。价值最高的是**冒烟测试**：启动真实示例、发送一条提示词并检查外部世界（[事故复盘 0001](postmortem/0001-acp-default-export-drops-inject.zh.md)）。自动跳过保持无密钥 CI 不受阻塞，每个示例都提供两种冒烟测试（[examples/AGENTS.md](../examples/AGENTS.md)）。
 
 ## 优先使用真实实现而非 mock
 
-只 mock 开销高或不确定的边界（LLM（大语言模型）适配器、网络、时钟）；下游一切保持真实。手写替身只能证明桥接层在搬运字节，不能证明交付的工具行为符合断言。桥接工具调用测试将脚本化 mock 模型与真实工具和执行器配合使用：`makeBridgeHarness({ withBash: true })` 接入 `dsh-bash-local` 与 `dsh-tool-bash`，然后运行 `echo`。
+只 mock 高成本或不确定的边界（LLM 适配器、网络、时钟）；下游保持真实。替身只能证明字节通过桥接，不能证明交付工具行为正确。桥接测试将脚本化模型与真实工具、执行器配合：`makeBridgeHarness({ withBash: true })`接入 `clocky-bash-local` 与 `clocky-tool-bash`，然后运行 `echo`。
 
 恢复测试按步骤区分分片前与分片后的失败，并证明失败分片不会派生出消息或工具副作用。覆盖耗尽、取消、策略组合、持久化、状态、协议计数、会关闭传输的空闲超时，以及交付的 Loader 组合。
 
 ## 验证外部世界，而非自我报告
 
-e2e 断言应重新运行命令或从外部重新读取文件；对 agent 自身输出做关键词探测会让作弊的 agent 通过。断言未修改的文件逐字节一致。e2e 测试自行管理资源：在测试中创建 harness，在 `afterEach` 中 dispose（即使失败/重试/超时也要释放）；共享 fixture 放在普通的 `tests/harness.ts` 中，绝不放在另一个 `*.e2e.ts` 中（导入一个 spec 会重新注册其 `describe`，导致真实 API 调用重复执行）。
+e2e 断言应重新运行命令或从外部读取文件；探测 agent 输出可能让作弊的 agent 通过。断言未修改文件逐字节一致。测试自行管理资源：在测试中创建 harness，在 `afterEach`中 dispose；共享 fixture 放在 `tests/harness.ts`，不要放在另一个 `*.e2e.ts` 中，否则导入 spec 会重复注册并重复真实 API 调用。
 
 ## 测试真实入口路径
 
@@ -46,4 +48,4 @@ e2e 断言应重新运行命令或从外部重新读取文件；对 agent 自身
 
 ## 何时需要快照测试
 
-每项非平凡的模型可见、协议可见或人类可见变更，都必须在同一 PR 中，通过可运行示例所属的快照套件添加或更新无密钥场景。包测试、e2e 断言、mock 与仅测试组合、PR 理由都不能取代组装后的 transcript；必要时应扩展 harness。ACP 自动化场景使用 `examples/<name>/tests/snapshots/`，即基于 [`dsh-acp-snapshot`](../packages/test-support/acp-snapshot/README.zh.md) 套件工厂的场景表（`examples/acp-agent` 为主套件）；`examples/headless-agent` 拥有内部规范事件 JSONL 快照与回放 fixture。`pwsh-tool-turn` ACP 场景启动真实 `pwsh`，在无 `pwsh` 的主机上跳过。已完成的交互式终端旅程使用 `apps/cli/tests/snapshots/` 下由 JSONL 驱动的场景；瞬态呈现使用包内语义矩阵，输入、Loader 选择或终端清理发生变化时还要添加 PTY 用例。浏览器渲染的 Web GUI 旅程使用上述 Web 应用快照套件。两个 SDK 各自独立地投影 agent loop、会话生命周期与 `SessionEventMap`，因此改动其中任何一项都要同时更新两者：`examples/jsonrpc-agent/tests/snapshots/` 拥有 TypeScript 客户端；`scripts/snapshots/python-sdk-single-exe/` 拥有 Python 客户端，且只有必需的 `python-runtime` CI 作业会运行它。新的能力 seam、生命周期变体或 transcript 呈现接口在计划阶段就要列出每个覆盖层级，并在实现前验证 harness 能够表达它们。
+每项非平凡的模型可见、协议可见或人类可见变更，都必须在同一 PR 中，通过可运行示例所属的快照套件添加或更新无密钥场景。包测试、e2e 断言、mock 与仅测试组合、PR 理由都不能取代组装后的 transcript；必要时应扩展 harness。ACP 自动化场景使用 `examples/<name>/tests/snapshots/`，即基于 [`clocky-acp-snapshot`](../packages/test-support/acp-snapshot/README.zh.md) 套件工厂的场景表（`examples/acp-agent` 为主套件）；`examples/headless-agent` 拥有内部规范事件 JSONL 快照与回放 fixture。`pwsh-tool-turn` ACP 场景启动真实 `pwsh`，在无 `pwsh` 的主机上跳过。已完成的交互式终端旅程使用 `apps/cli/tests/snapshots/` 下由 JSONL 驱动的场景；瞬态呈现使用包内语义矩阵，输入、Loader 选择或终端清理发生变化时还要添加 PTY 用例。浏览器渲染的 Web GUI 旅程使用上述 Web 应用快照套件。两个 SDK 各自独立地投影 agent loop、会话生命周期与 `SessionEventMap`，因此改动其中任何一项都要同时更新两者：`examples/jsonrpc-agent/tests/snapshots/` 拥有 TypeScript 客户端；`scripts/snapshots/python-sdk-single-exe/` 拥有 Python 客户端，且只有必需的 `python-runtime` CI 作业会运行它。新的能力 seam、生命周期变体或 transcript 呈现接口在计划阶段就要列出每个覆盖层级，并在实现前验证 harness 能够表达它们。

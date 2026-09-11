@@ -63,6 +63,9 @@ const PACKED_CHUNK_ROW_TYPES = new Set(['text-chunks', 'reasoning-chunks', 'tool
 /** Canonical UUID spelling minted for ordinary message identities. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+/** Prefix of the deterministic identity derived for a Team channel view. */
+const TEAM_CHANNEL_VIEW_MESSAGE_ID_PREFIX = 'team-channel-view:'
+
 /** A snapshot scenario and how its fixtures are produced. */
 export interface Scenario {
   name: string
@@ -557,7 +560,7 @@ function completeMessage(value: unknown): Record<string, unknown> | undefined {
   if (
     !isRecord(value)
     || typeof value.id !== 'string'
-    || !UUID_RE.test(value.id)
+    || !UUID_RE.test(value.id) && !value.id.startsWith(TEAM_CHANNEL_VIEW_MESSAGE_ID_PREFIX)
     || typeof value.role !== 'string'
     || !Array.isArray(value.content)
     || !isRecord(value.source)
@@ -576,6 +579,20 @@ function surfaceEventMessage(record: Record<string, unknown>): Record<string, un
     case 'user/message':
       message = data
       break
+    case 'team/channel-view': {
+      const { content, ...source } = data
+      message = {
+        id: `${TEAM_CHANNEL_VIEW_MESSAGE_ID_PREFIX}${JSON.stringify([
+          data.teamId,
+          data.channelId,
+          data.triggeringEnvelopeId,
+        ])}`,
+        role: 'user',
+        content,
+        source: { kind: 'team-channel-view', ...source },
+      }
+      break
+    }
     case 'assistant/message':
     case 'tool/result':
       message = data.message

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Remaining chat branch tails: MessageItem context/unknown arms,
+// Remaining chat tails: MessageItem context/unknown arms,
 // user IconActions, StatsLine no-cache join,
 // AssistantMarkdown single-line reasoning. (Tool-row dispatch tails live
 // with the keyed-slot machinery specs since the tool ring dissolved into
@@ -142,7 +142,7 @@ describe('MessageItem arms', () => {
     expect(view.container.textContent).toContain('README.md, please.')
   })
 
-  it('user bubbles expose clock / copy and neither branch nor edit; copy writes the text', () => {
+  it('user bubbles expose clock / copy and no edit action; copy writes the text', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -161,7 +161,6 @@ describe('MessageItem arms', () => {
     )
     expect(screen.getByText('14:24')).toBeTruthy()
     expect(screen.getByRole('button', { name: '复制' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: '在新对话中分支' })).toBeNull()
     expect(screen.queryByRole('button', { name: '编辑' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '复制' }))
     expect(writeText).toHaveBeenCalledWith('hello bubble')
@@ -290,7 +289,7 @@ describe('MessageItem arms', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('consumed steering renders as a plain user bubble and keeps copy without branch', () => {
+  it('consumed steering renders as a plain user bubble and keeps copy', () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -308,7 +307,6 @@ describe('MessageItem arms', () => {
     expect(view.getByText(/附加内容块/)).toBeTruthy()
     fireEvent.click(view.getByRole('button', { name: '复制' }))
     expect(writeText).toHaveBeenCalledWith('steer!')
-    expect(view.queryByRole('button', { name: '在新对话中分支' })).toBeNull()
   })
 
   it('context uses the Tool calls disclosure chrome and keeps its body collapsed by default', () => {
@@ -707,7 +705,7 @@ describe('MessageItem arms', () => {
     // reach it, and the row marker must not claim a form that did not render.
     const cases = [
       { form: 'snapshot', source: { kind: 'plugin', form: 'snapshot', sections: 'not-a-list' }, label: 'plugin' },
-      { form: 'relay', source: { kind: 'subagent-report', form: 'relay' }, label: 'subagent-report' },
+      { form: 'relay', source: { kind: 'team-report', form: 'relay' }, label: 'team-report' },
       { form: 'recall', source: { kind: 'session-reference', form: 'recall', references: [{ label: 'x' }] }, label: 'session-reference' },
     ] as const
     for (const { form, source, label } of cases) {
@@ -747,13 +745,13 @@ describe('MessageItem arms', () => {
         kind: 'context',
         seq: 3,
         content: [{ type: 'text', text: 'child report body' }],
-        source: { kind: 'subagent-report', form: 'relay', senderSessionId: 'child-7' },
-        provenance: { role: 'inject', label: 'subagent-report' },
+        source: { kind: 'team-report', form: 'relay', senderSessionId: 'child-7' },
+        provenance: { role: 'inject', label: 'team-report' },
         form: 'relay',
       } as never}
       />,
     )
-    fireEvent.click(view.getByRole('button', { name: /^上下文注入\s*subagent-report$/ }))
+    fireEvent.click(view.getByRole('button', { name: /^上下文注入\s*team-report$/ }))
     expect(view.container.querySelector('[data-context-relay-sender]')?.textContent).toBe('来自会话 child-7')
     expect(view.container.querySelector('[data-context-text]')?.textContent).toBe('child report body')
   })
@@ -1009,7 +1007,7 @@ describe('useCalendarDay boundary refresh', () => {
   })
 })
 
-describe('small branch tails', () => {
+describe('small chat tails', () => {
   it('AssistantMarkdown single-line reasoning summary skips the newline cut', () => {
     const view = render(
       <AssistantMarkdown

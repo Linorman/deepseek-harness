@@ -1,0 +1,3 @@
+# Collection navigation keeps its real Hub and Host while pending tasks remain unassigned.
+- id: team-scheduler-dag
+  disabled: true

@@ -81,22 +81,22 @@ export interface CreateAgentOptions {
   /** The live agent/session identity. */
   readonly sessionId: SessionId
   /**
-   * Session creation metadata: validated absolute `cwd`, `parentSession`
-   * fork lineage, the `seedLength` seed boundary, the coarse `origin`
-   * classification, and the `delegationDepth` recursion budget. Mirrors the
-   * `cwd`/`parentSession`/`seedLength`/`origin`/`delegationDepth` fields of
-   * {@link CreateSessionOptions.meta} in clocky-session (the internal-only
-   * `createdAt`, used when reconstructing a persisted session, is deliberately
-   * excluded — a factory caller never sets it). This is durable session data,
-   * so the session boundary validates and snapshots it before asynchronous
-   * setup begins.
+   * Session creation metadata: validated absolute `cwd`, opaque Team and
+   * Participant references, `parentSession` fork lineage, and the `seedLength`
+   * seed boundary. Mirrors the caller-supplied fields of
+   * {@link CreateSessionOptions.meta}; the internal-only `createdAt`, used when
+   * reconstructing a persisted session, is deliberately excluded because a
+   * factory caller never sets it. Subagent classification and delegation depth
+   * are durable descriptor-event facts, not Session header metadata. This is
+   * durable session data, so the session boundary validates and snapshots it
+   * before asynchronous setup begins.
    */
   readonly meta?: {
     readonly cwd?: string
+    readonly teamId?: string
+    readonly participantId?: string
     readonly parentSession?: SessionId
     readonly seedLength?: number
-    readonly origin?: 'subagent'
-    readonly delegationDepth?: number
     readonly agentPreset?: string
   }
   /**

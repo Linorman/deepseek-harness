@@ -1,0 +1,31 @@
+{
+  "scenario": "human-approval-producer",
+  "gateway": "ApiProxyService",
+  "operation": "write approval.txt",
+  "standingMode": "read-only",
+  "firstWrite": "FS_SANDBOX_DENIED",
+  "requestedMode": "workspace-write",
+  "approvalToolCalls": 1,
+  "callId": "human-approval-escalated-write",
+  "reason": "escalate sandbox to workspace-write: Allow replacing approval.txt after the read-only sandbox denied this exact write.",
+  "pendingKind": "approval",
+  "pendingPhase": "pending",
+  "approvalAuditCorrelated": true,
+  "sourceIdIsApprovalId": true,
+  "taskAndSessionCorrelated": true,
+  "pendingRegistryReplay": true,
+  "mux": [
+    "approval/requested",
+    "approval/resolved"
+  ],
+  "finalAction": "cancelled",
+  "outcome": {
+    "kind": "team-cancelled"
+  },
+  "approvalDecision": "cancelled",
+  "historyRecords": 2,
+  "originalPendingRetained": true,
+  "fileBefore": "before\n",
+  "fileAfter": "before\n",
+  "team": "cancelled"
+}

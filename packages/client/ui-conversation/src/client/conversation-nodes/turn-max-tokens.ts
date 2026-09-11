@@ -24,10 +24,9 @@ function lastStep(context: ConversationNodeContext<TurnMaxTokensState>): number 
 }
 
 /**
- * Anchor the notice between the closing Assistant and the turn-tail so the
- * tail stays the turn's last Chat node and keeps its branch action enabled.
- * Without a closing text Assistant there is no branch action to protect, and
- * the turn/end seq keeps the notice at the truncation point.
+ * Anchor the notice between the closing Assistant and the turn-tail. Without
+ * a closing text Assistant, the turn/end seq keeps the notice at the
+ * truncation point.
  */
 function noticeAnchor(context: ConversationNodeContext<TurnMaxTokensState>, seq: number): number {
   const location = context.start?.location ?? context.matches[0]?.location

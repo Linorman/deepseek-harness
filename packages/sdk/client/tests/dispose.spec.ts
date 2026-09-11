@@ -33,6 +33,7 @@ interface FakeChildScript {
  * `exit` event.
  */
 class FakeChild extends EventEmitter {
+  pid = 42
   exitCode: number | null = null
   signalCode: NodeJS.Signals | null = null
   readonly kills: NodeJS.Signals[] = []
@@ -88,6 +89,27 @@ describe('disposeRuntimeProcess', () => {
     expect(fake.kills).toEqual([])
   })
 
+  it('cleans a detached process group after its direct child already exited', async () => {
+    const fake = new FakeChild()
+    fake.exitCode = 0
+    let groupLive = true
+    const signals: Array<[number, 'SIGTERM' | 'SIGKILL']> = []
+    await disposeRuntimeProcess(
+      asChild(fake),
+      { disposeEofGraceMs: 20, disposeGraceMs: 20 },
+      'linux',
+      true,
+      {
+        signal: (group, signal) => {
+          signals.push([group, signal])
+          groupLive = false
+        },
+        exists: () => groupLive,
+      },
+    )
+    expect(signals).toEqual([[42, 'SIGTERM']])
+  })
+
   it('tier 1: a cooperative child quiesces on stdin EOF — no signal is ever sent', async () => {
     const fake = new FakeChild({ diesOn: 'eof', delayMs: 5 })
     await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1000, disposeGraceMs: 1000 })
@@ -101,6 +123,26 @@ describe('disposeRuntimeProcess', () => {
     await disposeRuntimeProcess(asChild(fake), { disposeEofGraceMs: 1000, disposeGraceMs: 1000 })
     expect(fake.exitCode).toBe(0)
     expect(fake.listenerCount('exit')).toBe(0)
+  })
+
+  it('terminates a detached POSIX group when EOF exits the leader while descendants remain', async () => {
+    const fake = new FakeChild({ diesOn: 'eof', synchronousExit: true })
+    let groupLive = true
+    const signals: Array<[number, 'SIGTERM' | 'SIGKILL']> = []
+    await disposeRuntimeProcess(
+      asChild(fake),
+      { disposeEofGraceMs: 20, disposeGraceMs: 20 },
+      'linux',
+      true,
+      {
+        signal: (group, signal) => {
+          signals.push([group, signal])
+          groupLive = false
+        },
+        exists: () => groupLive,
+      },
+    )
+    expect(signals).toEqual([[42, 'SIGTERM']])
   })
 
   it('tier 2: a child that ignores EOF but honors SIGTERM dies on the middle rung', async () => {

@@ -7,9 +7,8 @@
 // chat content from the keyless FixtureApiClient transport.
 //
 // Component behavior remains owned by per-package suites (SlotTestRuntime
-// benches over src). This smoke additionally pins the resident interaction
-// fixture's cross-plugin projection because only the built connection/runtime/
-// workspace graph can prove that transport-to-row path end to end.
+// benches over src). This smoke additionally pins the Team-to-coordinator
+// transcript path because only the built connection/runtime graph can prove it.
 import { resolve } from 'node:path'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
@@ -41,28 +40,21 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   mountAssembledApp()
 
   // The sidebar renders from the boot graph: every inject layer activated.
-  const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
+  const teamNavigator = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+  const draftComposer = screen.getByRole('textbox') as HTMLTextAreaElement
+  expect(draftComposer.disabled).toBe(false)
+  expect(screen.queryByRole('tree', { name: 'Sessions' })).toBeNull()
+  const fixtureTeam = within(teamNavigator).getByTitle('Demonstrate the fixture Team API.')
+  fireEvent.click(fixtureTeam)
+  await waitFor(() => {
+    expect(within(teamNavigator).getByTitle('Demonstrate the fixture Team API.')
+      .getAttribute('aria-current')).toBe('page')
+  }, { timeout: 10_000 })
   expect(document.querySelector('svg[viewBox="0 0 156 24"]')).not.toBeNull()
   expect(screen.queryByText('Clocky')).toBeNull()
-  // The compact layout dropped group session counts; the fixture workspace
-  // group row renders immediately with its sessions beneath it.
-  const fixtureGroup = (await within(tree).findAllByText('fixture'))
-    .map(el => el.closest<HTMLElement>('[role="treeitem"]'))
-    .find(el => el?.getAttribute('aria-expanded') !== null)
-  if (fixtureGroup === undefined) throw new Error('fixture Workspace group missing')
 
-  // The resident fixture has both a question and an approval; composer routing
-  // exposes the question first, and the assembled workspace plugin mirrors that
-  // actionable wait instead of the underlying running state.
-  const waitingTitle = await within(tree).findByText('Fixture 历史会话')
-  const waitingRow = waitingTitle.closest<HTMLElement>('[role="treeitem"]')
-  if (waitingRow === null) throw new Error('fixture Session title must belong to a tree row')
-  expect(waitingRow.querySelector('[data-state="warning"]')).not.toBeNull()
-  expect(waitingRow.querySelector('[data-state="ongoing"]')).toBeNull()
-  within(waitingRow).getByText('Waiting for answer')
-
-  // Opening a session reaches chat content through the fixture transport.
-  fireEvent.click(waitingTitle)
+  // Team selection opens the fixture coordinator transcript through the Team
+  // activation binding rather than a Session-browser row.
   await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })
@@ -125,7 +117,7 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   // Every bundle injected its plugin-owned style tag (the loader's CSS path).
   const styleOwners = [...document.head.querySelectorAll('style[data-plugin]')]
     .map(style => style.getAttribute('data-plugin'))
-  for (const plugin of ['@clocky/clocky-client-ui-layout', '@clocky/clocky-client-ui-sidebar', '@clocky/clocky-client-ui-conversation', '@clocky/clocky-client-ui-tool']) {
+  for (const plugin of ['@clocky/clocky-client-ui-layout', '@clocky/clocky-client-ui-sidebar', '@clocky/clocky-client-ui-team', '@clocky/clocky-client-ui-conversation', '@clocky/clocky-client-ui-tool']) {
     expect(styleOwners).toContain(plugin)
   }
 })

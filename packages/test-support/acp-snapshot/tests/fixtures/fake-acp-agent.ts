@@ -43,6 +43,8 @@ interface Behavior {
   rejectNewSession?: boolean
   /** Reject `session/new` only when `additionalDirectories` is non-empty (the real bridge's rule). */
   rejectExtraDirs?: boolean
+  /** Persist one Team-provenanced coordinator Session when `session/new` succeeds. */
+  teamCoordinatorOnNewSession?: boolean
   /** How `session/prompt` settles: a clean response, a JSON-RPC error, or a hang until `session/cancel`. */
   prompt?: 'respond' | 'error' | 'hang-until-cancel'
   /** Persist the scripted logs while handling cancellation, before stdin EOF. */
@@ -128,10 +130,20 @@ function persistParkedTurnStart(): void {
   parkedTurnLog = join(sessionsRoot, 'ready', sessionId, 'session.jsonl')
   mkdirSync(dirname(parkedTurnLog), { recursive: true })
   writeFileSync(parkedTurnLog, [
-    JSON.stringify({ type: 'session', version: 0, id: sessionId, createdAt: 1, cwd: sessionCwd, delegationDepth: 0 }),
+    JSON.stringify({ type: 'session', version: 0, id: sessionId, createdAt: 1, cwd: sessionCwd }),
     JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
     '',
   ].join('\n'))
+}
+
+function persistTeamCoordinator(): void {
+  const coordinatorSessionId = `team-coordinator-${sessionId}`
+  const target = join(sessionsRoot, 'team', coordinatorSessionId, 'session.jsonl')
+  mkdirSync(dirname(target), { recursive: true })
+  writeFileSync(target, `${JSON.stringify({
+    type: 'session', version: 0, id: coordinatorSessionId, createdAt: 1, cwd: sessionCwd,
+    teamId: `team-${sessionId}`, participantId: `coordinator-${sessionId}`,
+  })}\n`)
 }
 
 /** Remove the transient open-turn log before publishing any scripted final logs. */
@@ -212,6 +224,7 @@ function handleFrame(frame: Record<string, unknown>): void {
       }
       sessionId = randomUUID()
       sessionCwd = typeof params.cwd === 'string' ? params.cwd : process.cwd()
+      if (behavior.teamCoordinatorOnNewSession === true) persistTeamCoordinator()
       respond(id as number | string, { sessionId })
       return
     }

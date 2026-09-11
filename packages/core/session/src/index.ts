@@ -98,6 +98,7 @@ function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
     throw new Error('session header is not a plain JSON record')
   }
   const record = input as Record<string, unknown>
+  assertNoRetiredHeaderFields(record)
   if (record.version !== SESSION_FORMAT_VERSION) {
     throw new Error(`session header version must be ${SESSION_FORMAT_VERSION}, got ${String(record.version)}`)
   }
@@ -115,6 +116,17 @@ function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
       throw new Error(`session header cwd must be an absolute path, got "${record.cwd}"`)
     }
   }
+  const hasTeamId = record.teamId !== undefined
+  const hasParticipantId = record.participantId !== undefined
+  if (hasTeamId !== hasParticipantId) {
+    throw new Error('session header teamId and participantId must be provided together')
+  }
+  if (hasTeamId && (typeof record.teamId !== 'string' || record.teamId.length === 0)) {
+    throw new Error('session header teamId must be a non-empty string')
+  }
+  if (hasParticipantId && (typeof record.participantId !== 'string' || record.participantId.length === 0)) {
+    throw new Error('session header participantId must be a non-empty string')
+  }
   if (record.parentSession !== undefined && typeof record.parentSession !== 'string') {
     throw new Error('session header parentSession must be a string')
   }
@@ -122,17 +134,21 @@ function validateSessionHeader(id: SessionId, input: unknown): SessionHeader {
     && (typeof record.seedLength !== 'number' || !Number.isSafeInteger(record.seedLength) || record.seedLength < 0)) {
     throw new Error('session header seedLength must be a non-negative safe integer')
   }
-  if (record.origin !== undefined && record.origin !== 'subagent') {
-    throw new Error('session header origin must be "subagent"')
-  }
-  if (record.delegationDepth !== undefined
-    && (typeof record.delegationDepth !== 'number' || !Number.isSafeInteger(record.delegationDepth) || record.delegationDepth < 0)) {
-    throw new Error('session header delegationDepth must be a non-negative safe integer')
-  }
   if (record.agentPreset !== undefined && typeof record.agentPreset !== 'string') {
     throw new Error('session header agentPreset must be a string')
   }
   return deepFreeze(record as unknown as SessionHeader)
+}
+
+/** Reject pre-cutover product metadata instead of silently dropping it. */
+function assertNoRetiredHeaderFields(value: unknown): void {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return
+  const record = value as Record<string, unknown>
+  for (const key of ['origin', 'delegationDepth'] as const) {
+    if (Object.hasOwn(record, key)) {
+      throw new Error(`session header field "${key}" was removed; use the subagent/descriptor event`)
+    }
+  }
 }
 
 /** Validate and freeze one exclusively owned persistence header in place. */
@@ -165,12 +181,19 @@ function snapshotSessionHeader(id: SessionId, source?: SessionHeader): SessionHe
  * @returns the same event object with a validated, deeply frozen message.
  */
 export function adoptSessionEvent<T extends SessionEvent>(event: T): T {
+  if (event.type === 'team/channel-view') {
+    if (Object.hasOwn(event, 'ignorable')) {
+      throw new Error('session event team/channel-view cannot be marked ignorable')
+    }
+    assertTeamChannelViewShape(event.data, `session event at seq ${event.seq}`)
+  }
   assertMessageEventShape(
     event,
     `session event at seq ${event.seq}`,
   )
   switch (event.type) {
     case 'user/message':
+    case 'team/channel-view':
       deepFreeze(event.data)
       break
     case 'assistant/message':
@@ -236,7 +259,8 @@ function assertSessionEventEnvelope(value: Record<string, unknown>, index: numbe
     || typeof seq !== 'number' || !Number.isSafeInteger(seq) || seq < 0
     || typeof time !== 'number' || !Number.isSafeInteger(time)
     || event['data'] === undefined
-    || (event['ignorable'] !== undefined && event['ignorable'] !== true)) {
+    || (event['ignorable'] !== undefined && event['ignorable'] !== true)
+    || (type === 'team/channel-view' && Object.hasOwn(event, 'ignorable'))) {
     throw new Error(`seed event at index ${index} has an invalid event envelope`)
   }
   switch (type) {
@@ -246,6 +270,76 @@ function assertSessionEventEnvelope(value: Record<string, unknown>, index: numbe
     case 'tool/result':
       assertCurrentLlmShape(event, index)
       break
+    case 'team/channel-view':
+      assertTeamChannelViewShape(event['data'], `seed team/channel-view at index ${index}`)
+      break
+  }
+}
+
+/** Validate one required Team channel view without importing the Team service definition. */
+function assertTeamChannelViewShape(value: unknown, subject: string): void {
+  const record = asExactRecord(value, [
+    'teamId', 'channelId', 'adapter', 'viewPolicy', 'triggeringEnvelopeId', 'sourceEnvelopeIds',
+    'delivery', 'content', 'causationId', 'taskId', 'review',
+  ], subject)
+  for (const key of ['teamId', 'channelId', 'triggeringEnvelopeId'] as const) {
+    if (!isNonEmptyString(record[key])) throw new Error(`${subject} has an invalid ${key}`)
+  }
+  assertTeamChannelViewImplementation(record['adapter'], `${subject} adapter`)
+  assertTeamChannelViewImplementation(record['viewPolicy'], `${subject} viewPolicy`)
+  const sourceEnvelopeIds = record['sourceEnvelopeIds']
+  if (!Array.isArray(sourceEnvelopeIds) || sourceEnvelopeIds.length === 0
+    || sourceEnvelopeIds.some(id => !isNonEmptyString(id))
+    || new Set(sourceEnvelopeIds).size !== sourceEnvelopeIds.length
+    || sourceEnvelopeIds.at(-1) !== record['triggeringEnvelopeId']) {
+    throw new Error(`${subject} has invalid sourceEnvelopeIds`)
+  }
+  if (record['delivery'] !== 'context' && record['delivery'] !== 'turn' && record['delivery'] !== 'steer') {
+    throw new Error(`${subject} has an invalid delivery`)
+  }
+  const content = record['content']
+  if (!Array.isArray(content) || content.length === 0 || content.some((block) => {
+    if (typeof block !== 'object' || block === null || Array.isArray(block)) return true
+    return !isNonEmptyString((block as Record<string, unknown>)['type'])
+  })) {
+    throw new Error(`${subject} has invalid content`)
+  }
+  for (const key of ['causationId', 'taskId'] as const) {
+    if (Object.hasOwn(record, key) && (record[key] === undefined || !isNonEmptyString(record[key]))) {
+      throw new Error(`${subject} has an invalid ${key}`)
+    }
+  }
+  if (Object.hasOwn(record, 'review')) {
+    if (record['review'] === undefined) throw new Error(`${subject} has an invalid review`)
+    const review = asExactRecord(record['review'], ['attemptId', 'reviewRevision', 'reviewerId', 'initiatorId'], `${subject} review`)
+    if (Object.hasOwn(review, 'initiatorId') && review['initiatorId'] === undefined
+      || !isNonEmptyString(review['attemptId']) || !isNonEmptyString(review['reviewerId'])
+      || typeof review['reviewRevision'] !== 'number' || !Number.isSafeInteger(review['reviewRevision']) || review['reviewRevision'] < 1
+      || review['initiatorId'] !== undefined && !isNonEmptyString(review['initiatorId'])) {
+      throw new Error(`${subject} has an invalid review`)
+    }
+  }
+}
+
+/** Require an object with no fields outside one durable record vocabulary. */
+function asExactRecord(value: unknown, keys: readonly string[], subject: string): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error(`${subject} must be an object`)
+  const record = value as Record<string, unknown>
+  if (Object.keys(record).some(key => !keys.includes(key))) throw new Error(`${subject} has an unexpected field`)
+  return record
+}
+
+/** Recognize a lossless nonempty string field. */
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+/** Validate the versioned adapter or policy identity retained by one channel view. */
+function assertTeamChannelViewImplementation(value: unknown, subject: string): void {
+  const record = asExactRecord(value, ['type', 'version'], subject)
+  if (!isNonEmptyString(record['type']) || typeof record['version'] !== 'number'
+    || !Number.isSafeInteger(record['version']) || record['version'] < 1) {
+    throw new Error(`${subject} is invalid`)
   }
 }
 
@@ -433,9 +527,10 @@ export class Session {
   }
 
   /**
-   * Detached, deep-frozen creation metadata (format version, cwd, lineage,
-   * seed boundary). Supplied by the store via `ctx.sessions.create()`. When a
-   * `Session` is created without a store-owned header, a minimal header is
+   * Detached, deep-frozen creation metadata (format version, cwd, opaque
+   * Team/Participant provenance, lineage, seed boundary). Supplied by the
+   * store via `ctx.sessions.create()`. When a `Session` is created without a
+   * store-owned header, a minimal header is
    * synthesized (stamped with the current {@link SESSION_FORMAT_VERSION}) so
    * `session.header` is always present. Kept out of the event log — it is a
    * storage concern, not replayable conversation state.
@@ -615,6 +710,9 @@ export class Session {
     if (dataSnapshot === undefined) {
       throw new Error(`session event "${type}" carries non-JSON-serializable data`)
     }
+    if (type === 'team/channel-view') {
+      assertTeamChannelViewShape(dataSnapshot, `session event "${type}"`)
+    }
     assertSupportedRequestHeader(type, dataSnapshot, `session event "${type}"`)
     const surfaceMetadataSnapshot = snapshotJsonValue(surfaceMetadata)
     if (surfaceMetadataSnapshot === undefined) {
@@ -737,7 +835,7 @@ export class Session {
       // index by construction. The non-null assertion expresses that invariant.
       // oxlint-disable-next-line typescript/no-non-null-assertion
       const msg = this.deriveEventMessage(this.log[seq]!)
-      // A surface node is one of the five message-producing types, but an
+      // A surface node is one of the four message-producing types, but an
       // empty-content assistant/message (a max-tokens step that hosts only
       // usage) derives to null and must not enter the transcript.
       if (msg) this.derived.push(msg)
@@ -874,15 +972,16 @@ export class SessionStore extends Service {
     }
     const seed = options?.seed
     const meta = options?.meta
+    assertNoRetiredHeaderFields(meta)
     const header: SessionHeader = {
       version: SESSION_FORMAT_VERSION,
       id: sessionId,
       createdAt: meta?.createdAt ?? Date.now(),
       ...meta?.cwd === undefined ? {} : { cwd: meta.cwd },
+      ...meta?.teamId === undefined ? {} : { teamId: meta.teamId },
+      ...meta?.participantId === undefined ? {} : { participantId: meta.participantId },
       ...meta?.parentSession === undefined ? {} : { parentSession: meta.parentSession },
       ...meta?.seedLength === undefined ? {} : { seedLength: meta.seedLength },
-      ...meta?.origin === undefined ? {} : { origin: meta.origin },
-      ...meta?.delegationDepth === undefined ? {} : { delegationDepth: meta.delegationDepth },
       ...meta?.agentPreset === undefined ? {} : { agentPreset: meta.agentPreset },
     }
     return Session.create(sessionId, seed, header)

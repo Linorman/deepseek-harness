@@ -21,7 +21,6 @@ import { FakeApiClient, deferred, err, fakeRemote, ok } from './fake-api.client.
 import { entries, ev, plainTurn } from './event-script.client.ts'
 
 const SID = 'fk-s1' as SessionId
-const PARENT = 'fk-parent' as SessionId
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -446,78 +445,6 @@ describe('paging', () => {
 })
 
 describe('prompt and cancel errors', () => {
-  it('routes an addressed child through non-activating history, continuation prompt, and interrupt only', async () => {
-    const api = new FakeApiClient()
-    const session = new Session(SID, api, fakeRemote(), {
-      address: { parentSessionId: PARENT, childSessionId: SID, mode: 'continuable' },
-      parentAvailable: true,
-    })
-    await session.open()
-    const prompted = await session.prompt([{ type: 'text', text: '继续' }], 'queue')
-    const cancelled = await session.cancel()
-
-    expect(prompted).toEqual({ ok: true, value: { accepted: true } })
-    expect(cancelled).toEqual({ ok: true, value: { accepted: true } })
-    expect(api.callsOf('subagent.history')).toEqual([
-      { parentSessionId: PARENT, childSessionId: SID, mode: 'continuable', maxMessages: 50 },
-    ])
-    expect(api.callsOf('subagent.prompt')).toEqual([
-      {
-        parentSessionId: PARENT, childSessionId: SID, mode: 'continuable',
-        content: [{ type: 'text', text: '继续' }],
-        clientTimeZone: new Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-    ])
-    expect(api.callsOf('subagent.interrupt')).toEqual([
-      { parentSessionId: PARENT, childSessionId: SID, mode: 'continuable' },
-    ])
-    expect(api.callsOf('session.history')).toEqual([])
-    expect(api.callsOf('session.prompt')).toEqual([])
-    expect(api.callsOf('session.cancel')).toEqual([])
-    // A successful interrupt leaves no stop error behind.
-    expect(session.getSnapshot().promptError).toBeNull()
-    expect(session.getSnapshot().subagent).toEqual({
-      address: { parentSessionId: PARENT, childSessionId: SID, mode: 'continuable' },
-      parentAvailable: true,
-    })
-  })
-
-  it('lands an interrupt business failure in promptError with op=stop', async () => {
-    const api = new FakeApiClient()
-    api.onSubagentInterrupt = () => Promise.resolve(err({
-      code: 'subagent-unauthorized', message: 'nope', details: { childSessionId: SID },
-    }) as never)
-    const session = new Session(SID, api, fakeRemote(), {
-      address: { parentSessionId: PARENT, childSessionId: SID, mode: 'continuable' },
-      parentAvailable: true,
-    })
-    await session.open()
-    const cancelled = await session.cancel()
-    expect(cancelled).toMatchObject({ ok: false, error: { code: 'subagent-unauthorized' } })
-    expect(session.getSnapshot().promptError).toMatchObject({
-      op: 'stop', error: { code: 'subagent-unauthorized' },
-    })
-  })
-
-  it('keeps one-shot history readable without exposing prompt or cancel transport', async () => {
-    const api = new FakeApiClient()
-    const session = new Session(SID, api, fakeRemote(), {
-      address: { parentSessionId: PARENT, childSessionId: SID, mode: 'one-shot' },
-    })
-    await session.open()
-    const prompted = await session.prompt([{ type: 'text', text: '继续' }], 'queue')
-    const cancelled = await session.cancel()
-
-    expect(prompted).toMatchObject({ ok: false, error: { code: 'subagent-not-resumable' } })
-    expect(cancelled).toMatchObject({ ok: false, error: { code: 'subagent-delivery-unavailable' } })
-    expect(api.callsOf('subagent.history')).toEqual([
-      { parentSessionId: PARENT, childSessionId: SID, mode: 'one-shot', maxMessages: 50 },
-    ])
-    expect(api.callsOf('subagent.prompt')).toEqual([])
-    expect(api.callsOf('subagent.interrupt')).toEqual([])
-    expect(api.callsOf('session.cancel')).toEqual([])
-  })
-
   it('sends content through session.prompt; composerPhase steps blank → engaging synchronously at send entry', async () => {
     const { api, session } = makeSession()
     session.handleBlank(true)

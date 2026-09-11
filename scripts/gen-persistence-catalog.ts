@@ -26,6 +26,14 @@ const SESSION_PACKAGE = '@clocky/clocky-session'
 /** The type-only module that plugin declaration merges augment. */
 const SESSION_TYPES_MODULE = '@clocky/clocky-session/types'
 
+/** Return source-plane TypeScript files without generated declaration artifacts. */
+function sourceFiles(scanRoot: string): string[] {
+  return globSync('packages/*/*/src/**/*.ts', { cwd: scanRoot })
+    .map(path => path.split(sep).join('/'))
+    .filter(path => !path.endsWith('.d.ts'))
+    .sort()
+}
+
 /** Event-envelope declarations rendered before the per-event vocabulary. */
 const EVENT_ENVELOPE_TYPE_NAMES = [
   'SessionEventType',
@@ -52,11 +60,6 @@ const LINK_MAP: Record<string, string> = {
   SessionTitleModelProvenance: 'session-title.md',
   SessionTitleProviderId: 'session-title.md',
   SessionTitleSource: 'session-title.md',
-  TeamId: 'agent-team.md',
-  TeamMemberSnapshot: 'agent-team.md',
-  TeamMessageId: 'agent-team.md',
-  TeamMessageSnapshot: 'agent-team.md',
-  TeamTaskSnapshot: 'agent-team.md',
 }
 
 /** One log event, extracted from a `SessionEventMap` declaration. */
@@ -173,7 +176,7 @@ export function collectLogEvents(scanRoot: string = root): LogEventEntry[] {
   const violations: string[] = []
   const seen = new Map<string, string>()
   let owningDecl: string | null = null
-  for (const rel of globSync('packages/*/*/src/**/*.ts', { cwd: scanRoot }).map(s => s.split(sep).join('/')).sort()) {
+  for (const rel of sourceFiles(scanRoot)) {
     const abs = resolve(scanRoot, rel)
     const text = readFileSync(abs, 'utf8')
     if (!text.includes('SessionEventMap')) continue
@@ -250,7 +253,7 @@ export function collectEventEnvelopeTypes(scanRoot: string = root): EventEnvelop
   const found = new Map<EventEnvelopeTypeName, EventEnvelopeTypeEntry>()
   const violations: string[] = []
   const wanted = new Set<string>(EVENT_ENVELOPE_TYPE_NAMES)
-  for (const rel of globSync('packages/*/*/src/**/*.ts', { cwd: scanRoot }).map(s => s.split(sep).join('/')).sort()) {
+  for (const rel of sourceFiles(scanRoot)) {
     const abs = resolve(scanRoot, rel)
     const text = readFileSync(abs, 'utf8')
     if (!EVENT_ENVELOPE_TYPE_NAMES.some(name => text.includes(name))) continue
@@ -296,7 +299,7 @@ export function collectEventEnvelopeTypes(scanRoot: string = root): EventEnvelop
  */
 export function collectSurfaceEventTypes(scanRoot: string = root): string[] {
   const found: { names: string[]; source: string }[] = []
-  for (const rel of globSync('packages/*/*/src/**/*.ts', { cwd: scanRoot }).map(s => s.split(sep).join('/')).sort()) {
+  for (const rel of sourceFiles(scanRoot)) {
     const abs = resolve(scanRoot, rel)
     const text = readFileSync(abs, 'utf8')
     if (!text.includes('SurfaceEventType')) continue

@@ -1,0 +1,36 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+# The fixture registers the production direct protocol with its capacity-aware policy.
+- id: team-channel-direct
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: channel-view-capacity-model
+    model: channel-view-capacity-model
+
+- id: team-hub
+  config:
+    maxChannelViewBytes: 32768
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_VIEW_CAPACITY_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_VIEW_CAPACITY_BACKEND
+    routes: {}
+
+- insert:
+    - id: channel-view-capacity-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_VIEW_CAPACITY_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: channel-view-capacity-driver
+      name: './snapshot-fixtures/headless-channel-view-capacity-driver.ts'

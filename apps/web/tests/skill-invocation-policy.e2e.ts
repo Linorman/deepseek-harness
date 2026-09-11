@@ -10,15 +10,16 @@ import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import {
-  assertFixtureInventory,
+  assertFixtureInventory, closedSessionFixture,
   captureStableAria,
   compareOrRefreshGolden,
   launchWebScaffold,
+  seedSession,
   watchConsole,
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/skill-invocation-policy', import.meta.url))
 const MENU_EXPECTED = join(SNAPSHOT_DIR, 'menu.expected.md')
@@ -55,7 +56,7 @@ const SKILLS: readonly SeedSkill[] = [
 
 async function seedSkills(workspaceCwd: string): Promise<void> {
   for (const skill of SKILLS) {
-    const directory = join(workspaceCwd, 'workspace', '.agents', 'skills', skill.name)
+    const directory = join(workspaceCwd, '.agents', 'skills', skill.name)
     await mkdir(directory, { recursive: true })
     const policyLines = skill.frontmatter === '' ? [] : skill.frontmatter.trimEnd().split('\n')
     await writeFile(join(directory, 'SKILL.md'), [
@@ -78,14 +79,22 @@ describe('web e2e: skill invocation policy through the real host', () => {
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
+    await seedSession(scaffold, closedSessionFixture(), 'skill-invocation-policy-web-e2e')
     await seedSkills(scaffold.workspaceCwd)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('textarea:enabled').first().waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {

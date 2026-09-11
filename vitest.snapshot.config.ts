@@ -43,7 +43,7 @@ export default defineConfig({
   plugins: [tsconfigPaths({ projects: ['./tsconfig.base.json'] }), standardDecoratorPlugin()],
   test: {
     execArgv: vitestExecArgv,
-    setupFiles: ['./scripts/test-invariants.ts'],
+    setupFiles: ['./scripts/test-invariants.ts', './scripts/test-dom.ts'],
     include: [
       'scripts/**/*.snapshot.ts',
       // The assembled Web snapshot executes generated client bundles; source

@@ -3,48 +3,46 @@
 
 # Tool Schema Catalog
 
-Every model-facing tool a shipped plugin contributes to `ctx.tools`: the `name`, `description`, and JSON-Schema `parameters` the model receives via the system-prompt assembly. It complements the [subsystem pages](subsystems/core.md) (the types plus each page's generated Cordis API region) — this page is the *tools* the agent is offered.
+Every public model-facing tool package under `packages/*/tool-*`: the `name`, `description`, and JSON-Schema `parameters` the model receives via system-prompt assembly. Private compatibility tools are explicit custom-composition surfaces and are not part of this product catalog. It complements the [subsystem pages](subsystems/core.md) (the types plus each page's generated Cordis API region) — this page is the *tools* an agent may be offered.
 
-This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*` and fails if any package is missing from the generator's boot manifest, so a new tool cannot be silently undocumented. See [the tool-schema-catalog Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.md).
+This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each public tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*`, skips private compatibility manifests, and fails if any public package is missing from the generator's boot manifest. See [the tool-schema-catalog Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.md).
 
-Scope: shipped product tools under `packages/*/tool-*`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The registered tool NAME can be a load-time config (e.g. `tool-subagent`'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog's packages-only scope.
+Scope: public model-facing tool packages under `packages/*/tool-*`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. Private compatibility tools and the `examples/` demo tools (e.g. `echo`) are excluded, matching the product catalog scope.
 
 ## Tool Package Map
 
 This table connects model-visible tool names to the plugin package and service seams behind them. Exact JSON Schemas follow in the package sections below.
 
-| Tool package | Model-visible names | Requires | Writes / affects | Shipped aliases | Deployment note |
+| Tool package | Model-visible names | Requires | Writes / affects | Configured aliases | Deployment note |
 | --- | --- | --- | --- | --- | --- |
-| `@deepseek-ai/dsh-tool-ask-user` | `ask_user_question` | `ctx.tools`, `ctx.userQuestions` | `tool/call`, `tool/result after a UI/provider answers the question` | - | ask_user_question pauses the tool call until the active UI provider returns a human answer. |
-| `@deepseek-ai/dsh-tools` | `run_code` | `ctx.tools`, `ctx.codeRuntime (execution time)`, `ctx.systemPrompt` | `tool/call`, `one tool/code-dispatch-start + tool/code-dispatch pair per bridged sub-call`, `tool/result` | - | Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: code` / `mode: both` (see the Code Mode Agent Note). Under `code` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result. |
-| `@deepseek-ai/dsh-plan-mode` | `exit_plan_mode` | `ctx.tools`, `ctx.systemPrompt`, `ctx.userQuestions (execution time, opportunistic)` | `tool/call`, `plan/mode inactive on an approved review`, `tool/result` | - | exit_plan_mode stays in the model-facing schema while planning is inactive so transitions add no tool-catalog churn on top of the plan-policy change. Its execute path rejects calls outside plan mode; in plan mode it presents the plan over the user-questions seam (approve / keep planning with feedback), and approval logs plan mode inactive at the step boundary. |
-| `@deepseek-ai/dsh-tool-bash` | `bash` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@deepseek-ai/dsh-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled. |
-| `@deepseek-ai/dsh-tool-pwsh` | `pwsh` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@deepseek-ai/dsh-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `DSH_*` environment comes from `@deepseek-ai/dsh-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables. |
-| `@deepseek-ai/dsh-tool-cordis` | `cordis_define`, `cordis_inspect_list`, `cordis_inspect_query`, `cordis_inspect_self`, `cordis_run`, `cordis_stop`, `cordis_undefine` | `ctx.tools`, `ctx.dynamicCordisRunner` | `tool/call`, `tool/result`, `process-local dynamic package lifecycle` | - | Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@deepseek-ai/dsh-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or DSH restarts; a full changed request header logs those tool-set changes. |
-| `@deepseek-ai/dsh-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
-| `@deepseek-ai/dsh-tool-pwsh-persistent` | `pwsh` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description. |
-| `@deepseek-ai/dsh-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`, `ctx.fs` | `tool/call`, `fs/observed after view presence/absence, edit absence, or successful mutation`, `tool/result` | - | Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API. |
-| `@deepseek-ai/dsh-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (image-tool registration)`, `ctx.llm + an image-capable route (image-tool execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
-| `@deepseek-ai/dsh-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
-| `@deepseek-ai/dsh-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
-| `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
-| `@deepseek-ai/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
-| `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
-| `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
-| `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
-| `@deepseek-ai/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
-| `@deepseek-ai/dsh-tool-subagent` | `subagent` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `child session events through the chosen provider` | `subagent`, `subagent_fork` | The registered tool name is the load-time `toolName` config (default `subagent`); the schema above is that default. The shipped compositions load this package once per subagent backend, so the model additionally sees `subagent_fork` bound to the fork backend. Each instance's description, `run_in_background` parameter, and system-prompt policy follow its own `backgroundMode` and `enableRunInBackground`, so the two shipped schemas are not identical: `subagent` is `continuable` and defaults omitted calls to background with automatic settlement delivery, while `subagent_fork` stays `one-shot` and defaults them to foreground — see `packages/bundle/base/cordis.patch.yml` and `examples/acp-agent/cordis.yml`. |
-| `@deepseek-ai/dsh-tool-subagent-control` | `interrupt_agent`, `list_agents`, `send_message` | `ctx.tools`, `ctx.subagents`, `ctx.agents and ctx.sessionProjections (list_agents only)` | `tool/call`, `tool/result`, `child session events through ctx.subagents` | - | The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries). |
-| `@deepseek-ai/dsh-tool-subagent-report` | `report` | `ctx.subagents`, `ctx.systemPrompt`, `a live continuable in-process child Agent` | `tool/call`, `tool/result`, `a user-role message in the direct parent session` | - | Registered per continuable in-process child rather than globally, so this schema is visible only inside such a child and survives its global `toolFilter`. The same contribution installs the child-scoped `tool:report` prompt section, which this catalog does not render. The parent-facing `send_message` tool is installed independently. |
-| `@deepseek-ai/dsh-tool-jobs` | `job_kill`, `job_list`, `job_output` | `ctx.tools`, `ctx.jobs`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `user/message via agent.inject() for background completion notices` | - | The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers' `ctx.jobs.start()`. |
-| `@deepseek-ai/dsh-experimental-tool-agent-team` | `followup_task`, `interrupt_agent`, `list_agents`, `send_message`, `spawn_teammate`, `team_task_create`, `team_task_get`, `team_task_list`, `team_task_update`, `wait_agent` | `ctx.tools`, `ctx.systemPrompt`, `ctx.agentTeams`, `an exact live Team member Agent` | `tool/call`, `team/member`, `team/message/queued`, `team/message/delivered`, `team/task`, `tool/result` | - | All ten tools are scoped to implicit Team Leads and durable teammates. The shipped dsh-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names. |
-| `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
-| `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
-| `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
+| `@clocky/clocky-tool-ask-user` | `ask_user_question` | `ctx.tools`, `ctx.userQuestions` | `tool/call`, `tool/result after a UI/provider answers the question` | - | ask_user_question pauses the tool call until the active UI provider returns a human answer. |
+| `@clocky/clocky-tools` | `run_code` | `ctx.tools`, `ctx.codeRuntime (execution time)`, `ctx.systemPrompt` | `tool/call`, `one tool/code-dispatch-start + tool/code-dispatch pair per bridged sub-call`, `tool/result` | - | Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: code` / `mode: both` (see the Code Mode Agent Note). Under `code` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result. |
+| `@clocky/clocky-plan-mode` | `exit_plan_mode` | `ctx.tools`, `ctx.systemPrompt`, `ctx.userQuestions (execution time, opportunistic)` | `tool/call`, `plan/mode inactive on an approved review`, `tool/result` | - | exit_plan_mode stays in the model-facing schema while planning is inactive so transitions add no tool-catalog churn on top of the plan-policy change. Its execute path rejects calls outside plan mode; in plan mode it presents the plan over the user-questions seam (approve / keep planning with feedback), and approval logs plan mode inactive at the step boundary. |
+| `@clocky/clocky-tool-bash` | `bash` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@clocky/clocky-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled. |
+| `@clocky/clocky-tool-pwsh` | `pwsh` | `ctx.tools`, `ctx.shell`, `ctx.systemPrompt`, `ctx.shellEnv`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@clocky/clocky-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `CLOCKY_*` environment comes from `@clocky/clocky-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables. |
+| `@clocky/clocky-tool-cordis` | `cordis_define`, `cordis_inspect_list`, `cordis_inspect_query`, `cordis_inspect_self`, `cordis_run`, `cordis_stop`, `cordis_undefine` | `ctx.tools`, `ctx.dynamicCordisRunner` | `tool/call`, `tool/result`, `process-local dynamic package lifecycle` | - | Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@clocky/clocky-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or Clocky restarts; a full changed request header logs those tool-set changes. |
+| `@clocky/clocky-tool-bash-persistent` | `bash` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description. |
+| `@clocky/clocky-tool-pwsh-persistent` | `pwsh` | `ctx.tools`, `ctx.terminals`, `an owning Agent at execution time` | `tool/call`, `PTY shell state`, `tool/result` | - | One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description. |
+| `@clocky/clocky-tool-str-replace-editor` | `str_replace_editor` | `ctx.tools`, `ctx.fs` | `tool/call`, `fs/observed after view presence/absence, edit absence, or successful mutation`, `tool/result` | - | Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API. |
+| `@clocky/clocky-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (image-tool registration)`, `ctx.llm + an image-capable route (image-tool execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@clocky/clocky-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
+| `@clocky/clocky-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
+| `@clocky/clocky-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
+| `@clocky/clocky-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
+| `@clocky/clocky-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
+| `@clocky/clocky-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@clocky/clocky-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
+| `@clocky/clocky-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
+| `@clocky/clocky-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
+| `@clocky/clocky-tool-jobs` | `job_kill`, `job_list`, `job_output` | `ctx.tools`, `ctx.jobs`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `user/message via agent.inject() for background completion notices` | - | The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers' `ctx.jobs.start()`. |
+| `@clocky/clocky-tool-team` | `team_final`, `team_message`, `team_task_heartbeat`, `team_task_integrate`, `team_task_report`, `team_task_review` | `ctx.tools`, `ctx.agents`, `ctx.teams`, `ctx.teamLinks`, `a Team-bound calling Agent` | `tool/call`, `tool/result`, `Team task attempt settlement through an activation-bound Link` | - | team_task_report and team_task_integrate are scoped to an Agent whose durable assignment source proves one running task attempt. The catalog boots a synthetic Team-bound Agent only to harvest their schemas; execution still requires a live bound Link and Team lease. |
+| `@clocky/clocky-team-channel-summary/tool` | `team_channel_summarize` | `ctx.tools`, `ctx.teamRuns`, `ctx.teamChannelSummaries`, `ctx.teams`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `authorized durable channel summary with source fingerprint`, `tool/result` | - | team_channel_summarize is scoped to the current default coordinator. Schema harvest supplies only the scope; execution requires a real active coordinator and the production summary Consumer. The result contains bounded extractive text; private subset sources are rejected. |
+| `@clocky/clocky-tool-team-goal` | `get_goal`, `team_goal_phase`, `update_goal` | `ctx.tools`, `ctx.teamRuns`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `activation-fenced durable Team objective read or edit`, `tool/result` | - | get_goal and update_goal are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires a current human direct-v3 Team input and an activation-fenced TeamRun operation. |
+| `@clocky/clocky-tool-team-task` | `team_task_cancel`, `team_task_delegate`, `team_task_list`, `team_task_propose_owner`, `team_task_start`, `team_task_wait`, `team_task_watch`, `team_worker_pool_set`, `team_workflow_start`, `team_workflow_task_cancel`, `team_workflow_wait` | `ctx.tools`, `ctx.teamRuns`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `durable default-worker task creation, inspection, owner proposal, cancellation, or Team-journal wait`, `tool/result` | - | team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation. |
+| `@clocky/clocky-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
+| `@clocky/clocky-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
 
-<a id="deepseek-aidsh-tool-ask-user"></a>
+<a id="clockyclocky-tool-ask-user"></a>
 
-## `@deepseek-ai/dsh-tool-ask-user`
+## `@clocky/clocky-tool-ask-user`
 
 ### `ask_user_question`
 
@@ -116,9 +114,9 @@ Source: [`packages/interaction/tool-ask-user/src/index.ts`](../packages/interact
 
 ask_user_question pauses the tool call until the active UI provider returns a human answer.
 
-<a id="deepseek-aidsh-tools"></a>
+<a id="clockyclocky-tools"></a>
 
-## `@deepseek-ai/dsh-tools`
+## `@clocky/clocky-tools`
 
 ### `run_code`
 
@@ -148,9 +146,9 @@ Source: [`packages/core/tools/src/code-mode.ts`](../packages/core/tools/src/code
 
 Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: code` / `mode: both` (see the Code Mode Agent Note). Under `code` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result.
 
-<a id="deepseek-aidsh-plan-mode"></a>
+<a id="clockyclocky-plan-mode"></a>
 
-## `@deepseek-ai/dsh-plan-mode`
+## `@clocky/clocky-plan-mode`
 
 ### `exit_plan_mode`
 
@@ -175,13 +173,13 @@ Source: [`packages/plan/plan-mode/src/index.ts`](../packages/plan/plan-mode/src/
 
 exit_plan_mode stays in the model-facing schema while planning is inactive so transitions add no tool-catalog churn on top of the plan-policy change. Its execute path rejects calls outside plan mode; in plan mode it presents the plan over the user-questions seam (approve / keep planning with feedback), and approval logs plan mode inactive at the step boundary.
 
-<a id="deepseek-aidsh-tool-bash"></a>
+<a id="clockyclocky-tool-bash"></a>
 
-## `@deepseek-ai/dsh-tool-bash`
+## `@clocky/clocky-tool-bash`
 
 ### `bash`
 
-Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell: no state (cwd, variables, functions) persists between calls — pass `workdir` instead of using `cd`. Non-zero exits are reported as `[exit code: N]`. Current harness environment facts are exposed through managed `$DSH_*` variables; inspect them when needed. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]` — a policy denial, not a bug in the command; do not retry another way. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Set `run_in_background: true` for long-running commands: the call returns a job id immediately; read its output with `job_output` and stop it with `job_kill`.
+Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell: no state (cwd, variables, functions) persists between calls — pass `workdir` instead of using `cd`. Non-zero exits are reported as `[exit code: N]`. Current harness environment facts are exposed through managed `$CLOCKY_*` variables; inspect them when needed. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]` — a policy denial, not a bug in the command; do not retry another way. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Set `run_in_background: true` for long-running commands: the call returns a job id immediately; read its output with `job_output` and stop it with `job_kill`.
 
 ```json
 {
@@ -217,15 +215,15 @@ Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs 
 
 Source: [`packages/shell/tool-bash/src/index.ts`](../packages/shell/tool-bash/src/index.ts)
 
-The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@deepseek-ai/dsh-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled.
+The bash tool is the model-facing consumer of the bash executor seam. A `run_in_background` run registers with the generic `ctx.jobs` runtime and is collected/stopped through the `job_*` tools from `@clocky/clocky-tool-jobs`; the `enableRunInBackground` config (default true) removes the parameter entirely when disabled.
 
-<a id="deepseek-aidsh-tool-pwsh"></a>
+<a id="clockyclocky-tool-pwsh"></a>
 
-## `@deepseek-ai/dsh-tool-pwsh`
+## `@clocky/clocky-tool-pwsh`
 
 ### `pwsh`
 
-Execute a PowerShell command (`pwsh -Command`) and return its stdout/stderr. Each call runs in a fresh pwsh process: no state (cwd, variables, functions) persists between calls — pass `workdir` instead of using `cd`. Paths use native Windows form (`C:\...`); read environment variables with `$env:NAME`. Non-zero exits are reported as `[exit code: N]`. Current harness environment facts are exposed through managed `$env:DSH_*` variables; inspect them when needed. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]` — a policy denial, not a bug in the command; do not retry another way. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. On Windows a force-killed command settles as `[exit code: 1]` without a signal marker — treat it as an interruption, not a command failure. Set `run_in_background: true` for long-running commands: the call returns a job id immediately; read its output with `job_output` and stop it with `job_kill`.
+Execute a PowerShell command (`pwsh -Command`) and return its stdout/stderr. Each call runs in a fresh pwsh process: no state (cwd, variables, functions) persists between calls — pass `workdir` instead of using `cd`. Paths use native Windows form (`C:\...`); read environment variables with `$env:NAME`. Non-zero exits are reported as `[exit code: N]`. Current harness environment facts are exposed through managed `$env:CLOCKY_*` variables; inspect them when needed. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]` — a policy denial, not a bug in the command; do not retry another way. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. On Windows a force-killed command settles as `[exit code: 1]` without a signal marker — treat it as an interruption, not a command failure. Set `run_in_background: true` for long-running commands: the call returns a job id immediately; read its output with `job_output` and stop it with `job_kill`.
 
 ```json
 {
@@ -261,11 +259,11 @@ Execute a PowerShell command (`pwsh -Command`) and return its stdout/stderr. Eac
 
 Source: [`packages/shell/tool-pwsh/src/index.ts`](../packages/shell/tool-pwsh/src/index.ts)
 
-The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@deepseek-ai/dsh-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `DSH_*` environment comes from `@deepseek-ai/dsh-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables.
+The pwsh tool is the PowerShell-dialect consumer of the bash executor seam for Windows compositions (a PowerShell executor such as `@clocky/clocky-pwsh-local` backs `ctx.shell`); it mirrors the bash tool call-for-call minus sandbox controls — `run_in_background` runs register with the generic `ctx.jobs` runtime and are collected/stopped through the `job_*` tools, and the managed `CLOCKY_*` environment comes from `@clocky/clocky-shell-env`. Each call runs in a fresh process (no persistent PTY session), with native `C:\...` paths and `$env:NAME` variables.
 
-<a id="deepseek-aidsh-tool-cordis"></a>
+<a id="clockyclocky-tool-cordis"></a>
 
-## `@deepseek-ai/dsh-tool-cordis`
+## `@clocky/clocky-tool-cordis`
 
 ### `cordis_define`
 
@@ -499,11 +497,11 @@ Permanently remove a dynamic Plugin owned by the current Session. If it is runni
 
 Source: [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts)
 
-Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@deepseek-ai/dsh-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or DSH restarts; a full changed request header logs those tool-set changes.
+Not in any shipped tree (a deliberate opt-in — dynamic package code reaches the real runtime, see .agents/notes/implemented/feature/2026-07-08-self-referential-cordis-toolset.md). The toolset injects `ctx.dynamicCordisRunner` from `@clocky/clocky-cordis-host-runner`, which owns the definition registry and the vm sandbox; a composition missing it never activates the tools. A running package may register ADDITIONAL model-visible tools until it is stopped, undefined, or Clocky restarts; a full changed request header logs those tool-set changes.
 
-<a id="deepseek-aidsh-tool-bash-persistent"></a>
+<a id="clockyclocky-tool-bash-persistent"></a>
 
-## `@deepseek-ai/dsh-tool-bash-persistent`
+## `@clocky/clocky-tool-bash-persistent`
 
 ### `bash`
 
@@ -528,9 +526,9 @@ Source: [`packages/shell/tool-bash-persistent/src/index.ts`](../packages/shell/t
 
 One owner-isolated persistent bash tool; deployment composition supplies the PTY backend and may override the model-facing environment description.
 
-<a id="deepseek-aidsh-tool-pwsh-persistent"></a>
+<a id="clockyclocky-tool-pwsh-persistent"></a>
 
-## `@deepseek-ai/dsh-tool-pwsh-persistent`
+## `@clocky/clocky-tool-pwsh-persistent`
 
 ### `pwsh`
 
@@ -555,9 +553,9 @@ Source: [`packages/shell/tool-pwsh-persistent/src/index.ts`](../packages/shell/t
 
 One owner-isolated persistent pwsh tool, the Windows counterpart of the persistent bash tool; deployment composition supplies a pwsh-dialect PTY backend and may override the model-facing environment description.
 
-<a id="deepseek-aidsh-tool-str-replace-editor"></a>
+<a id="clockyclocky-tool-str-replace-editor"></a>
 
-## `@deepseek-ai/dsh-tool-str-replace-editor`
+## `@clocky/clocky-tool-str-replace-editor`
 
 ### `str_replace_editor`
 
@@ -625,9 +623,9 @@ Source: [`packages/fs/tool-str-replace-editor/src/index.ts`](../packages/fs/tool
 
 Standalone view/create/unique literal replace/line insert tool over the filesystem seam; it composes with any shell or terminal API.
 
-<a id="deepseek-aidsh-tool-fs"></a>
+<a id="clockyclocky-tool-fs"></a>
 
-## `@deepseek-ai/dsh-tool-fs`
+## `@clocky/clocky-tool-fs`
 
 ### `edit`
 
@@ -740,11 +738,11 @@ Create or fully replace a UTF-8 text file.
 
 Source: [`packages/fs/tool-fs/src/index.ts`](../packages/fs/tool-fs/src/index.ts)
 
-The read-before-write/edit policy is added by `@deepseek-ai/dsh-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input.
+The read-before-write/edit policy is added by `@clocky/clocky-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input.
 
-<a id="deepseek-aidsh-tool-fs-search"></a>
+<a id="clockyclocky-tool-fs-search"></a>
 
-## `@deepseek-ai/dsh-tool-fs-search`
+## `@clocky/clocky-tool-fs-search`
 
 ### `glob`
 
@@ -802,9 +800,9 @@ Source: [`packages/fs/tool-fs-search/src/index.ts`](../packages/fs/tool-fs-searc
 
 glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments.
 
-<a id="deepseek-aidsh-tool-terminal"></a>
+<a id="clockyclocky-tool-terminal"></a>
 
-## `@deepseek-ai/dsh-tool-terminal`
+## `@clocky/clocky-tool-terminal`
 
 ### `terminal_close`
 
@@ -967,9 +965,9 @@ Source: [`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/to
 
 The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema.
 
-<a id="deepseek-aidsh-tool-goal"></a>
+<a id="clockyclocky-tool-goal"></a>
 
-## `@deepseek-ai/dsh-tool-goal`
+## `@clocky/clocky-tool-goal`
 
 ### `create_goal`
 
@@ -1061,9 +1059,9 @@ Source: [`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/
 
 create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds.
 
-<a id="deepseek-aidsh-schedule"></a>
+<a id="clockyclocky-schedule"></a>
 
-## `@deepseek-ai/dsh-schedule`
+## `@clocky/clocky-schedule`
 
 ### `schedule_create`
 
@@ -1158,9 +1156,9 @@ Source: [`packages/schedule/schedule/src/tools.ts`](../packages/schedule/schedul
 
 Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier.
 
-<a id="deepseek-aidsh-tool-lsp"></a>
+<a id="clockyclocky-tool-lsp"></a>
 
-## `@deepseek-ai/dsh-tool-lsp`
+## `@clocky/clocky-tool-lsp`
 
 ### `lsp`
 
@@ -1204,42 +1202,11 @@ Query a language server for precise code navigation. operation is one of goToDef
 
 Source: [`packages/lsp/tool-lsp/src/index.ts`](../packages/lsp/tool-lsp/src/index.ts)
 
-The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.
+The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@clocky/clocky-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.
 
-<a id="deepseek-aidsh-tool-ralph"></a>
+<a id="clockyclocky-tool-skill"></a>
 
-## `@deepseek-ai/dsh-tool-ralph`
-
-### `ralph`
-
-Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the shared workspace is long-term memory, and only a bounded structured report crosses rounds. The call returns when a worker reports completion or a concrete blocker, or at the round limit. Ordinary long-running same-session work belongs to goal tools.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "objective": {
-      "type": "string",
-      "description": "The immutable completion objective for every fresh Ralph round."
-    },
-    "maxRounds": {
-      "type": "number",
-      "description": "Optional positive safe-integer round cap, bounded by the deployment ceiling."
-    }
-  },
-  "required": [
-    "objective"
-  ]
-}
-```
-
-Source: [`packages/workflow/tool-ralph/src/index.ts`](../packages/workflow/tool-ralph/src/index.ts)
-
-A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.
-
-<a id="deepseek-aidsh-tool-skill"></a>
-
-## `@deepseek-ai/dsh-tool-skill`
+## `@clocky/clocky-tool-skill`
 
 ### `skill`
 
@@ -1262,9 +1229,9 @@ Load the full instructions for an available skill. Call this with the exact skil
 
 Source: [`packages/skill/tool-skill/src/index.ts`](../packages/skill/tool-skill/src/index.ts)
 
-<a id="deepseek-aidsh-tool-session-query"></a>
+<a id="clockyclocky-tool-session-query"></a>
 
-## `@deepseek-ai/dsh-tool-session-query`
+## `@clocky/clocky-tool-session-query`
 
 ### `session_event_read`
 
@@ -1497,147 +1464,9 @@ Source: [`packages/session-query/tool-session-query/src/index.ts`](../packages/s
 
 The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies.
 
-<a id="deepseek-aidsh-tool-subagent"></a>
+<a id="clockyclocky-tool-jobs"></a>
 
-## `@deepseek-ai/dsh-tool-subagent`
-
-### `subagent`
-
-Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. Give it a complete, standalone prompt: it does not see this conversation. This call waits for the result by default. Set `run_in_background: true` to return a job id; collect with `job_output` and stop with `job_kill`.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "description": {
-      "type": "string",
-      "description": "A short (3-5 word) description of the delegated task, for display."
-    },
-    "prompt": {
-      "type": "string",
-      "description": "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."
-    },
-    "run_in_background": {
-      "type": "boolean",
-      "description": "Whether to run as a background job and return its id. Defaults to false; collect with job_output or stop with job_kill."
-    }
-  },
-  "required": [
-    "description",
-    "prompt"
-  ]
-}
-```
-
-Source: [`packages/subagent/tool-subagent/src/index.ts`](../packages/subagent/tool-subagent/src/index.ts)
-
-The registered tool name is the load-time `toolName` config (default `subagent`); the schema above is that default. The shipped compositions load this package once per subagent backend, so the model additionally sees `subagent_fork` bound to the fork backend. Each instance's description, `run_in_background` parameter, and system-prompt policy follow its own `backgroundMode` and `enableRunInBackground`, so the two shipped schemas are not identical: `subagent` is `continuable` and defaults omitted calls to background with automatic settlement delivery, while `subagent_fork` stays `one-shot` and defaults them to foreground — see `packages/bundle/base/cordis.patch.yml` and `examples/acp-agent/cordis.yml`.
-
-<a id="deepseek-aidsh-tool-subagent-control"></a>
-
-## `@deepseek-ai/dsh-tool-subagent-control`
-
-### `interrupt_agent`
-
-Request cancellation of a background agent's current turn by its agent id. The target may be your direct child or a deeper agent created under you. Only the current turn stops: messages already queued for the agent stay parked until a later send_message, agents it started keep running, and the agent itself stays available for follow-ups. This call returns as soon as the stop request is accepted, so the target may keep running briefly; interrupting an agent that already finished is an accepted no-op.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "agent_id": {
-      "type": "string",
-      "description": "The agent id of the running agent to interrupt."
-    }
-  },
-  "required": [
-    "agent_id"
-  ]
-}
-```
-
-Source: [`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
-
-### `list_agents`
-
-List your continuable background subagents by durable id and label. Use it to recall which ones you started, not to poll for completion — you are told when one finishes. Status comes from the live registry: running means the agent is working right now, idle means it is loaded but between turns (it may be waiting on agents it started), and ready means it exists only in storage — resumable, not terminal, and not a result waiting to be collected; a `send_message` starts a new turn on the same conversation, and a direct child remains a `send_message` candidate in every status. The snapshot is not a delivery promise — `send_message` performs the authoritative check and may still fail. Children that could not be read are reported as diagnostics instead of being silently dropped. Scope `descendants` walks the whole tree below you in stable pre-order, annotating each entry with its durable direct-parent session id and depth. You may use `send_message` only for depth-1 entries; deeper entries are candidates for `interrupt_agent` only.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "scope": {
-      "type": "string",
-      "description": "children (default) lists direct children only; descendants walks the complete tree below you.",
-      "enum": [
-        "children",
-        "descendants"
-      ]
-    }
-  }
-}
-```
-
-Source: [`packages/subagent/tool-subagent-control/src/list-agents.ts`](../packages/subagent/tool-subagent-control/src/list-agents.ts)
-
-### `send_message`
-
-Send a message to a background subagent by its subagent id, continuing the same conversation. It becomes the subagent's next turn: if it is still working, the message waits until its current turn finishes, so it cannot redirect work already underway. This call returns no answer from the subagent — only confirmation that the message was delivered — so use it to give it more work. A failure means the message was NOT delivered.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "subagent_id": {
-      "type": "string",
-      "description": "The subagent id returned when the background subagent was started."
-    },
-    "message": {
-      "type": "string",
-      "description": "The message to deliver to the subagent."
-    }
-  },
-  "required": [
-    "subagent_id",
-    "message"
-  ]
-}
-```
-
-Source: [`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts)
-
-The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries).
-
-<a id="deepseek-aidsh-tool-subagent-report"></a>
-
-## `@deepseek-ai/dsh-tool-subagent-report`
-
-### `report`
-
-Report selected content to the agent that started you. Call this once before you finish, with a self-contained final result, and earlier for progress or findings that change what that agent does next. That agent shares your workspace but does not automatically receive your transcript, tool output, or reasoning, so finishing your work is not itself a result. Reporting does not end your turn or finish your work, and only your direct parent receives it. A failed call may still have arrived, so do not blindly repeat it.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "output": {
-      "type": "string",
-      "description": "Actionable content for your parent; summarize conclusions and reference relevant shared paths."
-    }
-  },
-  "required": [
-    "output"
-  ]
-}
-```
-
-Source: [`packages/subagent/tool-subagent-report/src/index.ts`](../packages/subagent/tool-subagent-report/src/index.ts)
-
-Registered per continuable in-process child rather than globally, so this schema is visible only inside such a child and survives its global `toolFilter`. The same contribution installs the child-scoped `tool:report` prompt section, which this catalog does not render. The parent-facing `send_message` tool is installed independently.
-
-<a id="deepseek-aidsh-tool-jobs"></a>
-
-## `@deepseek-ai/dsh-tool-jobs`
+## `@clocky/clocky-tool-jobs`
 
 ### `job_kill`
 
@@ -1708,60 +1537,335 @@ Source: [`packages/jobs/tool-jobs/src/index.ts`](../packages/jobs/tool-jobs/src/
 
 The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers' `ctx.jobs.start()`.
 
-<a id="deepseek-aidsh-experimental-tool-agent-team"></a>
+<a id="clockyclocky-tool-team"></a>
 
-## `@deepseek-ai/dsh-experimental-tool-agent-team`
+## `@clocky/clocky-tool-team`
 
-### `followup_task`
+### `team_final`
 
-Send a durable follow-up task to another Team member and start a turn when needed.
+Send the final answer through the assigned Team result channel. Use the exact channel_id of the final-answer channel; the recipient is derived from that channel.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "target": {
+    "channel_id": {
       "type": "string",
-      "description": "Team member name, or lead."
+      "description": "Exact two-party direct Team channel id."
     },
-    "message": {
+    "text": {
       "type": "string",
-      "description": "Self-contained message for the target."
+      "description": "Non-empty final answer for the other channel participant."
     }
   },
   "required": [
-    "target",
-    "message"
+    "channel_id",
+    "text"
   ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
 
-### `interrupt_agent`
+### `team_message`
 
-Interrupt one teammate's current turn while preserving its pending inbox. Team Lead only.
+Send an explicit text message to a Team channel. The sender is derived from your current activation; the channel adapter validates recipients, turn order, and delivery intent. For an ordinary consult, answer its logged request with turn delivery; task reviews require team_task_review.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "target": {
+    "channel_id": {
       "type": "string",
-      "description": "Teammate name."
+      "description": "Exact Team channel id."
+    },
+    "text": {
+      "type": "string",
+      "description": "Non-empty message text."
+    },
+    "audience": {
+      "type": "array",
+      "description": "Optional explicit recipients; omit for adapter-defined broadcast.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "delivery": {
+      "type": "string",
+      "enum": [
+        "context",
+        "turn",
+        "steer"
+      ]
     }
   },
   "required": [
-    "target"
+    "channel_id",
+    "text",
+    "delivery"
   ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
 
-### `list_agents`
+### `team_task_heartbeat`
 
-List the Lead and every durable teammate with current runtime status.
+Renew the lease for one running Team task attempt assigned to you. Use the exact task_id and attempt_id from the task assignment message before the lease expires.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Exact Team task id from the task assignment message."
+    },
+    "attempt_id": {
+      "type": "string",
+      "description": "Exact attempt id from the task assignment message."
+    }
+  },
+  "required": [
+    "task_id",
+    "attempt_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
+
+### `team_task_integrate`
+
+Execute the current assigned Team integration task from its completed source attempt. The Hub derives the source task, provider, target, expected target revision, and operation mode from the durable task; use the exact task_id and attempt_id from the task assignment message. The provider validates the source attempt artifact manifest; integration-capable providers consume one provenance-bound patch artifact in their provider-owned format; directory providers use the portable change-set encoding.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Exact integration task id from the task assignment message."
+    },
+    "attempt_id": {
+      "type": "string",
+      "description": "Exact integration attempt id from the task assignment message."
+    },
+    "verification": {
+      "type": "string",
+      "description": "Optional verification command or summary to retain with the integration result."
+    }
+  },
+  "required": [
+    "task_id",
+    "attempt_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
+
+### `team_task_report`
+
+Report completion, failure, or release for one running Team task attempt assigned to you. Use the exact task_id and attempt_id from the task assignment message. completed records summary and enters review only when the task names a reviewer; otherwise it completes the task directly; failed or released returns it to pending unless its attempt limit is exhausted.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Exact Team task id from the task assignment message."
+    },
+    "attempt_id": {
+      "type": "string",
+      "description": "Exact attempt id from the task assignment message."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed",
+        "released"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Concise result summary; required only with completed."
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Optional evidence statements supporting the result.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "Optional artifact references produced by this attempt.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "patch",
+              "log",
+              "screenshot",
+              "report"
+            ]
+          },
+          "uri": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "sourceAttemptId": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "team",
+              "human"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "uri",
+          "visibility"
+        ]
+      }
+    },
+    "changed_paths": {
+      "type": "array",
+      "description": "Optional changed paths from the execution workspace.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification": {
+      "type": "string",
+      "description": "Optional verification command or summary."
+    },
+    "failure_code": {
+      "type": "string",
+      "description": "Stable failure classification; required only with failed."
+    },
+    "failure_message": {
+      "type": "string",
+      "description": "Concrete failure explanation; required only with failed."
+    }
+  },
+  "required": [
+    "task_id",
+    "attempt_id",
+    "outcome"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
+
+### `team_task_review`
+
+Accept or return one Team task result for rework when you are the configured reviewer. Use the task_id from the current review assignment and a concise reason; its durable revision fence is derived from that assignment.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Exact Team task id awaiting your review."
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "accepted",
+        "rework"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Non-empty explanation for the review decision."
+    }
+  },
+  "required": [
+    "task_id",
+    "decision",
+    "reason"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team/src/index.ts`](../packages/team/tool-team/src/index.ts)
+
+team_task_report and team_task_integrate are scoped to an Agent whose durable assignment source proves one running task attempt. The catalog boots a synthetic Team-bound Agent only to harvest their schemas; execution still requires a live bound Link and Team lease.
+
+<a id="clockyclocky-team-channel-summarytool"></a>
+
+## `@clocky/clocky-team-channel-summary/tool`
+
+### `team_channel_summarize`
+
+Create an explicit channel-wide extractive summary of a committed message range. The channel must use an allowed summary view policy. All selected messages must be visible to every channel member; private subset ranges are rejected. Use the same idempotency key and range to retry. This does not send a message or call another model.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "channel_id": {
+      "type": "string",
+      "description": "Selected channel id."
+    },
+    "expected_cursor": {
+      "type": "integer",
+      "description": "Current channel WAL cursor."
+    },
+    "from_sequence": {
+      "type": "integer",
+      "description": "First included WAL sequence."
+    },
+    "to_sequence": {
+      "type": "integer",
+      "description": "Last included WAL sequence."
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Stable retry identity for this exact range."
+    }
+  },
+  "required": [
+    "channel_id",
+    "expected_cursor",
+    "from_sequence",
+    "to_sequence",
+    "idempotency_key"
+  ]
+}
+```
+
+Source: [`packages/team/team-channel-summary/src/tool.ts`](../packages/team/team-channel-summary/src/tool.ts)
+
+team_channel_summarize is scoped to the current default coordinator. Schema harvest supplies only the scope; execution requires a real active coordinator and the production summary Consumer. The result contains bounded extractive text; private subset sources are rejected.
+
+<a id="clockyclocky-tool-team-goal"></a>
+
+## `@clocky/clocky-tool-team-goal`
+
+### `get_goal`
+
+Read this Team’s durable objective, including its exact revision, phase, blocker, and budget.
 
 ```json
 {
@@ -1770,116 +1874,82 @@ List the Lead and every durable teammate with current runtime status.
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts)
 
-### `send_message`
+### `team_goal_phase`
 
-Send durable information to another Team member without starting an idle member.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "target": {
-      "type": "string",
-      "description": "Team member name, or lead."
-    },
-    "message": {
-      "type": "string",
-      "description": "Self-contained message for the target."
-    }
-  },
-  "required": [
-    "target",
-    "message"
-  ]
-}
-```
-
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
-
-### `spawn_teammate`
-
-Create one named, durable teammate. Only the Team Lead may call this tool.
+Advance this Team objective to active, paused, blocked, or complete at the exact revision. A blocked objective must include a code and explanation.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "Unique lower-kebab-case teammate name."
+    "revision": {
+      "type": "integer",
+      "description": "Exact positive revision returned by get_goal."
     },
-    "description": {
+    "phase": {
       "type": "string",
-      "description": "Short description of the delegated responsibility."
-    },
-    "prompt": {
-      "type": "string",
-      "description": "Complete initial task for the teammate."
-    },
-    "context": {
-      "type": "string",
-      "description": "fresh starts without Lead history; fork inherits completed Lead turns. Defaults to fresh.",
       "enum": [
-        "fresh",
-        "fork"
+        "active",
+        "paused",
+        "blocked",
+        "complete"
       ]
+    },
+    "blocker_code": {
+      "type": "string",
+      "description": "Required with blocked."
+    },
+    "blocker_message": {
+      "type": "string",
+      "description": "Required with blocked."
     }
   },
   "required": [
-    "name",
-    "description",
-    "prompt"
+    "revision",
+    "phase"
   ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts)
 
-### `team_task_create`
+### `update_goal`
 
-Create one unowned pending task on the shared Team task board.
+Replace this Team’s objective at the exact revision returned by get_goal. Use only when the current human message asks to revise the task.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "subject": {
+    "revision": {
+      "type": "integer",
+      "description": "Exact positive revision returned by get_goal."
+    },
+    "objective": {
       "type": "string",
-      "description": "Concise task title."
-    },
-    "description": {
-      "type": "string",
-      "description": "Complete task details and acceptance criteria."
-    },
-    "blocked_by": {
-      "type": "array",
-      "description": "Task ids that must complete first.",
-      "items": {
-        "type": "string"
-      }
-    },
-    "write_scopes": {
-      "type": "array",
-      "description": "Advisory workspace-relative file or directory prefixes this task expects to modify.",
-      "items": {
-        "type": "string"
-      }
+      "description": "Replacement non-empty Team objective."
     }
   },
   "required": [
-    "subject",
-    "description"
+    "revision",
+    "objective"
   ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts)
 
-### `team_task_get`
+get_goal and update_goal are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires a current human direct-v3 Team input and an activation-fenced TeamRun operation.
 
-Read the complete latest value of one shared task before changing or executing it.
+<a id="clockyclocky-tool-team-task"></a>
+
+## `@clocky/clocky-tool-team-task`
+
+### `team_task_cancel`
+
+Request cancellation of one worker-pool Team task while the Team and other tasks continue. Assigned or running tasks remain non-terminal until their exact owner stops work and releases resources; use team_task_wait to observe settlement.
 
 ```json
 {
@@ -1887,7 +1957,11 @@ Read the complete latest value of one shared task before changing or executing i
   "properties": {
     "task_id": {
       "type": "string",
-      "description": "Shared task id."
+      "description": "Exact task id returned by team_task_start."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional explanation retained with the first accepted cancellation."
     }
   },
   "required": [
@@ -1896,50 +1970,76 @@ Read the complete latest value of one shared task before changing or executing i
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
 
-### `team_task_list`
+### `team_task_delegate`
 
-List shared tasks, including readiness, owner, revision, blockers, and write-scope warnings.
+Delegate a bounded task to a child Team with its own coordinator. Provide complete instructions, workspace-relative scopes, and explicit resource ceilings. The child shares this workspace and remains within this Team’s authority. Use team_task_list, team_task_watch, team_task_wait, or team_task_cancel with the returned task_id.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "status": {
+    "subject": {
       "type": "string",
-      "description": "Optional exact status filter.",
-      "enum": [
-        "pending",
-        "in_progress",
-        "completed"
-      ]
+      "description": "Concise task subject."
     },
-    "owner": {
+    "instructions": {
       "type": "string",
-      "description": "Optional member-name filter; use unowned for tasks without an owner."
+      "description": "Self-contained child Team objective and expected result."
     },
-    "ready": {
-      "type": "boolean",
-      "description": "Optional readiness filter."
+    "read_scopes": {
+      "type": "array",
+      "description": "Workspace-relative readable paths.",
+      "items": {
+        "type": "string"
+      }
     },
-    "cursor": {
+    "write_scopes": {
+      "type": "array",
+      "description": "Workspace-relative writable paths.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "budget": {
+      "description": "Resource ceilings: maxInputTokens, maxOutputTokens, maxTotalTokens, maxTurns, maxWallTimeMs, maxCostUnits, maxRetries, maxConcurrency, maxArtifactBytes. Values cannot exceed this Team’s allowance."
+    },
+    "template_id": {
+      "type": "string",
+      "description": "Configured child template; supply template_version together. Omit both for this Team’s template."
+    },
+    "template_version": {
       "type": "integer",
-      "description": "Zero-based result offset. Defaults to 0."
-    },
-    "limit": {
-      "type": "integer",
-      "description": "Number of rows, 1 through 100. Defaults to 50."
+      "description": "Exact version of template_id."
     }
-  }
+  },
+  "required": [
+    "subject",
+    "instructions",
+    "budget"
+  ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
 
-### `team_task_update`
+### `team_task_list`
 
-Compare-and-set a shared task action using the latest revision from team_task_get or team_task_list.
+List the current phase, review facts, and accepted child response of every worker or child-Team task started by this coordinator. The list is bounded by the durable Team task set and excludes workflow-plan tasks. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_task_propose_owner`
+
+Set or clear an advisory preferred owner for one pending default-worker Team task. The proposal grants no authority; the scheduler still checks capabilities, availability, workspace, and budgets.
 
 ```json
 {
@@ -1947,86 +2047,197 @@ Compare-and-set a shared task action using the latest revision from team_task_ge
   "properties": {
     "task_id": {
       "type": "string",
-      "description": "Shared task id."
+      "description": "Exact task id returned by team_task_start."
     },
-    "expected_revision": {
-      "type": "integer",
-      "description": "Current task revision used as the CAS precondition."
-    },
-    "action": {
+    "participant_id": {
       "type": "string",
-      "description": "Task transition to apply.",
-      "enum": [
-        "claim",
-        "release",
-        "edit",
-        "set_dependencies",
-        "complete",
-        "reopen",
-        "reassign",
-        "delete"
-      ]
-    },
+      "description": "Preferred Team Participant id; omit to clear the current proposal."
+    }
+  },
+  "required": [
+    "task_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_task_start`
+
+Start one independent, bounded Team task for the configured worker pool. Provide a concise subject, complete instructions, the expected deliverable, validation, and any filesystem regions the task may read or modify. For a non-trivial objective with multiple feasible workstreams, start at least two independent tasks before waiting. Use narrow, non-overlapping workspace-relative file scopes only for concurrent shared-workspace writers; leave scopes empty for work that does not touch files, and use a read-only research, analysis, or review task when only one writer is safe. Use workspace-relative read_scopes and write_scopes; absolute paths under the current workspace are converted, while paths outside the workspace are rejected. The current workspace and permission mode are shown in runtime context. The coordinator may set the pool with team_worker_pool_set; the scheduler assigns this task to an eligible idle worker, or leaves it queued when every worker is busy. The returned review_policy identifies the selected reviewer or none. The task continues after this call; start other independent tasks before waiting when useful, then use team_task_wait when a result is needed. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+
+```json
+{
+  "type": "object",
+  "properties": {
     "subject": {
       "type": "string",
-      "description": "Replacement title for edit."
+      "description": "Concise statement of the task to perform."
     },
-    "description": {
+    "instructions": {
       "type": "string",
-      "description": "Replacement details for edit."
+      "description": "Complete self-contained instructions for the worker."
     },
-    "blocked_by": {
+    "read_scopes": {
       "type": "array",
-      "description": "Complete blocker list for set_dependencies.",
+      "description": "Workspace-relative paths the task may read, such as src/file.ts. An absolute path under the current workspace is converted.",
       "items": {
         "type": "string"
       }
     },
     "write_scopes": {
       "type": "array",
-      "description": "Replacement advisory write scopes for edit.",
+      "description": "Workspace-relative paths the task may modify, such as src/file.ts. An absolute path under the current workspace is converted.",
       "items": {
         "type": "string"
       }
-    },
-    "owner": {
-      "type": "string",
-      "description": "Member name for Lead-only reassign; omit to unassign."
     }
   },
   "required": [
-    "task_id",
-    "expected_revision",
-    "action"
+    "subject",
+    "instructions"
   ]
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
 
-### `wait_agent`
+### `team_task_wait`
 
-Wait for the next teammate status, mailbox, or shared-task change after this call starts. This never wakes inactive members and returns noProgress immediately when no other member is running or provisioning. Re-list after wakeup or timeout instead of polling.
+Wait for a worker or child-Team task started by this coordinator, including any configured review. The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start or team_task_delegate. Cancelling this call stops only the wait, not the task. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
 
 ```json
 {
   "type": "object",
   "properties": {
-    "timeout_ms": {
+    "task_id": {
+      "type": "string",
+      "description": "Exact task id returned by team_task_start."
+    }
+  },
+  "required": [
+    "task_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_task_watch`
+
+Wait for a bounded Team cursor advance and return the compact state of this coordinator's worker and child-Team tasks. Provide the cursor from the previous list or watch result; cancelling this call stops only the watch. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "after_cursor": {
       "type": "integer",
-      "description": "Wait duration in milliseconds, from 10000 through 3600000. Defaults to 30000."
+      "description": "Last Team cursor already observed; omit for an immediate snapshot."
     }
   }
 }
 ```
 
-Source: [`packages/experimental/tool-agent-team/src/index.ts`](../packages/experimental/tool-agent-team/src/index.ts)
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
 
-All ten tools are scoped to implicit Team Leads and durable teammates. The shipped dsh-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names.
+### `team_worker_pool_set`
 
-<a id="deepseek-aidsh-tool-todo"></a>
+Set the desired number of worker agents for this Team. For any non-trivial objective with multiple feasible workstreams, including research, analysis, writing, data, operations, coding, or mixed work, set at least 2 before starting independent work and increase it when the task graph has more parallel work. The request is capped by the deployment limit; tasks beyond currently available workers stay queued and are assigned as workers become idle, so do not wait for a slot before starting independent tasks.
 
-## `@deepseek-ai/dsh-tool-todo`
+```json
+{
+  "type": "object",
+  "properties": {
+    "worker_count": {
+      "type": "integer",
+      "description": "Desired worker-pool size, including the default worker slot."
+    }
+  },
+  "required": [
+    "worker_count"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_workflow_start`
+
+Compile one bounded declarative Team workflow from JSON. Provide task templates, plan-local dependencies, explicit bounds, and a versioned workflow channel graph. Use workspace-relative readScopes and writeScopes in every task template; absolute paths under the current workspace are converted, while outside paths are rejected. Do not provide JavaScript, filesystem code, or hidden control flow; the complete plan is validated before any task can run. The workflow continues after this call; use team_workflow_wait for its projected result.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": {
+      "description": "Complete JSON-serializable TeamWorkflowPlan."
+    }
+  },
+  "required": [
+    "plan"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_workflow_task_cancel`
+
+Cancel one task in a workflow created by this coordinator, selected by its plan and task template. Its blocked descendants cancel when their prerequisite cannot complete; independent tasks continue. Use team_workflow_wait for the aggregate outcome and configured results.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "description": "Exact plan id returned by team_workflow_start."
+    },
+    "task_template_id": {
+      "type": "string",
+      "description": "Task template id in the admitted plan."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Optional reason retained by the task stop intent."
+    }
+  },
+  "required": [
+    "plan_id",
+    "task_template_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+### `team_workflow_wait`
+
+Wait for a declarative Team workflow started by this coordinator. Use the plan_id returned by team_workflow_start. Cancelling this call stops only the wait, not the workflow.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "description": "Exact plan id returned by team_workflow_start."
+    }
+  },
+  "required": [
+    "plan_id"
+  ]
+}
+```
+
+Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts)
+
+team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation.
+
+<a id="clockyclocky-tool-todo"></a>
+
+## `@clocky/clocky-tool-todo`
 
 ### `todo_write`
 
@@ -2074,104 +2285,9 @@ Source: [`packages/todo/tool-todo/src/index.ts`](../packages/todo/tool-todo/src/
 
 todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task.
 
-<a id="deepseek-aidsh-tool-workflow"></a>
+<a id="clockyclocky-tool-web"></a>
 
-## `@deepseek-ai/dsh-tool-workflow`
-
-### `workflow`
-
-Run a JavaScript workflow script that orchestrates subagents at scale. Use this for work that fans out across many independent pieces — an audit over many files, a migration, multi-angle research, adversarial verification of findings — where you write the orchestration as a script instead of delegating turn by turn.
-
-The workflow's identity rides the `meta` parameter as JSON: required `name` (short kebab-case) and `description` strings, optional `whenToUse` string and `phases` array (`{title, detail?, provider?, model?}`). The `script` parameter is the plain JavaScript body ONLY (NOT TypeScript, and NO `export const meta` statement — meta is a parameter, not code), running with top-level await; end with `return <value>` — the value must be JSON-serializable and is this tool's result.
-
-Script-body hooks:
-- `agent(prompt, opts?): Promise<any>` — run one subagent to completion. Without `opts.schema` it resolves to the child's final text; with `opts.schema` (an object-rooted JSON Schema using ONLY type/properties/required/additionalProperties/items/enum/const/oneOf — no pattern/format/numeric bounds) it resolves to the validated object. Resolves `null` when the child fails (filter with `.filter(Boolean)`). Other opts: `label` (display), `phase` (progress group), and independent `provider`/`model` LLM target overrides (either may be provided alone). Anything else (`effort`/`isolation`/`agentType`) is rejected loudly.
-- `pipeline(items, ...stages): Promise<any[]>` — run each item through the stages independently with NO barrier between stages (prefer this for multi-stage work). Each stage receives `(prev, item, index)`. An ordinary stage throw drops that ITEM to `null` and skips its remaining stages.
-- `parallel(thunks): Promise<any[]>` — run zero-argument functions concurrently and await ALL of them (a barrier; use only when a stage genuinely needs every prior result together). A throwing thunk resolves to `null`.
-- `phase(title)` — start a progress phase; `log(message)` — narrate progress; `args` — the tool call's `args` input, verbatim.
-
-Misused hooks (bad arguments, unknown options, unsupported schemas, tripped caps) throw errors that ALWAYS kill the script — they never dissolve into a per-item `null`.
-
-Constraints: concurrency and total-agent caps apply; no filesystem, network, timers, or Node.js APIs are provided — the agents do the work, the script only coordinates them. The run executes in the foreground: this call returns when the whole script finishes.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "script": {
-      "type": "string",
-      "description": "The plain-JS workflow script body (top-level await allowed; NO `export const meta` statement; end with `return <json-value>`)."
-    },
-    "meta": {
-      "type": "object",
-      "description": "The workflow identity block (plain JSON — never code).",
-      "additionalProperties": true,
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Short kebab-case workflow name."
-        },
-        "description": {
-          "type": "string",
-          "description": "One-line description of what the workflow does."
-        },
-        "whenToUse": {
-          "type": "string",
-          "description": "Optional guidance on when this workflow applies."
-        },
-        "phases": {
-          "type": "array",
-          "description": "Optional phase declarations matched by phase() calls.",
-          "items": {
-            "type": "object",
-            "additionalProperties": true,
-            "properties": {
-              "title": {
-                "type": "string",
-                "description": "The phase title phase() calls match by exact string."
-              },
-              "detail": {
-                "type": "string",
-                "description": "Optional one-line description of the phase."
-              },
-              "provider": {
-                "type": "string",
-                "description": "Optional provider override this phase is expected to use."
-              },
-              "model": {
-                "type": "string",
-                "description": "Optional model override this phase is expected to use."
-              }
-            },
-            "required": [
-              "title"
-            ]
-          }
-        }
-      },
-      "required": [
-        "name",
-        "description"
-      ]
-    },
-    "args": {
-      "type": "object",
-      "description": "Optional JSON input exposed to the script as the `args` global (wrap a bare list as a field, e.g. {\"files\": [...]}).",
-      "additionalProperties": true
-    }
-  },
-  "required": [
-    "script",
-    "meta"
-  ]
-}
-```
-
-Source: [`packages/workflow/tool-workflow/src/index.ts`](../packages/workflow/tool-workflow/src/index.ts)
-
-<a id="deepseek-aidsh-tool-web"></a>
-
-## `@deepseek-ai/dsh-tool-web`
+## `@clocky/clocky-tool-web`
 
 ### `web_fetch`
 

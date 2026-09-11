@@ -12,6 +12,8 @@
     "src/index.ts",
     "src/invariant.ts",
     "src/loopback-hostname.ts",
+    "src/product-auth-contract.ts",
+    "src/product-auth.ts",
     "src/rpc-host.ts",
     "src/rpc.ts",
     "src/websocket-downlink.ts"
@@ -22,6 +24,9 @@
     },
     {
       "path": "../../host/apiproxy"
+    },
+    {
+      "path": "../../core/product-principal"
     },
     {
       "path": "../../host/webserver"

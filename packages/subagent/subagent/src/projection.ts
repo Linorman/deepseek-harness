@@ -118,11 +118,13 @@ interface IdentityState {
 const identityValueSchema = z.discriminatedUnion('mode', [
   z.object({
     mode: z.literal('one-shot'),
+    depth: z.number().int().nonnegative(),
     label: z.string().optional(),
     seq: z.number().int().nonnegative(),
   }).strict(),
   z.object({
     mode: z.literal('continuable'),
+    depth: z.number().int().nonnegative(),
     label: z.string(),
     seq: z.number().int().nonnegative(),
   }).strict(),
@@ -148,10 +150,11 @@ function descriptorIdentity(event: SessionEvent): SubagentIdentityProjection | u
   return descriptor.mode === 'one-shot'
     ? {
       mode: 'one-shot',
+      depth: descriptor.depth,
       ...descriptor.label !== undefined ? { label: descriptor.label } : {},
       seq: event.seq,
     }
-    : { mode: 'continuable', label: descriptor.label, seq: event.seq }
+    : { mode: 'continuable', depth: descriptor.depth, label: descriptor.label, seq: event.seq }
 }
 
 /**

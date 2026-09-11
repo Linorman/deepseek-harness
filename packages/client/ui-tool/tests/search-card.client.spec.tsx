@@ -383,7 +383,7 @@ describe('DetailsPanel Output section (search)', () => {
     if (selection !== null) chat.actions.select(selection)
     const sessions = createSnapshotStore<SessionListState>({
       ids: [], byId: {}, current: undefined, phase: 'ready',
-      subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+      jobsBySession: {},
     })
     const workspaces = createSnapshotStore<WorkspaceListState>({
       items: [], archivedSessionIds: [], state: 'idle', phase: 'ready', error: null,
@@ -423,7 +423,7 @@ describe('DetailsPanel Output section (search)', () => {
       nodes: [], turnTimings: new Map(), turnEnds: new Map(), partial: null, runningCalls: [],
       pending: [], queue: [], running: false, composerPhase: 'active', removed: false,
       openState: 'open', openError: null, hasMore: false, loadingOlder: false,
-      promptError: null, blank: false, subagent: null, lastAgentError: null, ...over,
+      promptError: null, blank: false, lastAgentError: null, ...over,
     }
   }
 

@@ -1,4 +1,4 @@
-# dsh-timeout
+# clocky-timeout
 
 English | [中文](README.zh.md)
 
@@ -11,7 +11,7 @@ It is a **library, not a service or plugin**: no `ctx`, registers nothing, holds
 ## API
 
 ```ts
-import { clampTimeout, deadline, idleWatchdog, MAX_TIMER_DELAY_MS, timeoutOf, TimeoutReason } from '@deepseek-ai/dsh-timeout'
+import { clampTimeout, deadline, idleWatchdog, MAX_TIMER_DELAY_MS, timeoutOf, TimeoutReason } from '@clocky/clocky-timeout'
 ```
 
 | Export | Role |
@@ -30,7 +30,7 @@ import { clampTimeout, deadline, idleWatchdog, MAX_TIMER_DELAY_MS, timeoutOf, Ti
 ## Usage shape
 
 ```ts
-import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
+import { deadline, timeoutOf } from '@clocky/clocky-timeout'
 
 declare function runWork(options: { signal: AbortSignal }): Promise<unknown>
 
@@ -48,7 +48,7 @@ The signal only *notifies* — the caller MUST attach its own termination (`d.si
 
 Pass your own `code` to `timeoutOf` so classification composes under nesting. When `upstream` is itself a deadline signal, `AbortSignal.any` preserves its `TimeoutReason` if that timer fires first. Scoping to your code makes a foreign timeout read as an ordinary upstream cancel instead of claiming that the local timer expired.
 
-For a streamed transport, create one `idleWatchdog`, pass its stable `signal` into the transport, and call `watchdog.next(iterator)` for each provider read. Call `watchdog.pulse()` when transport activity does not yield an iterator value. The interval must be positive, finite, and no greater than `MAX_TIMER_DELAY_MS`; Node otherwise clamps it to one millisecond. It measures only outstanding demand, so no timer runs while downstream code renders or otherwise waits before asking for the next chunk. The primitive still only notifies, so the transport must observe the stable signal; the DeepSeek and pi-ai adapters prove that timeout closes their real response body or SDK request.
+For a streamed transport, create one `idleWatchdog`, pass its stable `signal` into the transport, and call `watchdog.next(iterator)` for each provider read. Call `watchdog.pulse()` when transport activity does not yield an iterator value. The interval must be positive, finite, and no greater than `MAX_TIMER_DELAY_MS`; Node otherwise clamps it to one millisecond. It measures only outstanding demand, so no timer runs while downstream code renders or otherwise waits before asking for the next chunk. The primitive still only notifies, so the transport must observe the stable signal; the pi-ai adapter and provider test harness prove that timeout closes a real response body or SDK request.
 
 ## What does NOT get a timeout
 
@@ -56,7 +56,7 @@ Local file `read`/`write`/`edit` take no `timeoutMs`: file IO runs untimed becau
 
 ## Model Experience
 
-Indirectly, through consumers such as `dsh-tool-call-timeout-policy`, which may replace a provider result with a retained timeout error or suppress a late result.
+Indirectly, through consumers such as `clocky-tool-call-timeout-policy`, which may replace a provider result with a retained timeout error or suppress a late result.
 
 #### KV Cache effect
 

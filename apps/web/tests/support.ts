@@ -55,25 +55,24 @@ export function probeFreePort(): Promise<number> {
 }
 
 /**
- * Drive the hero's workspace picker through the composed directory dialog
- * until the live composer unlocks. A fresh world has no Workspace, so the boot
- * lands in the Workspace-trigger view state (startup auto-selection has nothing to
- * select); every scenario that types into the composer must connect one
- * first. With nothing to list, activating the textarea raises the dialog directly —
- * adding a workspace is the picker's only entry. The directory is staged here
- * and adopted through the path editor, which is idempotent across the repeated
- * connects a scenario may make; creating a folder from inside the dialog (the
- * product's other half of the same route) is covered by
- * workspace-management.e2e.ts. The default name 'workspace' keeps the session
- * header cwd at <root>/workspace, the materialization proof several scenarios
- * assert.
+ * Prepare a fresh browser world for a scenario that needs a live composer.
+ * Legacy compositions expose the workspace picker and are driven through its
+ * directory dialog. The shipped Team-first composition starts with an enabled
+ * Team draft instead, so there is no Session or Workspace to select yet; in
+ * that mode the already-live draft is the correct barrier and the first send
+ * owns Team creation.
  * @param page - the page under test.
  * @param root - host directory the workspace folder is staged in (the scaffold's `workspaceCwd`).
  * @param name - folder name staged and adopted as the workspace.
  */
 export async function connectFreshWorkspace(page: Page, root: string, name = 'workspace'): Promise<void> {
+  const picker = page.getByRole('textbox', { name: 'Choose workspace' })
+  if (await picker.count() === 0) {
+    await page.getByPlaceholder('Describe what you want to build').waitFor({ timeout: 15_000 })
+    return
+  }
   mkdirSync(join(root, name), { recursive: true })
-  await page.getByRole('textbox', { name: 'Choose workspace' }).click()
+  await picker.click()
   const dialog = page.getByRole('dialog', { name: 'Select Workspace Directory' })
   await dialog.waitFor({ timeout: 10_000 })
   await dialog.getByRole('button', { name: 'Edit path' }).click()
@@ -97,8 +96,16 @@ export async function connectFreshWorkspace(page: Page, root: string, name = 'wo
  * @param name - directory created under `root` and connected.
  */
 export async function connectFreshWorkspaceZh(page: Page, root: string, name = 'workspace'): Promise<void> {
+  // The shipped composition starts with a live Team draft and intentionally
+  // has no Workspace picker. Keep the helper valid for both explicit legacy
+  // compositions and the Team-first surface.
+  const picker = page.getByRole('textbox', { name: '选择工作区' })
+  if (await picker.count() === 0) {
+    await page.getByPlaceholder('描述你想要构建的内容').waitFor({ timeout: 15_000 })
+    return
+  }
   mkdirSync(join(root, name), { recursive: true })
-  await page.getByRole('textbox', { name: '选择工作区' }).click()
+  await picker.click()
   const dialog = page.getByRole('dialog', { name: '选择工作区目录' })
   await dialog.waitFor({ timeout: 10_000 })
   await dialog.getByRole('button', { name: '编辑路径' }).click()

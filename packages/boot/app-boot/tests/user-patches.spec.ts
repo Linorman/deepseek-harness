@@ -25,10 +25,10 @@ const NAME = 'clocky-test-bin'
 
 const tmp = (): string => mkdtempSync(join(tmpdir(), 'clocky-user-patches-'))
 
-async function eventually(test: () => boolean, message: string): Promise<void> {
+async function eventually(test: () => boolean, message: string, diagnose?: () => unknown): Promise<void> {
   const deadline = Date.now() + 30_000
   while (!test()) {
-    if (Date.now() >= deadline) throw new Error(message)
+    if (Date.now() >= deadline) throw new Error(message, { cause: diagnose?.() })
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
@@ -331,7 +331,9 @@ describe('boot with user patches', () => {
     })
     try {
       writeFileSync(filename, '- id: noop\n  config:\n    value: live\n')
-      await eventually(() => (entryConfig(ctx, 'noop') as { value?: string }).value === 'live', 'user patch addition was not applied')
+      await eventually(() => (entryConfig(ctx, 'noop') as { value?: string }).value === 'live', 'user patch addition was not applied', () => ({
+        filename, config: entryConfig(ctx, 'noop'), failures,
+      }))
 
       writeFileSync(filename, '- id: noop\n  config:\n    fail: true\n')
       await eventually(() => failures.length === 1, 'failed candidate was not broadcast')

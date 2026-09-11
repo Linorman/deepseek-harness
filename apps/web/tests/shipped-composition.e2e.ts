@@ -11,14 +11,22 @@ import { CallId } from '@clocky/clocky-llm'
 import { canonicalPath, writableRoots } from '@clocky/clocky-sandbox'
 import { SessionId } from '@clocky/clocky-session'
 import { settingsNamespace } from '@clocky/clocky-settings'
+import type { ParticipantId, ParticipantSnapshot, TeamId } from '@clocky/clocky-team'
 // Empty type imports carry the tools/sandboxPolicy/approval Context merges.
 import type {} from '@clocky/clocky-tools'
 import type {} from '@clocky/clocky-sandbox-policy'
 import type {} from '@clocky/clocky-user-approval'
 import type {} from '@clocky/clocky-permission-presets'
 import type {} from '@clocky/clocky-agent-presets'
+import type {} from '@clocky/clocky-agent-runtime'
 import type {} from '@clocky/clocky-commands'
+import type {} from '@clocky/clocky-storage-log'
+import type {} from '@clocky/clocky-storage'
 import type {} from '@clocky/clocky-system-prompt'
+import type {} from '@clocky/clocky-team'
+import type {} from '@clocky/clocky-team-activation-controller'
+import type {} from '@clocky/clocky-team-link'
+import type {} from '@clocky/clocky-team-run'
 import { launchWebScaffold, type WebScaffold } from './scaffold.ts'
 
 const FILE_REFERENCE_PROMPT = fileURLToPath(new URL(
@@ -36,26 +44,16 @@ const FILE_REFERENCE_PROMPT = fileURLToPath(new URL(
 const EXPECTED_TOOLS = [
   'ask_user_question',
   'bash',
-  'create_goal',
   'edit',
   'exit_plan_mode',
-  'get_goal',
-  'interrupt_agent',
   'job_kill',
   'job_list',
   'job_output',
-  'list_agents',
-  'ralph',
   'read',
   'read_image',
-  'send_message',
   'skill',
-  'subagent',
-  'subagent_fork',
   'todo_write',
-  'update_goal',
   'web_search',
-  'workflow',
   'write',
 ]
 
@@ -69,6 +67,45 @@ const RIPGREP_TOOLS = ['glob', 'grep']
 
 let scaffold: WebScaffold | undefined
 
+/** Narrow private Hub face used only to seed one pre-existing TeamRun worker's durable active fixture state. */
+interface TeamHubParticipantFixtureInternals {
+  readonly teams: ReadonlyMap<TeamId, {
+    readonly queue: { run<T>(operation: () => Promise<T>): Promise<T> }
+    readonly projection: {
+      readonly team: { readonly updatedAt: number }
+      readonly participants: ReadonlyMap<ParticipantId, ParticipantSnapshot>
+    }
+  }>
+  commitTeamCommand(
+    loaded: unknown,
+    records: readonly {
+      readonly type: 'participant/changed'
+      readonly participant: ParticipantSnapshot
+      readonly createdAt: number
+    }[],
+    code: 'TEAM_INVALID_ARGUMENT',
+  ): Promise<void>
+}
+
+/** Seed only the default TeamRun worker's provisioning-to-active durable fixture transition. */
+async function seedActiveTeamRunWorker(ctx: WebScaffold['ctx'], teamId: TeamId, workerId: ParticipantId): Promise<void> {
+  const hub = ctx.teams as unknown as TeamHubParticipantFixtureInternals
+  const loaded = hub.teams.get(teamId)
+  if (loaded === undefined) throw new Error(`shipped composition did not retain Team '${teamId}' for worker fixture seeding`)
+  await loaded.queue.run(async () => {
+    const worker = loaded.projection.participants.get(workerId)
+    if (worker?.phase !== 'provisioning') {
+      throw new Error(`shipped composition worker '${workerId}' is not provisioned for fixture activation`)
+    }
+    const createdAt = Math.max(Date.now(), loaded.projection.team.updatedAt + 1)
+    await hub.commitTeamCommand(loaded, [{
+      type: 'participant/changed',
+      participant: { ...worker, phase: 'active' },
+      createdAt,
+    }], 'TEAM_INVALID_ARGUMENT')
+  })
+}
+
 afterEach(async () => {
   await scaffold?.close()
   scaffold = undefined
@@ -77,6 +114,10 @@ afterEach(async () => {
 it('assembles the shipped Web catalog, file-reference guidance, retry policy, and confined access default', async () => {
   scaffold = await launchWebScaffold()
   const ctx = scaffold.ctx
+  // Team control mutations must wait for the product-principal-bound human
+  // actor provider; otherwise delete/update calls race startup and fail with
+  // the generic "no authenticated Team actor" response.
+  expect(ctx.get('teamHumanActors')).toBeDefined()
   expect(ctx.llm.providerRetryPolicy('test-provider')).toMatchInlineSnapshot(`
     {
       "initialDelayMs": 500,
@@ -180,6 +221,158 @@ it('assembles the shipped Web catalog, file-reference guidance, retry policy, an
   } finally {
     await commandHandle.dispose()
   }
+}, 120_000)
+
+it('assembles local Team services while scoping Team tools to an explicitly preset coordinator', async () => {
+  scaffold = await launchWebScaffold()
+  const ctx = scaffold.ctx
+  expect(ctx.get('storageLog')).toBeDefined()
+  expect(ctx.storage.backend.names()).toEqual(expect.arrayContaining(['json', 'sqlite']))
+  expect(ctx.get('teams')).toBeDefined()
+  expect(ctx.get('agentRuntimes')).toBeDefined()
+  expect(ctx.get('teamActivations')).toBeDefined()
+  expect(ctx.get('teamLinks')?.getProvider('local')).toBeDefined()
+  expect(ctx.get('teamWorkspaces')?.getProvider('shared-local')).toBeDefined()
+  expect(ctx.get('goals')).toBeUndefined()
+  expect(ctx.teams.listAdapters()).toEqual(expect.arrayContaining([
+    { type: 'task-assignment', version: 1 },
+  ]))
+  await expect(ctx.agentPresets.resolve('minimal')).resolves.toMatchObject({
+    id: 'minimal', trust: 'system',
+  })
+  const teamRuns = ctx.get('teamRuns')
+  if (teamRuns === undefined) throw new Error('Web composition did not provide TeamRun')
+
+  const ordinary = await ctx.agents.create({
+    sessionId: SessionId('shipped-team-ordinary'),
+    meta: { cwd: scaffold.workspaceCwd },
+    setup: agentCtx => ctx.agentPresets.mount(agentCtx).then(() => undefined),
+  })
+  try {
+    expect(ctx.tools.get('team_final', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_start', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_wait', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_list', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_watch', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_cancel', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_task_propose_owner', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_workflow_start', ordinary.agent)).toBeUndefined()
+    expect(ctx.tools.get('team_workflow_wait', ordinary.agent)).toBeUndefined()
+    const run = await teamRuns.create({
+      objective: 'Return an explicit final result.',
+      cwd: scaffold.workspaceCwd,
+      preset: 'standard',
+    })
+    let workerLease: Awaited<ReturnType<typeof ctx.teamActivations.activate>> | undefined
+    try {
+      await teamRuns.postHumanInput({
+        teamId: run.teamId,
+        content: [{ type: 'text', text: 'Prepare the default Team task tools.' }],
+        delivery: 'context',
+      })
+      const coordinator = run.coordinatorLease.localAgent
+      if (coordinator === undefined) throw new Error('TeamRun did not publish a local coordinator')
+      expect(coordinator.session.header.agentPreset).toBe('standard')
+      expect(ctx.tools.get('subagent_fork', coordinator)).toBeUndefined()
+      expect(ctx.tools.get('create_goal', coordinator)).toBeUndefined()
+      expect(ctx.tools.get('get_goal', coordinator)?.name).toBe('get_goal')
+      expect(ctx.tools.get('update_goal', coordinator)?.name).toBe('update_goal')
+      expect(ctx.tools.get('team_final', coordinator)?.name).toBe('team_final')
+      expect(ctx.tools.get('team_task_start', coordinator)?.name).toBe('team_task_start')
+      expect(ctx.tools.get('team_task_wait', coordinator)?.name).toBe('team_task_wait')
+      expect(ctx.tools.get('team_task_list', coordinator)?.name).toBe('team_task_list')
+      expect(ctx.tools.get('team_task_watch', coordinator)?.name).toBe('team_task_watch')
+      expect(ctx.tools.get('team_task_cancel', coordinator)?.name).toBe('team_task_cancel')
+      expect(ctx.tools.get('team_task_propose_owner', coordinator)?.name).toBe('team_task_propose_owner')
+      expect(ctx.tools.get('team_workflow_start', coordinator)?.name).toBe('team_workflow_start')
+      expect(ctx.tools.get('team_workflow_wait', coordinator)?.name).toBe('team_workflow_wait')
+      await expect.poll(() => ctx.commands.find(coordinator, 'goal')).toMatchObject({
+        description: 'view this Team’s durable objective; authenticated product actors own mutations',
+      })
+      const goalCommand = await ctx.commands.execute(
+        coordinator,
+        '/goal edit Use the Team-owned objective.',
+        [],
+        new AbortController().signal,
+      )
+      expect(goalCommand?.result).toEqual({
+        kind: 'error',
+        text: 'Changing a Team objective through /goal requires an authenticated Team actor.',
+      })
+      await expect(ctx.teams.getTeam({ teamId: run.teamId })).resolves.toMatchObject({
+        team: { goal: { objective: 'Return an explicit final result.', revision: 1 } },
+      })
+
+      await seedActiveTeamRunWorker(ctx, run.teamId, run.worker!.id)
+      const activeWorker = await ctx.teams.getTeam({ teamId: run.teamId })
+      workerLease = await ctx.teamActivations.activate({
+        teamId: run.teamId,
+        participantId: run.worker!.id,
+        expectedCursor: activeWorker.team.cursor,
+        provider: 'in-process',
+        sessionId: SessionId('shipped-team-worker'),
+        seed: { kind: 'fresh' },
+        agent: { cwd: scaffold.workspaceCwd, options: coordinator.options, preset: 'minimal' },
+        signal: new AbortController().signal,
+      })
+      const worker = workerLease.localAgent
+      if (worker === undefined) throw new Error('TeamRun worker activation did not publish a local Agent')
+      expect(worker.session.header).toMatchObject({
+        teamId: run.teamId,
+        participantId: run.worker!.id,
+        agentPreset: 'minimal',
+      })
+      expect(ctx.tools.get('team_task_start', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_task_wait', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_task_list', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_task_watch', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_task_cancel', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_task_propose_owner', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_workflow_start', worker)).toBeUndefined()
+      expect(ctx.tools.get('team_workflow_wait', worker)).toBeUndefined()
+    } finally {
+      await workerLease?.dispose()
+      await teamRuns.cancel(run.teamId)
+    }
+  } finally {
+    await ordinary.dispose()
+  }
+}, 120_000)
+
+it('keeps authenticated Team task deletion available in the shipped Web composition', async () => {
+  scaffold = await launchWebScaffold()
+  const created = await scaffold.authenticatedRpc<{
+    team: { id: string; cursor: number }
+  }>('team.create', { objective: 'Exercise task deletion.', cwd: scaffold.workspaceCwd })
+  if (!created.result.ok) throw new Error(created.result.error.message)
+  const teamId = created.result.value.team.id
+  const task = await scaffold.authenticatedRpc<{ id: string; revision: number }>('team.task.create', {
+    teamId,
+    expectedCursor: created.result.value.team.cursor,
+    idempotencyKey: 'web-task-delete-regression',
+    subject: 'Disposable task',
+    description: 'Delete this lease-free task.',
+    blockedBy: [],
+    // Keep the task lease-free so the delete call exercises the human control
+    // path rather than racing the scheduler's default worker.
+    requiredCapabilities: ['human-delete-regression'],
+    priority: 0,
+    readScopes: [],
+    writeScopes: [],
+    workspaceMode: 'shared',
+    budget: {},
+    reviewPolicy: { kind: 'none' },
+    maxAttempts: 1,
+  })
+  if (!task.result.ok) throw new Error(task.result.error.message)
+  const deleted = await scaffold.authenticatedRpc<{ phase: string }>('team.task.delete', {
+    teamId,
+    taskId: task.result.value.id,
+    expectedRevision: task.result.value.revision,
+  })
+  expect(deleted.result).toMatchObject({ ok: true, value: { phase: 'deleted' } })
+  const cancelled = await scaffold.authenticatedRpc<{ phase: string }>('team.cancel', { teamId })
+  expect(cancelled.result).toMatchObject({ ok: true })
 }, 120_000)
 
 it('lets a preset producer reach the background-job registry', async () => {

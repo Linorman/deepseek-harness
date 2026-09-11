@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "description": "Explicitly retained trusted internal Session entry points and shipped Team orchestration controls.",
+  "sessionEntrypoints": [
+    {
+      "id": "core-agent-registry-create",
+      "surface": "trusted Agent registry",
+      "operation": "create",
+      "checks": [
+        {
+          "path": "packages/core/agent/src/index.ts",
+          "symbol": "async create(options: CreateAgentOptions): Promise<AgentHandle> {"
+        }
+      ]
+    },
+    {
+      "id": "core-agent-registry-resume",
+      "surface": "trusted Agent registry",
+      "operation": "resume",
+      "checks": [
+        {
+          "path": "packages/core/agent/src/index.ts",
+          "symbol": "async resume(options: ResumeAgentOptions): Promise<AgentHandle> {"
+        }
+      ]
+    },
+    {
+      "id": "core-session-store-create",
+      "surface": "trusted Session store",
+      "operation": "create",
+      "checks": [
+        {
+          "path": "packages/core/session/src/index.ts",
+          "symbol": "create(id?: SessionId, options?: CreateSessionOptions): Session {"
+        }
+      ]
+    },
+    {
+      "id": "core-session-store-fork",
+      "surface": "trusted Session store",
+      "operation": "fork",
+      "checks": [
+        {
+          "path": "packages/core/session/src/index.ts",
+          "symbol": "fork(source: SessionForkSource, boundary?: number, childSessionId?: SessionId): Session {"
+        }
+      ]
+    },
+    {
+      "id": "web-http-session-resume",
+      "surface": "Web and HTTP Host API",
+      "operation": "resume",
+      "checks": [
+        {
+          "path": "packages/host/apiproxy/src/api-proxy.ts",
+          "symbol": "const agentFor = createApiRemoteAgentResolver(ctx, {"
+        },
+        {
+          "path": "packages/api/remotes/src/agent-lookup.ts",
+          "symbol": "const handle = await ctx.agents.resume({"
+        }
+      ]
+    },
+    {
+      "id": "continuable-subagent-activation",
+      "surface": "continuable subagent runtime",
+      "operation": "create-or-resume",
+      "checks": [
+        {
+          "path": "packages/subagent/subagent/src/continuation.ts",
+          "symbol": "? await this.ownerCtx.agents.resume({"
+        },
+        {
+          "path": "packages/subagent/subagent/src/continuation.ts",
+          "symbol": ": await this.ownerCtx.agents.create({"
+        }
+      ]
+    }
+  ],
+  "modelVisibleOrchestration": [
+    {
+      "id": "team-task-tools",
+      "availability": "shipped",
+      "tools": ["team_final", "team_task_report", "team_task_start", "team_task_wait"],
+      "checks": [
+        {
+          "path": "packages/team/tool-team/src/index.ts",
+          "symbol": "name: 'team_task_report'"
+        },
+        {
+          "path": "packages/team/tool-team/src/index.ts",
+          "symbol": "name: 'team_final'"
+        },
+        {
+          "path": "packages/team/tool-team-task/src/index.ts",
+          "symbol": "name: 'team_task_start'"
+        },
+        {
+          "path": "packages/team/tool-team-task/src/index.ts",
+          "symbol": "name: 'team_task_wait'"
+        }
+      ]
+    }
+  ]
+}

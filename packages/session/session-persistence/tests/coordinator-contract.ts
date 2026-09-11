@@ -322,6 +322,96 @@ export function runCoordinatorContract(name: string, makeFixture: () => Promise<
       }
     })
 
+    it('materializes an empty Session header with its Team participant provenance', async () => {
+      const fix = await makeFixture()
+      const { ctx, fiber } = await freshCtx(fix)
+      try {
+        const session = ctx.sessions.create(SessionId('empty-materialized'), {
+          meta: { cwd: WORK, teamId: 'team-durable', participantId: 'participant-durable' },
+        })
+        await ctx.sessionPersistence.materializeHeader(session)
+
+        await expect(ctx.sessionPersistence.load(session.id)).resolves.toMatchObject({
+          meta: { teamId: 'team-durable', participantId: 'participant-durable' },
+          events: [],
+        })
+      } finally {
+        await fiber.dispose()
+        await fix.cleanup()
+      }
+    })
+
+    it('rejects live adoption of a persisted Session under another Team participant', async () => {
+      const fix = await makeFixture()
+      const { ctx, fiber } = await freshCtx(fix)
+      const id = SessionId('team-participant-collision')
+      let firstFiber: Fiber | undefined
+      let secondFiber: Fiber | undefined
+      try {
+        let first!: Session
+        firstFiber = await ctx.plugin(Object.assign((inner: Context) => {
+          first = inner.sessions.create(id, {
+            meta: { cwd: WORK, teamId: 'team-first', participantId: 'participant-first' },
+          })
+        }, { inject: ['sessions'] }))
+        await ctx.sessionPersistence.materializeHeader(first)
+        await firstFiber.dispose()
+        firstFiber = undefined
+        await expect(ctx.sessionPersistence.load(id)).resolves.toMatchObject({
+          meta: { teamId: 'team-first', participantId: 'participant-first' },
+        })
+
+        let second!: Session
+        secondFiber = await ctx.plugin(Object.assign((inner: Context) => {
+          second = inner.sessions.create(id, {
+            meta: { cwd: WORK, teamId: 'team-second', participantId: 'participant-second' },
+          })
+        }, { inject: ['sessions'] }))
+        await expect(ctx.sessions.flush(second)).rejects.toThrow(/another Team participant/)
+      } finally {
+        await secondFiber?.dispose()
+        await firstFiber?.dispose()
+        await fiber.dispose()
+        await fix.cleanup()
+      }
+    })
+
+    it('rejects cold persisted-prefix adoption under another Team participant', async () => {
+      const fix = await makeFixture()
+      const id = SessionId('cold-team-participant-collision')
+      const first = await freshCtx(fix)
+      let firstMember: Fiber | undefined
+      let second: { ctx: Context; fiber: Fiber } | undefined
+      let secondMember: Fiber | undefined
+      try {
+        let firstSession!: Session
+        firstMember = await first.ctx.plugin(Object.assign((inner: Context) => {
+          firstSession = inner.sessions.create(id, {
+            meta: { cwd: WORK, teamId: 'team-first', participantId: 'participant-first' },
+          })
+        }, { inject: ['sessions'] }))
+        await first.ctx.sessionPersistence.materializeHeader(firstSession)
+        await firstMember.dispose()
+        firstMember = undefined
+        await first.ctx.fiber.dispose()
+
+        second = await freshCtx(fix)
+        let secondSession!: Session
+        secondMember = await second.ctx.plugin(Object.assign((inner: Context) => {
+          secondSession = inner.sessions.create(id, {
+            meta: { cwd: WORK, teamId: 'team-second', participantId: 'participant-second' },
+          })
+        }, { inject: ['sessions'] }))
+        await expect(second.ctx.sessions.flush(secondSession)).rejects.toThrow(/another Team participant/)
+      } finally {
+        await secondMember?.dispose()
+        await second?.ctx.fiber.dispose()
+        await firstMember?.dispose()
+        await first.ctx.fiber.dispose()
+        await fix.cleanup()
+      }
+    })
+
     it('round-trips the seed boundary (seedLength) through persistence', async () => {
       // A forked child records how many leading events were inherited via the seed; the
       // boundary must survive a reload (so a resume/replay can tell the inherited prefix from
@@ -345,17 +435,14 @@ export function runCoordinatorContract(name: string, makeFixture: () => Promise<
       }
     })
 
-    it('round-trips the delegation depth through persistence', async () => {
-      // A subagent child's recursion budget lives in its header; a reload that
-      // dropped it would reset the child to top-level and un-bound maxDepth
-      // (JSONL stores it in the header line; SQLite uses `delegation_depth`).
+    it('round-trips the durable agent preset through persistence', async () => {
       const fix = await makeFixture()
       const { ctx, fiber } = await freshCtx(fix)
       try {
         let session!: Session
         const sessionFiber = await ctx.plugin(Object.assign((inner: Context) => {
           session = inner.sessions.create(SessionId('delegated-child'), {
-            meta: { cwd: WORK, parentSession: SessionId('root'), delegationDepth: 2 },
+            meta: { cwd: WORK, parentSession: SessionId('root'), agentPreset: 'reviewer' },
           })
         }, { inject: ['sessions'] }))
         send(session, oneTurnLog())
@@ -363,7 +450,7 @@ export function runCoordinatorContract(name: string, makeFixture: () => Promise<
         await sessionFiber.dispose()
 
         const loaded = await ctx.sessionPersistence.load(SessionId('delegated-child'))
-        expect(loaded.meta.delegationDepth).toBe(2)
+        expect(loaded.meta.agentPreset).toBe('reviewer')
       } finally {
         await fiber.dispose()
         await fix.cleanup()

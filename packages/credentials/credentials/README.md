@@ -1,10 +1,10 @@
-# dsh-credentials
+# clocky-credentials
 
 English | [中文](README.zh.md)
 
 Credential Service Definition (`ctx.credentials`). One doctrine, three consequences:
 
-**Configuration carries references to secrets, never the secrets.** A settings section or `cordis.yml` entry says `apiKeyEnv: DEEPSEEK_API_KEY`; the value behind that reference lives with a credential provider. So the settings document stays safe to sync and to render in a configuration UI, `describe()` can answer "is this configured, where from, can I write it" without ever holding a value, and rotating a secret touches no configuration file.
+**Configuration carries references to secrets, never the secrets.** A settings section or `cordis.yml` entry says `apiKeyEnv: TEST_API_KEY`; the value behind that reference lives with a credential provider. So the settings document stays safe to sync and to render in a configuration UI, `describe()` can answer "is this configured, where from, can I write it" without ever holding a value, and rotating a secret touches no configuration file.
 
 **Consumers resolve per operation.** `resolve(ref)` is called at the start of each operation (the LLM adapters resolve once per model request) and never cached across operations — that read is what makes a changed credential reach the very next request without restarting any plugin.
 
@@ -21,12 +21,12 @@ The key is `<scope>/<id>`, where `scope` is the **owning plugin's registered nam
 ## Surface
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { credentialKey, credentialRef } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@clocky/cordis'
+import { credentialKey, credentialRef } from '@clocky/clocky-credentials'
 
 declare const ctx: Context
 
-const ref = credentialRef('DEEPSEEK_API_KEY')            // POSIX shell identifier, branded
+const ref = credentialRef('TEST_API_KEY')                // POSIX shell identifier, branded
 const hit = await ctx.credentials.resolve(ref)           // { value, source } | undefined
 const info = await ctx.credentials.describe(ref)         // { configured, source?, writable } — never the value
 await ctx.credentials.set(ref, 'sk-…')                   // rejects while a read-only source shadows the ref
@@ -52,7 +52,7 @@ The shadowing rule on `set`/`unset` is deliberate fail-loud: when a read-only so
 
 ## Providers
 
-[`dsh-credentials-local`](../credentials-local/README.md) layers the inherited process environment over its managed `$DSH_HOME/.credentials.yaml` document, with the launcher's project and user `.env` layers as fallbacks. The seam shape leaves room for keyring-, helper-command-, and KMS-backed providers; a remote settings provider never needs to carry secrets.
+[`clocky-credentials-local`](../credentials-local/README.md) layers the inherited process environment over its managed `$CLOCKY_HOME/.credentials.yaml` document, with the launcher's project and user `.env` layers as fallbacks. The seam shape leaves room for keyring-, helper-command-, and KMS-backed providers; a remote settings provider never needs to carry secrets.
 
 ## Model Experience
 

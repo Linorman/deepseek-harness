@@ -9,9 +9,11 @@
  * real host entity, so the sink is one unconditional prompt path.
  */
 import type { ClientContext, ISessions, SessionBinding, SessionFace, SessionId } from '@clocky/clocky-client-runtime/client'
+import type { ImageAttachmentLimits } from '@clocky/clocky-attachment'
 import type { InputTriggerController, SubmitImageAttachment, SubmitOutcome } from '@clocky/clocky-client-ui-input-trigger/client'
 import type { TranslateNS } from '@clocky/clocky-client-locale/client'
 import { queueReadFaceOf } from '../queue/store.ts'
+import { attachmentErrorText } from '../image-labels.ts'
 import type { ComposerKeyboard, DraftAttachmentId, SessionInputResolver, SessionInput } from './contract.ts'
 import type { InputSubmitMode } from '../contract/composer-submission.ts'
 import type { PopupDismissFace } from './facade.ts'
@@ -20,6 +22,12 @@ import { SessionInputShell } from './facade.ts'
 /** Structural command face for per-session popup resolution. */
 interface CommandFace {
   popupFor(actx: ClientContext): PopupDismissFace
+}
+
+/** Minimal Team ownership lookup used to fence the generic Session command plane. */
+interface TeamOwnershipFace {
+  teamForSession?: (sessionId: SessionId) => unknown
+  teamForCoordinatorSession?: (sessionId: SessionId) => unknown
 }
 
 /** Attachment-send face resolved lazily to keep hub/service construction acyclic. */
@@ -158,8 +166,7 @@ export class InputHub implements SessionInputResolver {
 
   /**
    * Default sink: optimistic clear + prompt. The session is always a real
-   * host entity (materialized when its workspace was picked), so there is
-   * exactly one path; a failed first prompt is an ordinary prompt failure
+   * Host entity, so a failed first prompt is an ordinary prompt failure
    * (banner via promptError, draft restored only while untouched).
    */
   private sink(
@@ -170,7 +177,42 @@ export class InputHub implements SessionInputResolver {
     signal: AbortSignal,
   ): Promise<SubmitOutcome> {
     if (text === '' && imageIds.length === 0) return Promise.resolve({ kind: 'success' })
-    return this.conversation().sendSession(session, text, imageIds, mode, signal)
+    return this.conversation().sendSession(session, text, imageIds, mode, signal).catch((error: unknown) => ({
+      kind: 'error' as const,
+      text: this.teamFailureText(error, session),
+    }))
+  }
+
+  /**
+   * Turn a Team-route rejection into the same localized composer copy used by
+   * the ordinary Session prompt path. Team input is a separate durable API,
+   * so its RPC failure cannot populate Session.promptError by itself.
+   * @param error - rejected Team runtime operation.
+   * @param session - addressed Session, used for the host-published image limits.
+   * @returns localized attachment copy or the host's actionable message.
+   */
+  private teamFailureText(error: unknown, session: SessionFace): string {
+    if (typeof error === 'object' && error !== null && 'rpcError' in error) {
+      const rpcError = (error as { rpcError?: unknown }).rpcError
+      if (typeof rpcError === 'object' && rpcError !== null && 'code' in rpcError) {
+        const code = (rpcError as { code?: unknown }).code
+        if (code === 'attachment-error' && 'details' in rpcError) {
+          const details = (rpcError as { details?: unknown }).details
+          if (typeof details === 'object' && details !== null && 'reason' in details) {
+            const reason = (details as { reason?: unknown }).reason
+            if (typeof reason === 'string') {
+              const limits = session.projections.faceOf('imageLimits').getSnapshot() as ImageAttachmentLimits | undefined
+              return attachmentErrorText(this.t, reason, limits)
+            }
+          }
+        }
+        if ('message' in rpcError) {
+          const message = (rpcError as { message?: unknown }).message
+          if (typeof message === 'string') return message
+        }
+      }
+    }
+    return error instanceof Error ? error.message : String(error)
   }
 
   /**
@@ -198,6 +240,16 @@ export class InputHub implements SessionInputResolver {
   }
 
   private controller(actx: ClientContext): InputTriggerController | undefined {
+    const sessionId = this.sessions().scopeOf(actx)
+    if (sessionId !== undefined) {
+      const teamTasks = this.rootCtx.get('teamTasks') as unknown as TeamOwnershipFace | undefined
+      const owned = typeof teamTasks?.teamForSession === 'function'
+        ? teamTasks.teamForSession(sessionId)
+        : typeof teamTasks?.teamForCoordinatorSession === 'function'
+          ? teamTasks.teamForCoordinatorSession(sessionId)
+          : undefined
+      if (owned !== undefined) return undefined
+    }
     const inputTriggers = this.rootCtx.get('inputTriggers')
     return inputTriggers?.sessionOf(actx)
   }

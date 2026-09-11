@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 /** Conversation assembly acceptance independent of Tool presentation. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, waitFor, within } from '@testing-library/react'
-import { useState } from 'react'
+import { cleanup, fireEvent, waitFor } from '@testing-library/react'
 import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
-import type { ISession, SessionId } from '@clocky/clocky-client-runtime/client'
+import type { ISession, SessionId, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
 import type { PropsRenderSlots } from '@clocky/clocky-client-ui-slots'
 import { SlotTestRuntime, usePinnedBrowserLanguages, stubSettingsScope } from '@clocky/clocky-client-test-runtime'
-import { apply, inject, type EmptyWorkspaceOwnerProps } from '@clocky/clocky-client-ui-conversation/client'
+import { apply, inject } from '@clocky/clocky-client-ui-conversation/client'
 
 usePinnedBrowserLanguages('zh-CN')
 
@@ -39,15 +38,6 @@ const LAYOUT_CHILDREN = {
   'details': { kind: 'single', scope: 'session' },
 } as const
 
-function WorkspaceProbe({ open }: EmptyWorkspaceOwnerProps) {
-  const [count, setCount] = useState(0)
-  return (
-    <button data-testid="workspace-probe" onClick={() => { setCount(value => value + 1) }}>
-      {String(open)}:{count}
-    </button>
-  )
-}
-
 async function bench(opts?: { blank?: boolean }) {
   const runtime = await SlotTestRuntime.create()
   runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
@@ -76,37 +66,54 @@ async function bench(opts?: { blank?: boolean }) {
 }
 
 describe('resident composer', () => {
-  it('renders the locked view state while no session exists at all', async () => {
+  it('starts a Team from the local task draft and opens its coordinator transcript', async () => {
+    const coordinator = 'team-coordinator' as SessionId
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
-    // The plugin injects both; these specs exercise no settings path.
     runtime.provide('remote', { $on: () => () => {} })
     runtime.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
     runtime.provide('layout', { openDetails: vi.fn(), closeDetails: vi.fn() })
     const locale = new LocaleRuntime(runtime.ctx)
     runtime.provide('locale', locale)
     runtime.slots.installLocale(locale)
+    await runtime.sessions.add({
+      id: coordinator,
+      summary: { title: 'Coordinator', displayTitle: 'Coordinator', cwd: '/proj' },
+      session: { loadOlder: vi.fn<ISession['loadOlder']>() },
+    }, { current: false })
+    const selection: TeamTaskSelection = {
+      teamId: 'team-1' as TeamTaskSelection['teamId'],
+      state: {} as TeamTaskSelection['state'],
+      coordinatorSessionId: coordinator,
+    }
+    const start = vi.fn(async () => selection)
+    runtime.teamTasks.stub('start', start)
+    runtime.teamTasks.startDraft({ agentPreset: 'cordis' })
     await runtime.root.declare(LAYOUT_CHILDREN, AppRoot)
     await runtime.mount({ inject: [...inject], apply })
-    runtime.slots.register({ name: 'conversation.hero.workspace' }, WorkspaceProbe)
     const view = runtime.renderRoot()
-    const textarea = view.container.querySelector('textarea')
-    expect(textarea).not.toBeNull()
-    expect(textarea!.disabled).toBe(false)
-    expect(textarea!.readOnly).toBe(true)
-    expect(textarea!.getAttribute('aria-haspopup')).toBe('menu')
-    expect(view.getByTestId('workspace-probe').textContent).toBe('false:0')
-    fireEvent.click(textarea!)
-    expect(view.getByTestId('workspace-probe').textContent).toBe('true:0')
-    expect(textarea!.getAttribute('aria-expanded')).toBe('true')
-    fireEvent.click(view.getByRole('button', { name: '选择工作区' }))
-    fireEvent.keyDown(textarea!, { key: 'Enter' })
-    expect(view.getByTestId('workspace-probe').textContent).toBe('true:0')
-    expect(view.getByRole('button', { name: '选择工作区' })).toBeTruthy()
+    const textarea = view.container.querySelector('textarea')!
+    expect(textarea.disabled).toBe(false)
+    expect(textarea.readOnly).toBe(false)
+
+    fireEvent.change(textarea, { target: { value: 'Create the Team from this first input.' } })
+    fireEvent.keyDown(textarea, { key: 'Enter' })
+
+    await waitFor(() => {
+      expect(start).toHaveBeenCalledWith({
+        text: 'Create the Team from this first input.',
+        agentPreset: 'cordis',
+      }, expect.any(AbortSignal))
+    })
+    await waitFor(() => {
+      expect(runtime.sessions.calls).toContainEqual({ method: 'refresh', args: [] })
+      expect(runtime.sessions.calls).toContainEqual({ method: 'open', args: [coordinator] })
+    })
+    expect(runtime.workspaces.calls).toEqual([])
     await runtime.dispose()
   })
 
-  it('keeps the complete Hero tree mounted when the first Workspace session appears', async () => {
+  it('keeps the no-session composer unavailable until a Team draft exists', async () => {
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
     // The plugin injects both; these specs exercise no settings path.
@@ -116,26 +123,41 @@ describe('resident composer', () => {
     const locale = new LocaleRuntime(runtime.ctx)
     runtime.provide('locale', locale)
     runtime.slots.installLocale(locale)
-    await runtime.workspaces.update((draft) => {
-      draft.items = [{ workspaceId: 'w1', title: 'Proj', path: '/proj', sessionIds: [SID] }] as never
-    })
     await runtime.root.declare(LAYOUT_CHILDREN, AppRoot)
     await runtime.mount({ inject: [...inject], apply })
-    runtime.slots.register({ name: 'conversation.hero.workspace' }, WorkspaceProbe)
+    const view = runtime.renderRoot()
+    const textarea = view.container.querySelector('textarea')
+    expect(textarea).not.toBeNull()
+    expect(textarea!.disabled).toBe(true)
+    expect(textarea!.placeholder).toBe('请从侧边栏新建任务')
+    expect(textarea!.getAttribute('aria-haspopup')).toBeNull()
+    fireEvent.click(textarea!)
+    fireEvent.keyDown(textarea!, { key: 'Enter' })
+    expect(textarea!.value).toBe('')
+    await runtime.dispose()
+  })
+
+  it('keeps the complete Hero tree mounted when the coordinator session appears', async () => {
+    const runtime = await SlotTestRuntime.create()
+    runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
+    // The plugin injects both; these specs exercise no settings path.
+    runtime.provide('remote', { $on: () => () => {} })
+    runtime.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
+    runtime.provide('layout', { openDetails: vi.fn(), closeDetails: vi.fn() })
+    const locale = new LocaleRuntime(runtime.ctx)
+    runtime.provide('locale', locale)
+    runtime.slots.installLocale(locale)
+    runtime.teamTasks.startDraft()
+    await runtime.root.declare(LAYOUT_CHILDREN, AppRoot)
+    await runtime.mount({ inject: [...inject], apply })
     const view = runtime.renderRoot()
 
     const root = view.container.querySelector('[data-phase="hero"]')!
     const scrollBody = view.container.querySelector('[data-conversation-scroll]')!
     const composerSeat = view.container.querySelector('[data-composer-seat]')!
     const textarea = view.container.querySelector('textarea')!
-    const workspaceChip = view.getByRole('button', { name: '选择工作区' })
-    const workspaceProbe = view.getByTestId('workspace-probe')
     expect(textarea.disabled).toBe(false)
-    expect(textarea.readOnly).toBe(true)
-
-    fireEvent.click(workspaceChip)
-    fireEvent.click(workspaceProbe)
-    expect(workspaceProbe.textContent).toBe('true:1')
+    expect(textarea.readOnly).toBe(false)
 
     await runtime.sessions.add({
       id: SID,
@@ -147,9 +169,6 @@ describe('resident composer', () => {
     expect(view.container.querySelector('[data-conversation-scroll]')).toBe(scrollBody)
     expect(view.container.querySelector('[data-composer-seat]')).toBe(composerSeat)
     expect(view.container.querySelector('textarea')).toBe(textarea)
-    expect(view.getByRole('button', { name: '选择工作区' })).toBe(workspaceChip)
-    expect(view.getByTestId('workspace-probe')).toBe(workspaceProbe)
-    expect(workspaceProbe.textContent).toBe('true:1')
     expect(textarea.disabled).toBe(false)
     expect(textarea.readOnly).toBe(false)
     await runtime.dispose()
@@ -157,9 +176,6 @@ describe('resident composer', () => {
 
   it('the textarea survives the blank→active conversion as the same DOM node', async () => {
     const runtime = await bench({ blank: true })
-    await runtime.workspaces.update((draft) => {
-      draft.items = [{ workspaceId: 'w1', title: 'Proj', path: '/proj', sessionIds: [SID] }] as never
-    })
     const view = runtime.renderRoot()
     const hero = view.container.querySelector('textarea')
     expect(hero).not.toBeNull()
@@ -218,17 +234,16 @@ describe('prompt rejection through the assembled composer', () => {
 })
 
 describe('title projection across assembled surfaces', () => {
-  it('one summary update re-labels the current-session crumb', async () => {
+  it('one summary update re-labels the current-session title', async () => {
     const runtime = await bench()
     const view = runtime.renderRoot()
-    const hierarchy = view.getByRole('navigation', { name: '会话层级' })
-    expect(within(hierarchy).getByRole('button', { name: 'S' }).hasAttribute('disabled')).toBe(true)
+    expect(view.getByText('S')).toBeTruthy()
 
     await runtime.sessions.updateSummary(SID, { displayTitle: '修订标题', title: '修订标题' })
     await waitFor(() => {
-      expect(within(hierarchy).getByRole('button', { name: '修订标题' }).hasAttribute('disabled')).toBe(true)
+      expect(view.getByText('修订标题')).toBeTruthy()
     })
-    expect(within(hierarchy).queryByRole('button', { name: 'S' })).toBeNull()
+    expect(view.queryByText('S')).toBeNull()
     await runtime.dispose()
   })
 })

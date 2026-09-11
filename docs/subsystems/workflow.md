@@ -4,7 +4,7 @@ English | [中文](workflow.zh.md)
 
 The workflow seam lets an agent run a model-written orchestration SCRIPT that starts subagents. Like [subagent](subagent.md) it is **one optional capability**, not part of the agent loop, so its types and operations live here rather than in [core.md](core.md). Like bash, it permits ONE engine implementation per context to provide `ctx.workflowEngine`; there is no named-provider registry (a second engine replaces the first through plugin configuration rather than running beside it).
 
-Service Definition: [dsh-workflow](../../packages/workflow/workflow) (`ctx.workflowEngine` + the vocabulary below). The Service Provider is [dsh-workflow-worker-thread](../../packages/workflow/workflow-worker-thread) (a `node:worker_threads` engine — one worker per run, the script's vm context inside it); the model-facing Consumer is [dsh-tool-workflow](../../packages/workflow/tool-workflow). The proposal and rationale: [the dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.md).
+Service Definition: [clocky-workflow](../../packages/workflow/workflow) (`ctx.workflowEngine` + the vocabulary below). The Service Provider is [clocky-workflow-worker-thread](../../packages/workflow/workflow-worker-thread) (a `node:worker_threads` engine — one worker per run, the script's vm context inside it); the model-facing Consumer is [clocky-tool-workflow](../../packages/workflow/tool-workflow). The proposal and rationale: [the dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.md).
 
 Sources: browser-safe vocabulary in [`packages/workflow/workflow/src/types.ts`](../../packages/workflow/workflow/src/types.ts), Host request and live-run handles in [`runtime-types.ts`](../../packages/workflow/workflow/src/runtime-types.ts).
 
@@ -121,11 +121,11 @@ The `workflow/*` events (`workflow/start`, `workflow/phase`, `workflow/log`, `wo
 
 ## Durable Chat records
 
-The top-level `dsh-tool-workflow` consumer projects display facts into its calling parent Session without changing execution ownership. It writes `tool-workflow/run-start` after a run is accepted, pairs member start and end by `runId + seq`, and writes `tool-workflow/run-end` only after the result is known and disposal reaches quiescence. Nested transport calls write no record. The first append failure disables later writes for that run, so the log remains empty or a legal continuous prefix and the tool result is unchanged.
+The top-level `clocky-tool-workflow` consumer projects display facts into its calling parent Session without changing execution ownership. It writes `tool-workflow/run-start` after a run is accepted, pairs member start and end by `runId + seq`, and writes `tool-workflow/run-end` only after the result is known and disposal reaches quiescence. Nested transport calls write no record. The first append failure disables later writes for that run, so the log remains empty or a legal continuous prefix and the tool result is unchanged.
 
-`dsh-tool-workflow/invariant` validates the same protocol before live commit and when a Session is loaded: one start per run, positive unique member sequences, paired member endings, no run ending with open members, and no updates after the run ending. A missing member ending or run ending at the log tail is valid interruption evidence rather than corruption.
+`clocky-tool-workflow/invariant` validates the same protocol before live commit and when a Session is loaded: one start per run, positive unique member sequences, paired member endings, no run ending with open members, and no updates after the run ending. A missing member ending or run ending at the log tail is valid interruption evidence rather than corruption.
 
-`dsh-client-ui-workflow-run` folds the four events through the Conversation Node engine into one `workflow-run` Chat node anchored at the run-start sequence, after the original workflow tool node. Phase groups come only from actual member starts and preserve exact strings, including the distinction between an omitted phase and `''`. Closed Locations turn missing terminal facts into interrupted presentation. The [UI package README](../../packages/client/ui-workflow-run/README.md) owns disclosure, status, and same-parent local navigation behavior.
+The four events remain durable workflow facts for explicit consumers. Shipped Web composition does not register a workflow-run Chat node.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -152,6 +152,51 @@ abstract start(request: WorkflowStartRequest): WorkflowRun
 ```
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
+<a id="ctxworkflowextensions--workflowextensionregistry"></a>
+
+### `ctx.workflowExtensions` — `WorkflowExtensionRegistry`
+
+Effect-scoped registry for deployment-defined workflow conditions and targets.
+
+```ts cordis-catalog
+/**
+ * Register one condition or target implementation.
+ * @param extension - validated implementation.
+ * @returns an effect-scoped disposer.
+ */
+register(extension: WorkflowExtension): () => void
+
+/**
+ * Resolve one exact extension identity.
+ * @param kind - condition or target.
+ * @param name - implementation name.
+ * @param version - behavior version.
+ * @returns the extension, or undefined when no exact implementation is registered.
+ */
+get(kind: WorkflowExtension['kind'], name: string, version: number): WorkflowExtension | undefined
+
+/**
+ * List extension identities in registration order.
+ * @returns detached extension identities.
+ */
+list(): WorkflowExtensionRef[]
+
+/**
+ * Retain every exact condition and target extension referenced by one graph.
+ * @param graph - graph to validate against extensions currently accepting work.
+ * @returns a release-once resolver for the exact acquired implementations.
+ */
+acquireForGraph(graph: TransitionGraph): WorkflowExtensionLeaseSet
+
+/**
+ * Return process-local registration and lease counts for HMR diagnostics.
+ * @returns detached current extension retention counts.
+ */
+getLeaseMetrics(): WorkflowExtensionLeaseMetrics
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
 
 <a id="workflow-events"></a>
 
@@ -220,6 +265,40 @@ A workflow run settled (any stop reason). Fired when WorkflowRun.result resolves
 ```
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
+<a id="workflowextension-added--emit"></a>
+
+#### `workflow/extension-added` — emit
+
+A workflow graph extension became available.
+
+```ts cordis-catalog
+/**
+ * A workflow graph extension became available.
+ * @param extension - extension identity.
+ * @mode emit
+ */
+'workflow/extension-added'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, 'validate'>): void
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
+
+<a id="workflowextension-removed--emit"></a>
+
+#### `workflow/extension-removed` — emit
+
+A workflow graph extension was removed from future graph admission.
+
+```ts cordis-catalog
+/**
+ * A workflow graph extension was removed from future graph admission.
+ * @param extension - extension identity.
+ * @mode emit
+ */
+'workflow/extension-removed'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, 'validate'>): void
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
 
 <a id="workflowlog--emit"></a>
 

@@ -1,0 +1,13 @@
+{
+  "via": "tool",
+  "authenticatedTeam": true,
+  "target": "cancelled",
+  "dependent": "cancelled",
+  "transitive": "cancelled",
+  "independent": "completed",
+  "descendantsNeverStarted": true,
+  "plan": "cancelled",
+  "planResultObserved": true,
+  "team": "completed",
+  "file": "before\n"
+}

@@ -1,7 +1,7 @@
 // Web e2e scenario: the shipped composition discovers local files and cold
 // sessions through the real Host, groups both domains in the shared @ menu,
 // and projects each pick as a complete inline range without issuing a model call.
-import { writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
@@ -25,7 +25,7 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/reference-composer', import.meta.url))
 const MENU_EXPECTED = join(SNAPSHOT_DIR, 'menu.expected.md')
@@ -141,16 +141,25 @@ describe.skipIf(MODE === 'record')('web e2e: file and session references through
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     await seedSession(scaffold, sourceSessionFixture(), SOURCE_SESSION_ID)
     await seedSession(scaffold, targetSessionFixture(), TARGET_SESSION_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
-    await writeFile(join(scaffold.workspaceCwd, 'workspace', 'reference.txt'), 'reference fixture\n')
+    await mkdir(scaffold.workspaceCwd, { recursive: true })
+    await writeFile(join(scaffold.workspaceCwd, 'reference.txt'), 'reference fixture\n')
+    // The Team-first empty state has no current Session. Select the seeded
+    // target once so the `@` source has a session cwd for file discovery.
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const target = page.locator('[role="treeitem"]').nth(1)
+    await target.waitFor({ timeout: 15_000 })
+    await target.click()
   }, 120_000)
 
   afterAll(async () => {
@@ -233,9 +242,10 @@ describe.skipIf(MODE === 'record')('web e2e: file and session references through
     const group = page.getByRole('treeitem', { name: /Ungrouped/ })
     await group.waitFor({ timeout: 15_000 })
     if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
-    const target = page.getByRole('treeitem').filter({ hasText: /^clocky-web-e2e-ws-/ }).first()
+    const target = page.getByRole('treeitem').filter({ hasText: /Reference order target/ }).first()
     await target.waitFor({ timeout: 15_000 })
     await target.click()
+    await page.locator('textarea').first().fill('')
     await page.getByRole('button', { name: /^Session recall\s*Research notes$/ }).waitFor({ timeout: 15_000 })
 
     const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))

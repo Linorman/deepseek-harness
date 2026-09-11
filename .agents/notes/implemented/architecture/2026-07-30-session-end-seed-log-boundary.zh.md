@@ -18,9 +18,9 @@ Status: implemented
 
 括号所有方按位置读取它：在 `session/end-seed` 之前的未配对开启标记具有更小的 seq，来自构造种子，并且属于一个已结束的生命周期。核心写入该边界但不从中读取任何内容；每个括号的词汇表仍归其所属插件，因此在没有消费方来塑形之前，核心不会先发布谓词辅助函数。
 
-选择构造函数，是因为它是每一个带种子会话都必经的唯一收窄处。全部六个入口都会到达它：`agents.resume()`、在已持久化 id 上的配置驱动启动（`restoreOrCreateConfigured`）、`sessions.fork()`、subagent fork 子会话、`coordinator.adopt()` 的实时前缀路径，以及裸的 `sessions.create(id, {seed})`。在持久化加载时写入的边界会漏掉两条 fork 路径——而一个继承了仍在运行的父会话开放 `compaction/start` 的 fork 子会话，恰恰是必须可判定的场景。在 loop 启动时写入的边界会漏掉 `fork()` 与 `adopt()`，并且不得不在 `SessionStartSource: 'startup'` 上触发——那正是 fork 子会话发布的取值，于是该字段将不再具有区分力。
+选择构造函数，是因为它是每一个带种子会话都必经的唯一收窄处。全部六个入口都会到达它：`agents.resume()`、在已持久化 id 上的配置驱动启动（`restoreOrCreateConfigured`）、`SessionStore.fork()`、subagent fork 子会话、`coordinator.adopt()` 的实时前缀路径，以及裸的 `SessionStore.create(id, {seed})`。在持久化加载时写入的边界会漏掉两条 fork 路径——而一个继承了仍在运行的父会话开放 `compaction/start` 的 fork 子会话，恰恰是必须可判定的场景。在 loop 启动时写入的边界会漏掉 `SessionStore.fork()` 与 `adopt()`，并且不得不在 `SessionStartSource: 'startup'` 上触发——那正是 fork 子会话发布的取值，于是该字段将不再具有区分力。
 
-两条守卫让这个标记保持精确。省略种子时不写入任何内容，因为这是全新会话。种子本身已以该事件结尾时不会重复标记，这让写入具备幂等性。幂等性是承重的，而不是为了整洁：每次绑定到 Agent 的冷会话接手都会经过 `agentFor()`；没有这条守卫，重复的控制操作即使没有执行任何工作，也会让日志增长。只执行检查的 `session.history` 与 `session.fork` 源端路径不会在源会话中创建这条边界。
+两条守卫让这个标记保持精确。省略种子时不写入任何内容，因为这是全新会话。种子本身已以该事件结尾时不会重复标记，这让写入具备幂等性。幂等性是承重的，而不是为了整洁：每次绑定到 Agent 的冷会话接手都会经过 `agentFor()`；没有这条守卫，重复的控制操作即使没有执行任何工作，也会让日志增长。只执行检查的 `session.history` 与 `SessionStore.fork()` 源端路径不会在源会话中创建这条边界。
 
 ## 持久化无需任何改动
 
@@ -38,7 +38,7 @@ Status: implemented
 
 **由持久化协调器的冷加载路径写入边界。** 较早的一版迭代写入的是 `session/resumed` 边界；它落选，一是因为完全覆盖不到 fork——而 fork 恰恰是继承括号的所有方可能仍然存活的那一种情形——二是因为在加载时铸造的标记必须在读取路径上做持久写入，这把成本铺开到整个 seam：每次冷加载都递增 revision、对一份无需修复的平衡日志也要走 `commitRepair`、需要一个已存储时间下限来维持钳制的单调性，以及加载在只读存储上会失败。
 
-**在 loop 启动时追加边界。** loop 调用 `resumeWith`，因此覆盖恢复路径，但完全漏掉 `fork()` 与 `adopt()`，而且事件不得不在 `'startup'` 上触发——那是 fork 子会话发布的来源——于是 `SessionStartSource` 将不再具有区分力。它还会在追加标记之前就发布会话，因此 `session/created` 监听方可能观察到一份没有边界的带种子日志。
+**在 loop 启动时追加边界。** loop 调用 `resumeWith`，因此覆盖恢复路径，但完全漏掉 `SessionStore.fork()` 与 `adopt()`，而且事件不得不在 `'startup'` 上触发——那是 fork 子会话发布的来源——于是 `SessionStartSource` 将不再具有区分力。它还会在追加标记之前就发布会话，因此 `session/created` 监听方可能观察到一份没有边界的带种子日志。
 
 **复用 `header.seedLength`。** 它是持久的 *fork 血缘*边界，并且刻意在恢复时保留原始 fork 取值——而恢复时构造种子是整份存储日志。这两个事实并不相同，混同会同时失去两者。
 

@@ -1,0 +1,85 @@
+# Keyless replay for the test-only direct-delegation composition.
+- id: base
+  name: '@clocky/cordis-plugin-include'
+  config:
+    path: ./cordis.yml
+    patches:
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
+        disabled: true
+      - id: acp-agent
+        name: '@clocky/clocky-acp-demo'
+        config:
+          provider: test-provider
+          model: test-model
+          persistenceRoot: !!js process.env.CLOCKY_SNAPSHOT_SESSIONS_ROOT ?? './.sessions'
+          persistenceCompression: none
+          workspaceContext:
+            maxBytes: 65536
+          persona: |
+            You are a coding assistant powered by the {{model}} model. Your working directory is {{cwd}}. Your bash tool runs under a file sandbox — a `[sandbox: file access denied …]` result is policy, not a command bug.
+
+            Verify your work by running the code or tests. Keep answers brief and factual.
+      - id: sandbox
+        name: '@clocky/clocky-sandbox-local'
+        config:
+          runnerCommand:
+            - bash
+            - -c
+            - while [ "$1" != "--" ]; do shift; done; shift; exec "$@"
+            - passthrough-runner
+          runnerFailureSignatures:
+            - 'passthrough-runner: profile rejected'
+      - insert:
+          - id: llm-replay
+            name: '@clocky/clocky-llm-replay'
+            config:
+              providers:
+                - id: test-provider
+                  name: Test Provider
+                  models:
+                    - id: test-model
+                    - id: test-model-pro
+          - id: session-projection
+            name: '@clocky/clocky-session-projection'
+          - id: subagent
+            name: '@clocky/clocky-subagent'
+          - id: subagent-spawn-in-process
+            name: '@clocky/clocky-subagent-spawn-in-process'
+            config:
+              providerName: spawn
+          - id: subagent-fork-in-process
+            name: '@clocky/clocky-subagent-fork-in-process'
+            config:
+              providerName: fork
+          - id: tool-subagent-control
+            name: '@clocky/clocky-tool-subagent-control'
+          - id: tool-subagent-list-agents
+            name: '@clocky/clocky-tool-subagent-control/list-agents'
+          - id: tool-subagent-report
+            name: '@clocky/clocky-tool-subagent-report'
+          - id: tool-subagent
+            name: '@clocky/clocky-tool-subagent'
+            config:
+              provider: spawn
+              toolName: subagent
+              backgroundMode: continuable
+              maxDepth: 1
+          - id: tool-subagent-fork
+            name: '@clocky/clocky-tool-subagent'
+            config:
+              provider: fork
+              toolName: subagent_fork
+              backgroundMode: one-shot
+              enableRunInBackground: false
+              maxDepth: 1
+          - id: workflow-worker-thread
+            name: '@clocky/clocky-workflow-worker-thread'
+            config:
+              provider: spawn
+          - id: tool-workflow
+            name: '@clocky/clocky-tool-workflow'
+          - id: tool-ralph
+            name: '@clocky/clocky-tool-ralph'
+          - id: subagent-settlement-marker
+            name: './tests/fixtures/subagent-settlement-marker.ts'

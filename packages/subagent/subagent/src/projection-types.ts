@@ -18,8 +18,9 @@ export interface SubagentTimingProjection {
 }
 
 /**
- * Durable identity of one descriptor-backed subagent session: lifecycle mode
- * plus creation label, folded last-wins from `subagent/descriptor` events.
+ * Durable identity of one descriptor-backed subagent session: lifecycle mode,
+ * delegation depth, plus creation label, folded last-wins from
+ * `subagent/descriptor` events.
  * Label strength follows the descriptor schema: a continuable child always
  * carries one, a one-shot child may omit it.
  */
@@ -27,6 +28,8 @@ export type SubagentIdentityProjection =
   | {
     /** A terminal one-shot child. */
     mode: 'one-shot'
+    /** Resolved delegation depth retained across restart. */
+    depth: number
     /** Optional durable creation label from the child's descriptor. */
     label?: string
     /**
@@ -40,6 +43,8 @@ export type SubagentIdentityProjection =
   | {
     /** A resumable conversation. */
     mode: 'continuable'
+    /** Resolved delegation depth retained across restart. */
+    depth: number
     /** Durable creation label from the child's descriptor. */
     label: string
     /** Seq of the folded descriptor event; see the one-shot arm for the own-suffix proof. */

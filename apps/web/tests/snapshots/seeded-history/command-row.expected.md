@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Use the read tool twice" [disabled]
+  - text: Use the read tool twice
   - button "Session log":
     - text: Session log
     - img
@@ -34,8 +33,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: 7/25 {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - button "compact Compacted 5 history items (~{{tokens}} tokens)"

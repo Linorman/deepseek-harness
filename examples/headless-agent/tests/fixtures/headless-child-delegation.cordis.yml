@@ -1,0 +1,30 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_CHILD_RESTART_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js "process.env.CLOCKY_CHILD_RESTART_BACKEND ?? 'sqlite'"
+    routes: {}
+
+- id: agent-default-model
+  config:
+    provider: child-delegation-model
+    model: child-delegation-model
+- id: team-run
+  config:
+    workerCount: 0
+    maxWorkerCount: 0
+- insert:
+    - id: child-delegation-json-storage
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_CHILD_RESTART_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: child-delegation-driver
+      name: './snapshot-fixtures/headless-child-delegation-driver.ts'

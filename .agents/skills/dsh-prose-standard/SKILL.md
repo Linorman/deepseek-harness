@@ -13,7 +13,7 @@ Comments describe non-obvious contracts or rationale that code cannot express; t
 
 ## Inputs and exclusions
 
-Require an explicit `scope`. If it is missing, report the required input and stop; do not infer a repository-wide scope or begin an interview.
+Resolve `scope` from the user's request, named files, current task, or reviewed diff; a separate `scope` parameter is unnecessary. When several materially different scopes remain plausible, ask one focused question and continue independent work. Do not expand a local edit into a repository-wide audit.
 
 Accept `mode: automatic | interactive`; default to `automatic`. Enter interactive mode only when the user explicitly requests questions or calibration.
 
@@ -62,12 +62,12 @@ Preserve searchable mechanism names and meaningful modal, temporal, or negative 
 
 ## Workflow
 
-1. Confirm the scope, mode, current branch or PR base, and applicable `AGENTS.md` files. Do not inspect unrelated branches.
+1. Establish scope, mode, current branch, applicable `AGENTS.md` files, and the PR base when reviewing a PR. Read repository state to establish these facts; do not request confirmation for facts already available. Do not inspect unrelated branches.
 2. Read [the documentation standard](../../../docs/AGENTS.md) and the owning code or document before judging a passage. For calibration or unfamiliar cases, read [the distilled examples](references/examples.md).
 3. Inspect the requested scope, not only the largest files. Use searches and word counts to find candidates, then judge passages semantically.
 4. Classify each candidate as keep, add, trim, restore, restructure, or defer. Apply clear changes only when the task authorizes edits; do not manufacture edits to satisfy a deletion target.
 5. Update the owner before derivative artifacts. Re-check analogous passages after learning a new rule.
-6. Run the narrow relevant checks, documentation gates, `git diff --check`, and behavior tests for visible strings. Verify the final diff contains no `vendor/` path and report any accidental vendor match rather than claiming a clean exclusion history.
+6. Run the narrow relevant checks, documentation gates, `git diff --check`, and behavior tests for product-visible strings. Contributor instruction edits use Markdown and skill metadata validation; they do not require product replay snapshots. Verify this task's edits contain no `vendor/` path and report any accidental vendor match rather than claiming a clean exclusion history.
 7. Report the inspected scope, clear changes, deliberate keeps, deferred cases, and checks actually run.
 
 ## Borderline decisions

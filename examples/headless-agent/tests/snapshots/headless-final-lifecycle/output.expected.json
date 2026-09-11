@@ -1,0 +1,93 @@
+{
+  "scenario": "headless-final-lifecycle",
+  "rejected": {
+    "code": "TEAM_FINAL_INVALID",
+    "teamPhase": "active",
+    "goalPhase": "active",
+    "closure": false,
+    "sinkAdmissions": 0,
+    "humanReceipts": 0
+  },
+  "accepted": {
+    "text": "VALID_REPLACEMENT_TEAM_FINAL",
+    "exactReplacement": true,
+    "teamPhase": "completed",
+    "goalPhase": "complete",
+    "sink": "team-run-result",
+    "humanReceipts": 1,
+    "channelPhase": "closed"
+  },
+  "commitOrder": [
+    "team/closure",
+    "team/final-admitted",
+    "channel/receipt"
+  ],
+  "activationProgress": [
+    "stopping",
+    "offline"
+  ],
+  "channelRecords": [
+    {
+      "type": "channel/opened",
+      "sequence": 0
+    },
+    {
+      "type": "channel/phase",
+      "sequence": 1,
+      "phase": "pending"
+    },
+    {
+      "type": "channel/invitation",
+      "sequence": 2
+    },
+    {
+      "type": "channel/invitation",
+      "sequence": 3
+    },
+    {
+      "type": "channel/acknowledged",
+      "sequence": 4
+    },
+    {
+      "type": "channel/acknowledged",
+      "sequence": 5
+    },
+    {
+      "type": "channel/phase",
+      "sequence": 6,
+      "phase": "active"
+    },
+    {
+      "type": "channel/envelope",
+      "sequence": 7,
+      "final": "expired",
+      "text": "EXPIRED_TEAM_FINAL"
+    },
+    {
+      "type": "channel/delivery-expired",
+      "sequence": 8,
+      "final": "expired"
+    },
+    {
+      "type": "channel/envelope",
+      "sequence": 9,
+      "final": "replacement",
+      "text": "VALID_REPLACEMENT_TEAM_FINAL"
+    },
+    {
+      "type": "channel/receipt",
+      "sequence": 10,
+      "final": "replacement"
+    },
+    {
+      "type": "channel/phase",
+      "sequence": 11,
+      "phase": "closing"
+    },
+    {
+      "type": "channel/closed",
+      "sequence": 12,
+      "phase": "closed"
+    }
+  ]
+}

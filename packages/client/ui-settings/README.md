@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-client-ui-settings
+# @clocky/clocky-client-ui-settings
 
 English | [中文](README.zh.md)
 

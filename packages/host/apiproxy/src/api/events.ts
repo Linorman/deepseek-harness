@@ -16,6 +16,7 @@ import type { ToolCallView, ToolResultView } from '@clocky/clocky-tools/presenta
 import type { RpcError, RpcId, RpcRequest } from './rpc.ts'
 import type { JobView } from './jobs.ts'
 import type { WorkspaceView } from './workspace.ts'
+import type { ChannelEvent, ParticipantId, TeamEvent, TeamId, TeamTaskId } from '@clocky/clocky-team/types'
 
 // Client-side consumers take the render-intent vocabulary from the contract;
 // clocky-tools remains its owner.
@@ -69,10 +70,14 @@ export interface EventsApi {
 export type MuxFrame =
   | { type: 'session/event'; sessionId: SessionId; event: SessionEvent; view?: ToolEventView }
   | { type: 'session/subscribed'; sessionId: SessionId; lastSeq: number }
-  | { type: 'approval/requested'; sessionId: SessionId; approvalId: ApprovalRequestId; toolName: string; callId?: CallId; reason?: string }
+  | { type: 'approval/requested'; sessionId: SessionId; approvalId: ApprovalRequestId; toolName: string; callId?: CallId; reason?: string; teamId?: TeamId; participantId?: ParticipantId; taskId?: TeamTaskId }
   | { type: 'approval/resolved'; sessionId: SessionId; approvalId: ApprovalRequestId; outcome: ApprovalOutcome }
-  | { type: 'question/requested'; sessionId: SessionId; questions: AskUserQuestionItem[] }
+  | { type: 'question/requested'; sessionId: SessionId; questions: AskUserQuestionItem[]; teamId?: TeamId; participantId?: ParticipantId; taskId?: TeamTaskId }
   | { type: 'question/resolved'; sessionId: SessionId; questionRpcId: RpcId; outcome: 'answered' | 'cancelled' }
+  /** Post-commit Team projection event for live Team browsers. */
+  | { type: 'team/changed'; event: TeamEvent }
+  /** Post-commit channel WAL event for live channel views. */
+  | { type: 'channel/changed'; event: ChannelEvent }
   /**
    * Complete transient inbox state after every enqueue, mutation, claim, or
    * discard. Pending work is not model-visible and therefore has no durable
@@ -108,9 +113,8 @@ export type MuxFrame =
   | { type: 'stream/error'; error: RpcError }
 
 /**
- * Host stream frames. session-added carries the lineage anchor, product
- * origin, project cwd, and blank bit (the list-summary fields a client cannot
- * wait for a refresh to learn); the frame fires at session/created, so blank is
+ * Host stream frames. session-added carries the project cwd and blank bit (the
+ * list-summary fields a client cannot wait for a refresh to learn); the frame fires at session/created, so blank is
  * constantly true — clients flip it on the session's first
  * `host/session-status(running:true)` (a blank session never runs), and a
  * reconnecting client takes `session.list`'s summary.blank as authoritative.
@@ -129,8 +133,6 @@ export type HostFrame =
     type: 'host/session-added'
     sessionId: SessionId
     blank: boolean
-    parentSessionId?: SessionId
-    origin?: 'subagent'
     cwd?: string
     agentPreset?: string
   }

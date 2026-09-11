@@ -1,0 +1,12 @@
+- id: human-question-driver
+  disabled: true
+
+- id: team-scheduler-dag
+  disabled: true
+
+- id: team-delegation
+  disabled: true
+
+- insert:
+    - id: channel-task-input-driver
+      name: './snapshot-fixtures/channel-task-input-driver.ts'

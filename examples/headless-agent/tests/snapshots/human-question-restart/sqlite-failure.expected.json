@@ -1,0 +1,33 @@
+{
+  "scenario": "human-question-restart",
+  "backend": "sqlite",
+  "outcome": "failure",
+  "independentHost": true,
+  "initialQuestion": "pending",
+  "cleanupAt": "recovery",
+  "originalPendingRetained": true,
+  "questionHistoryRecords": 2,
+  "recovered": {
+    "question": "question",
+    "questionPhase": "cancelled",
+    "questionOutcome": {
+      "kind": "team-failed",
+      "reason": {
+        "code": "QUESTION_COORDINATOR_FAILURE",
+        "message": "The coordinator failed while a worker awaited a human answer."
+      }
+    },
+    "detailsRetained": true,
+    "task": "running",
+    "taskAttempt": "retained-unsettled",
+    "workspace": "active",
+    "oldEpochs": 2,
+    "quiescedEpochs": 0,
+    "team": "stalled",
+    "goal": "active",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactUnprovenEpoch": true,
+    "modelRequests": 0,
+    "newQuestionCalls": 0
+  }
+}

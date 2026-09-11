@@ -59,6 +59,7 @@ function precedingMessageTime(agent: Agent): number | undefined {
   for (const event of [...agent.session.events].reverse()) {
     switch (event.type) {
       case 'user/message':
+      case 'team/channel-view':
       case 'assistant/message':
       case 'tool/result':
         return event.time

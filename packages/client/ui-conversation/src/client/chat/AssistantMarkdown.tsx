@@ -5,9 +5,8 @@
 // step-summary flow). Shared by finalized nodes and the streaming partial;
 // the turn-level loading dots live in the chat view's tail, not here.
 // Finalized content (text) nodes append IconActions once their turn ends
-// (`time` is omitted for mid-turn narration and while the turn still runs);
-// their branch action is enabled only when the node is also the completed
-// turn's transcript tail. Think / tool-head-only nodes stay chrome-free.
+// (`time` is omitted for mid-turn narration and while the turn still runs).
+// Think / tool-head-only nodes stay chrome-free.
 
 import { Fragment, memo, useMemo } from 'react'
 import type { ReactNode } from 'react'

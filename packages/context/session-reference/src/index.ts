@@ -7,7 +7,7 @@
 
 import { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import type { Agent, PreStepDecision } from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent, type PreStepDecision } from '@clocky/clocky-agent'
 import { Remote, TypertRemoteService } from '@clocky/clocky-typert-protocol'
 import { createUserMessage, freezeMessage } from '@clocky/clocky-llm'
 import type { ContentBlock, UserMessage } from '@clocky/clocky-llm'
@@ -165,7 +165,7 @@ export class SessionReferenceResolver extends TypertRemoteService {
       throw new SessionReferenceError('candidate limit must be a positive safe integer', 'SESSION_REFERENCE_INVALID_REFERENCE')
     }
     const needle = query.toLocaleLowerCase()
-    const targetCwd = agent.session.header.cwd
+    const targetCwd = resolveAgentWorkspaceRoot(agent)
     assertNotCancelled(signal)
     const records = (await settleWithCancellation(this.ctx.sessionQuery.listSessions(signal), signal))
       .filter(record => record.header.id !== agent.id)

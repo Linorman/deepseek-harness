@@ -17,10 +17,11 @@ import { afterEach, describe, expect, it, onTestFailed } from 'vitest'
 import type { ReplayOverrideDoc } from '@clocky/clocky-llm-replay'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
-  launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
+  assertFixtureInventory, captureStableAria, closedSessionFixture, compareOrRefreshGolden,
+  fixtureUserPrompts, launchWebScaffold, recordFixture, seedSession, watchConsole,
+  webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/turn-tail-actions', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -69,16 +70,24 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     }
     scaffold = await launchWebScaffold(
       MODE === 'record'
-        ? {}
-        : { replayFixture: FIXTURE, ...(overridePath === undefined ? {} : { replayOverride: overridePath }) },
+        ? { legacyWorkspaceSurface: true }
+        : { legacyWorkspaceSurface: true, replayFixture: FIXTURE, ...(overridePath === undefined ? {} : { replayOverride: overridePath }) },
     )
+    await seedSession(scaffold, closedSessionFixture(), 'turn-tail-actions-web-e2e')
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
   }
 
   /** Send the recorded prompt with the settled barrier pre-armed (returned wrapped so the caller can act mid-turn). */
@@ -122,11 +131,10 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
       () => page.getByRole('status').filter({ hasText: 'Deep diving...' }).isVisible(),
       { timeout: 10_000 },
     ).toBe(true)
-    // Only the user bubble owns a footer (clock + copy; user bubbles carry no
-    // branch action): the narration is not the answer yet.
+    // Only the user bubble owns a footer (clock + copy): the narration is not
+    // the answer yet.
     const copyButtons = page.getByRole('button', { name: 'Copy' })
     await expect.poll(() => copyButtons.count(), { timeout: 10_000 }).toBe(1)
-    expect(await page.getByRole('button', { name: 'Branch into a new conversation' }).count()).toBe(0)
     await copyButtons.first().focus()
     const running = await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd)
     await compareOrRefreshGolden(RUNNING_EXPECTED, running, MODE)

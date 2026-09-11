@@ -44,7 +44,7 @@ export interface SessionInputDeps {
    * order (the empty-draft accelerated-Enter gesture); absent = unsupported.
    */
   steerQueue?: (() => void) | undefined
-  /** The plain-message sink (send choreography / materialize fork — the hub owns it). */
+  /** The plain-message sink; the hub owns submission choreography. */
   defaultSink(
     text: string,
     imageIds: readonly DraftAttachmentId[],

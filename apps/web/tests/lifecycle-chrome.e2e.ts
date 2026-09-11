@@ -1,10 +1,8 @@
-// Web e2e scenarios: lifecycle & chrome — the workspace-aware first-send
-// flow over the real wire, reload recovery, and the dark-mode token cascade.
-// One tiny recorded turn (text-only) drives the whole spec: the empty-state
-// hero materializes a real Workspace + Session on first send (the jsdom
-// workspace-flow suite pins the object-layer state machine over the fixture
-// client; THIS spec pins the same flow through HTTP RPC + SSE + the host
-// gateway), reload replays everything from the log (zero further model
+// Web e2e scenarios: lifecycle & chrome — the Team-first first-send flow over
+// the real wire, reload recovery, and the dark-mode token cascade. One tiny
+// replayed turn with an explicit final Envelope drives the product path: the empty-state hero
+// creates a durable Team and coordinator Session on first send, reload opens
+// the Team before reading its descendant transcript (zero further model
 // calls), and the theme scenario proves the shipped dark palette actually
 // cascades: attribute -> alias token flip -> painted surface change. No
 // theme/layout golden: aria snapshots are color-blind (lane scope: the
@@ -18,14 +16,16 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
-  launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
+  acknowledgeReloadConnectionLoss, assertFixtureInventory, captureStableAria, closedSessionFixture,
+  compareOrRefreshGolden, fixtureUserPrompts, launchWebScaffold, recordFixture, seedSession,
+  watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/lifecycle-chrome', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
 const REPLAY_OVERRIDE = join(SNAPSHOT_DIR, 'replay.override.json')
+const PLAN_PROVIDER_FIXTURE = fileURLToPath(new URL('./snapshots/plan-narrow-viewport/session.jsonl', import.meta.url))
 const HERO_EXPECTED = join(SNAPSHOT_DIR, 'hero.expected.md')
 const COMMAND_MENU_EXPECTED = join(SNAPSHOT_DIR, 'command-menu.expected.md')
 const FUZZY_COMMAND_MENU_EXPECTED = join(SNAPSHOT_DIR, 'command-menu-fuzzy.expected.md')
@@ -53,10 +53,9 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    // Fresh world: connect a Workspace so the composer scenarios start live.
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
   }, 120_000)
 
   afterAll(async () => {
@@ -65,20 +64,41 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
   })
 
   it.skipIf(MODE === 'record')('opens the shared slash menu from plus with only Command candidates', async () => {
-    onTestFailed(() => saveFailureShot(page, 'web-e2e-command-menu-launcher'))
-    const launcher = page.getByRole('button', { name: 'Commands' })
+    const commandScaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
+    const commandSessionId = 'lifecycle-command-menu-session'
+    await seedSession(commandScaffold, closedSessionFixture(), commandSessionId)
+    const commandPage = await newEnglishPage(browser)
+    const commandTripwire = watchConsole(commandPage)
+    try {
+      await commandScaffold.authenticateBrowserPage(commandPage)
+      await commandPage.goto(commandScaffold.baseUrl, { waitUntil: 'load' })
+      await commandPage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
+      const group = commandPage.locator('[role="treeitem"]').first()
+      await group.waitFor({ timeout: 15_000 })
+      if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+      const sessionRow = commandPage.locator('[role="treeitem"]').nth(1)
+      await sessionRow.waitFor({ timeout: 15_000 })
+      await sessionRow.click()
+      await commandPage.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
+      onTestFailed(() => saveFailureShot(commandPage, 'web-e2e-command-menu-launcher'))
+    } catch (error) {
+      await commandPage.close()
+      await commandScaffold.close()
+      throw error
+    }
+    const launcher = commandPage.getByRole('button', { name: 'Commands' })
     await launcher.click()
-    const menu = page.getByRole('listbox', { name: 'Trigger suggestions' })
+    const menu = commandPage.getByRole('listbox', { name: 'Trigger suggestions' })
     await menu.waitFor({ timeout: 10_000 })
-    const snapshot = await captureStableAria(page, '[role="listbox"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(commandPage, '[role="listbox"]', commandScaffold.workspaceCwd)
     await compareOrRefreshGolden(COMMAND_MENU_EXPECTED, snapshot, MODE)
     expect(snapshot).toContain('text: Commands')
     expect(snapshot).not.toContain('text: Skills')
     expect(snapshot).not.toContain('text: Subagents')
     const launchedBox = await menu.boundingBox()
-    await page.locator('textarea').first().press('Escape')
+    await commandPage.locator('textarea').first().press('Escape')
     await expect.poll(() => menu.count()).toBe(0)
-    const input = page.locator('textarea').first()
+    const input = commandPage.locator('textarea').first()
     await input.fill('/')
     await menu.waitFor({ timeout: 10_000 })
     const typedBox = await menu.boundingBox()
@@ -92,33 +112,42 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     await expect.poll(() => menu.getByRole('option').allTextContents()).toEqual([
       'compactCompact older conversation history',
     ])
-    const fuzzySnapshot = await captureStableAria(page, '[role="listbox"]', scaffold.workspaceCwd)
+    const fuzzySnapshot = await captureStableAria(commandPage, '[role="listbox"]', commandScaffold.workspaceCwd)
     await compareOrRefreshGolden(FUZZY_COMMAND_MENU_EXPECTED, fuzzySnapshot, MODE)
     await input.fill('')
     await expect.poll(() => menu.count()).toBe(0)
+    expect(commandTripwire.pageErrors).toEqual([])
+    expect(commandTripwire.warnings).toEqual([])
+    await commandPage.close()
+    await commandScaffold.close()
   })
 
   it.skipIf(MODE === 'record')('shows active Plan as the warn-state status action', async () => {
-    const activeScaffold = await launchWebScaffold()
+    const activeScaffold = await launchWebScaffold({
+      legacyWorkspaceSurface: true,
+      replayFixture: PLAN_PROVIDER_FIXTURE,
+      replayProvidersOnly: true,
+    })
+    const activeSessionId = 'lifecycle-plan-session'
+    await seedSession(activeScaffold, closedSessionFixture({ planActive: true }), activeSessionId)
     const activePage = await newEnglishPage(browser)
     const activeTripwire = watchConsole(activePage)
     try {
+      await activeScaffold.authenticateBrowserPage(activePage)
       await activePage.goto(activeScaffold.baseUrl, { waitUntil: 'load' })
       await activePage.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-      await connectFreshWorkspace(activePage, activeScaffold.workspaceCwd)
-      const input = activePage.locator('textarea').first()
-      await activePage.getByRole('button', { name: 'Commands' }).click()
-      const menu = activePage.getByRole('listbox', { name: 'Trigger suggestions' })
-      await menu.waitFor({ timeout: 10_000 })
-      await menu.getByRole('option', { name: 'plan Enter or leave plan mode' }).click()
-      await expect.poll(() => input.inputValue()).toBe('/plan ')
-      await input.press('Enter')
+      const group = activePage.locator('[role="treeitem"]').first()
+      await group.waitFor({ timeout: 15_000 })
+      if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+      const sessionRow = activePage.locator('[role="treeitem"]').nth(1)
+      await sessionRow.waitFor({ timeout: 15_000 })
+      await sessionRow.click()
+      await activePage.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
       const planButton = activePage.getByRole('button', { name: 'Plan mode on, press to turn off' })
       await planButton.waitFor({ timeout: 10_000 })
       // The golden encodes an empty composer, and the button arriving does not
       // mean the submitted text is gone yet: under load the capture can catch
       // a textbox still holding `/plan`.
-      await expect.poll(() => input.inputValue(), { timeout: 10_000 }).toBe('')
       const planSnapshot = await captureStableAria(activePage, '[class*="frame"]', activeScaffold.workspaceCwd)
       await compareOrRefreshGolden(PLAN_ACTIVE_EXPECTED, planSnapshot, MODE)
       const planStyle = await planButton.evaluate((element) => {
@@ -197,28 +226,29 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     }
   }, 200_000)
 
-  it.skipIf(MODE === 'record')('materialized a real Workspace and Session over the wire', async () => {
+  it.skipIf(MODE === 'record')('materialized a Team and coordinator Session over the wire', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-lifecycle-materialize'))
-    // Browser: the sidebar tree now carries the auto-created workspace group
-    // with its one session, and the opened session is the selected row. The
-    // compact layout dropped group session counts, so the group row itself is
-    // the barrier.
     await expect.poll(
-      () => page.locator('[role="treeitem"][aria-expanded]').filter({ hasText: 'workspace' }).count(),
+      () => page.locator('section[aria-label="Tasks"] button').filter({ hasText: PROMPT }).count(),
       { timeout: 15_000 },
-    ).toBeGreaterThanOrEqual(1)
-    await expect.poll(() => page.locator('[role="treeitem"][aria-selected="true"]').count(), { timeout: 10_000 }).toBe(1)
+    ).toBe(1)
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     await expect.poll(() => page.getByText('Cache hit 99.5%', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
-    // Host: the session's durable header cwd is the folder the workspace
-    // flow created and adopted (<workspaceCwd>/workspace) — the proof the
-    // send went through workspace materialization rather than a bare
-    // default-cwd session.
-    const cwds = scaffold.ctx.sessions.list().map(session => session.header.cwd)
-    expect(cwds).toEqual([join(scaffold.workspaceCwd, 'workspace')])
+    // Host: the Team owns one coordinator Session whose cwd is the scaffold
+    // execution root; no Workspace/Session browser is part of the shipped
+    // product roster.
+    const cwds = (await scaffold.ctx.sessionPersistence.list()).map(session => session.cwd)
+    expect(cwds).toEqual([scaffold.workspaceCwd])
+    expect(scaffold.ctx.workspaceRegistry.list()).toEqual([])
     const turnEnds = sessionEvents.filter(e => e.type === 'turn/end')
     expect(turnEnds).toHaveLength(1)
     expect((turnEnds[0] as SessionEvent & { data: { reason: { kind: string } } }).data.reason.kind).toBe('completed')
+    const team = (await scaffold.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 2 })).items[0]
+    if (team === undefined) throw new Error('The first input did not create a Team')
+    const received = await scaffold.authenticatedRpc<{ text: string }>('team.waitFinal', { teamId: team.id })
+    expect(received.result).toMatchObject({ ok: true, value: { text: 'LIGHTHOUSE' } })
+    await expect.poll(async () => (await scaffold.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 2 })).items.map(team => team.phase))
+      .toEqual(['completed'])
   }, 60_000)
 
   it.skipIf(MODE === 'record')('recovers the whole surface across a reload from the log alone', async () => {
@@ -227,12 +257,13 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
-    // Selection persisted (clocky.sessions.current) and history replayed: the
-    // recorded turn re-renders from session.history with zero model calls —
-    // the replay cursor was fully consumed before the reload, so any stray
-    // request would fail the scenario loudly at close().
+    // The Team list is durable while the browser-local Session selection is
+    // not; reopen the Team before reading its coordinator transcript. The
+    // recorded turn re-renders from session.history with zero model calls.
+    const task = page.locator('section[aria-label="Tasks"] button').filter({ hasText: PROMPT }).first()
+    await task.waitFor({ timeout: 15_000 })
+    await task.click()
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
-    await expect.poll(() => page.locator('[role="treeitem"][aria-selected="true"]').count(), { timeout: 10_000 }).toBe(1)
     // Golden of the recovered conversation region: rebuilt from the log, it
     // must render the same settled transcript the live turn produced.
     const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)

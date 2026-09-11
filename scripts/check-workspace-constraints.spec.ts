@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import {
   checkExperimentalDependencyIsolation,
   checkExperimentalManifest,
+  checkPrivateCompatibilityDependencyIsolation,
   type WorkspaceManifest,
 } from './check-workspace-constraints.ts'
 
@@ -71,6 +72,36 @@ describe('experimental workspace constraints', () => {
 
     expect(checkExperimentalDependencyIsolation(manifests)).toEqual([
       '@clocky/clocky-python-runtime: dependencies.@clocky/clocky-experimental-prototype must not reference an experimental package',
+    ])
+  })
+})
+
+describe('private compatibility workspace constraints', () => {
+  const compatibility: WorkspaceManifest = {
+    dir: 'packages/subagent/subagent',
+    manifest: { name: '@clocky/clocky-subagent', private: true },
+  }
+
+  it('requires private compatibility manifests without publication metadata', () => {
+    expect(checkPrivateCompatibilityDependencyIsolation([compatibility])).toEqual([])
+  })
+
+  it('rejects release and Python runtime dependencies on compatibility packages', () => {
+    const consumers: WorkspaceManifest[] = [
+      compatibility,
+      {
+        dir: 'packages/core/consumer',
+        manifest: { name: '@clocky/clocky-consumer', dependencies: { '@clocky/clocky-subagent': 'workspace:^' } },
+      },
+      {
+        dir: 'python/sdk-runtime',
+        manifest: { name: 'clocky-jsonrpc-agent-pkg', dependencies: { '@clocky/clocky-subagent': 'workspace:^' } },
+      },
+    ]
+
+    expect(checkPrivateCompatibilityDependencyIsolation(consumers)).toEqual([
+      '@clocky/clocky-consumer: dependencies.@clocky/clocky-subagent must not reference a private compatibility package',
+      'clocky-jsonrpc-agent-pkg: dependencies.@clocky/clocky-subagent must not reference a private compatibility package',
     ])
   })
 })

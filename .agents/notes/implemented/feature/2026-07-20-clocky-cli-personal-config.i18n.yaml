@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-20-clocky-cli-personal-config.md
+2026-07-20-clocky-cli-personal-config.md: d35a47b8339f72ffa72a1aefab44151f0d4322b2
+2026-07-20-clocky-cli-personal-config.zh.md: 4ec4ca6c61395b2f30a5c6a048acee28a39fd87a

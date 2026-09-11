@@ -14,7 +14,6 @@ import AgentRegistry from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import { createScope } from '@clocky/clocky-scope'
 import SessionStore, { SessionId } from '@clocky/clocky-session'
-import SessionProjectionRegistry from '@clocky/clocky-session-projection'
 import SqliteSessionQueryEngine from '@clocky/clocky-session-query-sqlite'
 import GoalService from '@clocky/clocky-goal'
 import SystemPrompt from '@clocky/clocky-system-prompt'
@@ -31,11 +30,6 @@ import PlanModeController from '@clocky/clocky-plan-mode'
 import WebRuntime from '@clocky/clocky-web'
 import * as WebSearchExa from '@clocky/clocky-web-search-exa'
 import * as WebFetchLocal from '@clocky/clocky-web-fetch-http'
-import SubagentRuntime from '@clocky/clocky-subagent'
-import type { SubagentProvider, SubagentReportDelivery } from '@clocky/clocky-subagent'
-import * as ToolSubagentControl from '@clocky/clocky-tool-subagent-control'
-import * as ToolSubagentListAgents from '@clocky/clocky-tool-subagent-control/list-agents'
-import * as ToolSubagentReport from '@clocky/clocky-tool-subagent-report'
 import SkillRegistry from '@clocky/clocky-skill'
 import * as SkillFileSystem from '@clocky/clocky-skill-filesystem'
 import LocalJobRegistry from '@clocky/clocky-jobs-local'
@@ -58,14 +52,12 @@ import * as ToolLsp from '@clocky/clocky-tool-lsp'
 import * as ToolSkill from '@clocky/clocky-tool-skill'
 import * as ToolSessionQuery from '@clocky/clocky-tool-session-query'
 import * as ToolTasks from '@clocky/clocky-tool-jobs'
-import type TeamService from '@clocky/clocky-experimental-agent-team'
-import * as ToolTeam from '@clocky/clocky-experimental-tool-agent-team'
+import * as NativeToolTeam from '@clocky/clocky-tool-team'
+import * as NativeChannelSummaryTool from '@clocky/clocky-team-channel-summary/tool'
+import * as NativeToolTeamGoal from '@clocky/clocky-tool-team-goal'
+import * as NativeToolTeamTask from '@clocky/clocky-tool-team-task'
 import * as ToolTodo from '@clocky/clocky-tool-todo'
-import * as ToolSubagent from '@clocky/clocky-tool-subagent'
 import * as ToolWeb from '@clocky/clocky-tool-web'
-import VmWorkflowEngine from '@clocky/clocky-workflow-worker-thread'
-import * as ToolRalph from '@clocky/clocky-tool-ralph'
-import * as ToolWorkflow from '@clocky/clocky-tool-workflow'
 import { githubSlug } from './verify-md-links.ts'
 
 /** Attachment seam marker that makes the attachments-conditional `read_image` schema harvestable. */
@@ -94,24 +86,6 @@ class CatalogAttachmentStore extends AttachmentStore {
 
 const root = resolve(import.meta.dirname, '..')
 const OUT = 'docs/tool-catalog.md'
-
-/**
- * Register the descriptor needed to mount schema-producing consumers. Declares
- * the full capability set of the shipped in-process providers so consumers
- * mount under their shipped defaults (tool-subagent's default numeric maxDepth
- * requires `depthLimit`).
- */
-function registerCatalogSubagentProvider(ctx: Context, name: string): void {
-  const provider: SubagentProvider = {
-    name,
-    capabilities: { outputSchema: true, depthLimit: true, toolFilter: true, persona: true },
-    inheritsParentContext: false,
-    start: () => Promise.reject(new Error('tool-catalog provider cannot start a child')),
-    // Declared so consumers configured for continuable background mode mount.
-    prepareContinuable: () => Promise.reject(new Error('tool-catalog provider cannot prepare a child')),
-  }
-  ctx.subagents.registerProvider(provider)
-}
 
 /** Minted child-scope keys for packages whose tools are never global. */
 const catalogChildScopes = new WeakMap<Context, Agent>()
@@ -156,8 +130,8 @@ export interface ToolPackage {
   requires: string[]
   /** Session events or other visible state the tools write or affect. */
   writes: string[]
-  /** Additional model-visible names shipped by example/app config. */
-  shippedNames?: string[]
+  /** Additional model-visible names selected by application or example configuration. */
+  configuredNames?: string[]
   /** Plug the injected seams + the tool plugin onto a context that already
    * carries `systemPrompt` + `tools`. */
   mount: (ctx: Context) => Promise<void>
@@ -175,15 +149,15 @@ export interface ToolPackage {
    * booting the package alone cannot show. The registered tool NAME can be a
    * load-time config (`tool-subagent`'s `toolName`), so one package may appear
    * under several names across deployments — the boot yields the package
-   * DEFAULT, and this note records the shipped alternatives the model sees.
+   * DEFAULT, and this note records any configured alternatives the model sees.
    */
   note?: string
 }
 
 /**
- * The boot manifest: every shipped tool package (a `tool-*` leaf under
- * `packages/`). Ordered by package name (the render order); the completeness
- * guard proves it is exhaustive against the on-disk glob.
+ * The boot manifest: every public model-facing tool package (a `tool-*` leaf
+ * under `packages/`). Private compatibility tools remain explicit custom
+ * composition code and are excluded from the product catalog.
  */
 const TOOL_PACKAGES: ToolPackage[] = [
   {
@@ -408,21 +382,6 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@clocky/clocky-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.',
   },
   {
-    pkg: '@clocky/clocky-tool-ralph',
-    dir: 'tool-ralph',
-    source: 'packages/workflow/tool-ralph/src/index.ts',
-    requires: ['ctx.tools', 'ctx.workflowEngine', 'ctx.subagents', 'ctx.systemPrompt', 'a calling Agent (exec.agent parents every fresh round)'],
-    writes: ['tool/call', 'tool/result', 'workflow and child session events during execution'],
-    async mount(ctx) {
-      await ctx.plugin(SubagentRuntime)
-      registerCatalogSubagentProvider(ctx, 'mock')
-      await ctx.plugin(VmWorkflowEngine, { provider: 'mock' })
-      await ctx.plugin(ToolRalph, { subagentProvider: 'mock' })
-    },
-    note:
-      'A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.',
-  },
-  {
     pkg: '@clocky/clocky-tool-skill',
     dir: 'tool-skill',
     source: 'packages/skill/tool-skill/src/index.ts',
@@ -453,64 +412,6 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies.',
   },
   {
-    pkg: '@clocky/clocky-tool-subagent',
-    dir: 'tool-subagent',
-    source: 'packages/subagent/tool-subagent/src/index.ts',
-    requires: ['ctx.tools', 'ctx.subagents', 'ctx.systemPrompt'],
-    writes: ['tool/call', 'tool/result', 'child session events through the chosen provider'],
-    shippedNames: ['subagent', 'subagent_fork'],
-    async mount(ctx) {
-      await ctx.plugin(SubagentRuntime)
-      registerCatalogSubagentProvider(ctx, 'mock')
-      await ctx.plugin(ToolSubagent, { provider: 'mock' })
-    },
-    note:
-      'The registered tool name is the load-time `toolName` config (default `subagent`); the schema above is that default. The shipped compositions load this package once per subagent backend, so the model additionally sees `subagent_fork` bound to the fork backend. Each instance\'s description, `run_in_background` parameter, and system-prompt policy follow its own `backgroundMode` and `enableRunInBackground`, so the two shipped schemas are not identical: `subagent` is `continuable` and defaults omitted calls to background with automatic settlement delivery, while `subagent_fork` stays `one-shot` and defaults them to foreground — see `packages/bundle/base/cordis.patch.yml` and `examples/acp-agent/cordis.yml`.',
-  },
-  {
-    pkg: '@clocky/clocky-tool-subagent-control',
-    dir: 'tool-subagent-control',
-    source: {
-      interrupt_agent: 'packages/subagent/tool-subagent-control/src/index.ts',
-      list_agents: 'packages/subagent/tool-subagent-control/src/list-agents.ts',
-      send_message: 'packages/subagent/tool-subagent-control/src/index.ts',
-    },
-    requires: ['ctx.tools', 'ctx.subagents', 'ctx.agents and ctx.sessionProjections (list_agents only)'],
-    writes: ['tool/call', 'tool/result', 'child session events through ctx.subagents'],
-    async mount(ctx) {
-      await ctx.plugin(SubagentRuntime)
-      await ctx.plugin(LocalJobRegistry)
-      await ctx.plugin(AgentRegistry)
-      await ctx.plugin(SessionStore)
-      await ctx.plugin(SessionProjectionRegistry)
-      await ctx.plugin(ToolSubagentControl)
-      await ctx.plugin(ToolSubagentListAgents)
-    },
-    note:
-      'The globally named control tools over continuable background subagents: provider-bound `tool-subagent` instances register distinct delegation tools, while this package registers `send_message` and `interrupt_agent` once, plus `list_agents` from its separately loaded `/list-agents` plugin (whose catalog rows use the sessionProjections and live Agent registries).',
-  },
-  {
-    pkg: '@clocky/clocky-tool-subagent-report',
-    dir: 'tool-subagent-report',
-    source: 'packages/subagent/tool-subagent-report/src/index.ts',
-    requires: ['ctx.subagents', 'ctx.systemPrompt', 'a live continuable in-process child Agent'],
-    writes: ['tool/call', 'tool/result', 'a user-role message in the direct parent session'],
-    async mount(ctx) {
-      await ctx.plugin(AgentRegistry)
-      await ctx.plugin(SubagentRuntime)
-      const { reportDelivery } = ToolSubagentReport.Config({}) as { reportDelivery: SubagentReportDelivery }
-      await mountCatalogChildScope(ctx, (childCtx) => {
-        ToolSubagentReport.installReportTool(childCtx, ctx, reportDelivery)
-      })
-    },
-    scope: ctx => catalogChildScopes.get(ctx) as Agent,
-    note:
-      'Registered per continuable in-process child rather than globally, so this schema is visible only '
-      + 'inside such a child and survives its global `toolFilter`. The same contribution installs the '
-      + 'child-scoped `tool:report` prompt section, which this catalog does not render. The parent-facing '
-      + '`send_message` tool is installed independently.',
-  },
-  {
     pkg: '@clocky/clocky-tool-jobs',
     dir: 'tool-jobs',
     source: 'packages/jobs/tool-jobs/src/index.ts',
@@ -524,26 +425,20 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The kind-agnostic background-job controller: background bash commands, PTY sends, and subagents are read, listed, and killed through the same three tools. Loading the plugin attaches the controller that arms producers\' `ctx.jobs.start()`.',
   },
   {
-    pkg: '@clocky/clocky-experimental-tool-agent-team',
-    dir: 'tool-agent-team',
-    source: 'packages/experimental/tool-agent-team/src/index.ts',
-    requires: ['ctx.tools', 'ctx.systemPrompt', 'ctx.agentTeams', 'an exact live Team member Agent'],
-    writes: ['tool/call', 'team/member', 'team/message/queued', 'team/message/delivered', 'team/task', 'tool/result'],
+    pkg: '@clocky/clocky-tool-team',
+    dir: 'tool-team',
+    source: 'packages/team/tool-team/src/index.ts',
+    requires: ['ctx.tools', 'ctx.agents', 'ctx.teams', 'ctx.teamLinks', 'a Team-bound calling Agent'],
+    writes: ['tool/call', 'tool/result', 'Team task attempt settlement through an activation-bound Link'],
     async mount(ctx) {
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(SessionStore)
-      const session = ctx.sessions.create(SessionId('tool-catalog-team-lead'))
+      ctx.provide('teams', {} as never)
+      ctx.provide('teamLinks', {} as never)
+      const session = ctx.sessions.create(SessionId('tool-catalog-team-task-agent'), {
+        meta: { teamId: 'team-tool-catalog', participantId: 'participant-tool-catalog' },
+      })
       let agent!: Agent
-      const membership = {
-        get root() { return agent },
-        id: session.id,
-        role: 'lead' as const,
-        name: 'lead',
-      }
-      ctx.provide('agentTeams', {
-        tryMembership: (candidate: Agent) => candidate === agent ? membership : undefined,
-        membership: () => membership,
-      } as unknown as TeamService)
       await ctx.plugin(Object.assign((inner: Context) => {
         agent = {
           id: session.id,
@@ -553,13 +448,108 @@ const TOOL_PACKAGES: ToolPackage[] = [
         } as unknown as Agent
         Object.assign(agent, { ctx: createScope(inner, agent).ctx })
         inner.agents.register(agent)
-      }, { inject: ['tools', 'systemPrompt', 'agents', 'agentTeams'] }))
-      await ctx.plugin(ToolTeam)
+      }, { inject: ['tools', 'agents', 'teams', 'teamLinks'] }))
+      await ctx.plugin(NativeToolTeam)
       catalogChildScopes.set(ctx, agent)
     },
     scope: ctx => catalogChildScopes.get(ctx) as Agent,
     note:
-      'All ten tools are scoped to implicit Team Leads and durable teammates. The shipped clocky-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names.',
+      'team_task_report and team_task_integrate are scoped to an Agent whose durable assignment source proves one running task attempt. The catalog boots a synthetic Team-bound Agent only to harvest their schemas; execution still requires a live bound Link and Team lease.',
+  },
+  {
+    pkg: '@clocky/clocky-team-channel-summary/tool',
+    dir: 'team-channel-summary',
+    source: 'packages/team/team-channel-summary/src/tool.ts',
+    requires: ['ctx.tools', 'ctx.teamRuns', 'ctx.teamChannelSummaries', 'ctx.teams', 'ctx.agents', 'a live default TeamRun coordinator Agent'],
+    writes: ['tool/call', 'authorized durable channel summary with source fingerprint', 'tool/result'],
+    async mount(ctx) {
+      await ctx.plugin(AgentRegistry)
+      await ctx.plugin(SessionStore)
+      const session = ctx.sessions.create(SessionId('tool-catalog-channel-summary-coordinator'))
+      let agent!: Agent
+      await ctx.plugin(Object.assign((inner: Context) => {
+        agent = {
+          id: session.id,
+          session,
+          options: {},
+          status: 'idle',
+        } as unknown as Agent
+        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
+        inner.agents.register(agent)
+      }, { inject: ['tools', 'agents'] }))
+      ctx.provide('teamRuns', {
+        tryCoordinatorGoalAuthority: () => ({}),
+      } as never)
+      ctx.provide('teamChannelSummaries', {} as never)
+      ctx.provide('teams', {} as never)
+      await ctx.plugin(NativeChannelSummaryTool)
+      catalogChildScopes.set(ctx, agent)
+    },
+    scope: ctx => catalogChildScopes.get(ctx) as Agent,
+    note:
+      'team_channel_summarize is scoped to the current default coordinator. Schema harvest supplies only the scope; execution requires a real active coordinator and the production summary Consumer. The result contains bounded extractive text; private subset sources are rejected.',
+  },
+  {
+    pkg: '@clocky/clocky-tool-team-goal',
+    dir: 'tool-team-goal',
+    source: 'packages/team/tool-team-goal/src/index.ts',
+    requires: ['ctx.tools', 'ctx.teamRuns', 'ctx.agents', 'a live default TeamRun coordinator Agent'],
+    writes: ['tool/call', 'activation-fenced durable Team objective read or edit', 'tool/result'],
+    async mount(ctx) {
+      await ctx.plugin(AgentRegistry)
+      await ctx.plugin(SessionStore)
+      const session = ctx.sessions.create(SessionId('tool-catalog-team-goal-coordinator'))
+      let agent!: Agent
+      await ctx.plugin(Object.assign((inner: Context) => {
+        agent = {
+          id: session.id,
+          session,
+          options: {},
+          status: 'idle',
+        } as unknown as Agent
+        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
+        inner.agents.register(agent)
+      }, { inject: ['tools', 'agents'] }))
+      ctx.provide('teamRuns', {
+        tryCoordinatorGoalAuthority: () => ({}),
+      } as never)
+      await ctx.plugin(NativeToolTeamGoal)
+      catalogChildScopes.set(ctx, agent)
+    },
+    scope: ctx => catalogChildScopes.get(ctx) as Agent,
+    note:
+      'get_goal and update_goal are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires a current human direct-v3 Team input and an activation-fenced TeamRun operation.',
+  },
+  {
+    pkg: '@clocky/clocky-tool-team-task',
+    dir: 'tool-team-task',
+    source: 'packages/team/tool-team-task/src/index.ts',
+    requires: ['ctx.tools', 'ctx.teamRuns', 'ctx.agents', 'a live default TeamRun coordinator Agent'],
+    writes: ['tool/call', 'durable default-worker task creation, inspection, owner proposal, cancellation, or Team-journal wait', 'tool/result'],
+    async mount(ctx) {
+      await ctx.plugin(AgentRegistry)
+      await ctx.plugin(SessionStore)
+      const session = ctx.sessions.create(SessionId('tool-catalog-team-run-coordinator'))
+      let agent!: Agent
+      await ctx.plugin(Object.assign((inner: Context) => {
+        agent = {
+          id: session.id,
+          session,
+          options: {},
+          status: 'idle',
+        } as unknown as Agent
+        Object.assign(agent, { ctx: createScope(inner, agent).ctx })
+        inner.agents.register(agent)
+      }, { inject: ['tools', 'agents'] }))
+      ctx.provide('teamRuns', {
+        coordinatorTaskAuthority: () => ({}),
+      } as never)
+      await ctx.plugin(NativeToolTeamTask)
+      catalogChildScopes.set(ctx, agent)
+    },
+    scope: ctx => catalogChildScopes.get(ctx) as Agent,
+    note:
+      'team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation.',
   },
   {
     pkg: '@clocky/clocky-tool-todo',
@@ -572,22 +562,6 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task.',
-  },
-  {
-    pkg: '@clocky/clocky-tool-workflow',
-    dir: 'tool-workflow',
-    source: 'packages/workflow/tool-workflow/src/index.ts',
-    requires: ['ctx.tools', 'ctx.workflowEngine', 'ctx.systemPrompt', 'a calling Agent (exec.agent parents the script children)'],
-    writes: ['tool/call', 'tool/result'],
-    async mount(ctx) {
-      // The tool injects `workflows`; boot the vm engine over a scripted
-      // subagent provider to satisfy it. The schema does not depend on which
-      // provider backs the engine.
-      await ctx.plugin(SubagentRuntime)
-      registerCatalogSubagentProvider(ctx, 'mock')
-      await ctx.plugin(VmWorkflowEngine, { provider: 'mock' })
-      await ctx.plugin(ToolWorkflow)
-    },
   },
   {
     pkg: '@clocky/clocky-tool-web',
@@ -614,7 +588,7 @@ interface CatalogPackage {
   sources: Readonly<Record<string, string>>
   requires: string[]
   writes: string[]
-  shippedNames?: string[]
+  configuredNames?: string[]
   schemas: ToolSchema[]
   /** A deployment note (see {@link ToolPackage.note}), rendered after the tools. */
   note?: string
@@ -624,17 +598,25 @@ interface CatalogPackage {
 export type ToolCatalog = CatalogPackage[]
 
 /**
- * Assert the boot manifest covers every shipped tool package on disk (a
- * `tool-*` leaf under `packages/`).
+ * Assert the boot manifest covers every public model-facing tool package on
+ * disk (a `tool-*` leaf under `packages/`).
  * Booting has no source declaration to enumerate, so this glob restores the
- * "a new tool cannot be silently undocumented" guarantee: an unlisted package
+ * "a new tool cannot be silently undocumented" guarantee: an unlisted public package
  * fails the generator (and the freshness gate) until it is added to
  * {@link TOOL_PACKAGES}. Exported for a direct negative test.
  *
  * `scanRoot` defaults to the repo root; a test may point it at a fixture tree.
  */
 export function assertManifestComplete(packages: ToolPackage[] = TOOL_PACKAGES, scanRoot: string = root): void {
-  const onDisk = globSync('packages/*/tool-*', { cwd: scanRoot }).map(p => basename(p)).sort()
+  const onDisk = globSync('packages/*/tool-*', { cwd: scanRoot }).filter((path) => {
+    const manifestPath = resolve(scanRoot, path, 'package.json')
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { private?: unknown }
+      return manifest.private !== true
+    } catch {
+      return true
+    }
+  }).map(p => basename(p)).sort()
   const listed = new Set(packages.map(p => p.dir))
   const missing = onDisk.filter(dir => !listed.has(dir))
   if (missing.length > 0) {
@@ -697,7 +679,7 @@ export async function collectToolCatalog(packages: ToolPackage[] = TOOL_PACKAGES
         requires: entry.requires,
         writes: entry.writes,
         schemas,
-        ...entry.shippedNames !== undefined ? { shippedNames: entry.shippedNames } : {},
+        ...entry.configuredNames !== undefined ? { configuredNames: entry.configuredNames } : {},
         ...entry.note !== undefined ? { note: entry.note } : {},
       })
     } finally {
@@ -744,19 +726,19 @@ export function render(catalog: ToolCatalog): string {
     '',
     '# Tool Schema Catalog',
     '',
-    'Every model-facing tool a shipped plugin contributes to `ctx.tools`: the `name`, `description`, and JSON-Schema `parameters` the model receives via the system-prompt assembly. It complements the [subsystem pages](subsystems/core.md) (the types plus each page\'s generated Cordis API region) — this page is the *tools* the agent is offered.',
+    'Every public model-facing tool package under `packages/*/tool-*`: the `name`, `description`, and JSON-Schema `parameters` the model receives via system-prompt assembly. Private compatibility tools are explicit custom-composition surfaces and are not part of this product catalog. It complements the [subsystem pages](subsystems/core.md) (the types plus each page\'s generated Cordis API region) — this page is the *tools* an agent may be offered.',
     '',
-    'This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*` and fails if any package is missing from the generator\'s boot manifest, so a new tool cannot be silently undocumented. See [the tool-schema-catalog Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.md).',
+    'This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each public tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*`, skips private compatibility manifests, and fails if any public package is missing from the generator\'s boot manifest. See [the tool-schema-catalog Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.md).',
     '',
-    'Scope: shipped product tools under `packages/*/tool-*`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The registered tool NAME can be a load-time config (e.g. `tool-subagent`\'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog\'s packages-only scope.',
+    'Scope: public model-facing tool packages under `packages/*/tool-*`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. Private compatibility tools and the `examples/` demo tools (e.g. `echo`) are excluded, matching the product catalog scope.',
     '',
     '## Tool Package Map',
     '',
     'This table connects model-visible tool names to the plugin package and service seams behind them. Exact JSON Schemas follow in the package sections below.',
     '',
-    '| Tool package | Model-visible names | Requires | Writes / affects | Shipped aliases | Deployment note |',
+    '| Tool package | Model-visible names | Requires | Writes / affects | Configured aliases | Deployment note |',
     '| --- | --- | --- | --- | --- | --- |',
-    ...catalog.map(entry => `| \`${entry.pkg}\` | ${codeList(entry.schemas.map(schema => schema.name))} | ${codeList(entry.requires)} | ${codeList(entry.writes)} | ${codeList(entry.shippedNames)} | ${tableCell(entry.note)} |`),
+    ...catalog.map(entry => `| \`${entry.pkg}\` | ${codeList(entry.schemas.map(schema => schema.name))} | ${codeList(entry.requires)} | ${codeList(entry.writes)} | ${codeList(entry.configuredNames)} | ${tableCell(entry.note)} |`),
     '',
   ]
   for (const entry of catalog) {

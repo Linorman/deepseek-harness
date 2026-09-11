@@ -39,15 +39,15 @@ function api(mux: MuxSource, host: HostSource): ApiProxy {
   } as ApiProxy
 }
 
-async function serve(downlinks: WebSocketDownlinks): Promise<{
+async function serve(downlinks: WebSocketDownlinks, productSignal?: AbortSignal): Promise<{
   origin: string
   close: () => Promise<void>
 }> {
   const server = createServer()
   server.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url ?? '/', 'http://clocky.internal').pathname
-    if (pathname === MUX_EVENTS_PATH) downlinks.handleMux(request, socket, head)
-    else if (pathname === HOST_EVENTS_PATH) downlinks.handleHost(request, socket, head)
+    if (pathname === MUX_EVENTS_PATH) void downlinks.handleMux(request, socket, head, productSignal)
+    else if (pathname === HOST_EVENTS_PATH) void downlinks.handleHost(request, socket, head, productSignal)
     else socket.destroy()
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -195,6 +195,47 @@ describe('WebSocket downlinks', () => {
     accepted.emit('error', new Error('transport failed'))
     await closed
     expect(aborted).toBe(true)
+  })
+
+  it('terminates an admitted downlink when its product-auth call is revoked', async () => {
+    let aborted = false
+    const productAuth = new AbortController()
+    const downlinks = new WebSocketDownlinks(api(
+      async function * (signal) {
+        try {
+          await untilAbort(signal)
+        } finally {
+          aborted = true
+        }
+      },
+      idle,
+    ))
+    const host = await serve(downlinks, productAuth.signal)
+    running.push(host.close)
+    const socket = new WebSocket(`${host.origin}${MUX_EVENTS_PATH}`)
+    await once(socket, 'open')
+    const closed = once(socket, 'close')
+    productAuth.abort()
+    await closed
+    expect(aborted).toBe(true)
+  })
+
+  it('rejects an upgrade before ws negotiation when its product-auth call is already revoked', async () => {
+    let opened = false
+    const productAuth = new AbortController()
+    productAuth.abort()
+    const downlinks = new WebSocketDownlinks(api(
+      async function * () {
+        opened = true
+      },
+      idle,
+    ))
+    const host = await serve(downlinks, productAuth.signal)
+    running.push(host.close)
+    const socket = new WebSocket(`${host.origin}${MUX_EVENTS_PATH}`)
+    socket.on('error', () => {})
+    await new Promise<void>((resolve) => { socket.once('close', () => { resolve() }) })
+    expect(opened).toBe(false)
   })
 
   it('drops a source frame that races after the client has closed', async () => {

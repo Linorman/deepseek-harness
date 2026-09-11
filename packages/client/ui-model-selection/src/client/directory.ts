@@ -1,9 +1,8 @@
 /**
- * Per-session model directory: the ONE state both selection entries share.
- * The /model popup and the composer-seat selector load through the same
- * controller and submit through the same selectModel call, so the host stays
- * the single fact source and the store is one shared echo — a switch made in
- * either entry is what the other shows next.
+ * Shared model directory state for an ordinary Session or the unsubmitted Team
+ * draft. The /model popup and composer seat load through one controller and
+ * submit through the same backend, so a switch made in either entry is echoed
+ * by the other surface.
  */
 import type {
   IApiClient, ModelCatalogFailure, ModelProviderGroup, ModelSelection, SessionId, SessionModels,
@@ -33,7 +32,15 @@ export interface ModelDirectoryState {
   error: string | null
 }
 
-/** One session's shared directory controller; disposed with the session scope. */
+/** Transport-independent model directory operations. */
+export interface ModelDirectoryBackend {
+  /** Read the current selection and advisory catalog. */
+  load: () => Promise<SessionModels>
+  /** Validate or retain one complete model selection. */
+  select: (selection: ModelSelection) => Promise<ModelSelection>
+}
+
+/** One target's shared model directory controller; disposed with its owning scope. */
 export class ModelDirectory {
   /** The shared snapshot both entries render from (uSES-safe store). */
   readonly store: SnapshotStore<ModelDirectoryState> = createSnapshotStore<ModelDirectoryState>({
@@ -45,15 +52,38 @@ export class ModelDirectory {
   private disposed = false
 
   /**
-   * @param sessions - the session wire face (captured from the plugin's root connection).
-   * @param sessionId - the owning session.
-   * @param available - whether this session may use Agent-bound model RPCs.
+   * @param backend - the source and mutation owner for this directory.
    */
-  constructor(
-    private readonly sessions: Pick<IApiClient['sessions'], 'models' | 'selectModel'>,
-    private readonly sessionId: SessionId,
-    private readonly available: () => boolean,
-  ) {}
+  constructor(private readonly backend: ModelDirectoryBackend) {}
+
+  /**
+   * Create a directory backed by one ordinary Host Session.
+   * @param sessions - Host Session methods used for model reads and selection.
+   * @param sessionId - ordinary Session identity owned by the Host.
+   * @returns a shared model-directory controller for that Session.
+   */
+  static forSession(
+    sessions: Pick<IApiClient['sessions'], 'models' | 'selectModel'>,
+    sessionId: SessionId,
+  ): ModelDirectory {
+    return new ModelDirectory({
+      load: async () => {
+        const { result } = await sessions.models({ sessionId })
+        if (!result.ok) throw new Error(`session.models failed: ${result.error.code}: ${result.error.message}`)
+        return result.value
+      },
+      select: async (selection) => {
+        const { result } = await sessions.selectModel({
+          sessionId,
+          provider: selection.provider,
+          model: selection.model,
+          ...selection.reasoningEffort === undefined ? {} : { reasoningEffort: selection.reasoningEffort },
+        })
+        if (!result.ok) throw new Error(`session.selectModel failed: ${result.error.code}: ${result.error.message}`)
+        return result.value.selected
+      },
+    })
+  }
 
   /**
    * Refresh the advisory directory (both entries call this on open).
@@ -61,28 +91,27 @@ export class ModelDirectory {
    * @returns the fresh directory value.
    */
   async load(): Promise<SessionModels> {
-    this.assertAvailable()
     const generation = ++this.generation
     this.store.update((s) => { s.status = 'loading'; s.error = null })
-    const { result } = await this.sessions.models({ sessionId: this.sessionId })
-    if (this.disposed || generation !== this.generation) {
-      if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
-      return result.value
+    try {
+      const value = await this.backend.load()
+      if (this.disposed || generation !== this.generation) return value
+      const { current, routable, groups, failures } = value
+      this.store.update((s) => {
+        s.current = current ?? null
+        s.routable = routable
+        s.groups = groups
+        s.failures = failures
+        s.status = 'ready'
+        s.error = null
+      })
+      return value
+    } catch (error: unknown) {
+      if (this.disposed || generation !== this.generation) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      this.store.update((s) => { s.status = 'error'; s.error = message })
+      throw error
     }
-    if (!result.ok) {
-      this.store.update((s) => { s.status = 'error'; s.error = `${result.error.code}: ${result.error.message}` })
-      throw new Error(`session.models failed: ${result.error.code}: ${result.error.message}`)
-    }
-    const { current, routable, groups, failures } = result.value
-    this.store.update((s) => {
-      s.current = current ?? null
-      s.routable = routable
-      s.groups = groups
-      s.failures = failures
-      s.status = 'ready'
-      s.error = null
-    })
-    return result.value
   }
 
   /**
@@ -92,32 +121,34 @@ export class ModelDirectory {
    * @param selection - provider, provider-owned model id, and optional adapter-owned effort.
  */
   async select(selection: ModelSelection): Promise<void> {
-    this.assertAvailable()
     const generation = ++this.generation
     this.store.update((s) => { s.status = 'selecting'; s.error = null })
-    const { result } = await this.sessions.selectModel({
-      sessionId: this.sessionId,
-      provider: selection.provider,
-      model: selection.model,
-      ...selection.reasoningEffort === undefined
-        ? {}
-        : { reasoningEffort: selection.reasoningEffort },
-    })
-    if (this.disposed || generation !== this.generation) {
-      if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`)
-      return
+    try {
+      const selected = await this.backend.select(selection)
+      if (this.disposed || generation !== this.generation) return
+      this.store.update((s) => {
+        s.current = selected
+        s.routable = true
+        s.status = 'ready'
+        s.error = null
+      })
+    } catch (error: unknown) {
+      if (this.disposed || generation !== this.generation) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      this.store.update((s) => { s.status = 'error'; s.error = message })
+      throw error
     }
-    if (!result.ok) {
-      this.store.update((s) => { s.status = 'error'; s.error = `${result.error.code}: ${result.error.message}` })
-      throw new Error(`session.selectModel failed: ${result.error.code}: ${result.error.message}`)
-    }
-    // The Host validated the route before accepting it, so a selection that
-    // landed is by construction one it can serve.
+  }
+
+  /**
+   * Synchronize an external draft selection without starting a catalog request.
+   * @param selection - draft model selection, or `undefined` to clear it.
+   */
+  syncCurrent(selection: ModelSelection | undefined): void {
+    if (this.disposed) return
     this.store.update((s) => {
-      s.current = result.value.selected
-      s.routable = true
-      s.status = 'ready'
-      s.error = null
+      s.current = selection ?? null
+      s.routable = selection !== undefined
     })
   }
 
@@ -137,7 +168,6 @@ export class ModelDirectory {
       s.status = 'idle'
       s.error = null
     })
-    if (!this.available()) return
     void this.load().catch(() => { /* the next menu open remains the explicit retry surface */ })
   }
 
@@ -146,9 +176,4 @@ export class ModelDirectory {
     this.disposed = true
   }
 
-  private assertAvailable(): void {
-    if (!this.available()) {
-      throw new Error('model selection is unavailable for addressed subagent sessions')
-    }
-  }
 }

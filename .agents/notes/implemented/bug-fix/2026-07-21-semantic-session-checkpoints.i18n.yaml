@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-21-semantic-session-checkpoints.md
-2026-07-21-semantic-session-checkpoints.md: 697d878dccbfab1ded9f73e134d594ba6f0665e1
-2026-07-21-semantic-session-checkpoints.zh.md: c72f2bbad33967f54013f05568b9d1082d549357
+2026-07-21-semantic-session-checkpoints.md: 765429929568b04826b525881d965fc5c3f570bb
+2026-07-21-semantic-session-checkpoints.zh.md: 3c6c5f7ac23c9367787dbc95531a40726ba52994

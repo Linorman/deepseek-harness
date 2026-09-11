@@ -13,7 +13,6 @@ SMOKE = runpy.run_path(ROOT / "scripts" / "smoke-python-runtime.py")
 @pytest.mark.parametrize(
     ("prompt_name", "expected"),
     [
-        ("SNAPSHOT_DIRECT_CHILD_PROMPT", "DIRECT_CHILD_OK"),
         ("SNAPSHOT_WORKFLOW_CHILD_PROMPT", "WORKFLOW_CHILD_OK"),
     ],
 )
@@ -30,6 +29,23 @@ def test_child_prompt_precedes_runtime_context(prompt_name: str, expected: str) 
         for chunk in chunks
         for choice in chunk.get("choices", [])
     )
+
+
+def test_direct_child_requests_cancellation_before_resumed_result() -> None:
+    chunks = SMOKE["completion_chunks"]({
+        "messages": [
+            {"role": "user", "content": SMOKE["SNAPSHOT_DIRECT_CHILD_PROMPT"]},
+            {"role": "user", "content": "Current runtime context"},
+        ],
+        "tools": [{"type": "function", "function": {"name": "snapshot_resume_pending"}}],
+    })
+    calls = [
+        call
+        for chunk in chunks
+        for choice in chunk.get("choices", [])
+        for call in choice.get("delta", {}).get("tool_calls", [])
+    ]
+    assert calls[0]["function"]["name"] == "snapshot_resume_pending"
 
 
 def test_mcp_smoke_requests_the_discovered_tool() -> None:

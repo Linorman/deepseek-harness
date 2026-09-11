@@ -385,7 +385,7 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     const fixture = await readFile(SEED, 'utf8')
     for (let index = 0; index < SEED_COUNT; index += 1) {
       await seedSession(scaffold, fixture, `sidebar-scrollbar-web-e2e-${String(index).padStart(2, '0')}`)
@@ -395,6 +395,7 @@ describe('web e2e: sidebar session list scrollbar (reserved gutter / themed thum
     // the list with room to spare.
     page = await newEnglishPage(browser, 800)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await expandSeededSessions(page)

@@ -65,6 +65,7 @@ export class ReactLoopAgent implements Agent {
   readonly inbox: Inbox
   private phase: Phase
   private activityDone: Promise<void> = Promise.resolve()
+  private readonly pendingWakes = new Set<UserMessage['id']>()
 
   /** The agent-scoped registration boundary; the lifecycle owner unwinds it after the driver exits. */
   readonly scope: Scope
@@ -86,8 +87,8 @@ export class ReactLoopAgent implements Agent {
     this.dispatch = agentEvents(loopCtx, this)
     this.inbox = new Inbox(session, {
       inserted: (message) => { this.dispatch.emit('agent/inbox/inserted', { message }) },
-      discarded: (message) => { this.dispatch.emit('agent/inbox/discarded', { message }) },
-      claimed: (message, turn) => { this.dispatch.emit('agent/inbox/claimed', { message, turn }) },
+      discarded: (message) => { this.pendingWakes.delete(message.id); this.dispatch.emit('agent/inbox/discarded', { message }) },
+      claimed: (message, turn) => { this.pendingWakes.delete(message.id); this.dispatch.emit('agent/inbox/claimed', { message, turn }) },
     })
     const lastTurn = session.events.findLast(event => event.type === 'turn/start')?.data.turn ?? 0
     this.phase = { kind: 'idle', lastTurn }
@@ -115,7 +116,13 @@ export class ReactLoopAgent implements Agent {
     // Captured before the insertion so a reentrant cancel from a splice observer cannot reclassify it.
     const wakingAfterAbort = wakeup && this.phase.kind !== 'idle' && this.phase.abort.signal.aborted
     const resolvedTarget = wakingAfterAbort ? 'next-turn' : target
-    this.inbox.splice(resolvedTarget, Infinity, 0, [message])
+    const alreadyWaking = this.pendingWakes.has(message.id)
+    if (wakeup) this.pendingWakes.add(message.id)
+    try { this.inbox.splice(resolvedTarget, Infinity, 0, [message]) }
+    catch (error: unknown) {
+      if (!alreadyWaking) this.pendingWakes.delete(message.id)
+      throw error
+    }
     if (wakeup) this.wakeDriver(wakingAfterAbort)
   }
 
@@ -136,7 +143,10 @@ export class ReactLoopAgent implements Agent {
       this.inbox.clear()
       if (this.phase.kind !== 'idle') this.phase.wakeRequested = false
     }
-    if (this.phase.kind !== 'idle') this.phase.abort.abort(cause)
+    if (this.phase.kind !== 'idle') {
+      if (options.keepInbox && options.resumePending && cause.kind !== 'disposed' && this.pendingWakes.size > 0) this.phase.wakeRequested = true
+      this.phase.abort.abort(cause)
+    }
   }
 
   runMaintenance<T>(job: (signal: AbortSignal) => Promise<T>): Promise<T> {
@@ -280,6 +290,12 @@ export class ReactLoopAgent implements Agent {
         phase.step = step
         try {
           for (const message of decision.messages) {
+            if (message.source.kind === 'team-channel-view') {
+              if (!isPersistedTeamChannelViewMessage(this.session, message)) {
+                throw new Error(`agent "${this.id}" received a Team channel view that is absent from its Session`)
+              }
+              continue
+            }
             this.session.append('user/message', message, { surfaceOp: 'append' })
           }
           // max-tokens is sticky: once any step hits the ceiling, later steps
@@ -512,4 +528,20 @@ export class ReactLoopAgent implements Agent {
     }))
     return { request, ...preparedCall === undefined ? {} : { preparedCall } }
   }
+}
+
+/** Return whether a queued Team channel view is already the exact Session-derived message. */
+function isPersistedTeamChannelViewMessage(session: Session, message: UserMessage): boolean {
+  if (message.source.kind !== 'team-channel-view') return false
+  const source = message.source
+  return session.events.some((event) => {
+    if (event.type !== 'team/channel-view'
+      || event.data.teamId !== source.teamId
+      || event.data.channelId !== source.channelId
+      || event.data.triggeringEnvelopeId !== source.triggeringEnvelopeId) return false
+    const derived = session.deriveEventMessage(event)
+    return derived?.role === 'user'
+      && derived.id === message.id
+      && JSON.stringify(derived) === JSON.stringify(message)
+  })
 }

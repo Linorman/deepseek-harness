@@ -38,6 +38,12 @@ export interface CancelOptions {
    * later turn and no canceled inbox splice is logged.
    */
   keepInbox?: boolean | undefined
+  /**
+   * With keepInbox, resume pending input that was submitted with wakeup after
+   * the cancelled activity finishes. Pure injected context does not gain a wake.
+   * The default leaves pre-existing pending wakes parked; idle cancellation remains a no-op.
+   */
+  resumePending?: boolean | undefined
 }
 
 /**
@@ -141,6 +147,120 @@ export interface Agent {
    * @param message - identified injected context and the source that supplied it.
    */
   inject(message: UserMessage): void
+}
+
+/** Error raised when a Team task has reserved a workspace scope without a usable live root. */
+export class AgentWorkspaceUnavailableError extends Error {
+  /** @param message - exact unavailable allocation diagnostic. */
+  constructor(message = 'Team task workspace allocation is unavailable') {
+    super(message)
+    this.name = 'AgentWorkspaceUnavailableError'
+  }
+}
+
+/** One local owner that settles every live workspace allocation for an Agent before its activation stops. */
+export interface AgentWorkspaceLeaseSettler {
+  /** Settle or preserve every allocation that remains live for the owning Agent. */
+  settleForActivationDisposal(): Promise<void>
+}
+
+/** Mutable handle for one Agent-keyed, process-local workspace lease. */
+export interface AgentWorkspaceLease {
+  /** Publish a fail-closed marker until its returned disposer clears the exact marker. */
+  markUnavailable(): () => void
+  /** Publish one live provider root until its returned disposer clears the exact root. */
+  publishRoot(root: string): () => void
+  /** Remove this exact Agent lease and its optional activation-disposal settler. */
+  dispose(): void
+}
+
+interface AgentWorkspaceLeaseState {
+  unavailable: object | undefined
+  root: { readonly token: object; readonly value: string } | undefined
+  readonly settler: AgentWorkspaceLeaseSettler | undefined
+}
+
+const agentWorkspaceLeases = new WeakMap<Agent, AgentWorkspaceLeaseState>()
+
+/**
+ * Open the sole live workspace lease for one Agent. This process-local registry
+ * does not use a Cordis service name: separately scoped Agents can share a
+ * provider fiber, while their workspace roots and activation cleanup remain
+ * keyed by the exact live Agent object.
+ * @param agent - live Agent that owns the local workspace root.
+ * @param settler - optional owner invoked before the Agent's activation handle disposes.
+ * @returns a state handle whose disposers cannot clear a newer root or marker.
+ */
+export function openAgentWorkspaceLease(
+  agent: Agent,
+  settler?: AgentWorkspaceLeaseSettler,
+): AgentWorkspaceLease {
+  if (agentWorkspaceLeases.has(agent)) {
+    throw new Error(`Agent '${agent.id}' already has a live workspace lease`)
+  }
+  const state: AgentWorkspaceLeaseState = {
+    unavailable: undefined,
+    root: undefined,
+    settler,
+  }
+  agentWorkspaceLeases.set(agent, state)
+  let disposed = false
+  const assertLive = (): void => {
+    if (!disposed && agentWorkspaceLeases.get(agent) === state) return
+    throw new Error(`Agent '${agent.id}' workspace lease is closed`)
+  }
+  return Object.freeze({
+    markUnavailable(): () => void {
+      assertLive()
+      const marker: object = {}
+      state.unavailable = marker
+      return () => {
+        if (agentWorkspaceLeases.get(agent) === state && state.unavailable === marker) {
+          state.unavailable = undefined
+        }
+      }
+    },
+    publishRoot(root: string): () => void {
+      assertLive()
+      const token: object = {}
+      state.root = { token, value: root }
+      return () => {
+        if (agentWorkspaceLeases.get(agent) === state && state.root?.token === token) {
+          state.root = undefined
+        }
+      }
+    },
+    dispose(): void {
+      if (disposed) return
+      disposed = true
+      if (agentWorkspaceLeases.get(agent) === state) agentWorkspaceLeases.delete(agent)
+    },
+  } satisfies AgentWorkspaceLease)
+}
+
+/**
+ * Settle the optional workspace owner registered for exactly one live Agent.
+ * @param agent - local Agent whose activation is stopping.
+ * @returns resolution after the current lease owner settles, when one exists.
+ */
+export async function settleAgentWorkspaceLease(agent: Agent): Promise<void> {
+  await agentWorkspaceLeases.get(agent)?.settler?.settleForActivationDisposal()
+}
+
+/**
+ * Resolve the execution root currently consumed by a Team task Agent.
+ * A delivery consumer may temporarily publish a provider-owned workspace
+ * allocation on the Agent scope; ordinary Sessions fall back to their durable
+ * header cwd. The allocation value is structural so this package does not
+ * depend on a Team workspace provider.
+ * @param agent - live Agent whose scoped allocation and Session header are read.
+ * @returns the current execution root, or `undefined` when neither is set.
+ */
+export function resolveAgentWorkspaceRoot(agent: Pick<Agent, 'ctx' | 'session'>): string | undefined {
+  const lease = agentWorkspaceLeases.get(agent as Agent)
+  if (lease?.unavailable !== undefined) throw new AgentWorkspaceUnavailableError()
+  if (lease?.root !== undefined) return lease.root.value
+  return agent.session.header.cwd
 }
 
 declare module '@clocky/cordis' {

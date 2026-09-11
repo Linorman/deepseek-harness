@@ -1,5 +1,6 @@
 /** Keyless assembled-Web evidence for conversational Schedule delivery. */
 
+import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
@@ -25,7 +26,7 @@ import {
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, conversationContextKey, saveFailureShot } from './support.ts'
+import { conversationContextKey, saveFailureShot } from './support.ts'
 
 const MODE = webSnapshotMode()
 const OVERLAY = fileURLToPath(new URL('../../../examples/web-schedule/cordis.yml', import.meta.url))
@@ -213,7 +214,7 @@ describe.skipIf(MODE === 'record')('web e2e: conversational reminders', () => {
   const everyAdapter = new EveryReminderAdapter()
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY })
+    scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY, legacyWorkspaceSurface: true })
     scaffold.ctx.effect(
       () => scaffold.ctx.llm.registerAdapter([AFTER_PROVIDER], afterAdapter),
       'Schedule Web After adapter',
@@ -227,6 +228,10 @@ describe.skipIf(MODE === 'record')('web e2e: conversational reminders', () => {
       'Schedule Web Every adapter',
     )
 
+    const cwd = join(scaffold.workspaceCwd, 'workspace')
+    await mkdir(cwd, { recursive: true })
+    const workspace = await scaffold.ctx.workspaceRegistry.create(cwd)
+
     browser = await chromium.launch()
     page = await browser.newPage({
       viewport: { width: 1680, height: 1000 },
@@ -235,15 +240,11 @@ describe.skipIf(MODE === 'record')('web e2e: conversational reminders', () => {
     })
     await page.addInitScript(() => { localStorage.setItem('clocky.locale', 'en') })
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
     expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone))
       .toBe(AT_BROWSER_ZONE)
-
-    const cwd = join(scaffold.workspaceCwd, 'workspace')
-    const workspace = await scaffold.ctx.workspaceRegistry.resolveByPath(cwd)
-    if (workspace === undefined) throw new Error('connected Web workspace was not registered')
 
     afterHandle = await scaffold.ctx.agents.create({
       sessionId: SessionId('schedule-after-web-e2e'),

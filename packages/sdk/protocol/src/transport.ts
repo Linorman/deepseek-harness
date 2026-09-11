@@ -27,6 +27,19 @@ export class JsonRpcResponseError extends Error {
   }
 }
 
+/** A request handler's explicit JSON-RPC error response. */
+export class JsonRpcRequestError extends Error {
+  /**
+   * @param code - the JSON-RPC or application-specific wire error code.
+   * @param message - the wire-visible rejection message.
+   * @param data - optional structured rejection details.
+   */
+  constructor(readonly code: number, message: string, readonly data?: unknown) {
+    super(message)
+    this.name = 'JsonRpcRequestError'
+  }
+}
+
 /**
  * Outbound request and notification surface used by the runtime server and
  * SDK clients.
@@ -233,6 +246,10 @@ export class JsonRpcLineTransport implements JsonRpcTransportPeer {
       const result = await handler(method, params)
       this.write({ jsonrpc: '2.0', id, result })
     } catch (error) {
+      if (error instanceof JsonRpcRequestError) {
+        this.writeError(id, error.code, error.message, error.data)
+        return
+      }
       this.writeError(id, -32603, error instanceof Error ? error.message : String(error))
     }
   }
@@ -253,8 +270,12 @@ export class JsonRpcLineTransport implements JsonRpcTransportPeer {
     pending.resolve(frame.result)
   }
 
-  private writeError(id: JsonRpcId, code: number, message: string): void {
-    this.write({ jsonrpc: '2.0', id, error: { code, message } })
+  private writeError(id: JsonRpcId, code: number, message: string, data?: unknown): void {
+    this.write({
+      jsonrpc: '2.0',
+      id,
+      error: data === undefined ? { code, message } : { code, message, data },
+    })
   }
 
   private write(message: Record<string, unknown>): void {

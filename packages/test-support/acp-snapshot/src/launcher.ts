@@ -23,6 +23,9 @@ import { resolveExampleLaunch } from '@clocky/clocky-loader-smoke'
 
 const EXIT_MARKER_GRACE_MS = 250
 
+/** Internal transcript selected for snapshot persistence checks after ACP session creation. */
+export type AcpTranscriptMode = 'wire-session' | 'team-coordinator'
+
 /** The source/built agent entry, leaf config, and workspace tsconfig an ACP test boots. */
 export interface AgentUnderTest {
   /** The agent source bin entry (for example `packages/examples/acp-demo/src/bin.ts`). */
@@ -33,6 +36,8 @@ export interface AgentUnderTest {
   configPath: string
   /** The repo tsconfig whose paths resolve unbuilt workspace imports. */
   tsconfigPath: string
+  /** Internal transcript selected after `session/new`; ordinary test agents use the wire id. */
+  transcriptMode?: AcpTranscriptMode
 }
 
 /** Options for one ACP test subprocess. */

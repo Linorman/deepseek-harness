@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-The browser side of the dsh web GUI: shell boot, browser-host communication, shared UI services, and feature plugins. Authoring rules live in [AGENTS.md](AGENTS.md); the host half is [`host/`](../host/README.md). All except `test-runtime` are **product** packages named `@deepseek-ai/dsh-client-<name>`.
+The browser side of the clocky web GUI: shell boot, browser-host communication, shared UI services, and feature plugins. Authoring rules live in [AGENTS.md](AGENTS.md); the host half is [`host/`](../host/README.md). All except `test-runtime` are **product** packages named `@clocky/clocky-client-<name>`.
 
 | Package | Purpose |
 |---|---|
@@ -19,19 +19,17 @@ The browser side of the dsh web GUI: shell boot, browser-host communication, sha
 | [`ui-primitives/`](ui-primitives/README.md) | Provides shared React controls, icons, and content renderers. |
 | [`ui-attachment/`](ui-attachment/README.md) | Registers composer and message-image attachment presentation. |
 | [`ui-layout/`](ui-layout/README.md) | Arranges the main application regions. |
-| [`ui-sidebar/`](ui-sidebar/README.md) | Presents workspace and session navigation. |
-| [`ui-brand-official/`](ui-brand-official/README.md) | Fills the generic browser-brand slots with the official name and marks. |
-| [`ui-workspace/`](ui-workspace/README.md) | Provides workspace selection and creation surfaces. |
+| [`ui-sidebar/`](ui-sidebar/README.md) | Hosts Team navigation and task creation controls. |
+| [`ui-team/`](ui-team/README.md) | Presents durable Team navigation and coordinator transcript selection. |
+| [`ui-workspace/`](ui-workspace/README.md) | Provides Workspace surfaces for non-product compositions. |
 | [`ui-conversation/`](ui-conversation/README.md) | Presents the active conversation and its input surface. |
 | [`ui-tool/`](ui-tool/README.md) | Composes Tool call trees and keyed per-Tool views. |
-| [`ui-workflow-run/`](ui-workflow-run/README.md) | Replays durable workflow runs as nested Chat disclosures with live-only child navigation. |
 | [`ui-goal/`](ui-goal/README.md) | Presents and manages the current goal. |
 | [`ui-trajectory/`](ui-trajectory/README.md) | Presents alternate views of agent activity. |
 | [`ui-commands/`](ui-commands/README.md) | Provides session-aware command discovery and dispatch. |
 | [`ui-input-trigger/`](ui-input-trigger/README.md) | Coordinates inline command and reference suggestions. |
 | [`ui-skill/`](ui-skill/README.md) | Adds skill references to inline suggestions. |
 | [`ui-reference/`](ui-reference/README.md) | Unified Web `@file` / `@session` reference source. |
-| [`ui-subagent/`](ui-subagent/README.md) | Provides subagent navigation, child transcript states, and inline references. |
 | [`ui-jobs/`](ui-jobs/README.md) | Lists this session's background jobs in the conversation header. |
 | [`ui-model-selection/`](ui-model-selection/README.md) | Provides model selection in conversation surfaces. |
 | [`ui-permission/`](ui-permission-presets/README.md) | Configures default permissions and switches the current session's access. |
@@ -41,7 +39,7 @@ The browser side of the dsh web GUI: shell boot, browser-host communication, sha
 | [`ui-agent-preset/`](ui-agent-preset/README.md) | Selects a session's agent preset and authors preset compositions. |
 | [`ui-settings/`](ui-settings/README.md) | Hosts the settings interface and its extension areas. |
 | [`ui-settings-general/`](ui-settings-general/README.md) | Provides the general settings section. |
-| [`ui-settings-models/`](ui-settings-models/README.md) | Provides model-provider configuration and DeepSeek onboarding. |
+| [`ui-settings-models/`](ui-settings-models/README.md) | Provides provider-neutral model configuration. |
 | [`ui-settings-plugin-inventory/`](ui-settings-plugin-inventory/README.md) | Contributes the read-only Host Loader inventory tab to Plugins settings. |
 
 Each child reference owns its contract and detailed behavior. The [slot system standard](../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.md) and [web client architecture note](../../.agents/notes/implemented/architecture/2026-07-19-gui-web-client-architecture.md) own the cross-package composition and loading decisions.

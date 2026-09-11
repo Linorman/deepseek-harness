@@ -1,0 +1,8 @@
+- id: agent-default-model
+  config:
+    provider: headless-team-run-mock
+    model: headless-team-run-mock
+
+- insert:
+    - id: headless-team-run-mock-llm
+      name: './snapshot-fixtures/headless-team-run-llm.ts'

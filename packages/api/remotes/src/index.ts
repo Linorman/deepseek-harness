@@ -18,8 +18,10 @@ export {
   ApiRemoteSessionNotFound,
   ApiRemoteSubagentSessionOwnership,
   apiRemoteSubagentOwnershipError,
+  apiRemoteTeamOwnershipError,
   createApiRemoteAgentResolver,
   hasApiRemoteSubagentOwner,
+  hasApiRemoteTeamOwner,
   inspectApiRemoteSession,
 } from './agent-lookup.ts'
 export type {

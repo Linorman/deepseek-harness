@@ -1,14 +1,16 @@
-# @deepseek-ai/dsh-storage-json
+# @clocky/clocky-storage-json
 
 [English](README.md) | 中文
 
-[存储中心](../storage/README.zh.md)的 JSON 后端：配置根目录下每个单元使用一个人类可读的 `<unit>.json` 文件，注册为后端 `json`。设计见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
+[存储中心](../storage/README.zh.md)的 JSON 后端：配置根目录下保存人类可读的 KV 单元和追加日志文件，注册为后端 `json`。设计见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
 ## 模型
 
 - 内存中的单元状态具有最终决定权；每个写入原语都会通过临时文件写入 + fsync + 原子 `rename()` 替换重新发布整个文件。单元文件始终是完整的当前状态：可读性是该后端存在的理由，规模问题则属于 SQLite 后端。
 - 缺失文件会作为空单元打开，并在第一次写入时物化。外来或无法解析的文件以 `malformed-medium` 拒绝；已存版本与描述符不同时以 `version-mismatch` 拒绝（预发布立场，不迁移）。
 - 跨调用的写入顺序属于调用方（领域层的写入链）；每次调用都具备原子性，并在完成时已达到持久状态。
+- 日志流位于 `logs/<base64url-name>.json`。带预期尾序列的追加会原子地重写完整流文档，因此被接受的批次会一同可见；检查点不能倒退或超过尾序列。
+- 日志分面会在任何日志操作前取得一个根目录范围的所有者记录。第二个本地 Hub 以 `writer-locked` 失败；同主机的死亡所有者会先被隔离再恢复，而不同主机的所有者会快速失败。
 
 ## 配置
 
@@ -18,11 +20,11 @@
 
 ## 模型体验
 
-### 已存领域记录
+### 已存宿主数据
 
 #### 模型看到的内容
 
-无。该后端不贡献提示词、工具或 schema；它在 `ctx.storage` 后面持久化非会话领域数据，只供宿主侧消费方使用。
+无。该后端不贡献提示词、工具或 schema；它在 `ctx.storage` 后面持久化非会话记录和追加日志，只供宿主侧消费方使用。
 
 #### Token 影响
 
@@ -34,5 +36,5 @@
 
 ## 已知限制与暂缓事项
 
-- Windows 持久性依赖 libuv 的 `rename()`（调用 `MoveFileExW` 并启用替换），没有显式 write-through 标志；追加日志分面落地时，计划把会话日志后端更严格的 Win32 write-through 发布辅助函数下移到此处（见 Agent Note 的迁移章节）。
-- 没有跨进程写锁：两个进程写入同一根目录时，可能交错执行整文件替换（最后写入者胜出）。当前消费方采用单一宿主进程部署；多进程方案按 Agent Note 的范围外事项表暂缓。
+- Windows 持久性依赖 libuv 的 `rename()`（调用 `MoveFileExW` 并启用替换），没有显式 write-through 标志。
+- JSON 日志分面刻意只支持单一 Hub。它拒绝存活的异主机或同主机所有者，而不协调分布式写入者；需要并发写入时使用 SQLite 日志后端。

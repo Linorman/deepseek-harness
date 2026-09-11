@@ -1,28 +1,103 @@
+import { teamChannelInputRequestSchema, teamChannelAttachmentRequestSchema, teamWorkflowPlanListRequestSchema } from './api/teams.schema.ts'
+import type { TeamChannelPostInput, TeamWorkflowPlanList } from './api/teams.ts'
+import { teamChannelListInputSchema } from '@clocky/clocky-team/schema'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
+import type { TeamHumanActionResponseInput, TeamHumanActionResponseResult, HostHumanActionResponseScope, HostHumanActionUnavailableScope } from '@clocky/clocky-team'
+import { teamHumanActionResponseInputSchema, taskAttemptIdSchema } from '@clocky/clocky-team'
+import { isDeepStrictEqual } from 'node:util'
+import { resolvePrincipalChannelText, getPrincipalChannelInvitation, acknowledgePrincipalChannelInvitation, createPrincipalChannelAdmission } from '@clocky/clocky-team-channel-admission/principal'
 /**
  * Host-side ApiProxy implementation. Signature discipline: unary takes the
  * narrow RpcRequest<P> and echoes request.rpcId on the RpcResponse<T>.
  */
 
 import { randomUUID } from 'node:crypto'
-import { mkdir, stat } from 'node:fs/promises'
+import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname } from 'node:path'
 import { z as zod } from 'zod'
 import type { Context } from '@clocky/cordis'
-import { installModelSelection } from '@clocky/clocky-agent'
+import { installModelSelection, resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { Agent, ModelSelection, ModelSelectionRef, AgentOptions, AgentStatus } from '@clocky/clocky-agent'
 import type {} from '@clocky/clocky-agent-presets/types'
 import { AttachmentError, admitEncodedImages } from '@clocky/clocky-attachment'
 import type { ImageAttachmentRef } from '@clocky/clocky-attachment'
+import {
+  TeamError,
+  channelCloseInputSchema,
+  channelSummarySelectionInputSchema,
+  channelSummaryHumanProofInput,
+  channelIdSchema,
+  channelOpenInputSchema,
+  jsonObjectSchema,
+  participantIdSchema,
+  participantInterruptRequestInputSchema,
+  participantInviteInputSchema,
+  participantPhaseTransitionInputSchema,
+  teamArchiveInputSchema,
+  teamGoalPhaseTransitionInputSchema,
+  teamGoalUpdateInputSchema,
+  teamResumeInputSchema,
+  teamTaskCancelInputSchema,
+  teamTaskCreateInputSchema,
+  teamTaskDeleteInputSchema,
+  teamTaskDetailsUpdateInputSchema,
+  teamTaskReviewResolveInputSchema,
+  teamHumanActionIdSchema,
+  teamHumanActionSourceIdSchema,
+  teamIdSchema,
+} from '@clocky/clocky-team'
+import type {
+  ChannelCloseInput,
+  ChannelEnvelopePostInput,
+  ChannelOpenInput,
+  ChannelSnapshot,
+  EnvelopeId,
+  ParticipantInterruptSnapshot,
+  ParticipantInterruptRequestInput,
+  ParticipantId,
+  ParticipantInviteInput,
+  ParticipantPhaseTransitionInput,
+  ParticipantSnapshot,
+  JsonObject,
+  TaskAttemptResult,
+  TeamHumanActionId,
+  TeamHumanActionKind,
+  TeamHumanActionSnapshot,
+  TeamHumanActorProofInput,
+  TeamSystemHumanActionProof,
+  TeamSystemHumanActionProofSource,
+  TeamSystemHumanActionScope,
+  TeamId,
+  TeamTaskSnapshot,
+  TeamStateSnapshot,
+  TeamMetricsSnapshot,
+  TeamEnvelope,
+  TeamGoalPhaseTransitionInput,
+  TeamGoalUpdateInput,
+  TeamResumeInput,
+  TeamWorkflowPlanSnapshot,
+  TeamTaskCancelInput,
+  TeamTaskCreateInput,
+  TeamTaskDeleteInput,
+  TeamTaskDetailsUpdateInput,
+  TeamTaskReviewResolveInput,
+  TeamParticipantOwner,
+} from '@clocky/clocky-team'
+import type {} from '@clocky/clocky-team'
+import type {} from '@clocky/clocky-team-human-actor'
+import type {} from '@clocky/clocky-team-channel-summary'
+import { TeamArtifactError } from '@clocky/clocky-team-artifact'
+import type {} from '@clocky/clocky-team-artifact'
+import { TeamRunError } from '@clocky/clocky-team-run'
+import type {} from '@clocky/clocky-team-run'
 import { createUserMessage, freezeMessage, ReasoningEffortId } from '@clocky/clocky-llm'
 import { errorChain } from '@clocky/clocky-llm'
-import type { ContentBlock, MessageSource } from '@clocky/clocky-llm'
+import type { MessageSource } from '@clocky/clocky-llm'
 import { isAppendSurfaceEvent, isJsonValue } from '@clocky/clocky-session'
 import type { JsonValue, Session, SessionEvent, SessionEventMap, SessionHeader, SessionId, UserMessage } from '@clocky/clocky-session'
 import type { SessionPersistence } from '@clocky/clocky-session-persistence'
 import { SessionQueryError, type SessionSearchCursor } from '@clocky/clocky-session-query'
-import { SubagentError } from '@clocky/clocky-subagent'
-import type { SubagentListEntry as CatalogSubagentListEntry } from '@clocky/clocky-subagent'
 import { isUserInvocable } from '@clocky/clocky-skill'
 import type { Workspace, WorkspaceRecord } from '@clocky/clocky-workspace'
 import {
@@ -39,8 +114,9 @@ import type {} from '@clocky/clocky-tools'
 import type {
   ApiProxy, ConfigurableProviderView, CredentialView, GoalRef, HistoryEntry, HostFrame,
   ModelCatalogFailure, ModelProviderGroup,
-  ModelReasoning, MuxFrame, PromptContentPart, QuestionResponsePayload, SessionListMetadata, SessionProjectionsBlock, SessionSearchItem,
-  QueuedInboxItem, SessionSummary, SettingsNamespaceView, SubagentAddress, JobView, ToolEventView,
+  ModelReasoning, MuxFrame, PromptContentPart, QuestionResponsePayload, SessionListMetadata,
+  SessionModels, SessionProjectionsBlock, SessionSearchItem,
+  QueuedInboxItem, SessionSummary, SettingsNamespaceView, JobView, ToolEventView,
   WorkspaceId, WorkspaceView,
 } from './api/index.ts'
 import {
@@ -95,6 +171,7 @@ import { imageLimitsProjectionSchema, sessionListMetadataProjectionSchema } from
 import { questionResponsePayloadSchema } from './api/questions.schema.ts'
 import type { ClientResponse, RpcError, RpcReceipt, RpcRequest, RpcResponse } from './api/rpc.ts'
 import { RpcId } from './api/rpc.ts'
+import type { TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamStartResult } from './api/teams.ts'
 import type {
   AskUserQuestionAnswer, AskUserQuestionItem, AskUserQuestionRequest,
 } from '@clocky/clocky-user-questions'
@@ -102,14 +179,16 @@ import { UserQuestionError } from '@clocky/clocky-user-questions'
 import { DirectoryPickerError } from '@clocky/clocky-host-directory-picker'
 import {
   ApiRemoteSessionNotFound as SessionNotFound,
-  ApiRemoteSubagentSessionOwnership as SubagentSessionOwnership,
   API_REMOTE_FORWARDED_EVENTS,
   apiRemoteSubagentOwnershipError,
+  apiRemoteTeamOwnershipError,
   createApiRemoteAgentResolver,
   hasApiRemoteSubagentOwner,
+  hasApiRemoteTeamOwner,
   inspectApiRemoteSession,
 } from '@clocky/clocky-api-remotes'
 import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-path-opener.ts'
+import { currentAuthenticatedProductCall, withAuthenticatedProductCall } from './authenticated-product-call.ts'
 
 /** Page size when history is called without maxMessages. */
 const DEFAULT_MAX_MESSAGES = 50
@@ -121,12 +200,25 @@ const SESSION_SEARCH_PROVIDER_CALL_LIMIT = 100
 const COLD_SUMMARY_BATCH_SIZE = 16
 /** Default maximum artifact size eligible for one cold blankness read. */
 export const DEFAULT_COLD_BLANK_PROBE_MAX_BYTES = 1024
+/** Fixed host-side safety bound for one browser artifact response. */
+const MAX_TEAM_ARTIFACT_READ_BYTES = 8 * 1024 * 1024
 
 /** Conversation message event types (the pagination counting unit). */
-const MESSAGE_TYPES = new Set(['user/message', 'assistant/message'])
+const MESSAGE_TYPES = new Set(['user/message', 'team/channel-view', 'assistant/message'])
+
+/** Recognize a Team-envelope source without making Host depend on the delivery Consumer package. */
+function isTeamSteeringSource(source: MessageSource): boolean {
+  const candidate = source as unknown as { readonly kind?: string; readonly delivery?: string }
+  return candidate.kind === 'team-envelope' && candidate.delivery === 'steer'
+}
+
+type DurablePromptContent = Array<
+  | { type: 'text'; text: string }
+  | { type: 'image'; attachment: ImageAttachmentRef }
+>
 
 /** Validate one prompt as a batch before publishing any durable image object. */
-async function durablePromptContent(ctx: Context, content: readonly PromptContentPart[]): Promise<ContentBlock[]> {
+async function durablePromptContent(ctx: Context, content: readonly PromptContentPart[]): Promise<DurablePromptContent> {
   if (content.every(part => part.type === 'text')) {
     return content.map(part => ({ type: 'text', text: part.text }))
   }
@@ -136,6 +228,23 @@ async function durablePromptContent(ctx: Context, content: readonly PromptConten
     ? { type: 'text', text: part.text }
     // admitEncodedImages returns one reference per image part in order.
     : { type: 'image', attachment: refs[next++] as ImageAttachmentRef })
+}
+
+/** Resolve optional wire fields into one complete actor-free Hub post command. */
+function channelPostCommandInput(input: TeamChannelPostInput): ChannelEnvelopePostInput {
+  return {
+    expectedCursor: input.expectedCursor,
+    ...input.idempotencyKey === undefined ? {} : { idempotencyKey: input.idempotencyKey },
+    draft: {
+      channelId: input.channelId, audience: input.audience, kind: input.kind, payload: input.payload, delivery: input.delivery,
+      ...input.priority === undefined ? {} : { priority: input.priority },
+      ...input.causationId === undefined ? {} : { causationId: input.causationId },
+      ...input.correlationId === undefined ? {} : { correlationId: input.correlationId },
+      ...input.taskId === undefined ? {} : { taskId: input.taskId },
+      ...input.traceId === undefined ? {} : { traceId: input.traceId },
+      ...input.ttlMs === undefined ? {} : { ttlMs: input.ttlMs },
+    },
+  }
 }
 
 /** Search durable content for an image reference, including nested tool results. */
@@ -474,8 +583,6 @@ function sessionListUpdatedAt(header: SessionHeader, metadata: SessionListMetada
 
 /** Shared Session-header projection for list baselines and creation frames. */
 function sessionListFields(header: SessionHeader, events: readonly SessionEvent[] = []): {
-  parentSessionId?: SessionId
-  origin?: 'subagent'
   cwd?: string
   agentPreset?: string
 } {
@@ -484,8 +591,6 @@ function sessionListFields(header: SessionHeader, events: readonly SessionEvent[
   // showing the creation-time value would contradict what the model saw.
   const agentPreset = resolveSessionPreset({ header, events })
   return {
-    ...header.parentSession === undefined ? {} : { parentSessionId: header.parentSession },
-    ...header.origin === undefined ? {} : { origin: header.origin },
     ...header.cwd === undefined ? {} : { cwd: header.cwd },
     ...agentPreset === undefined ? {} : { agentPreset },
   }
@@ -618,12 +723,16 @@ interface ToolCallData { callId: string; name: string; arguments: string }
  * answerer's promise back into `ctx.approval`.
  */
 interface PendingApproval {
+  answerClaimed?: boolean
   rpcId: RpcId
   sessionId: SessionId
   approvalId: ApprovalRequestId
   toolName: string
   callId?: CallId
   reason?: string
+  teamId?: TeamId
+  participantId?: ParticipantId
+  taskId?: TeamTaskSnapshot['id']
   resolve(outcome: ApprovalOutcome): void
 }
 
@@ -638,12 +747,16 @@ function requestedFrame(pending: PendingApproval): RpcRequest<MuxFrame> {
       toolName: pending.toolName,
       ...pending.callId === undefined ? {} : { callId: pending.callId },
       ...pending.reason === undefined ? {} : { reason: pending.reason },
+      ...pending.teamId === undefined ? {} : { teamId: pending.teamId },
+      ...pending.participantId === undefined ? {} : { participantId: pending.participantId },
+      ...pending.taskId === undefined ? {} : { taskId: pending.taskId },
     },
   }
 }
 
 /** One host-owned question wait, addressed by the stable server-request id. */
 interface PendingQuestion {
+  answerClaimed?: boolean
   rpcId: RpcId
   sessionId: SessionId
   questions: AskUserQuestionItem[]
@@ -651,6 +764,324 @@ interface PendingQuestion {
   reject: (error: UserQuestionError) => void
   signal?: AbortSignal
   onAbort?: () => void
+  teamId?: TeamId
+  participantId?: ParticipantId
+  taskId?: TeamTaskSnapshot['id']
+}
+
+const HOST_API_PROXY_HUMAN_ACTION_PROOF_SOURCE = 'host-api-proxy'
+
+/** Retain the Host-only proof issuer associated with one ApiProxy context. */
+const hostHumanActionProofIssuers = new WeakMap<Context, HostHumanActionProofIssuer>()
+
+/** Own one-shot authority for Host-verified Team approval/question actions. */
+class HostHumanActionProofIssuer {
+  private readonly proofs = new Map<TeamSystemHumanActionProof, TeamSystemHumanActionScope>()
+  private readonly pendingActions = new Map<TeamHumanActionId, TeamHumanActionSnapshot>()
+  private readonly proofChecks = new Map<TeamSystemHumanActionProof, () => boolean>()
+  private closed = false
+
+  /** Source registered while this ApiProxy context owns verified interaction entries. */
+  readonly source: TeamSystemHumanActionProofSource = Object.freeze({
+    name: HOST_API_PROXY_HUMAN_ACTION_PROOF_SOURCE,
+    resolveHumanActionProof: (proof: TeamSystemHumanActionProof): TeamSystemHumanActionScope | undefined =>
+      this.resolve(proof),
+  })
+
+  /** Issue one exact pending-action proof and retain its action only after Hub acceptance. */
+  async upsert<T>(
+    input: { readonly teamId: TeamId; readonly expectedCursor: number; readonly action: TeamHumanActionSnapshot },
+    operation: (actor: TeamSystemHumanActionProof) => Promise<T>,
+  ): Promise<T> {
+    const result = await this.withProof({ kind: 'host-human-action-upsert', ...input }, operation)
+    this.pendingActions.set(input.action.id, freezeHumanAction(structuredClone(input.action)))
+    return result
+  }
+
+  /** Issue one exact terminal-action proof for an action this Host previously admitted. */
+  async resolveAction<T>(
+    input: {
+      readonly teamId: TeamId
+      readonly expectedCursor: number
+      readonly actionId: TeamHumanActionId
+      readonly phase: 'resolved' | 'cancelled'
+      readonly outcome: JsonObject
+    },
+    operation: (actor: TeamSystemHumanActionProof) => Promise<T>,
+  ): Promise<T> {
+    this.assertOpen()
+    const action = this.pendingActions.get(input.actionId)
+    if (action === undefined || action.teamId !== input.teamId) {
+      throw new TeamError('Host human-action entry is no longer verified', 'TEAM_ACTOR_PROOF_INVALID')
+    }
+    const result = await this.withProof({
+      kind: 'host-human-action-resolve',
+      teamId: input.teamId,
+      expectedCursor: input.expectedCursor,
+      action,
+      phase: input.phase,
+      outcome: input.outcome,
+    }, operation)
+    this.pendingActions.delete(input.actionId)
+    return result
+  }
+
+  /** Check whether this runtime still owns an accepted interaction or in-flight settlement. */
+  hasVerifiedAction(actionId: TeamHumanActionId): boolean { return this.pendingActions.has(actionId) }
+
+  /** Persist one caller-authenticated response while its exact callback remains owned. */
+  async acceptResponse<T>(
+    scope: Omit<HostHumanActionResponseScope, 'kind' | 'action'>,
+    isCurrent: () => boolean,
+    operation: (actor: TeamSystemHumanActionProof) => Promise<T>,
+  ): Promise<T> {
+    const action = this.pendingActions.get(scope.input.actionId)
+    if (action === undefined) throw new TeamError('Host response continuation is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+    return await this.withProof({ kind: 'host-human-action-response-accept', ...scope, action }, operation, isCurrent)
+  }
+
+  /** Failure-only authority cannot recreate a successful response callback from durable data. */
+  async unavailable<T>(
+    scope: Omit<HostHumanActionUnavailableScope, 'kind'>,
+    isCurrent: () => boolean,
+    operation: (actor: TeamSystemHumanActionProof) => Promise<T>,
+  ): Promise<T> {
+    return await this.withProof({ kind: 'host-human-action-unavailable', ...scope }, operation,
+      () => isCurrent() && !this.pendingActions.has(scope.action.id))
+  }
+
+  /** Forget an action after a terminal persistence failure no longer retries it. */
+  forget(actionId: TeamHumanActionId): void {
+    this.pendingActions.delete(actionId)
+  }
+
+  /** Invalidate every outstanding proof and verified action during ApiProxy teardown. */
+  close(): void {
+    this.closed = true
+    this.proofs.clear()
+    this.proofChecks.clear()
+    this.pendingActions.clear()
+  }
+
+  /** Retain one proof only until its matching TeamRuntime call settles. */
+  private async withProof<T>(
+    scope: TeamSystemHumanActionScope,
+    operation: (actor: TeamSystemHumanActionProof) => Promise<T>,
+    isCurrent?: () => boolean,
+  ): Promise<T> {
+    this.assertOpen()
+    const proof = createHostHumanActionProof()
+    this.proofs.set(proof, freezeHumanActionScope(structuredClone(scope)))
+    if (isCurrent !== undefined) this.proofChecks.set(proof, isCurrent)
+    try {
+      return await operation(proof)
+    } finally {
+      this.proofs.delete(proof)
+      this.proofChecks.delete(proof)
+    }
+  }
+
+  /** Resolve only a live one-shot proof retained by this exact Host issuer. */
+  private resolve(proof: TeamSystemHumanActionProof): TeamSystemHumanActionScope | undefined {
+    return this.closed || this.proofChecks.get(proof)?.() === false ? undefined : this.proofs.get(proof)
+  }
+
+  /** Reject issuance after ApiProxy teardown before a proof reaches the Hub. */
+  private assertOpen(): void {
+    if (this.closed) throw new TeamError('Host human-action proof issuer is closed', 'TEAM_ACTOR_PROOF_INVALID')
+  }
+}
+
+/** Create one non-serializable proof that only the Host ApiProxy source can resolve. */
+function createHostHumanActionProof(): TeamSystemHumanActionProof {
+  const proof: object = {}
+  Object.defineProperty(proof, 'toJSON', {
+    enumerable: true,
+    value: (): never => { throw new TypeError('Host human-action proofs are runtime-only and cannot be serialized') },
+  })
+  return Object.freeze(proof) as TeamSystemHumanActionProof
+}
+
+/** Freeze one action value retained by the private issuer without exposing caller mutation. */
+function freezeHumanAction(action: TeamHumanActionSnapshot): TeamHumanActionSnapshot {
+  Object.freeze(action)
+  Object.freeze(action.details)
+  if (action.outcome !== undefined) Object.freeze(action.outcome)
+  return action
+}
+
+/** Freeze a detached system scope before retaining it behind an opaque proof. */
+function freezeHumanActionScope(scope: TeamSystemHumanActionScope): TeamSystemHumanActionScope {
+  Object.freeze(scope)
+  freezeHumanAction(scope.action)
+  if (scope.kind === 'host-human-action-resolve') Object.freeze(scope.outcome)
+  return scope
+}
+
+/** Return the sole Host issuer for this ApiProxy context, registering it on first Team use. */
+function hostHumanActionProofIssuer(ctx: Context): HostHumanActionProofIssuer | undefined {
+  const existing = hostHumanActionProofIssuers.get(ctx)
+  if (existing !== undefined) return existing
+  const teams = ctx.get('teams')
+  if (teams === undefined) return undefined
+  const issuer = new HostHumanActionProofIssuer()
+  const unregister = teams.registerSystemHumanActionProofSource(issuer.source)
+  hostHumanActionProofIssuers.set(ctx, issuer)
+  ctx.effect(() => () => {
+    issuer.close()
+    unregister()
+    if (hostHumanActionProofIssuers.get(ctx) === issuer) hostHumanActionProofIssuers.delete(ctx)
+  }, 'api-proxy: human-action proof source')
+  return issuer
+}
+
+/** Resolve Team/Participant/task provenance from a Session header and latest task assignment. */
+function interactionProvenance(session: Pick<Session, 'header' | 'events'>): {
+  readonly teamId?: TeamId
+  readonly participantId?: ParticipantId
+  readonly taskId?: TeamTaskSnapshot['id']
+} {
+  const team = teamIdSchema.safeParse(session.header.teamId)
+  const participant = participantIdSchema.safeParse(session.header.participantId)
+  const latestAssignment = [...session.events].reverse().find(event => event.type === 'user/message'
+    && (event.data.source as { kind?: unknown }).kind === 'team-task-assignment')
+  const rawTaskId = latestAssignment?.type === 'user/message'
+    ? (latestAssignment.data.source as { taskId?: unknown }).taskId
+    : undefined
+  const task = typeof rawTaskId === 'string' ? rawTaskId as TeamTaskSnapshot['id'] : undefined
+  return {
+    ...team.success ? { teamId: team.data } : {},
+    ...participant.success ? { participantId: participant.data } : {},
+    ...task === undefined ? {} : { taskId: task },
+  }
+}
+
+/** Build a stable Team-owned interaction identity from its source request. */
+function teamHumanActionId(
+  kind: TeamHumanActionKind,
+  sessionId: SessionId,
+  sourceId: string,
+): TeamHumanActionId {
+  return teamHumanActionIdSchema.parse(`${kind}:${String(sessionId)}:${sourceId}`)
+}
+
+/** Persist one pending Team interaction when its Session carries complete Team provenance. */
+async function persistPendingTeamAction(
+  ctx: Context,
+  input: {
+    readonly sessionId: SessionId
+    readonly kind: TeamHumanActionKind
+    readonly sourceId: string
+    readonly details: JsonObject
+    readonly participantId?: ParticipantId
+    readonly teamId?: TeamId
+    readonly taskId?: TeamTaskSnapshot['id']
+  },
+  isVerifiedPending: () => boolean,
+): Promise<TeamHumanActionSnapshot | undefined> {
+  if (input.teamId === undefined || input.participantId === undefined || !isVerifiedPending()) return undefined
+  const teamId = input.teamId
+  const teams = ctx.get('teams')
+  if (teams === undefined) return undefined
+  const issuer = hostHumanActionProofIssuer(ctx)
+  if (issuer === undefined) return undefined
+  const source = input.taskId === undefined ? undefined : [...(ctx.get('sessions')?.get(input.sessionId)?.events ?? [])].reverse()
+    .find(event => event.type === 'user/message' && (event.data.source as { taskId?: unknown }).taskId === input.taskId)
+  const attempt = source?.type === 'user/message'
+    ? taskAttemptIdSchema.safeParse((source.data.source as { attemptId?: unknown }).attemptId) : undefined
+  const action: TeamHumanActionSnapshot = {
+    ...(attempt?.success === true ? { attemptId: attempt.data } : {}),
+    id: teamHumanActionId(input.kind, input.sessionId, input.sourceId),
+    teamId,
+    kind: input.kind,
+    phase: 'pending',
+    sessionId: input.sessionId,
+    participantId: input.participantId,
+    ...input.taskId === undefined ? {} : { taskId: input.taskId },
+    sourceId: teamHumanActionSourceIdSchema.parse(input.sourceId),
+    details: structuredClone(input.details),
+    createdAt: 0,
+    updatedAt: 0,
+  }
+  // Timestamps are Hub-owned; the zero placeholders satisfy the wire shape and
+  // are replaced by TeamHub on the first durable append.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (!isVerifiedPending()) return undefined
+    const state = await teams.getTeam({ teamId })
+    if (!isVerifiedPending()) return undefined
+    try {
+      return await issuer.upsert({
+        teamId,
+        expectedCursor: state.team.cursor,
+        action,
+      }, async actor => await teams.upsertHumanAction({
+        actor,
+        teamId,
+        expectedCursor: state.team.cursor,
+      }))
+    } catch (error: unknown) {
+      if (error instanceof TeamError && error.code === 'TEAM_CURSOR_CONFLICT') continue
+      throw error
+    }
+  }
+  throw new TeamError(`Team '${teamId}' human-action cursor changed repeatedly`, 'TEAM_CURSOR_CONFLICT')
+}
+
+/** Persist a terminal Team interaction state without making response delivery depend on the mux. */
+async function persistResolvedTeamAction(
+  ctx: Context,
+  input: {
+    readonly sessionId: SessionId
+    readonly kind: TeamHumanActionKind
+    readonly sourceId: string
+    readonly phase: 'resolved' | 'cancelled'
+    readonly outcome: JsonObject
+    readonly teamId?: TeamId
+  },
+): Promise<void> {
+  if (input.teamId === undefined) return
+  const teamId = input.teamId
+  const teams = ctx.get('teams')
+  if (teams === undefined) return
+  const actionId = teamHumanActionId(input.kind, input.sessionId, input.sourceId)
+  const issuer = hostHumanActionProofIssuers.get(ctx)
+  if (issuer === undefined) {
+    ctx.logger.warn(`api-proxy: no verified Host human-action entry exists for '${String(actionId)}'`)
+    return
+  }
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let state: TeamStateSnapshot
+    try {
+      state = await teams.getTeam({ teamId })
+    } catch (error: unknown) {
+      ctx.logger.warn(`api-proxy: could not read Team '${input.teamId}' while resolving human-action '${String(actionId)}': ${error instanceof Error ? error.message : String(error)}`)
+      return
+    }
+    try {
+      await issuer.resolveAction({
+        teamId,
+        expectedCursor: state.team.cursor,
+        actionId,
+        phase: input.phase,
+        outcome: input.outcome,
+      }, async actor => await teams.resolveHumanAction({
+        actor,
+        teamId,
+        expectedCursor: state.team.cursor,
+      }))
+      return
+    } catch (error: unknown) {
+      if (error instanceof TeamError && error.code === 'TEAM_CURSOR_CONFLICT') continue
+      // A restarted Host has no verified pending entry and therefore cannot
+      // mint replacement authority. Keep the mux outcome authoritative and
+      // leave this fail-closed persistence diagnostic for operators.
+      issuer.forget(actionId)
+      ctx.logger.warn(`api-proxy: could not persist Team human-action '${String(actionId)}': ${error instanceof Error ? error.message : String(error)}`)
+      return
+    }
+  }
+  issuer.forget(actionId)
+  ctx.logger.warn(`api-proxy: Team human-action '${String(actionId)}' resolution cursor kept changing`)
 }
 
 /** Validate one answer batch against the exact question request it resolves. */
@@ -817,128 +1248,6 @@ function detachedProjectionsFor(
   return registry.restore({}, events, 0).snapshot
 }
 
-/**
- * Best-effort projections for one subagent history page, fail-soft like
- * {@link listProjectionsFor}: a registered unit throwing on a corrupt payload
- * never blocks transcript reading — the page is served without the block.
- * @param ctx - context carrying the logger for the degradation warning.
- * @param childSessionId - the child whose page is being decorated.
- * @param compute - the arm-specific fold (live watermark or detached restore).
- * @returns the projections block, or undefined when the fold failed.
- */
-function subagentHistoryProjections(
-  ctx: Context,
-  childSessionId: SessionId,
-  compute: () => SessionProjectionsBlock | undefined,
-): SessionProjectionsBlock | undefined {
-  try {
-    return compute()
-  } catch (error) {
-    ctx.logger.warn(`subagent.history: projections for "${childSessionId}" failed (serving the page without them): ${String(error)}`)
-    return undefined
-  }
-}
-
-/** Map continuation admission failures without exposing provider details. */
-function subagentPromptError(
-  request: RpcRequest<{ childSessionId: SessionId }>,
-  error: unknown,
-  signal: AbortSignal,
-): RpcResponse<never> {
-  const childSessionId = request.payload.childSessionId
-  if (signal.aborted) {
-    return err(request, { code: 'cancelled', message: 'subagent prompt was cancelled', details: {} })
-  }
-  if (error instanceof SubagentError) {
-    switch (error.code) {
-      case 'NOT_RESUMABLE':
-        return err(request, {
-          code: 'subagent-not-resumable',
-          message: 'subagent cannot be resumed',
-          details: { childSessionId },
-        })
-      case 'UNAUTHORIZED':
-        return err(request, {
-          code: 'subagent-unauthorized',
-          message: 'subagent does not belong to this parent',
-          details: { childSessionId },
-        })
-      case 'DRAINING':
-      case 'ACTIVATION_CLOSING':
-      case 'CONTINUATION_UNAVAILABLE':
-      case 'PERSISTENCE_UNAVAILABLE':
-        return err(request, {
-          code: 'subagent-delivery-unavailable',
-          message: 'subagent follow-up is temporarily unavailable',
-          details: { childSessionId },
-        })
-      default:
-        break
-    }
-  }
-  return err(request, { code: 'internal', message: 'subagent prompt failed', details: {} })
-}
-
-/** Stable RPC face of the missing projections capability, shared by every catalog read path. */
-function projectionsUnavailableError(): RpcError {
-  return {
-    code: 'internal',
-    message: 'subagent catalog is unavailable: this deployment does not mount the sessionProjections registry (load @clocky/clocky-session-projection)',
-    details: {},
-  }
-}
-
-/** Verify one address and mode against the complete direct-child catalog. */
-async function catalogChild(
-  ctx: Context,
-  address: SubagentAddress,
-  signal?: AbortSignal,
-): Promise<{
-  entry?: Extract<CatalogSubagentListEntry, { kind: 'child' }>
-  error?: RpcError
-}> {
-  const { parentSessionId, childSessionId, mode } = address
-  try {
-    const entries = await ctx.subagents.listChildren(parentSessionId, signal)
-    const entry = entries.find(candidate => candidate.id === childSessionId)
-    if (entry === undefined || (entry.kind === 'child' && entry.mode !== mode)) {
-      return {
-        error: {
-          code: 'subagent-not-found',
-          message: `session "${childSessionId}" is not a ${mode} direct child of "${parentSessionId}"`,
-          details: { parentSessionId, childSessionId },
-        },
-      }
-    }
-    if (entry.kind === 'diagnostic') {
-      return {
-        error: {
-          code: 'subagent-catalog-diagnostic',
-          message: `subagent "${childSessionId}" is ${entry.reason}`,
-          details: { parentSessionId, childSessionId, reason: entry.reason },
-        },
-      }
-    }
-    return { entry }
-  } catch (error: unknown) {
-    if (signal?.aborted || (error instanceof SubagentError && error.code === 'CANCELLED')) {
-      return { error: { code: 'cancelled', message: 'subagent catalog read was cancelled', details: {} } }
-    }
-    if (error instanceof SubagentError && error.code === 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE') {
-      return { error: projectionsUnavailableError() }
-    }
-    return { error: { code: 'internal', message: 'subagent catalog read failed', details: {} } }
-  }
-}
-
-/**
- * The requested preset differs from the one this session already runs.
- *
- * A session's composition is fixed at creation: its history was produced under
- * that preset's tools, so adopting the identity under a different one would
- * replay tool calls the rebuilt agent cannot make. Naming a different preset
- * is therefore a caller error rather than a switch.
- */
 /** The roster is absent: this deployment composes no agent presets at all. */
 function noRoster(agentPreset: string): RpcError {
   return {
@@ -964,36 +1273,6 @@ function presetError(agentPreset: string, error: unknown): RpcError {
     return { code: 'agent-preset-invalid', message: error.message, details: { agentPreset, reason: error.message } }
   }
   return { code: 'internal', message: `agent preset "${agentPreset}": ${String(error)}`, details: {} }
-}
-
-class AgentPresetConflict extends Error {
-  constructor(
-    readonly sessionId: SessionId,
-    readonly requestedPreset: string,
-    readonly existingPreset: string | undefined,
-  ) {
-    super(
-      existingPreset === undefined
-        ? `session "${sessionId}" records no agent preset, so it cannot be adopted under one; `
-        + 'a deployment composing no roster records none on any session — '
-        : `session "${sessionId}" already runs agent preset ${JSON.stringify(existingPreset)}; `
-      + `requested ${JSON.stringify(requestedPreset)}. A session's preset is fixed at creation.`,
-    )
-  }
-}
-
-/** Requested identity already belongs to a session with another project cwd. */
-class SessionCwdConflict extends Error {
-  constructor(
-    readonly sessionId: SessionId,
-    readonly requestedCwd: string,
-    readonly existingCwd: string | undefined,
-  ) {
-    super(
-      `session "${sessionId}" already exists with cwd ${JSON.stringify(existingCwd)}; `
-      + `requested ${JSON.stringify(requestedCwd)}`,
-    )
-  }
 }
 
 /** An explicit Host naming operation would duplicate another Workspace title. */
@@ -1038,6 +1317,63 @@ function changedWorkspaceView(workspaceId: string, value: unknown): WorkspaceVie
   }
 }
 
+/** Remove private artifact metadata from browser-facing Team projections. */
+function redactTeamStateForHuman(state: TeamStateSnapshot): TeamStateSnapshot {
+  return {
+    ...state,
+    tasks: state.tasks.map(redactTaskForHuman),
+    workspaceAllocations: state.workspaceAllocations.map(allocation => allocation.loss === undefined ? allocation : {
+      ...allocation, loss: { ...allocation.loss, artifacts: allocation.loss.artifacts.filter(reference => reference.visibility !== 'private') },
+    }),
+  }
+}
+
+/** Remove private artifact metadata from one browser-facing task projection. */
+function redactTaskForHuman(task: TeamTaskSnapshot): TeamTaskSnapshot {
+  return {
+    ...task,
+    attemptHistory: task.attemptHistory.map((attempt) => {
+      if (attempt.outcome.kind !== 'completed') return attempt
+      return {
+        ...attempt,
+        outcome: {
+          ...attempt.outcome,
+          result: redactTaskResultForHuman(attempt.outcome.result),
+        },
+      }
+    }),
+  }
+}
+
+/** Retain only artifact fields that a human Team reader may inspect. */
+function redactTaskResultForHuman(result: TaskAttemptResult): TaskAttemptResult {
+  return {
+    ...result,
+    ...result.artifacts === undefined ? {} : { artifacts: result.artifacts.filter(artifact => artifact.visibility !== 'private') },
+    ...result.integration === undefined ? {} : {
+      integration: {
+        ...result.integration,
+        ...result.integration.proposalArtifact?.visibility === 'private' ? {} : result.integration.proposalArtifact === undefined ? {} : { proposalArtifact: result.integration.proposalArtifact },
+        ...result.integration.artifacts === undefined ? {} : { artifacts: result.integration.artifacts.filter(artifact => artifact.visibility !== 'private') },
+      },
+    },
+  }
+}
+
+/** Remove private artifact metadata from one browser-facing workflow plan result. */
+function redactWorkflowPlanForHuman(plan: TeamWorkflowPlanSnapshot): TeamWorkflowPlanSnapshot {
+  if (plan.result === undefined) return plan
+  return {
+    ...plan,
+    result: {
+      ...plan.result,
+      tasks: plan.result.tasks.map(task => task.phase === 'completed'
+        ? { ...task, result: redactTaskResultForHuman(task.result) }
+        : task),
+    },
+  }
+}
+
 /**
  * Implement ApiProxy over a composed host context.
  * @param ctx - a context with the Host spine and Workspace registry mounted.
@@ -1064,14 +1400,13 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
    * not enforcement: the wire is reachable directly.
    */
   const presetSwitches = new Map<SessionId, Promise<unknown>>()
-  /** Client-chosen identity creation/resume, deduplicated across concurrent retries. */
-  const sessionCreations = new Map<SessionId, Promise<Agent>>()
   /** Serializes path ownership and explicit title checks with Workspace mutations. */
   let workspaceCreationChain = Promise.resolve()
   const pendingQuestions = new Map<RpcId, PendingQuestion>()
   const pendingApprovals = new Map<RpcId, PendingApproval>()
   const muxQueues = new Set<FrameQueue<RpcRequest<MuxFrame>>>()
   const imageAdmissionChains = new WeakMap<Agent, Promise<void>>()
+  hostHumanActionProofIssuer(ctx)
 
   /** Serialize image admission with model selection for one agent. */
   function serializeImageAdmission<T>(agent: Agent, operation: () => Promise<T>): Promise<T> {
@@ -1129,27 +1464,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   }
 
   /**
-   * Reject an attempt to run an existing session under a different preset.
-   *
-   * A caller that names no preset always adopts the session as it is, so the
-   * common paths — reconnecting, resuming, retrying a create — are unaffected.
-   * @param sessionId - the identity being adopted.
-   * @param requested - the preset the request named, if any.
-   * @param existing - the preset the session RUNS, if any; both callers resolve
-   * it from the log, which differs from the creation header once a blank
-   * session has switched.
-   * @throws when both are present and differ.
-   */
-  function assertPresetUnchanged(
-    sessionId: SessionId,
-    requested: string | undefined,
-    existing: string | undefined,
-  ): void {
-    if (requested === undefined || requested === existing) return
-    throw new AgentPresetConflict(sessionId, requested, existing)
-  }
-
-  /**
    * Resolve the preset an agent will be composed from, and the setup that
    * installs it.
    *
@@ -1192,12 +1506,16 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     session: Pick<Session, 'header'>,
     agent: Agent | undefined,
   ): boolean => hasApiRemoteSubagentOwner(ctx, session, agent)
+  const hasTeamOwner = (session: Pick<Session, 'header'>): boolean =>
+    hasApiRemoteTeamOwner(session)
   const subagentOwnershipError = (sessionId: SessionId): RpcError =>
     apiRemoteSubagentOwnershipError(sessionId)
+  const teamOwnershipError = (sessionId: SessionId): RpcError =>
+    apiRemoteTeamOwnershipError(sessionId)
   const inspectServable = (sessionId: SessionId): Promise<{ meta: SessionHeader; events: SessionEvent[] }> =>
     inspectApiRemoteSession(ctx, sessionId)
-  // Cold resume composes the preset the session recorded, for the same reason
-  // `session.create` does: its history was produced under that composition.
+  // Cold resume composes the preset recorded by the session: its history was
+  // produced under that composition.
   // Every generic entry point — prompt, models, commands — arrives here, so
   // leaving it out meant a session opened after a restart ran on host tools
   // and the deployment persona. Resolved from the LOG, not the header: a
@@ -1279,10 +1597,12 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       ...project('next-turn').map(message => ({ id: message.id, placement: 'queued' as const, message })),
       ...project('next-step').map(message => ({
         id: message.id,
-        // Only user-origin messages are steering; injected context (approval
-        // notices, task completion, attached snapshots) is not a user action
-        // and must not render as a pending steering bubble.
-        placement: message.source.kind === 'user' ? 'steering' as const : 'context' as const,
+        // Explicit Team steering retains its durable delivery intent; other
+        // Team-derived context (approval notices, task completion, attached
+        // snapshots) must not render as a pending steering bubble.
+        placement: message.source.kind === 'user' || isTeamSteeringSource(message.source)
+          ? 'steering' as const
+          : 'context' as const,
         message,
       })),
     ]
@@ -1294,9 +1614,15 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     if (agent?.session !== session) return
     broadcast({ type: 'session/queue', sessionId: session.id, items: queueItems(agent, event.data) })
   })
+  ctx.on('team/changed', (event) => { broadcast({ type: 'team/changed', event }) })
+  ctx.on('channel/changed', (event) => { broadcast({ type: 'channel/changed', event }) })
 
   /** Remove a wait before settling it: synchronous deletion makes the first claimant win. */
-  function claimQuestion(pending: PendingQuestion, outcome: 'answered' | 'cancelled'): void {
+  function claimQuestion(
+    pending: PendingQuestion,
+    outcome: 'answered' | 'cancelled',
+    answer?: AskUserQuestionAnswer,
+  ): void {
     pendingQuestions.delete(pending.rpcId)
     if (pending.signal !== undefined && pending.onAbort !== undefined) {
       pending.signal.removeEventListener('abort', pending.onAbort)
@@ -1305,35 +1631,67 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       type: 'question/resolved', sessionId: pending.sessionId,
       questionRpcId: pending.rpcId, outcome,
     })
+    void persistResolvedTeamAction(ctx, {
+      sessionId: pending.sessionId,
+      kind: 'question',
+      sourceId: String(pending.rpcId),
+      phase: outcome === 'answered' ? 'resolved' : 'cancelled',
+      outcome: outcome === 'answered'
+        ? { kind: 'answered', answer: structuredClone(answer ?? { answers: [] }) as unknown as JsonValue }
+        : { kind: 'cancelled' },
+      ...pending.teamId === undefined ? {} : { teamId: pending.teamId },
+    })
   }
 
   const disposeProvider = ctx.userQuestions.registerProvider({
-    ask(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer> {
-      const sessionId = request.agent?.id
-      if (sessionId === undefined) {
+    async ask(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer> {
+      const agent = request.agent
+      const sessionId = agent?.id
+      if (agent === undefined || sessionId === undefined) {
         return Promise.reject(new UserQuestionError(
           'web user interaction requires an agent-owned session', 'ASK_MISSING_AGENT'))
       }
-      return new Promise<AskUserQuestionAnswer>((resolve, reject) => {
-        const rpcId = RpcId(randomUUID())
-        const pending: PendingQuestion = {
-          rpcId, sessionId, questions: request.questions, resolve, reject,
-          ...(request.signal === undefined ? {} : { signal: request.signal }),
-        }
-        const onAbort = (): void => {
-          claimQuestion(pending, 'cancelled')
-          reject(new UserQuestionError(
-            'ask_user_question was aborted before the user answered', 'ASK_ABORTED'))
-        }
-        pending.onAbort = onAbort
-        pendingQuestions.set(rpcId, pending)
-        request.signal?.addEventListener('abort', onAbort, { once: true })
-        const envelope: RpcRequest<MuxFrame> = {
-          rpcId,
-          payload: { type: 'question/requested', sessionId, questions: request.questions },
-        }
-        for (const queue of muxQueues) queue.push(envelope)
-      })
+      const provenance = interactionProvenance(agent.session)
+      const rpcId = RpcId(randomUUID())
+      if (request.signal?.aborted === true) {
+        return Promise.reject(new UserQuestionError(
+          'ask_user_question was aborted before the user answered', 'ASK_ABORTED'))
+      }
+      const deferred = Promise.withResolvers<AskUserQuestionAnswer>()
+      const pending: PendingQuestion = {
+        rpcId, sessionId, questions: request.questions, resolve: deferred.resolve, reject: deferred.reject,
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+        ...provenance,
+      }
+      const onAbort = (): void => {
+        claimQuestion(pending, 'cancelled')
+        deferred.reject(new UserQuestionError(
+          'ask_user_question was aborted before the user answered', 'ASK_ABORTED'))
+      }
+      pending.onAbort = onAbort
+      pendingQuestions.set(rpcId, pending)
+      request.signal?.addEventListener('abort', onAbort, { once: true })
+      try {
+        await persistPendingTeamAction(ctx, {
+          sessionId,
+          kind: 'question',
+          sourceId: String(rpcId),
+          details: { questionRpcId: String(rpcId), questions: structuredClone(request.questions) as unknown as JsonValue },
+          ...provenance,
+        }, () => pendingQuestions.get(rpcId) === pending)
+      } catch (error: unknown) {
+        pendingQuestions.delete(rpcId)
+        request.signal?.removeEventListener('abort', onAbort)
+        deferred.reject(error)
+        return await deferred.promise
+      }
+      if (!pendingQuestions.has(rpcId)) return await deferred.promise
+      const envelope: RpcRequest<MuxFrame> = {
+        rpcId,
+        payload: { type: 'question/requested', sessionId, questions: request.questions, ...provenance },
+      }
+      for (const queue of muxQueues) queue.push(envelope)
+      return await deferred.promise
     },
   })
   ctx.effect(() => () => {
@@ -1360,7 +1718,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     ctx.effect(() => () => {
       for (const pending of [...pendingApprovals.values()]) pending.resolve('cancelled')
     }, 'api-proxy: approval registry teardown')
-    ctx.on('approval/request', (req, next) => {
+    ctx.on('approval/request', async (req, next) => {
       // Dispatch rides a microtask behind the service's own signal check: an
       // abort landing in that window would register the abort listener AFTER
       // the signal fired — never invoked, entry pending forever, zombie frame
@@ -1397,35 +1755,68 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       // not this channel's question; delegate to the fail-closed default.
       if (approvalId === undefined) return next()
       const id = approvalId
-      return new Promise<ApprovalOutcome>((resolve) => {
-        const settle = (outcome: ApprovalOutcome): void => {
-          /* v8 ignore next 3 -- defensive double-settle guard: respond() routes
-             through the pending table (a settled id is not-pending before it can
-             re-settle) and the first settle removes the abort listener, so no
-             reachable path settles twice; kept against future settle callers. */
-          if (!pendingApprovals.delete(pending.rpcId)) return
-          req.signal?.removeEventListener('abort', onAbort)
-          broadcast({ type: 'approval/resolved', sessionId: pending.sessionId, approvalId: id, outcome })
-          // A cancelled ask was already settled by the service's own signal
-          // race, which discards this late resolution; resolving is a no-op
-          // there and keeps this promise from dangling forever.
-          resolve(outcome)
-        }
-        const onAbort = (): void => { settle('cancelled') }
-        const pending: PendingApproval = {
-          rpcId: RpcId(randomUUID()),
+      const provenance = interactionProvenance(req.agent.session)
+      const rpcId = RpcId(randomUUID())
+      const deferred = Promise.withResolvers<ApprovalOutcome>()
+      const settle = (outcome: ApprovalOutcome): void => {
+        /* v8 ignore next 3 -- defensive double-settle guard: respond() routes
+           through the pending table (a settled id is not-pending before it can
+           re-settle) and the first settle removes the abort listener, so no
+           reachable path settles twice; kept against future settle callers. */
+        if (!pendingApprovals.delete(pending.rpcId)) return
+        req.signal?.removeEventListener('abort', onAbort)
+        broadcast({ type: 'approval/resolved', sessionId: pending.sessionId, approvalId: id, outcome })
+        void persistResolvedTeamAction(ctx, {
+          sessionId: pending.sessionId,
+          kind: 'approval',
+          sourceId: String(id),
+          phase: outcome === 'cancelled' ? 'cancelled' : 'resolved',
+          outcome: { kind: outcome },
+          ...pending.teamId === undefined ? {} : { teamId: pending.teamId },
+        })
+        // A cancelled ask was already settled by the service's own signal
+        // race, which discards this late resolution; resolving is a no-op
+        // there and keeps this promise from dangling forever.
+        deferred.resolve(outcome)
+      }
+      const onAbort = (): void => { settle('cancelled') }
+      const pending: PendingApproval = {
+        rpcId,
+        sessionId: req.agent.session.id,
+        approvalId: id,
+        toolName: req.toolName,
+        ...req.callId === undefined ? {} : { callId: req.callId },
+        ...req.reason === undefined ? {} : { reason: req.reason },
+        ...provenance,
+        resolve: settle,
+      }
+      pendingApprovals.set(pending.rpcId, pending)
+      req.signal?.addEventListener('abort', onAbort, { once: true })
+      try {
+        await persistPendingTeamAction(ctx, {
           sessionId: req.agent.session.id,
-          approvalId: id,
-          toolName: req.toolName,
-          ...req.callId === undefined ? {} : { callId: req.callId },
-          ...req.reason === undefined ? {} : { reason: req.reason },
-          resolve: settle,
-        }
-        pendingApprovals.set(pending.rpcId, pending)
-        req.signal?.addEventListener('abort', onAbort, { once: true })
-        const envelope = requestedFrame(pending)
-        for (const queue of muxQueues) queue.push(envelope)
-      })
+          kind: 'approval',
+          sourceId: String(id),
+          details: {
+            approvalId: String(id),
+            rpcId: String(rpcId),
+            toolName: req.toolName,
+            ...req.callId === undefined ? {} : { callId: String(req.callId) },
+            ...req.reason === undefined ? {} : { reason: req.reason },
+          },
+          ...provenance,
+        }, () => pendingApprovals.get(pending.rpcId) === pending)
+      } catch (error: unknown) {
+        pendingApprovals.delete(pending.rpcId)
+        req.signal?.removeEventListener('abort', onAbort)
+        throw error
+      }
+      if (!pendingApprovals.has(pending.rpcId)) {
+        return await deferred.promise
+      }
+      const envelope = requestedFrame(pending)
+      for (const queue of muxQueues) queue.push(envelope)
+      return await deferred.promise
     })
   }
 
@@ -1447,20 +1838,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     }
     const inspected = await inspectServable(sessionId)
     return { id: inspected.meta.id, header: inspected.meta, events: inspected.events }
-  }
-
-  /** Resolve the Workspace inherited by a fork without making ordinary loose lineage grouped. */
-  async function forkWorkspace(source: Pick<Session, 'id' | 'header'>): Promise<Workspace | undefined> {
-    const workspaces = ctx.workspaceRegistry.list()
-    const direct = workspaces.find(workspace => workspace.sessionIds.includes(source.id))
-    if (direct !== undefined || source.header.origin !== 'subagent') return direct
-
-    const lineage = await ctx.sessionQuery.traceSession(source.id)
-    for (const ancestor of lineage.ancestors) {
-      const workspace = workspaces.find(candidate => candidate.sessionIds.includes(ancestor.header.id))
-      if (workspace !== undefined) return workspace
-    }
-    return undefined
   }
 
   /**
@@ -1553,98 +1930,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       // a deleted or broken preset must degrade this read, never fail it.
       return undefined
     }
-  }
-
-  /** Resolve one requested identity to a live agent, creating or resuming it once. */
-  async function ensureSession(
-    sessionId: SessionId,
-    cwd: string,
-    checkPersistedIdentity: boolean,
-    presetId?: string,
-  ): Promise<Agent> {
-    let creation = sessionCreations.get(sessionId)
-    if (creation === undefined) {
-      creation = (async () => {
-        const attached = ctx.sessions.get(sessionId)
-        const live = ctx.agents.get(sessionId)
-        if (attached !== undefined && hasSubagentOwner(attached, live)) {
-          throw new SubagentSessionOwnership(sessionId)
-        }
-        if (live !== undefined) return live
-
-        const persistence = checkPersistedIdentity ? ctx.get('sessionPersistence') : undefined
-        const stored = persistence === undefined
-          ? undefined
-          : (await persistence.list()).find(header => header.id === sessionId)
-        if (persistence !== undefined && stored !== undefined) {
-          const inspected = await persistence.inspect(sessionId)
-          // Ownership first: explicit-id adoption of a session-backed
-          // subagent must answer `agent-busy` regardless of the requested
-          // cwd (the api/commands.ts contract), not a cwd conflict.
-          if (hasSubagentOwner({ header: inspected.meta }, undefined)) {
-            throw new SubagentSessionOwnership(sessionId)
-          }
-          if (inspected.meta.cwd !== cwd) {
-            throw new SessionCwdConflict(sessionId, cwd, inspected.meta.cwd)
-          }
-          // Resolved from the log, not the header: a session that switched
-          // while blank ran every turn under the newer composition.
-          const storedPreset = resolveSessionPreset({ header: inspected.meta, events: inspected.events })
-          assertPresetUnchanged(sessionId, presetId, storedPreset)
-          // The stored preset wins over anything the request names: a resumed
-          // session's history was produced under that composition, and
-          // rebuilding it differently would replay tool calls the model can no
-          // longer make.
-          return (await ctx.agents.resume({
-            resumeSessionId: sessionId,
-            agentOptions: agentOptions(),
-            setup: (await composeAgent(storedPreset)).setup,
-          })).agent
-        }
-
-        try {
-          await mkdir(cwd, { recursive: true })
-        } catch (error: unknown) {
-          throw new Error(`failed to ensure project directory "${cwd}": ${String(error)}`, { cause: error })
-        }
-        const composition = await composeAgent(presetId)
-        return (await ctx.agents.create({
-          sessionId,
-          agentOptions: agentOptions(),
-          meta: {
-            cwd,
-            ...composition.agentPreset === undefined ? {} : { agentPreset: composition.agentPreset },
-          },
-          setup: composition.setup,
-        })).agent
-      })().catch((error: unknown) => {
-        // Another Host entry path may have published the same identity while
-        // this operation crossed an asynchronous persistence/filesystem step.
-        const live = ctx.agents.get(sessionId)
-        if (live !== undefined) {
-          if (hasSubagentOwner(live.session, live)) throw new SubagentSessionOwnership(sessionId)
-          return live
-        }
-        const attached = ctx.sessions.get(sessionId)
-        if (attached !== undefined && hasSubagentOwner(attached, undefined)) {
-          throw new SubagentSessionOwnership(sessionId)
-        }
-        throw error
-      }).finally(() => {
-        sessionCreations.delete(sessionId)
-      })
-      sessionCreations.set(sessionId, creation)
-    }
-    const agent = await creation
-    if (hasSubagentOwner(agent.session, agent)) throw new SubagentSessionOwnership(sessionId)
-    // Beside the cwd check for the same reason, and after the await so it
-    // covers every path that yields a live agent — freshly created, adopted
-    // live, resumed from disk, or recovered by the concurrent-creation catch.
-    assertPresetUnchanged(sessionId, presetId, resolveSessionPreset(agent.session))
-    if (agent.session.header.cwd !== cwd) {
-      throw new SessionCwdConflict(sessionId, cwd, agent.session.header.cwd)
-    }
-    return agent
   }
 
   /** Resolve or create one path while holding the Host's workspace-create chain. */
@@ -1788,31 +2073,33 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
    * This is `session.prompt`'s enforcement boundary: a client that disables
    * its input is an affordance, and the method stays callable regardless.
    */
+  function turnRefusal<T>(request: RpcRequest<unknown>, agent: Agent): RpcResponse<T> | undefined {
+    const selection = selectionFor(agent).current
+    if (selection === undefined) {
+      return err(request, {
+        code: 'model-not-configured',
+        message: 'no model is configured; select a provider and model before starting a turn',
+        details: {},
+      })
+    }
+    if (!routeServed(selection.provider)) {
+      return err(request, {
+        code: 'model-unavailable',
+        message: `no adapter serves provider "${selection.provider}"; select a model for this session`,
+        details: { provider: selection.provider, model: selection.model },
+      })
+    }
+    return undefined
+  }
+
   async function turnAgentFor<T>(
     request: RpcRequest<unknown>, sessionId: SessionId,
   ): Promise<{ agent: Agent } | { refused: RpcResponse<T> }> {
     const found = await agentFor(sessionId)
     if ('error' in found) return { refused: err(request, found.error) }
     const agent = found.agent
-    const selection = selectionFor(agent).current
-    if (selection === undefined) {
-      return {
-        refused: err(request, {
-          code: 'model-not-configured',
-          message: 'no model is configured; select a provider and model before starting a turn',
-          details: {},
-        }),
-      }
-    }
-    if (!routeServed(selection.provider)) {
-      return {
-        refused: err(request, {
-          code: 'model-unavailable',
-          message: `no adapter serves provider "${selection.provider}"; select a model for this session`,
-          details: { provider: selection.provider, model: selection.model },
-        }),
-      }
-    }
+    const refused = turnRefusal<T>(request, agent)
+    if (refused !== undefined) return { refused }
     return { agent }
   }
 
@@ -1873,6 +2160,569 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   /** Missing-service report shared by the credentials domain. */
   function credentialsAbsent(): RpcError {
     return { code: 'internal', message: 'credentials service is absent: this deployment does not mount a credential provider (e.g. @clocky/clocky-credentials-local) in its composition', details: {} }
+  }
+
+  function teamServiceFor<T>(request: RpcRequest<unknown>):
+    | { readonly teams: NonNullable<ReturnType<typeof ctx.get<'teams'>>> }
+    | { readonly refused: RpcResponse<T> } {
+    const teams = ctx.get('teams')
+    if (teams !== undefined) return { teams }
+    return {
+      refused: err(request, {
+        code: 'team-service-unavailable',
+        message: 'Team RPC is unavailable: this host does not compose a Team provider',
+        details: {},
+      }),
+    }
+  }
+
+  function teamRunFor<T>(request: RpcRequest<unknown>, teamId?: TeamId):
+    | { readonly teams: NonNullable<ReturnType<typeof ctx.get<'teams'>>>; readonly teamRuns: NonNullable<ReturnType<typeof ctx.get<'teamRuns'>>> }
+    | { readonly refused: RpcResponse<T> } {
+    const service = teamServiceFor<T>(request)
+    if ('refused' in service) return service
+    const teamRuns = ctx.get('teamRuns')
+    if (teamRuns !== undefined) return { teams: service.teams, teamRuns }
+    return {
+      refused: err(request, {
+        code: 'team-run-unavailable',
+        message: 'Team input and lifecycle operations require a current local Team-run owner',
+        details: teamId === undefined ? {} : { teamId },
+      }),
+    }
+  }
+
+  /** Refuse Host Team control when this proxy has no authenticated Team actor. */
+  function teamActorUnavailable<T>(request: RpcRequest<unknown>, teamId?: TeamId): RpcResponse<T> {
+    return err(request, {
+      code: 'team-run-unavailable',
+      message: 'This Host Team control operation requires an authenticated Team actor, but none is available.',
+      details: teamId === undefined ? {} : { teamId },
+    })
+  }
+
+  /** Refuse every Team write before it can reach a TeamRun or Team policy path. */
+  function requireTeamMutationAuthentication<T>(request: RpcRequest<unknown>): RpcResponse<T> | undefined {
+    const authentication = authenticatedTeamMutationCall(request)
+    return 'refused' in authentication ? authentication.refused : undefined
+  }
+
+  /** Resolve the live product call once when a Team route also needs its durable owner identity. */
+  function authenticatedTeamMutationCall(request: RpcRequest<unknown>):
+    | { readonly call: NonNullable<ReturnType<typeof currentAuthenticatedProductCall>> }
+    | { readonly refused: RpcResponse<never> } {
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined) {
+      return {
+        refused: err<never>(request, {
+          code: 'PRODUCT_AUTH_REQUIRED',
+          message: 'Product authentication is required for Team mutations.',
+          details: {},
+        }),
+      }
+    }
+    if (call.signal.aborted) {
+      return {
+        refused: err<never>(request, {
+          code: 'PRODUCT_AUTH_INVALID',
+          message: 'Product authentication is invalid.',
+          details: {},
+        }),
+      }
+    }
+    return { call }
+  }
+
+  /** Refuse a current-run route unless its transport principal owns exactly one active human participant. */
+  async function requireCurrentTeamRunHumanOwner(
+    request: RpcRequest<unknown>,
+    teams: NonNullable<ReturnType<typeof ctx.get<'teams'>>>,
+    teamId: TeamId,
+    call: NonNullable<ReturnType<typeof currentAuthenticatedProductCall>>,
+  ): Promise<RpcResponse<never> | undefined> {
+    let state: TeamStateSnapshot
+    try {
+      state = await teams.getTeam({ teamId })
+    } catch (error: unknown) {
+      return teamFailure<never>(request, error, teamId)
+    }
+    if (call.signal.aborted) {
+      return err<never>(request, {
+        code: 'PRODUCT_AUTH_INVALID',
+        message: 'Product authentication is invalid.',
+        details: {},
+      })
+    }
+    const matches = state.participants.filter(participant =>
+      participant.kind === 'human'
+      && participant.phase === 'active'
+      && participant.owner?.kind === 'product-principal'
+      && participant.owner.principalId === call.principal.id)
+    if (matches.length === 0) {
+      return err<never>(request, {
+        code: 'TEAM_HUMAN_ACTOR_NOT_FOUND',
+        message: 'Authenticated principal owns no active human Team participant',
+        details: { teamId },
+      })
+    }
+    if (matches.length > 1) {
+      return err<never>(request, {
+        code: 'TEAM_HUMAN_ACTOR_AMBIGUOUS',
+        message: 'Authenticated principal maps to multiple active human Team participants',
+        details: { teamId },
+      })
+    }
+    return undefined
+  }
+
+  /** Return the durable non-secret owner selected by the current authenticated product call. */
+  function authenticatedHumanOwner(): Extract<TeamParticipantOwner, { readonly kind: 'product-principal' }> {
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined || call.signal.aborted) {
+      throw new TeamError('Product authentication is invalid.', 'TEAM_ACTOR_PROOF_INVALID')
+    }
+    return { kind: 'product-principal', principalId: call.principal.id }
+  }
+
+  /** Retain this authenticated call for exact pending-manifest endpoint confirmation during Team creation. */
+  function authenticatedChannelAdmission() {
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined || call.signal.aborted) throw new TeamError('Product authentication is invalid', 'TEAM_ACTOR_PROOF_INVALID')
+    return createPrincipalChannelAdmission(ctx, call)
+  }
+
+  /** Return whether the current authenticated principal owns exactly one active human for a Team response. */
+  async function canResolveTeamHumanAction(teamId: TeamId, participantId?: ParticipantId): Promise<boolean> {
+    const call = currentAuthenticatedProductCall()
+    const teams = ctx.get('teams')
+    if (call === undefined || call.signal.aborted || teams === undefined || participantId === undefined) return false
+    let state: TeamStateSnapshot
+    try {
+      state = await teams.getTeam({ teamId })
+    } catch {
+      return false
+    }
+    const currentCall = currentAuthenticatedProductCall()
+    if (currentCall === undefined || currentCall !== call || currentCall.signal.aborted) return false
+    // `participantId` identifies the Team Agent that asked the question; it
+    // is normally a coordinator or worker, not the human who is answering it.
+    // Require that source participant to remain active, then authorize the
+    // authenticated principal through its own active human participant.
+    const sourceParticipant = state.participants.find(participant => participant.id === participantId)
+    if (sourceParticipant === undefined || sourceParticipant.phase !== 'active') return false
+    const humans = state.participants.filter(participant =>
+      participant.kind === 'human'
+      && participant.phase === 'active'
+      && participant.owner?.kind === 'product-principal'
+      && participant.owner.principalId === call.principal.id
+      && participant.authorityGrant?.operations.includes('human-action') === true,
+    )
+    return sourceParticipant.kind === 'human'
+      ? humans.some(participant => participant.id === sourceParticipant.id)
+      : humans.length === 1
+  }
+
+  /** Bind one complete actor-free channel-post request to an authenticated human proof. */
+  function humanChannelPostProofInput(
+    teamId: TeamId,
+    input: ChannelEnvelopePostInput,
+  ): TeamHumanActorProofInput {
+    return {
+      teamId,
+      operation: 'send',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free channel-open request to an authenticated human proof. */
+  function humanChannelOpenProofInput(input: ChannelOpenInput): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'channel-open',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free channel-close request to the channel's server-derived Team. */
+  function humanChannelCloseProofInput(teamId: TeamId, input: ChannelCloseInput): TeamHumanActorProofInput {
+    return {
+      teamId,
+      operation: 'close',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free participant invitation to an authenticated human proof. */
+  function humanParticipantInviteProofInput(input: ParticipantInviteInput): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'invite',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free participant phase mutation to an authenticated human proof. */
+  function humanParticipantPhaseProofInput(
+    input: ParticipantPhaseTransitionInput,
+    operation: 'activate' | 'close',
+  ): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation,
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free participant interrupt to an authenticated human proof. */
+  function humanParticipantInterruptProofInput(input: ParticipantInterruptRequestInput): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'interrupt',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free terminal archive request to an authenticated human proof. */
+  function humanTeamArchiveProofInput(input: { readonly teamId: TeamId; readonly expectedCursor: number }): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'close',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free Team resume request to an authenticated human proof. */
+  function humanTeamResumeProofInput(input: TeamResumeInput): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'activate',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free Team goal revision mutation to an authenticated human proof. */
+  function humanTeamGoalProofInput(
+    input: TeamGoalUpdateInput | TeamGoalPhaseTransitionInput,
+  ): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'goal-mutate',
+      fence: { kind: 'revision', revision: input.expectedRevision },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free task creation to an authenticated human proof. */
+  function humanTaskCreateProofInput(input: TeamTaskCreateInput): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'task-mutate',
+      fence: { kind: 'cursor', cursor: input.expectedCursor },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind one complete actor-free task revision mutation to an authenticated human proof. */
+  function humanTaskRevisionProofInput(
+    input: TeamTaskDetailsUpdateInput | TeamTaskCancelInput | TeamTaskDeleteInput,
+  ): TeamHumanActorProofInput {
+    return {
+      teamId: input.teamId,
+      operation: 'task-mutate',
+      fence: { kind: 'revision', revision: input.expectedRevision },
+      payload: jsonObjectSchema.parse(structuredClone(input)),
+    }
+  }
+
+  /** Bind the externally selected Team together with one actor-free review decision to an authenticated human proof. */
+  function humanTaskReviewProofInput(
+    teamId: TeamId,
+    input: TeamTaskReviewResolveInput,
+  ): TeamHumanActorProofInput {
+    return {
+      teamId,
+      operation: 'task-mutate',
+      fence: { kind: 'revision', revision: input.expectedRevision },
+      payload: jsonObjectSchema.parse({ teamId, ...structuredClone(input) }),
+    }
+  }
+
+  function teamCreatePreset(agentPreset: string | undefined): string | undefined {
+    return agentPreset ?? ctx.get('agentPresets')?.defaultId
+  }
+
+  /** Convert the browser-safe model selection into the Agent's branded effort value. */
+  function teamModelSelection(
+    selection: import('./api/sessions.ts').ModelSelection | undefined,
+  ): ModelSelection | undefined {
+    if (selection === undefined) return undefined
+    return {
+      provider: selection.provider,
+      model: selection.model,
+      ...selection.reasoningEffort === undefined
+        ? {}
+        : { reasoningEffort: ReasoningEffortId(selection.reasoningEffort) },
+    }
+  }
+
+  function teamFailure<T>(
+    request: RpcRequest<unknown>,
+    error: unknown,
+    teamId?: TeamId,
+    signal?: AbortSignal,
+  ): RpcResponse<T> {
+    if (signal?.aborted === true) {
+      return err(request, { code: 'cancelled', message: 'Team operation was cancelled', details: {} })
+    }
+    if (error instanceof AttachmentError) {
+      return err(request, {
+        code: 'attachment-error',
+        message: error.message,
+        details: { reason: error.code },
+      })
+    }
+    const teamError = error as TeamError | undefined
+    if (teamError?.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+      || teamError?.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS'
+      || teamError?.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN'
+      || teamError?.code === 'TEAM_ACTOR_PROOF_INVALID') {
+      return err(request, {
+        code: teamError.code,
+        message: teamError.message,
+        details: teamId === undefined ? {} : { teamId },
+      })
+    }
+    if (teamError?.code === 'TEAM_NOT_FOUND' && teamId !== undefined) {
+      return err(request, { code: 'team-not-found', message: teamError.message, details: { teamId } })
+    }
+    if (teamError?.code === 'TEAM_CURSOR_CONFLICT') {
+      return err(request, {
+        code: 'team-cursor-conflict',
+        message: teamError.message,
+        details: teamId === undefined ? {} : { teamId },
+      })
+    }
+    if (teamError?.code === 'TEAM_INVALID_ARGUMENT') {
+      return err(request, { code: 'team-invalid-argument', message: teamError.message, details: teamId === undefined ? {} : { teamId } })
+    }
+    if (teamError?.code === 'TEAM_CHANNEL_CURSOR_CONFLICT') {
+      const payload = request.payload
+      const selected = typeof payload === 'object' && payload !== null && 'channelId' in payload
+        ? channelIdSchema.safeParse(payload.channelId) : undefined
+      return err(request, {
+        code: 'team-channel-cursor-conflict', message: teamError.message,
+        details: { ...teamId === undefined ? {} : { teamId },
+          ...selected?.success === true ? { channelId: selected.data } : {} },
+      })
+    }
+    if (teamError?.code === 'TEAM_CHANNEL_IDEMPOTENCY_CONFLICT') {
+      const payload = request.payload
+      const selected = typeof payload === 'object' && payload !== null && 'channelId' in payload
+        ? channelIdSchema.safeParse(payload.channelId) : undefined
+      return err(request, {
+        code: 'team-channel-idempotency-conflict', message: teamError.message,
+        details: { ...teamId === undefined ? {} : { teamId },
+          ...selected?.success === true ? { channelId: selected.data } : {} },
+      })
+    }
+    if (teamError?.code === 'TEAM_CHANNEL_COMPACTED' || teamError?.code === 'TEAM_AUDIT_COMPACTED') {
+      const details = teamError.details
+      const rawTeamId = details?.teamId
+      const rawChannelId = details?.channelId
+      const rawFirstCursor = details?.firstCursor
+      const parsedTeamId = typeof rawTeamId === 'string' ? teamIdSchema.safeParse(rawTeamId) : undefined
+      const parsedChannelId = typeof rawChannelId === 'string' ? channelIdSchema.safeParse(rawChannelId) : undefined
+      const mappedTeamId = teamId ?? (parsedTeamId?.success === true ? parsedTeamId.data : undefined)
+      const mappedChannelId = parsedChannelId?.success === true ? parsedChannelId.data : undefined
+      const firstCursor = typeof rawFirstCursor === 'number' && Number.isSafeInteger(rawFirstCursor) && rawFirstCursor >= 0
+        ? rawFirstCursor
+        : undefined
+      const mappedDetails = {
+        ...mappedTeamId === undefined ? {} : { teamId: mappedTeamId },
+        ...mappedChannelId === undefined ? {} : { channelId: mappedChannelId },
+        ...firstCursor === undefined ? {} : { firstCursor },
+      }
+      return err(request, {
+        code: teamError.code === 'TEAM_CHANNEL_COMPACTED' ? 'team-channel-compacted' : 'team-audit-compacted',
+        message: teamError.message,
+        details: mappedDetails,
+      })
+    }
+    if (error instanceof TeamRunError) {
+      switch (error.code) {
+        case 'TEAM_RUN_MODEL_REQUIRED':
+          return err(request, { code: 'team-model-required', message: error.message, details: {} })
+        case 'TEAM_RUN_START_CONFLICT':
+          return err(request, { code: 'team-start-conflict', message: error.message, details: {} })
+        case 'TEAM_RUN_FINAL_INVALID':
+          if (teamId !== undefined) {
+            return err(request, { code: 'team-final-invalid', message: error.message, details: { teamId } })
+          }
+          break
+        case 'TEAM_RUN_NOT_QUIESCENT':
+          if (teamId !== undefined) {
+            return err(request, { code: 'team-not-quiescent', message: error.message, details: { teamId } })
+          }
+          break
+        case 'TEAM_RUN_WORKFLOW_INVALID':
+          break
+        case 'TEAM_RUN_NOT_FOUND':
+        case 'TEAM_RUN_WORKFLOW_NOT_FOUND':
+        case 'TEAM_RUN_DISPOSED':
+        case 'TEAM_RUN_COORDINATOR_INVALID':
+        case 'TEAM_RUN_WORKER_PRESET_REQUIRED':
+        case 'TEAM_RUN_INVALID_WORKER_POOL':
+          return err(request, {
+            code: 'team-run-unavailable',
+            message: error.message,
+            details: teamId === undefined ? {} : { teamId },
+          })
+      }
+    }
+    return err(request, {
+      code: 'internal',
+      message: `Team operation failed: ${error instanceof Error ? error.message : String(error)}`,
+      details: {},
+    })
+  }
+
+  async function teamCoordinatorRoute<T>(
+    request: RpcRequest<unknown>,
+    sessionId: SessionId,
+  ): Promise<
+    | {
+      readonly agent: Agent
+      readonly teamId: TeamId
+      readonly teams: NonNullable<ReturnType<typeof ctx.get<'teams'>>>
+      readonly teamRuns: NonNullable<ReturnType<typeof ctx.get<'teamRuns'>>>
+    }
+    | { readonly refused: RpcResponse<T> }
+    | undefined
+  > {
+    const liveAgent = ctx.agents.get(sessionId)
+    const attached = liveAgent?.session ?? ctx.sessions.get(sessionId)
+    let header = attached?.header
+    if (header === undefined) {
+      if (ctx.get('teams') === undefined) return undefined
+      try {
+        header = (await inspectServable(sessionId)).meta
+      } catch (error: unknown) {
+        // Lookup failures remain owned by the ordinary Session resolver below; this probe only detects Team provenance.
+        void error
+        return undefined
+      }
+    }
+    if (header.teamId === undefined && header.participantId === undefined) return undefined
+    if (header.teamId === undefined || header.participantId === undefined) {
+      return {
+        refused: err(request, {
+          code: 'team-run-unavailable',
+          message: `session "${sessionId}" has incomplete Team provenance`,
+          details: {},
+        }),
+      }
+    }
+    const teamId = teamIdSchema.parse(header.teamId)
+    const participantId = participantIdSchema.parse(header.participantId)
+    const service = teamRunFor<T>(request, teamId)
+    if ('refused' in service) return service
+    if (liveAgent === undefined) {
+      return {
+        refused: err(request, {
+          code: 'team-run-unavailable',
+          message: `Team '${teamId}' has no live coordinator Session owned by this local Team-run provider`,
+          details: { teamId },
+        }),
+      }
+    }
+    let state: TeamStateSnapshot
+    try {
+      state = await service.teams.getTeam({ teamId })
+    } catch (error: unknown) {
+      return { refused: teamFailure(request, error, teamId) }
+    }
+    const coordinators = state.participants.filter(participant =>
+      participant.kind === 'local-agent' && participant.role === 'coordinator' && participant.phase === 'active')
+    const coordinator = coordinators[0]
+    const binding = coordinator === undefined
+      ? undefined
+      : state.activations.find(candidate => candidate.activation.participantId === coordinator.id
+        && candidate.sessionId === liveAgent.session.id
+        && (candidate.activation.status === 'idle' || candidate.activation.status === 'running'))
+    if (coordinator === undefined || coordinators.length !== 1
+      || coordinator.id !== participantId || binding === undefined
+      || state.team.phase !== 'active') {
+      return {
+        refused: err(request, {
+          code: 'team-run-unavailable',
+          message: `Team '${teamId}' has no current local coordinator owner for session "${sessionId}"`,
+          details: { teamId },
+        }),
+      }
+    }
+    return {
+      agent: liveAgent,
+      teamId,
+      teams: service.teams,
+      teamRuns: service.teamRuns,
+    }
+  }
+
+  async function admitPromptContent<T>(
+    request: RpcRequest<unknown>,
+    agent: Agent,
+    content: readonly PromptContentPart[],
+  ): Promise<{ readonly content: DurablePromptContent } | { readonly refused: RpcResponse<T> }> {
+    try {
+      if (content.some(part => part.type === 'image')) {
+        const current = selectionFor(agent).current
+        if (current === undefined) {
+          return {
+            refused: err(request, {
+              code: 'model-not-configured',
+              message: 'no model is configured; select a provider and model before sending an image',
+              details: {},
+            }),
+          }
+        }
+        const modelInfo = await ctx.llm.resolveModelInfo(current.provider, current.model)
+        if (modelInfo.inputModalities !== undefined && !modelInfo.inputModalities.includes('image')) {
+          return {
+            refused: err(request, {
+              code: 'attachment-error',
+              message: `Model "${current.model}" does not support image input.`,
+              details: { reason: 'MODEL_DOES_NOT_SUPPORT_IMAGES' },
+            }),
+          }
+        }
+      }
+      return { content: await durablePromptContent(ctx, content) }
+    } catch (error: unknown) {
+      if (error instanceof AttachmentError) {
+        return {
+          refused: err(request, {
+            code: 'attachment-error',
+            message: error.message,
+            details: { reason: error.code },
+          }),
+        }
+      }
+      return {
+        refused: err(request, {
+          code: 'agent-busy',
+          message: 'prompt rejected',
+          details: { reason: String(error) },
+        }),
+      }
+    }
   }
 
   /** Map one redacted settings descriptor to its wire view. */
@@ -1944,6 +2794,100 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     return ok(request, namespaceView(descriptor))
   }
 
+  async function responseState(call: AuthenticatedProductCall, input: TeamHumanActionResponseInput) {
+    call.signal.throwIfAborted()
+    const teams = ctx.get('teams')
+    if (teams === undefined) throw new TeamError('Team provider is unavailable', 'TEAM_INVALID_ARGUMENT')
+    const state = await teams.getTeam({ teamId: input.teamId })
+    const action = state.humanActions?.find(value => value.id === input.actionId)
+    if (action === undefined
+      || !await withAuthenticatedProductCall(call, () => canResolveTeamHumanAction(input.teamId, action.participantId))) {
+      throw new TeamError('Authenticated principal cannot answer this human action', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+    }
+    call.signal.throwIfAborted()
+    return { teams, state, action }
+  }
+
+  function sameResponse(action: TeamHumanActionSnapshot, input: TeamHumanActionResponseInput): boolean {
+    return action.response?.idempotencyKey === input.idempotencyKey && action.response.expectedUpdatedAt === input.expectedUpdatedAt
+      && isDeepStrictEqual(action.response.answer, input.answer)
+  }
+
+  ctx.inject(['teamHumanDelivery'], (inboxCtx) => {
+    const unregister = inboxCtx.teamHumanDelivery.registerActionResponder({
+      async respond(call, request): Promise<TeamHumanActionResponseResult | undefined> {
+        const input = teamHumanActionResponseInputSchema.parse(request)
+        const { teams, state, action } = await responseState(call, input)
+        const approval = action.kind === 'approval'
+          ? [...pendingApprovals.values()].find(value => value.teamId === input.teamId && value.sessionId === action.sessionId
+            && String(value.approvalId) === String(action.sourceId)) : undefined
+        const question = action.kind === 'question'
+          ? [...pendingQuestions.values()].find(value => value.teamId === input.teamId && value.sessionId === action.sessionId
+            && String(value.rpcId) === String(action.sourceId)) : undefined
+        const pending = approval ?? question
+        if (pending === undefined) return undefined
+        if (pending.answerClaimed === true) {
+          if (sameResponse(action, input)) return { kind: 'accepted', action }
+          throw new TeamError('Human response admission is already in progress; retry the same key', 'TEAM_CURSOR_CONFLICT')
+        }
+        if (input.answer.kind !== action.kind) throw new TeamError('Answer kind does not match the request', 'TEAM_INVALID_ARGUMENT')
+        const questionAnswer = input.answer.kind === 'question'
+          ? { answers: input.answer.answers.map(answer => ({ id: answer.id, selected: [...answer.selected],
+            ...(answer.custom === undefined ? {} : { custom: answer.custom }) })) } : undefined
+        if (question !== undefined && (questionAnswer === undefined
+          || !matchesQuestions({ sessionId: question.sessionId, answer: questionAnswer }, question))) {
+          throw new TeamError('Answer does not match the current question options', 'TEAM_INVALID_ARGUMENT')
+        }
+        const issuer = hostHumanActionProofIssuer(ctx)
+        const human = state.participants.find(value => value.kind === 'human' && value.phase === 'active'
+          && value.owner?.kind === 'product-principal' && value.owner.principalId === call.principal.id)
+        if (issuer === undefined || human === undefined) throw new TeamError('Human response owner is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+        pending.answerClaimed = true
+        const isCurrent = () => !call.signal.aborted && (approval === undefined
+          ? pendingQuestions.get(pending.rpcId) === pending : pendingApprovals.get(pending.rpcId) === pending)
+        let accepted: TeamHumanActionSnapshot
+        try {
+          accepted = await issuer.acceptResponse({ teamId: input.teamId, expectedCursor: state.team.cursor, input,
+            principalId: call.principal.id, humanId: human.id }, isCurrent,
+          async actor => await teams.acceptHumanActionResponse({ actor, teamId: input.teamId, expectedCursor: state.team.cursor }))
+        } catch (error: unknown) { pending.answerClaimed = false; throw error }
+        if (approval !== undefined && input.answer.kind === 'approval' && pendingApprovals.get(approval.rpcId) === approval) {
+          approval.resolve(input.answer.outcome)
+        } else if (question !== undefined && questionAnswer !== undefined && pendingQuestions.get(question.rpcId) === question) {
+          claimQuestion(question, 'answered', questionAnswer)
+          question.resolve(questionAnswer)
+        }
+        return { kind: 'accepted', action: accepted }
+      },
+      async unavailable(call, request): Promise<TeamHumanActionResponseResult> {
+        const input = teamHumanActionResponseInputSchema.parse(request)
+        const { teams, state, action } = await responseState(call, input)
+        if (action.response !== undefined && !sameResponse(action, input)) {
+          throw new TeamError('Response retry conflicts with the accepted answer', 'TEAM_INVALID_ARGUMENT')
+        }
+        if (action.phase !== 'pending') {
+          if (action.outcome?.code === 'HUMAN_ACTION_CONTINUATION_UNAVAILABLE') return { kind: 'unavailable', action }
+          if (sameResponse(action, input)) return { kind: 'accepted', action }
+          throw new TeamError('Human action has already settled', 'TEAM_INVALID_ARGUMENT')
+        }
+        if (action.response === undefined && action.updatedAt !== input.expectedUpdatedAt) {
+          throw new TeamError('Human action revision is stale', 'TEAM_INVALID_ARGUMENT')
+        }
+        const issuer = hostHumanActionProofIssuer(ctx)
+        if (issuer === undefined) throw new TeamError('Human action recovery owner is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+        if (issuer.hasVerifiedAction(action.id)) {
+          if (sameResponse(action, input)) return { kind: 'accepted', action }
+          throw new TeamError('Human action settlement is in progress', 'TEAM_CURSOR_CONFLICT')
+        }
+        const unavailable = await issuer.unavailable({ teamId: input.teamId, expectedCursor: state.team.cursor, action },
+          () => !call.signal.aborted,
+          async actor => await teams.unavailableHumanAction({ actor, teamId: input.teamId, expectedCursor: state.team.cursor }))
+        return { kind: 'unavailable', action: unavailable }
+      },
+    })
+    inboxCtx.effect(() => unregister)
+  })
+
   return {
     sessions: {
       // Attached sessions summarize from memory; persisted-but-unattached (cold)
@@ -1995,7 +2939,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
               page = await sessionQuery.searchSessions({
                 query: request.payload.query,
                 eventFilters: [
-                  { kind: 'type', values: ['user/message', 'assistant/message'] },
+                  { kind: 'type', values: ['user/message', 'team/channel-view', 'assistant/message'] },
                   { kind: 'surface', values: ['current'] },
                 ],
                 limit: requestedPageLimit,
@@ -2085,81 +3029,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
       },
 
-      async create(request) {
-        const sessionId = request.payload.sessionId ?? `session-${randomUUID()}` as SessionId
-        let workspace: Workspace | undefined
-        if (request.payload.workspaceId !== undefined) {
-          workspace = ctx.workspaceRegistry.get(brandWorkspaceId(request.payload.workspaceId))
-          if (workspace === undefined) {
-            return err(request, {
-              code: 'workspace-not-found',
-              message: `workspace "${request.payload.workspaceId}" not found`,
-              details: { workspaceId: request.payload.workspaceId },
-            })
-          }
-        }
-        const cwd = workspace?.path ?? request.payload.cwd ?? defaults.cwd
-        const requestedPreset = request.payload.agentPreset
-        try {
-          await ensureSession(sessionId, cwd, request.payload.sessionId !== undefined, requestedPreset)
-        } catch (error: unknown) {
-          if (error instanceof AgentPresetConflict) {
-            return err(request, {
-              code: 'agent-preset-conflict',
-              message: error.message,
-              details: {
-                sessionId: error.sessionId,
-                requestedPreset: error.requestedPreset,
-                ...error.existingPreset === undefined ? {} : { existingPreset: error.existingPreset },
-              },
-            })
-          }
-          const refused = presetFailure(request, error)
-          if (refused !== undefined) return refused
-          if (error instanceof SessionCwdConflict) {
-            return err(request, {
-              code: 'session-conflict',
-              message: error.message,
-              details: {
-                sessionId: error.sessionId,
-                requestedCwd: error.requestedCwd,
-                ...error.existingCwd === undefined ? {} : { existingCwd: error.existingCwd },
-              },
-            })
-          }
-          if (error instanceof SubagentSessionOwnership) {
-            return err(request, subagentOwnershipError(error.sessionId))
-          }
-          return err(request, {
-            code: 'internal',
-            message: `failed to create session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
-        if (workspace !== undefined) {
-          try {
-            await workspace.attachSession(sessionId)
-          } catch (error: unknown) {
-            return err(request, {
-              code: 'workspace-attach-failed',
-              message: `session "${sessionId}" was created but could not attach to workspace "${workspace.id}": ${String(error)}`,
-              details: { sessionId, workspaceId: workspace.id },
-            })
-          }
-        }
-        // Echo the composition the session RUNS so a client can label it
-        // without waiting for the next list refresh — the create is the commit
-        // point that knows it (a caller that named none gets the default).
-        // Resolved from the log for the same reason `sessionListFields()` is:
-        // this handler also adopts an already-live session, and one that
-        // switched while blank runs a preset its header no longer names, so
-        // echoing the header would contradict both the adoption this call just
-        // allowed and the row `session.list` serves for the same session.
-        const created = ctx.agents.get(sessionId)
-        const createdPreset = created === undefined ? undefined : resolveSessionPreset(created.session)
-        return ok(request, { sessionId, ...createdPreset === undefined ? {} : { agentPreset: createdPreset } })
-      },
-
       async history(request) {
         const { sessionId, beforeSeq, maxMessages } = request.payload
         try {
@@ -2192,9 +3061,26 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async models(request) {
         const { sessionId } = request.payload
-        const found = await agentFor(sessionId)
-        if ('error' in found) return err(request, found.error)
-        const current = selectionFor(found.agent).current
+        let agent: Agent
+        // Model metadata is read-only and is needed to render a Team worker's
+        // transcript. Coordinator ownership is required for prompt/model
+        // mutation, but it must not block this harmless read when the worker
+        // Agent is live and its Team binding is exact.
+        const liveTeamAgent = ctx.agents.get(sessionId)
+        if (liveTeamAgent !== undefined && hasTeamOwner(liveTeamAgent.session)) {
+          agent = liveTeamAgent
+        } else {
+          const teamRoute = await teamCoordinatorRoute<SessionModels>(request, sessionId)
+          if (teamRoute !== undefined && 'refused' in teamRoute) return teamRoute.refused
+          if (teamRoute !== undefined) {
+            agent = teamRoute.agent
+          } else {
+            const found = await agentFor(sessionId)
+            if ('error' in found) return err(request, found.error)
+            agent = found.agent
+          }
+        }
+        const current = selectionFor(agent).current
         const { groups, failures } = await buildModelCatalog(ctx)
         const routable = current !== undefined && routeServed(current.provider)
         return ok(request, {
@@ -2207,9 +3093,17 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async selectModel(request) {
         const { sessionId, provider, model, reasoningEffort } = request.payload
-        const found = await agentFor(sessionId)
-        if ('error' in found) return err(request, found.error)
-        return serializeImageAdmission(found.agent, async () => {
+        const teamRoute = await teamCoordinatorRoute<{ selected: ModelSelection }>(request, sessionId)
+        if (teamRoute !== undefined && 'refused' in teamRoute) return teamRoute.refused
+        let agent: Agent
+        if (teamRoute !== undefined) {
+          agent = teamRoute.agent
+        } else {
+          const found = await agentFor(sessionId)
+          if ('error' in found) return err(request, found.error)
+          agent = found.agent
+        }
+        return serializeImageAdmission(agent, async () => {
           try {
             const resolved = await ctx.llm.resolveCallConfig({
               provider,
@@ -2225,7 +3119,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
                 ? {}
                 : { reasoningEffort: resolved.reasoningEffort },
             }
-            selectionFor(found.agent).current = selected
+            selectionFor(agent).current = selected
             try {
               await defaults.saveDefaultModelSelection?.(selected)
             } catch (error: unknown) {
@@ -2274,104 +3168,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
       },
 
-      async fork(request) {
-        const { sessionId, atSeq } = request.payload
-        let source: SessionReadState
-        try {
-          source = await readSessionState(sessionId)
-        } catch (error: unknown) {
-          if (error instanceof SessionNotFound) {
-            return err(request, { code: 'session-not-found', message: error.message, details: { sessionId } })
-          }
-          return err(request, {
-            code: 'internal',
-            message: `fork source unavailable for session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
-        const events = source.events
-        // An in-log anchor belongs to the turn containing it and must never
-        // clip backward to an earlier completed turn. Omitted and past-end
-        // anchors retain the last-completed-turn shortcut.
-        const lastSeq = events.at(-1)?.seq ?? -1
-        const anchoredBoundary = atSeq === undefined
-          ? undefined
-          : events.find(e => e.type === 'turn/end' && e.seq >= atSeq)
-        const boundary = anchoredBoundary
-          ?? (atSeq === undefined || atSeq > lastSeq
-            ? events.findLast(e => e.type === 'turn/end')
-            : undefined)
-        if (boundary === undefined) {
-          return err(request, {
-            code: 'fork-unavailable',
-            message: atSeq !== undefined && atSeq <= lastSeq
-              ? `session "${sessionId}" has not completed the turn containing event ${String(atSeq)}`
-              : `session "${sessionId}" has no completed turn to fork from`,
-            details: { sessionId },
-          })
-        }
-        // Extend the cut through trailing out-of-band appends (session/title,
-        // injections) up to the next turn/start: they are standalone events, so
-        // the seed stays balanced, and the child inherits a title generated
-        // right after the boundary turn.
-        let cut = boundary.seq + 1
-        while (cut < events.length && events[cut]?.type !== 'turn/start') cut++
-        let workspace: Workspace | undefined
-        try {
-          workspace = await forkWorkspace(source)
-        } catch (error: unknown) {
-          return err(request, {
-            code: 'internal',
-            message: `failed to resolve fork workspace for session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
-        const childId = `session-${randomUUID()}` as SessionId
-        // The child inherits the parent's composition for the same reason a
-        // resumed session keeps its own: the seeded history was produced under
-        // those tools, and composing anything else would strand the tool calls
-        // it already carries. Now that no model-facing row sits in the host
-        // plane, composing nothing would leave the child with no tools at all.
-        const forkComposition = await composeAgent(resolveSessionPreset(source))
-        try {
-          await ctx.agents.create({
-            sessionId: childId,
-            seed: events.slice(0, cut),
-            meta: {
-              ...source.header.cwd === undefined ? {} : { cwd: source.header.cwd },
-              parentSession: source.id,
-              seedLength: cut,
-              ...forkComposition.agentPreset === undefined
-                ? {}
-                : { agentPreset: forkComposition.agentPreset },
-            },
-            agentOptions: agentOptions(),
-            setup: forkComposition.setup,
-          })
-        } catch (error: unknown) {
-          return err(request, {
-            code: 'internal',
-            message: `failed to fork session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
-        // An ordinary source keeps its direct Workspace. A subagent source is
-        // not listed there, so its ordinary fork joins the nearest owning
-        // ancestor instead. The child is already published if attach fails.
-        if (workspace !== undefined) {
-          try {
-            await workspace.attachSession(childId)
-          } catch (error: unknown) {
-            return err(request, {
-              code: 'workspace-attach-failed',
-              message: `session "${childId}" was forked but could not attach to workspace "${workspace.id}": ${String(error)}`,
-              details: { sessionId: childId, workspaceId: workspace.id },
-            })
-          }
-        }
-        return ok(request, { sessionId: childId })
-      },
-
       async prompt(request) {
         const { sessionId, mode, content, clientTimeZone } = request.payload
         const canonicalTimeZone = clientTimeZone === undefined
@@ -2384,6 +3180,35 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             details: { value: clientTimeZone },
           })
         }
+        const teamRoute = await teamCoordinatorRoute<{ accepted: true }>(request, sessionId)
+        if (teamRoute !== undefined) {
+          if ('refused' in teamRoute) return teamRoute.refused
+          const authentication = authenticatedTeamMutationCall(request)
+          if ('refused' in authentication) return authentication.refused
+          const ownerRefusal = await requireCurrentTeamRunHumanOwner(
+            request, teamRoute.teams, teamRoute.teamId, authentication.call,
+          )
+          if (ownerRefusal !== undefined) return ownerRefusal
+          const modelRefusal = turnRefusal<{ accepted: true }>(request, teamRoute.agent)
+          if (modelRefusal !== undefined) return modelRefusal
+          const hasImage = content.some(part => part.type === 'image')
+          const admit = async (): Promise<RpcResponse<{ accepted: true }>> => {
+            const admitted = await admitPromptContent<{ accepted: true }>(request, teamRoute.agent, content)
+            if ('refused' in admitted) return admitted.refused
+            try {
+              await teamRoute.teamRuns.postHumanInput({
+                teamId: teamRoute.teamId,
+                content: admitted.content,
+                delivery: mode === 'steer' ? 'steer' : 'turn',
+                humanOwner: authenticatedHumanOwner(),
+              })
+            } catch (error: unknown) {
+              return teamFailure(request, error, teamRoute.teamId)
+            }
+            return ok(request, { accepted: true as const })
+          }
+          return hasImage ? serializeImageAdmission(teamRoute.agent, admit) : admit()
+        }
         const resolved = await turnAgentFor<{ accepted: true }>(request, sessionId)
         if ('refused' in resolved) return resolved.refused
         const agent = resolved.agent
@@ -2395,37 +3220,13 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
         const hasImage = content.some(part => part.type === 'image')
         const admit = async (): Promise<RpcResponse<{ accepted: true }>> => {
+          const admitted = await admitPromptContent<{ accepted: true }>(request, agent, content)
+          if ('refused' in admitted) return admitted.refused
           try {
-            if (hasImage) {
-              const current = selectionFor(agent).current
-              if (current === undefined) {
-                return err(request, {
-                  code: 'model-not-configured',
-                  message: 'no model is configured; select a provider and model before sending an image',
-                  details: {},
-                })
-              }
-              const modelInfo = await ctx.llm.resolveModelInfo(current.provider, current.model)
-              if (modelInfo.inputModalities !== undefined && !modelInfo.inputModalities.includes('image')) {
-                return err(request, {
-                  code: 'attachment-error',
-                  message: `Model "${current.model}" does not support image input.`,
-                  details: { reason: 'MODEL_DOES_NOT_SUPPORT_IMAGES' },
-                })
-              }
-            }
-            const durable = await durablePromptContent(ctx, content)
-            const message: UserMessage = createUserMessage({ content: durable, source })
+            const message: UserMessage = createUserMessage({ content: admitted.content, source })
             if (mode === 'steer') agent.steer(message)
             else agent.followup(message)
           } catch (error: unknown) {
-            if (error instanceof AttachmentError) {
-              return err(request, {
-                code: 'attachment-error',
-                message: error.message,
-                details: { reason: error.code },
-              })
-            }
             return err(request, {
               code: 'agent-busy',
               message: 'prompt rejected',
@@ -2496,6 +3297,9 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           }))
         }
         const agent = ctx.agents.get(sessionId)
+        if (agent !== undefined && hasTeamOwner(agent.session)) {
+          return Promise.resolve(err(request, teamOwnershipError(sessionId)))
+        }
         if (agent !== undefined && hasSubagentOwner(agent.session, agent)) {
           return Promise.resolve(err(request, subagentOwnershipError(sessionId)))
         }
@@ -2536,187 +3340,1075 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         return Promise.resolve(ok(request, { accepted: true as const }))
       },
 
-      cancel(request) {
+      async cancel(request) {
         const { sessionId } = request.payload
+        const teamRoute = await teamCoordinatorRoute<{ accepted: true }>(request, sessionId)
+        if (teamRoute !== undefined) {
+          if ('refused' in teamRoute) return teamRoute.refused
+          const refused = requireTeamMutationAuthentication<{ accepted: true }>(request)
+          if (refused !== undefined) return refused
+          return teamActorUnavailable(request, teamRoute.teamId)
+        }
         const agent = ctx.agents.get(sessionId)
         if (agent === undefined) {
-          return Promise.resolve(err(request, {
+          return err(request, {
             code: 'session-not-found',
             message: `session "${sessionId}" not found (not attached)`,
             details: { sessionId },
-          }))
+          })
         }
         if (hasSubagentOwner(agent.session, agent)) {
-          return Promise.resolve(err(request, subagentOwnershipError(sessionId)))
+          return err(request, subagentOwnershipError(sessionId))
         }
         agent.cancel({ kind: 'user' }, { keepInbox: true })
-        return Promise.resolve(ok(request, { accepted: true as const }))
+        return ok(request, { accepted: true as const })
       },
     },
 
-    subagents: {
-      async list(request, signal) {
+    teams: {
+      async list(request) {
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listTeamsPage']>>>(request)
+        if ('refused' in service) return service.refused
         try {
-          const entries = await ctx.subagents.listChildren(request.payload.parentSessionId, signal)
-          return ok(request, {
-            entries: entries.map(entry => entry.kind === 'child'
-              ? {
-                ...entry,
-                activity: ctx.agents.get(entry.id)?.status === 'running' ? 'running' : 'inactive',
-              }
-              : entry),
-            parentAvailable: ctx.agents.get(request.payload.parentSessionId) !== undefined,
-          })
+          return ok(request, await service.teams.listTeamsPage({
+            afterCursor: request.payload.afterCursor ?? -1,
+            limit: request.payload.limit ?? 128,
+          }))
         } catch (error: unknown) {
-          if (signal?.aborted || (error instanceof SubagentError && error.code === 'CANCELLED')) {
-            return err(request, {
-              code: 'cancelled',
-              message: 'subagent catalog read was cancelled',
-              details: {},
-            })
-          }
-          if (error instanceof SubagentError && error.code === 'SUBAGENT_CONTROL_PROJECTIONS_UNAVAILABLE') {
-            return err(request, projectionsUnavailableError())
-          }
-          return err(request, {
-            code: 'internal',
-            message: 'subagent catalog read failed',
-            details: {},
-          })
+          return teamFailure(request, error)
         }
       },
 
-      async history(request, signal) {
-        const {
-          parentSessionId, childSessionId, mode, beforeSeq, maxMessages,
-        } = request.payload
-        const verified = await catalogChild(ctx, {
-          parentSessionId, childSessionId, mode,
-        }, signal)
-        if (verified.error !== undefined) return err(request, verified.error)
-        // The generic-history data plane: an attached child serves its
-        // in-memory snapshot and the registry's live watermark projections; a
-        // cold child is one persistence inspection plus a detached fold.
-        let header: SessionHeader
-        let events: SessionEvent[]
-        let projections: SessionProjectionsBlock | undefined
-        const attached = ctx.sessions.get(childSessionId)
-        if (attached !== undefined) {
-          header = attached.header
-          events = [...attached.events]
-          projections = beforeSeq === undefined
-            ? subagentHistoryProjections(ctx, childSessionId, () => projectionsFor(ctx, attached))
-            : undefined
-        } else {
-          try {
-            const inspected = await inspectServable(childSessionId)
-            header = inspected.meta
-            events = inspected.events
-            projections = beforeSeq === undefined
-              ? subagentHistoryProjections(ctx, childSessionId, () => detachedProjectionsFor(ctx, inspected.events))
-              : undefined
-          } catch (error: unknown) {
-            if (signal?.aborted) {
-              return err(request, {
-                code: 'cancelled',
-                message: 'subagent history read was cancelled',
-                details: {},
-              })
-            }
-            if (error instanceof SessionNotFound) {
-              return err(request, {
-                code: 'subagent-not-found',
-                message: 'subagent disappeared during history read',
-                details: { parentSessionId, childSessionId },
-              })
-            }
-            return err(request, {
-              code: 'internal',
-              message: 'subagent history read failed',
-              details: {},
-            })
-          }
-        }
-        if (signal?.aborted) {
-          return err(request, {
-            code: 'cancelled',
-            message: 'subagent history read was cancelled',
-            details: {},
-          })
-        }
-        if (header.parentSession !== parentSessionId) {
-          return err(request, {
-            code: 'subagent-unauthorized',
-            message: 'subagent parent changed during history read',
-            details: { childSessionId },
-          })
-        }
-        const page = historyPage(ctx, events, beforeSeq, maxMessages)
-        return ok(request, { ...page, ...projections === undefined ? {} : { projections } })
-      },
-
-      async prompt(request, signal) {
-        const { parentSessionId, childSessionId, content, clientTimeZone } = request.payload
-        const canonicalTimeZone = clientTimeZone === undefined
-          ? undefined
-          : canonicalClientTimeZone(clientTimeZone)
-        if (clientTimeZone !== undefined && canonicalTimeZone === undefined) {
-          return err(request, {
-            code: 'invalid-time-zone',
-            message: 'clientTimeZone must be UTC or a valid IANA Area/Location name',
-            details: { value: clientTimeZone },
-          })
-        }
-        const parent = ctx.agents.get(parentSessionId)
-        if (parent === undefined) {
-          return err(request, {
-            code: 'subagent-parent-unavailable',
-            message: `parent session "${parentSessionId}" is not live`,
-            details: { parentSessionId },
-          })
-        }
-        const verified = await catalogChild(ctx, {
-          parentSessionId, childSessionId, mode: 'continuable',
-        }, signal)
-        if (verified.error !== undefined) return err(request, verified.error)
+      async get(request) {
+        const { teamId } = request.payload
+        const service = teamServiceFor<TeamStateSnapshot>(request)
+        if ('refused' in service) return service.refused
         try {
-          const messageId = await ctx.subagents.followup(parent, childSessionId, content, {
-            source: {
-              kind: 'user',
-              rpcId: request.rpcId,
-              ...(canonicalTimeZone === undefined ? {} : { clientTimeZone: canonicalTimeZone }),
-            },
+          return ok(request, redactTeamStateForHuman(await service.teams.getTeam({ teamId })))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async create(request, signal) {
+        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamRunFor<TeamStateSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const preset = teamCreatePreset(request.payload.agentPreset)
+        const selection = teamModelSelection(request.payload.selection)
+        try {
+          const run = await service.teamRuns.create({
+            admitHumanChannel: authenticatedChannelAdmission(),
+            objective: request.payload.objective,
+            cwd: request.payload.cwd ?? defaults.cwd,
+            humanOwner: authenticatedHumanOwner(),
+            ...selection === undefined ? {} : { selection },
+            ...preset === undefined ? {} : { preset },
             signal,
           })
-          return ok(request, { messageId })
+          return ok(request, await service.teams.getTeam({ teamId: run.teamId }))
         } catch (error: unknown) {
-          return subagentPromptError(request, error, signal)
+          return teamFailure(request, error, undefined, signal)
         }
       },
 
-      // Deliberately no catalog, history, persistence, or parent Agent lookup:
-      // the core primitive alone authorizes the durable address against the
-      // live Activation, which is what keeps a live child interruptible while
-      // its parent Agent is offline. Absent targets are accepted no-ops there.
-      interrupt(request) {
-        const { parentSessionId, childSessionId } = request.payload
+      async resume(request, signal) {
+        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamRunFor<TeamStateSnapshot>(request, request.payload.teamId)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
         try {
-          ctx.subagents.interrupt(childSessionId, { kind: 'user', parentSessionId })
-        } catch (error: unknown) {
-          if (error instanceof SubagentError && error.code === 'UNAUTHORIZED') {
-            return Promise.resolve(err(request, {
-              code: 'subagent-unauthorized',
-              message: 'subagent does not belong to this parent',
-              details: { childSessionId },
-            }))
+          const { cwd, agentPreset, ...untrustedInput } = request.payload
+          const input = teamResumeInputSchema.parse(untrustedInput)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
           }
-          return Promise.resolve(err(request, {
-            code: 'internal',
-            message: 'subagent interrupt failed',
-            details: {},
-          }))
+          const preset = teamCreatePreset(agentPreset)
+          const state = await humanActors.withProof(
+            call,
+            humanTeamResumeProofInput(input),
+            async (actor) => {
+              const authorization = await service.teams.authorizeHumanResume({ actor, ...input })
+              try {
+                const run = await service.teamRuns.resume({
+                  admitHumanChannel: authenticatedChannelAdmission(),
+                  teamId: input.teamId,
+                  ...cwd === undefined ? {} : { cwd },
+                  ...preset === undefined ? {} : { preset },
+                  authorization,
+                  humanOwner: authenticatedHumanOwner(),
+                  signal,
+                })
+                return await service.teams.getTeam({ teamId: run.teamId })
+              } finally {
+                authorization.close()
+              }
+            },
+          )
+          return ok(request, redactTeamStateForHuman(state))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId, signal)
         }
-        return Promise.resolve(ok(request, { accepted: true as const }))
+      },
+
+      async start(request, signal) {
+        const refused = requireTeamMutationAuthentication<TeamStartResult>(request)
+        if (refused !== undefined) return refused
+        const service = teamRunFor<TeamStartResult>(request)
+        if ('refused' in service) return service.refused
+        const preset = teamCreatePreset(request.payload.agentPreset)
+        const selection = teamModelSelection(request.payload.selection)
+        try {
+          const started = await service.teamRuns.start({
+            admitHumanChannel: authenticatedChannelAdmission(),
+            objective: request.payload.objective,
+            content: [{ type: 'text', text: request.payload.text }],
+            idempotencyKey: request.payload.idempotencyKey,
+            cwd: request.payload.cwd ?? defaults.cwd,
+            humanOwner: authenticatedHumanOwner(),
+            ...selection === undefined ? {} : { selection },
+            ...preset === undefined ? {} : { preset },
+            signal,
+          })
+          return ok(request, {
+            state: await service.teams.getTeam({ teamId: started.handle.teamId }),
+            envelopeId: started.input.id,
+          })
+        } catch (error: unknown) {
+          return teamFailure(request, error, undefined, signal)
+        }
+      },
+
+      async postInput(request) {
+        const { teamId, text, content, idempotencyKey, delivery } = request.payload
+        const authentication = authenticatedTeamMutationCall(request)
+        if ('refused' in authentication) return authentication.refused
+        const service = teamRunFor<{ envelopeId: EnvelopeId }>(request, teamId)
+        if ('refused' in service) return service.refused
+        const ownerRefusal = await requireCurrentTeamRunHumanOwner(
+          request, service.teams, teamId, authentication.call,
+        )
+        if (ownerRefusal !== undefined) return ownerRefusal
+        try {
+          const input = content === undefined ? [{ type: 'text' as const, text: text ?? '' }] : content
+          const durable = await durablePromptContent(ctx, input)
+          const envelope = await service.teamRuns.postHumanInput({
+            teamId,
+            content: durable,
+            humanOwner: authenticatedHumanOwner(),
+            ...delivery === undefined ? {} : { delivery },
+            ...idempotencyKey === undefined ? {} : { idempotencyKey },
+          })
+          return ok(request, { envelopeId: envelope.id })
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async waitFinal(request, signal) {
+        const { teamId, afterCursor } = request.payload
+        const authentication = authenticatedTeamMutationCall(request)
+        if ('refused' in authentication) return authentication.refused
+        const service = teamRunFor<TeamFinal>(request, teamId)
+        if ('refused' in service) return service.refused
+        const ownerRefusal = await requireCurrentTeamRunHumanOwner(
+          request, service.teams, teamId, authentication.call,
+        )
+        if (ownerRefusal !== undefined) return ownerRefusal
+        try {
+          return ok(request, await service.teamRuns.waitForFinal({
+            teamId,
+            ...afterCursor === undefined ? {} : { afterCursor },
+            humanOwner: authenticatedHumanOwner(),
+            signal,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId, signal)
+        }
+      },
+
+      async cancel(request) {
+        const { teamId } = request.payload
+        const authentication = authenticatedTeamMutationCall(request)
+        if ('refused' in authentication) return authentication.refused
+        const teams = ctx.get('teams')
+        const teamRuns = ctx.get('teamRuns')
+        if (teams === undefined) {
+          return err(request, {
+            code: 'team-service-unavailable',
+            message: 'Team RPC is unavailable: this host does not compose a Team provider',
+            details: {},
+          })
+        }
+        if (teamRuns === undefined) return teamActorUnavailable(request, teamId)
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, teamId)
+        const ownerRefusal = await requireCurrentTeamRunHumanOwner(
+          request, teams, teamId, authentication.call,
+        )
+        if (ownerRefusal !== undefined) return ownerRefusal
+        try {
+          await teamRuns.cancel(teamId, authenticatedHumanOwner())
+          const state = await teams.getTeam({ teamId })
+          return ok(request, { accepted: true as const, phase: state.team.phase })
+        } catch (error: unknown) {
+          if (error instanceof TeamRunError && error.code === 'TEAM_RUN_NOT_FOUND') {
+            const state = await teams.getTeam({ teamId })
+            const input = {
+              teamId,
+              expectedCursor: state.team.cursor,
+            }
+            try {
+              await humanActors.withProof(
+                authentication.call,
+                humanTeamResumeProofInput(input),
+                async (actor) => {
+                  const authorization = await teams.authorizeHumanResume({ actor, ...input })
+                  try {
+                    const resumeRequest = {
+                      teamId,
+                      authorization,
+                      admitHumanChannel: authenticatedChannelAdmission(),
+                      humanOwner: authenticatedHumanOwner(),
+                    } as const
+                    try {
+                      await teamRuns.resume(resumeRequest)
+                    } catch (resumeError: unknown) {
+                      if (!(resumeError instanceof TeamRunError) || resumeError.code !== 'TEAM_RUN_START_CONFLICT') throw resumeError
+                      const activationController = ctx.get('teamActivations')
+                      if (activationController === undefined) throw resumeError
+                      const latest = await teams.getTeam({ teamId })
+                      const coordinator = latest.participants.find(participant => participant.role === 'coordinator')
+                      const binding = coordinator === undefined
+                        ? undefined
+                        : latest.activations.find(item => item.activation.participantId === coordinator.id)
+                      if (coordinator === undefined || binding === undefined) throw resumeError
+                      await activationController.fenceStale({
+                        teamId,
+                        participantId: coordinator.id,
+                        activationId: binding.activation.id,
+                        sessionId: binding.sessionId,
+                        provider: binding.provider,
+                        authorization,
+                      })
+                      await teamRuns.resume(resumeRequest)
+                    }
+                  } finally {
+                    authorization.close()
+                  }
+                },
+              )
+              await teamRuns.cancel(teamId, authenticatedHumanOwner())
+              const resumedAndCancelled = await teams.getTeam({ teamId })
+              return ok(request, { accepted: true as const, phase: resumedAndCancelled.team.phase })
+            } catch (fallbackError: unknown) {
+              return teamFailure(request, fallbackError, teamId)
+            }
+          }
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async archive(request) {
+        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamStateSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamArchiveInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const state = await humanActors.withProof(
+            call,
+            humanTeamArchiveProofInput(input),
+            async actor => await service.teams.archiveTeam({ actor, ...input }),
+          )
+          return ok(request, redactTeamStateForHuman(state))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async goalUpdate(request) {
+        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamStateSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamGoalUpdateInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const state = await humanActors.withProof(
+            call,
+            humanTeamGoalProofInput(input),
+            async actor => await service.teams.updateTeamGoal({ actor, ...input }),
+          )
+          return ok(request, redactTeamStateForHuman(state))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async goalTransition(request) {
+        const refused = requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamStateSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamGoalPhaseTransitionInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamStateSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const state = await humanActors.withProof(
+            call,
+            humanTeamGoalProofInput(input),
+            async actor => await service.teams.transitionTeamGoalPhase({ actor, ...input }),
+          )
+          return ok(request, redactTeamStateForHuman(state))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async quiescence(request) {
+        const { teamId } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['inspectQuiescence']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.inspectQuiescence(teamId))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async inboxRespond(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+        const inbox = ctx.get('teamHumanDelivery')
+        try {
+          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
+          return ok(request, await inbox.respond(call, request.payload))
+        } catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async inboxRead(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+        const inbox = ctx.get('teamHumanDelivery')
+        try {
+          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
+          return ok(request, await inbox.read(call, request.payload))
+        } catch (error: unknown) { return teamFailure(request, error) }
+      },
+
+      async inboxWatch(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+        const inbox = ctx.get('teamHumanDelivery')
+        try {
+          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
+          return ok(request, await inbox.watch(call, request.payload))
+        } catch (error: unknown) { return teamFailure(request, error) }
+      },
+
+      async inboxAcknowledge(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+        const inbox = ctx.get('teamHumanDelivery')
+        try {
+          if (inbox === undefined) throw new TeamError('Durable principal inbox is not mounted', 'TEAM_INVALID_ARGUMENT')
+          return ok(request, await inbox.acknowledge(call, request.payload))
+        } catch (error: unknown) { return teamFailure(request, error) }
+      },
+
+      async metrics(request) {
+        const service = teamServiceFor<TeamMetricsSnapshot>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return await Promise.resolve(ok(request, service.teams.getMetrics()))
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async auditRead(request) {
+        const { teamId, channelId, afterCursor, limit } = request.payload
+        const service = teamServiceFor<TeamAuditList>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.readAudit({
+            teamId,
+            ...channelId === undefined ? {} : { channelId },
+            afterCursor: afterCursor ?? -1,
+            limit: limit ?? 128,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async artifactRead(request, signal) {
+        const { teamId, artifactId } = request.payload
+        const service = teamServiceFor<TeamArtifactReadResult>(request)
+        if ('refused' in service) return service.refused
+        try {
+          const lookup = await service.teams.getArtifact({ teamId, artifactId })
+          if (lookup === undefined) {
+            return err(request, {
+              code: 'team-artifact-not-found',
+              message: `visible Team artifact '${artifactId}' was not found`,
+              details: { teamId, artifactId },
+            })
+          }
+          if (lookup.provider === undefined) {
+            return err(request, {
+              code: 'team-artifact-unavailable',
+              message: `Team artifact '${artifactId}' has no readable provider`,
+              details: { teamId, artifactId },
+            })
+          }
+          const artifacts = ctx.get('teamArtifacts')
+          if (artifacts === undefined || artifacts.getProvider(lookup.provider) === undefined) {
+            return err(request, {
+              code: 'team-artifact-unavailable',
+              message: `Team artifact '${artifactId}' provider is unavailable`,
+              details: { teamId, artifactId },
+            })
+          }
+          signal.throwIfAborted()
+          const bytes = await artifacts.read(lookup.provider, { reference: lookup, signal })
+          signal.throwIfAborted()
+          if (bytes.byteLength > MAX_TEAM_ARTIFACT_READ_BYTES) {
+            return err(request, {
+              code: 'team-artifact-unavailable',
+              message: `Team artifact '${artifactId}' exceeds the browser read limit`,
+              details: { teamId, artifactId },
+            })
+          }
+          return ok(request, {
+            artifact: lookup,
+            bytes: bytes.byteLength,
+            data: Buffer.from(bytes).toString('base64'),
+          })
+        } catch (error: unknown) {
+          if (signal.aborted) return teamFailure(request, error, teamId, signal)
+          if (error instanceof TeamArtifactError && error.code === 'TEAM_ARTIFACT_NOT_FOUND') {
+            return err(request, {
+              code: 'team-artifact-not-found',
+              message: `visible Team artifact '${artifactId}' is no longer available`,
+              details: { teamId, artifactId },
+            })
+          }
+          return err(request, {
+            code: 'team-artifact-unavailable',
+            message: `Team artifact '${artifactId}' could not be read`,
+            details: { teamId, artifactId },
+          })
+        }
+      },
+
+      async artifactList(request) {
+        const { teamId, afterCursor, limit } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listArtifactsPage']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.listArtifactsPage({
+            teamId,
+            afterCursor: afterCursor ?? -1,
+            limit: limit ?? 128,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async memberList(request) {
+        const { teamId, afterCursor, limit } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listParticipantsPage']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.listParticipantsPage({
+            teamId,
+            afterCursor: afterCursor ?? -1,
+            limit: limit ?? 128,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async memberInvite(request) {
+        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ParticipantSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = participantInviteInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const participant = await humanActors.withProof(
+            call,
+            humanParticipantInviteProofInput(input),
+            async actor => await service.teams.inviteParticipant({ actor, ...input }),
+          )
+          return ok(request, participant)
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async memberActivate(request) {
+        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ParticipantSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'active' })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const participant = await humanActors.withProof(
+            call,
+            humanParticipantPhaseProofInput(input, 'activate'),
+            async actor => await service.teams.transitionParticipantPhase({ actor, ...input }),
+          )
+          return ok(request, participant)
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async memberRemove(request) {
+        const refused = requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ParticipantSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = participantPhaseTransitionInputSchema.parse({ ...request.payload, phase: 'left' })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ParticipantSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const participant = await humanActors.withProof(
+            call,
+            humanParticipantPhaseProofInput(input, 'close'),
+            async actor => await service.teams.transitionParticipantPhase({ actor, ...input }),
+          )
+          return ok(request, participant)
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async memberInterrupt(request) {
+        const refused = requireTeamMutationAuthentication<ParticipantInterruptSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ParticipantInterruptSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = participantInterruptRequestInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ParticipantInterruptSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const interrupt = await humanActors.withProof(
+            call,
+            humanParticipantInterruptProofInput(input),
+            async actor => await service.teams.requestParticipantInterrupt({ actor, ...input }),
+          )
+          return ok(request, interrupt)
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      channelCatalog(request) {
+        return Promise.resolve().then(() => {
+          const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamChannelCatalog>(request)
+          if (refused !== undefined) return refused
+          const service = teamServiceFor<import('@clocky/clocky-team').TeamChannelCatalog>(request)
+          if ('refused' in service) return service.refused
+          const summaries = ctx.get('teamChannelSummaries')
+          return ok(request, { adapters: service.teams.listAdapters(), viewPolicies: service.teams.listViewPolicies(),
+            ...summaries === undefined ? {} : { summary: summaries.describe() } })
+        })
+      },
+
+      async channelList(request) {
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamChannelListPage>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<import('@clocky/clocky-team').TeamChannelListPage>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamChannelListInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) return teamActorUnavailable(request, input.teamId)
+          return ok(request, await humanActors.withProof(call, { teamId: input.teamId, operation: 'channel-list-read',
+            fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) },
+          async actor => await service.teams.listTeamChannels({ actor, ...input })))
+        } catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async channelAdmission(request) {
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').ChannelHumanAdmissionSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<import('@clocky/clocky-team').ChannelHumanAdmissionSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = { teamId: teamIdSchema.parse(request.payload.teamId), channelId: channelIdSchema.parse(request.payload.channelId) }
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) return teamActorUnavailable(request, input.teamId)
+          return ok(request, await humanActors.withProof(call, { teamId: input.teamId, operation: 'channel-admission-read',
+            fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) },
+          async actor => await service.teams.getHumanChannelAdmission({ actor, ...input })))
+        } catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async channelInvitation(request) {
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').ChannelHumanInvitationSnapshot>(request)
+        if (refused !== undefined) return refused
+        try {
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined) return teamActorUnavailable(request)
+          return ok(request, await getPrincipalChannelInvitation(ctx, call, request.payload))
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async channelInvitationAcknowledge(request) {
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').ChannelHumanInvitationSnapshot>(request)
+        if (refused !== undefined) return refused
+        try {
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined) return teamActorUnavailable(request)
+          return ok(request, await acknowledgePrincipalChannelInvitation(ctx, call, request.payload))
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async channelOpen(request) {
+        const refused = requireTeamMutationAuthentication<ChannelSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ChannelSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = channelOpenInputSchema.parse(request.payload)
+          const { workflowPlanId, expectedPlanRevision, ...genericInput } = input
+          if (workflowPlanId !== undefined || expectedPlanRevision !== undefined) {
+            throw new TeamError('Product channel opening cannot select a workflow plan', 'TEAM_INVALID_ARGUMENT')
+          }
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ChannelSnapshot>(request)
+              ?? teamActorUnavailable(request, genericInput.teamId)
+          }
+          const channel = await humanActors.withProof(
+            call,
+            humanChannelOpenProofInput(genericInput),
+            async actor => await service.teams.openChannel({ actor, authorityKind: 'human', ...genericInput }),
+          )
+          return ok(request, channel)
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async channelInput(request) {
+        const refused = requireTeamMutationAuthentication<TeamEnvelope>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamEnvelope>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request)
+        try {
+          const input = teamChannelInputRequestSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) return teamActorUnavailable(request)
+          const own = await getPrincipalChannelInvitation(ctx, call, { channelId: input.channelId })
+          const adapter = own.channel.manifest.adapter
+          if (adapter.type !== 'direct') {
+            const first = input.content[0]
+            if (input.content.length !== 1 || first?.type !== 'text') throw new TeamError('Basic channel input requires exactly one text block', 'TEAM_INVALID_ARGUMENT')
+            const draft = await resolvePrincipalChannelText(ctx, call, own, { ...input, text: first.text })
+            const command = channelPostCommandInput({ ...input, ...draft })
+            return ok(request, await humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
+              actor => service.teams.postChannelEnvelope({ actor, ...command })))
+          }
+          if (own.invitation.status !== 'acknowledged' || (input.idempotencyKey === undefined && own.channel.phase !== 'active')
+            || ![3, 4].includes(adapter.version)) {
+            throw new TeamError('Text and image input requires an acknowledged invitation in an active direct version 3 or 4 channel', 'TEAM_INVALID_ARGUMENT')
+          }
+          const parts: PromptContentPart[] = input.content.map(part => part.type === 'text' ? part : {
+            type: 'image', mediaType: part.mediaType, data: part.data, ...part.name === undefined ? {} : { name: part.name },
+          })
+          const content = await durablePromptContent(ctx, parts)
+          call.signal.throwIfAborted()
+          const command = channelPostCommandInput({ ...input, kind: 'message', payload: jsonObjectSchema.parse({ content }) })
+          const envelope = await humanActors.withProof(call, humanChannelPostProofInput(own.channel.manifest.teamId, command),
+            async actor => await service.teams.postChannelEnvelope({ actor, ...command }))
+          return ok(request, envelope)
+        } catch (error: unknown) { return teamFailure(request, error) }
+      },
+
+      async channelAttachment(request) {
+        const refused = requireTeamMutationAuthentication<import('./api/teams.ts').TeamChannelAttachment>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<import('./api/teams.ts').TeamChannelAttachment>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const { attachmentId, ...input } = teamChannelAttachmentRequestSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) return teamActorUnavailable(request, input.teamId)
+          const image = await humanActors.withProof(call, { teamId: input.teamId, operation: 'channel-content-read',
+            fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) }, async (actor) => {
+            const envelope = await service.teams.getHumanChannelEnvelope({ actor, ...input })
+            const ref = imageBlockIn(envelope.payload.content, candidate => String(candidate.attachmentId) === String(attachmentId))
+            if (ref === undefined) return undefined
+            const stored = await ctx.attachments.readImage(ref, call.signal)
+            await service.teams.getHumanChannelEnvelope({ actor, ...input })
+            return { attachment: stored.ref, data: Buffer.from(stored.data).toString('base64') }
+          })
+          if (image === undefined) return err(request, { code: 'attachment-error',
+            message: 'Image is not referenced by this channel message.', details: { reason: 'ATTACHMENT_NOT_REFERENCED' } })
+          return ok(request, image)
+        } catch (error: unknown) {
+          if (error instanceof TeamError && error.code === 'TEAM_CHANNEL_ENVELOPE_NOT_FOUND') {
+            return err(request, { code: 'attachment-error', message: error.message, details: { reason: 'ATTACHMENT_NOT_REFERENCED' } })
+          }
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async channelPost(request) {
+        const refused = requireTeamMutationAuthentication<TeamEnvelope>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamEnvelope>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request)
+        const input = channelPostCommandInput(request.payload)
+        try {
+          const channel = await service.teams.getChannel({ channelId: input.draft.channelId })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            const currentRefusal = requireTeamMutationAuthentication<TeamEnvelope>(request)
+            return currentRefusal ?? teamActorUnavailable(request, channel.manifest.teamId)
+          }
+          const envelope = await humanActors.withProof(
+            call,
+            humanChannelPostProofInput(channel.manifest.teamId, input),
+            async actor => await service.teams.postChannelEnvelope({ actor, ...input }),
+          )
+          return ok(request, envelope)
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async channelSummarize(request) {
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').ChannelSummaryRecord>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<import('@clocky/clocky-team').ChannelSummaryRecord>(request)
+        if ('refused' in service) return service.refused
+        const summaries = ctx.get('teamChannelSummaries')
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request)
+        try {
+          if (summaries === undefined) throw new TeamError('Explicit channel summary Consumer is not mounted', 'TEAM_INVALID_ARGUMENT')
+          const input = channelSummarySelectionInputSchema.parse(request.payload)
+          const channel = await service.teams.getChannel({ channelId: input.channelId })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) return teamActorUnavailable(request, channel.manifest.teamId)
+          const summary = await humanActors.withProof(call, channelSummaryHumanProofInput(channel.manifest.teamId, input),
+            async requester => await summaries.summarize({ requester, ...input }))
+          return ok(request, summary)
+        } catch (error: unknown) { return teamFailure(request, error) }
+      },
+
+      async channelRead(request) {
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['readChannelPage']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.readChannelPage({
+            channelId: request.payload.channelId,
+            afterCursor: request.payload.afterCursor ?? -1,
+            limit: request.payload.limit ?? 128,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async channelClose(request) {
+        const refused = requireTeamMutationAuthentication<ChannelSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<ChannelSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request)
+        try {
+          const input = channelCloseInputSchema.parse(request.payload)
+          const channel = await service.teams.getChannel({ channelId: input.channelId })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<ChannelSnapshot>(request)
+              ?? teamActorUnavailable(request, channel.manifest.teamId)
+          }
+          const closed = await humanActors.withProof(
+            call,
+            humanChannelCloseProofInput(channel.manifest.teamId, input),
+            async actor => await service.teams.closeChannel({ actor, ...input }),
+          )
+          return ok(request, closed)
+        } catch (error: unknown) {
+          return teamFailure(request, error)
+        }
+      },
+
+      async channelWatch(request, signal) {
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['watchChannel']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.watchChannel({
+            channelId: request.payload.channelId,
+            afterCursor: request.payload.afterCursor ?? -1,
+            signal,
+          }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, undefined, signal)
+        }
+      },
+
+      async taskCreate(request) {
+        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const { idempotencyKey, ...payload } = request.payload
+          const input = teamTaskCreateInputSchema.parse({ ...payload, createCommand: { idempotencyKey } })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const task = await humanActors.withProof(
+            call,
+            humanTaskCreateProofInput(input),
+            async actor => await service.teams.createTask({ actor, ...input }),
+          )
+          return ok(request, redactTaskForHuman(task))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async taskGet(request) {
+        const { teamId, taskId } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['getTask']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, redactTaskForHuman(await service.teams.getTask({ teamId, taskId })))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async taskList(request) {
+        const { teamId, afterCursor, limit } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listTasksPage']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          const page = await service.teams.listTasksPage({
+            teamId,
+            afterCursor: afterCursor ?? -1,
+            limit: limit ?? 128,
+          })
+          return ok(request, { ...page, items: page.items.map(redactTaskForHuman) })
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId)
+        }
+      },
+
+      async workflowPlanList(request) {
+        const input = teamWorkflowPlanListRequestSchema.parse(request.payload)
+        const service = teamServiceFor<TeamWorkflowPlanList>(request)
+        if ('refused' in service) return service.refused
+        try {
+          const page = await service.teams.listWorkflowPlansPage({
+            teamId: input.teamId,
+            afterCursor: input.afterCursor ?? -1,
+            limit: input.limit ?? 128,
+          })
+          return ok(request, {
+            items: page.items.map(redactWorkflowPlanForHuman),
+            ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
+          })
+        } catch (error: unknown) {
+          return teamFailure(request, error, input.teamId)
+        }
+      },
+
+      async taskUpdate(request) {
+        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamTaskDetailsUpdateInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const task = await humanActors.withProof(
+            call,
+            humanTaskRevisionProofInput(input),
+            async actor => await service.teams.updateTaskDetails({ actor, ...input }),
+          )
+          return ok(request, redactTaskForHuman(task))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async taskCancel(request) {
+        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamTaskCancelInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const task = await humanActors.withProof(
+            call,
+            humanTaskRevisionProofInput(input),
+            async actor => await service.teams.cancelTask({ actor, ...input }),
+          )
+          return ok(request, redactTaskForHuman(task))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async taskDelete(request) {
+        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamTaskDeleteInputSchema.parse(request.payload)
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+              ?? teamActorUnavailable(request, input.teamId)
+          }
+          const task = await humanActors.withProof(
+            call,
+            humanTaskRevisionProofInput(input),
+            async actor => await service.teams.deleteTask({ actor, ...input }),
+          )
+          return ok(request, redactTaskForHuman(task))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async taskReview(request) {
+        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        if (refused !== undefined) return refused
+        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        if ('refused' in service) return service.refused
+        const humanActors = ctx.get('teamHumanActors')
+        if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        try {
+          const input = teamTaskReviewResolveInputSchema.parse({
+            taskId: request.payload.taskId,
+            expectedRevision: request.payload.expectedRevision,
+            nextPhase: request.payload.decision === 'accepted' ? 'completed' : 'pending',
+            reason: request.payload.reason,
+          })
+          const call = currentAuthenticatedProductCall()
+          if (call === undefined || call.signal.aborted) {
+            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+              ?? teamActorUnavailable(request, request.payload.teamId)
+          }
+          const task = await humanActors.withProof(
+            call,
+            humanTaskReviewProofInput(request.payload.teamId, input),
+            async actor => await service.teams.resolveTaskReview({ actor, ...input }),
+          )
+          return ok(request, redactTaskForHuman(task))
+        } catch (error: unknown) {
+          return teamFailure(request, error, request.payload.teamId)
+        }
+      },
+
+      async taskWatch(request, signal) {
+        const { teamId, afterCursor } = request.payload
+        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['watchTeam']>>>(request)
+        if ('refused' in service) return service.refused
+        try {
+          return ok(request, await service.teams.watchTeam({ teamId, afterCursor: afterCursor ?? -1, signal }))
+        } catch (error: unknown) {
+          return teamFailure(request, error, teamId, signal)
+        }
       },
     },
 
@@ -2847,8 +4539,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         const selection = defaults.defaultModelSelection()
         return Promise.resolve(ok(request, {
           version: '0.0.1',
-          // Same source as session.create's fallback: the UI's default project
-          // must match where an unspecified-cwd session actually lands.
+          // The configured execution-root fallback exposed to Host clients.
           cwd: defaults.cwd,
           // Read live for the same reason: this is what the NEXT session will
           // start from, so a saved default has to be what it reports.
@@ -3124,9 +4815,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     },
 
     skills: {
-      // Skill lookup never creates or resumes an agent: the session address
-      // resolves to a canonical cwd from the host-resident session header, and
-      // the view scope is the live agent or the preset's standing key.
+      // Skill lookup never creates or resumes an agent. A live Agent supplies
+      // its current execution root; a cold Session uses its recorded cwd.
       async list(request) {
         const { sessionId } = request.payload
         const session = ctx.sessions.get(sessionId)
@@ -3137,12 +4827,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             details: { sessionId },
           })
         }
-        if (session.header.cwd === undefined) {
-          // Every served session records its project at create time; a
-          // cwd-less header is a pre-project legacy log (not served).
-          return err(request, { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} })
-        }
-        const cwd = session.header.cwd
         // The host registry is layered per scope and serves every session. A
         // composition may still realm-mount its own registry instead; that
         // instance is invisible to host contexts, so address it through the
@@ -3161,8 +4845,14 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         // The scope presenters resolve in — the live agent, else the recorded
         // preset's standing key, else the global layer — so a cold session's
         // '/' popup lists the catalog its composition actually serves.
-        const scope = await presenterScopeFor(sessionId, session)
         try {
+          const cwd = live === undefined ? session.header.cwd : resolveAgentWorkspaceRoot(live)
+          if (cwd === undefined) {
+            // A cold cwd-less log is pre-project, while a live Agent has
+            // already had its allocation root considered above.
+            return err(request, { code: 'internal', message: `session "${sessionId}" has no project cwd`, details: {} })
+          }
+          const scope = await presenterScopeFor(sessionId, session)
           const skills = (await skillRegistry.list({ cwd, scope })).filter(isUserInvocable)
           return ok(request, {
             skills: skills.map(skill => ({
@@ -3357,6 +5047,9 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             payload: {
               type: 'question/requested', sessionId: pending.sessionId,
               questions: pending.questions,
+              ...pending.teamId === undefined ? {} : { teamId: pending.teamId },
+              ...pending.participantId === undefined ? {} : { participantId: pending.participantId },
+              ...pending.taskId === undefined ? {} : { taskId: pending.taskId },
             },
           })
         }
@@ -3611,35 +5304,44 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
     },
 
-    respond(message: ClientResponse): Promise<RpcReceipt> {
+    async respond(message: ClientResponse): Promise<RpcReceipt> {
       // Route by the echoed rpcId (the wire correlation): approvals first,
       // then questions — the two registries share one id space of UUIDs.
       const approval = pendingApprovals.get(message.rpcId)
       if (approval !== undefined) {
-        if (!message.result.ok) return Promise.resolve({ accepted: false, reason: 'bad-response' })
+        if (approval.answerClaimed === true) return { accepted: false, reason: 'not-pending' }
+        if (approval.teamId !== undefined && !await canResolveTeamHumanAction(approval.teamId, approval.participantId)) {
+          return { accepted: false, reason: 'not-pending' }
+        }
+        if (pendingApprovals.get(message.rpcId) !== approval) return { accepted: false, reason: 'not-pending' }
+        if (!message.result.ok) return { accepted: false, reason: 'bad-response' }
         const parsed = approvalResponsePayloadSchema.safeParse(message.result.value)
         // The payload's audit correlation must match the entry the rpcId routed
         // to — a mismatched answer is malformed, not merely late.
         if (!parsed.success || parsed.data.approvalId !== approval.approvalId || parsed.data.sessionId !== approval.sessionId) {
-          return Promise.resolve({ accepted: false, reason: 'bad-response' })
+          return { accepted: false, reason: 'bad-response' }
         }
         approval.resolve(parsed.data.outcome)
-        return Promise.resolve({ accepted: true })
+        return { accepted: true }
       }
       const pending = pendingQuestions.get(message.rpcId)
-      if (pending === undefined) return Promise.resolve({ accepted: false, reason: 'not-pending' })
+      if (pending === undefined || pending.answerClaimed === true) return { accepted: false, reason: 'not-pending' }
+      if (pending.teamId !== undefined && !await canResolveTeamHumanAction(pending.teamId, pending.participantId)) {
+        return { accepted: false, reason: 'not-pending' }
+      }
+      if (pendingQuestions.get(message.rpcId) !== pending) return { accepted: false, reason: 'not-pending' }
       if (!message.result.ok) {
         if (message.result.error.code !== 'cancelled') {
-          return Promise.resolve({ accepted: false, reason: 'bad-response' })
+          return { accepted: false, reason: 'bad-response' }
         }
         claimQuestion(pending, 'cancelled')
         pending.reject(new UserQuestionError(
           'the user cancelled ask_user_question', 'ASK_CANCELLED'))
-        return Promise.resolve({ accepted: true })
+        return { accepted: true }
       }
       const parsed = questionResponsePayloadSchema.safeParse(message.result.value)
       if (!parsed.success) {
-        return Promise.resolve({ accepted: false, reason: 'bad-response' })
+        return { accepted: false, reason: 'bad-response' }
       }
       const payload: QuestionResponsePayload = {
         sessionId: parsed.data.sessionId,
@@ -3652,11 +5354,12 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         },
       }
       if (!matchesQuestions(payload, pending)) {
-        return Promise.resolve({ accepted: false, reason: 'bad-response' })
+        return { accepted: false, reason: 'bad-response' }
       }
-      claimQuestion(pending, 'answered')
+      claimQuestion(pending, 'answered', payload.answer)
       pending.resolve(payload.answer)
-      return Promise.resolve({ accepted: true })
+      return { accepted: true }
     },
   }
+
 }

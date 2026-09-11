@@ -143,7 +143,7 @@ async function verifyBackend(
   events: readonly SessionEvent[],
   sizes: readonly number[],
 ): Promise<void> {
-  const header = { ...meta('differential', '/work'), delegationDepth: 0 }
+  const header = { ...meta('differential', '/work') }
   let mounted = await mount(name, root)
   try {
     await mounted.persistence.create(header)

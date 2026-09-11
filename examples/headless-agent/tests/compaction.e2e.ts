@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Context } from '@clocky/cordis'
-import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
+import { codingHarness, finalText, hasRealModel, realModel, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
 import { SessionId } from '@clocky/clocky-session'
 
 /**
@@ -24,7 +24,7 @@ afterEach(async () => {
   workdir = undefined
 })
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY)('compaction: a long session compacts mid-flight and keeps running', () => {
+describe.skipIf(!hasRealModel)('compaction: a long session compacts mid-flight and keeps running', () => {
   it('summarizes older history into a checkpoint without breaking the task', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'clocky-compaction-'))
     for (let i = 1; i <= 4; i++) {
@@ -32,12 +32,16 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('compaction: a long session compa
     }
 
     // Reasoning tokens require a larger generation cap than the retained checkpoint.
+    // Qwen's local tool schema and default reasoning consume more of a tiny
+    // advertised context window than the external fixture, so give this live
+    // route enough measured room to reach the tool/compaction boundary.
+    const localModel = realModel.provider === 'local-vllm'
     ctx = await codingHarness(workdir, {
       persona: SYSTEM_PROMPT,
-      modelContextWindow: 2000,
+      modelContextWindow: localModel ? 10000 : 2000,
       compact: {
-        thresholdRatio: 0.5,
-        retainTokens: 400,
+        thresholdRatio: localModel ? 0.15 : 0.5,
+        retainTokens: localModel ? 0 : 400,
         summarizationProvider: '',
         summarizationModel: '',
         maxTokens: 1024,
@@ -45,7 +49,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('compaction: a long session compa
       },
       persistenceRoot: join(workdir, '.sessions'),
     })
-    const agent = ctx.agentLoop.create(SessionId('e2e-compaction'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-compaction'), realModel)
 
     agent.followup(createUserMessage({
       content: [{

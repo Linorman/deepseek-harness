@@ -1,9 +1,8 @@
-# Depth-limit snapshot overlay: keep the default composition and allow two
-# generations of spawn children before runtime enforcement rejects another.
+# Test-only depth-limit overlay for direct spawn children.
 - id: base
   name: '@clocky/cordis-plugin-include'
   config:
-    path: ./cordis.yml
+    path: ./legacy-subagent.cordis.yml
     patches:
       - id: tool-subagent
         name: '@clocky/clocky-tool-subagent'

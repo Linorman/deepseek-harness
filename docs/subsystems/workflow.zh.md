@@ -4,7 +4,7 @@
 
 工作流 seam 允许 agent（智能体）运行由模型编写、会启动 subagent 的编排脚本。与 [subagent](subagent.zh.md) 一样，它是**一项可选能力**，不属于 agent loop，因此其类型和操作记录在此处，而非 [core.md](core.zh.md)。与 bash 一样，每个上下文只允许一个引擎实现提供 `ctx.workflowEngine`；没有命名提供方注册表（第二个引擎通过插件配置替换第一个，而不与它同时运行）。
 
-Service Definition：[dsh-workflow](../../packages/workflow/workflow)（`ctx.workflowEngine` + 下文词汇）。Service Provider 是 [dsh-workflow-worker-thread](../../packages/workflow/workflow-worker-thread)（一个 `node:worker_threads` 引擎——每个 run 一个 worker，脚本的 vm 上下文位于其中）；面向模型的 Consumer 是 [dsh-tool-workflow](../../packages/workflow/tool-workflow)。提案与设计理由见 [dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.zh.md)。
+Service Definition：[clocky-workflow](../../packages/workflow/workflow)（`ctx.workflowEngine` + 下文词汇）。Service Provider 是 [clocky-workflow-worker-thread](../../packages/workflow/workflow-worker-thread)（一个 `node:worker_threads` 引擎——每个 run 一个 worker，脚本的 vm 上下文位于其中）；面向模型的 Consumer 是 [clocky-tool-workflow](../../packages/workflow/tool-workflow)。提案与设计理由见 [dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.zh.md)。
 
 源码：浏览器安全词汇位于 [`packages/workflow/workflow/src/types.ts`](../../packages/workflow/workflow/src/types.ts)，Host 请求与活跃运行句柄位于 [`runtime-types.ts`](../../packages/workflow/workflow/src/runtime-types.ts)。
 
@@ -121,11 +121,11 @@ interface WorkflowRun {
 
 ## 持久 Chat 记录
 
-顶层 `dsh-tool-workflow` 消费方把展示事实投影到调用它的父 Session，同时不改变执行所有权。运行接受后写 `tool-workflow/run-start`，以 `runId + seq` 配对成员开始与结束，并且只在结果已取得且 dispose 完全停稳后写 `tool-workflow/run-end`。嵌套 transport 调用不写记录。第一次 append 失败会禁用本运行后续写入，因此日志保持为空或合法连续前缀，工具结果不变。
+顶层 `clocky-tool-workflow` 消费方把展示事实投影到调用它的父 Session，同时不改变执行所有权。运行接受后写 `tool-workflow/run-start`，以 `runId + seq` 配对成员开始与结束，并且只在结果已取得且 dispose 完全停稳后写 `tool-workflow/run-end`。嵌套 transport 调用不写记录。第一次 append 失败会禁用本运行后续写入，因此日志保持为空或合法连续前缀，工具结果不变。
 
-`dsh-tool-workflow/invariant` 会在实时提交前和 Session 加载时校验同一协议：每个运行只有一个 start，成员序号为正且唯一，成员 end 必须配对，仍有开放成员时不能结束运行，运行结束后不能继续更新。日志尾部缺少成员 end 或 run end 是有效的中断证据，不是损坏。
+`clocky-tool-workflow/invariant` 会在实时提交前和 Session 加载时校验同一协议：每个运行只有一个 start，成员序号为正且唯一，成员 end 必须配对，仍有开放成员时不能结束运行，运行结束后不能继续更新。日志尾部缺少成员 end 或 run end 是有效的中断证据，不是损坏。
 
-`dsh-client-ui-workflow-run` 通过 Conversation Node 引擎把四类事件折叠为一个 `workflow-run` Chat 节点，以 run-start 序号锚定在原工作流工具节点之后。阶段组只来自真正开始过的成员，并保留精确字符串，包括字段缺省与 `''` 的区别。Location 关闭时，缺失终点会显示为已中断。[界面包 README](../../packages/client/ui-workflow-run/README.zh.md)负责定义 disclosure、状态与同父本地导航行为。
+这四类事件仍是供显式消费方使用的持久工作流事实。随附 Web 组合不注册 workflow-run Chat 节点。
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -152,6 +152,51 @@ abstract start(request: WorkflowStartRequest): WorkflowRun
 ```
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
+<a id="ctxworkflowextensions--workflowextensionregistry"></a>
+
+### `ctx.workflowExtensions` — `WorkflowExtensionRegistry`
+
+Effect-scoped registry for deployment-defined workflow conditions and targets.
+
+```ts cordis-catalog
+/**
+ * Register one condition or target implementation.
+ * @param extension - validated implementation.
+ * @returns an effect-scoped disposer.
+ */
+register(extension: WorkflowExtension): () => void
+
+/**
+ * Resolve one exact extension identity.
+ * @param kind - condition or target.
+ * @param name - implementation name.
+ * @param version - behavior version.
+ * @returns the extension, or undefined when no exact implementation is registered.
+ */
+get(kind: WorkflowExtension['kind'], name: string, version: number): WorkflowExtension | undefined
+
+/**
+ * List extension identities in registration order.
+ * @returns detached extension identities.
+ */
+list(): WorkflowExtensionRef[]
+
+/**
+ * Retain every exact condition and target extension referenced by one graph.
+ * @param graph - graph to validate against extensions currently accepting work.
+ * @returns a release-once resolver for the exact acquired implementations.
+ */
+acquireForGraph(graph: TransitionGraph): WorkflowExtensionLeaseSet
+
+/**
+ * Return process-local registration and lease counts for HMR diagnostics.
+ * @returns detached current extension retention counts.
+ */
+getLeaseMetrics(): WorkflowExtensionLeaseMetrics
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
 
 <a id="workflow-events"></a>
 
@@ -220,6 +265,40 @@ A workflow run settled (any stop reason). Fired when WorkflowRun.result resolves
 ```
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
+<a id="workflowextension-added--emit"></a>
+
+#### `workflow/extension-added` — emit
+
+A workflow graph extension became available.
+
+```ts cordis-catalog
+/**
+ * A workflow graph extension became available.
+ * @param extension - extension identity.
+ * @mode emit
+ */
+'workflow/extension-added'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, 'validate'>): void
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
+
+<a id="workflowextension-removed--emit"></a>
+
+#### `workflow/extension-removed` — emit
+
+A workflow graph extension was removed from future graph admission.
+
+```ts cordis-catalog
+/**
+ * A workflow graph extension was removed from future graph admission.
+ * @param extension - extension identity.
+ * @mode emit
+ */
+'workflow/extension-removed'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, 'validate'>): void
+```
+
+Source: [`packages/team/team-channel-workflow/src/index.ts`](../../packages/team/team-channel-workflow/src/index.ts)
 
 <a id="workflowlog--emit"></a>
 

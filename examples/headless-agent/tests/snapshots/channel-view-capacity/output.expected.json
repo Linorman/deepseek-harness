@@ -1,0 +1,21 @@
+{
+  "scenario": "channel-view-capacity",
+  "adapter": "consult/1",
+  "purePolicy": true,
+  "utf8Limit": 32768,
+  "oversizedSource": {
+    "rejected": "TEAM_CHANNEL_BACKPRESSURE",
+    "repeatedClaimRejected": true,
+    "pendingRetained": true,
+    "cursorUnchanged": true,
+    "sessionViews": 0,
+    "receipts": 0
+  },
+  "smallerSource": {
+    "sessionViews": 1,
+    "receipts": 1,
+    "receiptAfterFlush": true,
+    "modelSawView": true
+  },
+  "teamsCancelledAfterVerification": 2
+}

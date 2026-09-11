@@ -752,11 +752,7 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
   return (
     <Modal
       open={open}
-      // Escape and mask reach every mounted Modal's document listener; while
-      // the nested create dialog is up only that topmost dialog may close
-      // (its own guard keeps an in-flight creation open), and an in-flight
-      // adoption pins the flow — dismissing it would leave the owner's
-      // createWorkspace to land after an apparent cancel.
+      // Pending folder creation or workspace adoption retains the owning dialog.
       onClose={() => { if (folderDraft === null && !busy) onClose() }}
       title={t('browser.title')}
       className={clsx(css.dialog)}
@@ -772,8 +768,8 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
         className={css.editorScope}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || pathDraft === null) return
-          // stopPropagation keeps the card-scope Escape from the Modal's
-          // document listener.
+          // Editing consumes Escape before the native dialog's cancellation action.
+          event.preventDefault()
           event.stopPropagation()
           // Escape while the input holds focus is about to unmount it; with
           // focus already parked on a row, that row survives the cancel and
@@ -1019,6 +1015,7 @@ export function DirectoryBrowser({ open, listDirectory, createDirectory, onOpen,
                 confirmCreate()
               }
               if (event.key === 'Escape') {
+                event.preventDefault()
                 event.stopPropagation()
                 if (!creatingFolder) setFolderDraft(null)
               }

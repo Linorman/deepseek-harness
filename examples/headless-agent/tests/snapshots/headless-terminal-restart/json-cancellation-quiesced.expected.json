@@ -1,0 +1,32 @@
+{
+  "scenario": "headless-terminal-restart",
+  "backend": "json",
+  "outcome": "cancellation",
+  "window": "quiesced",
+  "independentHost": true,
+  "initial": {
+    "teamPhase": "quiescing",
+    "goalPhase": "active",
+    "quiesced": true,
+    "closureCount": 0,
+    "cancellationCount": 1,
+    "expiredHumanMessages": 1,
+    "coordinatorReceipts": 0
+  },
+  "recovered": {
+    "teamPhase": "cancelled",
+    "goalPhase": "active",
+    "quiesced": true,
+    "stallCode": null,
+    "intentCode": "USER_CANCELLED",
+    "closureCount": 1,
+    "cancellationCount": 1,
+    "expiredHumanMessages": 1,
+    "expiryReason": "cancellation",
+    "coordinatorReceipts": 0,
+    "humanReceipts": 0,
+    "finalAdmissions": 0,
+    "channelPhase": "closed",
+    "modelRequests": 0
+  }
+}

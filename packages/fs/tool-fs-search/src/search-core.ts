@@ -22,6 +22,7 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, relative, sep } from 'node:path'
 import type { Context } from '@clocky/cordis'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import { HarnessError } from '@clocky/clocky-llm'
 import { ItemRetainer, TextRetainer } from '@clocky/clocky-output-retention'
 import type { RetainedItems } from '@clocky/clocky-output-retention'
@@ -224,7 +225,7 @@ export async function runRipgrep(
   if (exec.signal.aborted) {
     throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
   }
-  const cwd = exec.agent?.session.header.cwd
+  const cwd = exec.agent === undefined ? undefined : resolveAgentWorkspaceRoot(exec.agent)
   const workdir = cwd ?? process.cwd()
   let handle: SubprocessHandle
   try {

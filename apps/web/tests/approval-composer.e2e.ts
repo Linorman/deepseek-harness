@@ -25,7 +25,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/approval-composer', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -33,6 +33,7 @@ const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
 // proves is asserted directly — see the world-state block at the end.
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
 const MODE = webSnapshotMode()
+const OVERLAY = fileURLToPath(new URL('./approval-composer.overlay.yml', import.meta.url))
 
 // Irreducible payload: the command has to be long enough to pass the card's
 // height cap, which is the only command length that reproduces an action row pushed off
@@ -54,14 +55,17 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
   const sessionEvents: SessionEvent[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 })
+    scaffold = await launchWebScaffold(MODE === 'record'
+      ? { extraOverlayPath: OVERLAY }
+      : { extraOverlayPath: OVERLAY, replayFixture: FIXTURE, paceMs: 15 })
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    await page.getByPlaceholder('Describe what you want to build').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {
@@ -84,18 +88,13 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
     // for the composer seat), and measuring it here keeps the assertion free of
     // the px value itself.
     await input.fill(CAP_PROBE)
+    await expect.poll(
+      () => input.evaluate(el => el.closest('[data-input-scroll]')?.clientHeight ?? 0),
+      { timeout: 5_000 },
+    ).toBeGreaterThan(100)
     const composerCap = await input.evaluate(el => el.closest('[data-input-scroll]')?.clientHeight ?? 0)
     expect(composerCap).toBeGreaterThan(0)
     await input.fill('')
-
-    // Read-only: the mode whose denial the model escalates from. Switched
-    // through the shipped access-mode chip, not a test-only override.
-    await page.locator('[aria-label^="Access mode"]').click()
-    await page.getByRole('menuitem', { name: 'Read Only' }).click()
-    await expect.poll(
-      () => page.locator('[aria-label="Access mode, current: Read Only"]').count(),
-      { timeout: 15_000 },
-    ).toBe(1)
 
     const settled = scaffold.whenTurnSettled(MODE === 'record' ? 240_000 : 60_000)
     await input.fill(PROMPT)
@@ -167,7 +166,7 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
     // not a platform-neutral golden surface.
     expect(JSON.stringify(sessionEvents.filter(e => e.type === 'approval/decided').at(-1)))
       .toContain('allowed-once')
-    const written = await readFile(join(scaffold.workspaceCwd, 'workspace', 'notes.txt'), 'utf8')
+    const written = await readFile(join(scaffold.workspaceCwd, 'notes.txt'), 'utf8')
     expect(written).toContain(TOKENS.slice(0, 64))
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(1)
     expect(await page.locator('[data-approval-key]').count()).toBe(0)

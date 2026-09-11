@@ -69,11 +69,11 @@ occurrence 表与 chip 三投影：
 ### hub / facade：常驻外壳与严格会话输入体
 
 - hub（trigger/decoration 注册表 + 发送编排）对 slash/command 服务是可选 `ctx.get()` 依赖：无 ui-input-trigger/命令面时输入正常收发，优雅降级。
-- 每个实体会话只有一个 `SessionInputShell`（facade），随会话作用域创建和拆除；无会话时不造 input machine。`ConversationRoot` 自身是 `session-maybe` 常驻外壳，持有 HeroShell、Workspace picker、composer stack 与 chain fallback 外框。它始终拥有同一个 scrollport 与 composer seat；会话出现后，彼此独立的严格会话 header 和 body outlet 只填入这些固定区域。
-- composer bar 是一个无条件渲染的 `session-maybe` slot entry：无会话时同一个 InputBar 以惰性态渲染（machine face 缺席、`disabled` owner prop），`connectWorkspace` 返回 blank 会话后同一实例转为 live——textarea DOM 在无会话 → blank 切换及其后每次 phase 翻转中都不重建；`ConversationRoot`、Hero 与布局骨架全程保持。
+- 每个实体会话只有一个 `SessionInputShell`（facade），随会话作用域创建和拆除；coordinator 会话出现之前，本地 Team 任务草稿拥有自己的 input shell。`ConversationRoot` 自身是 `session-maybe` 常驻外壳，持有 HeroShell、composer stack 与 chain fallback 外框。它始终拥有同一个 scrollport 与 composer seat；coordinator 会话出现后，彼此独立的严格会话 header 和 body outlet 才填入这些固定区域。
+- composer bar 是一个无条件渲染的 `session-maybe` slot entry：既没有 Session 也没有 Team 草稿时，同一个 InputBar 以惰性态渲染（machine face 缺席、`disabled` owner prop）；Team 草稿会给该实例提供本地 machine，而具幂等性的 `teams.start` 会刷新并打开得到的 coordinator 会话。textarea DOM 在无会话 → Team 草稿 → coordinator 切换及其后每次 phase 翻转中都不重建；`ConversationRoot`、Hero 与布局骨架全程保持。
 - ConversationRoot 的 Hero 判据是 `sessionId === undefined || (composerPhase === 'blank' && (openState === 'open' || summaryBlank === true))`：summary 已证实为空的会话在任何 open state 下都保持 Hero，未经证实的会话则在 loading 期间进入 settling。首次 submit 同步进入 engaging，失败也保留 composer 与错误上下文，不退回 blank Hero；sidebar 的 blank 位只在提示词成功受理后翻 false。
-- 发送统一在 hub defaultSink：乐观清稿后只走 `session.prompt` 且固定 `mode:'queue'`（Web UI 无 steer 入口；host 线缆上的 `mode:'steer'` 不经此 machine）；失败且 live draft 仍为空才回填，用户已经继续输入则不覆盖。不存在 Draft materialize 或 attach 事务。
-- blank Hero 改选 Workspace 时，外壳调用 `connectWorkspace`；目标会话不同时把非空 draft 从当前 shell 搬到目标 shell，再 open 新 id，旧 blank 会话留存但不再 current。
+- 发送统一在 hub defaultSink：乐观清稿后，Team 草稿提交调用具幂等性的 `teams.start`、刷新并打开其 coordinator 会话；会话作用域的提交才只走固定 `mode:'queue'` 的 `session.prompt`（Web UI 无 steer 入口；host 线缆上的 `mode:'steer'` 不经此 machine）。失败且 live draft 仍为空才回填，用户已经继续输入则不覆盖。不存在 Draft materialize 或 attach 事务。
+- Team 草稿在 `teams.start` 成功前始终只存在于本地；成功会刷新保留的会话列表并打开返回的 coordinator 会话，失败则保留同一份草稿及错误上下文以便重试。
 - Notifier 双位约定：`dirty`（快照新鲜度，`ensureFresh` 拉取可清）与 `notifyPending`（通知欠账，只有 flush 清）各自独立——拉取不得吞推送，对象层推订阅者（watchTransaction）依赖这一保证。
 
 ### 纯文本引用：text outcome 与 lexicon 装饰
@@ -93,7 +93,7 @@ skill/@subagent 引用不走占位符 + occurrence 身份链——纯文本引�
 
 ### slot 体系
 
-`conversation` 本身是 session-maybe；其会话内容与 composer 输入 slot 严格限定为会话，Hero Workspace picker 保持 root。root 注册把 header outlet 渲染在常驻 scrollport 上方，把 body outlet 渲染在其内部、常驻 composer seat 之前。子 slot 均由 ui-conversation 的 conversation 注册声明：
+`conversation` 本身是 session-maybe；其会话内容与会话作用域的 composer 输入 slot 严格限定为会话，Team 草稿 composer 则留在常驻 root 外壳中。root 注册把 header outlet 渲染在常驻 scrollport 上方，把 body outlet 渲染在其内部、常驻 composer seat 之前。子 slot 均由 ui-conversation 的 conversation 注册声明：
 
 - `conversation.session.header`（single）——常驻 scrollport 上方严格会话的 breadcrumb、view tab 与 header action。
 - `conversation.session`（single）——常驻 scrollport 内严格会话的 view ring 与 draft mirror。header 和 body 共享同一个会话作用域 chat store；会话 id 切换时各自重建。
@@ -103,7 +103,6 @@ skill/@subagent 引用不走占位符 + occurrence 身份链——纯文本引�
 - `conversation.composer.dock`——composer 上沿统计带。
 - `conversation.input.left` / `conversation.input.right`——工具行左右区。
 - `conversation.input.plan` / `conversation.input.model`（single）——工具行两具名控制位；bar 只传 `locked`（owner props），空到 owning 插件注册为止，无占位 fallback。plan seat 未激活时保持为空，因为入口归共享 Command source 所有；有效 plan 目标会渲染 warn 状态的 `Plan ×` 状态按钮，其唯一动作是 `/plan off`。
-- `conversation.hero.workspace`（root scope）——无会话 / blank Hero 共用的 Workspace picker；pick 经 `connectWorkspace` 复用或创建目标 blank 会话，必要时搬运 draft 后切 current。
 
 ### 测试纪律
 
@@ -129,7 +128,7 @@ skill/@subagent 引用不走占位符 + occurrence 身份链——纯文本引�
 
 ## 后果
 
-- 一个常驻 conversation 外壳承接无会话/blank/active：无会话 → blank 保持 ConversationRoot、Hero、root scope Workspace picker、scrollport、composer seat、InputBar 与 textarea；只有严格会话 header 和 body outlet 开始承载内容。同一 blank 会话 → engaging/active 也保持 InputBar 与 textarea。EmptyState 与受控 intent 链（`sessions.updateIntent`/`updatePendingPrompt`/`workspaces.sendSession`）随最后消费方一并删除。
+- 一个常驻 conversation 外壳承接无会话/Team 草稿/active：无会话 → Team 草稿保持 ConversationRoot、Hero、scrollport、composer seat、InputBar 与 textarea；只有 coordinator 会话打开后，严格会话 header 和 body outlet 才开始承载内容。Team 草稿 → coordinator 的切换及其后的 phase 变化也保持 InputBar 与 textarea。EmptyState 与受控 intent 链（`sessions.updateIntent`/`updatePendingPrompt`/`workspaces.sendSession`）随最后消费方一并删除。
 - 输入面对命令零知识 + 可选依赖：无命令包时纯输入可用；`@` 引用与 skill 引用免费复用同一菜单/pick 流水线。代价是空格/回车裁决是逐 source 轮询协议，其应答语义（同步/异步、undefined 含义）为冻结约定。
 - 提交事务化（attempt seq + 漂移守卫）使晚到结果回灌、会话切换、concurrent 重放三类缺陷结构性不可能，由矩阵测试钉住。
 - 已知欠账：chip 跨刷新保真（可复用粘贴匹配）未立项；subagent 引用的模型表示待业务立项。

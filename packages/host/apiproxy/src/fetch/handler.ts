@@ -1,3 +1,5 @@
+import { teamHumanActionResponseInputSchema } from '../api/teams.schema.ts'
+import { teamHumanInboxReadInputSchema, teamHumanInboxAcknowledgeInputSchema } from '../api/teams.schema.ts'
 /**
  * Server side of the fetch carrier: maps an ApiProxy onto a pure
  * WHATWG Request->Response function. Two-level parse: full form (type/rpcId/method +
@@ -8,6 +10,7 @@
 
 import { randomUUID } from 'node:crypto'
 import type { z } from 'zod'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 import type { ApiProxy, MuxFrame, HostFrame } from '../api/index.ts'
 import { sessionLogQuerySchema } from '../api/downloads.schema.ts'
 import type { RequestPayload, ResponseValue, RpcMethodMap } from '../api/rpc-map.ts'
@@ -15,11 +18,10 @@ import type { ClientRequest, RpcError, RpcRequest, RpcResponse, ServerRequest, S
 import { RpcId } from '../api/rpc.ts'
 import type { Wire } from '../api/rpc.schema.ts'
 import { clientRequestSchema, clientResponseSchema } from '../api/rpc.schema.ts'
+import { withAuthenticatedProductCall } from '../authenticated-product-call.ts'
 import {
   sessionCancelRequestSchema,
   sessionAttachmentRequestSchema,
-  sessionCreateRequestSchema,
-  sessionForkRequestSchema,
   sessionHistoryRequestSchema,
   sessionListRequestSchema,
   sessionModelsRequestSchema,
@@ -65,11 +67,45 @@ import {
 } from '../api/credentials.schema.ts'
 import { llmDiscoverModelsRequestSchema, llmModelsRequestSchema, llmProvidersRequestSchema } from '../api/llm.schema.ts'
 import {
-  subagentHistoryRequestSchema,
-  subagentInterruptRequestSchema,
-  subagentListRequestSchema,
-  subagentPromptRequestSchema,
-} from '../api/subagents.schema.ts'
+  teamArchiveRequestSchema, teamArtifactListRequestSchema, teamArtifactReadRequestSchema, teamAuditReadRequestSchema, teamCancelRequestSchema,
+  teamGoalTransitionRequestSchema, teamGoalUpdateRequestSchema,
+  teamMetricsRequestSchema,
+  teamChannelCloseRequestSchema,
+  teamChannelOpenRequestSchema,
+  teamChannelInputRequestSchema,
+  teamChannelAttachmentRequestSchema,
+  teamChannelListRequestSchema,
+  teamChannelCatalogRequestSchema,
+  teamChannelAdmissionRequestSchema,
+  teamChannelInvitationRequestSchema,
+  teamChannelInvitationAcknowledgeRequestSchema,
+  teamChannelPostRequestSchema,
+  teamChannelSummarizeRequestSchema,
+  teamChannelReadRequestSchema,
+  teamChannelWatchRequestSchema,
+  teamCreateRequestSchema,
+  teamGetRequestSchema,
+  teamListRequestSchema,
+  teamMemberInterruptRequestSchema,
+  teamMemberActivateRequestSchema,
+  teamMemberInviteRequestSchema,
+  teamMemberListRequestSchema,
+  teamMemberRemoveRequestSchema,
+  teamPostInputRequestSchema,
+  teamResumeRequestSchema,
+  teamQuiescenceRequestSchema,
+  teamStartRequestSchema,
+  teamTaskCreateRequestSchema,
+  teamTaskCancelRequestSchema,
+  teamTaskDeleteRequestSchema,
+  teamTaskReviewRequestSchema,
+  teamTaskGetRequestSchema,
+  teamTaskListRequestSchema,
+  teamTaskUpdateRequestSchema,
+  teamTaskWatchRequestSchema,
+  teamWorkflowPlanListRequestSchema,
+  teamWaitFinalRequestSchema,
+} from '../api/teams.schema.ts'
 
 /**
  * Unary dispatch table, keyed by (and compiler-locked to) RpcMethodMap: a map row without a
@@ -90,20 +126,61 @@ type UnaryRoutes = {
 const UNARY_ROUTES: UnaryRoutes = {
   'session.list': { schema: sessionListRequestSchema, invoke: (api, r) => api.sessions.list(r) },
   'session.search': { schema: sessionSearchRequestSchema, invoke: (api, r, signal) => api.sessions.search(r, signal) },
-  'session.create': { schema: sessionCreateRequestSchema, invoke: (api, r) => api.sessions.create(r) },
   'session.history': { schema: sessionHistoryRequestSchema, invoke: (api, r) => api.sessions.history(r) },
   'session.models': { schema: sessionModelsRequestSchema, invoke: (api, r) => api.sessions.models(r) },
   'session.selectModel': { schema: sessionSelectModelRequestSchema, invoke: (api, r) => api.sessions.selectModel(r) },
   'session.rename': { schema: sessionRenameRequestSchema, invoke: (api, r) => api.sessions.rename(r) },
-  'session.fork': { schema: sessionForkRequestSchema, invoke: (api, r) => api.sessions.fork(r) },
   'session.prompt': { schema: sessionPromptRequestSchema, invoke: (api, r) => api.sessions.prompt(r) },
   'session.attachment': { schema: sessionAttachmentRequestSchema, invoke: (api, r) => api.sessions.attachment(r) },
   'session.updateQueue': { schema: sessionUpdateQueueRequestSchema, invoke: (api, r) => api.sessions.updateQueue(r) },
   'session.cancel': { schema: sessionCancelRequestSchema, invoke: (api, r) => api.sessions.cancel(r) },
-  'subagent.list': { schema: subagentListRequestSchema, invoke: (api, r, signal) => api.subagents.list(r, signal) },
-  'subagent.history': { schema: subagentHistoryRequestSchema, invoke: (api, r, signal) => api.subagents.history(r, signal) },
-  'subagent.prompt': { schema: subagentPromptRequestSchema, invoke: (api, r, signal) => api.subagents.prompt(r, signal) },
-  'subagent.interrupt': { schema: subagentInterruptRequestSchema, invoke: (api, r) => api.subagents.interrupt(r) },
+  'team.list': { schema: teamListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.list'>(api, r, team => team.list(r)) },
+  'team.get': { schema: teamGetRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.get'>(api, r, team => team.get(r)) },
+  'team.create': { schema: teamCreateRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.create'>(api, r, team => team.create(r, signal)) },
+  'team.resume': { schema: teamResumeRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.resume'>(api, r, team => team.resume(r, signal)) },
+  'team.start': { schema: teamStartRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.start'>(api, r, team => team.start(r, signal)) },
+  'team.postInput': { schema: teamPostInputRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.postInput'>(api, r, team => team.postInput(r)) },
+  'team.waitFinal': { schema: teamWaitFinalRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.waitFinal'>(api, r, team => team.waitFinal(r, signal)) },
+  'team.cancel': { schema: teamCancelRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.cancel'>(api, r, team => team.cancel(r)) },
+  'team.archive': { schema: teamArchiveRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.archive'>(api, r, team => team.archive(r)) },
+  'team.goal.update': { schema: teamGoalUpdateRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.goal.update'>(api, r, team => team.goalUpdate(r)) },
+  'team.goal.transition': { schema: teamGoalTransitionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.goal.transition'>(api, r, team => team.goalTransition(r)) },
+  'team.quiescence': { schema: teamQuiescenceRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.quiescence'>(api, r, team => team.quiescence(r)) },
+  'team.inbox.respond': { schema: teamHumanActionResponseInputSchema, invoke: (api, r) => unavailableTeamApi<'team.inbox.respond'>(api, r, team => team.inboxRespond(r)) },
+  'team.inbox.read': { schema: teamHumanInboxReadInputSchema, invoke: (api, r) => unavailableTeamApi<'team.inbox.read'>(api, r, team => team.inboxRead(r)) },
+  'team.inbox.watch': { schema: teamHumanInboxReadInputSchema, invoke: (api, r) => unavailableTeamApi<'team.inbox.watch'>(api, r, team => team.inboxWatch(r)) },
+  'team.inbox.acknowledge': { schema: teamHumanInboxAcknowledgeInputSchema, invoke: (api, r) => unavailableTeamApi<'team.inbox.acknowledge'>(api, r, team => team.inboxAcknowledge(r)) },
+  'team.metrics': { schema: teamMetricsRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.metrics'>(api, r, team => team.metrics(r)) },
+  'team.audit.read': { schema: teamAuditReadRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.audit.read'>(api, r, team => team.auditRead(r)) },
+  'team.artifact.read': { schema: teamArtifactReadRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.artifact.read'>(api, r, team => team.artifactRead(r, signal)) },
+  'team.artifact.list': { schema: teamArtifactListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.artifact.list'>(api, r, team => team.artifactList(r)) },
+  'team.member.list': { schema: teamMemberListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.list'>(api, r, team => team.memberList(r)) },
+  'team.member.invite': { schema: teamMemberInviteRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.invite'>(api, r, team => team.memberInvite(r)) },
+  'team.member.activate': { schema: teamMemberActivateRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.activate'>(api, r, team => team.memberActivate(r)) },
+  'team.member.remove': { schema: teamMemberRemoveRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.remove'>(api, r, team => team.memberRemove(r)) },
+  'team.member.interrupt': { schema: teamMemberInterruptRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.interrupt'>(api, r, team => team.memberInterrupt(r)) },
+  'team.channel.input': { schema: teamChannelInputRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.input'>(api, r, team => team.channelInput(r)) },
+  'team.channel.attachment': { schema: teamChannelAttachmentRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.attachment'>(api, r, team => team.channelAttachment(r)) },
+  'team.channel.catalog': { schema: teamChannelCatalogRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.catalog'>(api, r, team => team.channelCatalog(r)) },
+  'team.channel.list': { schema: teamChannelListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.list'>(api, r, team => team.channelList(r)) },
+  'team.channel.admission': { schema: teamChannelAdmissionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.admission'>(api, r, team => team.channelAdmission(r)) },
+  'team.channel.invitation': { schema: teamChannelInvitationRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.invitation'>(api, r, team => team.channelInvitation(r)) },
+  'team.channel.invitation.acknowledge': { schema: teamChannelInvitationAcknowledgeRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.invitation.acknowledge'>(api, r, team => team.channelInvitationAcknowledge(r)) },
+  'team.channel.open': { schema: teamChannelOpenRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.open'>(api, r, team => team.channelOpen(r)) },
+  'team.channel.post': { schema: teamChannelPostRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.post'>(api, r, team => team.channelPost(r)) },
+  'team.channel.read': { schema: teamChannelReadRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.read'>(api, r, team => team.channelRead(r)) },
+  'team.channel.summarize': { schema: teamChannelSummarizeRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.summarize'>(api, r, team => team.channelSummarize(r)) },
+  'team.channel.close': { schema: teamChannelCloseRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.channel.close'>(api, r, team => team.channelClose(r)) },
+  'team.channel.watch': { schema: teamChannelWatchRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.channel.watch'>(api, r, team => team.channelWatch(r, signal)) },
+  'team.task.create': { schema: teamTaskCreateRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.create'>(api, r, team => team.taskCreate(r)) },
+  'team.task.cancel': { schema: teamTaskCancelRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.cancel'>(api, r, team => team.taskCancel(r)) },
+  'team.task.delete': { schema: teamTaskDeleteRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.delete'>(api, r, team => team.taskDelete(r)) },
+  'team.task.review': { schema: teamTaskReviewRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.review'>(api, r, team => team.taskReview(r)) },
+  'team.task.get': { schema: teamTaskGetRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.get'>(api, r, team => team.taskGet(r)) },
+  'team.task.list': { schema: teamTaskListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.list'>(api, r, team => team.taskList(r)) },
+  'team.workflow.plan.list': { schema: teamWorkflowPlanListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.workflow.plan.list'>(api, r, team => team.workflowPlanList(r)) },
+  'team.task.update': { schema: teamTaskUpdateRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.update'>(api, r, team => team.taskUpdate(r)) },
+  'team.task.watch': { schema: teamTaskWatchRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.task.watch'>(api, r, team => team.taskWatch(r, signal)) },
   'host.describe': { schema: hostDescribeRequestSchema, invoke: (api, r) => api.host.describe(r) },
   'host.pickDirectory': { schema: hostPickDirectoryRequestSchema, invoke: (api, r, signal) => api.host.pickDirectory(r, signal) },
   'host.listDirectory': { schema: hostListDirectoryRequestSchema, invoke: (api, r, signal) => api.host.listDirectory(r, signal) },
@@ -142,6 +219,26 @@ const UNARY_ROUTES: UnaryRoutes = {
   'llm.discoverModels': { schema: llmDiscoverModelsRequestSchema, invoke: (api, r, signal) => api.llm.discoverModels(r, signal) },
 }
 
+/** Answer a Team route on a legacy API fixture that predates the Team domain. */
+function unavailableTeamApi<K extends keyof RpcMethodMap>(
+  api: ApiProxy,
+  request: RpcRequest<RequestPayload<K>>,
+  invoke: (teams: NonNullable<ApiProxy['teams']>) => Promise<RpcResponse<ResponseValue<K>>>,
+): Promise<RpcResponse<ResponseValue<K>>> {
+  if (api.teams !== undefined) return invoke(api.teams)
+  return Promise.resolve({
+    rpcId: request.rpcId,
+    result: {
+      ok: false,
+      error: {
+        code: 'team-service-unavailable',
+        message: 'Team RPC is unavailable: this host does not compose a Team provider',
+        details: {},
+      },
+    },
+  })
+}
+
 /** Route lookup that narrows an arbitrary path segment to a map key (single cast point for the string→key refinement). */
 function methodFor(path: string): keyof RpcMethodMap | undefined {
   return Object.hasOwn(UNARY_ROUTES, path) ? path as keyof RpcMethodMap : undefined
@@ -176,7 +273,11 @@ function fullResponse(narrow: RpcResponse<unknown>): Response {
 // schema/invoke pairing; a union parameter degrades the row to an uninvokable intersection.
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters
 async function handleUnary<K extends keyof RpcMethodMap>(
-  api: ApiProxy, method: K, message: ClientRequest, signal: AbortSignal,
+  api: ApiProxy,
+  method: K,
+  message: ClientRequest,
+  signal: AbortSignal,
+  authenticatedProductCall: AuthenticatedProductCall | undefined,
 ): Promise<Response> {
   const route = UNARY_ROUTES[method]
   const payload = route.schema.safeParse(message.payload)
@@ -184,11 +285,21 @@ async function handleUnary<K extends keyof RpcMethodMap>(
     return errorResponse(message.rpcId, { code: 'bad-request', message: `invalid payload for ${method}`, details: { issues: payload.error.issues } })
   }
   try {
-    return fullResponse(await route.invoke(api, { rpcId: message.rpcId, payload: payload.data }, signal))
+    const dispatchSignal = authenticatedProductCall === undefined
+      ? signal
+      : AbortSignal.any([signal, authenticatedProductCall.signal])
+    return await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+      fullResponse(await route.invoke(api, { rpcId: message.rpcId, payload: payload.data }, dispatchSignal)))
   } catch (error: unknown) {
     // The impl never throws business errors; reaching here means the implementation itself crashed — 500, carrier layer.
     return new Response(`handler failure: ${String(error)}`, { status: 500 })
   }
+}
+
+/** Runtime-only call facts supplied by an authenticated physical carrier. */
+export interface ApiFetchContext {
+  /** Immutable product principal authenticated before this request was parsed or dispatched. */
+  readonly authenticatedProductCall?: AuthenticatedProductCall | undefined
 }
 
 /** SSE frame: complete the narrow RpcRequest<frame> into a ServerRequest full form (method = frame type). */
@@ -238,9 +349,10 @@ function sseResponse(frames: AsyncIterable<RpcRequest<MuxFrame | HostFrame>>): R
 /**
  * Wraps an ApiProxy into a pure fetch function (isomorphic point: feed the returned fetch straight to InProcessApiClient).
  * @param api - the host-side ApiProxy implementation.
+ * @param context - runtime-only transport facts; these never join an RPC envelope or payload.
  * @returns an object holding `fetch(Request)`; paths outside /api/ return 404.
  */
-export function toFetchHandler(api: ApiProxy): { fetch: typeof fetch } {
+export function toFetchHandler(api: ApiProxy, context: ApiFetchContext = {}): { fetch: typeof fetch } {
   return {
     // Signature matches global fetch: the isomorphic point hands this function to InProcessApiClient as its transport aspect,
     // Clients call in (url, init) form — normalize to Request before handling.
@@ -248,14 +360,17 @@ export function toFetchHandler(api: ApiProxy): { fetch: typeof fetch } {
       const req = input instanceof Request ? input : new Request(input, init)
       const url = new URL(req.url)
       const path = url.pathname
+      const dispatchSignal = context.authenticatedProductCall === undefined
+        ? req.signal
+        : AbortSignal.any([req.signal, context.authenticatedProductCall.signal])
 
       // No-envelope read channels (SSE GET streams + host-only download):
       // physical routes that answer directly, without a wire envelope.
       if (path === '/api/events.mux' && req.method === 'GET') {
-        return sseResponse(api.events.mux({ rpcId: RpcId(randomUUID()), payload: {} }, req.signal))
+        return sseResponse(api.events.mux({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal))
       }
       if (path === '/api/events.host' && req.method === 'GET') {
-        return sseResponse(api.events.host({ rpcId: RpcId(randomUUID()), payload: {} }, req.signal))
+        return sseResponse(api.events.host({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal))
       }
       if (path === '/api/session.export' && (req.method === 'GET' || req.method === 'HEAD')) {
         // Query params are a different boundary from the POST envelope, but
@@ -264,7 +379,7 @@ export function toFetchHandler(api: ApiProxy): { fetch: typeof fetch } {
         if (!parsed.success) {
           return new Response('missing or invalid sessionId query parameter', { status: 400 })
         }
-        const response = await api.downloads.sessionLog(parsed.data, req.signal)
+        const response = await api.downloads.sessionLog(parsed.data, dispatchSignal)
         if (req.method === 'GET') return response
         await response.body?.cancel()
         return new Response(null, { status: response.status, headers: response.headers })
@@ -296,7 +411,8 @@ export function toFetchHandler(api: ApiProxy): { fetch: typeof fetch } {
       if (path === '/api/respond') {
         const parsed = clientResponseSchema.safeParse(body)
         if (!parsed.success) return Response.json({ accepted: false, reason: 'bad-response' })
-        return Response.json(await api.respond(parsed.data))
+        return await withAuthenticatedProductCall(context.authenticatedProductCall, async () =>
+          Response.json(await api.respond(parsed.data)))
       }
 
       const method = methodFor(path.slice('/api/'.length))
@@ -314,7 +430,7 @@ export function toFetchHandler(api: ApiProxy): { fetch: typeof fetch } {
       if (message.method !== method) {
         return errorResponse(message.rpcId, { code: 'bad-request', message: `method "${message.method}" does not match path "${method}"`, details: { issues: [] } })
       }
-      return handleUnary(api, method, message, req.signal)
+      return handleUnary(api, method, message, dispatchSignal, context.authenticatedProductCall)
     },
   }
 }

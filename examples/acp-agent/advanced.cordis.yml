@@ -1,9 +1,8 @@
-# Add Code Mode and Cordis tools to the base spawn/workflow stack, exercising
-# all four boundaries in one ACP snapshot.
+# Test-only legacy delegation plus Code Mode and Cordis tools.
 - id: base
   name: '@clocky/cordis-plugin-include'
   config:
-    path: ./cordis.yml
+    path: ./legacy-subagent.cordis.yml
     patches:
       - id: acp-agent
         name: '@clocky/clocky-acp-demo'

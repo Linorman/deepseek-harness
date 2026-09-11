@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - 'button "Using ONE run_code program: run" [disabled]'
+  - text: {{workspace}}
   - img
   - text: Standard mode
   - button "Session log":
@@ -9,7 +8,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- text: "Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
+- text: "Direct message from participant-{{uuid}}: Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -26,9 +25,9 @@
   - text: Code Run bash echo and catch missing file read
 - img
 - text: Bash Echo CODE_ROUND_OK Failed
-- 'button "Read Error: cannot read \"{{cwd}}/workspace/missing.txt\": not found"':
+- 'button "Read Error: cannot read \"{{cwd}}/missing.txt\": not found"':
   - img
-  - text: "Read Error: cannot read \"{{cwd}}/workspace/missing.txt\": not found"
+  - text: "Read Error: cannot read \"{{cwd}}/missing.txt\": not found"
 - button "Think The program ran successfully. Let me now reply DONE as instructed.":
   - img
   - img
@@ -40,13 +39,10 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation":
-  - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - textbox "Message the agent"
-- button "Commands":
+- button "Commands" [disabled]:
   - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current Test Model":
   - text: Test Model
   - img

@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Reply with the single word" [disabled]
+  - text: {{workspace}}
   - img
   - text: Standard mode
   - button "Session log":
@@ -9,7 +8,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- text: Reply with the single word LIGHTHOUSE and stop. {{clock}}
+- text: "Direct message from participant-{{uuid}}: Reply with the single word LIGHTHOUSE and stop. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -27,16 +26,17 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation":
-  - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Tool call team_final · channel-{{uuid}}":
+  - img
+  - img
+  - text: Tool call team_final · channel-{{uuid}}
 - textbox "Message the agent"
-- button "Commands":
+- button "Commands" [disabled]:
   - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current Test Model":
-  - text: Test Model
+- button "Select model":
+  - text: Select model
   - img
-- button "8% of context used"
+- button "0% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 1 steps LLM {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 99.5% Input 10K tok · Output 21 tok
+- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 99.5% Input 10K tok · Output 21 tok

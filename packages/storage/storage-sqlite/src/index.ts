@@ -9,7 +9,11 @@ import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import type { DatabaseSync } from 'node:sqlite'
 import { StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
-import type { KvFacet, KvUnit, KvUnitDescriptor, StorageBackend } from '@clocky/clocky-storage'
+import type {
+  KvFacet, KvUnit, KvUnitDescriptor, LogFacet, LogStream, LogStreamDescriptor,
+  LogStreamInfo, StorageBackend,
+} from '@clocky/clocky-storage'
+import { openSqliteLog, validateExistingStream } from './log.ts'
 import { openDatabase, recordTableName, type JournalMode } from './schema.ts'
 import { SqliteKvUnit } from './unit.ts'
 
@@ -49,23 +53,30 @@ export const Config: z<Config> = z.object({
 
 /**
  * The SQLite {@link StorageBackend}. Owns one `DatabaseSync` connection and
- * the open-unit table; `kv.open` validates names, enforces the per-unit
- * version stamp in `units`, and ensures the unit's record tables.
+ * independent open-handle tables for KV units and log streams; each facet
+ * validates its own durable version record before exposing a handle.
  */
 export class SqliteStorageBackend implements StorageBackend {
-  /** The key-value facet; the only shape this backend serves. */
+  /** Key-value units backed by the unit metadata and record tables. */
   readonly kv: KvFacet = { open: descriptor => this.openUnit(descriptor) }
+  /** Durable append-only streams backed by `log_*` tables. */
+  readonly log: LogFacet = {
+    open: descriptor => this.openLog(descriptor),
+    list: () => this.listLogs(),
+  }
 
   private readonly ready: Promise<DatabaseSync>
   /** Open (or still-opening) units by name; presence is the double-open guard. */
   private readonly units = new Map<string, Promise<SqliteKvUnit>>()
+  /** One caller-owned handle per log stream name. */
+  private readonly logs = new Map<string, Promise<LogStream>>()
   private closing: Promise<void> | undefined
 
   /**
    * @param config - Validated plugin configuration.
    */
   constructor(config: Config) {
-    this.ready = openDatabase(config.path, (config as Required<Config>).journalMode)
+    this.ready = openDatabase(config.path, config.journalMode ?? 'wal')
     // Mark the rejection handled: every primitive re-awaits `ready`, so an
     // open failure still surfaces to each caller; this guard only prevents an
     // unhandled-rejection crash when the failure precedes the first use.
@@ -122,6 +133,68 @@ export class SqliteStorageBackend implements StorageBackend {
     })
   }
 
+  /** Reserve and open one log stream. */
+  private openLog(descriptor: LogStreamDescriptor): Promise<LogStream> {
+    if (this.closing !== undefined) {
+      return Promise.reject(new StorageError('closed', 'sqlite storage backend is closed'))
+    }
+    if (descriptor.name.length === 0) {
+      return Promise.reject(new Error('log stream name must be non-empty'))
+    }
+    if (!Number.isSafeInteger(descriptor.version) || descriptor.version < 0) {
+      return Promise.reject(new Error(`log stream '${descriptor.name}' version must be a non-negative safe integer`))
+    }
+    if (this.logs.has(descriptor.name)) {
+      return Promise.reject(new Error(`log stream '${descriptor.name}' is already open (double-open is a caller bug)`))
+    }
+    const pending = this.materializeLog(descriptor)
+    this.logs.set(descriptor.name, pending)
+    pending.catch(() => this.logs.delete(descriptor.name))
+    return pending
+  }
+
+  /** Ensure the database has opened, then expose a validated stream handle. */
+  private async materializeLog(descriptor: LogStreamDescriptor): Promise<LogStream> {
+    const db = await this.ready
+    if (this.closing !== undefined) throw new StorageError('closed', 'sqlite storage backend is closed')
+    return openSqliteLog(
+      db,
+      descriptor,
+      () => { this.logs.delete(descriptor.name) },
+      () => this.closing !== undefined,
+    )
+  }
+
+  /** List and validate every materialized stream in stable name order. */
+  private async listLogs(): Promise<readonly LogStreamInfo[]> {
+    this.ensureOpenForLogs()
+    const db = await this.ready
+    this.ensureOpenForLogs()
+    const rows = db.prepare('SELECT name, version, tail_sequence FROM log_streams ORDER BY name ASC').all() as
+      Array<{ name: string; version: number; tail_sequence: number }>
+    return rows.map((row) => {
+      if (row.name.length === 0 || !Number.isSafeInteger(row.version) || row.version < 0) {
+        throw new StorageError('malformed-medium', 'log stream metadata has an invalid name or version')
+      }
+      const descriptor = { name: row.name, version: row.version }
+      validateExistingStream(db, descriptor)
+      const checkpoint = db.prepare('SELECT sequence FROM log_checkpoints WHERE stream = ?').get(row.name) as
+        | { sequence: number }
+        | undefined
+      return {
+        name: row.name,
+        version: row.version,
+        tailSequence: row.tail_sequence,
+        ...(checkpoint === undefined ? {} : { checkpointSequence: checkpoint.sequence }),
+      }
+    })
+  }
+
+  /** Reject log work once backend disposal begins. */
+  private ensureOpenForLogs(): void {
+    if (this.closing !== undefined) throw new StorageError('closed', 'sqlite storage backend is closed')
+  }
+
   /**
    * Close every open unit and release the database. Idempotent; concurrent
    * and repeated calls resolve once teardown finishes.
@@ -144,6 +217,10 @@ export class SqliteStorageBackend implements StorageBackend {
     for (const pending of [...this.units.values()]) {
       const unit = await pending.catch(() => undefined)
       await unit?.close()
+    }
+    for (const pending of [...this.logs.values()]) {
+      const stream = await pending.catch(() => undefined)
+      await stream?.close()
     }
     db.close()
   }

@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-subagent-in-process-driver
+# @clocky/clocky-subagent-in-process-driver
 
 [English](README.md) | 中文
 
@@ -10,7 +10,7 @@
 
 驱动器按以下顺序运行：
 
-1. 校验父 agent 深度和可选的绝对 `maxDepth`，然后把子 agent 深度推导为父 agent 深度加一，并将其持久化到子 agent 会话 header。
+1. 校验父 agent 深度和可选的绝对 `maxDepth`，然后把子 agent 深度推导为父 agent 深度加一，并将其持久化到子 agent 的描述符事件。
 2. 直接调用 `parent.ctx.agents.create`，把必需的请求信号传入工厂的创建事务。
 3. 在该事务未发布的设置窗口中，安装请求的 persona、工具限制和结构化输出运行时。
 4. 发布子 agent，保留返回的 `AgentHandle`，并通过先调用 `child.followup(prompt)`、再调用 `child.whenIdle()` 来驱动一项任务。
@@ -32,7 +32,7 @@
 
 `InProcessRunOptions` 的形态为 `{ seed?: SessionEvent[] }`。spawn 省略该值。fork 提供已配平的已完成轮次前缀，并记录其长度，确保结果读取器不会把作为初始内容的父 agent 消息误认为子 agent 输出。
 
-深度强制在 `startInProcessRun` 内部完成：它通过 `delegationDepthOf` 读取父 agent 深度（持久化的 `SessionHeader.delegationDepth` 具有权威性；运行时 `AgentOptions.subagentDepth` 可以加深但绝不能降低该值，因此恢复后的子 agent 会保留预算），缺失值按顶层深度零处理，拒绝格式错误的存储值，并报告尝试的子 agent 深度超过 `maxDepth`。超过安全整数范围、无法表示的深度会触发 `RangeError`。子 agent 深度写入子 agent header，因此会在持久化和恢复后保留。
+深度强制在 `startInProcessRun` 内部完成：它通过 `delegationDepthOf` 读取父 agent 深度（持久化的 `subagent/descriptor` 投影具有权威性；运行时 `AgentOptions.subagentDepth` 可以加深但绝不能降低该值，因此恢复后的子 agent 会保留预算），缺失值按顶层深度零处理，拒绝格式错误的存储值，并报告尝试的子 agent 深度超过 `maxDepth`。超过安全整数范围、无法表示的深度会触发 `RangeError`。子 agent 深度写入描述符事件，因此会在持久化和恢复后保留。
 
 ## 结构化输出
 
@@ -86,7 +86,7 @@ When you have your final answer, you MUST report it by calling the `structured_o
 
 #### 模型看到的内容
 
-通过 `dsh-tool-subagent`，无效深度状态会精确变为 `Error: agent subagentDepth must be a non-negative safe integer`、`Error: subagent child depth exceeds the safe-integer range` 或 `Error: subagent depth <attempted> exceeds maxDepth <max>`。发布前取消的中止原因会通过注册表的 `Error: <message>` 包装传递。
+通过 `clocky-tool-subagent`，无效深度状态会精确变为 `Error: agent subagentDepth must be a non-negative safe integer`、`Error: subagent child depth exceeds the safe-integer range` 或 `Error: subagent depth <attempted> exceeds maxDepth <max>`。发布前取消的中止原因会通过注册表的 `Error: <message>` 包装传递。
 
 #### Token 影响
 

@@ -12,9 +12,8 @@ import type { ClientContext, SessionId } from '@clocky/clocky-client-runtime/cli
 
 /**
  * The provider-facing projection of one client session. It carries stable
- * identity alone; a source that calls Agent-bound RPCs must consult its own
- * service's capability state because an addressed persisted subagent may
- * have a client scope without a live Host Agent.
+ * identity alone; a source that calls Agent-bound RPCs owns its own
+ * capability checks.
  */
 export interface ClientSessionContext {
   readonly sessionId: SessionId

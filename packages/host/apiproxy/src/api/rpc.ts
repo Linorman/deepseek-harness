@@ -10,6 +10,7 @@ type ZodIssue = zCore.core.$ZodIssue
 import type { Branded } from '@clocky/clocky-brand'
 import type { MessageId } from '@clocky/clocky-llm/brand'
 import type { SessionId } from '@clocky/clocky-session/types'
+import type { ChannelId, TeamId } from '@clocky/clocky-team/types'
 
 /**
  * Message correlation id: the initiator mints it on a request; a response
@@ -35,9 +36,7 @@ export interface RpcErrorDetailsMap {
   'session-not-found': { sessionId: SessionId }
   'model-unavailable': { provider: string; model: string }
   'model-not-configured': {}
-  'session-conflict': { sessionId: SessionId; requestedCwd: string; existingCwd?: string }
   'invalid-time-zone': { value: string }
-  'workspace-attach-failed': { sessionId: SessionId; workspaceId: string }
   'workspace-not-found': { workspaceId: string }
   'workspace-invalid-path': { path: string }
   'workspace-name-conflict': { name: string }
@@ -48,7 +47,6 @@ export interface RpcErrorDetailsMap {
   'directory-picker-unavailable': { capability: string }
   'agent-preset-read-only': { agentPreset: string; reason: string }
   'agent-preset-locked': { sessionId: SessionId; agentPreset: string }
-  'agent-preset-conflict': { sessionId: SessionId; requestedPreset: string; existingPreset?: string }
   'agent-preset-not-found': { agentPreset: string; available: string[] }
   'agent-preset-invalid': { agentPreset: string; reason: string }
   'agent-busy': { reason: string }
@@ -82,17 +80,38 @@ export interface RpcErrorDetailsMap {
    */
   'model-discovery-failed': { settingsNs: string; baseURL?: string }
   'title-invalid': { sessionId: SessionId }
-  'fork-unavailable': { sessionId: SessionId }
-  'subagent-parent-unavailable': { parentSessionId: SessionId }
-  'subagent-not-found': { parentSessionId: SessionId; childSessionId: SessionId }
-  'subagent-catalog-diagnostic': {
-    parentSessionId: SessionId
-    childSessionId: SessionId
-    reason: 'corrupt' | 'unsupported' | 'unavailable'
-  }
-  'subagent-not-resumable': { childSessionId: SessionId }
-  'subagent-unauthorized': { childSessionId: SessionId }
-  'subagent-delivery-unavailable': { childSessionId: SessionId }
+  /** A Team mutation reached the Host API without a transport-authenticated product principal. */
+  'PRODUCT_AUTH_REQUIRED': {}
+  /** A transport credential or its retained product-principal lease is invalid. */
+  'PRODUCT_AUTH_INVALID': {}
+  /** The authenticated principal owns no active human participant in the selected Team. */
+  'TEAM_HUMAN_ACTOR_NOT_FOUND': { teamId?: TeamId }
+  /** The authenticated principal maps to more than one active human participant in the selected Team. */
+  'TEAM_HUMAN_ACTOR_AMBIGUOUS': { teamId?: TeamId }
+  /** The selected human participant's immutable grant denies this operation. */
+  'TEAM_HUMAN_ACTOR_FORBIDDEN': { teamId?: TeamId }
+  /** A runtime-only Team actor proof is forged, stale, revoked, or outside its payload fence. */
+  'TEAM_ACTOR_PROOF_INVALID': { teamId?: TeamId }
+  'team-service-unavailable': {}
+  'team-run-unavailable': { teamId?: TeamId }
+  'team-not-found': { teamId: TeamId }
+  'team-model-required': {}
+  'team-start-conflict': {}
+  /** A Team cursor moved between the caller's read and its mutation. */
+  'team-cursor-conflict': { teamId?: TeamId }
+  /** A channel cursor or invitation revision moved before its mutation. */
+  'team-invalid-argument': { teamId?: TeamId }
+  'team-channel-cursor-conflict': { teamId?: TeamId; channelId?: ChannelId }
+  /** A sender reused one channel post key with different canonical fields. */
+  'team-channel-idempotency-conflict': { teamId?: TeamId; channelId?: ChannelId }
+  'team-final-invalid': { teamId: TeamId }
+  'team-not-quiescent': { teamId: TeamId }
+  /** A channel read started before a physically compacted WAL prefix. */
+  'team-channel-compacted': { teamId?: TeamId; channelId?: ChannelId; firstCursor?: number }
+  /** An audit read started before a physically compacted audit prefix. */
+  'team-audit-compacted': { teamId?: TeamId; channelId?: ChannelId; firstCursor?: number }
+  'team-artifact-not-found': { teamId: TeamId; artifactId: string }
+  'team-artifact-unavailable': { teamId: TeamId; artifactId: string }
   'internal': {}
 }
 

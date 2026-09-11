@@ -12,10 +12,10 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { Clocky, type HarnessNotification } from '@clocky/clocky-sdk-client'
+import { Clocky, HarnessTeam, SdkProtocolError, type HarnessNotification, type NotificationSubscription } from '@clocky/clocky-sdk-client'
 import type { ContentBlock } from '@clocky/clocky-llm'
-import { SessionId, type SessionEvent, type TurnEndReason } from '@clocky/clocky-session'
-import type { SubagentResult, SubagentRun, SubagentStartRequest, SubagentStopReason } from '@clocky/clocky-subagent'
+import { SessionId, type SessionEvent } from '@clocky/clocky-session'
+import type { SubagentRun, SubagentStartRequest, SubagentStopReason } from '@clocky/clocky-subagent'
 import { AssistantOutputFold, settleRunResult, subprocessRunHandle } from '@clocky/clocky-subagent'
 import { scrubbedParentEnv } from '@clocky/clocky-subprocess'
 
@@ -35,6 +35,8 @@ export interface SdkRunSpec {
   provider: string
   /** Model the child runtime initializes with. */
   model: string
+  /** Opaque product credential sent only in the child runtime initialization handshake. */
+  credential?: string
   /** Optional per-request output-token cap sent in the child runtime's initialize handshake. */
   maxTokens?: number
   /**
@@ -68,29 +70,6 @@ export const DEFAULT_DISPOSE_GRACE_MS = 3_000
 /** Default bound on the protocol `shutdown` exchange during dispose. */
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 1_000
 
-/**
- * Map a child turn-end reason to a harness {@link SubagentStopReason}.
- * @param reason - the owned child run's final durable turn reason, or
- * `undefined` when it settled without running a turn.
- * @returns the harness equivalent; an absent or unknown reason maps to
- * `error`, so an unclean stop is never reported as `completed`.
- */
-export function sdkStopReason(reason: TurnEndReason | undefined): SubagentStopReason {
-  switch (reason?.kind) {
-    case 'completed':
-      return 'completed'
-    case 'max-tokens':
-      return 'max-tokens'
-    case 'aborted':
-      return 'aborted'
-    // error / interrupted / disposed / a future merged variant /
-    // no turn at all: the task did NOT finish cleanly — surface a generic
-    // failure so the consumer maps it to an isError result.
-    default:
-      return 'error'
-  }
-}
-
 /** Normalize an unknown thrown value to an Error (the catch binding is `unknown`). */
 function toError(value: unknown): Error {
   // The catch only sees rejections from the SDK client, which are always
@@ -98,6 +77,53 @@ function toError(value: unknown): Error {
   // throw that the typed surfaces cannot produce.
   /* v8 ignore next */
   return value instanceof Error ? value : new Error(String(value))
+}
+
+/** Fold one validated coordinator event from the raw SDK notification stream. */
+function foldCoordinatorOutput(
+  fold: AssistantOutputFold,
+  notification: HarnessNotification,
+  coordinatorSessionId: string,
+): void {
+  if (notification.method !== 'session.event' || notification.params.sessionId !== coordinatorSessionId) return
+  const event = notification.params.event
+  if (!isRecord(event) || typeof event.type !== 'string') {
+    throw new SdkProtocolError(`session.event carried no event envelope: ${JSON.stringify(event)}`)
+  }
+  if (event.type === 'assistant/message') {
+    const message = isRecord(event.data) ? event.data.message : undefined
+    const content = isRecord(message) ? message.content : undefined
+    if (!Array.isArray(content) || !content.every(block => isRecord(block) && typeof block.type === 'string')) {
+      throw new SdkProtocolError(`assistant/message event carried malformed content: ${JSON.stringify(event)}`)
+    }
+  }
+  fold.push(event as unknown as SessionEvent)
+}
+
+/** Await an explicit Team final while retaining coordinator output notifications. */
+async function waitForTeamFinal(
+  team: HarnessTeam,
+  subscription: NotificationSubscription,
+  fold: AssistantOutputFold,
+  cancelled: Promise<void>,
+): Promise<string | undefined> {
+  const completion = team.waitForFinal()
+  while (true) {
+    const notification = subscription.next()
+    const settled = await Promise.race([
+      completion.then(final => ({ kind: 'final' as const, text: final.text })),
+      notification.then(value => ({ kind: 'notification' as const, value })),
+      cancelled.then(() => ({ kind: 'cancelled' as const })),
+    ])
+    if (settled.kind === 'cancelled') return undefined
+    if (settled.kind === 'final') return settled.text
+    foldCoordinatorOutput(fold, settled.value, team.coordinatorSessionId)
+  }
+}
+
+/** Narrow an unknown JSON-RPC value to a record. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 /**
@@ -111,6 +137,9 @@ function toError(value: unknown): Error {
  */
 export async function startSdkRun(request: SubagentStartRequest, spec: SdkRunSpec): Promise<SubagentRun> {
   if (request.signal.aborted) throw new Error('subagent request was aborted before the SDK child started')
+  if (spec.credential === undefined || spec.credential.length === 0) {
+    throw new Error('subagent SDK child requires an explicitly configured product credential')
+  }
   // The run id lives in the parent namespace; the child runtime's session id
   // (minted below, private to the wire) exists only inside the child process.
   const id = SessionId(randomUUID())
@@ -125,20 +154,28 @@ export async function startSdkRun(request: SubagentStartRequest, spec: SdkRunSpe
       disposeEofGraceMs: spec.disposeEofGraceMs,
       disposeGraceMs: spec.disposeGraceMs,
     },
+    credential: spec.credential,
     cwd: spec.cwd,
     provider: spec.provider,
     model: spec.model,
     ...spec.maxTokens === undefined ? {} : { maxTokens: spec.maxTokens },
   })
 
-  // Cancellation settles the result without waiting for a cooperative child.
   const flags = { cancelled: false }
+  let teamFinalized = false
   let signalCancelSettled!: () => void
   const cancelSettled = new Promise<void>((resolve) => { signalCancelSettled = resolve })
+  let team: HarnessTeam | undefined
+  let teamCancellation: Promise<void> | undefined
+  const cancelTeam = (): void => {
+    if (team === undefined || teamCancellation !== undefined) return
+    teamCancellation = team.cancel().then(() => undefined, () => {})
+  }
   const requestCancel = (): void => {
     if (flags.cancelled) return
     flags.cancelled = true
     signalCancelSettled()
+    if (!teamFinalized) cancelTeam()
   }
   const onAbort = (): void => { requestCancel() }
   request.signal.addEventListener('abort', onAbort, { once: true })
@@ -162,29 +199,30 @@ export async function startSdkRun(request: SubagentStartRequest, spec: SdkRunSpe
     throw toError(error)
   }
 
-  const childSessionId = `session-${randomUUID().replaceAll('-', '')}`
-  // The child's final answer under the seam's canonical selection rule
-  // (`AssistantOutputFold`); a partial answer survives cancel and error paths.
   const fold = new AssistantOutputFold()
-  const observe = (notification: HarnessNotification): void => {
-    if (notification.method !== 'session.event' || notification.params.sessionId !== childSessionId) return
-    fold.push(notification.params.event as SessionEvent)
-  }
   const collectOutput = (): ContentBlock[] => fold.collect() ?? []
+  const subscription = harness.client.subscribe()
 
-  // Race the child turn against local cancellation; the shared settlement
-  // flattens failures under the seam's never-reject contract.
-  const result: Promise<SubagentResult> = settleRunResult({
+  const settled = settleRunResult({
     attempt: async () => {
-      const turn = await Promise.race([
-        harness.session(childSessionId).run(request.prompt, { onNotification: observe }),
-        cancelSettled.then(() => 'cancelled' as const),
-      ])
-      if (turn === 'cancelled') return { output: collectOutput(), stopReason: 'aborted' }
-      const lastEnd = turn.events.findLast(
-        (event): event is Extract<SessionEvent, { type: 'turn/end' }> => event.type === 'turn/end',
+      const creation = harness.createTeam(request.prompt)
+      void creation.then(
+        (created) => {
+          team = created
+          if (flags.cancelled) cancelTeam()
+        },
+        () => {},
       )
-      return { output: collectOutput(), stopReason: sdkStopReason(lastEnd?.data.reason) }
+      const created = await Promise.race([
+        creation,
+        cancelSettled.then(() => undefined),
+      ])
+      if (created === undefined) return { output: collectOutput(), stopReason: 'aborted' }
+      const finalText = await waitForTeamFinal(created, subscription, fold, cancelSettled)
+      if (finalText === undefined) return { output: collectOutput(), stopReason: 'aborted' }
+      teamFinalized = true
+      const output = fold.collect() ?? [{ type: 'text', text: finalText }]
+      return { output, stopReason: 'completed' }
     },
     collectOutput,
     cancelled: () => flags.cancelled,
@@ -192,9 +230,8 @@ export async function startSdkRun(request: SubagentStartRequest, spec: SdkRunSpe
     signal: request.signal,
     onAbort,
   })
+  const result = settled.finally(() => { subscription.close() })
 
-  // There is no wire-level prompt cancel: dispose settles the result locally,
-  // then the bounded shutdown request + dispose ladder tears the child down.
   return subprocessRunHandle({
     id,
     result,

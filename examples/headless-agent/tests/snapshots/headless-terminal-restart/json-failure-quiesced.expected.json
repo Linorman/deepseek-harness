@@ -1,0 +1,32 @@
+{
+  "scenario": "headless-terminal-restart",
+  "backend": "json",
+  "outcome": "failure",
+  "window": "quiesced",
+  "independentHost": true,
+  "initial": {
+    "teamPhase": "quiescing",
+    "goalPhase": "active",
+    "quiesced": true,
+    "closureCount": 1,
+    "cancellationCount": 0,
+    "expiredHumanMessages": 0,
+    "coordinatorReceipts": 1
+  },
+  "recovered": {
+    "teamPhase": "failed",
+    "goalPhase": "active",
+    "quiesced": true,
+    "stallCode": null,
+    "intentCode": "TERMINAL_FIXTURE_FAILURE",
+    "closureCount": 1,
+    "cancellationCount": 0,
+    "expiredHumanMessages": 1,
+    "expiryReason": "closure",
+    "coordinatorReceipts": 1,
+    "humanReceipts": 0,
+    "finalAdmissions": 0,
+    "channelPhase": "closed",
+    "modelRequests": 0
+  }
+}

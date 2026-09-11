@@ -102,9 +102,14 @@ jobs:
       CLOCKY_COVERAGE_MAX_WORKERS: '6'
       CLOCKY_COVERAGE_PARTITIONS: '4'
       CLOCKY_GATE_CONCURRENCY: '3'
+      CLOCKY_CHANGE_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v6
         with:
+          # The changed-package coverage gate resolves GITHUB_BASE_REF to
+          # origin/<base>; a shallow checkout would silently reduce its scope
+          # to HEAD and let the gate pass without measuring the PR.
+          fetch-depth: 0
           persist-credentials: false
 
       - uses: pnpm/action-setup@v4

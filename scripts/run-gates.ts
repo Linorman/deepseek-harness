@@ -180,6 +180,18 @@ function pnpmScript(id: string, script: string, options: Partial<Gate> = {}): Ga
   }
 }
 
+/** Build a pnpm gate whose script also receives explicit release arguments. */
+function pnpmRun(id: string, script: string, args: string[], options: Partial<Gate> = {}): Gate {
+  const commandArgs = ['run', script, ...args]
+  return {
+    id,
+    label: options.label ?? `${script} ${args.join(' ')}`,
+    displayCommand: `pnpm ${commandArgs.join(' ')}`,
+    ...pnpmInvocation(commandArgs),
+    ...options,
+  }
+}
+
 /** Build official client artifacts inside a CI aggregate without changing sibling gate environments. */
 function ciBuildGate(id = 'build', options: Partial<Gate> = {}): Gate {
   return pnpmScript(id, 'build', {
@@ -217,7 +229,7 @@ export function gatesForMode(selected: Mode): Gate[] {
         pnpmScript('duplication', 'duplication'),
       ]
     case 'ci-coverage':
-      return coverageGates()
+      return [...coverageGates(), changedPackageCoverageGate(['coverage', 'coverage-exempt-heavy'])]
     case 'ci-snapshot':
       return [ciBuildGate(), snapshotGate()]
     case 'ci-artifacts':
@@ -267,8 +279,12 @@ function ciSharedStaticGates(): Gate[] {
   return [
     pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
     pnpmScript('constraints', 'constraints'),
+    pnpmScript('legacy-cutover', 'verify-legacy-cutover', { label: 'legacy cutover' }),
     pnpmScript('clocky-package-licenses', 'verify-clocky-package-licenses', { label: 'Clocky package licenses' }),
     pnpmScript('package-invariants', 'verify-package-invariants', { label: 'package invariants' }),
+    pnpmScript('direct-session-entrypoints', 'verify-direct-session-entrypoints', {
+      label: 'direct Session entrypoint inventory',
+    }),
     pnpmScript('cordis-config', 'verify-cordis-config', { label: 'Cordis config' }),
     pnpmScript('optional-dependency-imports', 'verify-optional-dependency-imports', {
       label: 'optional dependency imports',
@@ -286,6 +302,7 @@ function ciPrimaryGates(): Gate[] {
     lintGate({ needs: ['typert-contracts'] }),
     pnpmScript('duplication', 'duplication'),
     ...coverageGates(),
+    changedPackageCoverageGate(['coverage', 'coverage-exempt-heavy']),
     ...nodeCompatSmokeGates(),
     snapshotGate(),
     ...docSyncLeafGates({
@@ -435,6 +452,27 @@ function ciConsumerGates(): Gate[] {
       needs: validatedBuild,
     }),
     builtBinSmokeGate(validatedBuild),
+    pnpmRun('pack-clocky', 'release:pack', ['--family', 'clocky', '--out', '.tmp/p0-gate/npm-clocky'], {
+      label: 'pack Clocky release family',
+      needs: builtTree,
+    }),
+    pnpmRun('pack-vendor', 'release:pack', ['--family', 'vendor', '--out', '.tmp/p0-gate/npm-vendor'], {
+      label: 'pack vendored release family',
+      needs: builtTree,
+    }),
+    pnpmRun('pack-native', 'release:pack-native', [], {
+      label: 'pack native Landlock entry',
+      needs: builtTree,
+    }),
+    pnpmRun('packed-consumer', 'release:verify-packed-install', [
+      '--family', 'clocky',
+      '--from', '.tmp/p0-gate/npm-clocky',
+      '--from', '.tmp/p0-gate/npm-vendor',
+      '--from', '.tmp/p0-gate/npm-native',
+    ], {
+      label: 'packed consumer',
+      needs: ['pack-clocky', 'pack-vendor', 'pack-native'],
+    }),
   ]
 }
 
@@ -583,6 +621,14 @@ function coverageGates(): Gate[] {
   ]
 }
 
+/** Run the explicit changed-package per-file coverage evidence. */
+function changedPackageCoverageGate(needs: string[] = []): Gate {
+  return pnpmScript('changed-package-coverage', 'test:coverage:changed', {
+    label: 'changed-package coverage',
+    ...needs.length === 0 ? {} : { needs },
+  })
+}
+
 // Example and package snapshots boot their bins in `lib` mode (built artifacts under plain Node,
 // plugins via real exports); script snapshots execute their real source entry path.
 // Callers wait either on `build` or on a validation gate that transitively owns that build.
@@ -626,6 +672,9 @@ function hygieneLeafGates(options: { artifactNeeds?: string[] } = {}): Gate[] {
     pnpmScript('constraints', 'constraints'),
     pnpmScript('clocky-package-licenses', 'verify-clocky-package-licenses', { label: 'Clocky package licenses' }),
     pnpmScript('package-invariants', 'verify-package-invariants', { label: 'package invariants' }),
+    pnpmScript('direct-session-entrypoints', 'verify-direct-session-entrypoints', {
+      label: 'direct Session entrypoint inventory',
+    }),
     builtPackageInvariantsGate(options.artifactNeeds),
     pnpmScript('node-next-types', 'verify-node-next-types', {
       label: 'node-next types',

@@ -1,0 +1,49 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: review-terminal-model
+    model: review-terminal-model
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_REVIEW_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_REVIEW_BACKEND
+    routes: {}
+
+- id: team-workspace-shared
+  config:
+    root: !!js process.cwd()
+
+- id: team-run
+  config:
+    workerPreset: minimal
+    reviewerPreset: minimal
+
+# Committed resource changes and startup own progress without a discovery pulse.
+- id: team-closure-driver
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: review-terminal-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_REVIEW_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: review-terminal-driver
+      name: './snapshot-fixtures/headless-review-terminal-restart-driver.ts'
+      config:
+        stage: !!js process.env.CLOCKY_REVIEW_STAGE
+        outcome: !!js process.env.CLOCKY_REVIEW_OUTCOME
+        teamId: !!js process.env.CLOCKY_REVIEW_TEAM_ID

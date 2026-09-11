@@ -1,0 +1,52 @@
+{
+  "name": "@clocky/clocky-agent-runtime-acp",
+  "description": "ACP subprocess provider for Team Participant-bound AgentRuntime activations",
+  "version": "0.1.1-rc.2",
+  "publishConfig": { "access": "public" },
+  "repository": { "type": "git", "url": "git+https://github.com/Linorman/clocky.git", "directory": "packages/agent-runtime/agent-runtime-acp" },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./invariant": { "types": "./lib/types/invariant.d.ts", "default": "./lib/invariant.js" },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib/index.js", "lib/invariant.js", "lib/types/**/*.d.ts"],
+  "license": "MIT",
+  "dependencies": { "@agentclientprotocol/sdk": "0.25.1", "@clocky/schemastery": "workspace:^" },
+  "peerDependencies": {
+    "@clocky/clocky-activation-supervisor": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/clocky-agent-runtime-sdk": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-channel-task-assignment": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-link-websocket": "workspace:^",
+    "@clocky/clocky-subprocess-local": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/clocky-activation-supervisor": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/clocky-agent-runtime-sdk": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-subprocess": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/clocky-team-channel-task-assignment": "workspace:^",
+    "@clocky/clocky-team-link": "workspace:^",
+    "@clocky/clocky-team-link-websocket": "workspace:^",
+    "@clocky/clocky-subprocess-local": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  }
+}

@@ -303,7 +303,7 @@ describe('input-machine: insert-ref and the occurrence table', () => {
     m.dispatch({ type: 'draft-changed', draft: '/go' })
     m.dispatch({ type: 'begin-command', claim: claimOf('goal'), span: spanOf(m, 0, 3) })
     m.dispatch({ type: 'draft-changed', draft: '/goal ask @wor' })
-    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'subagent'), span: spanOf(m, 10, 14) })
+    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'worker'), span: spanOf(m, 10, 14) })
     expect(m.state.draft).toBe(`/goal ask ${referenceDraftText(refOf('worker-1'))} `)
     expect(m.state.phase).toBe('claimed')
     expect(m.state.occurrences).toHaveLength(1)
@@ -324,7 +324,7 @@ describe('input-machine: occurrence reconciliation on draft edits', () => {
   function withChip(): InputMachine {
     const m = new InputMachine()
     m.dispatch({ type: 'draft-changed', draft: 'see @wor now' })
-    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'subagent'), span: spanOf(m, 4, 8) })
+    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'worker'), span: spanOf(m, 4, 8) })
     return m
   }
 
@@ -835,7 +835,7 @@ describe('input-machine: submitting transaction', () => {
   it('commit clears draft and occurrences, releases the claim, and relays the outcome text', () => {
     const m = new InputMachine()
     m.dispatch({ type: 'draft-changed', draft: '@wor' })
-    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'subagent'), span: spanOf(m, 0, 4) })
+    m.dispatch({ type: 'insert-ref', reference: refOf('worker-1', 'worker'), span: spanOf(m, 0, 4) })
     const refLength = referenceDraftText(refOf('worker-1')).length
     m.dispatch({
       type: 'draft-changed',

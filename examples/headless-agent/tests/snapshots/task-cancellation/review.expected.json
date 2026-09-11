@@ -1,0 +1,13 @@
+{
+  "scenario": "single-task-review-cancellation",
+  "teamAfterTaskCancellation": "active",
+  "task": "cancelled",
+  "originalAttempt": "completed",
+  "attemptHistoryUnchanged": true,
+  "reviewHistory": [],
+  "correspondingConsult": "closed",
+  "oldReviewToolRejected": true,
+  "followupTask": "completed",
+  "allAllocationsReleased": true,
+  "file": "before\n"
+}

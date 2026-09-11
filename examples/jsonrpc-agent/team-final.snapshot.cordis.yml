@@ -1,0 +1,13 @@
+# Keyless Team-final scenario: the coordinator script calls `team_final` through
+# the real scoped tool, so the SDK waits on the durable direct-channel result.
+- id: base
+  name: '@clocky/cordis-plugin-include'
+  config:
+    path: ./cordis.yml
+    patches:
+      - id: llm-pi-ai
+        name: '@clocky/clocky-llm-pi-ai'
+        disabled: true
+      - insert:
+          - id: team-final-llm
+            name: ./tests/fixtures/team-final-llm.ts

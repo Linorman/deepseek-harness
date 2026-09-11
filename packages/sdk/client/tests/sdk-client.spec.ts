@@ -9,20 +9,22 @@ import { mkdir, mkdtemp, readFile, realpath, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Clocky,
+  HarnessTeam,
   HarnessClient,
-  HarnessSession,
   JsonRpcResponseError,
+  parseActivationStatusNotification,
   RequestTimeoutError,
   SdkProtocolError,
   TransportClosedError,
-  type HarnessNotification,
+  type ContentBlock,
 } from '../src/index.ts'
-import { finalResponse, normalizeInput } from '../src/api.ts'
+import { normalizeInput, resolveObjective } from '../src/api.ts'
 
 const fakeRuntime = fileURLToPath(new URL('./fake-runtime.ts', import.meta.url))
+const TEST_CREDENTIAL = 'sdk-client-test-credential'
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => {
@@ -43,10 +45,26 @@ function fakeLaunch(env: Record<string, string> = {}, extra: LaunchOverrides = {
 
 function harnessWith(env: Record<string, string> = {}, extra: LaunchOverrides = {}): Clocky {
   const harness = new Clocky({
-    launch: fakeLaunch(env, extra), provider: 'test-provider', model: 'test-model',
+    launch: fakeLaunch(env, extra), credential: TEST_CREDENTIAL, provider: 'test-provider', model: 'test-model',
   })
   cleanups.push(() => harness.close())
   return harness
+}
+
+/** Complete wire target for the SDK activation lifecycle helpers. */
+function activationTarget(overrides: Partial<{
+  activationId: string
+  teamId: string
+  participantId: string
+  sessionId: string
+}> = {}) {
+  return {
+    activationId: 'activation-client',
+    teamId: 'team-client',
+    participantId: 'participant-client',
+    sessionId: 'session-client',
+    ...overrides,
+  }
 }
 
 async function tempDir(prefix: string): Promise<string> {
@@ -56,65 +74,16 @@ async function tempDir(prefix: string): Promise<string> {
 }
 
 describe('Clocky', () => {
-  it('ignores notifications that precede the submitted message receipt', async () => {
-    const notifications = [
-      { method: 'session.status', params: { sessionId: 'owned', status: 'running' } },
-      {
-        method: 'session.event',
-        params: { sessionId: 'owned', event: { type: 'turn/start', data: { turn: 1 } } },
-      },
-      {
-        method: 'session.event',
-        params: {
-          sessionId: 'owned',
-          event: { type: 'agent/inbox/spliced', data: { inserted: null } },
-        },
-      },
-      {
-        method: 'session.event',
-        params: {
-          sessionId: 'owned',
-          event: {
-            type: 'agent/inbox/spliced',
-            seq: 0,
-            time: 0,
-            data: {
-              target: 'next-turn',
-              start: 0,
-              inserted: [{ id: 'accepted-message', role: 'user', content: [], source: { kind: 'user' } }],
-            },
-          },
-        },
-      },
-      { method: 'session.status', params: { sessionId: 'owned', status: 'idle' } },
-    ] as HarnessNotification[]
-    let closed = false
-    const harness = {
-      start: () => Promise.resolve(),
-      client: {
-        prompt: () => Promise.resolve('accepted-message'),
-        subscribeSessionTree: () => ({
-          next: async () => {
-            const notification = notifications.shift()
-            if (notification === undefined) throw new Error('scripted notification queue exhausted')
-            return notification
-          },
-          tryNext: () => notifications.shift(),
-          close: () => { closed = true },
-          async * [Symbol.asyncIterator]() {},
-        }),
-      },
-    } as unknown as Clocky
-
-    const result = await new HarnessSession(harness, 'owned').run('go')
-
-    expect(result.notifications.map(notification => notification.method))
-      .toEqual(['session.event', 'session.status'])
-    expect(result.events.map(event => event.type)).toEqual(['agent/inbox/spliced'])
-    expect(closed).toBe(true)
+  it('requires an explicit objective for image-only Team input', () => {
+    const image = [{
+      type: 'image' as const,
+      attachment: { attachmentId: 'sha256:image' as never, mediaType: 'image/png' as const, bytes: 1, width: 1, height: 1 },
+    }] satisfies ContentBlock[]
+    expect(() => resolveObjective(image, image, undefined)).toThrow('objective is required when Team input contains no text')
+    expect(resolveObjective(image, image, 'Inspect the screenshot.')).toBe('Inspect the screenshot.')
   })
 
-  it('runs a turn end to end and reuses the runtime across sessions', async () => {
+  it('runs a Team end to end and reuses the runtime across completed Teams', async () => {
     const harness = harnessWith({ FAKE_TEXT: 'turn answer' })
     const first = await harness.run('say hi')
     expect(first.finalResponse).toBe('turn answer')
@@ -122,30 +91,9 @@ describe('Clocky', () => {
       'agent/inbox/spliced', 'turn/start', 'assistant/chunk', 'assistant/message', 'turn/end',
     ])
 
-    // Same subprocess, second session: ids differ, protocol state is reusable.
+    // Same subprocess, second Team: ids differ, protocol state is reusable.
     const second = await harness.run([{ type: 'text', text: 'again' }])
-    expect(second.sessionId).not.toBe(first.sessionId)
-    await harness.close()
-  })
-
-  it('keeps events root-scoped while streaming notifications for the session tree', async () => {
-    const harness = harnessWith({ FAKE_SUBAGENT: '1' })
-    const seen: HarnessNotification[] = []
-    const result = await harness.run('delegate', {
-      sessionId: 'parent-1',
-      onNotification: (n) => { seen.push(n) },
-    })
-
-    // The child session's events arrive through subagent.started lineage.
-    expect(seen.map(n => n.method)).toContain('subagent.started')
-    expect(seen.map(n => n.method)).toContain('subagent.finished')
-    const childEvents = seen.filter(n => n.method === 'session.event' && n.params.sessionId === 'parent-1-child')
-    expect(childEvents.length).toBeGreaterThan(0)
-    // RunResult.events is the root session's typed stream; descendants retain
-    // their session ids in the raw notification stream above.
-    expect(result.events.every(event => event.type !== 'assistant/message'
-      || event.data.message.content[0]?.type !== 'text'
-      || event.data.message.content[0].text !== 'child says hi')).toBe(true)
+    expect(second.teamId).not.toBe(first.teamId)
     await harness.close()
   })
 
@@ -154,6 +102,7 @@ describe('Clocky', () => {
     const recordFile = join(dir, 'init.jsonl')
     const harness = new Clocky({
       launch: fakeLaunch({ FAKE_RECORD_INIT: recordFile }),
+      credential: TEST_CREDENTIAL,
       cwd: dir,
       provider: 'custom-provider',
       model: 'custom-model',
@@ -165,6 +114,7 @@ describe('Clocky', () => {
     await harness.close()
     const records = (await readFile(recordFile, 'utf8')).trim().split('\n').map(line => JSON.parse(line) as object)
     expect(records).toEqual([{
+      credential: TEST_CREDENTIAL,
       cwd: dir,
       provider: 'custom-provider',
       model: 'custom-model',
@@ -184,11 +134,12 @@ describe('Clocky', () => {
     expect(isAbsolute(relativeCwd)).toBe(false)
     const harness = new Clocky({
       launch: fakeLaunch({ FAKE_RECORD_INIT: recordFile, FAKE_ECHO_CWD_IN_INIT: '1' }, { cwd: relativeCwd }),
+      credential: TEST_CREDENTIAL,
       provider: 'test-provider', model: 'test-model',
     })
     cleanups.push(() => harness.close())
     await harness.start()
-    const identity = await harness.client.initialize({ cwd: inner, provider: 'p', model: 'm' })
+    const identity = await harness.client.initialize({ credential: TEST_CREDENTIAL, cwd: inner, provider: 'p', model: 'm' })
     await harness.close()
     // The child spawned under the temp worker dir (its physical cwd)...
     expect(identity.serverInfo.version).toBe(await realpath(inner))
@@ -211,6 +162,61 @@ describe('Clocky', () => {
     await expect(harness.run('later')).rejects.toThrow()
   })
 
+  it('redacts a handshake credential from a reflected initialization error', async () => {
+    const credential = 'credential-never-visible-in-sdk-error'
+    const client = new HarnessClient(fakeLaunch({ FAKE_INIT_ECHO_CREDENTIAL: '1' }))
+    cleanups.push(() => client.close())
+
+    const failure: unknown = await client.initialize({
+      credential,
+      cwd: process.cwd(),
+      provider: 'test-provider',
+      model: 'test-model',
+    }).then(
+      () => { throw new Error('initialization unexpectedly succeeded') },
+      (error: unknown) => error,
+    )
+    expect(failure).toBeInstanceOf(JsonRpcResponseError)
+    expect(failure).toMatchObject({ message: 'credential=[REDACTED]', data: { credential: '[REDACTED]' } })
+    expect(JSON.stringify(failure)).not.toContain(credential)
+    await client.close()
+  })
+
+  it('does not pass a configured handshake credential through the child environment or command line', async () => {
+    const credential = 'credential-must-not-reach-child-process'
+    const harness = new Clocky({
+      launch: fakeLaunch({ SDK_PRODUCT_CREDENTIAL: credential, FAKE_ECHO_ENV: 'SDK_PRODUCT_CREDENTIAL' }),
+      credential,
+      provider: 'test-provider',
+      model: 'test-model',
+    })
+    cleanups.push(() => harness.close())
+
+    const result = await harness.run('check child environment')
+    expect(result.finalResponse).toContain('SDK_PRODUCT_CREDENTIAL=')
+    expect(result.finalResponse).not.toContain(credential)
+    await harness.close()
+
+    const client = new HarnessClient({ command: process.execPath, args: [fakeRuntime, credential] })
+    await expect(client.initialize({ credential, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' }))
+      .rejects.toThrow('command and arguments must not contain the product credential')
+    expect(client.pid).toBeUndefined()
+  })
+
+  it('rejects a second initialization credential without sending it to the existing child', async () => {
+    const firstCredential = 'first-sdk-connection-credential'
+    const replacementCredential = 'replacement-sdk-connection-credential'
+    const client = new HarnessClient(fakeLaunch())
+    cleanups.push(() => client.close())
+
+    await client.initialize({ credential: firstCredential, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    await expect(client.initialize({ credential: replacementCredential, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' }))
+      .rejects.toThrow('launched with another product credential')
+    await expect(client.initialize({ credential: firstCredential, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' }))
+      .resolves.toMatchObject({ serverInfo: { name: 'clocky-sdk-runtime' } })
+    await client.close()
+  })
+
   it('retries a failed handshake with a fresh runtime process', async () => {
     const dir = await tempDir('sdk-client-retry-')
     const marker = join(dir, 'first-boot-failed')
@@ -227,6 +233,25 @@ describe('Clocky', () => {
     await expect(harness.run('after-close')).rejects.toThrow(TransportClosedError)
   })
 
+  it('does not replace a failed runtime client after its owning Clocky instance is terminal', async () => {
+    const harness = new Clocky({
+      launch: fakeLaunch(), credential: TEST_CREDENTIAL, provider: 'test-provider', model: 'test-model',
+    }) as unknown as {
+      clientInstance: { start(): void; initialize(): Promise<unknown>; close(): Promise<void> }
+      closed: boolean
+      start(): Promise<void>
+    }
+    const client = {
+      start: () => undefined,
+      initialize: () => Promise.reject(new Error('terminal handshake failure')),
+      close: () => Promise.resolve(),
+    }
+    harness.clientInstance = client
+    harness.closed = true
+    await expect(harness.start()).rejects.toThrow('terminal handshake failure')
+    expect(harness.clientInstance).toBe(client)
+  })
+
   it('rejects a malformed initialize result as a protocol error', async () => {
     const harness = harnessWith({ FAKE_MALFORMED: '1' })
     await expect(harness.run('bad')).rejects.toThrow(SdkProtocolError)
@@ -236,7 +261,7 @@ describe('Clocky', () => {
     let captured: Clocky
     {
       await using harness = new Clocky({
-        launch: fakeLaunch(), provider: 'test-provider', model: 'test-model',
+        launch: fakeLaunch(), credential: TEST_CREDENTIAL, provider: 'test-provider', model: 'test-model',
       })
       captured = harness
       const result = await harness.run('scoped')
@@ -245,14 +270,64 @@ describe('Clocky', () => {
     // After scope exit the runtime is closed: reuse fails loudly.
     await expect(captured.run('after')).rejects.toThrow(TransportClosedError)
   })
+
+  it('forwards top-level Team inspection entrypoints after one shared handshake', async () => {
+    const client = {
+      start: vi.fn(),
+      initialize: vi.fn(async () => ({ serverInfo: { name: 'fake', version: '1' } })),
+      close: vi.fn(async () => undefined),
+      resumeTeam: vi.fn(async () => ({ teamId: 'team-forward', coordinatorSessionId: 'coordinator-forward' })),
+      listTeams: vi.fn(async () => ({ items: [] })),
+      getTeam: vi.fn(async () => ({ state: {} })),
+      listTeamMembers: vi.fn(async () => ({ items: [] })),
+      listTeamTasks: vi.fn(async () => ({ items: [] })),
+      getTeamQuiescence: vi.fn(async () => ({ value: {} })),
+      getTeamMetrics: vi.fn(async () => ({})),
+      readTeamAudit: vi.fn(async () => ({ teamId: 'team-forward', items: [] })),
+    }
+    const harness = new Clocky({ launch: fakeLaunch(), credential: TEST_CREDENTIAL, provider: 'provider', model: 'model' })
+    ;(harness as unknown as { clientInstance: typeof client }).clientInstance = client
+
+    const resumed = await harness.resumeTeam({ teamId: 'team-forward', expectedCursor: 7 })
+    await harness.listTeams()
+    await harness.getTeam('team-forward')
+    await harness.listTeamMembers('team-forward')
+    await harness.listTeamTasks('team-forward')
+    await harness.teamQuiescence('team-forward')
+    await harness.teamMetrics()
+    await harness.teamAudit({ teamId: 'team-forward' })
+    await harness.close()
+
+    expect(resumed).toMatchObject({ id: 'team-forward', coordinatorSessionId: 'coordinator-forward' })
+    expect(client.initialize).toHaveBeenCalledOnce()
+    expect(client.resumeTeam).toHaveBeenCalledWith({ teamId: 'team-forward', expectedCursor: 7 })
+    expect(client.listTeams).toHaveBeenCalledWith({})
+    expect(client.getTeam).toHaveBeenCalledWith({ teamId: 'team-forward' })
+    expect(client.listTeamMembers).toHaveBeenCalledWith({ teamId: 'team-forward' })
+    expect(client.listTeamTasks).toHaveBeenCalledWith({ teamId: 'team-forward' })
+    expect(client.getTeamQuiescence).toHaveBeenCalledWith({ teamId: 'team-forward' })
+    expect(client.getTeamMetrics).toHaveBeenCalledWith()
+    expect(client.readTeamAudit).toHaveBeenCalledWith({ teamId: 'team-forward' })
+    expect(client.close).toHaveBeenCalledOnce()
+  })
 })
 
 describe('HarnessClient', () => {
+  it('publishes its spawned runtime pid only after the first protocol request starts the child', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    cleanups.push(() => client.close())
+    expect(client.pid).toBeUndefined()
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    expect(client.pid).toEqual(expect.any(Number))
+    expect(client.pid).toBeGreaterThan(0)
+    await client.close()
+  })
+
   it('times out a hung request at the per-call bound', async () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_HANG_PROMPT: '1' }))
     cleanups.push(() => client.close())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
-    await expect(client.request('session/prompt', { sessionId: 's', contentBlocks: normalizeInput('hi') }, 200))
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await expect(client.request('team/create', { objective: 'Hi.', contentBlocks: normalizeInput('hi') }, 200))
       .rejects.toThrow(RequestTimeoutError)
     await client.close()
   })
@@ -260,9 +335,9 @@ describe('HarnessClient', () => {
   it('a timed-out request leaves no pending transport state', async () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_HANG_PROMPT: '1' }))
     cleanups.push(() => client.close())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     for (let round = 0; round < 3; round++) {
-      await expect(client.request('session/prompt', { sessionId: 's', contentBlocks: normalizeInput('x') }, 50))
+      await expect(client.request('team/create', { objective: 'X.', contentBlocks: normalizeInput('x') }, 50))
         .rejects.toThrow(RequestTimeoutError)
     }
     // Abandonment removed each pending entry at its timeout; a hung method
@@ -277,21 +352,189 @@ describe('HarnessClient', () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_HANG_PROMPT: '1' }, { requestTimeoutMs: 400 }))
     cleanups.push(() => client.close())
     // The bound applies from send, so it holds regardless of runtime boot time.
-    await expect(client.prompt('s', normalizeInput('hi'))).rejects.toThrow(RequestTimeoutError)
+    await expect(client.createTeam({ objective: 'Hi.', contentBlocks: normalizeInput('hi') })).rejects.toThrow(RequestTimeoutError)
     await client.close()
   })
 
-  it('rejects a malformed prompt acceptance as a protocol error', async () => {
+  it('rejects a malformed Team creation result as a protocol error', async () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_MALFORMED: '1' }))
     cleanups.push(() => client.close())
-    await expect(client.prompt('s', normalizeInput('hi'))).rejects.toThrow(SdkProtocolError)
+    await expect(client.createTeam({ objective: 'Hi.', contentBlocks: normalizeInput('hi') })).rejects.toThrow(SdkProtocolError)
     await client.close()
+  })
+
+  it('validates and sends an actor-free detached Team archive request', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    cleanups.push(() => client.close())
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await expect(client.archiveTeam({ teamId: 'detached-terminal', expectedCursor: 3 })).resolves.toEqual({ teamId: 'detached-terminal', archivedAt: 7 })
+    await expect(client.archiveTeam({
+      teamId: 'detached-terminal', expectedCursor: 3, actor: 'forged',
+    } as never)).rejects.toThrow(SdkProtocolError)
+    await client.close()
+  })
+
+  it('reads and acknowledges a principal inbox through the initialized stdio SDK', async () => {
+    const harness = harnessWith()
+    await expect(harness.inboxRead({ afterCursor: 4, limit: 2 })).resolves.toEqual({ items: [], displayCursor: 4, cursor: 6 })
+    await expect(harness.inboxWatch({ afterCursor: 6 })).resolves.toMatchObject({ cursor: 6 })
+    await expect(harness.inboxAcknowledge({ throughCursor: 4 })).resolves.toEqual({ displayCursor: 4 })
+    await expect(harness.client.inboxRead({ principalId: 'other' } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.inboxAcknowledge({ throughCursor: -1 })).rejects.toThrow(SdkProtocolError)
+  })
+
+  it('discovers channel capabilities and preserves explicit summary selection through both SDK layers', async () => {
+    const harness = harnessWith()
+    await harness.start()
+    const catalog = await harness.client.getTeamChannelCatalog()
+    expect(catalog.summary).toMatchObject({ allowedPolicies: ['summarized-window'], maxHistorySpan: 32 })
+    const input = { channelId: 'summary-channel', expectedCursor: 8, coveredSequenceRange: { from: 3, to: 5 }, idempotencyKey: 'chosen-range' }
+    const saved = await harness.client.summarizeTeamChannel(input)
+    expect(saved.value).toMatchObject({ coveredSequenceRange: input.coveredSequenceRange, idempotencyKey: input.idempotencyKey })
+    await expect(harness.client.getTeamChannelCatalog({ actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.summarizeTeamChannel({ ...input, actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.summarizeTeamChannel({ ...input, coveredSequenceRange: { from: 5, to: 3 } })).rejects.toThrow(SdkProtocolError)
+    const team = await harness.createTeam('channel capabilities')
+    expect(await team.channelCatalog()).toEqual(catalog)
+    expect(await team.summarizeChannel(input)).toEqual(saved)
+    await harness.close()
+  })
+
+  it('sends ordered channel media and reads an exact Envelope attachment through both SDK layers', async () => {
+    const harness = harnessWith()
+    await harness.start()
+    const input = { channelId: 'media-channel', expectedCursor: 2, audience: ['peer'], delivery: 'turn' as const,
+      content: [{ type: 'text' as const, text: 'Before' }, { type: 'image' as const, mediaType: 'image/png' as const, data: 'cGl4' }, { type: 'text' as const, text: 'After' }] }
+    await expect(harness.client.inputTeamChannel({ ...input, actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
+    const posted = await harness.client.inputTeamChannel(input)
+    expect(posted.value.payload.content).toMatchObject([{ type: 'text', text: 'Before' }, { type: 'image', attachment: { attachmentId: 'fixture-image' } }, { type: 'text', text: 'After' }])
+    const selection = { teamId: 'team-1', channelId: 'media-channel', envelopeId: posted.value.id, envelopeSequence: posted.value.sequence, attachmentId: 'fixture-image' }
+    await expect(harness.client.readTeamChannelAttachment(selection)).resolves.toMatchObject({ attachment: { attachmentId: 'fixture-image' }, data: 'cGl4' })
+    await expect(harness.client.readTeamChannelAttachment({ ...selection, actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.readTeamChannelAttachment({ ...selection, envelopeSequence: -1 })).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.readTeamChannelAttachment({ teamId: selection.teamId, channelId: selection.channelId, envelopeId: selection.envelopeId, attachmentId: selection.attachmentId } as never)).rejects.toThrow(SdkProtocolError)
+    const team = await harness.createTeam('channel media')
+    expect(await team.inputChannel(input)).toEqual(posted)
+    await expect(team.channelAttachment({ channelId: 'media-channel', envelopeId: posted.value.id, envelopeSequence: posted.value.sequence, attachmentId: 'fixture-image' }))
+      .resolves.toMatchObject({ data: 'cGl4' })
+    await harness.close()
+  })
+
+  it('pages channel projections through stdio and pins the high-level Team identity', async () => {
+    const harness = harnessWith()
+    await harness.start()
+    const first = await harness.client.listTeamChannels({ teamId: 'team-1', limit: 1 })
+    expect(first.items.map(channel => channel.manifest.id)).toEqual(['listed-0'])
+    expect(first.nextCursor).toBe(0)
+    await expect(harness.client.listTeamChannels({ teamId: 'team-1', actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.listTeamChannels({ teamId: 'team-1', limit: 0 })).rejects.toThrow(SdkProtocolError)
+    const team = await harness.createTeam('list channels')
+    const next = await team.channels({ afterCursor: first.nextCursor, limit: 2, teamId: 'forged-team' } as never)
+    expect(next.items.map(channel => channel.manifest.id)).toEqual(['listed-1', 'listed-2'])
+    expect(next.items.every(channel => channel.manifest.teamId === team.id)).toBe(true)
+    expect(next.nextCursor).toBeUndefined()
+    await harness.close()
+  })
+
+  it('reads pending channel admission through the initialized stdio client and Team handle', async () => {
+    const harness = harnessWith()
+    await harness.start()
+    await expect(harness.client.getTeamChannelAdmission({ teamId: 'team-1', channelId: 'pending-channel' }))
+      .resolves.toMatchObject({ value: { channel: { phase: 'pending' }, invitations: [{ status: 'pending' }] } })
+    await expect(harness.client.getTeamChannelAdmission({ teamId: 'team-1', channelId: 'pending-channel', actor: 'forged' } as never))
+      .rejects.toThrow(SdkProtocolError)
+    const team = await harness.createTeam('inspect admission')
+    await expect(team.admission('pending-channel')).resolves.toMatchObject({ value: { channel: { manifest: { teamId: team.id, id: 'pending-channel' } } } })
+    await harness.close()
+  })
+
+  it('reads a visible Team artifact through the low-level and Team-handle SDK APIs', async () => {
+    const harness = harnessWith()
+    await harness.start()
+    await expect(harness.client.readTeamArtifact({ teamId: 'team-1', artifactId: 'artifact-1' })).resolves.toEqual({
+      artifact: { id: 'artifact-1', provider: 'local', kind: 'report', uri: 'artifact://report', visibility: 'team' },
+      bytes: 4,
+      data: 'dGVzdA==',
+    })
+    const team = await harness.createTeam('artifact')
+    await expect(team.readArtifact('artifact-1')).resolves.toMatchObject({ bytes: 4, data: 'dGVzdA==' })
+    await harness.close()
+  })
+
+  it('rejects malformed results from every low-level Team route', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const request = vi.spyOn(client, 'request').mockResolvedValue({})
+    const invite = {
+      teamId: 'team', expectedCursor: 1, kind: 'local-agent' as const, displayName: 'Worker', role: 'reviewer', capabilities: [],
+    }
+    const channelOpen = {
+      teamId: 'team', expectedCursor: 1, adapter: { type: 'direct', version: 3 }, participants: [], limits: {},
+    }
+    const channelPost = {
+      channelId: 'channel', expectedCursor: 1, audience: null, kind: 'message', payload: {}, delivery: 'turn' as const,
+    }
+    const taskCreate = {
+      teamId: 'team', expectedCursor: 1, idempotencyKey: 'sdk-client-task-create', subject: 'Task', description: 'Do the task.', blockedBy: [], requiredCapabilities: [],
+      priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared' as const, budget: {}, reviewPolicy: { kind: 'none' as const }, maxAttempts: 1,
+    }
+    const malformed = async (operation: Promise<unknown>): Promise<void> => {
+      await expect(operation).rejects.toThrow(SdkProtocolError)
+    }
+
+    await malformed(client.listTeams())
+    await malformed(client.getTeam({ teamId: 'team' }))
+    await malformed(client.updateTeamGoal({ teamId: 'team', expectedRevision: 1, objective: 'Update the objective.' }))
+    await malformed(client.transitionTeamGoal({ teamId: 'team', expectedRevision: 2, phase: 'paused' }))
+    await malformed(client.getTeamQuiescence({ teamId: 'team' }))
+    await malformed(client.getTeamMetrics())
+    await malformed(client.inboxRespond({ teamId: 'team', actionId: 'action', expectedUpdatedAt: 1, idempotencyKey: 'answer', answer: { kind: 'approval', outcome: 'rejected' } }))
+    await malformed(client.inboxRead({}))
+    await malformed(client.inboxWatch({ afterCursor: 4, limit: 2 }))
+    await malformed(client.inboxAcknowledge({ throughCursor: 4 }))
+    await malformed(client.readTeamAudit({ teamId: 'team' }))
+    await malformed(client.readTeamArtifact({ teamId: 'team', artifactId: 'artifact' }))
+    await malformed(client.getTeamChannelAdmission({ teamId: 'team', channelId: 'channel' }))
+    await malformed(client.listTeamChannels({ teamId: 'team' }))
+    await malformed(client.inputTeamChannel({ channelId: 'channel', expectedCursor: 1, audience: null, delivery: 'turn', content: [{ type: 'text', text: 'hello' }] }))
+    await malformed(client.readTeamChannelAttachment({ teamId: 'team', channelId: 'channel', envelopeId: 'envelope', envelopeSequence: 1, attachmentId: 'attachment' }))
+    await malformed(client.listTeamMembers({ teamId: 'team' }))
+    await malformed(client.inviteTeamMember(invite))
+    await malformed(client.activateTeamMember({ teamId: 'team', participantId: 'participant', expectedCursor: 1 }))
+    await malformed(client.removeTeamMember({ teamId: 'team', participantId: 'participant', expectedCursor: 1 }))
+    await malformed(client.interruptTeamMember({ teamId: 'team', participantId: 'participant', expectedCursor: 1 }))
+    await malformed(client.openTeamChannel(channelOpen))
+    await malformed(client.postTeamChannel(channelPost))
+    await malformed(client.readTeamChannel({ channelId: 'channel' }))
+    await malformed(client.closeTeamChannel({ channelId: 'channel', expectedCursor: 1 }))
+    await malformed(client.watchTeamChannel({ channelId: 'channel' }))
+    await malformed(client.listTeamTasks({ teamId: 'team' }))
+    await malformed(client.createTeamTask(taskCreate))
+    await malformed(client.getTeamTask({ teamId: 'team', taskId: 'task' }))
+    await malformed(client.updateTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1, subject: 'Changed' }))
+    await malformed(client.cancelTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1 }))
+    await malformed(client.deleteTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1 }))
+    await malformed(client.reviewTeamTask({
+      teamId: 'team', taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Looks good.',
+    }))
+    await malformed(client.watchTeamTasks({ teamId: 'team' }))
+    await malformed(client.resumeTeam({ teamId: 'team', expectedCursor: 1 }))
+    await malformed(client.waitForTeamFinal({ teamId: 'team' }))
+    await malformed(client.cancelTeam({ teamId: 'team' }))
+    await malformed(client.archiveTeam({ teamId: 'team', expectedCursor: 1 }))
+
+    expect(request.mock.calls.map(([method]) => method)).toEqual([
+      'team/list', 'team/get', 'team/goal-update', 'team/goal-transition', 'team/quiescence', 'team/metrics', 'team/inbox-respond', 'team/inbox-read', 'team/inbox-watch', 'team/inbox-acknowledge', 'team/audit-read', 'team/artifact-read', 'team/channel-admission', 'team/channel-list', 'team/channel-input', 'team/channel-attachment', 'team/member-list',
+      'team/member-invite', 'team/member-activate', 'team/member-remove', 'team/member-interrupt', 'team/channel-open',
+      'team/channel-post', 'team/channel-read', 'team/channel-close', 'team/channel-watch', 'team/task-list', 'team/task-create',
+      'team/task-get', 'team/task-update', 'team/task-cancel', 'team/task-delete', 'team/task-review', 'team/task-watch',
+      'team/resume', 'team/wait-final', 'team/cancel', 'team/archive',
+    ])
   })
 
   it('fails pending requests with exit code and stderr tail when the runtime dies', async () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_EXIT_BEFORE_INIT: '1', FAKE_STDERR: 'fatal: scripted death' }))
     cleanups.push(() => client.close())
-    const failure = await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' }).then(
+    const failure = await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' }).then(
       () => { throw new Error('initialize unexpectedly succeeded') },
       (error: unknown) => error,
     )
@@ -305,7 +548,7 @@ describe('HarnessClient', () => {
   it('flushes an unterminated stderr line into the tail at close', async () => {
     const client = new HarnessClient(fakeLaunch({ FAKE_STDERR_NO_NEWLINE: 'no trailing newline', FAKE_EXIT_BEFORE_INIT: '1' }))
     cleanups.push(() => client.close())
-    const failure = await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' }).then(
+    const failure = await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' }).then(
       () => { throw new Error('initialize unexpectedly succeeded') },
       (error: unknown) => error,
     )
@@ -320,7 +563,7 @@ describe('HarnessClient', () => {
 
   it('close() is idempotent, reaps the child, and fails later use', async () => {
     const client = new HarnessClient(fakeLaunch())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     await Promise.all([client.close(), client.close()])
     expect(() => { client.start() }).toThrow(TransportClosedError)
     await expect(client.request('anything')).rejects.toThrow(TransportClosedError)
@@ -336,7 +579,7 @@ describe('HarnessClient', () => {
       { FAKE_IGNORE_EOF: '1', FAKE_SIGTERM_FILE: sigtermFile },
       { shutdownTimeoutMs: 100, disposeEofGraceMs: 100, disposeGraceMs: 1_000 },
     ))
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     await client.close()
     if (process.platform === 'win32') {
       await expect(stat(sigtermFile)).rejects.toMatchObject({ code: 'ENOENT' })
@@ -350,7 +593,7 @@ describe('HarnessClient', () => {
       { FAKE_IGNORE_EOF: '1', FAKE_TRAP_SIGTERM: '1' },
       { shutdownTimeoutMs: 100, disposeEofGraceMs: 100, disposeGraceMs: 300 },
     ))
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     // Resolves (does not hang or reject): the SIGKILL rung reaped the child.
     await client.close()
   })
@@ -358,12 +601,12 @@ describe('HarnessClient', () => {
   it('delivers notifications to unfiltered and filtered subscriptions in wire order', async () => {
     const client = new HarnessClient(fakeLaunch())
     cleanups.push(() => client.close())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
 
     const all = client.subscribe()
     const idleOnly = client.subscribe(n => n.method === 'session.status' && n.params.status === 'idle')
     const firstPending = all.next()
-    await client.prompt('sub-test', normalizeInput('go'))
+    await client.createTeam({ objective: 'Go.', contentBlocks: normalizeInput('go') })
 
     const first = await firstPending
     expect(first.method).toBe('session.event')
@@ -392,13 +635,13 @@ describe('HarnessClient', () => {
   it('contains a throwing filter to its own subscription', async () => {
     const client = new HarnessClient(fakeLaunch())
     cleanups.push(() => client.close())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
 
     const broken = client.subscribe(() => { throw new Error('filter exploded') })
     // A non-Error throw is normalized rather than crashing dispatch.
     const brokenNonError = client.subscribe(() => { throw 'string boom' })
     const healthy = client.subscribe(n => n.method === 'session.status' && n.params.status === 'idle')
-    await client.prompt('filter-contain', normalizeInput('go'))
+    await client.createTeam({ objective: 'Go.', contentBlocks: normalizeInput('go') })
 
     // The sibling subscription and the read loop are undisturbed.
     expect((await healthy.next()).method).toBe('session.status')
@@ -411,10 +654,10 @@ describe('HarnessClient', () => {
 
   it('close() drops queued notifications; runtime death keeps them drainable', async () => {
     const client = new HarnessClient(fakeLaunch())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     const closed = client.subscribe()
     const drainable = client.subscribe()
-    await client.prompt('queue-drop', normalizeInput('go'))
+    await client.createTeam({ objective: 'Go.', contentBlocks: normalizeInput('go') })
     expect(closed.tryNext()).toBeDefined()
     closed.close()
     // Manual close drops the rest of the queue outright.
@@ -428,59 +671,247 @@ describe('HarnessClient', () => {
 
   it('subscriptions created after termination are born failed', async () => {
     const client = new HarnessClient(fakeLaunch())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     await client.close()
     // No producer can ever feed this subscription; next() must not park forever.
     await expect(client.subscribe().next()).rejects.toThrow(TransportClosedError)
 
     const dead = new HarnessClient(fakeLaunch({ FAKE_EXIT_BEFORE_INIT: '1' }))
     cleanups.push(() => dead.close())
-    await dead.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' }).catch(() => {})
+    await dead.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' }).catch(() => {})
     await expect(dead.subscribe().next()).rejects.toThrow(TransportClosedError)
   })
 
   it('closes subscriptions with the runtime and rejects parked waiters', async () => {
     const client = new HarnessClient(fakeLaunch())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
     const subscription = client.subscribe()
     const parked = subscription.next()
     await client.close()
     await expect(parked).rejects.toThrow(TransportClosedError)
   })
 
-  it('scopes the session tree across multi-hop lineage and ignores foreign sessions', async () => {
+  it('opens, observes, interrupts, queries, and disposes an exact activation without closing the runtime', async () => {
     const client = new HarnessClient(fakeLaunch())
     cleanups.push(() => client.close())
-    await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' })
+    await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    const target = activationTarget()
+    const notifications = client.subscribe()
 
-    const tree = client.subscribeSessionTree('root')
-    // Lineage edges arrive as subagent.started notifications.
-    const inject = (method: string, params: Record<string, unknown>): void => {
-      (client as unknown as { dispatchNotification(n: HarnessNotification): void }).dispatchNotification({ method, params })
-    }
-    inject('subagent.started', { parentSessionId: 'root', childSessionId: 'child' })
-    inject('subagent.started', { parentSessionId: 'child', childSessionId: 'grandchild' })
-    inject('session.event', { sessionId: 'grandchild', event: { type: 'noop' } })
-    inject('session.event', { sessionId: 'stranger', event: { type: 'noop' } })
-    inject('subagent.started', { parentSessionId: 'other-root', childSessionId: 'other-child' })
-    inject('subagent.finished', { parentSessionId: 'child', childSessionId: 'grandchild' })
-    // Self-loop and empty edges must not corrupt the lineage map.
-    inject('subagent.started', { parentSessionId: 'loop', childSessionId: 'loop' })
-    inject('subagent.started', { parentSessionId: '', childSessionId: 'x' })
-    inject('subagent.finished', { childSessionId: 'root' })
+    const opened = await client.openActivation({ target, seed: { kind: 'fresh' } })
+    expect(opened).toEqual({ ...target, status: 'idle', statusSequence: 0 })
+    const openingNotification = parseActivationStatusNotification(await notifications.next())
+    expect(openingNotification).toEqual({ state: opened })
+    expect(await client.getActivationStatus({ target })).toEqual(opened)
+    await expect(client.enrollActivationLink({
+      target,
+      binding: { ...target, provider: 'sdk' },
+      enrollment: {
+        provider: 'websocket',
+        endpoint: 'wss://team.example.test/team-link',
+        capability: 'opaque-capability',
+      },
+    })).resolves.toBeUndefined()
 
-    expect((await tree.next()).method).toBe('subagent.started')
-    expect((await tree.next()).method).toBe('subagent.started')
-    expect((await tree.next()).params.sessionId).toBe('grandchild')
-    expect((await tree.next()).method).toBe('subagent.finished')
-    // The foreign-root edge and stranger event were filtered; next is the root-child edge.
-    expect((await tree.next()).params.childSessionId).toBe('root')
-    tree.close()
+    await client.interruptActivation({ target, cause: { kind: 'parent' } })
+    expect(parseActivationStatusNotification(await notifications.next())).toEqual({
+      state: { ...target, status: 'running', statusSequence: 1 },
+    })
+    const disposed = await client.disposeActivation({ target })
+    expect(disposed).toEqual({ ...target, status: 'offline', statusSequence: 2 })
+    expect(parseActivationStatusNotification(await notifications.next())).toEqual({ state: disposed })
+
+    // Activation disposal is local: the same process still accepts new product Teams.
+    await expect(client.createTeam({ objective: 'Still alive.', contentBlocks: normalizeInput('still alive') }))
+      .resolves.toMatchObject({ teamId: expect.any(String) as unknown })
+    notifications.close()
     await client.close()
+  })
+
+  it('rejects malformed activation request, response, acknowledgement, and notification payloads', async () => {
+    const invalid = new HarnessClient(fakeLaunch())
+    cleanups.push(() => invalid.close())
+    await expect(invalid.openActivation({
+      target: activationTarget({ sessionId: '' }),
+      seed: { kind: 'fresh' },
+    })).rejects.toThrow(SdkProtocolError)
+    await expect(invalid.createTeam({ objective: '', contentBlocks: normalizeInput('invalid Team') })).rejects.toThrow(SdkProtocolError)
+    await expect(invalid.enrollActivationLink({
+      target: activationTarget(),
+      binding: { ...activationTarget(), provider: '' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'opaque-capability' },
+    })).rejects.toThrow(SdkProtocolError)
+
+    const malformedOpen = new HarnessClient(fakeLaunch({ FAKE_ACTIVATION_MALFORMED_OPEN_RESULT: '1' }))
+    cleanups.push(() => malformedOpen.close())
+    await malformedOpen.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await expect(malformedOpen.openActivation({ target: activationTarget(), seed: { kind: 'fresh' } })).rejects.toThrow(SdkProtocolError)
+
+    const malformedInterrupt = new HarnessClient(fakeLaunch({ FAKE_ACTIVATION_MALFORMED_INTERRUPT_RESULT: '1' }))
+    cleanups.push(() => malformedInterrupt.close())
+    await malformedInterrupt.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await malformedInterrupt.openActivation({ target: activationTarget(), seed: { kind: 'fresh' } })
+    await expect(malformedInterrupt.interruptActivation({ target: activationTarget(), cause: { kind: 'user' } }))
+      .rejects.toThrow(SdkProtocolError)
+
+    const malformedDispose = new HarnessClient(fakeLaunch({ FAKE_ACTIVATION_MALFORMED_DISPOSE_RESULT: '1' }))
+    cleanups.push(() => malformedDispose.close())
+    await malformedDispose.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await malformedDispose.openActivation({ target: activationTarget(), seed: { kind: 'fresh' } })
+    await expect(malformedDispose.disposeActivation({ target: activationTarget() })).rejects.toThrow(SdkProtocolError)
+
+    const malformedEnrollment = new HarnessClient(fakeLaunch({ FAKE_ACTIVATION_MALFORMED_LINK_ENROLL_RESULT: '1' }))
+    cleanups.push(() => malformedEnrollment.close())
+    await malformedEnrollment.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' })
+    await expect(malformedEnrollment.enrollActivationLink({
+      target: activationTarget(),
+      binding: { ...activationTarget(), provider: 'sdk' },
+      enrollment: { provider: 'websocket', endpoint: 'wss://team.example.test/team-link', capability: 'opaque-capability' },
+    })).rejects.toThrow(SdkProtocolError)
+
+    expect(parseActivationStatusNotification({ method: 'session.status', params: {} })).toBeUndefined()
+    expect(() => parseActivationStatusNotification({ method: 'activation.status', params: { state: { activationId: 'bad' } } }))
+      .toThrow(SdkProtocolError)
+  })
+})
+
+describe('HarnessTeam forwarding', () => {
+  it('forwards every Team inspection and lifecycle helper with the stable Team identity', async () => {
+    const start = vi.fn(async () => undefined)
+    const client = {
+      resumeTeam: vi.fn(async () => ({ teamId: 'team-forward', coordinatorSessionId: 'coordinator-forward' })),
+      getTeam: vi.fn(async () => ({ state: { team: { cursor: 41 } } })),
+      listTeamMembers: vi.fn(async () => ({ items: [] })),
+      listTeamTasks: vi.fn(async () => ({ items: [] })),
+      updateTeamGoal: vi.fn(async () => ({ state: {} })),
+      transitionTeamGoal: vi.fn(async () => ({ state: {} })),
+      getTeamQuiescence: vi.fn(async () => ({ value: {} })),
+      getTeamMetrics: vi.fn(async () => ({})),
+      readTeamAudit: vi.fn(async () => ({ teamId: 'team-forward', items: [] })),
+      readTeamArtifact: vi.fn(async () => ({ artifact: {}, bytes: 0, data: '' })),
+      inviteTeamMember: vi.fn(async () => ({ value: {} })),
+      activateTeamMember: vi.fn(async () => ({ value: {} })),
+      removeTeamMember: vi.fn(async () => ({ value: {} })),
+      interruptTeamMember: vi.fn(async () => ({ value: {} })),
+      openTeamChannel: vi.fn(async () => ({ value: {} })),
+      postTeamChannel: vi.fn(async () => ({ value: {} })),
+      readTeamChannel: vi.fn(async () => ({ value: {} })),
+      closeTeamChannel: vi.fn(async () => ({ value: {} })),
+      watchTeamChannel: vi.fn(async () => ({ value: {} })),
+      createTeamTask: vi.fn(async () => ({ value: {} })),
+      getTeamTask: vi.fn(async () => ({ value: {} })),
+      updateTeamTask: vi.fn(async () => ({ value: {} })),
+      cancelTeamTask: vi.fn(async () => ({ value: {} })),
+      deleteTeamTask: vi.fn(async () => ({ value: {} })),
+      reviewTeamTask: vi.fn(async () => ({ value: {} })),
+      watchTeamTasks: vi.fn(async () => ({ value: {} })),
+      waitForTeamFinal: vi.fn(async () => ({ teamId: 'team-forward', channelId: 'channel', envelopeId: 'envelope', text: 'done' })),
+      cancelTeam: vi.fn(async () => ({ phase: 'cancelled' as const })),
+      archiveTeam: vi.fn(async () => ({ teamId: 'team-forward', archivedAt: 42 })),
+    }
+    const harness = { start, client } as unknown as Clocky
+    const team = new HarnessTeam(harness, 'team-forward', 'coordinator-forward')
+
+    await team.resume({ expectedCursor: 12 })
+    await team.state()
+    await team.updateGoal({ teamId: 'forged-goal-team', expectedRevision: 1, objective: 'Update the objective.' } as never)
+    await team.transitionGoal({ teamId: 'forged-transition-team', expectedRevision: 2, phase: 'paused' } as never)
+    await team.members({ afterCursor: 2, limit: 3, teamId: 'forged-members-team' } as never)
+    await team.members()
+    await team.tasks({ afterCursor: 4, limit: 5, teamId: 'forged-tasks-team' } as never)
+    await team.tasks()
+    await team.quiescence()
+    await team.metrics()
+    await team.audit({ channelId: 'channel', afterCursor: 6, limit: 7, teamId: 'forged-audit-team' } as never)
+    await team.readArtifact('artifact')
+    await team.inviteMember({ teamId: 'forged-invite-team', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'reviewer', capabilities: [] } as never)
+    await team.activateMember({ teamId: 'forged-activate-team', participantId: 'participant', expectedCursor: 1 } as never)
+    await team.removeMember({ teamId: 'forged-remove-team', participantId: 'participant', expectedCursor: 1 } as never)
+    await team.interruptMember({ teamId: 'forged-interrupt-team', participantId: 'participant', expectedCursor: 1 } as never)
+    await team.openChannel({ teamId: 'forged-channel-team', expectedCursor: 1, adapter: { type: 'direct', version: 3 }, participants: [], limits: {} } as never)
+    await team.postChannel({ channelId: 'channel', expectedCursor: 1, audience: null, kind: 'message', payload: {}, delivery: 'turn' })
+    await team.channel('channel', 8, 9)
+    await team.channel('channel')
+    await team.closeChannel({ channelId: 'channel', expectedCursor: 1 })
+    await team.watchChannel('channel', 10)
+    await team.watchChannel('channel')
+    await team.createTask({
+      expectedCursor: 1, idempotencyKey: 'sdk-team-task-create', subject: 'Task', description: 'Do the task.', blockedBy: [], requiredCapabilities: [], priority: 0,
+      readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+    })
+    await team.task('task')
+    await team.updateTask({ taskId: 'task', expectedRevision: 1, subject: 'Changed' })
+    await team.cancelTask({ taskId: 'task', expectedRevision: 1 })
+    await team.deleteTask({ taskId: 'task', expectedRevision: 1 })
+    await team.reviewTask({ taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Looks good.' })
+    await team.watchTasks(11)
+    await team.watchTasks()
+    await team.waitForFinal()
+    await team.cancel()
+    await team.archive()
+
+    expect(client.listTeamMembers).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 2, limit: 3 })
+    expect(client.listTeamTasks).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 4, limit: 5 })
+    expect(client.updateTeamGoal).toHaveBeenCalledWith({ teamId: 'team-forward', expectedRevision: 1, objective: 'Update the objective.' })
+    expect(client.transitionTeamGoal).toHaveBeenCalledWith({ teamId: 'team-forward', expectedRevision: 2, phase: 'paused' })
+    expect(client.readTeamAudit).toHaveBeenCalledWith({ teamId: 'team-forward', channelId: 'channel', afterCursor: 6, limit: 7 })
+    expect(client.readTeamChannel).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 8, limit: 9 })
+    expect(client.watchTeamChannel).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 10 })
+    expect(client.watchTeamTasks).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 11 })
+    expect(client.archiveTeam).toHaveBeenCalledWith({ teamId: 'team-forward', expectedCursor: 41 })
+    expect(start).toHaveBeenCalled()
+  })
+
+  it('keeps every task mutation pinned to the handle Team when runtime values carry another teamId', async () => {
+    const start = vi.fn(async () => undefined)
+    const client = {
+      createTeamTask: vi.fn(async () => ({ value: {} })),
+      updateTeamTask: vi.fn(async () => ({ value: {} })),
+      cancelTeamTask: vi.fn(async () => ({ value: {} })),
+      deleteTeamTask: vi.fn(async () => ({ value: {} })),
+      reviewTeamTask: vi.fn(async () => ({ value: {} })),
+    }
+    const team = new HarnessTeam({ start, client } as unknown as Clocky, 'team-bound', 'coordinator-bound')
+
+    await team.createTask({
+      teamId: 'team-untrusted', expectedCursor: 1, idempotencyKey: 'sdk-task-bound-create', subject: 'Task', description: 'Do the task.',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+    } as never)
+    await team.updateTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, subject: 'Changed' } as never)
+    await team.cancelTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
+    await team.deleteTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
+    await team.reviewTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Reviewed.' } as never)
+
+    expect(client.createTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(client.updateTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(client.cancelTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(client.deleteTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(client.reviewTeamTask).toHaveBeenCalledWith(expect.objectContaining({ teamId: 'team-bound' }))
+    expect(start).toHaveBeenCalledTimes(5)
   })
 })
 
 describe('wire payload validation', () => {
+  it('preserves valid channel views and rejects the shared invalid wire corpus', async () => {
+    const corpus = JSON.parse(await readFile(
+      new URL('../../protocol/tests/fixtures/team-channel-view-cases.json', import.meta.url),
+      'utf8',
+    )) as { readonly name: string; readonly valid: boolean; readonly event: Record<string, unknown> }[]
+    for (const entry of corpus) {
+      const harness = harnessWith({ FAKE_SESSION_EVENT_JSON: JSON.stringify(entry.event) })
+      try {
+        if (entry.valid) {
+          const result = await harness.run(entry.name)
+          expect(result.events.find(event => event.type === 'team/channel-view'), entry.name).toEqual(entry.event)
+        } else {
+          await expect(harness.run(entry.name), entry.name).rejects.toThrow(SdkProtocolError)
+        }
+      } finally {
+        await harness.close()
+      }
+    }
+  })
+
   it('rejects a non-object session.event envelope as a protocol error', async () => {
     const harness = harnessWith({ FAKE_MALFORMED_EVENT: '1' })
     await expect(harness.run('bad-event')).rejects.toThrow(SdkProtocolError)
@@ -503,7 +934,7 @@ describe('stderr tail bound', () => {
     const manyLines = Array.from({ length: 450 }, (_, i) => `line-${i}`).join('\n')
     const client = new HarnessClient(fakeLaunch({ FAKE_STDERR: manyLines, FAKE_EXIT_BEFORE_INIT: '1' }))
     cleanups.push(() => client.close())
-    const failure = await client.initialize({ cwd: process.cwd(), provider: 'p', model: 'm' }).then(
+    const failure = await client.initialize({ credential: TEST_CREDENTIAL, cwd: process.cwd(), provider: 'p', model: 'm' }).then(
       () => { throw new Error('initialize unexpectedly succeeded') },
       (error: unknown) => error,
     )
@@ -521,12 +952,9 @@ describe('pure helpers', () => {
     expect(normalizeInput(blocks)).toBe(blocks)
   })
 
-  it('finalResponse reads the last assistant message and tolerates absence', () => {
-    expect(finalResponse([])).toBe('')
-    expect(finalResponse([{ type: 'turn/start', seq: 0, time: 0, data: { turn: 0 } } as never])).toBe('')
-    expect(finalResponse([
-      { type: 'assistant/message', seq: 0, time: 0, data: { message: { content: [{ type: 'text', text: 'first' }] } } } as never,
-      { type: 'assistant/message', seq: 1, time: 0, data: { message: { content: [{ type: 'text', text: 'a' }, { type: 'tool-call' }, { type: 'text', text: 'b' }] } } } as never,
-    ])).toBe('ab')
+  it('derives a text objective and preserves an explicit objective', () => {
+    const blocks = [{ type: 'text' as const, text: 'first' }, { type: 'text' as const, text: 'second' }]
+    expect(resolveObjective(blocks, blocks, undefined)).toBe('first\nsecond')
+    expect(resolveObjective(blocks, blocks, '  Custom objective.  ')).toBe('Custom objective.')
   })
 })

@@ -43,7 +43,8 @@ export type {
   MuxFrame, PromptContentPart, QuestionResponsePayload, QueueAction, RpcError, RpcId, RpcReceipt,
   RpcRequest, RpcResponse, RpcResult, SessionId, SessionModels, SessionSearchItem,
   SessionSummary, SettingsNamespaceView, SettingsPathOpView, SkillEntry, StreamChunk,
-  SubagentAddress, SubagentCatalog, JobView, ToolCallView, ToolEventView, ToolResultView,
+  JobView, ToolCallView, ToolEventView, ToolResultView,
+  TeamAuditList, TeamFinal, TeamInputReceipt, TeamMemberList, TeamStartResult, TeamTaskList, TeamsApi,
   WorkspaceId, WorkspaceView,
 } from '@clocky/clocky-client-connection/client'
 export type {} from '@clocky/clocky-api-gateway/client'

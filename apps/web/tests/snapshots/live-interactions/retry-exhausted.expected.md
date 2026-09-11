@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Reply with a one-sentence description" [disabled]
-  - img
-  - text: Standard mode
+  - text: Reply with a one-sentence description
   - button "Session log":
     - text: Session log
     - img

@@ -138,7 +138,7 @@ describe('session.search', () => {
       eventFilters: [
         {
           kind: 'type',
-          values: ['user/message', 'assistant/message'],
+          values: ['user/message', 'team/channel-view', 'assistant/message'],
         },
         { kind: 'surface', values: ['current'] },
       ],

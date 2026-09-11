@@ -1,0 +1,30 @@
+{
+  "adapter": {
+    "type": "direct",
+    "version": 4
+  },
+  "invitation": "acknowledged",
+  "metadataEndpoints": 2,
+  "channelListContinuations": 2,
+  "staleAcknowledgementError": "team-channel-cursor-conflict",
+  "cancelledChannel": "closed",
+  "cancelledInvitation": "cancelled",
+  "observedContext": true,
+  "broadcast": true,
+  "orderedContentTypes": [
+    "text",
+    "image",
+    "text"
+  ],
+  "imagePreviewLoaded": true,
+  "modelImageCapability": true,
+  "selectedViewPolicy": {
+    "type": "summarized-window",
+    "version": 1
+  },
+  "summaryCoversSelectedMessage": true,
+  "summaryRetainsContext": true,
+  "backgroundHistoryStable": true,
+  "modelText": "通道消息已经收到。",
+  "pageErrors": []
+}

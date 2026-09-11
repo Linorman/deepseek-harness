@@ -79,6 +79,7 @@ describe('client bundle purity gate', () => {
     expect(resolveId('@clocky/clocky-host-apiproxy/api')).toBeNull()
     expect(resolveId('@clocky/clocky-session/surface')).toBeNull()
     expect(resolveId('@clocky/clocky-brand')).toBeNull()
+    expect(resolveId('@clocky/clocky-team/schema')).toBeNull()
   })
 
   it('lets exact generated Remote contributions inline without admitting their package implementation', () => {
@@ -91,6 +92,7 @@ describe('client bundle purity gate', () => {
   it('throws on any other @clocky leak', () => {
     expect(() => resolveId('@clocky/clocky-agent')).toThrow(/purity/)
     expect(() => resolveId('@clocky/clocky-client-web')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-team')).toThrow(/purity/)
   })
 
   it('throws on cross-plugin value imports — bare plugin names and /client subpaths alike', () => {

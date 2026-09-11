@@ -1,10 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk'
-import { AttachmentError } from '@clocky/clocky-attachment'
-import { SessionId } from '@clocky/clocky-session'
-import { makeBridgeHarness, textResponse, type BridgeHarness } from './harness.ts'
+import { makeBridgeHarness, type BridgeHarness } from './harness.ts'
 
-describe('automation-only ACP bridge', () => {
+describe('ACP Team-run bridge', () => {
   let harness: BridgeHarness | undefined
 
   afterEach(async () => {
@@ -12,216 +10,104 @@ describe('automation-only ACP bridge', () => {
     harness = undefined
   })
 
-  it('advertises only fresh text sessions', async () => {
-    harness = await makeBridgeHarness()
-    const response = await harness.client.initialize({
-      protocolVersion: PROTOCOL_VERSION,
-      clientCapabilities: { _meta: { terminal_output: true } },
-    })
-
-    expect(response).toEqual({
-      protocolVersion: PROTOCOL_VERSION,
-      agentInfo: { name: 'clocky-acp', version: '0.0.1' },
-      agentCapabilities: {
-        promptCapabilities: { image: false, audio: false, embeddedContext: false },
-      },
-      authMethods: [],
-    })
-  })
-
-  it('advertises image prompts only with an exact capable route and attachment store', async () => {
-    harness = await makeBridgeHarness({ imageCapable: true })
-    const capable = await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    expect(capable.agentCapabilities?.promptCapabilities?.image).toBe(true)
-    await harness.dispose()
-
-    harness = await makeBridgeHarness({ imageCapable: true, attachments: false })
-    const noStore = await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    expect(noStore.agentCapabilities?.promptCapabilities?.image).toBe(false)
-  })
-
-  it('negotiates an unsupported version and accepts the required no-op authentication call', async () => {
-    harness = await makeBridgeHarness()
-    const response = await harness.client.initialize({ protocolVersion: 0, clientCapabilities: {} })
-    expect(response.protocolVersion).toBe(PROTOCOL_VERSION)
-    await expect(harness.client.authenticate({ methodId: 'unused' })).resolves.toEqual({})
-  })
-
-  it('creates a session, emits one committed answer, and settles the prompt', async () => {
-    harness = await makeBridgeHarness({ script: [textResponse('hello there')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+  it('creates an opaque ACP projection of one Team and completes it through an explicit final Envelope', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{ kind: 'final', text: 'Completed Team result.' }] })
+    const initialized = await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
     const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-    const result = await harness.client.prompt({
-      sessionId,
-      prompt: [{ type: 'text', text: 'say hello' }],
-    })
+    const [team] = (await harness.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).items
+    if (team === undefined) throw new Error('expected ACP Team')
+    const coordinator = harness.ctx.agents.list().find(agent => agent.session.header.teamId === team.id)
 
-    expect(result.stopReason).toBe('end_turn')
-    await vi.waitFor(() => { expect(harness!.updates).toHaveLength(1) })
-    expect(harness.updates).toEqual([{
-      sessionUpdate: 'agent_message_chunk',
-      content: { type: 'text', text: 'hello there' },
-    }])
-    expect(harness.ctx.agents.get(SessionId(sessionId))?.session.header.cwd).toBe(process.cwd())
-    expect(harness.adapter.requests[0]?.messages.at(-1)?.content).toEqual([{ type: 'text', text: 'say hello' }])
-  })
-
-  it('leaves absent agent targets for request listeners to supply', async () => {
-    harness = await makeBridgeHarness({ config: { provider: undefined, model: undefined } })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-
-    expect(harness.ctx.agents.get(SessionId(sessionId))?.options).toEqual({})
-  })
-
-  it('concatenates text blocks without exposing protocol framing to the model', async () => {
-    harness = await makeBridgeHarness({ script: [textResponse('done')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-    await harness.client.prompt({
-      sessionId,
-      prompt: [
-        { type: 'text', text: 'first' },
-        { type: 'text', text: ' second' },
-      ],
-    })
-
-    expect(harness.adapter.requests[0]?.messages.at(-1)?.content).toEqual([{ type: 'text', text: 'first second' }])
-  })
-
-  it('admits mixed text/image prompts in wire order and logs references only', async () => {
-    harness = await makeBridgeHarness({ imageCapable: true, script: [textResponse('done')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const resolve = vi.spyOn(harness.ctx.llm, 'resolveModelInfo')
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-
-    await harness.client.prompt({
-      sessionId,
-      prompt: [
-        { type: 'text', text: 'before' },
-        { type: 'image', data: 'AQ==', mimeType: 'image/png' },
-        { type: 'text', text: 'between' },
-        { type: 'image', data: 'Ag==', mimeType: 'image/jpeg' },
-        { type: 'text', text: 'after' },
-      ],
-    })
-
-    expect(resolve).toHaveBeenCalledWith('mock', 'mock', expect.any(AbortSignal))
-    expect(harness.attachments?.saved.map(input => [...input.data])).toEqual([[1], [2]])
-    const requestContent = harness.adapter.requests[0]?.messages.at(-1)?.content
-    expect(requestContent?.map(block => block.type)).toEqual(['text', 'image', 'text', 'image', 'text'])
-    expect(requestContent?.[0]).toEqual({ type: 'text', text: 'before' })
-    expect(requestContent?.[2]).toEqual({ type: 'text', text: 'between' })
-    expect(requestContent?.[4]).toEqual({ type: 'text', text: 'after' })
-    const firstImage = requestContent?.[1]
-    const secondImage = requestContent?.[3]
-    if (firstImage?.type !== 'image' || secondImage?.type !== 'image') throw new Error('expected ordered image blocks')
-    expect(firstImage.attachment.mediaType).toBe('image/png')
-    expect(firstImage.attachment.bytes).toBe(1)
-    expect(secondImage.attachment.mediaType).toBe('image/jpeg')
-    expect(secondImage.attachment.bytes).toBe(1)
-    const agent = harness.ctx.agents.get(SessionId(sessionId))
-    expect(JSON.stringify(agent?.session.events)).not.toContain('AQ==')
-  })
-
-  it('rejects a malformed image batch atomically and frees the prompt slot', async () => {
-    harness = await makeBridgeHarness({ imageCapable: true, script: [textResponse('recovered')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-
-    await expect(harness.client.prompt({
-      sessionId,
-      prompt: [
-        { type: 'image', data: 'AQ==', mimeType: 'image/png' },
-        { type: 'image', data: 'not base64', mimeType: 'image/png' },
-      ],
-    })).rejects.toThrow(/canonical base64/)
-    expect(harness.attachments?.saved).toEqual([])
-
-    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'retry' }] }))
+    expect(initialized.agentCapabilities?.promptCapabilities).toEqual({ image: false, audio: false, embeddedContext: false })
+    expect(sessionId).not.toBe(coordinator?.session.id)
+    expect(coordinator?.session.header.teamId).toBe(team.id)
+    expect(typeof coordinator?.session.header.participantId).toBe('string')
+    expect(coordinator?.session.header.cwd).toBe(process.cwd())
+    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Complete this task.' }] }))
       .resolves.toEqual({ stopReason: 'end_turn' })
-  })
 
-  it('reports durable image write failures as internal prompt failures', async () => {
-    harness = await makeBridgeHarness({ imageCapable: true })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-    vi.spyOn(harness.attachments!, 'saveImages').mockRejectedValueOnce(
-      new AttachmentError('disk failed', 'ATTACHMENT_WRITE_FAILED'),
-    )
-
-    await expect(harness.client.prompt({
+    expect(harness.sessionUpdates).toEqual([{
       sessionId,
-      prompt: [{ type: 'image', data: 'AQ==', mimeType: 'image/png' }],
-    })).rejects.toThrow(/unable to persist the prompt image batch/)
+      update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Completed Team result.' } },
+    }])
+    const request = harness.adapter.requests[0]
+    const message = request?.messages.at(-1)
+    if (message === undefined || message.role !== 'user') throw new Error('expected coordinator user message')
+    const [prefix, input] = message.content
+    expect(prefix).toMatchObject({ type: 'text' })
+    if (prefix?.type !== 'text') throw new Error('expected direct-message prefix')
+    expect(prefix.text).toContain('Direct message from')
+    expect(input).toEqual({ type: 'text', text: 'Complete this task.' })
+    await expect(harness.ctx.teams.getTeam({ teamId: team.id })).resolves.toMatchObject({ team: { phase: 'completed' } })
+    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'again' }] }))
+      .rejects.toThrow('ACP session is complete')
   })
 
-  it('renders the deployment persona for an ACP-created agent', async () => {
-    harness = await makeBridgeHarness({ persona: 'Automation persona for {{model}} in {{cwd}}.', script: [textResponse('ok')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
-    await harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'go' }] })
-    expect(harness.adapter.requests[0]?.system).toContain(`Automation persona for mock in ${process.cwd()}.`)
-  })
-
-  it('requires one absolute workspace and no MCP servers', async () => {
-    harness = await makeBridgeHarness()
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-
-    await expect(harness.client.newSession({ cwd: 'relative', mcpServers: [] })).rejects.toThrow(/absolute path/)
-    await expect(harness.client.newSession({
-      cwd: process.cwd(),
-      mcpServers: [],
-      additionalDirectories: ['/tmp/other'],
-    })).rejects.toThrow(/additionalDirectories/)
-    await expect(harness.client.newSession({
-      cwd: process.cwd(),
-      mcpServers: [{ name: 'fs', command: 'node', args: [], env: [] }],
-    })).rejects.toThrow(/mcpServers/)
-
-    await expect(harness.client.newSession({
-      cwd: process.cwd(),
-      mcpServers: [],
-      additionalDirectories: [],
-    })).resolves.toHaveProperty('sessionId')
-  })
-
-  it('rejects empty and unadvertised image prompts before a turn starts', async () => {
-    harness = await makeBridgeHarness()
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+  it('admits image input into the direct-v3 human Envelope without persisting inline base64', async () => {
+    harness = await makeBridgeHarness({ imageCapable: true, scenarios: [{ kind: 'final', text: 'Image reviewed.' }] })
+    const initialized = await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
     const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
 
-    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: '  ' }] }))
-      .rejects.toThrow(/empty prompt/)
-    await expect(harness.client.prompt({
-      sessionId,
-      prompt: [{ type: 'image', data: '', mimeType: 'image/png' }],
-    })).rejects.toThrow(/inline image prompts were not advertised/)
-    expect(harness.ctx.agents.get(SessionId(sessionId))?.session.events.some(event => event.type === 'turn/start')).toBe(false)
-  })
-
-  it('renders baseline resource links as textual references in the user message', async () => {
-    harness = await makeBridgeHarness({ script: [textResponse('done')] })
-    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+    expect(initialized.agentCapabilities?.promptCapabilities?.image).toBe(true)
     await harness.client.prompt({
       sessionId,
       prompt: [
-        { type: 'text', text: 'summarize' },
-        { type: 'resource_link', name: 'notes.txt', uri: 'file:///tmp/notes.txt' },
+        { type: 'text', text: 'Inspect this image.' },
+        { type: 'image', data: 'AQ==', mimeType: 'image/png' },
       ],
     })
-    expect(harness.adapter.requests[0]?.messages.at(-1)?.content).toEqual([{
-      type: 'text',
-      text: 'summarize\n[resource_link name="notes.txt" uri="file:///tmp/notes.txt"]\n',
+
+    expect(harness.attachments?.saved.map(item => [...item.data])).toEqual([[1]])
+    const content = harness.adapter.requests[0]?.messages.at(-1)?.content
+    expect(content?.map(block => block.type)).toEqual(['text', 'text', 'image'])
+    expect(JSON.stringify(content)).not.toContain('AQ==')
+  })
+
+  it('preserves committed coordinator text and avoids duplicating an equal final Envelope', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{
+      kind: 'final', text: 'The exact final answer.', assistantText: 'The exact final answer.',
+    }] })
+    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+
+    await harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Answer.' }] })
+
+    expect(harness.sessionUpdates).toEqual([{
+      sessionId,
+      update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'The exact final answer.' } },
     }])
   })
 
-  it('rejects prompts for unknown sessions and ignores unknown cancellation', async () => {
-    harness = await makeBridgeHarness()
+  it('adds an explicit final output after earlier committed coordinator text', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{
+      kind: 'final', text: 'Final answer.', assistantText: 'Working result.',
+    }] })
     await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
-    await expect(harness.client.prompt({ sessionId: 'missing', prompt: [{ type: 'text', text: 'go' }] }))
-      .rejects.toThrow(/unknown session/)
-    await expect(harness.client.cancel({ sessionId: 'missing' })).resolves.toBeUndefined()
+    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+
+    await harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Answer.' }] })
+
+    expect(harness.sessionUpdates).toEqual([
+      { sessionId, update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Working result.' } } },
+      { sessionId, update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'Final answer.' } } },
+    ])
+  })
+
+  it('reports a coordinator turn that ends without an explicit final Envelope', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{ kind: 'no-final' }] })
+    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+
+    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Finish silently.' }] }))
+      .rejects.toThrow('coordinator turn ended completed before an explicit final Envelope')
+  })
+
+  it('rejects the prompt when a committed coordinator image cannot be projected to ACP', async () => {
+    harness = await makeBridgeHarness({ scenarios: [{ kind: 'final', text: 'Final answer.', missingImage: true }] })
+    await harness.client.initialize({ protocolVersion: PROTOCOL_VERSION, clientCapabilities: {} })
+    const { sessionId } = await harness.client.newSession({ cwd: process.cwd(), mcpServers: [] })
+
+    await expect(harness.client.prompt({ sessionId, prompt: [{ type: 'text', text: 'Answer.' }] }))
+      .rejects.toThrow('assistant output delivery failed')
   })
 })

@@ -1,1 +1,1 @@
-{"sessionId":"{{sessionId}}","finalResponse":"SDK snapshot OK"}
+{"teamId":"team-{{sessionId}}","finalResponse":"SDK snapshot OK","final":{"teamId":"team-{{sessionId}}","channelId":"channel-{{sessionId}}","envelopeId":"envelope-{{sessionId}}","text":"SDK snapshot OK"}}

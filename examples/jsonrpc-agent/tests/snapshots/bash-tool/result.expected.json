@@ -1,1 +1,1 @@
-{"sessionId":"{{sessionId}}","finalResponse":"clocky-sdk-proof-7391"}
+{"teamId":"team-{{sessionId}}","finalResponse":"clocky-sdk-proof-7391","final":{"teamId":"team-{{sessionId}}","channelId":"channel-{{sessionId}}","envelopeId":"envelope-{{sessionId}}","text":"clocky-sdk-proof-7391"}}

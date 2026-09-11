@@ -3,7 +3,7 @@
 
 # Session Persistence Event Catalog
 
-Every event type that can appear in a session's durable event log: the complete persisted `SessionEvent` envelope and each member of the merge-extensible `SessionEventMap` — the owning vocabulary in `@deepseek-ai/dsh-session` plus every plugin declaration merge into `@deepseek-ai/dsh-session/types` in this repo — with source JSDoc, full payload declaration, surface badge, and declaration site. It complements [session.md](subsystems/session.md) (surface ordering and the `deriveMessages()` projection), [persistence.md](subsystems/persistence.md) (how the log is made durable), and the generated region of [session.md](subsystems/session.md#cordis-surface) (the live bus wiring — a log event is NOT a cordis event; it reaches listeners via the single `session/event` emit).
+Every event type that can appear in a session's durable event log: the complete persisted `SessionEvent` envelope and each member of the merge-extensible `SessionEventMap` — the owning vocabulary in `@clocky/clocky-session` plus every plugin declaration merge into `@clocky/clocky-session/types` in this repo — with source JSDoc, full payload declaration, surface badge, and declaration site. It complements [session.md](subsystems/session.md) (surface ordering and the `deriveMessages()` projection), [persistence.md](subsystems/persistence.md) (how the log is made durable), and the generated region of [session.md](subsystems/session.md#cordis-surface) (the live bus wiring — a log event is NOT a cordis event; it reaches listeners via the single `session/event` emit).
 
 This file is GENERATED from source (`scripts/gen-persistence-catalog.ts`) and verified fresh by `pnpm run verify-persistence-catalog` (part of `doc-sync`) — do not edit it by hand. Declaration blocks retain the source declaration and nested property JSDoc, removing only the indentation imposed by a containing interface/module, and use a `ts persistence-catalog` fence (skipped by doc-typecheck because declarations reference types from their owning modules). Type names in a payload link to the page that documents them. See [the persistence-log-catalog Agent Note](../.agents/notes/archived/process/2026-07-04-persistence-log-catalog.md).
 
@@ -22,6 +22,7 @@ export type SessionEventType = keyof SessionEventMap
  */
 export type SurfaceEventType =
   | 'user/message'
+  | 'team/channel-view'
   | 'assistant/message'
   | 'tool/result'
 
@@ -50,7 +51,7 @@ export type SurfaceOp =
  *
  * The {@link sourceEventSeqs} and {@link surfaceOp} fields are conditional:
  * they only exist on {@link SurfaceEventType} variants (`user/message`,
- * `assistant/message`, `tool/result`).
+ * `team/channel-view`, `assistant/message`, `tool/result`).
  * Non-surface events (boundary markers, chunks, usage, errors) never carry
  * surface metadata — the compiler enforces this at `Session.append()`
  * call sites.
@@ -73,7 +74,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
      * defaulting to required means a forgotten marker over-refuses (an
      * inconvenience) rather than silently resuming a gutted session.
      */
-    ignorable?: true
+    ignorable?: K extends 'team/channel-view' ? never : true
   } & (K extends SurfaceEventType ? {
     /**
      * Seq numbers of earlier events that this event cites as sources
@@ -90,7 +91,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 }[T]
 ```
 
-Sources: [`packages/core/session/src/types.ts:340`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:347`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:376`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:408`](../packages/core/session/src/types.ts)
+Sources: [`packages/core/session/src/types.ts:409`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:416`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:446`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:478`](../packages/core/session/src/types.ts)
 
 ## Events
 
@@ -134,6 +135,22 @@ Source: [`packages/core/agent/src/types.ts:19`](../packages/core/agent/src/types
 ```
 
 Source: [`packages/preset/agent-presets/src/session.ts:26`](../packages/preset/agent-presets/src/session.ts)
+
+### `agent-runtime-acp/*`
+
+<a id="agent-runtime-acpprompt-completed--log-only"></a>
+
+#### `agent-runtime-acp/prompt-completed` — log-only
+
+```ts persistence-catalog
+/**
+ * Records a successful ACP response before the source Envelope receipt.
+ * @param data - exact Team, participant, channel, Envelope, and response facts.
+ */
+'agent-runtime-acp/prompt-completed': AcpPromptCompletedData
+```
+
+Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:98`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
 
 ### `approval/*`
 
@@ -215,7 +232,7 @@ Source: [`packages/interaction/user-approval/src/index.ts:67`](../packages/inter
 
 Types: [StreamChunk](subsystems/llm-streaming.md)
 
-Source: [`packages/core/session/src/types.ts:266`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:335`](../packages/core/session/src/types.ts)
 
 <a id="assistantmessage--surface"></a>
 
@@ -237,7 +254,7 @@ Source: [`packages/core/session/src/types.ts:266`](../packages/core/session/src/
 
 Types: [TokenUsage](subsystems/llm-streaming.md)
 
-Source: [`packages/core/session/src/types.ts:277`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:346`](../packages/core/session/src/types.ts)
 
 ### `command/*`
 
@@ -407,7 +424,7 @@ Source: [`packages/compaction/compaction/src/types.ts:33`](../packages/compactio
 'feedback/record': { text: string }
 ```
 
-Source: [`packages/feedback/command-feedback/src/index.ts:62`](../packages/feedback/command-feedback/src/index.ts)
+Source: [`packages/feedback/command-feedback/src/index.ts:61`](../packages/feedback/command-feedback/src/index.ts)
 
 ### `goal/*`
 
@@ -547,7 +564,7 @@ Source: [`packages/plan/plan-mode/src/index.ts:53`](../packages/plan/plan-mode/s
 'request/context': RequestContext
 ```
 
-Source: [`packages/core/session/src/types.ts:313`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:382`](../packages/core/session/src/types.ts)
 
 <a id="requestheader--log-only"></a>
 
@@ -561,7 +578,7 @@ Source: [`packages/core/session/src/types.ts:313`](../packages/core/session/src/
 'request/header': { header: EpochHeader; reason: RequestHeaderReason }
 ```
 
-Source: [`packages/core/session/src/types.ts:308`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:377`](../packages/core/session/src/types.ts)
 
 ### `sandbox/*`
 
@@ -636,7 +653,7 @@ Source: [`packages/schedule/schedule/src/types.ts:219`](../packages/schedule/sch
 'session/end-seed': Record<string, never>
 ```
 
-Source: [`packages/core/session/src/types.ts:336`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:405`](../packages/core/session/src/types.ts)
 
 <a id="sessiontitle--log-only"></a>
 
@@ -678,7 +695,7 @@ Source: [`packages/session/session-title-llm/src/index.ts:43`](../packages/sessi
 'step/end': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:256`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:319`](../packages/core/session/src/types.ts)
 
 <a id="stepstart--log-only"></a>
 
@@ -689,7 +706,7 @@ Source: [`packages/core/session/src/types.ts:256`](../packages/core/session/src/
 'step/start': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:254`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:317`](../packages/core/session/src/types.ts)
 
 ### `subagent/*`
 
@@ -712,62 +729,20 @@ Source: [`packages/subagent/subagent/src/descriptor.ts:37`](../packages/subagent
 
 ### `team/*`
 
-<a id="teammember--log-only"></a>
+<a id="teamchannel-view--surface"></a>
 
-#### `team/member` — log-only
-
-```ts persistence-catalog
-/** Whole teammate lifecycle value, stored only in the Team Lead Session. */
-'team/member': { version: 1; teamId: TeamId; member: TeamMemberSnapshot }
-```
-
-Types: [TeamId](subsystems/agent-team.md) · [TeamMemberSnapshot](subsystems/agent-team.md)
-
-Source: [`packages/experimental/agent-team/src/types.ts:206`](../packages/experimental/agent-team/src/types.ts)
-
-<a id="teammessagedelivered--log-only"></a>
-
-#### `team/message/delivered` — log-only
+#### `team/channel-view` — surface
 
 ```ts persistence-catalog
-/** Durable acknowledgement that the target Session recorded the message. */
-'team/message/delivered': {
-  version: 1
-  teamId: TeamId
-  messageId: TeamMessageId
-  targetId: SessionId
-}
+/**
+ * One non-direct Team channel view rendered before its delivery receipt.
+ * It derives exactly one user-role message from its stored `content` and is
+ * required because omitting it would change model-history reconstruction.
+ */
+'team/channel-view': TeamChannelViewEventData
 ```
 
-Types: [TeamId](subsystems/agent-team.md) · [TeamMessageId](subsystems/agent-team.md)
-
-Source: [`packages/experimental/agent-team/src/types.ts:212`](../packages/experimental/agent-team/src/types.ts)
-
-<a id="teammessagequeued--log-only"></a>
-
-#### `team/message/queued` — log-only
-
-```ts persistence-catalog
-/** Durable mailbox enqueue, stored before delivery is attempted. */
-'team/message/queued': { version: 1; teamId: TeamId; message: TeamMessageSnapshot }
-```
-
-Types: [TeamId](subsystems/agent-team.md) · [TeamMessageSnapshot](subsystems/agent-team.md)
-
-Source: [`packages/experimental/agent-team/src/types.ts:210`](../packages/experimental/agent-team/src/types.ts)
-
-<a id="teamtask--log-only"></a>
-
-#### `team/task` — log-only
-
-```ts persistence-catalog
-/** Whole shared-task value, stored only in the Team Lead Session. */
-'team/task': { version: 1; teamId: TeamId; task: TeamTaskSnapshot }
-```
-
-Types: [TeamId](subsystems/agent-team.md) · [TeamTaskSnapshot](subsystems/agent-team.md)
-
-Source: [`packages/experimental/agent-team/src/types.ts:208`](../packages/experimental/agent-team/src/types.ts)
+Source: [`packages/core/session/src/types.ts:333`](../packages/core/session/src/types.ts)
 
 ### `todo/*`
 
@@ -782,7 +757,7 @@ Source: [`packages/experimental/agent-team/src/types.ts:208`](../packages/experi
 
 Types: [TodoItem](subsystems/session.md)
 
-Source: [`packages/core/session/src/types.ts:303`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:372`](../packages/core/session/src/types.ts)
 
 ### `tool/*`
 
@@ -801,7 +776,7 @@ Source: [`packages/core/session/src/types.ts:303`](../packages/core/session/src/
 
 Types: [CallId](subsystems/core.md)
 
-Source: [`packages/core/session/src/types.ts:283`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:352`](../packages/core/session/src/types.ts)
 
 <a id="toolcode-dispatch--log-only"></a>
 
@@ -864,7 +839,7 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
  * runtime-validates all event data with `isJsonValue`, so a non-serializable
  * `meta` is rejected at the source, and the durable log reproduces the
  * identical card on replay. Absent
- * unless the tool attaches one (e.g. `dsh-tool-fs` carries its result-time
+ * unless the tool attaches one (e.g. `clocky-tool-fs` carries its result-time
  * contextual diff here).
  */
 'tool/result': {
@@ -876,7 +851,7 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
 }
 ```
 
-Source: [`packages/core/session/src/types.ts:295`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:364`](../packages/core/session/src/types.ts)
 
 ### `tool-workflow/*`
 
@@ -946,7 +921,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:47`](../packages/workflow
 /**
  * Closes turn `turn` with the {@link TurnEndReason} that ended it. A turn
  * with no entered step has no `step/start` or `step/end`. The loop does not await a
- * flush at turn boundaries: `dsh-session-checkpoint-policy` owns the
+ * flush at turn boundaries: `clocky-session-checkpoint-policy` owns the
  * per-request durability checkpoint, and consumers that read storage after
  * `whenIdle()` flush themselves. Success commits the turn; rejection is
  * reported live and does not prevent later work.
@@ -956,7 +931,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:47`](../packages/workflow
 
 Types: [TurnEndReason](subsystems/session.md)
 
-Source: [`packages/core/session/src/types.ts:252`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:315`](../packages/core/session/src/types.ts)
 
 <a id="turnstart--log-only"></a>
 
@@ -972,7 +947,7 @@ Source: [`packages/core/session/src/types.ts:252`](../packages/core/session/src/
 'turn/start': { turn: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:243`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:306`](../packages/core/session/src/types.ts)
 
 ### `user/*`
 
@@ -991,17 +966,4 @@ Source: [`packages/core/session/src/types.ts:243`](../packages/core/session/src/
 'user/message': UserMessage
 ```
 
-Source: [`packages/core/session/src/types.ts:264`](../packages/core/session/src/types.ts)
-
-### `web/*`
-
-<a id="webdeepseek-search-llm-request--log-only"></a>
-
-#### `web/deepseek-search-llm-request` — log-only
-
-```ts persistence-catalog
-/** Secret-free auxiliary DeepSeek search request recorded before dispatch. */
-'web/deepseek-search-llm-request': DeepSeekSearchLlmRequest
-```
-
-Source: [`packages/web/web-search-deepseek/src/provider.ts:83`](../packages/web/web-search-deepseek/src/provider.ts)
+Source: [`packages/core/session/src/types.ts:327`](../packages/core/session/src/types.ts)

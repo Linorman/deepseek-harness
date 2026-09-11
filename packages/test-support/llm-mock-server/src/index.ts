@@ -147,7 +147,7 @@ export interface MockLlmServerOptions {
   readonly requestId?: string
   /** Tool name emitted by `tool_call_success`. */
   readonly toolName?: string
-  /** Raw JSON arguments emitted by `tool_call_success`. */
+  /** Raw JSON arguments emitted by `tool_call_success`; `{{channel_id}}` may be replaced from a Team prompt. */
   readonly toolArguments?: string
   /** Optional observer for JSONL CLI telemetry; observer failures never affect wire behavior. */
   readonly onEvent?: (event: MockLlmServerEvent) => void
@@ -431,8 +431,27 @@ async function disconnect(
   response.destroy()
 }
 
-function toolCallChunks(options: ResolvedOptions): readonly unknown[] {
-  const midpoint = Math.max(1, Math.floor(options.toolArguments.length / 2))
+/** Resolve the optional Team final-channel placeholder from one request body. */
+function toolArgumentsFor(options: ResolvedOptions, body: unknown): string {
+  const marker = '{{channel_id}}'
+  if (!options.toolArguments.includes(marker)) return options.toolArguments
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) return options.toolArguments
+  const messages = (body as { messages?: unknown }).messages
+  if (!Array.isArray(messages)) return options.toolArguments
+  const system = messages.find(message => (
+    message !== null
+    && typeof message === 'object'
+    && !Array.isArray(message)
+    && (message as { role?: unknown }).role === 'system'
+  )) as { content?: unknown } | undefined
+  const content = typeof system?.content === 'string' ? system.content : undefined
+  const channelId = content?.match(/team_final with channel_id ([^\s]+)/u)?.[1]
+  return channelId === undefined ? options.toolArguments : options.toolArguments.replaceAll(marker, channelId)
+}
+
+function toolCallChunks(options: ResolvedOptions, body: unknown): readonly unknown[] {
+  const toolArguments = toolArgumentsFor(options, body)
+  const midpoint = Math.max(1, Math.floor(toolArguments.length / 2))
   return [
     {
       choices: [{
@@ -442,7 +461,7 @@ function toolCallChunks(options: ResolvedOptions): readonly unknown[] {
             index: 0,
             id: 'mock-call-1',
             type: 'function',
-            function: { name: options.toolName, arguments: options.toolArguments.slice(0, midpoint) },
+            function: { name: options.toolName, arguments: toolArguments.slice(0, midpoint) },
           }],
         },
         finish_reason: null,
@@ -451,7 +470,7 @@ function toolCallChunks(options: ResolvedOptions): readonly unknown[] {
     {
       choices: [{
         index: 0,
-        delta: { tool_calls: [{ index: 0, function: { arguments: options.toolArguments.slice(midpoint) } }] },
+        delta: { tool_calls: [{ index: 0, function: { arguments: toolArguments.slice(midpoint) } }] },
         finish_reason: null,
       }],
     },
@@ -571,7 +590,7 @@ async function runBehavior(
       return
     case 'tool_call_success':
       openSse(response)
-      for (const chunk of toolCallChunks(options)) writeSse(record, response, chunk)
+      for (const chunk of toolCallChunks(options, record.body)) writeSse(record, response, chunk)
       writeSse(record, response, terminalChunk('tool_calls', 2))
       writeDone(record, response)
       response.end()

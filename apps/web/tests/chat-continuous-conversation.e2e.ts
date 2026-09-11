@@ -107,23 +107,27 @@ function toolStream(spec: TurnSpec): StreamChunk[] {
   if (spec.callId === undefined || spec.toolResultMarker === undefined) {
     throw new Error(`turn ${String(spec.index)} has no tool identity`)
   }
-  const args = JSON.stringify({
+  return callStream(spec.callId, 'bash', {
     command: `printf '${spec.toolResultMarker}\\n'`,
     description: spec.toolResultMarker,
   })
+}
+
+function callStream(id: ReturnType<typeof CallId>, name: string, input: Record<string, unknown>): StreamChunk[] {
+  const args = JSON.stringify(input)
   return [
     { type: 'block-start', index: 0, blockType: 'tool-call' },
     {
       type: 'tool-call-delta',
       index: 0,
-      id: spec.callId,
-      name: 'bash',
+      id,
+      name,
       argumentsDelta: args,
     },
     {
       type: 'block-end',
       index: 0,
-      block: { type: 'tool-call', id: spec.callId, name: 'bash', arguments: args },
+      block: { type: 'tool-call', id, name, arguments: args },
     },
     { type: 'usage', usage: { inputTokens: 256, outputTokens: 24 } },
     { type: 'finish', reason: { kind: 'tool-calls' } },
@@ -132,10 +136,14 @@ function toolStream(spec: TurnSpec): StreamChunk[] {
 
 function replayScript(specs: readonly TurnSpec[]): ReplayOverrideDoc {
   return specs.flatMap((spec): ReplayEntry[] => {
+    const delivery: ReplayEntry = { kind: 'chunks', chunks: callStream(CallId(`continuous-post-${suffix(spec.index)}`), 'team_message', {
+      channel_id: '{{fromRequest:channel-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}}',
+      text: spec.deltas.join(''), delivery: 'context',
+    }) }
     const final: ReplayEntry = { kind: 'chunks', chunks: textStream(spec) }
     return spec.callId === undefined
-      ? [final]
-      : [{ kind: 'chunks', chunks: toolStream(spec) }, final]
+      ? [delivery, final]
+      : [{ kind: 'chunks', chunks: toolStream(spec) }, delivery, final]
   })
 }
 
@@ -151,6 +159,11 @@ function assistantText(event: Extract<SessionEvent, { type: 'assistant/message' 
     .filter(block => block.type === 'text')
     .map(block => block.text)
     .join('')
+}
+
+/** Team-first human input is logged with the durable envelope source. */
+function isHumanInput(event: Extract<SessionEvent, { type: 'user/message' }>): boolean {
+  return event.data.source.kind === 'user' || event.data.source.kind === 'team-envelope'
 }
 
 function toolResultText(event: Extract<SessionEvent, { type: 'tool/result' }>): string {
@@ -197,6 +210,7 @@ describe('web e2e: continuous conversation grown through the composer', () => {
     page.on('console', (message) => {
       if (message.type() === 'warning') consoleWarnings.push(message.text())
     })
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await connectFreshWorkspace(page, scaffold.workspaceCwd, 'continuous-chat-e2e')
@@ -232,13 +246,13 @@ describe('web e2e: continuous conversation grown through the composer', () => {
       await page.getByText(spec.userMarker, { exact: false }).last().waitFor({ timeout: 15_000 })
       await expect.poll(() => sessionEvents.slice(eventStart).some(event => (
         event.type === 'user/message'
-        && event.data.source.kind === 'user'
+        && isHumanInput(event)
         && userText(event).includes(spec.userMarker)
       )), { timeout: 15_000 }).toBe(true)
       const echoedUser = sessionEvents.slice(eventStart).find(
         (event): event is SessionEvent<'user/message'> => (
           event.type === 'user/message'
-          && event.data.source.kind === 'user'
+          && isHumanInput(event)
           && userText(event).includes(spec.userMarker)
         ),
       )
@@ -265,7 +279,7 @@ describe('web e2e: continuous conversation grown through the composer', () => {
         event.type === 'turn/start'
       ))
       const users = turnEvents.filter((event): event is SessionEvent<'user/message'> => (
-        event.type === 'user/message' && event.data.source.kind === 'user'
+        event.type === 'user/message' && isHumanInput(event)
       ))
       const assistants = turnEvents.filter((event): event is SessionEvent<'assistant/message'> => (
         event.type === 'assistant/message'
@@ -280,20 +294,33 @@ describe('web e2e: continuous conversation grown through the composer', () => {
       expect(turnStarts[0]?.data.turn).toBe(spec.index)
       expect(users).toHaveLength(1)
       expect(users[0]?.seq).toBe(echoedUser.seq)
-      expect(userText(users[0]!)).toBe(spec.prompt)
+      // Direct v3 messages carry the authenticated sender prefix in the
+      // model-visible content; the user-authored prompt remains the durable
+      // suffix that this scenario owns.
+      expect(userText(users[0]!)).toContain(spec.prompt)
       expect(finalAssistants).toHaveLength(1)
-      expect(assistants).toHaveLength(spec.callId === undefined ? 1 : 2)
+      expect(assistants).toHaveLength(spec.callId === undefined ? 2 : 3)
       expect(turnEnds).toHaveLength(1)
       expect(turnEnds[0]?.data).toEqual({ turn: spec.index, reason: { kind: 'completed' } })
-      expect(chunks).toHaveLength(spec.deltas.length + (spec.callId === undefined ? 4 : 9))
+      expect(chunks).toHaveLength(spec.deltas.length + (spec.callId === undefined ? 9 : 14))
 
       const assistantRow = page.locator(`[data-chat-anchor-key="${assistantKey(finalAssistants[0]!)}"]`)
       await expect.poll(() => assistantRow.count(), { timeout: 10_000 }).toBe(1)
       expect(await assistantRow.getAttribute('data-chat-flow-kind')).toBe('assistant-step')
       expect(await assistantRow.textContent()).toContain(spec.doneMarker)
 
-      const calls = turnEvents.filter((event): event is SessionEvent<'tool/call'> => event.type === 'tool/call')
-      const results = turnEvents.filter((event): event is SessionEvent<'tool/result'> => event.type === 'tool/result')
+      const allCalls = turnEvents.filter((event): event is SessionEvent<'tool/call'> => event.type === 'tool/call')
+      const allResults = turnEvents.filter((event): event is SessionEvent<'tool/result'> => event.type === 'tool/result')
+      expect(allCalls).toHaveLength(spec.callId === undefined ? 1 : 2)
+      expect(allResults).toHaveLength(allCalls.length)
+      const postId = CallId(`continuous-post-${suffix(spec.index)}`)
+      expect(allCalls.find(event => event.data.callId === postId)?.data.name).toBe('team_message')
+      const postResult = allResults.find(event => event.data.message.source.callId === postId)
+      expect(postResult?.data.message.content[0].isError).toBe(false)
+      if (users[0]?.data.source.kind !== 'team-envelope' || postResult === undefined) throw new Error('Native Team delivery provenance is missing')
+      expect(JSON.parse(toolResultText(postResult))).toMatchObject({ channel_id: users[0].data.source.channelId })
+      const calls = allCalls.filter(event => event.data.name === 'bash')
+      const results = allResults.filter(event => event.data.message.source.callId === spec.callId)
       if (spec.callId === undefined || spec.toolResultMarker === undefined) {
         expect(calls).toHaveLength(0)
         expect(results).toHaveLength(0)

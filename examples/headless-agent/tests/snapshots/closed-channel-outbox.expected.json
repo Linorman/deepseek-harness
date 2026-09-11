@@ -1,0 +1,10 @@
+{
+  "consultAgent": "response-received-after-close",
+  "consultHuman": "response-receipted-after-close",
+  "discussionFinalTurn": ["Agent", "human"],
+  "workflowFinalTurn": ["Agent", "human"],
+  "consultText": "ORDINARY_CONSULT_ANSWER",
+  "modelReplies": 2,
+  "agentViews": 3,
+  "syntheticHumanParticipants": 0
+}

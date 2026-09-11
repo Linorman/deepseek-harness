@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "CJK strong emphasis" [disabled]
+  - text: CJK strong emphasis
   - button "Session log":
     - text: Session log
     - img
@@ -41,8 +40,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}}
 - textbox "Message the agent"

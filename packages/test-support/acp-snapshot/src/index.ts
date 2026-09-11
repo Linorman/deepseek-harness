@@ -24,10 +24,12 @@ export {
   type PermissionAnswer,
   type RunOptions,
   type RunResult,
+  type TeamCoordinatorTranscript,
 } from './harness.ts'
 export {
   launchAcpTestAgent,
   type AcpTestLaunchOptions,
+  type AcpTranscriptMode,
   type AgentUnderTest,
   type LaunchedAcpTestAgent,
 } from './launcher.ts'

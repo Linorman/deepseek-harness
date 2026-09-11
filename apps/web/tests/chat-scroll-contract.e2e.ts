@@ -152,19 +152,21 @@ async function launchScrollWorld(options: ScrollWorldOptions): Promise<ScrollWor
       const replayOverride = join(replayDir, 'replay.override.json')
       await writeFile(replayOverride, JSON.stringify(options.replay))
       scaffold = await launchWebScaffold({
+        legacyWorkspaceSurface: true,
         replayFixture: join(replayDir, 'override-only.jsonl'),
         replayOverride,
         paceMs: STREAM_PACE_MS,
         replayContextWindow: REPLAY_CONTEXT_WINDOW,
       })
     } else {
-      scaffold = await launchWebScaffold({})
+      scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     }
     for (const seed of options.seeds) await seedSession(scaffold, seed.fixture.log, seed.id)
     const events: SessionEvent[] = []
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { events.push(event) })
     page = await newEnglishPage(browser, 900)
     const tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     // Session-list bootstrap can replace the controlled search state. Wait

@@ -1,0 +1,39 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../core/team-workspace"
+    },
+    {
+      "path": "../team-channel-task-assignment"
+    },
+    {
+      "path": "../team-channel-basic"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../team-channel-admission"
+    },
+    {
+      "path": "../team-placement-default"
+    }
+  ]
+}

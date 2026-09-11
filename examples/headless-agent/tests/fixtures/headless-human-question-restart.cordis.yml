@@ -1,0 +1,11 @@
+# Reuse the real Host composition while replacing only its scenario driver.
+- id: human-question-driver
+  disabled: true
+
+- insert:
+    - id: human-question-restart-driver
+      name: './snapshot-fixtures/headless-human-question-restart-driver.ts'
+      config:
+        stage: !!js process.env.CLOCKY_QUESTION_STAGE
+        outcome: !!js process.env.CLOCKY_QUESTION_OUTCOME
+        teamId: !!js process.env.CLOCKY_QUESTION_TEAM_ID

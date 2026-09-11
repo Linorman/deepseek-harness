@@ -1,4 +1,4 @@
-/** Browser runtime services for slots, sessions, workspaces, and connection-stream delivery. */
+/** Browser runtime services for slots, Teams, Sessions, Workspaces, and connection-stream delivery. */
 import type { Context } from '@clocky/cordis'
 import type { ConnectionHandle, SessionId } from '@clocky/clocky-api-remotes/client'
 // Type-only: the ctx.remote merge. Deliberately the gateway's Client half rather
@@ -11,6 +11,7 @@ import { SlotRegistry } from './slots.ts'
 import { SessionRuntime } from './sessions/service.ts'
 import type { SessionListState } from './sessions/service.ts'
 import { WorkspaceRuntime } from './workspaces/service.ts'
+import { TeamTaskRuntime } from './teams/service.ts'
 import type { ConversationSnapshot } from './sessions/conversation.ts'
 import type { UseProjection } from './sessions/projection-store.ts'
 import { ConversationEventRegistry } from './conversation/event-registry.ts'
@@ -36,9 +37,7 @@ export type {
 } from './contract/conversation.ts'
 export type { ConversationRuntime } from './sessions/conversation-assembler.ts'
 export type { RootOwnerProps } from './slots.ts'
-export { SessionCreateError, SessionRuntime, scopeOf, workspaceTitleOf } from './sessions/service.ts'
-export { indexSubagentDescendants } from './sessions/subagent-lineage.ts'
-export type { SubagentDescendantSummary } from './sessions/subagent-lineage.ts'
+export { SessionRuntime, scopeOf, workspaceTitleOf } from './sessions/service.ts'
 // The provide channel is shared with the client test runtime (one
 // materialization/projection implementation; no test-side mirror to drift).
 export { SessionProvideChannel } from './sessions/provide.ts'
@@ -46,6 +45,7 @@ export type { SessionProvideChannelHost } from './sessions/provide.ts'
 export { createScope } from './agents/scope.ts'
 export type { AgentScopeHandle } from './agents/scope.ts'
 export { DirectoryBrowseError, WorkspaceCreateError, WorkspaceRuntime } from './workspaces/service.ts'
+export { TeamTaskRuntime, TeamTaskStartError } from './teams/service.ts'
 export { abbreviateHomePath, resolveWorkspacePath } from './workspaces/path.ts'
 // Contract only: the scope implementation and its Host transport belong to
 // clocky-client-ui-settings (see that package's settings-scope.ts).
@@ -57,10 +57,18 @@ export type { ISession, ProjectionsFace, SessionFace } from './contract/session.
 export type { AgentContext, ISessions } from './contract/sessions.ts'
 export type { IWorkspaces } from './contract/workspaces.ts'
 export type {
+  ITeamTasks, TeamHumanAction, TeamInboxPage, TeamInboxState, TeamActionResponseInput, TeamActionResponseResult, TeamChannelState, TeamChannelInvitation, TeamChannelAdmission, TeamChannelListPage, TeamChannelListState, TeamCollectionKind, TeamCollectionPage, TeamCollectionsState, TeamManagementCommand, TeamManagementOperation, TeamTaskDraft, TeamTaskDraftOptions, TeamTaskDraftPhase, TeamTaskListState, TeamTaskSelection,
+  TeamTaskStartInput, TeamChannelInput, TeamChannelAttachmentInput, TeamChannelAttachmentResult, TeamChannelMessageContent, TeamChannelCatalog, TeamChannelCatalogState, TeamChannelSummary,
+} from './contract/team-tasks.ts'
+export type {
+  ChannelId, ChannelReadPageResult, ChannelReadResult, ChannelRecord, ParticipantId, TeamArtifactReadResult, TeamArtifactReference, TeamAuditList,
+  TeamTaskId, TeamTaskSnapshot,
+} from '@clocky/clocky-client-connection/client'
+export type {
   SessionBinding, SessionListState, SessionProvideContribution, SessionProvideDescriptor, SessionSummary,
 } from './sessions/service.ts'
-export type { SessionListPhase, SessionSearchResultItem, SubagentCatalogSnapshot } from './sessions/manager.ts'
-export type { SubagentAddress, JobView } from '@clocky/clocky-client-connection/client'
+export type { SessionListPhase, SessionSearchResultItem } from './sessions/manager.ts'
+export type { JobView } from '@clocky/clocky-client-connection/client'
 export type { WorkspaceListPhase } from './workspaces/manager.ts'
 export type { WorkspaceListState } from './workspaces/service.ts'
 export type {
@@ -106,7 +114,7 @@ export type {
 export type {
   ProjectionsBaseline, ProjectionValueStore, SessionProjectionMap, UseProjection,
 } from './sessions/projection-store.ts'
-export type { SessionId } from '@clocky/clocky-client-connection/client'
+export type { SessionId, TeamId } from '@clocky/clocky-client-connection/client'
 
 /** Client-side Cordis context after declaration merging. */
 export type ClientContext = Context
@@ -147,6 +155,8 @@ declare module '@clocky/clocky-client-ui-slots' {
     useSessions: SnapshotSelectorHook<SessionListState>
     /** Selector hook over real Workspaces and their independent baseline lifecycle. */
     useWorkspaces: SnapshotSelectorHook<import('./workspaces/service.ts').WorkspaceListState>
+    /** Selector hook over durable Team task state and the local first-input draft. */
+    useTeamTasks?: SnapshotSelectorHook<import('./contract/team-tasks.ts').TeamTaskListState>
   }
 }
 
@@ -176,6 +186,8 @@ declare module '@clocky/cordis' {
     sessions: import('./contract/sessions.ts').ISessions
     /** The outward face only; the concrete service stays inside the runtime. */
     workspaces: import('./contract/workspaces.ts').IWorkspaces
+    /** The outward Team product face; Session transcripts remain descendants. */
+    teamTasks: import('./contract/team-tasks.ts').ITeamTasks
   }
 }
 
@@ -197,13 +209,13 @@ export function apply(ctx: Context): void {
     identity: candidate => sessions.scopeOf(candidate),
   })
   const workspaces = new WorkspaceRuntime(ctx, connection.api, sessions)
-  ctx.effect(
-    () => workspaces.startInitialSelection(),
-    'runtime: initial Workspace selection',
-  )
+  const teamTasks = new TeamTaskRuntime(ctx, connection.api)
+  sessions.clear()
+  teamTasks.startDraft()
   const loop = connection.start({
     onMuxEnvelope: (envelope) => {
       sessions.handleMuxEnvelope(envelope)
+      teamTasks.handleMuxEnvelope(envelope)
     },
     onHostEnvelope: (envelope) => {
       sessions.handleHostEnvelope(envelope)
@@ -218,6 +230,7 @@ export function apply(ctx: Context): void {
     onConnected: () => {
       sessions.handleConnected()
       workspaces.handleConnected()
+      teamTasks.handleConnected()
       ctx.emit('connection/reset')
     },
     onStateChange: (state) => {
@@ -226,6 +239,7 @@ export function apply(ctx: Context): void {
       // the only safe moment to drop generation-scoped interaction state.
       if (state === 'reconnecting') {
         sessions.handleDisconnected()
+        teamTasks.handleDisconnected()
       }
     },
   })

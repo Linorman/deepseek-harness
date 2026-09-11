@@ -1,0 +1,9 @@
+# Start the coordinator in read-only mode so its first Team turn exercises
+# the real approval escalation path before the model-facing file operation.
+- id: permission
+  config:
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+    defaultPreset: read-only

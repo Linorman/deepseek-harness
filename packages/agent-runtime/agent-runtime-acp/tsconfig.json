@@ -1,0 +1,23 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "lib/types" },
+  "include": ["src"],
+  "references": [
+    { "path": "../../../vendor/cosmokit" },
+    { "path": "../../../vendor/cordis" },
+    { "path": "../../../vendor/schemastery" },
+    { "path": "../../core/agent-runtime" },
+    { "path": "../../core/activation-supervisor" },
+    { "path": "../agent-runtime-sdk" },
+    { "path": "../../llm/llm" },
+    { "path": "../../core/session" },
+    { "path": "../../session/session-persistence" },
+    { "path": "../../core/team" },
+    { "path": "../../core/team-link" },
+    { "path": "../../team/team-channel-task-assignment" },
+    { "path": "../../team/team-link-websocket" },
+    { "path": "../../subprocess/subprocess" },
+    { "path": "../../subprocess/subprocess-local" },
+    { "path": "../../runtime-diagnostics/invariants" }
+  ]
+}

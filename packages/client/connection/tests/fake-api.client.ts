@@ -2,10 +2,80 @@
 // data source on a real clock; behavior tests need per-case responses and
 // deferred-controlled timing). Streams are hand pumps: pushMux/pushHost.
 import type {
-  HostFrame, IApiClient, ModelSelection, MuxFrame,
-  RpcRequest, RpcResponse, SessionId, SessionModels, SessionSearchItem, SkillEntry, WorkspaceId,
+  HostFrame, IApiClient, ModelSelection, MuxFrame, RpcError,
+  ResponseValue, RpcRequest, RpcResponse, SessionId, SessionModels, SessionSearchItem, SkillEntry, WorkspaceId,
 } from '../src/client/api.ts'
-import { RpcId } from '../src/client/api.ts'
+import type { RequestPayload } from '@clocky/clocky-host-apiproxy/api'
+import { emptyTeamLatencyHistogram, RpcId } from '../src/client/api.ts'
+
+type FakeTeamState = ResponseValue<'team.get'>
+type FakeTeamId = RequestPayload<'team.get'>['teamId']
+type FakeTeamChannelId = ResponseValue<'team.waitFinal'>['channelId']
+type FakeTeamEnvelopeId = ResponseValue<'team.waitFinal'>['envelopeId']
+
+const fakeTeamId = (value: string): FakeTeamId => value as FakeTeamId
+const fakeTeamChannelId = (teamId: FakeTeamId): FakeTeamChannelId => `fk-team-channel-${String(teamId)}` as FakeTeamChannelId
+const fakeTeamEnvelopeId = (value: string): FakeTeamEnvelopeId => value as FakeTeamEnvelopeId
+
+function fakeTeamState(teamId: FakeTeamId, objective: string): FakeTeamState {
+  const goal: FakeTeamState['goal'] = {
+    teamId,
+    revision: 1,
+    objective,
+    phase: 'active',
+    budgets: {},
+  }
+  const humanId = `fk-team-human-${String(teamId)}` as FakeTeamState['participants'][number]['id']
+  const coordinatorId = `fk-team-coordinator-${String(teamId)}` as FakeTeamState['participants'][number]['id']
+  return {
+    team: {
+      id: teamId,
+      depth: 0,
+      maxTeamDepth: 4,
+      goal,
+      phase: 'active',
+      cursor: 0,
+      createdAt: 1_750_000_000_000,
+      updatedAt: 1_750_000_000_000,
+    },
+    goal,
+    rules: {},
+    budgets: {},
+    participants: [
+      {
+        id: humanId,
+        teamId,
+        kind: 'human',
+        displayName: 'Fake human',
+        role: 'human',
+        capabilities: [],
+        phase: 'active',
+      },
+      {
+        id: coordinatorId,
+        teamId,
+        kind: 'local-agent',
+        displayName: 'Fake coordinator',
+        role: 'coordinator',
+        capabilities: [],
+        phase: 'active',
+      },
+    ],
+    activations: [{
+      activation: {
+        id: `fk-team-activation-${String(teamId)}` as FakeTeamState['activations'][number]['activation']['id'],
+        teamId,
+        participantId: coordinatorId,
+        status: 'idle',
+      },
+      sessionId: `fk-team-session-${String(teamId)}` as FakeTeamState['activations'][number]['sessionId'],
+      provider: 'in-process',
+    }],
+    tasks: [],
+    workspaceAllocations: [],
+    channelIds: [fakeTeamChannelId(teamId)],
+  }
+}
 
 export interface Deferred<T> {
   promise: Promise<T>
@@ -30,6 +100,14 @@ export function ok<T>(value: T): RpcResponse<T> {
   return { rpcId: RpcId(`fake-${nextRpc++}`), result: { ok: true, value } }
 }
 
+/** Default rejection for Team management methods not used by connection-only cases. */
+function teamManagementError<T>(): RpcResponse<T> {
+  const error: RpcError = {
+    code: 'internal', message: 'connection fake does not implement Team management', details: {},
+  }
+  return { rpcId: RpcId(`fake-${nextRpc++}`), result: { ok: false, error } }
+}
+
 
 type StreamItem<F> = { kind: 'frame'; envelope: RpcRequest<F> } | { kind: 'end' } | { kind: 'fail'; error: unknown }
 
@@ -45,9 +123,7 @@ export class FakeApiClient implements IApiClient {
   onList: (payload: unknown) => Promise<RpcResponse<{ items: never[] }>> = () => Promise.resolve(ok({ items: [] }))
   onSearch: (payload: unknown) => Promise<RpcResponse<{ items: SessionSearchItem[]; hasMore: boolean }>> =
     () => Promise.resolve(ok({ items: [], hasMore: false }))
-  onCreate: (payload: unknown) => Promise<RpcResponse<{ sessionId: SessionId }>> = () => Promise.resolve(ok({ sessionId: 'fk-new' as SessionId }))
   onRename: (payload: unknown) => Promise<RpcResponse<{ title: string; seq: number }>> = () => Promise.resolve(ok({ title: 'fk-renamed', seq: 0 }))
-  onFork: (payload: unknown) => Promise<RpcResponse<{ sessionId: SessionId }>> = () => Promise.resolve(ok({ sessionId: 'fk-fork' as SessionId }))
   onHistory: (payload: { sessionId: SessionId; beforeSeq?: number; maxMessages?: number })
   => Promise<RpcResponse<{ events: never[]; hasMore: boolean; modelSelection: ModelSelection }>> =
     () => Promise.resolve(ok({
@@ -110,35 +186,138 @@ export class FakeApiClient implements IApiClient {
       this.lastSearchSignal = signal
       return this.record('session.search', payload, this.onSearch(payload))
     },
-    create: (payload: unknown) => this.record('session.create', payload, this.onCreate(payload)),
     history: (payload: { sessionId: SessionId; beforeSeq?: number; maxMessages?: number }) =>
       this.record('session.history', payload, this.onHistory(payload)),
     models: (payload: unknown) => this.record('session.models', payload, this.onModels(payload)),
     selectModel: (payload: ModelSelection & { sessionId: SessionId }) =>
       this.record('session.selectModel', payload, this.onSelectModel(payload)),
     rename: (payload: unknown) => this.record('session.rename', payload, this.onRename(payload)),
-    fork: (payload: unknown) => this.record('session.fork', payload, this.onFork(payload)),
     prompt: (payload: unknown) => this.record('session.prompt', payload, this.onPrompt(payload)),
     attachment: (payload: unknown) => this.record('session.attachment', payload, this.onAttachment(payload)),
     updateQueue: (payload: unknown) => this.record('session.updateQueue', payload, this.onUpdateQueue(payload)),
     cancel: (payload: unknown) => this.record('session.cancel', payload, this.onCancel(payload)),
   }
 
-  readonly subagents: IApiClient['subagents'] = {
-    list: (payload: unknown) => this.record('subagent.list', payload, Promise.resolve(ok({
-      entries: [],
-      parentAvailable: true,
-    }))),
-    history: (payload: unknown) => this.record('subagent.history', payload, Promise.resolve(ok({
-      events: [],
-      hasMore: false,
-    }))),
-    prompt: (payload: unknown) => this.record('subagent.prompt', payload, Promise.resolve(ok({
-      messageId: 'fake-message' as never,
-    }))),
-    interrupt: (payload: unknown) => this.record('subagent.interrupt', payload, Promise.resolve(ok({
-      accepted: true as const,
-    }))),
+  onTeamList: (payload: RequestPayload<'team.list'>) => Promise<RpcResponse<ResponseValue<'team.list'>>>
+    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('fk-team'), 'Fake Team objective').team] }))
+  onTeamGet: (payload: RequestPayload<'team.get'>) => Promise<RpcResponse<ResponseValue<'team.get'>>>
+    = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Fake Team objective')))
+  onTeamCreate: (payload: RequestPayload<'team.create'>) => Promise<RpcResponse<ResponseValue<'team.create'>>>
+    = payload => Promise.resolve(ok(fakeTeamState(fakeTeamId('fk-team'), payload.objective)))
+  onTeamResume: (payload: RequestPayload<'team.resume'>) => Promise<RpcResponse<ResponseValue<'team.resume'>>>
+    = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Fake Team objective')))
+  onTeamStart: (payload: RequestPayload<'team.start'>) => Promise<RpcResponse<ResponseValue<'team.start'>>>
+    = payload => Promise.resolve(ok({
+      state: fakeTeamState(fakeTeamId('fk-team'), payload.objective),
+      envelopeId: fakeTeamEnvelopeId('fk-team-envelope'),
+    }))
+  onTeamPostInput: (payload: RequestPayload<'team.postInput'>) => Promise<RpcResponse<ResponseValue<'team.postInput'>>>
+    = () => Promise.resolve(ok({ envelopeId: fakeTeamEnvelopeId('fk-team-envelope') }))
+  onTeamWaitFinal: (payload: RequestPayload<'team.waitFinal'>) => Promise<RpcResponse<ResponseValue<'team.waitFinal'>>>
+    = payload => Promise.resolve(ok({
+      teamId: payload.teamId,
+      channelId: fakeTeamChannelId(payload.teamId),
+      envelopeId: fakeTeamEnvelopeId('fk-team-final'),
+      text: 'Fake Team final.',
+    }))
+  onTeamCancel: (payload: RequestPayload<'team.cancel'>) => Promise<RpcResponse<ResponseValue<'team.cancel'>>>
+    = () => Promise.resolve(ok({ accepted: true as const, phase: 'cancelled' as const }))
+  onTeamQuiescence: (payload: RequestPayload<'team.quiescence'>) => Promise<RpcResponse<ResponseValue<'team.quiescence'>>>
+    = payload => Promise.resolve(ok({
+      teamId: payload.teamId,
+      quiescent: true,
+      reasons: [],
+      activeTaskIds: [],
+      activeActivationIds: [],
+      activeWorkspaceAllocationIds: [],
+      openChannelIds: [],
+    }))
+  onTeamMetrics: (
+    payload: RequestPayload<'team.metrics'>,
+  ) => Promise<RpcResponse<ResponseValue<'team.metrics'>>>
+    = () => Promise.resolve(ok({
+      activeAdmissions: 0,
+      pendingDeliveries: 0,
+      activeActivations: 0,
+      activeTasks: 0,
+      stalledTeams: 0,
+      replayLag: 0,
+      lastTaskLatencyMs: 0,
+      lastReceiptLatencyMs: 0,
+      taskLatency: emptyTeamLatencyHistogram(),
+      receiptLatency: emptyTeamLatencyHistogram(),
+      workspaceConflicts: 0,
+      teamEvents: 0,
+      channelEvents: 0,
+      policyDenials: 0,
+      adapterFailures: 0,
+      deliveryClaims: 0,
+      taskAssignments: 0,
+      taskRetries: 0,
+      teamCompactions: 0,
+      channelCompactions: 0,
+      checkpointFailures: 0,
+      auditProjectionRepairs: 0,
+      auditProjectionFailures: 0,
+      updatedAt: 0,
+    }))
+  onTeamTaskReview: (payload: RequestPayload<'team.task.review'>) => Promise<RpcResponse<ResponseValue<'team.task.review'>>>
+    = () => Promise.resolve(teamManagementError())
+  onTeamMemberActivate: (payload: RequestPayload<'team.member.activate'>) => Promise<RpcResponse<ResponseValue<'team.member.activate'>>>
+    = () => Promise.resolve(teamManagementError())
+  onTeamTaskCancel: (payload: RequestPayload<'team.task.cancel'>) => Promise<RpcResponse<ResponseValue<'team.task.cancel'>>>
+    = () => Promise.resolve(teamManagementError())
+  onTeamTaskDelete: (payload: RequestPayload<'team.task.delete'>) => Promise<RpcResponse<ResponseValue<'team.task.delete'>>>
+    = () => Promise.resolve(teamManagementError())
+
+  readonly teams: IApiClient['teams'] = {
+    inboxRespond: payload => this.record('team.inbox.respond', payload, Promise.resolve(teamManagementError())),
+    inboxRead: payload => this.record('team.inbox.read', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
+    inboxWatch: payload => this.record('team.inbox.watch', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
+    inboxAcknowledge: payload => this.record('team.inbox.acknowledge', payload, Promise.resolve(teamManagementError())),
+    list: (payload: RequestPayload<'team.list'>) => this.record('team.list', payload, this.onTeamList(payload)),
+    get: (payload: RequestPayload<'team.get'>) => this.record('team.get', payload, this.onTeamGet(payload)),
+    create: (payload: RequestPayload<'team.create'>) => this.record('team.create', payload, this.onTeamCreate(payload)),
+    resume: (payload: RequestPayload<'team.resume'>) => this.record('team.resume', payload, this.onTeamResume(payload)),
+    start: (payload: RequestPayload<'team.start'>) => this.record('team.start', payload, this.onTeamStart(payload)),
+    postInput: (payload: RequestPayload<'team.postInput'>) => this.record('team.postInput', payload, this.onTeamPostInput(payload)),
+    waitFinal: (payload: RequestPayload<'team.waitFinal'>) => this.record('team.waitFinal', payload, this.onTeamWaitFinal(payload)),
+    cancel: (payload: RequestPayload<'team.cancel'>) => this.record('team.cancel', payload, this.onTeamCancel(payload)),
+    archive: payload => this.record('team.archive', payload, Promise.resolve(teamManagementError())),
+    goalUpdate: payload => this.record('team.goal.update', payload, Promise.resolve(teamManagementError())),
+    goalTransition: payload => this.record('team.goal.transition', payload, Promise.resolve(teamManagementError())),
+    quiescence: (payload: RequestPayload<'team.quiescence'>) => this.record('team.quiescence', payload, this.onTeamQuiescence(payload)),
+    metrics: (payload: RequestPayload<'team.metrics'>) => this.record('team.metrics', payload, this.onTeamMetrics(payload)),
+    auditRead: payload => this.record('team.audit.read', payload, Promise.resolve(teamManagementError())),
+    artifactRead: payload => this.record('team.artifact.read', payload, Promise.resolve(teamManagementError())),
+    artifactList: payload => this.record('team.artifact.list', payload, Promise.resolve(teamManagementError())),
+    memberList: payload => this.record('team.member.list', payload, Promise.resolve(teamManagementError())),
+    memberInvite: payload => this.record('team.member.invite', payload, Promise.resolve(teamManagementError())),
+    memberActivate: payload => this.record('team.member.activate', payload, this.onTeamMemberActivate(payload)),
+    memberRemove: payload => this.record('team.member.remove', payload, Promise.resolve(teamManagementError())),
+    memberInterrupt: payload => this.record('team.member.interrupt', payload, Promise.resolve(teamManagementError())),
+    channelCatalog: payload => this.record('team.channel.catalog', payload, Promise.resolve(teamManagementError())),
+    channelList: payload => this.record('team.channel.list', payload, Promise.resolve(teamManagementError())),
+    channelInput: payload => this.record('team.channel.input', payload, Promise.resolve(teamManagementError())),
+    channelAttachment: payload => this.record('team.channel.attachment', payload, Promise.resolve(teamManagementError())),
+    channelAdmission: payload => this.record('team.channel.admission', payload, Promise.resolve(teamManagementError())),
+    channelInvitation: payload => this.record('team.channel.invitation', payload, Promise.resolve(teamManagementError())),
+    channelInvitationAcknowledge: payload => this.record('team.channel.invitation.acknowledge', payload, Promise.resolve(teamManagementError())),
+    channelOpen: payload => this.record('team.channel.open', payload, Promise.resolve(teamManagementError())),
+    channelPost: payload => this.record('team.channel.post', payload, Promise.resolve(teamManagementError())),
+    channelSummarize: payload => this.record('team.channel.summarize', payload, Promise.resolve(teamManagementError())),
+    channelRead: payload => this.record('team.channel.read', payload, Promise.resolve(teamManagementError())),
+    channelClose: payload => this.record('team.channel.close', payload, Promise.resolve(teamManagementError())),
+    channelWatch: payload => this.record('team.channel.watch', payload, Promise.resolve(teamManagementError())),
+    taskCreate: payload => this.record('team.task.create', payload, Promise.resolve(teamManagementError())),
+    taskGet: payload => this.record('team.task.get', payload, Promise.resolve(teamManagementError())),
+    taskList: payload => this.record('team.task.list', payload, Promise.resolve(teamManagementError())),
+    workflowPlanList: payload => this.record('team.workflow.plan.list', payload, Promise.resolve(teamManagementError())),
+    taskUpdate: payload => this.record('team.task.update', payload, Promise.resolve(teamManagementError())),
+    taskCancel: payload => this.record('team.task.cancel', payload, this.onTeamTaskCancel(payload)),
+    taskDelete: payload => this.record('team.task.delete', payload, this.onTeamTaskDelete(payload)),
+    taskReview: payload => this.record('team.task.review', payload, this.onTeamTaskReview(payload)),
+    taskWatch: payload => this.record('team.task.watch', payload, Promise.resolve(teamManagementError())),
   }
 
   readonly host: IApiClient['host'] = {

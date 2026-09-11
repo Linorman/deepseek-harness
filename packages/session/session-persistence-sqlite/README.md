@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-session-persistence-sqlite
+# @clocky/clocky-session-persistence-sqlite
 
 English | [中文](README.zh.md)
 
@@ -20,7 +20,7 @@ Full reads scan physical rows in first-logical-sequence order. A reverse pass fi
 
 ## Schema compatibility
 
-A pristine database initializes directly at schema 17. Older schemas, foreign application identities, non-pristine unversioned databases, and incompatible schema objects reject; this pre-release provider supplies no migration. Every statement and fixed pragma lives in a packaged `.sql` resource; values use SQLite parameters and runtime code never assembles query text.
+A pristine database initializes directly at schema 18. The `sessions` row stores a paired nullable `team_id`/`participant_id` provenance reference and rejects one-sided or empty values. Older schemas, foreign application identities, non-pristine unversioned databases, and incompatible schema objects reject; this pre-release provider supplies no migration. Every statement and fixed pragma lives in a packaged `.sql` resource; values use SQLite parameters and runtime code never assembles query text.
 
 ## Configuration (schemastery)
 

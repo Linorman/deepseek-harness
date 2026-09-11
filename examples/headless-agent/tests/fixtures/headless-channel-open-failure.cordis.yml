@@ -1,0 +1,35 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: team-delegation
+  disabled: true
+
+# The fixture registers the production protocol with an observable runtime lease.
+- id: team-channel-direct
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: channel-open-model
+    model: channel-open-model
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_CHANNEL_OPEN_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_CHANNEL_OPEN_BACKEND
+    routes: {}
+
+- insert:
+    - id: channel-open-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_CHANNEL_OPEN_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: channel-open-failure-driver
+      name: './snapshot-fixtures/headless-channel-open-failure-driver.ts'

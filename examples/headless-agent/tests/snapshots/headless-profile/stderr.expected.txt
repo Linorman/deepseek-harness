@@ -1,1 +1,1 @@
-clocky: SERVER: CLI mock provider failed
+clocky: coordinator turn failed before an explicit final Envelope: SERVER: CLI mock provider failed

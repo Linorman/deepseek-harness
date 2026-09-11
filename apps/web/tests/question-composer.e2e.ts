@@ -75,6 +75,7 @@ describe('web e2e: resident question composer round trip', () => {
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     // Fresh world: connect a Workspace so the composer scenarios start live.
@@ -104,16 +105,17 @@ describe('web e2e: resident question composer round trip', () => {
     await composer.waitFor({ timeout: MODE === 'record' ? 120_000 : 30_000 })
     await expect.poll(() => composer.getByText('Which color do you prefer?').count(), { timeout: 10_000 }).toBeGreaterThan(0)
 
-    const selectedRow = page.locator('[role="treeitem"][aria-selected="true"]')
-    await expect.poll(() => selectedRow.locator('[data-state="warning"]').count(), { timeout: 10_000 }).toBe(1)
-    await expect.poll(() => selectedRow.getByText('Waiting for answer', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    // Team-first navigation owns the selected task; the legacy Session tree
+    // no longer carries pending-human-action status.
+    const selectedTask = page.locator('section[aria-label="Tasks"] [aria-current="page"]')
+    await expect.poll(() => selectedTask.count(), { timeout: 10_000 }).toBe(1)
 
     if (MODE !== 'record') {
       // This golden owns the stable question surface; the answered-state
       // golden below owns the resulting transcript.
       const snapshot = await captureStableAria(page, '[data-question-key]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
-      const sidebar = await captureStableAria(page, '[role="treeitem"][aria-selected="true"]', scaffold.workspaceCwd)
+      const sidebar = await captureStableAria(page, 'section[aria-label="Tasks"] [aria-current="page"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(SIDEBAR_EXPECTED, sidebar, MODE)
     }
 
@@ -219,7 +221,7 @@ describe('web e2e: resident question composer round trip', () => {
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     // Composer gone; regular input restored.
     expect(await page.locator('[data-question-key]').count()).toBe(0)
-    expect(await selectedRow.locator('[data-state="warning"]').count()).toBe(0)
+    expect(await selectedTask.count()).toBe(1)
     await expect.poll(() => page.locator('textarea').first().isEnabled(), { timeout: 10_000 }).toBe(true)
     // Golden of the answered transcript: the ask_user_question round trip
     // rendered as history (question tool row + DONE), composer takeover gone.

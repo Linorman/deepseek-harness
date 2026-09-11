@@ -58,6 +58,8 @@ export abstract class EntryTree {
         .map(outcome => outcome.reason)
       if (failures.length === 1) throw failures[0]
       if (failures.length > 1) throw new AggregateError(failures, 'loader fibers failed')
+      // Another waiter may have started dependent fibers while outcomes settled.
+      if (this.getTasks().length) continue
       this.ctx.reflect.notify(['loader'])
       if (!this.getTasks().length) return
     }

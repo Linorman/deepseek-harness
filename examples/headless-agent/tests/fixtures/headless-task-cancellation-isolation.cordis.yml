@@ -1,0 +1,26 @@
+- id: human-approval-driver
+  disabled: true
+
+- id: team-agent-client
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: task-isolation-model
+    model: task-isolation-model
+
+- id: team-scheduler-dag
+  config:
+    leaseDurationMs: 3600000
+    maxAssignmentsPerDrive: 2
+    maxExpirationsPerDrive: 2
+    maxWakeDispatchesPerDrive: 2
+    maxConflictsPerDrive: 4
+    maxActiveAttemptsPerParticipant: 2
+    permittedWorkspaceModes: [shared]
+    pulseIntervalMs: 1000
+    disposalTimeoutMs: 5000
+
+- insert:
+    - id: task-cancellation-isolation-driver
+      name: './snapshot-fixtures/headless-task-cancellation-isolation-driver.ts'

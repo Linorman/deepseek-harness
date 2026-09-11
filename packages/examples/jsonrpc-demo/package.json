@@ -45,7 +45,8 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@clocky/clocky-app-boot": "workspace:^"
+    "@clocky/clocky-app-boot": "workspace:^",
+    "@clocky/clocky-team-human-client": "workspace:^"
   },
   "peerDependencies": {
     "@clocky/clocky-invariants": "workspace:^",

@@ -9,6 +9,9 @@
   ],
   "references": [
     {
+      "path": "../../core/product-principal"
+    },
+    {
       "path": "../../goal/goal"
     },
     {
@@ -42,6 +45,12 @@
       "path": "../../core/agent-default-model"
     },
     {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../core/team-artifact"
+    },
+    {
       "path": "../../preset/agent-presets"
     },
     {
@@ -67,9 +76,6 @@
     },
     {
       "path": "../../session-query/session-query"
-    },
-    {
-      "path": "../../subagent/subagent"
     },
     {
       "path": "../../skill/skill"
@@ -100,6 +106,21 @@
     },
     {
       "path": "../../util/native-command"
+    },
+    {
+      "path": "../../team/team-run"
+    },
+    {
+      "path": "../../team/team-human-actor"
+    },
+    {
+      "path": "../../team/team-channel-summary"
+    },
+    {
+      "path": "../../team/team-channel-admission"
+    },
+    {
+      "path": "../../attachment/attachment-local"
     }
   ]
 }

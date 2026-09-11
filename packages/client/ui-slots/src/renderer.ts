@@ -177,6 +177,11 @@ export interface SlotRendererHost {
     /** Workspace list source backing the useWorkspaces standard hook. */
     list: HostObservable<unknown>
   }
+  /** Team-task product source backing the useTeamTasks standard hook. */
+  teamTasks?: {
+    /** Team product list, selection, and local first-input draft source. */
+    list: HostObservable<unknown>
+  }
   /**
    * Installed locale face backing the `t` standard seat (absent until the
    * locale plugin installs one; rendering an entry that declared `locale:`

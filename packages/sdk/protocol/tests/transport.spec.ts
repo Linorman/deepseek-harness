@@ -1,7 +1,7 @@
 import { once } from 'node:events'
 import { PassThrough, Writable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
-import { JsonRpcLineTransport, JsonRpcResponseError } from '../src/index.ts'
+import { JsonRpcLineTransport, JsonRpcRequestError, JsonRpcResponseError } from '../src/index.ts'
 
 function transportPair() {
   const aToB = new PassThrough()
@@ -56,6 +56,23 @@ describe('JsonRpcLineTransport', () => {
     expect(failure).toBeInstanceOf(JsonRpcResponseError)
     expect(failure).toMatchObject({ message: 'handler boom', code: -32603, data: undefined })
 
+    a.close()
+    b.close()
+  })
+
+  it('preserves a handler-selected error code and structured data on the response peer', async () => {
+    const { a, b } = transportPair()
+    a.onRequest(async () => {
+      throw new JsonRpcRequestError(-32_001, 'activation target conflict', { code: 'SDK_ACTIVATION_TARGET_MISMATCH' })
+    })
+    a.start()
+    b.start()
+
+    await expect(b.request('activation/open', {})).rejects.toMatchObject({
+      code: -32_001,
+      message: 'activation target conflict',
+      data: { code: 'SDK_ACTIVATION_TARGET_MISMATCH' },
+    })
     a.close()
     b.close()
   })

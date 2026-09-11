@@ -36,6 +36,11 @@
     - id: typert-gateway
       name: '@clocky/clocky-api-gateway'
 
+    # Deployment-owned principal providers register against this shared seam.
+    # Surface bundles choose whether to supply an actual authenticator.
+    - id: product-principals
+      name: '@clocky/clocky-product-principal'
+
     - id: session-title
       name: '@clocky/clocky-session-title'
       config:
@@ -105,11 +110,9 @@
       name: '@clocky/clocky-attachment-local'
 
     # Full-text session search is opt-in. `openAt: never` keeps
-    # ctx.sessionQuery mounted — exact reads, titles, and lineage traces
-    # (session export, subagent-fork Workspace inheritance) stay available —
-    # while search calls fail with SESSION_QUERY_SEARCH_DISABLED and SQLite is
-    # never opened; the Web sidebar search matches titles and workspace names
-    # only. Deployments enabling content search override `openAt` to
+    # ctx.sessionQuery mounted — exact reads, titles, and lineage traces stay
+    # available — while search calls fail with SESSION_QUERY_SEARCH_DISABLED
+    # and SQLite is never opened. Deployments enabling content search override `openAt` to
     # `first-search` or `startup` in a later patch layer (profile
     # cordis.patch.yml or a --patch overlay), typically with a durable `path`.
     - id: session-query-sqlite
@@ -118,9 +121,7 @@
         path: ':memory:'
         openAt: never
 
-    # Shared projection registry: subagent catalog identity (mode/label) folds
-    # through its registered units, so the `list_agents` surface below fails
-    # loud without it; web layers reuse this same mount for list rows.
+    # Shared projection registry for host and client projection units.
     - id: session-projection
       name: '@clocky/clocky-session-projection'
 
@@ -215,12 +216,15 @@
 
     - id: goal
       name: '@clocky/clocky-goal'
+      disabled: true
 
     - id: goal-round-driver
       name: '@clocky/clocky-goal-round-driver'
+      disabled: true
 
     - id: command-goal
       name: '@clocky/clocky-command-goal'
+      disabled: true
 
     - id: plan-mode
       name: '@clocky/clocky-plan-mode'
@@ -248,57 +252,6 @@
     # independent, so it follows whichever compaction service this leaf mounts.
     - id: command-compact
       name: '@clocky/clocky-command-compact'
-
-    - id: subagent
-      name: '@clocky/clocky-subagent'
-
-    - id: subagent-spawn-in-process
-      name: '@clocky/clocky-subagent-spawn-in-process'
-      config:
-        providerName: spawn
-
-    - id: subagent-fork-in-process
-      name: '@clocky/clocky-subagent-fork-in-process'
-      config:
-        providerName: fork
-
-    # Continuable background children are selected per delegation tool. The
-    # separately loaded follow-up tool registers the one global `send_message`.
-    - id: tool-subagent-control
-      name: '@clocky/clocky-tool-subagent-control'
-
-    - id: tool-subagent-list-agents
-      name: '@clocky/clocky-tool-subagent-control/list-agents'
-
-    - id: tool-subagent
-      name: '@clocky/clocky-tool-subagent'
-      config:
-        provider: spawn
-        toolName: subagent
-        backgroundMode: continuable
-
-    # Fork stays one-shot: a continuable child's `report` tool and prompt
-    # section precede the inherited history a fork exists to reuse; one-shot
-    # fork children install neither, keeping the parent's request prefix.
-    # See .agents/notes/implemented/architecture/2026-08-10-fork-children-stay-one-shot.md.
-    - id: tool-subagent-fork
-      name: '@clocky/clocky-tool-subagent'
-      config:
-        provider: fork
-        toolName: subagent_fork
-        backgroundMode: one-shot
-
-    # Optional direct-child return channel; absent from roots and one-shot agents.
-    - id: tool-subagent-report
-      name: '@clocky/clocky-tool-subagent-report'
-
-    - id: workflow-worker-thread
-      name: '@clocky/clocky-workflow-worker-thread'
-      config:
-        provider: spawn
-
-    - id: tool-workflow
-      name: '@clocky/clocky-tool-workflow'
 
     - id: timeout-policy
       name: '@clocky/clocky-tool-call-timeout-policy'
@@ -329,17 +282,11 @@
       config:
         allowParallelInProgress: true
 
-    # Persisted same-session goals reach the model and the slash menu here; the
-    # domain, driver, and `/goal` command are above.
+    # Legacy same-session goal tools stay disabled in shipped Team profiles;
+    # Team-scoped objective controls are mounted by the product composition.
     - id: tool-goal
       name: '@clocky/clocky-tool-goal'
-
-    # Fresh-agent Ralph iteration over a build-time-fixed script.
-    - id: tool-ralph
-      name: '@clocky/clocky-tool-ralph'
-      config:
-        subagentProvider: spawn
-        maxRounds: 64
+      disabled: true
 
     - id: tool-str-replace-editor
       name: '@clocky/clocky-tool-str-replace-editor'
@@ -379,7 +326,7 @@
         persona: ''
 
     # Agents created at startup. The base stays empty; raw overlays may create
-    # agents, while Web creates sessions on client request.
+    # agents, while Web starts product work through Team-run.
     - id: agent-loop
       name: '@clocky/clocky-agent-loop'
       config:

@@ -12,15 +12,13 @@ The child-scoped `report` return channel is now the largest such addition, and s
 
 ## Decision
 
-Every shipped composition binds the fork delegation tool to `backgroundMode: one-shot`: [the base bundle](../../../../packages/bundle/base/cordis.patch.yml), [the ACP example](../../../../examples/acp-agent/cordis.yml), and [the headless example](../../../../examples/headless-agent/cordis.yml). The base bundle leaves `run_in_background` available, because it mounts a task service; the two examples set `enableRunInBackground: false`, because they mount none and a one-shot background start would otherwise fail at call time on a missing `tasks` service.
+The [base bundle](../../../../packages/bundle/base/cordis.patch.yml), its headless descendant, and the shipped Web `standard`, `code`, and `cordis` presets do not mount the fork provider or expose `subagent_fork`. Product tasks therefore enter through Team topology and Team tools rather than a model-directed Session fork. The standalone examples and an explicit custom composition may still mount the fork provider and tool when inherited conversation is an intentional deployment choice.
 
-One-shot children — foreground and background alike — are created through `SubagentRuntime.start()`, which never enters the continuable activation-setup registry, so neither `report` nor its prompt section is installed. A forked one-shot child's system prompt and tool schemas therefore equal its parent's, apart from the `persona` and `toolFilter` deltas a deployment opts into per delegation tool.
-
-`spawn` keeps `backgroundMode: continuable`. Continuable children and the report obligation ship unchanged for the provider whose child starts with no inherited prefix to protect, so this decision costs the report channel nothing.
+`spawn` keeps `backgroundMode: continuable`. Continuable spawned children and the report obligation remain available for configured direct-child compositions; they do not establish a second product task entry path.
 
 ### The restriction is composition, not code
 
-`ForkInProcessProvider.prepareContinuable` stays implemented and `ctx.subagents.startContinuable()` still accepts `fork`; only the shipped `cordis.yml` rows changed. `tool-subagent` knows both the provider's `inheritsParentContext` and its own `backgroundMode` at mount, so a load-time rejection of the pair was available and is deliberately not added: the pair is not wrong in general. It is wrong only while a child-scope delta precedes inherited history, and the package that creates that delta — [`dsh-tool-subagent-report`](../../../../packages/subagent/tool-subagent-report/README.md) — is separately installable and, by its own design, invisible to `tool-subagent`. A deployment that omits the report package can run continuable forked children with the prefix intact. Encoding one roster's consequence as a delegation-tool invariant would make the tool assert something it cannot observe.
+`ForkInProcessProvider.prepareContinuable`, `ctx.subagents.startContinuable({ provider: 'fork' })`, and trusted `ctx.sessions.fork()` stay implemented. `tool-subagent` does not reject inherited-context continuations at mount because a custom composition can omit the child-scoped report contribution and retain a byte-identical prefix. That provider policy belongs to the composition, not the generic delegation tool.
 
 The reintroduction condition is recorded as a `TODO(fork-continuable-prefix-reuse)` marker on `prepareContinuable` itself, the one method the shipped compositions do not call, and tracked as issue #2124: continuable fork reopens when a child's system prompt and tool schemas can match its parent's byte for byte.
 
@@ -28,7 +26,9 @@ The reintroduction condition is recorded as a `TODO(fork-continuable-prefix-reus
 
 **Reject `inheritsParentContext` + `continuable` at mount.** A loud load-time failure would prevent silent reintroduction, which is what the configuration change cannot do. Rejected because the delegation tool cannot see the report package and the combination is legitimate without it; the invariant would be false for a deployment that never installs a child-scope delta, and `tool-subagent` would be asserting a fact owned by the roster.
 
-**Stop mounting the fork provider at all.** This was the broader form of the restriction. Rejected because foreground fork *is* the prefix-reusing case and is untouched by the report channel, so a full ban gives up the capability without buying anything the one-shot binding does not already buy — and would leave no shipped composition exercising session seeding.
+**Keep the fork provider and `subagent_fork` in product bundles.** Rejected because model-directed Session forks preserve a second product orchestration path after Team becomes the task owner. A custom composition retains the capability without making it part of the shipped model catalog.
+
+**Delete the core fork provider and Session API.** Rejected because trusted tests and explicit custom compositions still need a completed-prefix child; product unmounting does not remove that internal capability.
 
 **Ship continuable forked children and accept the loss.** Rejected because the loss is total rather than marginal: reuse breaks ahead of the inherited history, so the child pays full prefill on a transcript it duplicated for the sole purpose of not paying it. A deployment that wants a long-lived child with no inherited context already has `spawn`.
 
@@ -38,12 +38,10 @@ The reintroduction condition is recorded as a `TODO(fork-continuable-prefix-reus
 
 ## Consequences
 
-- No shipped composition creates a continuable forked child; `subagent_fork` returns a result to its caller's turn, and `send_message` addresses only spawned children.
-- A forked child's request prefix stays byte-identical to its parent's unless the deployment configures `persona` or `toolFilter` on the fork delegation tool, so the token cost of seeding buys provider-side reuse again.
-- The fork provider's continuable path has no production caller and no assembled-composition coverage. It keeps its package-level tests, and the seam still accepts it, so a bundle or `--patch` overlay can reintroduce it with no code change and no warning.
-- `subagent_fork`'s model-visible schema changes: the continuable background wording is replaced by the one-shot task wording in the base bundle, and disappears entirely from the two examples. The affected keyless snapshot tool-schema sidecars are re-recorded in the same change.
-- The report obligation's reach narrows to spawned children in shipped deployments. Its default `next-step` scheduling, authority model, and coverage remain independent of fork composition.
+- The shipped headless and Web model catalogs omit `subagent_fork`; assembled composition tests pin that absence alongside the Team final path.
+- The fork provider and its package-level tests remain available to examples, tests, and custom composition. Its continuable path has no shipped product caller.
+- The report obligation remains scoped to continuable spawned children in shipped product compositions. Its scheduling, authority model, and coverage remain independent of custom fork composition.
 
 ### Accepted risks
 
-The constraint lives in three configuration files and a code comment, not in a gate. A future bundle row or profile patch can set `backgroundMode: continuable` on a fork tool and silently reintroduce the prefix loss; nothing fails loud. That is the accepted cost of not encoding one roster's consequence into `tool-subagent`.
+An explicit custom bundle or profile patch can reintroduce the fork provider and tool without a code change. That is accepted because the capability remains outside the shipped product catalog, and the generic delegation tool cannot infer a custom composition's child-prefix policy.

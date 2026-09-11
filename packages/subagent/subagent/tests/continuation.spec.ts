@@ -272,6 +272,7 @@ describe('SubagentRuntime.startContinuable', () => {
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: 'continuable',
       provider: 'spawn',
+      depth: 1,
       label: 'child task',
       agentProvider: 'mock',
       agentModel: 'mock',
@@ -280,7 +281,6 @@ describe('SubagentRuntime.startContinuable', () => {
     expect('surfaceOp' in descriptor).toBe(false)
     expect(loaded.meta.id).toBe(started.childId)
     expect(loaded.meta.parentSession).toBe(SessionId('parent'))
-    expect(loaded.meta.origin).toBe('subagent')
   })
 
   it('rolls the child back completely when the caller signal aborts before acceptance', async () => {
@@ -367,6 +367,7 @@ describe('SubagentRuntime.startContinuable', () => {
     expect(descriptor?.data).toEqual({
       version: SUBAGENT_DESCRIPTOR_VERSION,
       mode: 'continuable',
+      depth: 1,
       provider: 'spawn',
       label: 'child task',
     })
@@ -401,6 +402,7 @@ describe('SubagentRuntime.startContinuable', () => {
       .toEqual({
         version: SUBAGENT_DESCRIPTOR_VERSION,
         mode: 'continuable',
+        depth: 1,
         provider: 'spawn',
         label: 'child task',
         toolFilter: { deny: ['noop'] },

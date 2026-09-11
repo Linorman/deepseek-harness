@@ -14,14 +14,16 @@ import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import type { ReplayOverrideDoc } from '@clocky/clocky-llm-replay'
 import {
   assertFixtureInventory,
+  closedSessionFixture,
   captureStableAria,
   compareOrRefreshGolden,
   launchWebScaffold,
+  seedSession,
   watchConsole,
   webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/skill-user-invoke', import.meta.url))
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
@@ -32,7 +34,7 @@ const ARGS_TEXT = 'and confirm the fixture wiring'
 const REPLY = 'USER_INVOKE_REPLY acknowledged; following the injected skill.'
 
 async function seedUserOnlySkill(workspaceCwd: string): Promise<void> {
-  const directory = join(workspaceCwd, 'workspace', '.agents', 'skills', SKILL_NAME)
+  const directory = join(workspaceCwd, '.agents', 'skills', SKILL_NAME)
   await mkdir(directory, { recursive: true })
   await writeFile(join(directory, 'SKILL.md'), [
     '---',
@@ -69,6 +71,7 @@ describe.skipIf(MODE === 'record')('web e2e: user-explicit skill invocation thro
     const replayOverride = join(replayDir, 'replay.override.json')
     await writeFile(replayOverride, JSON.stringify(REPLAY))
     scaffold = await launchWebScaffold({
+      legacyWorkspaceSurface: true,
       replayFixture: join(replayDir, 'override-only.jsonl'),
       replayOverride,
       // Paced replay keeps the timing-derived chrome (TTFT / tok/s) present
@@ -76,12 +79,20 @@ describe.skipIf(MODE === 'record')('web e2e: user-explicit skill invocation thro
       paceMs: 10,
     })
     await seedUserOnlySkill(scaffold.workspaceCwd)
+    await seedSession(scaffold, closedSessionFixture(), 'skill-user-invoke-web-e2e')
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('textarea:enabled').first().waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {

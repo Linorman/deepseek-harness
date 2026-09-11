@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-agent-spine-demo
+# @clocky/clocky-agent-spine-demo
 
 English | [中文](README.zh.md)
 
@@ -11,39 +11,39 @@ Read this package for the whole plugin tree and its composition order.
 `apply(ctx, config)` mounts each of these as a child of the bundle fiber:
 
 ```
-@deepseek-ai/cordis-plugin-timer  timer service (writes nothing to stdout)
-@deepseek-ai/dsh-llm              abstract LLM service + content-block vocabulary
-@deepseek-ai/dsh-session          event-sourced session log + store
-@deepseek-ai/dsh-session-title    log-backed title service + deterministic fallback
-@deepseek-ai/dsh-system-prompt    prompt-section + tool-schema assembly
-@deepseek-ai/dsh-tools            registry + guarded pre/around/post/final-result pipeline
-@deepseek-ai/dsh-skill            skill provider registry
-@deepseek-ai/dsh-skill-filesystem      local filesystem skill provider
-@deepseek-ai/dsh-agent            agent registry + initiator scope + agent/* events
-@deepseek-ai/dsh-goal             optional persisted same-session goal domain
-@deepseek-ai/dsh-tool-goal        optional model-facing goal controls
-@deepseek-ai/dsh-goal-round-driver     optional same-session goal-round driver
-@deepseek-ai/dsh-llm-retry        provider-routed request retry policy
-@deepseek-ai/dsh-jobs-local      generic background-job registry
-@deepseek-ai/dsh-invariants       configurable invariant registry service
-@deepseek-ai/dsh-session/invariant
-@deepseek-ai/dsh-agent/invariant
-@deepseek-ai/dsh-scope/invariant
-@deepseek-ai/dsh-agent-loop/invariant
+@clocky/cordis-plugin-timer  timer service (writes nothing to stdout)
+@clocky/clocky-llm              abstract LLM service + content-block vocabulary
+@clocky/clocky-session          event-sourced session log + store
+@clocky/clocky-session-title    log-backed title service + deterministic fallback
+@clocky/clocky-system-prompt    prompt-section + tool-schema assembly
+@clocky/clocky-tools            registry + guarded pre/around/post/final-result pipeline
+@clocky/clocky-skill            skill provider registry
+@clocky/clocky-skill-filesystem      local filesystem skill provider
+@clocky/clocky-agent            agent registry + initiator scope + agent/* events
+@clocky/clocky-goal             optional persisted same-session goal domain
+@clocky/clocky-tool-goal        optional model-facing goal controls
+@clocky/clocky-goal-round-driver     optional same-session goal-round driver
+@clocky/clocky-llm-retry        provider-routed request retry policy
+@clocky/clocky-jobs-local      generic background-job registry
+@clocky/clocky-invariants       configurable invariant registry service
+@clocky/clocky-session/invariant
+@clocky/clocky-agent/invariant
+@clocky/clocky-scope/invariant
+@clocky/clocky-agent-loop/invariant
                                   package-owned relational checks
-@deepseek-ai/dsh-tool-bash        the model-facing bash schema (unless toolBash=false)
-@deepseek-ai/dsh-agent-instructions  AGENTS.md/CLAUDE.md workspace context loader
-@deepseek-ai/dsh-tool-skill       session-prefix skill catalog + model-facing loader schema
-@deepseek-ai/dsh-tool-jobs       job_output/job_list/job_kill schemas + completion notices
-@deepseek-ai/dsh-agent-loop       THE concrete loop (gets the forwarded `agents`)
-                                  (dsh-system-prompt gets the forwarded `persona`)
+@clocky/clocky-tool-bash        the model-facing bash schema (unless toolBash=false)
+@clocky/clocky-agent-instructions  AGENTS.md/CLAUDE.md workspace context loader
+@clocky/clocky-tool-skill       session-prefix skill catalog + model-facing loader schema
+@clocky/clocky-tool-jobs       job_output/job_list/job_kill schemas + completion notices
+@clocky/clocky-agent-loop       THE concrete loop (gets the forwarded `agents`)
+                                  (clocky-system-prompt gets the forwarded `persona`)
 ```
 
 ## What it deliberately leaves OUTSIDE the bundle
 
 The spine is everything COMMON to every entry point. The swappable and entry-point-coupled pieces stay out, picked by whatever loads the bundle:
 
-- **the LLM adapter** — the bundle ships the abstract `llm` service; the leaf registers a concrete adapter on `ctx.llm` (`llm-deepseek`, `llm-pi-ai`, `llm-replay`).
+- **the LLM adapter** — the bundle ships the abstract `llm` service; the leaf registers a concrete adapter on `ctx.llm` (`llm-pi-ai`, `llm-replay`).
 - **model-backed session-title providers** — the bundle mounts the fallback service with overridable example limits (5 words, 40 fallback bytes, 80 accepted-title bytes); a leaf may opt into exactly one first-prompt or all-messages LLM provider.
 - **the bash executor** — the bundle ships `tool-bash` (the consumer schema); the leaf provides `ctx.shell` (`bash-local` or a sandboxed impl).
 - **non-local skill providers** — the bundle ships the skill registry, the local filesystem provider, and the `skill` tool; deployments can add other providers such as embedded or remote catalogs as siblings.
@@ -54,14 +54,14 @@ This applies the [Service Definition / Service Provider / Consumer separation](.
 ## Config
 
 ```ts
-import type { Config } from '@deepseek-ai/dsh-agent-spine-demo'
-// { agents?, maxParallelToolCalls?, includeHarnessIdentity?, includeRuntimeContext?, persona?, toolOrder?, tools?, dshHome?, sessionTitle?, skills?, workspaceContext, toolBash?, jobs?, toolJobs?, goals?, invariants? }
+import type { Config } from '@clocky/clocky-agent-spine-demo'
+// { agents?, maxParallelToolCalls?, includeHarnessIdentity?, includeRuntimeContext?, persona?, toolOrder?, tools?, clockyHome?, sessionTitle?, skills?, workspaceContext, toolBash?, jobs?, toolJobs?, goals?, invariants? }
 // workspaceContext requires { maxBytes } or false; the other owner schemas supply defaults.
 ```
 
-The bundle forwards each field to the child that owns it. App packages supply any pre-created agents: headless and JSON-RPC compositions create `main`, while the ACP app creates agents on demand at `session/new`. `includeRuntimeContext: false` is forwarded to `dsh-system-prompt` and suppresses all dynamic context snapshots for fresh sessions without disabling their policy services. Prompt, tool, title, skill, agent-instructions, invariant, goal, and task settings retain the schemas and defaults documented by their owning packages; `jobs.maxConcurrentJobsPerOwner` configures the local provider independently of the model-facing `toolJobs` controls. `pickSpineConfig()` copies only fields owned by this bundle, and conflicting `dshHome` values fail during composition.
+The bundle forwards each field to the child that owns it. App packages supply any pre-created agents: headless and JSON-RPC compositions create `main`, while the ACP app creates agents on demand at `session/new`. `includeRuntimeContext: false` is forwarded to `clocky-system-prompt` and suppresses all dynamic context snapshots for fresh sessions without disabling their policy services. Prompt, tool, title, skill, agent-instructions, invariant, goal, and task settings retain the schemas and defaults documented by their owning packages; `jobs.maxConcurrentJobsPerOwner` configures the local provider independently of the model-facing `toolJobs` controls. `pickSpineConfig()` copies only fields owned by this bundle, and conflicting `clockyHome` values fail during composition.
 
-For example, `{ invariants: { enabled: true, package_allowlist: ['^@deepseek-ai/dsh-'], package_blocklist: ['agent-loop$'] } }` keeps the package-owned companions mounted but suppresses the blocked owner. Blocklist matches override allowlist matches; see [`dsh-invariants`](../../runtime-diagnostics/invariants/README.md) for regex and lifecycle rules.
+For example, `{ invariants: { enabled: true, package_allowlist: ['^@clocky/clocky-'], package_blocklist: ['agent-loop$'] } }` keeps the package-owned companions mounted but suppresses the blocked owner. Blocklist matches override allowlist matches; see [`clocky-invariants`](../../runtime-diagnostics/invariants/README.md) for regex and lifecycle rules.
 
 ## Why a code bundle, not a shared YAML include
 
@@ -71,7 +71,7 @@ The retry policy may repeat a failed request in a new numbered step. Retry statu
 
 ## Model Experience
 
-Indirectly, through `dsh-system-prompt`, `dsh-tool-skill`, `dsh-tool-bash`, `dsh-tools`, and `dsh-llm-retry`, plus `dsh-tool-goal` and goal-round prompts when `goals` is enabled. The bundle adds no model-bound wrapper content of its own.
+Indirectly, through `clocky-system-prompt`, `clocky-tool-skill`, `clocky-tool-bash`, `clocky-tools`, and `clocky-llm-retry`, plus `clocky-tool-goal` and goal-round prompts when `goals` is enabled. The bundle adds no model-bound wrapper content of its own.
 
 #### KV Cache effect
 

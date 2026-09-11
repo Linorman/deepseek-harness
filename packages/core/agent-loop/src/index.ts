@@ -8,7 +8,7 @@
 import { Context, FiberState, Service } from '@clocky/cordis'
 import { randomUUID } from 'node:crypto'
 import z from '@clocky/schemastery'
-import { emitAgentEvent } from '@clocky/clocky-agent'
+import { emitAgentEvent, resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type {
   Agent,
   AgentFactory,
@@ -350,7 +350,7 @@ export class AgentLoop extends Service implements AgentFactory {
     ctx.effect(() => ctx.agents.setFactory(this), 'agentLoop.setFactory()')
     ctx.systemPrompt.variable('provider', context => context.agent?.options.provider)
     ctx.systemPrompt.variable('model', context => context.agent?.options.model)
-    ctx.systemPrompt.variable('cwd', context => context.agent?.session.header.cwd)
+    ctx.systemPrompt.variable('cwd', context => context.agent === undefined ? undefined : resolveAgentWorkspaceRoot(context.agent))
 
     for (const { id, sessionId, cwd, resumeSessionId, ...options } of this.config.agents) {
       const meta = cwd === undefined ? {} : { cwd }

@@ -1,0 +1,34 @@
+{
+  "scenario": "workspace-release-restart",
+  "backend": "json",
+  "independentHost": true,
+  "before": {
+    "allocation": "release-requested",
+    "task": "running",
+    "providerManifestCreated": true,
+    "providerManifestRemoved": true,
+    "physicalReleases": 1,
+    "failedConfirmations": 1,
+    "workerQuiesced": false,
+    "coordinatorQuiesced": true,
+    "sharedRootRetained": true
+  },
+  "recovered": {
+    "allocation": "released",
+    "task": "running",
+    "attemptRetained": true,
+    "worker": "stopping",
+    "workerQuiesced": false,
+    "coordinatorQuiesced": true,
+    "team": "stalled",
+    "goal": "active",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactWorkerEpochInStall": true,
+    "confirmationAttempts": 2,
+    "confirmationFailures": 1,
+    "confirmationCommits": 1,
+    "cleanupReconciliations": 1,
+    "repeatedPhysicalRelease": false,
+    "modelRequests": 0
+  }
+}

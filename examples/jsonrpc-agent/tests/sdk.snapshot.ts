@@ -11,7 +11,6 @@
 
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -37,8 +36,11 @@ const liveConfig = join(testsDir, '..', 'cordis.yml')
 const replayConfig = join(testsDir, '..', 'cordis.snapshot.yml')
 const minimalLiveConfig = join(testsDir, '..', 'minimal.cordis.yml')
 const minimalReplayConfig = join(testsDir, '..', 'minimal.snapshot.cordis.yml')
+const teamFinalConfig = join(testsDir, '..', 'team-final.snapshot.cordis.yml')
+const resumePendingConfig = join(testsDir, '..', 'resume-pending.snapshot.cordis.yml')
 const runtimeBin = fileURLToPath(new URL('../../../packages/examples/jsonrpc-demo/src/bin.ts', import.meta.url))
 const repoTsconfig = fileURLToPath(new URL('../../../tsconfig.json', import.meta.url))
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 
 const MINIMAL_SYSTEM_PROMPT = 'You are the environment-selected minimal software engineer.'
 const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
@@ -59,14 +61,12 @@ function dirOf(url: string): string {
 }
 
 interface SdkScenario {
+  /** Number of persisted sessions, including child agents. */
+  sessionCount?: number
   /** Scenario name; the snapshots/<name> fixture directory. */
   name: string
   /** The user prompt for the single SDK turn. */
   prompt: string
-  /** Fixed SDK session id, so fixtures and replay binding stay stable. */
-  sessionId: string
-  /** How many child sessions the turn persists (subagent scenarios). */
-  children: number
   /** Optional scenario-specific live and replay compositions. */
   configs?: { live: string; replay: string }
   /** Environment overrides passed to the runtime subprocess. */
@@ -75,8 +75,8 @@ interface SdkScenario {
   expectedFiles?: Readonly<Record<string, string>>
   /** Assembled model-facing tool names and required argument keys. */
   expectedTools?: Readonly<Record<string, readonly string[]>>
-  /** Exact assembled system prompt for the root request. */
-  expectedSystem?: string
+  /** Expected root-request system-prompt contract. */
+  expectedSystem?: string | { prefix: string }
   /** Exact model-facing descriptions for selected tools. */
   expectedToolDescriptions?: Readonly<Record<string, string>>
   /** Expected runtime-context state in the real assembled request. */
@@ -87,33 +87,41 @@ const SCENARIOS: SdkScenario[] = [
   {
     name: 'text-turn',
     prompt: 'Reply with exactly: SDK snapshot OK',
-    sessionId: 'sdk-snapshot-text',
-    children: 0,
   },
   {
     name: 'bash-tool',
     prompt: 'Run this exact command with your bash tool, then reply with its stdout only: echo clocky-sdk-proof-7391',
-    sessionId: 'sdk-snapshot-bash',
-    children: 0,
-  },
-  {
-    name: 'subagent-spawn-in-process',
-    prompt: "Use the subagent tool exactly once with description 'echo probe' and prompt: Reply with exactly: child answer 42. Then reply with the subagent's final answer verbatim.",
-    sessionId: 'sdk-snapshot-subagent',
-    children: 1,
   },
   {
     name: 'persistent-tools',
     prompt: 'Prove that bash state persists. Then create {{cwd}}/note.txt with a tab-indented line, view it, replace that literal tab-indented line, and make the persistent shell exit with code 9.',
-    sessionId: 'persistent-tools-snapshot',
-    children: 0,
     configs: { live: minimalLiveConfig, replay: minimalReplayConfig },
     environment: { CLOCKY_SYSTEM_PROMPT: MINIMAL_SYSTEM_PROMPT },
     expectedFiles: { 'note.txt': 'target:\n\tnew\n' },
-    expectedTools: { bash: ['command'], str_replace_editor: ['command', 'path'] },
-    expectedSystem: MINIMAL_SYSTEM_PROMPT,
+    expectedTools: {
+      bash: ['command'],
+      str_replace_editor: ['command', 'path'],
+      team_final: ['channel_id', 'text'],
+      team_message: ['channel_id', 'text', 'delivery'],
+      team_task_heartbeat: ['task_id', 'attempt_id'],
+      team_task_integrate: ['task_id', 'attempt_id'],
+      team_task_report: ['task_id', 'attempt_id', 'outcome'],
+      team_task_review: ['task_id', 'decision', 'reason'],
+    },
+    expectedSystem: { prefix: MINIMAL_SYSTEM_PROMPT },
     expectedToolDescriptions: { bash: MINIMAL_BASH_DESCRIPTION },
     runtimeContext: false,
+  },
+  {
+    name: 'team-final',
+    prompt: 'Return the scripted Team final result.',
+    configs: { live: teamFinalConfig, replay: teamFinalConfig },
+  },
+  {
+    name: 'resume-pending',
+    sessionCount: 2,
+    prompt: 'Resume the retained input after cancelling this turn.',
+    configs: { live: resumePendingConfig, replay: resumePendingConfig },
   },
 ]
 
@@ -134,11 +142,12 @@ async function jsonlFiles(dir: string): Promise<string[]> {
 
 async function persistedLogs(sessionsRoot: string): Promise<PersistedLog[]> {
   const files = await jsonlFiles(sessionsRoot)
-  return Promise.all(files.map(async (path) => {
+  const logs = await Promise.all(files.map(async (path) => {
     const content = await readFile(path, 'utf8')
     const header = JSON.parse(content.slice(0, content.indexOf('\n'))) as Record<string, unknown>
     return { path, content, header }
   }))
+  return logs.filter(log => log.header.type === 'session')
 }
 
 interface LoggedRequestHeader {
@@ -252,11 +261,12 @@ function normalizeNotifications(notifications: readonly HarnessNotification[], c
   return normalizeStdout(`${records.map(record => JSON.stringify(record)).join('\n')}\n`, ctx)
 }
 
-/** Normalize the owned-run projection. */
+/** Normalize the Team-run result projection. */
 function normalizeResult(result: RunResult, ctx: NormalizeContext): string {
   return normalizeStdout(`${JSON.stringify({
-    sessionId: result.sessionId,
+    teamId: result.teamId,
     finalResponse: result.finalResponse,
+    final: result.final,
   })}\n`, ctx)
 }
 
@@ -268,7 +278,11 @@ async function runScenario(scenario: SdkScenario): Promise<{
   observedFiles: Record<string, string | MissingFile>
   cwd: string
 }> {
-  const cwd = await mkdtemp(join(tmpdir(), `sdk-snapshot-${scenario.name}-`))
+  const tempRoot = join(repoRoot, '.tmp')
+  await mkdir(tempRoot, { recursive: true })
+  const cwd = await mkdtemp(join(tempRoot, `sdk-snapshot-${scenario.name}-`))
+  const runtimeTemp = join(cwd, '.tmp')
+  await mkdir(runtimeTemp)
   const sessionsRoot = join(cwd, '.sessions')
   const replayFixtures = recording ? [] : await hydrateReplayFixtures(scenario, cwd)
   const launch = resolveExampleLaunch({
@@ -285,6 +299,10 @@ async function runScenario(scenario: SdkScenario): Promise<{
       : scenario.configs?.replay ?? replayConfig,
     CLOCKY_SESSION_ROOT: sessionsRoot,
     CLOCKY_CWD: cwd,
+    CLOCKY_HOME: join(cwd, '.clocky'),
+    TMPDIR: runtimeTemp,
+    TMP: runtimeTemp,
+    TEMP: runtimeTemp,
     CLOCKY_SNAPSHOT: mode,
     NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
     ...parentFixture === undefined ? {} : {
@@ -302,16 +320,24 @@ async function runScenario(scenario: SdkScenario): Promise<{
       env,
       requestTimeoutMs: 110_000,
     },
+    credential: 'jsonrpc-snapshot-product-credential',
     cwd,
     provider: 'test-provider',
     model: 'test-model',
   })
   try {
     const notifications: HarnessNotification[] = []
-    const result = await harness.run(scenario.prompt.replaceAll('{{cwd}}', cwd), {
-      sessionId: scenario.sessionId,
-      onNotification: (notification) => { notifications.push(notification) },
-    })
+    const result = await harness.run(
+      scenario.prompt.replaceAll('{{cwd}}', cwd),
+      { onNotification: (notification) => { notifications.push(notification) } },
+    )
+    if (scenario.name === 'team-final') {
+      const inbox = await harness.inboxRead({ limit: 1 })
+      expect(inbox.items).toMatchObject([{ kind: 'final', teamId: result.teamId, envelopeId: result.final.envelopeId, text: result.finalResponse }])
+      expect(inbox.displayCursor).toBe(-1)
+      await harness.inboxAcknowledge({ throughCursor: inbox.items[0]!.sequence })
+      expect((await harness.inboxRead({})).items).toEqual([])
+    }
     await harness.close()
     const logs = await persistedLogs(sessionsRoot)
     const observedFiles = Object.fromEntries(await Promise.all(
@@ -327,22 +353,17 @@ async function runScenario(scenario: SdkScenario): Promise<{
   }
 }
 
-/** Order logs parent-first, children by creation time (fixture layout order). */
-function orderLogs(logs: PersistedLog[], scenario: SdkScenario): PersistedLog[] {
-  const parents = logs.filter(log => typeof log.header.parentSession !== 'string')
-  const children = logs.filter(log => typeof log.header.parentSession === 'string')
-    .sort((left, right) => Number(left.header.createdAt) - Number(right.header.createdAt))
-  expect(parents).toHaveLength(1)
-  expect(children).toHaveLength(scenario.children)
-  return [...parents, ...children]
+/** Select the SDK coordinator from the expected parent and child Session logs. */
+function coordinatorLog(logs: PersistedLog[], scenario: SdkScenario): PersistedLog {
+  expect(logs).toHaveLength(scenario.sessionCount ?? 1)
+  const coordinator = logs.find(log => log.header.parentSession === undefined)
+  if (coordinator === undefined) throw new Error(`${scenario.name} has no coordinator session log`)
+  return coordinator
 }
 
 function fixtureFiles(scenario: SdkScenario): string[] {
-  const dir = join(snapshotsDir, scenario.name)
-  return [
-    join(dir, 'session.jsonl'),
-    ...Array.from({ length: scenario.children }, (_, index) => join(dir, `session.${index + 1}.jsonl`)),
-  ]
+  return Array.from({ length: scenario.sessionCount ?? 1 }, (_, index) =>
+    join(snapshotsDir, scenario.name, index === 0 ? 'session.jsonl' : `session.${index}.jsonl`))
 }
 
 describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
@@ -353,7 +374,8 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
       const resultExpectedPath = join(scenarioDir, 'result.expected.json')
 
       const { result, notifications, logs, observedFiles, cwd } = await runScenario(scenario)
-      const ordered = orderLogs(logs, scenario)
+      const coordinator = coordinatorLog(logs, scenario)
+      const ordered = [coordinator, ...logs.filter(log => log !== coordinator)]
       const actualContext = contextOf(ordered, cwd)
       const files = fixtureFiles(scenario)
 
@@ -413,7 +435,7 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
           .toBe(normalizeSessionSnapshot(expected, expectedContext))
       }
 
-      // The SDK-visible wire stream and turn result match their expected outputs.
+      // The SDK-visible Team stream and final result match their expected outputs.
       const normalizedNotifications = normalizeNotifications(notifications, actualContext)
       const normalizedResult = normalizeResult(result, actualContext)
       if (recording || refreshing) {
@@ -423,7 +445,8 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
       expect(normalizedNotifications).toBe(await readFile(notificationsExpectedPath, 'utf8'))
       expect(normalizedResult).toBe(await readFile(resultExpectedPath, 'utf8'))
 
-      // Wire-shape invariants that must hold in every mode.
+      // Team-run invariants that must hold in every mode.
+      expect(result.final.text).toBe(result.finalResponse)
       expect(notifications.at(-1)).toMatchObject({
         method: 'session.status',
         params: { status: 'idle' },
@@ -437,7 +460,15 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
       if (scenario.expectedSystem !== undefined) {
         const parent = ordered[0]
         if (parent === undefined) throw new Error(`${scenario.name} has no parent session log`)
-        expect(assembledSystem(parent)).toBe(scenario.expectedSystem)
+        const system = assembledSystem(parent)
+        if (typeof scenario.expectedSystem === 'string') {
+          expect(system).toBe(scenario.expectedSystem)
+        } else {
+          expect(system.startsWith(scenario.expectedSystem.prefix)).toBe(true)
+          expect(system).toMatch(
+            /When you have completed the user's objective, call team_final with channel_id channel-.+ and your final answer text\./u,
+          )
+        }
       }
       if (scenario.expectedToolDescriptions !== undefined) {
         const parent = ordered[0]
@@ -458,10 +489,6 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
           const system = assembledSystem(parent)
           for (const clause of scenario.runtimeContext.includes) expect(system).not.toContain(clause)
         }
-      }
-      if (scenario.children > 0) {
-        expect(notifications.some(n => n.method === 'subagent.started')).toBe(true)
-        expect(notifications.some(n => n.method === 'subagent.finished')).toBe(true)
       }
     })
   }

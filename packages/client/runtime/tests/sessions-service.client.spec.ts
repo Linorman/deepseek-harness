@@ -4,13 +4,13 @@
  * validation, persisted mask semantics, cell resolution), scope-tree
  * lifecycle (lazy mint / frozen survival / removed teardown with staged
  * deferral — the stage follows list.current), binding identity, breadcrumb
- * projection, create.
+ * projection.
  */
 import { Context } from '@clocky/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@clocky/clocky-api-remotes/client'
-import { SessionCreateError, SessionRuntime, scopeOf } from '../src/client/sessions/service.ts'
-import { FakeApiClient, deferred, err, fakeRemote, ok } from './fake-api.client.ts'
+import { SessionRuntime, scopeOf } from '../src/client/sessions/service.ts'
+import { FakeApiClient, deferred, fakeRemote, ok } from './fake-api.client.ts'
 
 const sid = (s: string): SessionId => s as SessionId
 
@@ -31,8 +31,6 @@ function bench(): Bench {
 type FeedRow = {
   id: string
   cwd?: string
-  parentId?: string
-  origin?: 'subagent'
   running?: boolean
   blank?: boolean
   agentPreset?: string
@@ -43,8 +41,6 @@ async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
     items: rows.map(r => ({
       sessionId: sid(r.id), updatedAt: 1, running: r.running ?? false, blank: r.blank ?? false,
       ...(r.cwd !== undefined ? { cwd: r.cwd } : {}),
-      ...(r.parentId !== undefined ? { parentSessionId: sid(r.parentId) } : {}),
-      ...(r.origin !== undefined ? { origin: r.origin } : {}),
       ...(r.agentPreset !== undefined ? { agentPreset: r.agentPreset } : {}),
     })),
   }) as never)
@@ -53,7 +49,7 @@ async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
 }
 
 describe('list store projection', () => {
-  it('projects durable titles separately from cwd/id display fallbacks and parent links', async () => {
+  it('projects durable titles separately from cwd/id display fallbacks', async () => {
     const b = bench()
     b.svc.handleMuxEnvelope({
       rpcId: 'title' as never,
@@ -61,14 +57,12 @@ describe('list store projection', () => {
     })
     await feedList(b, [
       { id: 's1', cwd: '/home/u/proj-a/' },
-      { id: 's2', parentId: 's1', origin: 'subagent', running: true },
+      { id: 's2', running: true },
     ])
     const state = b.svc.list.getSnapshot()
     expect(state.ids).toEqual(['s1', 's2'])
     expect(state.byId[sid('s1')]).toMatchObject({ title: 'Durable title', displayTitle: 'Durable title', cwd: '/home/u/proj-a/' })
-    expect(state.byId[sid('s2')]).toMatchObject({
-      displayTitle: 's2', parentId: 's1', origin: 'subagent', running: true,
-    })
+    expect(state.byId[sid('s2')]).toMatchObject({ displayTitle: 's2', running: true })
     expect(state.byId[sid('s2')]?.title).toBeUndefined()
   })
 
@@ -378,221 +372,6 @@ describe('slot-store scope prune hook', () => {
   })
 })
 
-describe('catalog-addressed navigation', () => {
-  it('uses catalog labels for a listed addressed route', async () => {
-    const b = bench()
-    b.api.onSubagentList = (payload) => {
-      const { parentSessionId } = payload as { parentSessionId: SessionId }
-      if (parentSessionId === sid('root')) {
-        return Promise.resolve(ok({
-          entries: [{
-            kind: 'child', id: sid('child'), mode: 'continuable', label: 'Child',
-            activity: 'inactive', hasChildren: true,
-          }] as never[],
-          parentAvailable: true,
-        }))
-      }
-      if (parentSessionId === sid('child')) {
-        return Promise.resolve(ok({
-          entries: [{
-            kind: 'child', id: sid('grandchild'), mode: 'continuable', label: 'Grandchild',
-            activity: 'inactive', hasChildren: false,
-          }] as never[],
-          parentAvailable: false,
-        }))
-      }
-      return Promise.resolve(ok({ entries: [], parentAvailable: false }))
-    }
-    await feedList(b, [
-      { id: 'root' },
-      { id: 'child', cwd: '/summary-child', parentId: 'root', origin: 'subagent' },
-      { id: 'grandchild', cwd: '/summary-grandchild', parentId: 'child', origin: 'subagent' },
-    ])
-    await b.svc.refreshSubagents(sid('root'))
-    await b.svc.refreshSubagents(sid('child'))
-    b.svc.openSubagent({
-      parentSessionId: sid('child'), childSessionId: sid('grandchild'), mode: 'continuable',
-    })
-
-    expect(b.svc.list.getSnapshot().byId[sid('child')]?.displayTitle).toBe('Child')
-    expect(b.svc.list.getSnapshot().byId[sid('grandchild')]?.displayTitle).toBe('Grandchild')
-  })
-
-  it('projects a directly opened descendant route without retaining ancestor scopes or addresses', async () => {
-    const b = bench()
-    b.api.onSubagentList = (payload) => {
-      const { parentSessionId } = payload as { parentSessionId: SessionId }
-      if (parentSessionId === sid('root')) {
-        return Promise.resolve(ok({
-          entries: [{
-            kind: 'child', id: sid('child'), mode: 'continuable', label: 'Child',
-            activity: 'inactive', hasChildren: true,
-          }] as never[],
-          parentAvailable: true,
-        }))
-      }
-      if (parentSessionId === sid('child')) {
-        return Promise.resolve(ok({
-          entries: [{
-            kind: 'child', id: sid('grandchild'), mode: 'continuable', label: 'Grandchild',
-            activity: 'inactive', hasChildren: false,
-          }] as never[],
-          parentAvailable: false,
-        }))
-      }
-      return Promise.resolve(ok({ entries: [], parentAvailable: false }))
-    }
-    await feedList(b, [{ id: 'root' }])
-    await b.svc.refreshSubagents(sid('root'))
-    await b.svc.refreshSubagents(sid('child'))
-    b.svc.openSubagent({
-      parentSessionId: sid('child'), childSessionId: sid('grandchild'), mode: 'continuable',
-    })
-
-    const list = b.svc.list.getSnapshot()
-    expect(list.ids).toEqual([sid('root')])
-    expect(list.byId[sid('child')]).toMatchObject({ parentId: sid('root'), origin: 'subagent' })
-    expect(list.byId[sid('grandchild')]).toMatchObject({ parentId: sid('child'), origin: 'subagent' })
-    expect(b.svc.binding(sid('child'))).toBeUndefined()
-    expect(b.svc.subagentAddress(sid('child'))).toBeUndefined()
-
-    b.svc.open(sid('child'))
-    expect(b.svc.list.getSnapshot().current).toBe(sid('child'))
-    expect(b.svc.subagentAddress(sid('child'))).toEqual({
-      parentSessionId: sid('root'), childSessionId: sid('child'), mode: 'continuable',
-    })
-  })
-})
-
-describe('create', () => {
-  it('passes a preallocated id and preserves it on ordinary failure', async () => {
-    const b = bench()
-    b.api.onCreate = () => Promise.resolve(ok({ sessionId: sid('fresh') }))
-    await expect(b.svc.create({ cwd: '/w', sessionId: sid('fresh') })).resolves.toBe('fresh')
-    expect(b.api.callsOf('session.create')).toEqual([{ cwd: '/w', sessionId: 'fresh' }])
-    b.api.onCreate = () => Promise.resolve({
-      rpcId: 'e' as never,
-      result: { ok: false as const, error: { code: 'internal' as const, message: '爆了', details: {} } },
-    } as never)
-    const failure = await b.svc.create({ sessionId: sid('candidate') }).catch((error: unknown) => error)
-    expect(failure).toBeInstanceOf(SessionCreateError)
-    expect(failure).toMatchObject({
-      requestedSessionId: 'candidate',
-      rpcError: { code: 'internal', message: '爆了' },
-    })
-  })
-
-  it('resolves with the session already listed and binding-resolvable (no flush wait)', async () => {
-    const b = bench()
-    b.api.onCreate = () => Promise.resolve(ok({ sessionId: sid('born') }))
-    const born = await b.svc.create({ workspaceId: 'ws' as never })
-    // Synchronously after resolution — the draft hand-off contract: the
-    // create echo IS the entity entering the client's view (blank row +
-    // resolvable scope/binding), no notifier flush in between.
-    expect(b.svc.list.getSnapshot().byId[born]).toMatchObject({ id: 'born', blank: true })
-    expect(b.svc.binding(born)).toBeDefined()
-    expect(b.svc.scope(born)).toBeDefined()
-  })
-
-  it('lists the published id after Workspace attachment fails (publication precedes attachment)', async () => {
-    const b = bench()
-    b.api.onCreate = () => Promise.resolve({
-      rpcId: 'attach' as never,
-      result: {
-        ok: false,
-        error: {
-          code: 'workspace-attach-failed', message: 'ledger unavailable',
-          details: { sessionId: sid('published'), workspaceId: 'ws' },
-        },
-      },
-    } as never)
-    const failure = await b.svc.create({
-      workspaceId: 'ws' as never,
-      sessionId: sid('published'),
-    }).catch((error: unknown) => error)
-    await Promise.resolve()
-    expect(failure).toBeInstanceOf(SessionCreateError)
-    expect(failure).toMatchObject({
-      requestedSessionId: 'published',
-      rpcError: { code: 'workspace-attach-failed' },
-    })
-    expect(b.svc.list.getSnapshot().byId[sid('published')]).toMatchObject({ id: 'published', blank: true })
-  })
-})
-
-describe('fork', () => {
-  it.each([
-    ['Roadmap', 'Roadmap (1)'],
-    ['Roadmap (1)', 'Roadmap (2)'],
-    ['计划（1）', '计划（2）'],
-    ['计划 （9）', '计划 （10）'],
-  ])('increments the durable title %j after the child is published', async (sourceTitle, childTitle) => {
-    const b = bench()
-    b.svc.handleMuxEnvelope({
-      rpcId: 'source-title' as never,
-      payload: { type: 'session/projection', sessionId: sid('source'), key: 'title', value: sourceTitle, seq: 2 } as never,
-    })
-    await feedList(b, [{ id: 'source', cwd: '/work' }])
-    b.api.onFork = () => Promise.resolve(ok({ sessionId: sid('child') }))
-    b.api.onRename = (payload) => {
-      const { title } = payload as { title: string }
-      return Promise.resolve(ok({ title, seq: 3 }))
-    }
-
-    await expect(b.svc.fork({
-      sessionId: sid('source'), atSeq: 7, increaseTitle: true,
-    })).resolves.toBe('child')
-
-    expect(b.api.callsOf('session.fork')).toEqual([{ sessionId: 'source', atSeq: 7 }])
-    expect(b.api.callsOf('session.rename')).toEqual([{ sessionId: 'child', title: childTitle }])
-    await Promise.resolve()
-    expect(b.svc.list.getSnapshot().byId[sid('child')]).toMatchObject({
-      title: childTitle,
-      displayTitle: childTitle,
-      parentId: 'source',
-    })
-  })
-
-  it('floors a fractional anchor to the real event seq the wire accepts', async () => {
-    const b = bench()
-    await feedList(b, [{ id: 'source', cwd: '/work' }])
-    b.api.onFork = () => Promise.resolve(ok({ sessionId: sid('child') }))
-
-    // The frozen node of an interrupted turn carries turnEnd.seq - 0.9.
-    await expect(b.svc.fork({ sessionId: sid('source'), atSeq: 41.1 })).resolves.toBe('child')
-
-    expect(b.api.callsOf('session.fork')).toEqual([{ sessionId: 'source', atSeq: 41 }])
-  })
-
-  it('does not rename without the title policy or a durable source title', async () => {
-    const b = bench()
-    await feedList(b, [{ id: 'source', cwd: '/work' }])
-    b.api.onFork = () => Promise.resolve(ok({ sessionId: sid('child') }))
-    await expect(b.svc.fork({ sessionId: sid('source'), increaseTitle: true })).resolves.toBe('child')
-    expect(b.api.callsOf('session.rename')).toEqual([])
-
-    b.api.onFork = () => Promise.resolve(ok({ sessionId: sid('child-2') }))
-    await expect(b.svc.fork({ sessionId: sid('source') })).resolves.toBe('child-2')
-    expect(b.api.callsOf('session.rename')).toEqual([])
-  })
-
-  it('rejects when child rename fails while keeping the published child addressable', async () => {
-    const b = bench()
-    b.svc.handleMuxEnvelope({
-      rpcId: 'source-title' as never,
-      payload: { type: 'session/projection', sessionId: sid('source'), key: 'title', value: 'Roadmap', seq: 2 } as never,
-    })
-    await feedList(b, [{ id: 'source' }])
-    b.api.onFork = () => Promise.resolve(ok({ sessionId: sid('child') }))
-    b.api.onRename = () => Promise.resolve(err({
-      code: 'title-invalid', message: 'rejected', details: { sessionId: sid('child') },
-    }))
-
-    await expect(b.svc.fork({ sessionId: sid('source'), increaseTitle: true }))
-      .rejects.toThrow('fork child rename failed: title-invalid: rejected')
-    expect(b.svc.binding(sid('child'))).toBeDefined()
-  })
-})
 
 describe('scope lifecycle rides the list mirror (entity parity: no client-side pre-birth)', () => {
   it('a session-added frame births the row (blank) and makes the scope resolvable; removal prunes it', async () => {

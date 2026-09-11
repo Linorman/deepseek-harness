@@ -53,15 +53,10 @@ export class WorkspaceRuntime implements IWorkspaces {
   readonly list: SnapshotStore<WorkspaceListState>
   /** Workspace baseline and frame owner. */
   private readonly manager: WorkspaceManager
-  /** In-flight blank-session creates keyed by workspace (connectWorkspace coalescing). */
-  private readonly connecting = new Map<WorkspaceId, Promise<SessionId>>()
-  /** Guards the runtime-owned one-shot initial-selection subscription. */
-  private initialSelectionStarted = false
-
   /**
    * @param ctx - client root context.
    * @param api - shared wire client.
-   * @param sessions - cross-domain sessions face used for recency and blank-session reuse.
+   * @param sessions - cross-domain sessions face used for baseline coordination and archive selection.
    */
   constructor(ctx: Context, private readonly api: IApiClient, private readonly sessions: SessionsPort) {
     this.manager = new WorkspaceManager(api)
@@ -72,123 +67,6 @@ export class WorkspaceRuntime implements IWorkspaces {
     this.manager.subscribe(() => { this.project() })
     this.sessions.list.subscribe(() => { this.project() })
     ctx.reflect.provide('workspaces', this, undefined)
-  }
-
-  /**
-   * Resolve the session a New Session flow lands in once this Workspace is
-   * chosen: reuse the workspace's existing blank session when one is in the
-   * list mirror, else create a fresh one on the host (`session.create` births
-   * the full Session+Agent — the client holds no intermediate state). The
-   * caller owns navigation: take the returned id to `sessions.open`.
-   * Resolution guarantee (both arms): the returned id is already in the list
-   * store and `sessions.binding(id)` resolves synchronously — draft hand-off
-   * may write the new scope's machine before opening.
-   * @param workspaceId - chosen Workspace (must be in the workspace list).
-   * @returns the reused or newly created session id.
-   */
-  async connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId> {
-    const workspace = this.list.getSnapshot().items.find(item => item.workspaceId === workspaceId)
-    if (workspace === undefined) throw new Error(`workspaces.connectWorkspace: unknown workspace ${workspaceId}`)
-    // Coalesce concurrent connects: a create's summary lands without cwd
-    // until the host frame arrives, so a second call inside that window
-    // would miss the reuse scan and mint another hidden blank session.
-    const inflight = this.connecting.get(workspaceId)
-    if (inflight !== undefined) return inflight
-    // Reuse requires workspace membership (id in sessionIds AND same
-    // canonical cwd — the host's own membership rule), never cwd alone:
-    // a cwd match can belong to no account (sessions the CLI/TUI birthed at
-    // the host cwd, or a deleted/recreated registration) and reusing it
-    // would open a session no grouping surface shows under this workspace.
-    // An archived blank is never reused either: reuse would open a session
-    // no grouping surface can show, so New Session mints a fresh one instead.
-    const archived = this.list.getSnapshot().archivedSessionIds
-    const sessions = this.sessions.list.getSnapshot()
-    for (const id of sessions.ids) {
-      const summary = sessions.byId[id]
-      if (summary !== undefined && summary.blank && summary.cwd === workspace.path
-        && workspace.sessionIds.includes(summary.id)
-        && !archived.includes(summary.id)) return summary.id
-    }
-    const attempt = this.sessions.create({ workspaceId })
-      .finally(() => { this.connecting.delete(workspaceId) })
-    this.connecting.set(workspaceId, attempt)
-    return attempt
-  }
-
-  /**
-   * Follow the first complete Workspace/Session baseline and select a default
-   * session exactly once. A restored current session wins; otherwise the most
-   * recent Workspace is connected (reusing or creating its blank session).
-   * Later explicit clears stay cleared instead of retriggering this startup
-   * policy. A failed connect may retry on the next baseline projection.
-   * @returns disposer for the baseline subscription; late work cannot navigate after disposal.
-   */
-  startInitialSelection(): () => void {
-    if (this.initialSelectionStarted) {
-      throw new Error('workspaces.startInitialSelection: already started')
-    }
-    this.initialSelectionStarted = true
-    let state: 'waiting' | 'connecting' | 'done' = 'waiting'
-    let disposed = false
-    const reconcile = (): void => {
-      if (disposed || state !== 'waiting') return
-      const workspace = this.list.getSnapshot()
-      if (!workspace.baselinesReady) return
-      const current = this.sessions.list.getSnapshot().current
-      const target = workspace.recentWorkspaceId
-      if (current !== undefined || target === undefined) {
-        state = 'done'
-        return
-      }
-      state = 'connecting'
-      void this.connectWorkspace(target).then(
-        (sessionId) => {
-          if (disposed) return
-          if (this.sessions.list.getSnapshot().current === undefined) {
-            this.sessions.open(sessionId)
-          }
-          state = 'done'
-        },
-        (reason: unknown) => {
-          if (disposed) return
-          state = 'waiting'
-          console.warn('initial workspace selection failed:', reason)
-        },
-      )
-    }
-    const unsubscribe = this.list.subscribe(reconcile)
-    reconcile()
-    return () => {
-      disposed = true
-      unsubscribe()
-    }
-  }
-
-  /**
-   * The shared New Session action behind the shell entry points (sidebar
-   * button, workspace browser): resolve the target Workspace — explicit wins,
-   * then the current Session's Workspace, then the recent-Workspace
-   * projection — connect its blank session and navigate there; with no
-   * Workspace at all, clear the selection into the New Session view state.
-   * Connect failures are non-fatal (console diagnostics; the current view
-   * stays usable).
-   * @param workspaceId - explicit target Workspace for scoped actions.
-   */
-  startSession(workspaceId?: WorkspaceId): void {
-    const workspace = this.list.getSnapshot()
-    const current = this.sessions.list.getSnapshot().current
-    const currentWorkspaceId = current === undefined
-      ? undefined
-      : workspace.items.find(item => item.sessionIds.includes(current))?.workspaceId
-    const target = workspaceId ?? currentWorkspaceId ?? workspace.recentWorkspaceId
-    if (target === undefined) {
-      this.sessions.clear()
-      return
-    }
-    void this.connectWorkspace(target).then(
-      (sessionId) => { this.sessions.open(sessionId) },
-      (reason: unknown) => { console.warn('new session failed:', reason) },
-    )
   }
 
   /**
@@ -334,7 +212,7 @@ export class WorkspaceRuntime implements IWorkspaces {
     const workspace = this.manager.getSnapshot()
     const sessions = this.sessions.list.getSnapshot()
     const baselinesReady = workspace.phase === 'ready' && sessions.phase === 'ready'
-    // An archived current selection clears into the New Session view state —
+    // An archived current selection clears into the no-session view state —
     // a hidden row must not stay open behind the list. Sweeping here covers
     // every install path with one rule: the local unary echo, another tab's
     // changed frame, and a reconnect baseline restoring a persisted

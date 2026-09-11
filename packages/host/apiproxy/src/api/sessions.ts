@@ -13,7 +13,6 @@ import type { SessionEvent, SessionId } from '@clocky/clocky-session/types'
 import type { SessionProjectionMap } from '@clocky/clocky-session-projection/types'
 import type { RpcId, RpcRequest, RpcResponse } from './rpc.ts'
 import type { ToolEventView } from './events.ts'
-import type { WorkspaceId } from './workspace.ts'
 
 declare module '@clocky/clocky-session-projection/types' {
   interface SessionProjectionStateMap {
@@ -198,10 +197,6 @@ export interface SessionSummary {
    * or oversized artifacts conservatively report false.
    */
   blank: boolean
-  /** fork/spawn lineage (session.header.parentSession passthrough); absent for root sessions. */
-  parentSessionId?: SessionId
-  /** Coarse durable origin used by navigation surfaces; never proves resumability. */
-  origin?: 'subagent'
   /** Session working directory (header.cwd passthrough); absent when unrecorded. */
   cwd?: string
   /**
@@ -248,24 +243,6 @@ export interface SessionsApi {
   ): Promise<RpcResponse<{ items: SessionSearchItem[]; hasMore: boolean }>>
 
   /**
-   * Creates a real session and its idle agent. At most one of `workspaceId` /
-   * `cwd` is accepted; an omitted project uses the Host cwd. A caller may
-   * preallocate `sessionId`: retries with the same id and cwd return the same
-   * session, while a different cwd fails with `session-conflict`. Workspace
-   * creation attaches the session after publication; an attach failure
-   * returns `workspace-attach-failed` with the published session id.
-   *
-   * `agentPreset` names the composition the new session's agent is built
-   * from; omitted, the effective default applies — the user's stored choice
-   * where one exists, else the deployment's own. The resolved id is stored on
-   * the session header, so a later resume rebuilds the same agent. An unknown
-   * id fails with `agent-preset-not-found`, and a preset whose composition
-   * cannot be mounted fails with `agent-preset-invalid`.
-   */
-  create(request: RpcRequest<{ workspaceId?: WorkspaceId; cwd?: string; sessionId?: SessionId; agentPreset?: string }>):
-  Promise<RpcResponse<{ sessionId: SessionId; agentPreset?: string }>>
-
-  /**
    * Reads a window of history events; page boundaries align to append-origin message
    * boundaries: one page = all raw events owned by a whole number of such messages (including
    * their chunk / tool events), never cut mid-message. Model-only replacement copies consume no
@@ -288,14 +265,14 @@ export interface SessionsApi {
 
   /**
    * Reads a fresh advisory model directory for an ordinary session. Provider
-   * lookups run independently; subagents reject with `agent-busy`.
+   * lookups run independently.
    */
   models(request: RpcRequest<{ sessionId: SessionId }>): Promise<RpcResponse<SessionModels>>
 
   /**
    * Selects the complete model selection for this session. Exact model metadata
    * validates an optional reasoning effort, while catalog membership remains
-   * advisory. Session-backed subagents reject with `agent-busy`.
+   * advisory.
    */
   selectModel(request: RpcRequest<{
     sessionId: SessionId
@@ -311,7 +288,6 @@ export interface SessionsApi {
    * normalized accepted title and the title event's seq return so the caller
    * can settle its projection cell without waiting for the push frame. A
    * title that normalizes to empty fails with `title-invalid`.
-   * Session-backed subagents reject with `agent-busy`.
    */
   rename(request: RpcRequest<{ sessionId: SessionId; title: string }>):
   Promise<RpcResponse<{ title: string; seq: number }>>
@@ -325,28 +301,10 @@ export interface SessionsApi {
    * RPC error with code command-error; an unrecognized name is an RPC error with code unknown-command.
    */
   /**
-   * Forks a new session from a completed-turn prefix of the source. `atSeq`
-   * anchors the cut: the boundary is the first `turn/end` at or after it
-   * (a message's fork button passes the message seq, so the fork includes
-   * that whole turn); a boundary past the log end, or an omitted `atSeq`,
-   * falls back to the source's last completed turn. An in-log anchor whose
-   * turn is still open fails with `fork-unavailable` instead of clipping to
-   * an earlier turn. The child inherits the source cwd, latest logged model
-   * target and `parentSessionId` lineage; the seed prefix carries the source
-   * title. Reading the source uses attached state or persistence inspection
-   * without acquiring an Agent. Workspace attachment follows the source
-   * directly, or the nearest workspace-owning ancestor when the source is a
-   * subagent.
-   */
-  fork(request: RpcRequest<{ sessionId: SessionId; atSeq?: number }>):
-  Promise<RpcResponse<{ sessionId: SessionId }>>
-
-  /**
    * Sends text and temporary image bytes to an ordinary session Agent after durable host admission.
-   * Browser callers attach their current IANA zone;
-   * the Host validates, canonicalizes, and records it on that exact user message. Omission remains
-   * valid for non-browser callers. Session-backed subagents reject with `agent-busy` and use
-   * `subagent.prompt`.
+   * A live default Team coordinator identified by its Session header instead receives the input through
+   * the current TeamRun owner's human channel. Browser callers attach their current IANA zone; the Host
+   * validates, canonicalizes, and records it on direct ordinary user input.
    */
   prompt(request: RpcRequest<{
     sessionId: SessionId
@@ -362,15 +320,14 @@ export interface SessionsApi {
 
   /**
    * Edits, removes, or strictly steers one pending queued occurrence on an ordinary session.
-   * Session-backed subagents reject with `agent-busy`.
    */
   updateQueue(request: RpcRequest<{ sessionId: SessionId; itemId: MessageId; action: QueueAction }>):
   Promise<RpcResponse<{ accepted: true }>>
 
   /**
    * Stops an ordinary session's active turn, preserving pending inbox work
-   * that resumes in FIFO order after cancellation settles. Session-backed
-   * subagents reject with `agent-busy`.
+   * that resumes in FIFO order after cancellation settles. A live default Team
+   * coordinator receives a durable Team soft interrupt instead.
    */
   cancel(request: RpcRequest<{ sessionId: SessionId }>): Promise<RpcResponse<{ accepted: true }>>
 

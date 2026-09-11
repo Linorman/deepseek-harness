@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Assembled max-tokens snapshot: boots the real built `packages/client/*/lib/
 // client.js` bundles through AppWebEntry's ModuleLoader path against the
-// keyless FixtureApiClient transport, opens the fixture session, and pins the
+// keyless FixtureApiClient transport, opens the fixture Team coordinator transcript, and pins the
 // surface its max-tokens turn (72) reaches — the turn-end notice row that a
 // provider output-cap truncation must render instead of ending silently.
 //
@@ -34,8 +34,11 @@ describe('assembled max-tokens turn-end notice', () => {
   it('renders the localized truncation notice after the cut-off answer instead of ending silently', async () => {
     mountAssembledApp()
 
-    const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-    fireEvent.click(await within(tree).findByText('Fixture 历史会话'))
+    const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+    fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+    await waitFor(() => {
+      expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
+    }, { timeout: 10_000 })
     // The truncated answer itself stays in the flow: the notice supplements the
     // partial output, it never replaces it.
     await screen.findByText(/条目 3：这一条写到一半被/, undefined, { timeout: 10_000 })

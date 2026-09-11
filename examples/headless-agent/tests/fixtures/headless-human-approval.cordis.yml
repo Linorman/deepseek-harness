@@ -1,0 +1,53 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: human-approval-model
+    model: human-approval-model
+
+# Standard supplies the real read/write tools and the shipped filesystem escalation path.
+- id: team-run
+  config:
+    workerPreset: standard
+
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_APPROVAL_BACKEND === 'json'
+
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_APPROVAL_BACKEND
+    routes: {}
+
+- insert:
+    - id: human-approval-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_APPROVAL_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+
+    - id: human-approval-domain
+      name: '@clocky/clocky-storage-domain'
+      config:
+        backend: !!js process.env.CLOCKY_APPROVAL_BACKEND
+
+    - id: human-approval-workspace
+      name: '@clocky/clocky-workspace'
+
+    - id: human-approval-directory-picker
+      name: '@clocky/clocky-host-directory-picker-browse'
+      config:
+        maxEntries: 1000
+
+    # The actual transport-agnostic Host gateway owns its pending registry and proofs.
+    - id: human-approval-host-api
+      name: '@clocky/clocky-host-apiproxy'
+      inject: [teams]
+      config:
+        nativeOpen: false
+
+    - id: human-approval-driver
+      name: './snapshot-fixtures/headless-human-approval-driver.ts'

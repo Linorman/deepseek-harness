@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-tool-ralph
+# @clocky/clocky-tool-ralph
 
 English | [中文](README.zh.md)
 
@@ -55,11 +55,11 @@ Small fixed guidance cost per request while the plugin is active.
 
 Prefix-stable while the plugin scope and guidance text are unchanged. Activation or disposal may invalidate reuse from this prompt section.
 
-### Tool schema
+### Tool definition
 
 #### What the model sees
 
-The generated [`ralph` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-ralph) exposes one required `objective` string and one optional `maxRounds` number. Provider choice, handoff size, report schema, workflow script, and orchestration behavior are deployment-owned and absent from the call schema.
+The `ralph` tool definition exposes one required `objective` string and one optional `maxRounds` number. Provider choice, handoff size, report definition, workflow script, and orchestration behavior are deployment-owned and absent from the call definition.
 
 #### Token effect
 

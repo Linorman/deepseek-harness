@@ -8,7 +8,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import type { Agent } from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent } from '@clocky/clocky-agent'
 import type { TerminalReadResult, TerminalSendResult, TerminalSessionId } from '@clocky/clocky-terminal'
 import { deadline, timeoutOf } from '@clocky/clocky-timeout'
 import { defineTool } from '@clocky/clocky-tools'
@@ -264,6 +264,7 @@ const PWSH_PROMPT_SETUP =
 function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShells {
   const pending = new WeakMap<Agent, Promise<TerminalSessionId>>()
   const live = new Map<Agent, TerminalSessionId>()
+  const roots = new Map<Agent, string | undefined>()
   const creating = new Set<Promise<TerminalSessionId>>()
   const ownerCleanupInstalled = new WeakSet<Agent>()
   const lifecycle = new AbortController()
@@ -279,25 +280,34 @@ function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShell
     const closing = [...live].map(async ([owner, id]) => { await close(owner, id, 'tool-pwsh-persistent disposed') })
     await Promise.all(closing)
     live.clear()
+    roots.clear()
   }, 'tool-pwsh-persistent shell cleanup')
 
   const reset = async (owner: Agent, reason: string): Promise<void> => {
     pending.delete(owner)
     const id = live.get(owner)
     live.delete(owner)
+    roots.delete(owner)
     if (id !== undefined) await close(owner, id, reason)
   }
 
   const get = (owner: Agent, signal: AbortSignal): Promise<TerminalSessionId> => {
+    const root = resolveAgentWorkspaceRoot(owner)
     const existing = pending.get(owner)
-    if (existing !== undefined) return existing
+    if (existing !== undefined) {
+      if (roots.get(owner) === root) return existing
+      return existing.then(async () => {
+        if (pending.get(owner) === existing && roots.get(owner) !== root) await reset(owner, 'Team workspace allocation changed')
+        return await get(owner, signal)
+      })
+    }
     const combinedSignal = AbortSignal.any([signal, lifecycle.signal])
     const creation = (async () => {
       try {
-        const cwd = owner.session.header.cwd
+        roots.set(owner, root)
         const spawned = await ctx.terminals.spawn(owner, {
           type: config.backendType,
-          ...cwd === undefined ? {} : { cwd },
+          ...root === undefined ? {} : { cwd: root },
         }, combinedSignal)
         live.set(owner, spawned.sessionId)
         if (!ownerCleanupInstalled.has(owner)) {
@@ -305,6 +315,7 @@ function persistentShells(ctx: Context, config: ResolvedConfig): PersistentShell
           owner.ctx.effect(() => () => {
             pending.delete(owner)
             live.delete(owner)
+            roots.delete(owner)
           }, 'tool-pwsh-persistent owner cache cleanup')
         }
         const setup = ctx.terminals.startSend(owner, spawned.sessionId, {

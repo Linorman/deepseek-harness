@@ -165,9 +165,10 @@ interface SessionHeaderRow {
   version: number
   created_at: number
   cwd: string | null
+  team_id: string | null
+  participant_id: string | null
   parent_session: string | null
   seed_length: number | null
-  delegation_depth: number | null
   agent_preset: string | null
 }
 
@@ -574,8 +575,8 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     const db = this._requireDb()
     db.prepare(`
       INSERT INTO persisted_sessions
-        (id, version, created_at, cwd, parent_session, seed_length, delegation_depth, agent_preset, revision, generation)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, version, created_at, cwd, team_id, participant_id, parent_session, seed_length, agent_preset, revision, generation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ...headerBindings(entry.header),
       revision,
@@ -604,8 +605,8 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     const db = this._requireDb()
     db.prepare(`
       INSERT INTO temp.live_sessions
-        (id, version, created_at, cwd, parent_session, seed_length, delegation_depth, agent_preset, fingerprint, persisted, generation)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, version, created_at, cwd, team_id, participant_id, parent_session, seed_length, agent_preset, fingerprint, persisted, generation)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       ...headerBindings(entry.header),
       entry.fingerprint,
@@ -702,7 +703,7 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     const db = this._requireDb()
     const live = db.prepare(
       `SELECT
-        id AS session_id, version, created_at, cwd, parent_session, seed_length, delegation_depth, agent_preset, generation
+        id AS session_id, version, created_at, cwd, team_id, participant_id, parent_session, seed_length, agent_preset, generation
       FROM temp.live_sessions
       WHERE id = ?`,
     ).get(sessionId) as (SessionHeaderRow & { generation: number }) | undefined
@@ -712,7 +713,7 @@ export class SqliteSessionQueryEngine extends SessionQueryEngine {
     if (persistenceBinding.service !== undefined) {
       const persisted = db.prepare(
         `SELECT
-          id AS session_id, version, created_at, cwd, parent_session, seed_length, delegation_depth, agent_preset, generation
+          id AS session_id, version, created_at, cwd, team_id, participant_id, parent_session, seed_length, agent_preset, generation
         FROM persisted_sessions
         WHERE id = ?`,
       ).get(sessionId) as (SessionHeaderRow & { generation: number }) | undefined
@@ -772,9 +773,10 @@ function headerBindings(header: SessionHeader): (string | number | null)[] {
     header.version,
     header.createdAt,
     header.cwd ?? null,
+    header.teamId ?? null,
+    header.participantId ?? null,
     header.parentSession ?? null,
     header.seedLength ?? null,
-    header.delegationDepth ?? null,
     header.agentPreset ?? null,
   ]
 }
@@ -787,9 +789,10 @@ function selectedDocumentsSql(): { sql: string } {
         ps.version AS version,
         ps.created_at AS created_at,
         ps.cwd AS cwd,
+        ps.team_id AS team_id,
+        ps.participant_id AS participant_id,
         ps.parent_session AS parent_session,
         ps.seed_length AS seed_length,
-        ps.delegation_depth AS delegation_depth,
         ps.agent_preset AS agent_preset,
         0 AS live,
         1 AS persisted,
@@ -810,9 +813,10 @@ function selectedDocumentsSql(): { sql: string } {
         ls.version AS version,
         ls.created_at AS created_at,
         ls.cwd AS cwd,
+        ls.team_id AS team_id,
+        ls.participant_id AS participant_id,
         ls.parent_session AS parent_session,
         ls.seed_length AS seed_length,
-        ls.delegation_depth AS delegation_depth,
         ls.agent_preset AS agent_preset,
         1 AS live,
         CASE WHEN ? = 1 THEN ls.persisted ELSE 0 END AS persisted,
@@ -919,9 +923,10 @@ function sameHeader(a: SessionHeader, b: SessionHeader): boolean {
     && a.id === b.id
     && a.createdAt === b.createdAt
     && a.cwd === b.cwd
+    && a.teamId === b.teamId
+    && a.participantId === b.participantId
     && a.parentSession === b.parentSession
     && a.seedLength === b.seedLength
-    && (a.delegationDepth ?? 0) === (b.delegationDepth ?? 0)
     && a.agentPreset === b.agentPreset
 }
 
@@ -931,9 +936,10 @@ function rowHeader(row: SessionHeaderRow): SessionHeader {
     id: row.session_id as SessionId,
     createdAt: row.created_at,
     ...row.cwd === null ? {} : { cwd: row.cwd },
+    ...row.team_id === null ? {} : { teamId: row.team_id },
+    ...row.participant_id === null ? {} : { participantId: row.participant_id },
     ...row.parent_session === null ? {} : { parentSession: row.parent_session as SessionId },
     ...row.seed_length === null ? {} : { seedLength: row.seed_length },
-    ...row.delegation_depth === null ? {} : { delegationDepth: row.delegation_depth },
     ...row.agent_preset === null ? {} : { agentPreset: row.agent_preset },
   }
 }

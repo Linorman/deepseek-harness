@@ -110,6 +110,7 @@ jobs:
       - name: Run complete unsharded primary Node CI serially
         env:
           CLOCKY_ARCHIVE_BASE_REF: ${{ github.event.before }}
+          CLOCKY_CHANGE_BASE: ${{ github.event.before }}
           CLOCKY_COVERAGE_MAX_WORKERS: '1'
           CLOCKY_E2E_MAX_WORKERS: '1'
           CLOCKY_GATE_CONCURRENCY: '1'

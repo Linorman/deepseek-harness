@@ -12,7 +12,7 @@ import {
   fixtureUserPrompts, launchWebScaffold, seedSession, watchConsole, webSnapshotMode,
   type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/details-session-lifecycle', import.meta.url))
 const HANDLES_EXPECTED = join(SNAPSHOT_DIR, 'handles.expected.md')
@@ -73,14 +73,21 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
   beforeAll(async () => {
     const fixture = await readFile(FIXTURE, 'utf8')
     expect(fixtureUserPrompts(fixture)).toEqual([PROMPT])
-    scaffold = await launchWebScaffold({ replayFixture: FIXTURE, paceMs: 5 })
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true, replayFixture: FIXTURE, paceMs: 5 })
     await seedSession(scaffold, await readFile(SEED_FIXTURE, 'utf8'), 'details-session-lifecycle-seed')
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await appFrame(page).waitFor({ timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {
@@ -116,16 +123,20 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await page.reload({ waitUntil: 'load' })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
     await appFrame(page).waitFor({ timeout: 30_000 })
+    const reloadedGroup = page.locator('[role="treeitem"]').first()
+    await reloadedGroup.waitFor({ timeout: 15_000 })
+    if (await reloadedGroup.getAttribute('aria-expanded') !== 'true') await reloadedGroup.click()
+    await page.locator('[role="treeitem"]').nth(1).click()
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
     expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
 
-    await page.getByRole('button', { name: /^(?:New session|新.*会话)$/ }).last().click()
+    await page.getByRole('button', { name: /^(?:New task|新.*任务)$/ }).last().click()
     await page.getByText('Into the Unknown', { exact: false }).waitFor({ timeout: 15_000 })
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
     expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
 
-    const original = page.locator('[role=treeitem]').filter({ hasText: 'Reply with the single word' }).first()
+    const original = page.locator('[role=treeitem]').nth(1)
     await original.click()
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)

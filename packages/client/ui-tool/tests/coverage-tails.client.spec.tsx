@@ -30,8 +30,7 @@ function listStore() {
     },
     current: undefined,
     phase: 'ready',
-    subagentsByParent: {}, jobsBySession: {},
-    currentAddress: undefined,
+    jobsBySession: {},
   })
 }
 

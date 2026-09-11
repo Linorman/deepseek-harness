@@ -1,0 +1,11 @@
+- id: team-run
+  config:
+    workerPreset: standard
+    reviewerPreset: minimal
+
+- id: human-approval-driver
+  disabled: true
+
+- insert:
+    - id: task-cancellation-driver
+      name: './snapshot-fixtures/headless-task-cancellation-driver.ts'

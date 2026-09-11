@@ -5,11 +5,12 @@
  * each drilling into its own list — the provider-grouped model list over
  * the shared directory, and the effort levels. The trigger (313:14108's
  * ToggleButton) shows both: model name + effort in the caption tone.
- * Data and submission ride the SAME per-session ModelDirectory as the
- * /model popup; exact-model reasoning metadata and the selected effort come
+ * Data and submission ride the SAME ModelDirectory as the /model popup. For a
+ * Team draft the directory is host-scoped and selection remains local until
+ * the first message is admitted; exact-model reasoning metadata still comes
  * from the Host rather than a client-owned vocabulary. A rejected selection
- * announces through the shared transient Toast anchored to the composer
- * card; the in-menu strip with Retry remains the catalog-load surface.
+ * announces through the shared transient Toast anchored to the composer card;
+ * the in-menu strip with Retry remains the catalog-load surface.
  */
 import {
   useEffect, useId, useMemo, useRef, useState, useSyncExternalStore,
@@ -21,7 +22,8 @@ import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
   IconWarningOutline16, Toast,
 } from '@clocky/clocky-client-ui-primitives'
-import type { PropsLocale } from '@clocky/clocky-client-ui-slots'
+import type { MaybeSnapshotSelectorHook, PropsLocale } from '@clocky/clocky-client-ui-slots'
+import type { SessionId, TeamTaskListState } from '@clocky/clocky-client-runtime/client'
 import type { ModelSelectInjected } from './slots.ts'
 import css from './ModelSelect.module.css'
 
@@ -43,9 +45,16 @@ interface EffortChoice {
  * @returns the trigger and, while open, the two-level menu.
  */
 export function ModelSelect(
-  { locked, available, directory, load, select, t }:
-  ModelSelectInjected & { locked: boolean } & PropsLocale<'model'>,
+  { locked, available, directory: suppliedDirectory, load, select, t, sessionId, useTeamTasks }:
+  ModelSelectInjected & { locked: boolean; sessionId?: SessionId | undefined; useTeamTasks?: MaybeSnapshotSelectorHook<TeamTaskListState> } & PropsLocale<'model'>,
 ) {
+  // A session-maybe slot receives the same standard hook in both states. The
+  // draft check keeps a retired local draft from leaving a selectable-looking
+  // model trigger in the blank shell; tests and third-party compositions that
+  // do not provide Team state retain the legacy `available` contract.
+  const teamDraft = useTeamTasks?.(state => state.draft)
+  const active = available && (sessionId !== undefined || teamDraft !== undefined || useTeamTasks === undefined)
+  const directory = suppliedDirectory
   const state = useSyncExternalStore(
     fn => directory.subscribe(fn),
     () => directory.getSnapshot(),
@@ -109,11 +118,11 @@ export function ModelSelect(
 
   // Mount-time load resolves the trigger label; every open refreshes.
   useEffect(() => {
-    if (available) {
+    if (active) {
       lastActionRef.current = 'load'
       load()
     }
-  }, [available, load])
+  }, [active, load])
 
   useEffect(() => {
     if (!open) return
@@ -124,7 +133,7 @@ export function ModelSelect(
     return () => { document.removeEventListener('mousedown', closeOutside) }
   }, [open])
 
-  if (!available) return null
+  if (!active) return null
 
   const show = (): void => {
     setPane('root')

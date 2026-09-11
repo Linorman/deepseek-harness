@@ -7,8 +7,9 @@
  * a durable projection-cache row when it serves an own-suffix identity (the
  * seq gate), and one persistence inspection folded through the registry
  * otherwise, validated against the enumerated lifecycle. The projection fold
- * is the single classification authority — this module parses no descriptor
- * itself. Absent persistence, enumeration is live-only: a cold child is
+ * is the single classification authority — this module only checks descriptor
+ * event presence to distinguish an ordinary fork from damaged subagent data.
+ * Absent persistence, enumeration is live-only: a cold child is
  * unreachable for resume anyway, so its absence is capability absence, not an
  * error. The module owns no catalog state and does not consult Activation,
  * Agent-registry, continuation-manager, or provider state.
@@ -33,8 +34,8 @@ const COLD_READ_CONCURRENCY = 4
 
 /**
  * One entry of a {@link listChildren} result, ordered by header `createdAt`
- * with ties broken on id. Only a candidate whose durable header has
- * `origin: 'subagent'` is interpreted. A served `subagent` projection value
+ * with ties broken on id. Only a candidate carrying a `subagent/descriptor`
+ * event is interpreted. A served `subagent` projection value
  * produces a `child`; a settled candidate whose fold served no identity
  * produces a `diagnostic`; a running candidate without one is omitted — its
  * descriptor may not be appended yet (the creation window). Diagnostics
@@ -53,7 +54,7 @@ export type SubagentListEntry =
      * delivery as an ownership conflict.
      */
     readonly activity: 'running' | 'inactive'
-    /** Whether a direct descendant has durable `origin: 'subagent'`. */
+    /** Whether a direct descendant carries a subagent descriptor event. */
     readonly hasChildren: boolean
   } & (
     | {
@@ -105,7 +106,6 @@ interface ListingRuntime {
   readonly persistence: SessionPersistence | undefined
   readonly cache: SessionProjectionCache | undefined
   readonly corpus: ReadonlyMap<SessionId, CorpusRecord>
-  readonly subagentParents: ReadonlySet<SessionId>
 }
 
 interface PositionedCandidate {
@@ -115,7 +115,7 @@ interface PositionedCandidate {
 }
 
 /**
- * Enumerate one parent's origin-classified direct children from the
+ * Enumerate one parent's descriptor-classified direct children from the
  * live-preferred merge of `ctx.sessions` and optional session persistence,
  * serving each identity from the `subagent` projection unit: the registry's
  * watermark snapshot for a live child; for a cold one, a durable
@@ -137,12 +137,12 @@ export async function listChildren(
   signal?: AbortSignal,
 ): Promise<SubagentListEntry[]> {
   const listing = await prepareListing(ctx, signal)
-  const candidates = [...listing.corpus.values()]
-    .filter(record => record.header.parentSession === parentSessionId
-      && record.header.origin === 'subagent')
-    .sort(compareCorpusRecords)
-  const rows = await resolveCandidateRows(candidates, listing, signal)
-  return rows.filter((row): row is SubagentListEntry => row !== undefined)
+  const positioned = descendantCandidates(listing.corpus, parentSessionId)
+  const rows = await resolveCandidateRows(
+    positioned.map(candidate => candidate.record), listing, signal,
+  )
+  return rows.filter((row, index): row is SubagentListEntry =>
+    positioned[index]?.parentId === parentSessionId && row !== undefined)
 }
 
 /**
@@ -230,13 +230,7 @@ async function prepareListing(
   for (const session of sessions.list()) {
     corpus.set(session.header.id, { header: session.header, live: session })
   }
-  const subagentParents = new Set<SessionId>()
-  for (const record of corpus.values()) {
-    if (record.header.origin === 'subagent' && record.header.parentSession !== undefined) {
-      subagentParents.add(record.header.parentSession)
-    }
-  }
-  return { projections, persistence, cache, corpus, subagentParents }
+  return { projections, persistence, cache, corpus }
 }
 
 /** Resolve projection-backed rows for aligned candidates with bounded cold reads. */
@@ -245,7 +239,7 @@ async function resolveCandidateRows(
   listing: ListingRuntime,
   signal: AbortSignal | undefined,
 ): Promise<(SubagentListEntry | undefined)[]> {
-  const { projections, persistence, cache, subagentParents } = listing
+  const { projections, persistence, cache } = listing
   const rows: (SubagentListEntry | undefined)[] = Array.from({ length: candidates.length })
   const coldReads: { index: number; header: SessionHeader }[] = []
   candidates.forEach((candidate, index) => {
@@ -270,8 +264,10 @@ async function resolveCandidateRows(
     }
     // The unit's serializable no-value sentinel is `null`; `undefined` can
     // only mean the key was dropped at a JSON boundary. Both are no value.
-    if (identity === undefined || identity === null) return
-    rows[index] = childRow(childId, identity, 'running', subagentParents.has(childId))
+    if (identity === undefined || identity === null) {
+      return
+    }
+    rows[index] = childRow(childId, identity, 'running')
   })
 
   // Cold candidates exist only when persistence listed them, so the narrow
@@ -283,18 +279,28 @@ async function resolveCandidateRows(
       async () => {
         for (let job = queue.shift(); job !== undefined; job = queue.shift()) {
           rows[job.index] = await resolveColdIdentity(
-            persistence, projections, cache, job.header,
-            subagentParents.has(job.header.id), signal,
+            persistence, projections, cache, job.header, signal,
           )
         }
       },
     ))
   }
   assertListingNotCancelled(signal)
-  return rows
+  const subagentIds = new Set<SessionId>()
+  candidates.forEach((candidate, index) => {
+    if (rows[index] !== undefined) subagentIds.add(candidate.header.id)
+  })
+  const subagentParents = new Set<SessionId>()
+  candidates.forEach((candidate) => {
+    const parentId = candidate.header.parentSession
+    if (parentId !== undefined && subagentIds.has(candidate.header.id)) subagentParents.add(parentId)
+  })
+  return rows.map(row => row?.kind === 'child'
+    ? { ...row, hasChildren: subagentParents.has(row.id) }
+    : row)
 }
 
-/** Build origin-classified candidates from the complete tree without recursion. */
+/** Build descriptor-classified candidates from the complete tree without recursion. */
 function descendantCandidates(
   corpus: ReadonlyMap<SessionId, CorpusRecord>,
   rootSessionId: SessionId,
@@ -321,7 +327,7 @@ function descendantCandidates(
     const id = position.record.header.id
     if (visited.has(id)) continue
     visited.add(id)
-    if (position.record.header.origin === 'subagent') positioned.push(position)
+    positioned.push(position)
     const descendants = children.get(id) ?? []
     for (const record of [...descendants].reverse()) {
       stack.push({ record, parentId: id, depth: position.depth + 1 })
@@ -350,9 +356,8 @@ async function resolveColdIdentity(
   projections: SessionProjectionRegistry,
   cache: SessionProjectionCache | undefined,
   header: SessionHeader,
-  hasChildren: boolean,
   signal: AbortSignal | undefined,
-): Promise<SubagentListEntry> {
+): Promise<SubagentListEntry | undefined> {
   const childId = header.id
   if (cache !== undefined) {
     let cached: SubagentIdentityProjection | null | undefined
@@ -373,7 +378,7 @@ async function resolveColdIdentity(
     // `null` sentinel, whose verdict belongs to the authoritative re-fold,
     // not to a derived row.
     if (cached !== undefined && cached !== null && cached.seq >= (header.seedLength ?? 0)) {
-      return childRow(childId, cached, 'inactive', hasChildren)
+      return childRow(childId, cached, 'inactive')
     }
   }
   assertListingNotCancelled(signal)
@@ -393,6 +398,7 @@ async function resolveColdIdentity(
   if (!sameLifecycle(inspected.meta, header)) {
     return { kind: 'diagnostic', id: childId, reason: 'corrupt' }
   }
+  if (!hasDescriptorEvent(inspected.events)) return undefined
   let identity: SubagentIdentityProjection | null | undefined
   try {
     identity = projections.restore({}, inspected.events, 0).snapshot.values.subagent
@@ -405,7 +411,7 @@ async function resolveColdIdentity(
   if (identity === undefined || identity === null) {
     return { kind: 'diagnostic', id: childId, reason: 'corrupt' }
   }
-  return childRow(childId, identity, 'inactive', hasChildren)
+  return childRow(childId, identity, 'inactive')
 }
 
 /** Materialize one served identity as its child row. */
@@ -413,7 +419,6 @@ function childRow(
   id: SessionId,
   identity: SubagentIdentityProjection,
   activity: 'running' | 'inactive',
-  hasChildren: boolean,
 ): SubagentListEntry {
   return identity.mode === 'one-shot'
     ? {
@@ -422,7 +427,7 @@ function childRow(
       mode: 'one-shot',
       ...identity.label !== undefined ? { label: identity.label } : {},
       activity,
-      hasChildren,
+      hasChildren: false,
     }
     : {
       kind: 'child',
@@ -430,18 +435,23 @@ function childRow(
       mode: 'continuable',
       label: identity.label,
       activity,
-      hasChildren,
+      hasChildren: false,
     }
 }
 
 /** Immutable header fields that distinguish one session lifecycle from another under the same id. */
 const LIFECYCLE_WITNESS_KEYS = [
-  'version', 'id', 'createdAt', 'cwd', 'parentSession', 'seedLength', 'delegationDepth',
+  'version', 'id', 'createdAt', 'cwd', 'teamId', 'participantId', 'parentSession', 'seedLength', 'agentPreset',
 ] as const
 
 /** Whether an inspected log still belongs to the enumerated lifecycle. */
 function sameLifecycle(meta: SessionHeader, expected: SessionHeader): boolean {
   return LIFECYCLE_WITNESS_KEYS.every(key => meta[key] === expected[key])
+}
+
+/** Whether a session log declares a subagent lifecycle. */
+function hasDescriptorEvent(events: readonly SessionEvent[]): boolean {
+  return events.some(event => event.type === 'subagent/descriptor')
 }
 
 /** Stop a listing at its next cancellation checkpoint. */

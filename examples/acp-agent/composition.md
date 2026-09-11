@@ -3,106 +3,80 @@
 
 # ACP Automation App Composition
 
-The ACP demo exposes fresh baseline-prompt agent sessions to programmatic clients over JSON-RPC stdio, with no stdout logger, human UI, or pre-created agent.
+The ACP demo exposes TeamRun-backed tasks to programmatic clients over JSON-RPC stdio, with no stdout logger or human UI.
 
 ```mermaid
 flowchart LR
   cfg["examples/acp-agent<br/>cordis.yml"]
-  plugin_acp_llm_deepseek["llm-deepseek<br/>@deepseek-ai/dsh-llm-deepseek"]
-  cfg --> plugin_acp_llm_deepseek
-  plugin_acp_sandbox["sandbox<br/>@deepseek-ai/dsh-sandbox-local"]
+  plugin_acp_llm_pi_ai["llm-pi-ai<br/>@clocky/clocky-llm-pi-ai"]
+  cfg --> plugin_acp_llm_pi_ai
+  plugin_acp_sandbox["sandbox<br/>@clocky/clocky-sandbox-local"]
   cfg --> plugin_acp_sandbox
-  plugin_acp_sandbox_policy["sandbox-policy<br/>@deepseek-ai/dsh-sandbox-policy"]
+  plugin_acp_sandbox_policy["sandbox-policy<br/>@clocky/clocky-sandbox-policy"]
   cfg --> plugin_acp_sandbox_policy
-  plugin_acp_subprocess["subprocess<br/>@deepseek-ai/dsh-subprocess-local"]
+  plugin_acp_subprocess["subprocess<br/>@clocky/clocky-subprocess-local"]
   cfg --> plugin_acp_subprocess
-  plugin_acp_bash["bash<br/>@deepseek-ai/dsh-bash-sandbox"]
+  plugin_acp_bash["bash<br/>@clocky/clocky-bash-sandbox"]
   cfg --> plugin_acp_bash
-  plugin_acp_approval["approval<br/>@deepseek-ai/dsh-user-approval"]
+  plugin_acp_approval["approval<br/>@clocky/clocky-user-approval"]
   cfg --> plugin_acp_approval
-  plugin_acp_acp_agent["acp-agent<br/>@deepseek-ai/dsh-acp-demo"]
+  plugin_acp_team_snapshot_finalizer["team-snapshot-finalizer<br/>./tests/fixtures/team-snapshot-finalizer.ts"]
+  cfg --> plugin_acp_team_snapshot_finalizer
+  plugin_acp_acp_agent["acp-agent<br/>@clocky/clocky-acp-demo"]
   cfg --> plugin_acp_acp_agent
-  plugin_acp_acp_agent --> bundle_agent_core["@deepseek-ai/dsh-agent-spine-demo"]
-  plugin_acp_acp_agent --> bundle_jsonl["@deepseek-ai/dsh-session-persistence-jsonl"]
-  plugin_acp_acp_agent --> entrypoint_acp["@deepseek-ai/dsh-acp<br/>automation-only JSON-RPC stdio<br/>fresh sessions created by client"]
+  plugin_acp_acp_agent --> bundle_agent_core["@clocky/clocky-agent-spine-demo"]
+  plugin_acp_acp_agent --> bundle_jsonl["@clocky/clocky-session-persistence-jsonl"]
+  plugin_acp_acp_agent --> bundle_agent_default_model["@clocky/clocky-agent-default-model"]
+  plugin_acp_acp_agent --> bundle_team_storage["@clocky/clocky-storage + json + log"]
+  plugin_acp_acp_agent --> bundle_team_hub["@clocky/clocky-team-hub + direct v3"]
+  plugin_acp_acp_agent --> bundle_team_runtime["@clocky/clocky-agent-runtime + in-process + activation controller"]
+  plugin_acp_acp_agent --> bundle_team_link_local["@clocky/clocky-team-link + local"]
+  plugin_acp_acp_agent --> bundle_team_agent_client["@clocky/clocky-team-agent-client"]
+  plugin_acp_acp_agent --> bundle_team_tools["@clocky/clocky-tool-team"]
+  plugin_acp_acp_agent --> bundle_team_run["@clocky/clocky-team-run"]
+  bundle_team_run --> bundle_team_hub
+  bundle_team_run --> bundle_team_runtime
+  bundle_team_run --> bundle_team_link_local
+  bundle_team_run --> bundle_team_agent_client
+  bundle_team_run --> bundle_team_tools
+  plugin_acp_acp_agent --> entrypoint_acp["@clocky/clocky-acp<br/>automation-only JSON-RPC stdio<br/>opaque Team-task handles"]
   bundle_agent_core --> spine_llm["ctx.llm"]
   bundle_agent_core --> spine_sessions["ctx.sessions"]
   bundle_agent_core --> spine_tools["ctx.tools + tool-bash"]
   bundle_agent_core --> spine_loop["ctx.agents + ctx.agentLoop"]
-  plugin_acp_token_meter["token-meter<br/>@deepseek-ai/dsh-token-meter"]
+  plugin_acp_token_meter["token-meter<br/>@clocky/clocky-token-meter"]
   cfg --> plugin_acp_token_meter
-  plugin_acp_compaction_basic["compaction-basic<br/>@deepseek-ai/dsh-compaction-basic"]
+  plugin_acp_compaction_basic["compaction-basic<br/>@clocky/clocky-compaction-basic"]
   cfg --> plugin_acp_compaction_basic
-  plugin_acp_session_projection["session-projection<br/>@deepseek-ai/dsh-session-projection"]
-  cfg --> plugin_acp_session_projection
-  plugin_acp_subagent["subagent<br/>@deepseek-ai/dsh-subagent"]
-  cfg --> plugin_acp_subagent
-  plugin_acp_subagent_spawn_in_process["subagent-spawn-in-process<br/>@deepseek-ai/dsh-subagent-spawn-in-process"]
-  cfg --> plugin_acp_subagent_spawn_in_process
-  plugin_acp_subagent_fork_in_process["subagent-fork-in-process<br/>@deepseek-ai/dsh-subagent-fork-in-process"]
-  cfg --> plugin_acp_subagent_fork_in_process
-  plugin_acp_tool_subagent_control["tool-subagent-control<br/>@deepseek-ai/dsh-tool-subagent-control"]
-  cfg --> plugin_acp_tool_subagent_control
-  plugin_acp_tool_subagent_list_agents["tool-subagent-list-agents<br/>@deepseek-ai/dsh-tool-subagent-control/list-agents"]
-  cfg --> plugin_acp_tool_subagent_list_agents
-  plugin_acp_tool_subagent_report["tool-subagent-report<br/>@deepseek-ai/dsh-tool-subagent-report"]
-  cfg --> plugin_acp_tool_subagent_report
-  plugin_acp_tool_subagent["tool-subagent<br/>@deepseek-ai/dsh-tool-subagent"]
-  cfg --> plugin_acp_tool_subagent
-  plugin_acp_tool_subagent_fork["tool-subagent-fork<br/>@deepseek-ai/dsh-tool-subagent"]
-  cfg --> plugin_acp_tool_subagent_fork
-  plugin_acp_workflow_worker_thread["workflow-worker-thread<br/>@deepseek-ai/dsh-workflow-worker-thread"]
-  cfg --> plugin_acp_workflow_worker_thread
-  plugin_acp_tool_workflow["tool-workflow<br/>@deepseek-ai/dsh-tool-workflow"]
-  cfg --> plugin_acp_tool_workflow
-  plugin_acp_tool_ralph["tool-ralph<br/>@deepseek-ai/dsh-tool-ralph"]
-  cfg --> plugin_acp_tool_ralph
-  plugin_acp_tool_todo["tool-todo<br/>@deepseek-ai/dsh-tool-todo"]
+  plugin_acp_tool_todo["tool-todo<br/>@clocky/clocky-tool-todo"]
   cfg --> plugin_acp_tool_todo
-  plugin_acp_repeat_tool_reminder["repeat-tool-reminder<br/>@deepseek-ai/dsh-repeat-tool-reminder"]
+  plugin_acp_repeat_tool_reminder["repeat-tool-reminder<br/>@clocky/clocky-repeat-tool-reminder"]
   cfg --> plugin_acp_repeat_tool_reminder
-  plugin_acp_fs_sandbox["fs-sandbox<br/>@deepseek-ai/dsh-fs-sandbox"]
+  plugin_acp_fs_sandbox["fs-sandbox<br/>@clocky/clocky-fs-sandbox"]
   cfg --> plugin_acp_fs_sandbox
-  plugin_acp_fs_observation_policy["fs-observation-policy<br/>@deepseek-ai/dsh-fs-observation-policy"]
+  plugin_acp_fs_observation_policy["fs-observation-policy<br/>@clocky/clocky-fs-observation-policy"]
   cfg --> plugin_acp_fs_observation_policy
-  plugin_acp_tool_fs["tool-fs<br/>@deepseek-ai/dsh-tool-fs"]
+  plugin_acp_tool_fs["tool-fs<br/>@clocky/clocky-tool-fs"]
   cfg --> plugin_acp_tool_fs
-  plugin_acp_hooks_claude_code["hooks-claude-code<br/>@deepseek-ai/dsh-hooks-claude-code"]
-  cfg --> plugin_acp_hooks_claude_code
-  plugin_acp_hooks_codex["hooks-codex<br/>@deepseek-ai/dsh-hooks-codex"]
-  cfg --> plugin_acp_hooks_codex
 ```
 
 | Plugin id | Package / module |
 | --- | --- |
-| `llm-deepseek` | `@deepseek-ai/dsh-llm-deepseek` |
-| `sandbox` | `@deepseek-ai/dsh-sandbox-local` |
-| `sandbox-policy` | `@deepseek-ai/dsh-sandbox-policy` |
-| `subprocess` | `@deepseek-ai/dsh-subprocess-local` |
-| `bash` | `@deepseek-ai/dsh-bash-sandbox` |
-| `approval` | `@deepseek-ai/dsh-user-approval` |
-| `acp-agent` | `@deepseek-ai/dsh-acp-demo` |
-| `token-meter` | `@deepseek-ai/dsh-token-meter` |
-| `compaction-basic` | `@deepseek-ai/dsh-compaction-basic` |
-| `session-projection` | `@deepseek-ai/dsh-session-projection` |
-| `subagent` | `@deepseek-ai/dsh-subagent` |
-| `subagent-spawn-in-process` | `@deepseek-ai/dsh-subagent-spawn-in-process` |
-| `subagent-fork-in-process` | `@deepseek-ai/dsh-subagent-fork-in-process` |
-| `tool-subagent-control` | `@deepseek-ai/dsh-tool-subagent-control` |
-| `tool-subagent-list-agents` | `@deepseek-ai/dsh-tool-subagent-control/list-agents` |
-| `tool-subagent-report` | `@deepseek-ai/dsh-tool-subagent-report` |
-| `tool-subagent` | `@deepseek-ai/dsh-tool-subagent` |
-| `tool-subagent-fork` | `@deepseek-ai/dsh-tool-subagent` |
-| `workflow-worker-thread` | `@deepseek-ai/dsh-workflow-worker-thread` |
-| `tool-workflow` | `@deepseek-ai/dsh-tool-workflow` |
-| `tool-ralph` | `@deepseek-ai/dsh-tool-ralph` |
-| `tool-todo` | `@deepseek-ai/dsh-tool-todo` |
-| `repeat-tool-reminder` | `@deepseek-ai/dsh-repeat-tool-reminder` |
-| `fs-sandbox` | `@deepseek-ai/dsh-fs-sandbox` |
-| `fs-observation-policy` | `@deepseek-ai/dsh-fs-observation-policy` |
-| `tool-fs` | `@deepseek-ai/dsh-tool-fs` |
-| `hooks-claude-code` | `@deepseek-ai/dsh-hooks-claude-code` |
-| `hooks-codex` | `@deepseek-ai/dsh-hooks-codex` |
+| `llm-pi-ai` | `@clocky/clocky-llm-pi-ai` |
+| `sandbox` | `@clocky/clocky-sandbox-local` |
+| `sandbox-policy` | `@clocky/clocky-sandbox-policy` |
+| `subprocess` | `@clocky/clocky-subprocess-local` |
+| `bash` | `@clocky/clocky-bash-sandbox` |
+| `approval` | `@clocky/clocky-user-approval` |
+| `team-snapshot-finalizer` | `./tests/fixtures/team-snapshot-finalizer.ts` |
+| `acp-agent` | `@clocky/clocky-acp-demo` |
+| `token-meter` | `@clocky/clocky-token-meter` |
+| `compaction-basic` | `@clocky/clocky-compaction-basic` |
+| `tool-todo` | `@clocky/clocky-tool-todo` |
+| `repeat-tool-reminder` | `@clocky/clocky-repeat-tool-reminder` |
+| `fs-sandbox` | `@clocky/clocky-fs-sandbox` |
+| `fs-observation-policy` | `@clocky/clocky-fs-observation-policy` |
+| `tool-fs` | `@clocky/clocky-tool-fs` |
 
 Source config: [`examples/acp-agent/cordis.yml`](cordis.yml).
 

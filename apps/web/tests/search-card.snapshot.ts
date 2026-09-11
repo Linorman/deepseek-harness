@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-// Assembled search-card snapshot: boots the real built workspace client bundles
+// Assembled search-card snapshot: boots the real built Web client bundles
 // through AppWebEntry's ModuleLoader path against the keyless
 // FixtureApiClient transport (no API key, no model round), opens the fixture
-// session, and pins the search card the `grep` turn (fixture turn 67) renders in
+// Team coordinator transcript, and pins the search card the `grep` turn (fixture turn 67) renders in
 // the assembled application. The built-boot smoke proves the graph boots but
 // intentionally carries no behavior assertions; this is the assembled-output check
 // that a broken SearchRow registration or a dropped card would fail — the
@@ -48,8 +48,8 @@ describe('assembled search card', () => {
   it('renders the grep card, its truncation summary, and its capped head/tail slice from the built bundles', async () => {
     mountAssembledApp()
 
-    const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-    fireEvent.click(await within(tree).findByText('Fixture 历史会话'))
+    const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+    fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
     // Wait for chat content to reach the fixture's later turns (the bash sample
     // is turn 66, the grep card turn 67).
     await waitFor(() => {

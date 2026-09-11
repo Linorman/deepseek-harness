@@ -26,10 +26,11 @@ describe('web e2e: rail search click survives its own document-level bubble', ()
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)
@@ -61,7 +62,7 @@ describe('web e2e: rail search click survives its own document-level bubble', ()
 
     // The guard ends with the gesture: a genuine outside click on an empty
     // query dismisses the expanded search as before.
-    await page.getByRole('button', { name: 'New session' }).first().click()
+    await page.getByRole('button', { name: 'New task' }).first().click()
     await expect.poll(async () => wideSearch.getAttribute('aria-expanded'), { timeout: 10_000 }).toBe('false')
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)

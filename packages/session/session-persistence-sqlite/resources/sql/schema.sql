@@ -8,13 +8,20 @@ CREATE TABLE sessions (
   version          INTEGER NOT NULL,
   created_at       INTEGER NOT NULL,
   cwd              TEXT,
+  team_id          TEXT,
+  participant_id   TEXT,
   parent_session   TEXT,
   seed_length      INTEGER,
-  origin           TEXT,
-  delegation_depth INTEGER,
   agent_preset     TEXT,
   incarnation      TEXT NOT NULL,
-  revision         INTEGER NOT NULL
+  revision         INTEGER NOT NULL,
+  CHECK (
+    (team_id IS NULL AND participant_id IS NULL)
+    OR (
+      team_id IS NOT NULL AND participant_id IS NOT NULL
+      AND length(team_id) > 0 AND length(participant_id) > 0
+    )
+  )
 ) STRICT;
 
 CREATE TABLE events (

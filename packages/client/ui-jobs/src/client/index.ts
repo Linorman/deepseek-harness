@@ -32,7 +32,6 @@ export function apply(ctx: ClientContext): void {
     () => ctx.slots.register({
       name: 'conversation.session.header.actions',
       id: 'job-list',
-      // After the subagent catalog: session lineage reads before process work.
       order: 20,
       locale: NS,
     }, JobListAction),

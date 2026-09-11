@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import AgentRegistry, { type Agent } from '@clocky/clocky-agent'
 import AgentLoop from '@clocky/clocky-agent-loop'
-import LlmRuntime from '@clocky/clocky-llm'
+import LlmRuntime, { type Message, type UserMessage } from '@clocky/clocky-llm'
 import SessionStore, { SessionId } from '@clocky/clocky-session'
+import type { TeamChannelViewEventData } from '@clocky/clocky-session'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import ToolRuntime from '@clocky/clocky-tools'
 import { MockAdapter, textResponse } from './mock-adapter.ts'
@@ -23,6 +24,24 @@ async function harness(adapter: MockAdapter): Promise<Context> {
 
 function send(agent: Agent, text: string): void {
   agent.followup(createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } }))
+}
+
+function isUserMessage(message: Message | null): message is UserMessage {
+  return message !== null && message.role === 'user'
+}
+
+/** Build one exact non-direct Team channel view that has already entered a Session. */
+function teamChannelView(): TeamChannelViewEventData {
+  return {
+    teamId: 'team-loop-view',
+    channelId: 'channel-loop-view',
+    adapter: { type: 'discussion', version: 1 },
+    viewPolicy: { type: 'recent-window', version: 1 },
+    triggeringEnvelopeId: 'envelope-loop-view',
+    sourceEnvelopeIds: ['envelope-loop-view'],
+    delivery: 'turn',
+    content: [{ type: 'text', text: 'Persisted Team view.' }],
+  }
 }
 
 describe('Agent', () => {
@@ -108,6 +127,57 @@ describe('Agent', () => {
 
     expect(agent.session.events.some(event => event.type === 'user/message')).toBe(true)
     expect(adapter.requests).toHaveLength(1)
+  })
+
+  it('uses a persisted Team channel view without appending a second user/message', async () => {
+    const adapter = new MockAdapter([textResponse('ok')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('team-channel-view'), { provider: 'mock', model: 'mock' })
+    const event = agent.session.append('team/channel-view', teamChannelView(), { surfaceOp: 'append' })
+    const message = agent.session.deriveEventMessage(event)
+    if (!isUserMessage(message)) {
+      throw new Error('Team channel-view event did not derive a user message')
+    }
+    if (message.source.kind !== 'team-channel-view') {
+      throw new Error('Team channel-view event did not derive a Team channel-view source')
+    }
+    const userMessage: UserMessage = message
+
+    agent.followup(userMessage)
+    await agent.whenIdle()
+
+    expect(adapter.requests[0]?.messages).toEqual([userMessage])
+    expect(agent.session.events.filter(candidate => candidate.type === 'user/message')).toHaveLength(0)
+  })
+
+  it('rejects an unlogged Team channel view instead of silently omitting it from history', async () => {
+    const adapter = new MockAdapter([textResponse('ok')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('unlogged-team-channel-view'), { provider: 'mock', model: 'mock' })
+    const failures: Error[] = []
+    ctx.on('agent/error', ({ agent: subject, error }) => {
+      if (subject === agent && error instanceof Error) failures.push(error)
+    })
+    agent.followup(createUserMessage({
+      content: [{ type: 'text', text: 'Forged view.' }],
+      source: {
+        kind: 'team-channel-view',
+        teamId: 'team-loop-view',
+        channelId: 'channel-loop-view',
+        adapter: { type: 'discussion', version: 1 },
+        viewPolicy: { type: 'recent-window', version: 1 },
+        triggeringEnvelopeId: 'envelope-loop-view',
+        sourceEnvelopeIds: ['envelope-loop-view'],
+        delivery: 'turn',
+      },
+    }))
+    await agent.whenIdle()
+
+    expect(adapter.requests).toHaveLength(0)
+    expect(failures.map(error => error.message)).toEqual([
+      'agent "unlogged-team-channel-view" received a Team channel view that is absent from its Session',
+    ])
+    expect(agent.session.events.filter(candidate => candidate.type === 'user/message')).toHaveLength(0)
   })
 
   it('emits one running and idle transition for one completed turn', async () => {

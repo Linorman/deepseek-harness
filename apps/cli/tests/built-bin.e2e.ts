@@ -13,6 +13,14 @@ const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const cliVersion = (JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }).version
 const clockyBin = join(repoRoot, 'apps/cli/lib/bin.js')
 const invalidProvider = fileURLToPath(new URL('./fixtures/invalid-provider.cordis.yml', import.meta.url))
+const LEGACY_GOAL_ROWS = ['goal', 'goal-round-driver', 'command-goal', 'tool-goal']
+
+function dumpedRow(source: string, id: string): string {
+  const start = source.indexOf(`- id: ${id}\n`)
+  if (start < 0) throw new Error(`missing dumped row '${id}'`)
+  const end = source.indexOf('\n- id: ', start + 1)
+  return source.slice(start, end < 0 ? source.length : end)
+}
 
 async function runBuiltBin(
   args: readonly string[] = [],
@@ -399,9 +407,11 @@ describe.skipIf(!existsSync(clockyBin))('clocky BUILT bin (node lib/bin.js, no t
   it('runs the headless profile through its app-owned task positional', async () => {
     const apiKey = 'built-clocky-headless-key'
     const server = await startMockLlmServer({
-      sequence: ['success'],
+      sequence: ['tool_call_success'],
       apiKey,
       successText: 'published headless profile reached the mock',
+      toolName: 'team_final',
+      toolArguments: '{"channel_id":"{{channel_id}}","text":"published headless profile reached the mock"}',
     })
     const home = mkdtempSync(join(tmpdir(), 'clocky-built-headless-'))
     try {
@@ -750,6 +760,9 @@ describe.skipIf(!existsSync(clockyBin))('clocky BUILT bin (node lib/bin.js, no t
       expect(stdout).toContain('agents: []')
       expect(stdout).toContain('# == @clocky/clocky-base')
       expect(stdout).toContain("name: '@clocky/clocky-host-webserver'")
+      expect(stdout).toContain("name: '@clocky/clocky-command-team-goal'")
+      expect(stdout).not.toContain("name: '@clocky/clocky-client-ui-goal'")
+      for (const id of LEGACY_GOAL_ROWS) expect(dumpedRow(stdout, id)).toContain('disabled: true')
     }, 30_000)
 
     it('prints the headless profile without Host or browser layers', async () => {
@@ -763,6 +776,7 @@ describe.skipIf(!existsSync(clockyBin))('clocky BUILT bin (node lib/bin.js, no t
       expect(stdout).not.toMatch(/name: '@clocky\/clocky-host-/)
       expect(stdout).not.toContain("name: '@clocky/clocky-web-app'")
       expect(stdout).not.toMatch(/name: '@clocky\/clocky-client-/)
+      for (const id of LEGACY_GOAL_ROWS) expect(dumpedRow(stdout, id)).toContain('disabled: true')
     }, 30_000)
 
     it('composes the profile user layer and a --patch overlay in order', async () => {

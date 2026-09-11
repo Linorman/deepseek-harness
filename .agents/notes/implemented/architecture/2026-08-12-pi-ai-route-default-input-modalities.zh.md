@@ -24,7 +24,7 @@ Harness 把缺失的模态当作否定能力，并有三个准入点在构造任
 
 **没有任何配置界面编辑 `input`。** 它和 `compat`、`reasoningEfforts`、`thinkingBudgets`、`headers` 一样是 settings 文档字段，而模型列表编辑器仍是一张只覆盖 id、名称和两个容量的手写表单。这不会带来持久代价，因为那张卡片本来就是按“承载自己并不编辑的字段”建造的：它的行 patch 会先展开已存储的行再应用改动，而采纳候选时已有行优先于重新发现的候选，因此手写的 `input` 在两条路径上都能存活。
 
-DeepSeek 直接适配器拥有独立的精确模型目录。支持视觉的条目声明图片输入，纯文本模型和未列出的透传 ID 保持纯文本。
+当前组合由 `clocky-llm-pi-ai` 拥有提供方目录。其目录条目和声明式 profile 是输入模态元数据的唯一来源；当前适配器集合没有单独的提供方图片目录。
 
 ## 备选方案
 
@@ -50,4 +50,4 @@ DeepSeek 直接适配器拥有独立的精确模型目录。支持视觉的条�
 
 `config.spec.ts` 负责 schema 边界：两个层级上的未知模态拒绝、路由空列表被 schema 接受而由 settings seam 真正运行的命名空间校验器拒绝，以及继承规则所倚赖的「缺省数组物化为 `[]`」这一事实。
 
-没有任何无密钥 snapshot 通道会跑 pi-ai 路由：snapshot 示例驱动的是 `dsh-llm-replay`，它在自己的配置里直接声明模态，而 pi-ai 路由需要一个真实端点，其端口是静态 `cordis.yml` 无法写出的。本次变更所供给的那些准入点已经通过该提供方在那里得到覆盖（`examples/acp-agent/image.cordis.snapshot.yml` 与 `image-text-route.cordis.snapshot.yml`）且不受影响——改变的是某个适配器报告什么，而非门禁如何读取它。
+没有任何无密钥 snapshot 通道会跑 pi-ai 路由：snapshot 示例驱动的是 `clocky-llm-replay`，它在自己的配置里直接声明模态，而 pi-ai 路由需要一个真实端点，其端口是静态 `cordis.yml` 无法写出的。本次变更所供给的那些准入点已经通过该提供方在那里得到覆盖（`examples/acp-agent/image.cordis.snapshot.yml` 与 `image-text-route.cordis.snapshot.yml`）且不受影响——改变的是某个适配器报告什么，而非门禁如何读取它。

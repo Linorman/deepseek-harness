@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Use the read tool twice" [disabled]
+  - text: Use the read tool twice
   - button "Session log":
     - text: Session log
     - img
@@ -22,9 +21,7 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation" [disabled]:
-  - img
-- text: Available only on the last message of a completed turn 7/25 {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- text: 7/25 {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - button "Read a.txt":
   - img
   - img
@@ -48,8 +45,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: 7/25 {{clock}} Ran for {{duration}}
 - textbox "Message the agent"

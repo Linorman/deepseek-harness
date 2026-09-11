@@ -59,6 +59,13 @@ export interface IConversation {
   loadOlder(): Promise<void>
 }
 
+/** Minimal Team-task face used to route coordinator input through the Hub. */
+interface TeamInputSelection { readonly teamId: string }
+interface TeamInputRuntime {
+  postInput(teamId: string, content: readonly Record<string, unknown>[], delivery: 'context' | 'turn' | 'steer', signal?: AbortSignal): Promise<void>
+  teamForCoordinatorSession(sessionId: SessionId): TeamInputSelection | undefined
+}
+
 /** Create one browser-only draft descriptor; only its id enters input state. */
 function browserDraftAttachment(file: File): ComposerAttachment {
   return {
@@ -129,6 +136,11 @@ export class ConversationController extends Service implements IConversation {
    */
   async send(text: string): Promise<void> {
     const session = this.scopedSession('send')
+    const team = this.teamForSession(session)
+    if (team !== undefined) {
+      await team.runtime.postInput(team.selection.teamId, [{ type: 'text', text }], 'turn')
+      return
+    }
     const result = await session.prompt([{ type: 'text', text }], 'queue')
     if (!result.ok) throw new Error(`conversation.send failed: ${result.error.code}: ${result.error.message}`)
   }
@@ -155,6 +167,12 @@ export class ConversationController extends Service implements IConversation {
     }
     const uploaded = await this.serializeImages(attachments.map(attachment => attachment.file))
     const content = [...uploaded, ...(text === '' ? [] : [{ type: 'text' as const, text }])]
+    const team = this.teamForSession(session)
+    if (team !== undefined) {
+      await team.runtime.postInput(team.selection.teamId, content, mode === 'steer' ? 'steer' : 'turn', signal)
+      this.releaseDraftImages(attachments)
+      return { kind: 'success' }
+    }
     const result = await session.prompt(content, mode, signal)
     if (!result.ok) return { kind: 'error' }
     this.releaseDraftImages(attachments)
@@ -330,6 +348,14 @@ export class ConversationController extends Service implements IConversation {
     const sessions = this.ctx.get('sessions')
     if (sessions === undefined) throw new Error('conversation: sessions service unavailable')
     return sessions
+  }
+
+  /** Resolve the selected Team that owns a coordinator Session, if any. */
+  private teamForSession(session: SessionFace): { runtime: TeamInputRuntime; selection: TeamInputSelection } | undefined {
+    const runtime = this.ctx.get('teamTasks') as unknown as TeamInputRuntime | undefined
+    if (runtime === undefined) return undefined
+    const selection = runtime.teamForCoordinatorSession(session.sessionId)
+    return selection === undefined ? undefined : { runtime, selection }
   }
 
   /** Convert browser files to canonical base64 prompt parts. */

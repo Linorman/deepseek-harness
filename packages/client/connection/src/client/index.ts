@@ -21,18 +21,25 @@ export type {
   SkillsApi, SkillEntry,
   ModelCatalogFailure, ModelCatalogModel, ModelProviderGroup, ModelReasoning,
   MessageId, ModelReasoningEffort, ModelSelection, QueueAction, QueuedInboxItem, SessionModels,
-  SubagentsApi, SubagentAddress, SubagentCatalog, SubagentListEntry, SubagentPromptReceipt,
   JobView,
   RpcRequest, RpcResponse, RpcResult, RpcError, RpcErrorCode,
   ClientRequest, ServerResponse, ServerRequest, ClientResponse, RpcMessage, RpcReceipt,
   HostDescription, IApiClient, SessionId, SessionEvent, ContentBlock, StreamChunk,
   GoalsApi, GoalRef,
+  AgentPresetEntry,
   SettingsApi, SettingsNamespaceView, SettingsPathOpView, SettingsSecretView,
   CredentialsApi, CredentialView, ConfigurableProviderView, DiscoveredModelView, LlmApi,
+  ChannelId, ChannelPostIdempotencyKey, ChannelReadPageResult, ChannelReadResult, ChannelRecord, ParticipantId,
+  TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamId, TeamInputReceipt, TeamList, TeamMemberList,
+  TeamSnapshot, TeamStartResult, TeamStateSnapshot, TeamTaskId, TeamTaskList, TeamTaskSnapshot, TeamWorkflowPlanList, TeamsApi,
+  TeamHumanActionId, TeamHumanActionSourceId, TeamHumanActionSnapshot,
+  TeamUsageSampleId, TeamUsageSnapshot, TeamQuiescenceSnapshot, TeamMetricsSnapshot, TeamStallReason, TeamViewPolicyRef,
+  TeamArtifactReference,
 } from './api.ts'
 export {
   RpcId,
   AbstractApiClient,
+  emptyTeamLatencyHistogram,
   transportError,
 } from './api.ts'
 

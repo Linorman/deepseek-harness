@@ -1,13 +1,16 @@
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Storage, { storageBackendServiceKey } from '@clocky/clocky-storage'
 import InvariantRegistry from '@clocky/clocky-invariants'
 import { runKvBackendContract } from '../../storage/tests/contract.ts'
+import { runLogBackendContract } from '../../storage/tests/log-contract.ts'
 import { Config, JsonStorageBackend, apply } from '../src/index.ts'
 import * as InvariantCompanion from '../src/invariant.ts'
+import { logFileName } from '../src/log.ts'
+import { acquireJsonLogOwner } from '../src/log-owner.ts'
 
 const roots: string[] = []
 
@@ -26,6 +29,17 @@ runKvBackendContract('json', async () => {
   return {
     backend: new JsonStorageBackend(root),
     reopen: async () => new JsonStorageBackend(root),
+  }
+})
+
+runLogBackendContract('json', async () => {
+  const root = await freshRoot()
+  return {
+    backend: new JsonStorageBackend(root),
+    reopen: async () => new JsonStorageBackend(root),
+    tearTail: async () => {
+      await writeFile(join(root, 'logs', logFileName('contract_stream')), '{"stream":', 'utf8')
+    },
   }
 })
 
@@ -80,6 +94,163 @@ describe('json backend specifics', () => {
     await backend.kv.open(descriptor)
     await expect(backend.kv.open(descriptor)).rejects.toThrow(/already open/)
     await backend.close()
+  })
+
+  it('refuses a second JSON log Hub for the same root until the first closes', async () => {
+    const root = await freshRoot()
+    const first = new JsonStorageBackend(root)
+    const stream = await first.log.open({ name: 'single_hub', version: 1 })
+    const second = new JsonStorageBackend(root)
+    await expect(second.log.open({ name: 'single_hub', version: 1 })).rejects.toMatchObject({
+      code: 'writer-locked',
+    })
+    await stream.close()
+    await first.close()
+    const resumed = await second.log.open({ name: 'single_hub', version: 1 })
+    await resumed.close()
+    await second.close()
+  })
+
+  it('reclaims a proven-dead local log owner and rejects malformed owner records', async () => {
+    const root = await freshRoot()
+    const logs = join(root, 'logs')
+    await mkdir(logs)
+    const lock = join(logs, '.clocky-log-owner.lock')
+    await writeFile(lock, JSON.stringify({ host: hostname(), pid: 999_999_999, nonce: 'stale-owner' }) + '\n', 'utf8')
+    const owner = await acquireJsonLogOwner(logs)
+    await owner.close()
+    await owner.close()
+
+    await writeFile(lock, '{not JSON', 'utf8')
+    await expect(acquireJsonLogOwner(logs)).rejects.toMatchObject({ code: 'malformed-medium' })
+
+    await writeFile(lock, '{}', 'utf8')
+    await expect(acquireJsonLogOwner(logs)).rejects.toMatchObject({ code: 'malformed-medium' })
+
+    await writeFile(lock, '[]', 'utf8')
+    await expect(acquireJsonLogOwner(logs)).rejects.toMatchObject({ code: 'malformed-medium' })
+
+    await writeFile(lock, JSON.stringify({ host: 'another-host', pid: 1, nonce: 'remote-owner' }) + '\n', 'utf8')
+    await expect(acquireJsonLogOwner(logs)).rejects.toMatchObject({ code: 'writer-locked' })
+
+    const nonDirectory = join(root, 'not-a-directory')
+    await writeFile(nonDirectory, '', 'utf8')
+    await expect(acquireJsonLogOwner(nonDirectory)).rejects.toMatchObject({ code: 'ENOTDIR' })
+  })
+
+  it('encodes Team-style stream names without exposing them as filesystem paths', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    const stream = await backend.log.open({ name: 'team/abc-123', version: 1 })
+    expect(stream.version).toBe(1)
+    await stream.append(-1, [{ accepted: true }])
+    await stream.close()
+    const names = (await readdir(join(root, 'logs'))).filter(name => !name.startsWith('.'))
+    expect(names).toEqual(['dGVhbS9hYmMtMTIz.json'])
+    expect(await backend.log.list()).toEqual([{ name: 'team/abc-123', version: 1, tailSequence: 0 }])
+    await backend.close()
+  })
+
+  it('rejects invalid log descriptors and log work after backend close', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    await expect(backend.log.open({ name: '', version: 1 })).rejects.toMatchObject({ code: 'malformed-medium' })
+    await expect(backend.log.open({ name: 'team/negative-version', version: -1 })).rejects.toMatchObject({
+      code: 'malformed-medium',
+    })
+    await expect(backend.log.open({ name: 'team/non-integer-version', version: 1.5 })).rejects.toMatchObject({
+      code: 'malformed-medium',
+    })
+
+    await backend.close()
+    await expect(backend.log.open({ name: 'team/after-close', version: 1 })).rejects.toMatchObject({ code: 'closed' })
+    await expect(backend.log.list()).rejects.toMatchObject({ code: 'closed' })
+  })
+
+  it('does not expose a log stream whose open races backend close', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    const opening = backend.log.open({ name: 'team/opening', version: 1 })
+    const closing = backend.close()
+
+    await expect(opening).rejects.toMatchObject({ code: 'closed' })
+    await closing
+  })
+
+  it('rejects a stream file whose encoded path and header disagree', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    const stream = await backend.log.open({ name: 'team/header', version: 1 })
+    await stream.append(-1, [{ accepted: true }])
+    await stream.close()
+    await rename(
+      join(root, 'logs', logFileName('team/header')),
+      join(root, 'logs', 'mismatched-stream.json'),
+    )
+
+    await expect(backend.log.list()).rejects.toMatchObject({ code: 'malformed-medium' })
+    await backend.close()
+  })
+
+  it('recovers a failed log-owner acquisition before a later stream open', async () => {
+    const root = await freshRoot()
+    const logs = join(root, 'logs')
+    const lock = join(logs, '.clocky-log-owner.lock')
+    await mkdir(logs)
+    await writeFile(lock, '{not JSON', 'utf8')
+
+    const backend = new JsonStorageBackend(root)
+    await expect(backend.log.open({ name: 'team/retry-owner', version: 1 })).rejects.toMatchObject({
+      code: 'malformed-medium',
+    })
+    await rm(lock)
+
+    const stream = await backend.log.open({ name: 'team/retry-owner', version: 1 })
+    await stream.close()
+    await backend.close()
+  })
+
+  it('drains a failed log-owner acquisition while backend close is in progress', async () => {
+    const root = await freshRoot()
+    const logs = join(root, 'logs')
+    await mkdir(logs)
+    await writeFile(join(logs, '.clocky-log-owner.lock'), '{not JSON', 'utf8')
+
+    const backend = new JsonStorageBackend(root)
+    const listing = backend.log.list()
+    const closing = backend.close()
+    await expect(listing).rejects.toMatchObject({ code: 'malformed-medium' })
+    await closing
+  })
+
+  it('rejects new stream operations immediately when backend shutdown starts', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    const stream = await backend.log.open({ name: 'team/closing', version: 1 })
+    const closing = backend.close()
+    await expect(stream.append(-1, [{ late: true }])).rejects.toMatchObject({ code: 'closed' })
+    await expect(stream.read(-1, 1)).rejects.toMatchObject({ code: 'closed' })
+    await closing
+  })
+
+  it('rejects non-JSON append values and stream paths that are not files', async () => {
+    const root = await freshRoot()
+    const backend = new JsonStorageBackend(root)
+    const stream = await backend.log.open({ name: 'team/values', version: 1 })
+    await expect(stream.append(-1, [undefined])).rejects.toMatchObject({ code: 'invalid-value' })
+    await expect(stream.append(-1, [{ toJSON: () => { throw new Error('cannot serialize') } }])).rejects.toMatchObject({
+      code: 'invalid-value',
+    })
+    const internals = stream as unknown as { state: { checkpoint: { sequence: number; value: unknown } } }
+    internals.state.checkpoint = { sequence: -1, value: { toJSON: () => { throw new Error('corrupt state') } } }
+    await expect(stream.readCheckpoint()).rejects.toMatchObject({ code: 'invalid-value' })
+    await stream.close()
+    await backend.close()
+
+    await mkdir(join(root, 'logs', logFileName('team/not-a-file')))
+    const damaged = new JsonStorageBackend(root)
+    await expect(damaged.log.open({ name: 'team/not-a-file', version: 1 })).rejects.toMatchObject({ code: 'EISDIR' })
+    await damaged.close()
   })
 
   it('rolls back memory when a publish fails', async () => {

@@ -2,9 +2,9 @@
 
 [English](storage.md) | 中文
 
-存储子系统持久保存一切不属于会话事件日志的数据（会话日志有自己的 seam——见 [persistence.md](persistence.zh.md)）。它是一项可选能力，不属于 agent loop（智能体循环）主干，并按[能力 seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md) 拆分：枢纽（hub）与 Service Definition（[dsh-storage](../../packages/storage/storage)，`ctx.storage`）、Service Provider（注册为 `json` 的 [dsh-storage-json](../../packages/storage/storage-json) 与注册为 `sqlite` 的 [dsh-storage-sqlite](../../packages/storage/storage-sqlite)），以及 Consumer 数据形式（[dsh-storage-domain](../../packages/storage/storage-domain)，`ctx.storageDomain`，也可经 `ctx.storage.domain` 访问）——它是后端约定的唯一 Consumer，也是其他一切所使用的类型化 API。枢纽自身不做任何 IO：后端拥有介质，数据形式拥有语义，产品包绝不直接触碰后端。设计记录：[领域 KV 存储 Agent Note](../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
+存储子系统持久保存一切不属于会话事件日志的数据（会话日志有自己的 seam——见 [persistence.md](persistence.zh.md)）。它是一项可选能力，不属于 agent loop（智能体循环）主干，并按[能力 seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md) 拆分：枢纽（hub）与 Service Definition（[clocky-storage](../../packages/storage/storage)，`ctx.storage`）、Service Provider（注册为 `json` 的 [clocky-storage-json](../../packages/storage/storage-json) 与注册为 `sqlite` 的 [clocky-storage-sqlite](../../packages/storage/storage-sqlite)），以及当前记录的 Consumer 数据形式（[clocky-storage-domain](../../packages/storage/storage-domain)，`ctx.storageDomain`／`ctx.storage.domain`）和仅追加流的 Consumer 数据形式（[clocky-storage-log](../../packages/storage/storage-log)，`ctx.storageLog`／`ctx.storage.log`）。枢纽自身不做任何 IO：后端拥有介质，数据形式拥有语义，产品包绝不直接触碰后端。设计记录：[领域 KV 存储 Agent Note](../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
-源码：[`packages/storage/storage/src/backend.ts`](../../packages/storage/storage/src/backend.ts) · [`packages/storage/storage-domain/src/spec.ts`](../../packages/storage/storage-domain/src/spec.ts) · [`packages/storage/storage-domain/src/events.ts`](../../packages/storage/storage-domain/src/events.ts)
+源码：[`packages/storage/storage/src/backend.ts`](../../packages/storage/storage/src/backend.ts) · [`packages/storage/storage/src/log.ts`](../../packages/storage/storage/src/log.ts) · [`packages/storage/storage-domain/src/spec.ts`](../../packages/storage/storage-domain/src/spec.ts) · [`packages/storage/storage-domain/src/events.ts`](../../packages/storage/storage-domain/src/events.ts)
 
 ## 枢纽：`ctx.storage`
 
@@ -15,13 +15,13 @@
 ```ts type-equiv
 /**
  * Data forms mountable on the hub, keyed by form name. Form owners extend
- * this map via declaration merging (the domain layer merges
- * `domain: DomainFacility`) and mount the facility in their `apply`.
+ * this map via declaration merging (the domain and log layers merge their
+ * facilities) and mount the facility in their `apply`.
  */
 interface StorageForms {}
 ```
 
-`mount(form, facility)` 是一个 effect，其 disposer 负责卸载；对同一键的第二次挂载抛出 `duplicate-mount`。`form(form)` 解析已挂载的 facility，在拥有插件加载之前抛出 `form-not-mounted`——组合方应据此安排插件顺序，而不是静默推迟。领域层合并 `domain: DomainFacility`，因此 `ctx.storage.domain` 与 `ctx.storageDomain` 是同一个对象。
+`mount(form, facility)` 是一个 effect，其 disposer 负责卸载；对同一键的第二次挂载抛出 `duplicate-mount`。`form(form)` 解析已挂载的 facility，在拥有插件加载之前抛出 `form-not-mounted`——组合方应据此安排插件顺序，而不是静默推迟。领域层和日志层分别合并 `domain: DomainFacility` 与 `log: StorageLogFacility`，所以每种形式都可通过 `ctx.storage.<form>` 和其可注入服务访问。
 
 ## 后端约定
 
@@ -35,6 +35,9 @@ interface StorageBackend {
   /** Key-value operations; absent when this backend cannot serve them. */
   readonly kv?: KvFacet
 
+  /** Append-only stream operations; absent when this backend cannot serve them. */
+  readonly log?: LogFacet
+
   /**
    * Drain in-flight writes across all open units and release the medium.
    * Idempotent; concurrent and repeated calls resolve once teardown finishes.
@@ -44,7 +47,13 @@ interface StorageBackend {
 }
 ```
 
-一个后端拥有一个介质（一棵文件树的根目录、一个数据库文件），并提供可选的操作组；目前 `kv` 是唯一一组。`KvFacet.open(descriptor)` 打开一个具名 unit——`KvUnitDescriptor` 携带名称、格式版本、表名清单，以及是否存在全局单例 slot——并返回提供 `loadAll`、`putRecord`、`deleteRecord`、`setGlobal` 和 `close` 的 `KvUnit`。unit 名与表名必须匹配 `UNIT_NAME_RE`（既可安全用作文件名，也可安全用作 SQL 标识符片段）；记录键是任意字符串，绝不进入文件路径。unit 不对并发写入做串行化——顺序由调用方负责——但每次单独调用在介质上都是原子的，且 resolve 后即已持久。介质上记录的版本与之不同时拒绝 `version-mismatch`；无法按该 unit 解析的介质拒绝 `malformed-medium`（不做迁移：预发布立场）。[`backend.ts`](../../packages/storage/storage/src/backend.ts) 是逐条款的规范性约定，[`tests/contract.ts`](../../packages/storage/storage/tests/contract.ts) 中的共享一致性套件会针对每个后端检查每项条款。[json 后端](../../packages/storage/storage-json/README.zh.md)以原子方式为每个 unit 整文件重新发布一份人类可读文件；[sqlite 后端](../../packages/storage/storage-sqlite/README.zh.md)在单个数据库中每行存储一份文档，用于频繁更新的数据。
+一个后端拥有一个介质（一棵文件树的根目录、一个数据库文件），并提供可选的操作组。`KvFacet.open(descriptor)` 打开一个具名 unit——`KvUnitDescriptor` 携带名称、格式版本、表名清单，以及是否存在全局单例 slot——并返回提供 `loadAll`、`putRecord`、`deleteRecord`、`setGlobal` 和 `close` 的 `KvUnit`。unit 名与表名必须匹配 `UNIT_NAME_RE`（既可安全用作文件名，也可安全用作 SQL 标识符片段）；记录键是任意字符串，绝不进入文件路径。unit 不对并发写入做串行化——顺序由调用方负责——但每次单独调用在介质上都是原子的，且 resolve 后即已持久。介质上记录的版本与之不同时拒绝 `version-mismatch`；无法按该 unit 解析的介质拒绝 `malformed-medium`（不做迁移：预发布立场）。[`backend.ts`](../../packages/storage/storage/src/backend.ts) 是逐条款的规范性约定；共享一致性套件 [`tests/contract.ts`](../../packages/storage/storage/tests/contract.ts)和[`tests/log-contract.ts`](../../packages/storage/storage/tests/log-contract.ts)会针对每个后端检查两个分面。[json 后端](../../packages/storage/storage-json/README.zh.md)发布人类可读文件；[sqlite 后端](../../packages/storage/storage-sqlite/README.zh.md)在一个数据库中保存记录和追加流。
+
+## 仅追加流
+
+`LogFacet.open({ name, version })` 返回一个由调用方拥有的 `LogStream`。一个流只会在当前尾序列等于 `expectedSequence` 时接受非空批次；该批次作为一次操作持久化并获得连续条目，否则以 `sequence-conflict` 拒绝。`read(afterSequence, limit)` 返回有序且有界的一页。检查点携带其覆盖的序列，不会超过尾序列，也不会倒退。`compact({ throughSequence, expectedCheckpointSequence })` 只会在准确的后续 checkpoint 覆盖 prefix 时原子移除它；在保留 prefix 之前读取会以 `compacted` 拒绝。值以分离的 JSON 快照跨越持久化边界。
+
+`StorageLogFacility`把每个流名称路由至配置的默认后端，或路由至其自身属性 `routes` 覆盖。它对每个名称只允许一个本地句柄，在 dispose 时关闭准入、排空每一个已接受的 open，然后结算每个返回的句柄。缺少 `log` 的后端以 `facet-unsupported` 失败。流名称是不透明值而不是 KV 标识符，因此允许 `team/<TeamId>` 和 `channel/<ChannelId>` 流。JSON 提供方每个根目录只接受一个本地 Hub 并拒绝另一个所有者；SQLite 在事务中序列化预期尾序列比较和完整批次。
 
 ## 声明领域
 
@@ -202,6 +211,49 @@ async closeAll(): Promise<void>
 ```
 
 Source: [`packages/storage/storage-domain/src/index.ts`](../../packages/storage/storage-domain/src/index.ts)
+
+<a id="ctxstoragelog--storagelogfacility"></a>
+
+### `ctx.storageLog` — `StorageLogFacility`
+
+The mounted facility. A caller owns each returned stream and closes it when its projection/runtime stops. Unmount closes admission, drains accepted backend calls, settles every returned handle, then releases the form.
+
+```ts cordis-catalog
+/**
+ * Open a caller-owned log stream over its configured backend. The facility
+ * preserves one open handle per stream name, so a Consumer has exactly one
+ * local serialization owner for its expected-tail mutations.
+ * @param descriptor - Stream declaration owned by the caller package.
+ * @returns a routed handle that releases the name only after backend close.
+ */
+async open(descriptor: LogStreamDescriptor): Promise<LogStream>
+
+/**
+ * Enumerate materialized streams through their configured backends. An entry
+ * stored on a backend that no longer owns its name under this route table is
+ * excluded, so recovery cannot accidentally reopen it through the wrong
+ * provider.
+ * @returns durable stream metadata in stable stream-name order.
+ */
+async list(): Promise<readonly LogStreamInfo[]>
+
+/**
+ * Read an open handle for diagnostics. Consumers hold the typed result of
+ * `open`; this method does not infer a descriptor's value type.
+ * @param name - Stream name.
+ * @returns its live routed handle, or `undefined`.
+ */
+get(name: string): LogStream | undefined
+
+/**
+ * Close admission, settle accepted backend calls, then close every resolved caller
+ * handle. All owned work settles before an aggregate failure is reported.
+ * @returns resolution after every accepted call and returned handle settles.
+ */
+closeAll(): Promise<void>
+```
+
+Source: [`packages/storage/storage-log/src/index.ts`](../../packages/storage/storage-log/src/index.ts)
 
 <a id="domain-events"></a>
 

@@ -25,7 +25,6 @@ function header(id: string, parentSession?: SessionId): SessionHeader {
     createdAt: 1000,
     cwd: '/proj',
     ...parentSession === undefined ? {} : { parentSession },
-    delegationDepth: parentSession === undefined ? 0 : 1,
   }
 }
 

@@ -14,10 +14,8 @@ export const name = 'headless-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: the runner is a one-shot driver over the API carrier
- * whose observable contract (final text on stdout, exit code by turn-end
- * reason) is process-level and owned by the launcher e2e; it registers
- * nothing and holds no mutable relation to audit inside the tree.
+ * No runtime invariant: the runner's Team final-output and exit contract is
+ * process-level and pinned by the launcher tests; it owns no in-tree relation.
  */
 const install: InvariantInstaller = () => {}
 

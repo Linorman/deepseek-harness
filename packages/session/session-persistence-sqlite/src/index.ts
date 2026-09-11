@@ -7,6 +7,7 @@
 import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import type {
+  Session,
   SessionEvent,
   SessionHeader,
   SessionId,
@@ -96,6 +97,10 @@ export class SqliteSessionPersistence extends SessionPersistence {
 
   create(meta: SessionHeader): Promise<void> {
     return this.coordinator.create(meta)
+  }
+
+  override materializeHeader(session: Session): Promise<void> {
+    return this.coordinator.materializeHeader(session)
   }
 
   append(id: SessionId, events: readonly SessionEvent[]): Promise<void> {

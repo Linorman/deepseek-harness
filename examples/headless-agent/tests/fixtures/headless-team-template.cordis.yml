@@ -1,0 +1,14 @@
+- id: team-run
+  config:
+    workerCount: 0
+    maxWorkerCount: 0
+    members:
+      - role: researcher
+        displayName: Researcher
+        kind: local-agent
+        capabilities: [team-default-worker]
+        provider: in-process
+        modelProvider: headless-team-task-mock
+        model: headless-team-task-mock
+        preset: standard
+        maxTokens: 4096

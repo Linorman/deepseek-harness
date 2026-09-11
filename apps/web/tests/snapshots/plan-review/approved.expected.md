@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - 'button "Plan a small change: add" [disabled]'
+  - text: {{workspace}}
   - img
   - text: Standard mode
   - button "Session log":
@@ -9,8 +8,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- img
-- text: "plan Plan mode on. Use /plan off to leave. Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. Call exit_plan_mode with a short plan of at most five bullet points. Once the plan is approved, reply with the single word DONE and stop. {{clock}}"
+- text: "Direct message from participant-{{uuid}}: Plan a small change: add a --greeting flag to a CLI. Do not read or write any files. Call exit_plan_mode with a short plan of at most five bullet points. Once the plan is approved, reply with the single word DONE and stop. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -40,13 +38,10 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation":
-  - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - textbox "Message the agent"
-- button "Commands":
+- button "Commands" [disabled]:
   - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current Test Model":
   - text: Test Model
   - img

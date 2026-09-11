@@ -36,6 +36,7 @@
     "@clocky/schemastery": "workspace:^"
   },
   "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-output-retention": "workspace:^",

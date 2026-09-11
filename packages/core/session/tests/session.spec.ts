@@ -980,18 +980,24 @@ describe('Session', () => {
       id: SessionId('header-owned'),
       createdAt: 123,
       cwd: '/accepted',
+      teamId: 'team-owned',
+      participantId: 'participant-owned',
       parentSession: SessionId('parent'),
       seedLength: 2,
     }
 
     const session = Session.create(SessionId('header-owned'), undefined, input)
     input.cwd = '/caller-mutated'
+    input.teamId = 'caller-mutated-team'
+    input.participantId = 'caller-mutated-participant'
 
     expect(session.header).toEqual({
       version: SESSION_FORMAT_VERSION,
       id: 'header-owned',
       createdAt: 123,
       cwd: '/accepted',
+      teamId: 'team-owned',
+      participantId: 'participant-owned',
       parentSession: 'parent',
       seedLength: 2,
     })
@@ -1046,6 +1052,12 @@ describe('Session', () => {
       { header: { ...base, createdAt: '123' }, error: /createdAt must be a non-negative safe integer/ },
       { header: { ...base, cwd: 1 }, error: /header cwd must be a string/ },
       { header: { ...base, cwd: 'relative' }, error: /header cwd must be an absolute path/ },
+      { header: { ...base, teamId: 'team-only' }, error: /teamId and participantId must be provided together/ },
+      { header: { ...base, participantId: 'participant-only' }, error: /teamId and participantId must be provided together/ },
+      { header: { ...base, teamId: '', participantId: 'participant' }, error: /teamId must be a non-empty string/ },
+      { header: { ...base, teamId: 1, participantId: 'participant' }, error: /teamId must be a non-empty string/ },
+      { header: { ...base, teamId: 'team', participantId: '' }, error: /participantId must be a non-empty string/ },
+      { header: { ...base, teamId: 'team', participantId: 1 }, error: /participantId must be a non-empty string/ },
       { header: { ...base, parentSession: 1 }, error: /header parentSession must be a string/ },
       { header: { ...base, seedLength: '1' }, error: /seedLength must be a non-negative safe integer/ },
       { header: { ...base, seedLength: 0.5 }, error: /seedLength must be a non-negative safe integer/ },
@@ -1054,7 +1066,23 @@ describe('Session', () => {
 
     for (const { header, error } of cases) {
       expect(() => Session.create(SessionId('header-shape'), undefined, header as SessionHeader)).toThrow(error)
+      expect(() => Session.fromRestore(SessionId('header-shape'), [], header as SessionHeader)).toThrow(error)
     }
+  })
+
+  it('restores paired Team and Participant references in a session header', () => {
+    const session = Session.fromRestore(SessionId('header-restored'), [], {
+      version: SESSION_FORMAT_VERSION,
+      id: SessionId('header-restored'),
+      createdAt: 123,
+      teamId: 'team-restored',
+      participantId: 'participant-restored',
+    })
+
+    expect(session.header).toMatchObject({
+      teamId: 'team-restored',
+      participantId: 'participant-restored',
+    })
   })
 
   it('rejects seed records with invalid fixed-envelope fields', () => {
@@ -1261,6 +1289,8 @@ describe('SessionStore', () => {
     expect(session.header).toMatchObject({ version: SESSION_FORMAT_VERSION, id: 'plain' })
     expect(Number.isSafeInteger(session.header.createdAt)).toBe(true)
     expect(session.header.cwd).toBeUndefined()
+    expect(session.header.teamId).toBeUndefined()
+    expect(session.header.participantId).toBeUndefined()
     expect(session.header.parentSession).toBeUndefined()
   })
 
@@ -1278,18 +1308,26 @@ describe('SessionStore', () => {
     })
   })
 
-  it('attaches subagent origin and delegationDepth from meta to the header', async () => {
+  it('attaches paired Team and Participant references from meta to the header', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
-    const session = ctx.sessions.create(SessionId('delegated-child'), {
-      meta: { parentSession: SessionId('parent'), origin: 'subagent', delegationDepth: 2 },
+    const session = ctx.sessions.create(SessionId('team-participant'), {
+      meta: { teamId: 'team-meta', participantId: 'participant-meta' },
     })
+
     expect(session.header).toMatchObject({
-      id: 'delegated-child',
-      parentSession: 'parent',
-      origin: 'subagent',
-      delegationDepth: 2,
+      id: 'team-participant',
+      teamId: 'team-meta',
+      participantId: 'participant-meta',
     })
+  })
+
+  it('rejects retired subagent header metadata', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    expect(() => ctx.sessions.create(SessionId('delegated-child'), {
+      meta: { parentSession: SessionId('parent'), origin: 'subagent' } as never,
+    })).toThrow(/header field "origin" was removed/)
   })
 
   it('rejects non-JSON and invalid scalar session metadata', async () => {
@@ -1298,6 +1336,10 @@ describe('SessionStore', () => {
     const cases: Array<{ meta: unknown; error: RegExp }> = [
       { meta: { parentSession: 1n }, error: /header is not losslessly JSON-serializable/ },
       { meta: { cwd: 1 }, error: /header cwd must be a string/ },
+      { meta: { teamId: 'team-only' }, error: /teamId and participantId must be provided together/ },
+      { meta: { participantId: 'participant-only' }, error: /teamId and participantId must be provided together/ },
+      { meta: { teamId: '', participantId: 'participant' }, error: /teamId must be a non-empty string/ },
+      { meta: { teamId: 'team', participantId: '' }, error: /participantId must be a non-empty string/ },
       { meta: { parentSession: 1 }, error: /header parentSession must be a string/ },
       { meta: { createdAt: '123' }, error: /header createdAt must be a non-negative safe integer/ },
       { meta: { createdAt: 1.5 }, error: /header createdAt must be a non-negative safe integer/ },
@@ -1306,10 +1348,10 @@ describe('SessionStore', () => {
       { meta: { seedLength: '1' }, error: /seedLength must be a non-negative safe integer/ },
       { meta: { seedLength: 0.5 }, error: /seedLength must be a non-negative safe integer/ },
       { meta: { seedLength: -1 }, error: /seedLength must be a non-negative safe integer/ },
-      { meta: { origin: 'fork' }, error: /origin must be "subagent"/ },
-      { meta: { delegationDepth: '1' }, error: /delegationDepth must be a non-negative safe integer/ },
-      { meta: { delegationDepth: 0.5 }, error: /delegationDepth must be a non-negative safe integer/ },
-      { meta: { delegationDepth: -1 }, error: /delegationDepth must be a non-negative safe integer/ },
+      { meta: { origin: 'fork' }, error: /header field "origin" was removed/ },
+      { meta: { delegationDepth: '1' }, error: /header field "delegationDepth" was removed/ },
+      { meta: { delegationDepth: 0.5 }, error: /header field "delegationDepth" was removed/ },
+      { meta: { delegationDepth: -1 }, error: /header field "delegationDepth" was removed/ },
       { meta: { agentPreset: 1 }, error: /agentPreset must be a string/ },
     ]
 

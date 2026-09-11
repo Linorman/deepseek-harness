@@ -3,7 +3,7 @@
 - id: base
   name: '@clocky/cordis-plugin-include'
   config:
-    path: ./cordis.yml
+    path: ./legacy-subagent.cordis.yml
     patches:
       - insert:
           - id: subagent-durability-failure

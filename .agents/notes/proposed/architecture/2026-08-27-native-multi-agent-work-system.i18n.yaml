@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-08-27-native-multi-agent-work-system.md
+2026-08-27-native-multi-agent-work-system.md: a030d90530e06f897729813b6a8fbdc8c0e0ddfe
+2026-08-27-native-multi-agent-work-system.zh.md: 0c1e995248c2fdc7178f538f33dbf4b1e5f38894

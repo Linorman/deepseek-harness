@@ -1,0 +1,571 @@
+[
+  {
+    "name": "channel context without optional provenance",
+    "valid": true,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "review turn preserves exact provenance and extensible content",
+    "valid": true,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "turn",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          },
+          {
+            "type": "future-block",
+            "value": {
+              "exact": "retained"
+            }
+          }
+        ],
+        "causationId": "cause-view",
+        "taskId": "task-view",
+        "review": {
+          "attemptId": "attempt-view",
+          "reviewRevision": 3,
+          "reviewerId": "reviewer-view",
+          "initiatorId": "initiator-view"
+        }
+      }
+    }
+  },
+  {
+    "name": "required view cannot be ignorable",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      },
+      "ignorable": true
+    }
+  },
+  {
+    "name": "required view needs append surface marker",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "negative durable sequence",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": -1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "unsafe durable timestamp",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 9007199254740992,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "boolean implementation version",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": true
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "unknown source field",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "mutableChannelState": {
+          "hidden": true
+        }
+      }
+    }
+  },
+  {
+    "name": "duplicate source envelopes",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "trigger-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "trigger must end source provenance",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "trigger-view",
+          "later-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "empty rendered content",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": []
+      }
+    }
+  },
+  {
+    "name": "invalid delivery intent",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "immediate",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "empty optional causation",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "causationId": ""
+      }
+    }
+  },
+  {
+    "name": "empty optional task",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "taskId": ""
+      }
+    }
+  },
+  {
+    "name": "invalid review revision",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "review": {
+          "attemptId": "attempt-view",
+          "reviewRevision": 0,
+          "reviewerId": "reviewer-view"
+        }
+      }
+    }
+  },
+  {
+    "name": "review cannot supply extra authority",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "review": {
+          "attemptId": "attempt-view",
+          "reviewRevision": 3,
+          "reviewerId": "reviewer-view",
+          "actor": "forged"
+        }
+      }
+    }
+  }
+]

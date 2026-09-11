@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Context } from '@clocky/cordis'
-import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
+import { codingHarness, finalText, hasRealModel, realModel, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
 import { SessionId } from '@clocky/clocky-session'
 
 /**
@@ -44,7 +44,7 @@ afterEach(async () => {
   workdir = undefined
 })
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY)('coding task: fix a failing test via bash', () => {
+describe.skipIf(!hasRealModel)('coding task: fix a failing test via bash', () => {
   it('repairs add.js so node add.test.js passes', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'clocky-coding-task-'))
     await writeFile(join(workdir, 'add.js'), BUGGY_ADD)
@@ -55,7 +55,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('coding task: fix a failing test 
     expect(before.status).not.toBe(0)
 
     ctx = await codingHarness(workdir, { persona: SYSTEM_PROMPT })
-    const agent = ctx.agentLoop.create(SessionId('e2e-task'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-task'), realModel)
 
     agent.followup(createUserMessage({
       content: [{

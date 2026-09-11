@@ -1,11 +1,10 @@
 /**
  * Derives the workspace browser tree from Host Workspace order and membership.
- * Unassigned Sessions trail under Ungrouped; only the selected blank Session
- * remains visible.
+ * Unassigned Sessions trail under Ungrouped.
  */
 import {
-  indexSubagentDescendants, type PendingInteractionStatus, type SessionId, type SessionListState,
-  type SessionSearchResultItem, type SessionSummary, type SubagentDescendantSummary,
+  type PendingInteractionStatus, type SessionId, type SessionListState,
+  type SessionSearchResultItem, type SessionSummary,
   type WorkspaceId, type WorkspaceView,
 } from '@clocky/clocky-client-runtime/client'
 
@@ -18,15 +17,13 @@ export const UNGROUPED_LABEL = 'Ungrouped'
 /** One top-level session row in a group or the flat list. */
 export interface SessionNode {
   id: SessionId
-  /** Stored display title; the renderer substitutes the localized New Session label for blank rows. */
+  /** Stored display title. */
   title: string
-  /** The provisional blank session (renderer shows the localized New Session title). */
+  /** Empty-log bit reported by the Host summary. */
   blank: boolean
   /** The runtime Session list reports an interaction awaiting this user. */
   pendingInteraction?: PendingInteractionStatus
   running: boolean
-  /** Running descendants connected through uninterrupted subagent-origin lineage. */
-  runningSubagentCount: number
   /** Finished running while not selected and not yet opened (the green "done" reminder dot). */
   completed: boolean
   updatedAt: number
@@ -62,8 +59,6 @@ export interface SearchResultNode {
   /** The runtime Session list reports an interaction awaiting this user. */
   pendingInteraction?: PendingInteractionStatus
   running: boolean
-  /** Running descendants connected through uninterrupted subagent-origin lineage. */
-  runningSubagentCount: number
   /** Finished running while not selected and not yet opened (the green "done" reminder dot). */
   completed: boolean
   snippet?: string
@@ -109,25 +104,9 @@ function byRecency(a: SessionSummary, b: SessionSummary): number {
   return a.id < b.id ? -1 : 1
 }
 
-/**
- * Ordinary sessions are visible; among blank sessions, only the current one
- * is visible. Subagent children use their parent header catalog; archived
- * sessions are visible nowhere, while their accounting slots remain so
- * unarchiving restores position.
- */
-function sessionVisible(session: SessionSummary, current: SessionId | undefined, archived: ReadonlySet<SessionId>): boolean {
-  return session.origin !== 'subagent'
-    && !archived.has(session.id)
-    && (!session.blank || session.id === current)
-}
-
-/**
- * A blank session is the selected Workspace's provisional New Session row;
- * its canonical title never enters search (blank rows are query-excluded)
- * and the renderer localizes its display label.
- */
-function sessionTitle(session: SessionSummary): string {
-  return session.blank ? 'New Session' : session.displayTitle
+/** Archived sessions are visible nowhere, while their accounting slots remain so unarchiving restores position. */
+function sessionVisible(session: SessionSummary, archived: ReadonlySet<SessionId>): boolean {
+  return !archived.has(session.id)
 }
 
 /** Build one group without projecting session lineage into presentation. */
@@ -185,7 +164,7 @@ function groupByWorkspace(
       const summary = list.byId[id]
       if (summary === undefined) continue // account may lead the list pull; the row appears when the summary lands
       accounted.add(id)
-      if (!sessionVisible(summary, list.current, archived)) continue
+      if (!sessionVisible(summary, archived)) continue
       members.push(summary)
     }
     groups.push(buildGroup(
@@ -196,7 +175,7 @@ function groupByWorkspace(
   const stray = list.ids
     .map(id => list.byId[id])
     .filter((s): s is SessionSummary =>
-      s !== undefined && !accounted.has(s.id) && sessionVisible(s, list.current, archived))
+      s !== undefined && !accounted.has(s.id) && sessionVisible(s, archived))
   if (stray.length > 0) {
     groups.push(buildGroup(
       UNGROUPED_KEY,
@@ -211,16 +190,12 @@ function groupByWorkspace(
   return groups
 }
 
-function sessionNode(
-  s: SessionSummary,
-  descendants: ReadonlyMap<SessionId, SubagentDescendantSummary>,
-): SessionNode {
+function sessionNode(s: SessionSummary): SessionNode {
   return {
     id: s.id,
-    title: sessionTitle(s),
+    title: s.displayTitle,
     blank: s.blank,
     running: s.running,
-    runningSubagentCount: descendants.get(s.id)?.runningCount ?? 0,
     completed: s.completed === true,
     updatedAt: s.updatedAt,
     ...(s.pendingInteraction === undefined ? {} : { pendingInteraction: s.pendingInteraction }),
@@ -231,8 +206,7 @@ function sessionNode(
  * Derive the workspace browser groups with every session as a top-level row.
  *
  * Every group shows; sessions populate under expanded groups in the selected
- * local order. Blank sessions are excluded except for the selected
- * provisional New Session row; archived sessions are excluded everywhere.
+ * local order; archived sessions are excluded everywhere.
  * Content search lives outside this derivation
  * (see {@link deriveSearchResults}).
  * @param list - sessions list snapshot (`current` feeds containsCurrent).
@@ -249,7 +223,6 @@ export function deriveGroups(
 ): GroupNode[] {
   const archived = new Set(archivedSessionIds)
   const expandedGroups = new Set(view.expandedGroups)
-  const descendants = indexSubagentDescendants(list.byId)
   const currentGroup = list.current === undefined
     ? undefined
     : (workspaces.find(w => w.sessionIds.includes(list.current as SessionId))?.workspaceId as string | undefined)
@@ -266,16 +239,15 @@ export function deriveGroups(
       sessionCount: g.sessions.length,
       expanded,
       containsCurrent: g.key === currentGroup,
-      sessions: expanded ? g.sessions.map(session => sessionNode(session, descendants)) : [],
+      sessions: expanded ? g.sessions.map(sessionNode) : [],
     })
   }
   return groups
 }
 
 /**
- * Derive the flat session list ("In one list" mode): every session — fork
- * children included — as a top-level row, strictly newest-first. No grouping,
- * no parent/child adjacency. Content search lives outside this derivation
+ * Derive the flat session list ("In one list" mode): every visible session as
+ * a top-level row, strictly newest-first. Content search lives outside this derivation
  * (see {@link deriveSearchResults}).
  * @param list - sessions list snapshot.
  * @param archivedSessionIds - registry-global archive set.
@@ -286,15 +258,14 @@ export function deriveFlat(
   archivedSessionIds: readonly SessionId[],
 ): SessionNode[] {
   const archived = new Set(archivedSessionIds)
-  const descendants = indexSubagentDescendants(list.byId)
   const rows: SessionSummary[] = []
   for (const id of list.ids) {
     const s = list.byId[id]
-    if (s === undefined || !sessionVisible(s, list.current, archived)) continue
+    if (s === undefined || !sessionVisible(s, archived)) continue
     rows.push(s)
   }
   rows.sort(byRecency)
-  return rows.map(session => sessionNode(session, descendants))
+  return rows.map(sessionNode)
 }
 
 /** Relative-time bucket of a session row's trailing label. */
@@ -329,7 +300,6 @@ export function deriveSearchResults(
   const q = query.trim().toLowerCase()
   if (q === '') return { items: [], hasMore: false }
   const archived = new Set(archivedSessionIds)
-  const descendants = indexSubagentDescendants(list.byId)
 
   const workspaceBySession = new Map<SessionId, string>()
   for (const workspace of workspaces) {
@@ -347,11 +317,9 @@ export function deriveSearchResults(
   const local: SessionSummary[] = []
   for (const id of list.ids) {
     const summary = list.byId[id]
-    // Blank placeholders never match a query (their canonical title displays
-    // localized, so matching it would tie search to one language).
-    if (summary === undefined || summary.blank || !sessionVisible(summary, list.current, archived)) continue
+    if (summary === undefined || !sessionVisible(summary, archived)) continue
     if (
-      sessionTitle(summary).toLowerCase().includes(q)
+      summary.displayTitle.toLowerCase().includes(q)
       || labelOf(summary).toLowerCase().includes(q)
     ) {
       local.push(summary)
@@ -369,7 +337,7 @@ export function deriveSearchResults(
   for (const summary of local) include(summary)
   for (const item of content.items) {
     const summary = list.byId[item.sessionId]
-    if (summary !== undefined && !summary.blank && sessionVisible(summary, list.current, archived)) include(summary)
+    if (summary !== undefined && sessionVisible(summary, archived)) include(summary)
   }
 
   return {
@@ -377,10 +345,9 @@ export function deriveSearchResults(
       const match = contentBySession.get(summary.id)
       return {
         id: summary.id,
-        title: sessionTitle(summary),
+        title: summary.displayTitle,
         workspace: labelOf(summary),
         running: summary.running,
-        runningSubagentCount: descendants.get(summary.id)?.runningCount ?? 0,
         ...(summary.pendingInteraction === undefined
           ? {}
           : { pendingInteraction: summary.pendingInteraction }),

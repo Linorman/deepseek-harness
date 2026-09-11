@@ -71,9 +71,6 @@ export function apply(ctx: ClientContext): void {
   const browserFlowSource = flowSource('sidebar.workspaces.directoryFlow')
   const pickerFlowSource = flowSource('conversation.hero.workspace.directoryFlow')
   const browserInjected = (): WorkspaceBrowserInjected => ({
-    // Explicit group actions keep their target; unscoped New Session inherits
-    // the current Session Workspace before the recent-Workspace fallback.
-    startSession: (workspaceId) => { ctx.workspaces.startSession(workspaceId) },
     open: (sessionId) => { ctx.sessions.open(sessionId) },
     searchSessions,
     searchResultLimit: ctx.sessions.searchResultLimit,
@@ -84,13 +81,6 @@ export function apply(ctx: ClientContext): void {
       if (session === undefined) throw new Error(`unknown session "${sessionId}"`)
       const result = await session.rename(title)
       if (!result.ok) throw new Error(result.error.message)
-    },
-    forkSession: (sessionId) => {
-      ctx.sessions.fork({ sessionId, increaseTitle: true })
-        .then((childId) => { ctx.sessions.open(childId) })
-        .catch(() => {
-          // Fork or child-rename failure keeps the current selection.
-        })
     },
     renameWorkspace: async (workspaceId, title) => { await ctx.workspaces.rename(workspaceId, title) },
     deleteWorkspace: async (workspaceId) => { await ctx.workspaces.delete(workspaceId) },

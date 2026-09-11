@@ -9,6 +9,7 @@
  */
 
 import type { Context } from '@clocky/cordis'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { Agent, AgentOptions, CreateAgentOptions } from '@clocky/clocky-agent'
 import type { SandboxMode } from '@clocky/clocky-sandbox'
 import type { Session, SessionId } from '@clocky/clocky-session'
@@ -84,9 +85,10 @@ export function resolveChildAgentOptions(
 
 /**
  * Build the child session's durable creation metadata: the parent's workspace,
- * its direct lineage, coarse product origin, the recursion budget that must
- * survive persistence, the seed boundary that separates inherited parent
- * history from child work, and the composition the child runs under.
+ * its direct lineage, the seed boundary that separates inherited parent
+ * history from child work, and the composition the child runs under. The
+ * subagent descriptor event, not Session metadata, carries child identity and
+ * recursion depth.
  *
  * The preset is read from the parent's LIVE scope chain rather than from its
  * header, because a parent that switched preset while blank runs on the newer
@@ -95,26 +97,20 @@ export function resolveChildAgentOptions(
  * resolves the deployment default and rebuilds turns under a tool set the
  * child never had.
  * @param parent - the delegating parent agent.
- * @param childDepth - the resolved delegation depth to persist.
  * @param lineageSeedLength - how many leading events came from the parent's log.
  * @returns the `meta` for `ctx.agents.create()`.
  */
 export function childSessionMeta(
   parent: Agent,
-  childDepth: number,
   lineageSeedLength: number,
 ): NonNullable<CreateAgentOptions['meta']> {
   const parentHeader = parent.session.header
+  const cwd = resolveAgentWorkspaceRoot(parent)
   const agentPreset = parent.ctx.get('agentPresets')?.composedPreset(parent.ctx)
   return {
-    ...parentHeader.cwd !== undefined ? { cwd: parentHeader.cwd } : {},
+    ...cwd === undefined ? {} : { cwd },
     ...agentPreset === undefined ? {} : { agentPreset },
     parentSession: parentHeader.id,
-    // Navigation classification only; the descriptor remains the authority
-    // for mode and continuation capability.
-    origin: 'subagent',
-    // Durable: the recursion budget must survive persistence and resume.
-    delegationDepth: childDepth,
     ...lineageSeedLength > 0 ? { seedLength: lineageSeedLength } : {},
   }
 }

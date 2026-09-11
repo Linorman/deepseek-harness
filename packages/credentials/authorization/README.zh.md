@@ -1,4 +1,4 @@
-# dsh-authorization
+# clocky-authorization
 
 [English](README.md) | 中文
 
@@ -13,9 +13,9 @@
 ## 接口
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { AuthorizationDeclinedError, type AuthorizationSession } from '@deepseek-ai/dsh-authorization'
-import { credentialKey } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@clocky/cordis'
+import { AuthorizationDeclinedError, type AuthorizationSession } from '@clocky/clocky-authorization'
+import { credentialKey } from '@clocky/clocky-credentials'
 
 declare const ctx: Context
 declare const exchange: (signal: AbortSignal) => Promise<void>

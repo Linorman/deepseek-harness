@@ -24,7 +24,7 @@ The assumption was justified in the source as the adapter's real capability rath
 
 **No configuration surface edits `input`.** It joins `compat`, `reasoningEfforts`, `thinkingBudgets`, and `headers` as a settings-document field, and the model-list editor stays a hand-written form over id, name, and the two capacities. This costs nothing durable because that card was already built to carry fields it does not edit: its row patch spreads the stored row before applying changes, and adoption keeps an existing row over a rediscovered candidate, so a hand-written `input` survives both.
 
-The direct DeepSeek adapter owns a separate exact-model catalog. Its supported vision entry declares image input, while its text models and unlisted pass-through ids remain text-only.
+`clocky-llm-pi-ai` owns the provider catalog used by the current composition. Its catalog entries and declared profiles are the only sources of input-modality metadata; there is no separate provider-specific image catalog in the current adapter set.
 
 ## Alternatives considered
 
@@ -50,4 +50,4 @@ A model that declares image input its endpoint does not serve is not caught loca
 
 `config.spec.ts` holds the schema boundary: an unknown modality refused at both levels, the empty route list accepted by the schema and refused by the namespace validator that the settings seam actually runs, and the `[]` materialization for an absent array that the inheritance rule depends on.
 
-No keyless snapshot lane exercises a pi-ai route: the snapshot examples drive `dsh-llm-replay`, which declares modalities directly in its configuration, and a pi-ai route needs a live endpoint whose port a static `cordis.yml` cannot name. The admission points this change feeds are already covered there through that provider (`examples/acp-agent/image.cordis.snapshot.yml` and `image-text-route.cordis.snapshot.yml`) and are unaffected — what changed is what one adapter reports, not how a gate reads it.
+No keyless snapshot lane exercises a pi-ai route: the snapshot examples drive `clocky-llm-replay`, which declares modalities directly in its configuration, and a pi-ai route needs a live endpoint whose port a static `cordis.yml` cannot name. The admission points this change feeds are already covered there through that provider (`examples/acp-agent/image.cordis.snapshot.yml` and `image-text-route.cordis.snapshot.yml`) and are unaffected — what changed is what one adapter reports, not how a gate reads it.

@@ -1,0 +1,36 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+- id: team-run
+  disabled: true
+- id: team-delegation
+  disabled: true
+- id: tool-team-goal
+  disabled: true
+- id: tool-team-task
+  disabled: true
+- id: tool-team-channel-summary
+  disabled: true
+- id: team-scheduler-dag
+  disabled: true
+- id: team-closure-driver
+  disabled: true
+- id: team-hub
+  config:
+    maxEnvelopeBytes: 4096
+    maxChannelViewBytes: 262144
+- insert:
+    - id: outbox-human-actor
+      name: '@clocky/clocky-team-human-actor'
+    - id: outbox-human-inbox
+      name: '@clocky/clocky-team-human-client'
+      config:
+        storagePageSize: 8
+        maxPageSize: 8
+        maxDeliveryBytes: 262144
+        maxPendingOperations: 128
+        watchTimeoutMs: 1000
+        pollIntervalMs: 25
+    - id: outbox-driver
+      name: './snapshot-fixtures/headless-closed-outbox-driver.ts'

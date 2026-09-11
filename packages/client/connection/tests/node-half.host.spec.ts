@@ -8,6 +8,7 @@ import type { AddressInfo } from 'node:net'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { ApiProxy } from '@clocky/clocky-host-apiproxy/api'
 import type { AttachmentStore } from '@clocky/clocky-attachment'
+import type {} from '@clocky/clocky-product-principal'
 import { RpcId, type ClientRequest } from '@clocky/clocky-host-apiproxy/api'
 import type { WebServer, WebRoute, WebUpgradeRoute } from '@clocky/clocky-host-webserver'
 import { API_PATH, apply, HOST_EVENTS_PATH, inject, MUX_EVENTS_PATH, type HostConnectionHandle } from '../src/index.ts'
@@ -57,14 +58,38 @@ function fakeRawPost(headers: Record<string, string>, url: string, body: string)
 }
 
 /** Response recorder compatible with both the fence's short-circuit and the bridge. */
-function fakeResponse(): { response: ServerResponse; state: { status?: number; body?: unknown } } {
-  const state: { status?: number; body?: unknown } = {}
+function fakeResponse(): {
+  response: ServerResponse
+  state: {
+    status?: number
+    body?: unknown
+    headers?: Record<string, string>
+    writeHeads: number
+    ends: number
+  }
+} {
+  const state: {
+    status?: number
+    body?: unknown
+    headers?: Record<string, string>
+    writeHeads: number
+    ends: number
+  } = {
+    writeHeads: 0,
+    ends: 0,
+  }
   const chunks: Buffer[] = []
   const response = Object.assign(new EventEmitter(), {
     writableEnded: false,
-    writeHead(value: number) { state.status = value; return this },
+    writeHead(value: number, headers?: Record<string, string>) {
+      state.writeHeads += 1
+      state.status = value
+      if (headers !== undefined) state.headers = headers
+      return this
+    },
     write(value: string | Uint8Array) { chunks.push(Buffer.from(value)); return true },
     end(this: { writableEnded: boolean }, value?: unknown) {
+      state.ends += 1
       if (typeof value === 'string' || value instanceof Uint8Array) chunks.push(Buffer.from(value))
       else if (value !== undefined) throw new TypeError('fake response only accepts string or Uint8Array bodies')
       if (chunks.length > 0) state.body = Buffer.concat(chunks).toString()
@@ -88,6 +113,45 @@ async function mounted(config?: { trustedHosts?: string[] }): Promise<{
   const fiber = ctx.plugin({ inject: [...inject], apply }, config)
   await fiber.await()
   return { routes, upgrades, dispose: () => fiber.dispose() }
+}
+
+/** Mount the connection with one credential-validating in-memory product-principal registry. */
+async function mountedWithProductAuth(config?: { trustedHosts?: string[] }): Promise<{
+  ctx: Context
+  routes: WebRoute[]
+  upgrades: WebUpgradeRoute[]
+  credential: string
+  authenticateCalls: string[]
+  dispose: () => Promise<void>
+}> {
+  const ctx = new Context()
+  const routes: WebRoute[] = []
+  const upgrades: WebUpgradeRoute[] = []
+  const credential = 'browser-bootstrap-credential'
+  const authenticateCalls: string[] = []
+  ctx.provide('webServer', fakeHttpServer(routes, upgrades) as WebServer)
+  ctx.provide('apiProxy', {} as unknown as ApiProxy)
+  ctx.provide('productPrincipals', {
+    authenticate: async (request: { credential?: string }) => {
+      authenticateCalls.push(request.credential ?? '')
+      if (request.credential !== credential) throw new Error('invalid credential')
+      return {
+        withCall: async <T>(operation: (call: {
+          principal: { id: string; issuer: string; subject: string; assurance: string; credentialGeneration: number }
+          credentialGeneration: number
+          signal: AbortSignal
+        }) => Promise<T>, signal?: AbortSignal) => await operation({
+          principal: { id: 'test-principal', issuer: 'test', subject: 'test-user', assurance: 'test', credentialGeneration: 1 },
+          credentialGeneration: 1,
+          signal: signal ?? new AbortController().signal,
+        }),
+        revoke: async () => {},
+      }
+    },
+  } as never)
+  const fiber = ctx.plugin({ inject: [...inject], apply }, config)
+  await fiber.await()
+  return { ctx, routes, upgrades, credential, authenticateCalls, dispose: () => fiber.dispose() }
 }
 
 describe('connection node half', () => {
@@ -129,6 +193,86 @@ describe('connection node half', () => {
     await dispose()
     expect(routes).toHaveLength(0)
     expect(upgrades).toHaveLength(0)
+  })
+
+  it('exchanges a loopback-only private-form credential for an HttpOnly cookie before HTTP or event admission', async () => {
+    const { routes, credential, authenticateCalls, dispose } = await mountedWithProductAuth({
+      trustedHosts: ['harness.example'],
+    })
+    const route = routes[0]!
+
+    const unauthenticatedEvent = fakeResponse()
+    await route.handler(fakeRequest({ host: '127.0.0.1:3080' }, MUX_EVENTS_PATH), unauthenticatedEvent.response)
+    expect(unauthenticatedEvent.state).toMatchObject({ status: 401, body: 'product authentication required' })
+    expect(unauthenticatedEvent.state).toMatchObject({ writeHeads: 1, ends: 1 })
+
+    const nonLoopbackBootstrap = fakeResponse()
+    await route.handler(fakePost({ host: 'harness.example' }, '/api/bootstrap', { credential }), nonLoopbackBootstrap.response)
+    expect(nonLoopbackBootstrap.state).toMatchObject({ status: 403, body: 'forbidden' })
+
+    const opaqueJsonBootstrap = fakeResponse()
+    await route.handler(fakePost({
+      host: '127.0.0.1:3080', origin: 'null', 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document',
+    }, '/api/bootstrap', { credential }), opaqueJsonBootstrap.response)
+    expect(opaqueJsonBootstrap.state).toMatchObject({ status: 403, body: 'forbidden' })
+
+    const opaqueOtherForm = fakeResponse()
+    await route.handler(fakeRawPost({
+      host: '127.0.0.1:3080',
+      origin: 'null',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'document',
+      'content-type': 'application/x-www-form-urlencoded',
+    }, '/api/team.list', `credential=${encodeURIComponent(credential)}&handoffId=${'h'.repeat(43)}`), opaqueOtherForm.response)
+    expect(opaqueOtherForm.state).toMatchObject({ status: 403, body: 'forbidden' })
+
+    const badCredential = 'never-reflect-this-credential'
+    const rejectedBootstrap = fakeResponse()
+    await route.handler(fakePost({ host: '127.0.0.1:3080' }, '/api/bootstrap', { credential: badCredential }), rejectedBootstrap.response)
+    expect(rejectedBootstrap.state).toMatchObject({ status: 401, body: 'product authentication invalid' })
+    expect(String(rejectedBootstrap.state.body)).not.toContain(badCredential)
+
+    const handoffId = 'h'.repeat(43)
+    const bootstrap = fakeResponse()
+    await route.handler(fakeRawPost({
+      host: '127.0.0.1:3080',
+      origin: 'null',
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'document',
+      'content-type': 'application/x-www-form-urlencoded',
+    }, '/api/bootstrap', `credential=${encodeURIComponent(credential)}&handoffId=${handoffId}`), bootstrap.response)
+    expect(bootstrap.state.status).toBe(303)
+    expect(bootstrap.state.headers?.location).toBe('/')
+    const replay = fakeResponse()
+    await route.handler(fakePost({ host: '127.0.0.1:3080' }, '/api/bootstrap', { credential }), replay.response)
+    expect(replay.state).toMatchObject({ status: 401, body: 'product authentication invalid' })
+    expect(authenticateCalls).toEqual([badCredential, credential, credential])
+    const setCookie = bootstrap.state.headers?.['set-cookie']
+    expect(setCookie).toMatch(/^clocky_product_auth=[A-Za-z0-9_-]{43}; Path=\/api; HttpOnly; SameSite=Strict$/)
+    expect(setCookie).not.toContain(credential)
+
+    const authenticated = fakeResponse()
+    await route.handler(fakePost({
+      host: '127.0.0.1:3080', cookie: setCookie!,
+    }, '/api/team.list', {
+      type: 'client-request', rpcId: 'authenticated-team-list', method: 'team.list', payload: {},
+    }), authenticated.response)
+    expect(authenticated.state.status).toBe(200)
+    expect(JSON.parse(String(authenticated.state.body))).toMatchObject({
+      result: { ok: false, error: { code: 'team-service-unavailable' } },
+    })
+
+    const invalidCookie = fakeResponse()
+    await route.handler(fakePost({
+      host: '127.0.0.1:3080', cookie: 'clocky_product_auth=malformed',
+    }, '/api/team.list', {
+      type: 'client-request', rpcId: 'invalid-cookie-team-list', method: 'team.list', payload: {},
+    }), invalidCookie.response)
+    expect(invalidCookie.state).toMatchObject({ status: 401, body: 'product authentication required' })
+
+    await dispose()
   })
 
   it('requires WebSocket upgrade for network GETs to either event path', async () => {
@@ -485,7 +629,7 @@ describe('connection node half over a real HTTP server', () => {
       // state (404 is the empty proxy's carrier answer — the fence passed).
       // `agentPreset.list` joins the model catalog for the same reason: ids and
       // trust only, and a LAN client's preset picker needs it. `select` is
-      // reachable too: `session.create` already takes an `agentPreset`, and the
+      // reachable too: `team.start` already takes an `agentPreset`, and the
       // deployment's own default already carries bash, so pinning the switch
       // would be a fence beside an open gate.
       for (const method of ['llm.providers', 'llm.models', 'agentPreset.list', 'agentPreset.select']) {

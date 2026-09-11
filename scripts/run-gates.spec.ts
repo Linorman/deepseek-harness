@@ -89,7 +89,7 @@ describe('gate graph validation', () => {
 
     expect(ids).toEqual([
       'rescope-vendor', 'knip', 'publint', 'constraints', 'clocky-package-licenses',
-      'package-invariants', 'built-package-invariants', 'node-next-types',
+      'package-invariants', 'direct-session-entrypoints', 'built-package-invariants', 'node-next-types',
       'optional-dependency-imports', 'client-packages', 'cordis-config',
       'runtime-closure', 'vendored-links',
     ])
@@ -194,6 +194,15 @@ describe('gate graph validation', () => {
       displayCommand: 'CLOCKY_COVERAGE_PARTITIONS=3 pnpm run test:coverage:partitioned',
       args: ['/private/pnpm.cjs', 'run', 'test:coverage:partitioned'],
       streamOutput: true,
+    })
+  })
+
+  it('runs changed-package coverage after the exhaustive coverage gates', () => {
+    const gates = withPnpmEntrypoint(() => gatesForMode('ci-coverage'))
+    expect(gates.at(-1)).toMatchObject({
+      id: 'changed-package-coverage',
+      displayCommand: 'pnpm run test:coverage:changed',
+      needs: ['coverage', 'coverage-exempt-heavy'],
     })
   })
 
@@ -363,7 +372,7 @@ describe('Node 24 lane ownership', () => {
     const subject = withPnpmEntrypoint(() => gatesForMode('ci-consumers'))
 
     expect(defaultConcurrency('ci-consumers', subject.length, 4)).toEqual({
-      workers: 10,
+      workers: 14,
       source: 'ci-consumers gate count',
     })
     expect(subject.map(item => item.id)).toEqual([
@@ -377,6 +386,10 @@ describe('Node 24 lane ownership', () => {
       'doc-typecheck',
       'node-next-types',
       'built-bin-smoke',
+      'pack-clocky',
+      'pack-vendor',
+      'pack-native',
+      'packed-consumer',
     ])
     expect(subject.find(item => item.id === 'publint')?.needs).toEqual(['build'])
     expect(subject.find(item => item.id === 'build')?.env).toEqual({
@@ -403,6 +416,22 @@ describe('Node 24 lane ownership', () => {
     expect(subject.find(item => item.id === 'web-snapshot')).toMatchObject({
       displayCommand: 'CLOCKY_SNAPSHOT=replay pnpm run test:web:built',
       env: { CLOCKY_SNAPSHOT: 'replay' },
+    })
+    expect(subject.find(item => item.id === 'pack-clocky')).toMatchObject({
+      displayCommand: 'pnpm run release:pack --family clocky --out .tmp/p0-gate/npm-clocky',
+      needs: ['build'],
+    })
+    expect(subject.find(item => item.id === 'pack-vendor')).toMatchObject({
+      displayCommand: 'pnpm run release:pack --family vendor --out .tmp/p0-gate/npm-vendor',
+      needs: ['build'],
+    })
+    expect(subject.find(item => item.id === 'pack-native')).toMatchObject({
+      displayCommand: 'pnpm run release:pack-native',
+      needs: ['build'],
+    })
+    expect(subject.find(item => item.id === 'packed-consumer')).toMatchObject({
+      displayCommand: 'pnpm run release:verify-packed-install --family clocky --from .tmp/p0-gate/npm-clocky --from .tmp/p0-gate/npm-vendor --from .tmp/p0-gate/npm-native',
+      needs: ['pack-clocky', 'pack-vendor', 'pack-native'],
     })
   })
 })

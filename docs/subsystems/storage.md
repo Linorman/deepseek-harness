@@ -2,9 +2,9 @@
 
 English | [中文](storage.zh.md)
 
-The storage subsystem persists everything that is not a session event log (session logs have their own seam — [persistence.md](persistence.md)). It is one optional capability, not part of the agent-loop spine, split as a [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md): the hub and Service Definition ([dsh-storage](../../packages/storage/storage), `ctx.storage`), the Service Providers ([dsh-storage-json](../../packages/storage/storage-json), registered as `json`, and [dsh-storage-sqlite](../../packages/storage/storage-sqlite), registered as `sqlite`), and the Consumer data form ([dsh-storage-domain](../../packages/storage/storage-domain), `ctx.storageDomain`, also reachable as `ctx.storage.domain`) — the backend contract's only Consumer and the typed API everything else uses. The hub performs no IO itself: backends own media, data forms own semantics, and product packages never touch backends directly. Design record: [domain KV storage Agent Note](../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
+The storage subsystem persists everything that is not a session event log (session logs have their own seam — [persistence.md](persistence.md)). It is one optional capability, not part of the agent-loop spine, split as a [capability seam](../../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md): the hub and Service Definition ([clocky-storage](../../packages/storage/storage), `ctx.storage`), the Service Providers ([clocky-storage-json](../../packages/storage/storage-json), registered as `json`, and [clocky-storage-sqlite](../../packages/storage/storage-sqlite), registered as `sqlite`), and Consumer data forms for current records ([clocky-storage-domain](../../packages/storage/storage-domain), `ctx.storageDomain` / `ctx.storage.domain`) and append-only streams ([clocky-storage-log](../../packages/storage/storage-log), `ctx.storageLog` / `ctx.storage.log`). The hub performs no IO itself: backends own media, data forms own semantics, and product packages never touch backends directly. Design record: [domain KV storage Agent Note](../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
 
-Source: [`packages/storage/storage/src/backend.ts`](../../packages/storage/storage/src/backend.ts) · [`packages/storage/storage-domain/src/spec.ts`](../../packages/storage/storage-domain/src/spec.ts) · [`packages/storage/storage-domain/src/events.ts`](../../packages/storage/storage-domain/src/events.ts)
+Source: [`packages/storage/storage/src/backend.ts`](../../packages/storage/storage/src/backend.ts) · [`packages/storage/storage/src/log.ts`](../../packages/storage/storage/src/log.ts) · [`packages/storage/storage-domain/src/spec.ts`](../../packages/storage/storage-domain/src/spec.ts) · [`packages/storage/storage-domain/src/events.ts`](../../packages/storage/storage-domain/src/events.ts)
 
 ## The hub: `ctx.storage`
 
@@ -15,13 +15,13 @@ Data forms mount on the hub under a merge-extensible key map:
 ```ts type-equiv
 /**
  * Data forms mountable on the hub, keyed by form name. Form owners extend
- * this map via declaration merging (the domain layer merges
- * `domain: DomainFacility`) and mount the facility in their `apply`.
+ * this map via declaration merging (the domain and log layers merge their
+ * facilities) and mount the facility in their `apply`.
  */
 interface StorageForms {}
 ```
 
-`mount(form, facility)` is an effect whose disposer unmounts; a second mount of the same key throws `duplicate-mount`. `form(form)` resolves a mounted facility and throws `form-not-mounted` until the owning plugin loads — assemblies order plugins accordingly rather than silently deferring. The domain layer merges `domain: DomainFacility`, so `ctx.storage.domain` and `ctx.storageDomain` are the same object.
+`mount(form, facility)` is an effect whose disposer unmounts; a second mount of the same key throws `duplicate-mount`. `form(form)` resolves a mounted facility and throws `form-not-mounted` until the owning plugin loads — assemblies order plugins accordingly rather than silently deferring. The domain and log layers merge `domain: DomainFacility` and `log: StorageLogFacility`, so each form is reachable through both `ctx.storage.<form>` and its injectable service.
 
 ## The backend contract
 
@@ -35,6 +35,9 @@ interface StorageBackend {
   /** Key-value operations; absent when this backend cannot serve them. */
   readonly kv?: KvFacet
 
+  /** Append-only stream operations; absent when this backend cannot serve them. */
+  readonly log?: LogFacet
+
   /**
    * Drain in-flight writes across all open units and release the medium.
    * Idempotent; concurrent and repeated calls resolve once teardown finishes.
@@ -44,7 +47,13 @@ interface StorageBackend {
 }
 ```
 
-A backend owns one medium (a file-tree root, a database file) and exposes optional operation groups; `kv` is the only group today. `KvFacet.open(descriptor)` opens one named unit — `KvUnitDescriptor` carries the name, format version, table names, and whether a global singleton slot exists — and returns a `KvUnit` with `loadAll`, `putRecord`, `deleteRecord`, `setGlobal`, and `close`. Unit and table names must match `UNIT_NAME_RE` (safe as a file name and as a SQL identifier segment); record keys are arbitrary strings that never reach file paths. A unit does not serialize concurrent writes — ordering belongs to the caller — but each single call is atomic on the medium and durable once resolved. A medium stamped with a different version rejects `version-mismatch`; one that cannot be parsed as the unit rejects `malformed-medium` (no migration, pre-release stance). [`backend.ts`](../../packages/storage/storage/src/backend.ts) is the normative clause-by-clause contract, and the shared conformance suite in [`tests/contract.ts`](../../packages/storage/storage/tests/contract.ts) checks every clause against each backend. The [json backend](../../packages/storage/storage-json/README.md) republishes one whole human-readable file per unit atomically; the [sqlite backend](../../packages/storage/storage-sqlite/README.md) stores one document per row in one database for frequently updated data.
+A backend owns one medium (a file-tree root, a database file) and exposes optional operation groups. `KvFacet.open(descriptor)` opens one named unit — `KvUnitDescriptor` carries the name, format version, table names, and whether a global singleton slot exists — and returns a `KvUnit` with `loadAll`, `putRecord`, `deleteRecord`, `setGlobal`, and `close`. Unit and table names must match `UNIT_NAME_RE` (safe as a file name and as a SQL identifier segment); record keys are arbitrary strings that never reach file paths. A unit does not serialize concurrent writes — ordering belongs to the caller — but each single call is atomic on the medium and durable once resolved. A medium stamped with a different version rejects `version-mismatch`; one that cannot be parsed as the unit rejects `malformed-medium` (no migration, pre-release stance). [`backend.ts`](../../packages/storage/storage/src/backend.ts) is the normative clause-by-clause contract, and the shared conformance suites in [`tests/contract.ts`](../../packages/storage/storage/tests/contract.ts) and [`tests/log-contract.ts`](../../packages/storage/storage/tests/log-contract.ts) check both facets against each backend. The [json backend](../../packages/storage/storage-json/README.md) publishes human-readable files; the [sqlite backend](../../packages/storage/storage-sqlite/README.md) stores records and append streams in one database.
+
+## Append-only streams
+
+`LogFacet.open({ name, version })` returns a caller-owned `LogStream`. A stream accepts a non-empty batch only when its current tail equals `expectedSequence`; the batch receives contiguous entries and is durable as one operation, otherwise it rejects `sequence-conflict`. `read(afterSequence, limit)` returns an ordered bounded page. A checkpoint carries the sequence it covers, never advances beyond the tail, and never moves backward. `compact({ throughSequence, expectedCheckpointSequence })` atomically removes only a prefix covered by an exact later checkpoint; a read before the retained prefix rejects `compacted`. Values cross the durable boundary as detached JSON snapshots.
+
+`StorageLogFacility` routes each stream name to the configured default backend or an own-property `routes` override. It permits one local handle per name, closes admission during disposal, drains every accepted open, and then settles every returned handle. A backend that lacks `log` fails with `facet-unsupported`. Stream names are opaque rather than KV identifiers, allowing `team/<TeamId>` and `channel/<ChannelId>` streams. The JSON provider admits one local Hub per root and rejects another owner; SQLite serializes expected-tail comparisons and full batches in a transaction.
 
 ## Declaring a domain
 
@@ -202,6 +211,49 @@ async closeAll(): Promise<void>
 ```
 
 Source: [`packages/storage/storage-domain/src/index.ts`](../../packages/storage/storage-domain/src/index.ts)
+
+<a id="ctxstoragelog--storagelogfacility"></a>
+
+### `ctx.storageLog` — `StorageLogFacility`
+
+The mounted facility. A caller owns each returned stream and closes it when its projection/runtime stops. Unmount closes admission, drains accepted backend calls, settles every returned handle, then releases the form.
+
+```ts cordis-catalog
+/**
+ * Open a caller-owned log stream over its configured backend. The facility
+ * preserves one open handle per stream name, so a Consumer has exactly one
+ * local serialization owner for its expected-tail mutations.
+ * @param descriptor - Stream declaration owned by the caller package.
+ * @returns a routed handle that releases the name only after backend close.
+ */
+async open(descriptor: LogStreamDescriptor): Promise<LogStream>
+
+/**
+ * Enumerate materialized streams through their configured backends. An entry
+ * stored on a backend that no longer owns its name under this route table is
+ * excluded, so recovery cannot accidentally reopen it through the wrong
+ * provider.
+ * @returns durable stream metadata in stable stream-name order.
+ */
+async list(): Promise<readonly LogStreamInfo[]>
+
+/**
+ * Read an open handle for diagnostics. Consumers hold the typed result of
+ * `open`; this method does not infer a descriptor's value type.
+ * @param name - Stream name.
+ * @returns its live routed handle, or `undefined`.
+ */
+get(name: string): LogStream | undefined
+
+/**
+ * Close admission, settle accepted backend calls, then close every resolved caller
+ * handle. All owned work settles before an aggregate failure is reported.
+ * @returns resolution after every accepted call and returned handle settles.
+ */
+closeAll(): Promise<void>
+```
+
+Source: [`packages/storage/storage-log/src/index.ts`](../../packages/storage/storage-log/src/index.ts)
 
 <a id="domain-events"></a>
 

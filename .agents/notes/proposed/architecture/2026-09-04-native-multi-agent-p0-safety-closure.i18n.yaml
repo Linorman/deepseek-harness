@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p0-safety-closure.md
+2026-09-04-native-multi-agent-p0-safety-closure.md: 438b15e1ea6b0218dd61f1a0a78d67b5b2eb45a9
+2026-09-04-native-multi-agent-p0-safety-closure.zh.md: 1ff475828097ce227aa182ddcdda75d3f57350cb

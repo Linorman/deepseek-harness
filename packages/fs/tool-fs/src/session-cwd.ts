@@ -1,13 +1,13 @@
 /**
  * Derive the working directory a filesystem tool resolves relative paths against: the calling
- * agent's per-session workspace (`exec.agent.session.header.cwd`), so each session's
- * `read`/`write`/`edit` act on ITS workspace, not the server's launch dir — mirroring how
- * `clocky-tool-bash` defaults a bash `workdir` to the session cwd.
+ * agent's current Team allocation root, falling back to its durable Session cwd, so each
+ * `read`/`write`/`edit` acts on the execution world selected for that task.
  * Non-agent calls return `undefined`, leaving the fallback in the provider rather than reading
  * `process.cwd()` at the tool boundary.
  * @module @clocky/clocky-tool-fs/session-cwd
  */
 
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { ToolExecution } from '@clocky/clocky-tools'
 import { canonicalPath } from '@clocky/clocky-sandbox'
 
@@ -21,7 +21,7 @@ const PARENT_PATH_SEGMENT = /(?:^|[\\/])\.\.(?:[\\/]|$)/
  * @returns the calling agent's session cwd, or undefined for a non-agent caller (the backend then applies its own default).
  */
 export function sessionCwd(exec: ToolExecution, requestedPath: string): string | undefined {
-  const cwd = exec.agent?.session.header.cwd
+  const cwd = exec.agent === undefined ? undefined : resolveAgentWorkspaceRoot(exec.agent)
   if (cwd === undefined || (!PARENT_PATH_SEGMENT.test(cwd) && !PARENT_PATH_SEGMENT.test(requestedPath))) return cwd
   return canonicalPath(cwd)
 }

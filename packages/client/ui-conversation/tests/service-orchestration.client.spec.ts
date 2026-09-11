@@ -7,7 +7,8 @@ import { Context } from '@clocky/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { AttachmentId } from '@clocky/clocky-attachment'
 import { makeTranslate, SlotTestRuntime } from '@clocky/clocky-client-test-runtime'
-import type { QueuedMessage, SessionFace } from '@clocky/clocky-client-runtime/client'
+import type { QueuedMessage, SessionFace, SessionId, TeamId } from '@clocky/clocky-client-runtime/client'
+import type { InputTriggerController } from '@clocky/clocky-client-ui-input-trigger/client'
 import { ComposerBlockRegistry } from '../src/client/input/blocks.ts'
 import { InputHub } from '../src/client/input/hub.ts'
 import { ConversationController, UnsupportedImageMediaTypeError } from '../src/client/service.ts'
@@ -83,6 +84,46 @@ describe('ConversationController', () => {
     await b.runtime.dispose()
   })
 
+  it('returns a localized Team attachment rejection to the composer', async () => {
+    const b = await bench()
+    const postInputError = Object.assign(new Error('Team route rejected'), {
+      rpcError: {
+        code: 'attachment-error',
+        message: 'raw host attachment text',
+        details: { reason: 'IMAGE_DIMENSION_TOO_LARGE' },
+      },
+    })
+    const postInput = vi.fn(async () => { throw postInputError })
+    // The conversation seam consumes only teamId; the test double does not
+    // need to fabricate the unrelated coordinator snapshot fields.
+    vi.spyOn(b.runtime.teamTasks, 'teamForCoordinatorSession').mockReturnValue({ teamId: 'team-1' as TeamId } as never)
+    b.runtime.teamTasks.stub('postInput', postInput)
+    b.runtime.sessions.behavior('s1').projections.set('imageLimits', {
+      maxImageBytes: 5 * 1024 * 1024,
+      maxImagesPerMessage: 20,
+      maxMessageImageBytes: 100 * 1024 * 1024,
+      maxImagePixels: 40_000_000,
+      maxImageDimension: 2000,
+      mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+    })
+    const [image] = b.root.createDraftImages([
+      new File([Uint8Array.of(1)], 'too-wide.png', { type: 'image/png' }),
+    ])
+    if (image === undefined) throw new Error('draft image missing')
+    b.shell.addImages([image.id])
+    b.shell.submit()
+
+    await vi.waitFor(() => {
+      expect(b.shell.notices.getSnapshot()).toEqual(expect.objectContaining({
+        level: 'error',
+        text: '图片宽高不能超过 2000px，请缩小后重试',
+      }))
+    })
+    expect(postInput).toHaveBeenCalledWith('team-1', expect.any(Array), 'turn', expect.any(AbortSignal))
+    expect(b.shell.snapshot.imageIds).toEqual([image.id])
+    await b.runtime.dispose()
+  })
+
   it('releases draft previews when their session scope is disposed', async () => {
     const b = await bench()
     const created = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:draft-1')
@@ -143,6 +184,21 @@ describe('ConversationController', () => {
     }).await()
     const orphan = bare.get('conversation') as ConversationController
     await expect(orphan.send('x')).rejects.toThrow(/sessions service unavailable/)
+  })
+})
+
+describe('InputHub command plane', () => {
+  it('does not expose the generic Session trigger controller to a Team coordinator', async () => {
+    const b = await bench()
+    const controller = { track: vi.fn() } as unknown as InputTriggerController
+    const sessionOf = vi.fn(() => controller)
+    b.runtime.ctx.provide('inputTriggers', { sessionOf } as never)
+
+    expect(b.hub.inputTriggers('s1' as SessionId)).toBe(controller)
+    vi.spyOn(b.runtime.teamTasks, 'teamForCoordinatorSession').mockReturnValue({ teamId: 'team-1' as TeamId } as never)
+    expect(b.hub.inputTriggers('s1' as SessionId)).toBeUndefined()
+    expect(sessionOf).toHaveBeenCalledOnce()
+    await b.runtime.dispose()
   })
 })
 

@@ -12,11 +12,11 @@ Subagents need the same start, collect, list, stop, ownership, notification, and
 
 ## Decision
 
-Each `dsh-tool-subagent` instance may expose `run_in_background`, controlled by `enableRunInBackground` and enabled by default. A disabled instance omits the parameter and rejects a forced background argument at execution. Provider selection remains deployment configuration, so one instance still registers one distinctly named tool for one provider.
+Each `clocky-tool-subagent` instance may expose `run_in_background`, controlled by `enableRunInBackground` and enabled by default. A disabled instance omits the parameter and rejects a forced background argument at execution. Provider selection remains deployment configuration, so one instance still registers one distinctly named tool for one provider.
 
 Background subagents use the [generic background job runtime](../architecture/2026-06-20-generic-long-running-tool-runtime.md). Collection, listing, cancellation, completion notices, and prompt guidance come from `job_output`, `job_list`, and `job_kill`; there are no subagent-specific companion tools.
 
-Foreground calls retain their synchronous contract: await provider startup and `run.result`, return final text only for `completed`, map other terminal reasons to an errored tool result with the optional safe diagnostic described by the [non-interactive permissions decision](2026-08-15-product-subagent-noninteractive-permissions.md), and always dispose the run before returning.
+Foreground calls retain their synchronous contract: await provider startup and `run.result`, return final text only for `completed`, map other terminal reasons to an errored tool result with an optional safe Provider diagnostic, and always dispose the run before returning.
 
 For a background call, the tool validates the parent and refuses an already-aborted execution signal before calling `ctx.jobs.start()`. The job runtime preflights the control API and owner cleanup before invoking the producer starter. That starter creates an independent `AbortController` and begins `ctx.subagents.start()`; after the id is returned, the tool-call signal no longer owns the child.
 

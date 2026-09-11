@@ -176,22 +176,24 @@ export class SqliteStore implements PersistenceBackend<number> {
     isMaterialized: boolean,
   ): Promise<void> {
     await this.open()
-    if (events.length === 0) return
+    if (events.length === 0 && isMaterialized) return
     this.db.exec(sql('begin-immediate'))
     try {
       validateSchemaForMutation(this.databaseConstructor, this.db, this.databasePath)
       const tailRows = this.tailRows(meta.id)
       const currentLast = this.logicalLastEvent(meta.id, tailRows)
       const expected = currentLast === undefined ? 0 : currentLast.seq + 1
-      const first = events[0] as SessionEvent
-      if (first.seq !== expected) {
-        throw new Error(`session ${meta.id} append starts at seq ${first.seq}, stored next seq is ${expected}`)
+      if (events.length > 0) {
+        const first = events[0] as SessionEvent
+        if (first.seq !== expected) {
+          throw new Error(`session ${meta.id} append starts at seq ${first.seq}, stored next seq is ${expected}`)
+        }
       }
       if (!isMaterialized) this.writeRow(meta)
 
       const insert = this.insertStatement()
       for (const record of packChunkRuns(events)) this.insertRecord(insert, meta.id, bindRecord(record))
-      this.incrementRevision(meta.id)
+      if (events.length > 0) this.incrementRevision(meta.id)
       this.db.exec(sql('commit'))
     } catch (error: unknown) {
       this.rollback(error, 'append')
@@ -373,10 +375,10 @@ export class SqliteStore implements PersistenceBackend<number> {
       meta.version,
       meta.createdAt,
       meta.cwd ?? null,
+      meta.teamId ?? null,
+      meta.participantId ?? null,
       meta.parentSession ?? null,
       meta.seedLength ?? null,
-      meta.origin ?? null,
-      meta.delegationDepth ?? null,
       meta.agentPreset ?? null,
       randomUUID(),
     )

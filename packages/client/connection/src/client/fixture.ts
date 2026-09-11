@@ -37,9 +37,20 @@ import type {
   ToolCallView, ToolEventView, ToolResultView, WorkspaceId, WorkspaceView,
 } from './api.ts'
 import type { RequestPayload, ResponseValue, RpcMethodMap } from '@clocky/clocky-host-apiproxy/api'
-import { AbstractApiClient, RpcId, SESSION_SEARCH_RESULT_LIMIT } from './api.ts'
+import { AbstractApiClient, emptyTeamLatencyHistogram, RpcId, SESSION_SEARCH_RESULT_LIMIT } from './api.ts'
 import { randomUuid } from './random-uuid.ts'
 import type { ClientConnectionRpc } from '../rpc.ts'
+
+/** ApiProxy fixture contract with the deterministic Team domain installed. */
+export type FixtureApi = Omit<ApiProxy, 'teams'> & {
+  readonly teams: NonNullable<ApiProxy['teams']>
+}
+
+type FixtureTeamState = ResponseValue<'team.get'>
+type FixtureTeamId = RequestPayload<'team.get'>['teamId']
+type FixtureTeamChannelId = ResponseValue<'team.waitFinal'>['channelId']
+type FixtureTeamEnvelopeId = ResponseValue<'team.waitFinal'>['envelopeId']
+type FixtureTeamTaskId = RequestPayload<'team.task.get'>['taskId']
 
 /** The fake carrier mints like a real one (business code never mints). */
 function rpcRequest<P>(payload: P): RpcRequest<P> {
@@ -1202,7 +1213,9 @@ function pageOf(
     const event = log[i]
     /* v8 ignore next -- dense-array guard: log seqs are array indexes, i stays within [0, end). */
     if (event === undefined) break
-    if (event.type === 'user/message' || event.type === 'assistant/message') messages++
+    if (event.type === 'user/message'
+      || event.type === 'team/channel-view'
+      || event.type === 'assistant/message') messages++
     if (event.type === 'turn/start' && messages >= maxMessages) {
       start = i
       break
@@ -1243,13 +1256,15 @@ function searchBlockText(block: ContentBlock): string[] {
   }
 }
 
-/** One current-surface user/assistant document, if searchable. */
+/** One current-surface message document, if searchable. */
 function searchEventText(event: SessionEvent): string {
   const content = event.type === 'user/message'
     ? event.data.content
-    : event.type === 'assistant/message'
-      ? event.data.message.content
-      : undefined
+    : event.type === 'team/channel-view'
+      ? event.data.content
+      : event.type === 'assistant/message'
+        ? event.data.message.content
+        : undefined
   if (content === undefined) return ''
   return content.flatMap(searchBlockText).map(part => part.trim()).filter(Boolean).join('\n')
 }
@@ -1444,12 +1459,6 @@ export interface FixtureOptions {
   empty?: boolean
   /** Reject every prompt before appending its user event. */
   rejectPrompt?: boolean
-  /** Publish the Session but fail its Workspace account write. */
-  failWorkspaceAttach?: boolean
-  /** Publish and frame the Session, then throw instead of returning create. */
-  dropSessionCreateResponse?: boolean
-  /** Order of the two successful create frames. */
-  createFrameOrder?: 'session-first' | 'workspace-first'
 }
 
 /** Inbox pump shared by both stream generators (FrameQueue pattern: ONE abort listener hung
@@ -1499,14 +1508,14 @@ class FxInbox<F> implements StreamConn<F> {
  * @param options - fixture branches for empty state and failure timing.
  * @returns an ApiProxy backed entirely by in-memory state — no host process, no network.
  */
-export function createFixtureApi(options: FixtureOptions = {}): ApiProxy {
+export function createFixtureApi(options: FixtureOptions = {}): FixtureApi {
   return createFixtureWorld(options).api
 }
 
 /** Both fixture faces over one state graph. */
 export interface FixtureWorld {
   /** Legacy unary/stream API the fixture still answers. */
-  readonly api: ApiProxy
+  readonly api: FixtureApi
   /** Generic Remote caller for the endpoints business services own. */
   readonly rpc: ClientConnectionRpc
 }
@@ -1526,7 +1535,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   // The resident fixture sessions all carry history, so none of them is blank.
   const sessions: SessionSummary[] = options.empty ? [] : [
     { sessionId: sid('fx-alpha'), updatedAt: Date.now(), running: true, blank: false, cwd: '/tmp/fixture' },
-    { sessionId: sid('fx-beta'), updatedAt: Date.now() - 60_000, running: false, blank: false, parentSessionId: sid('fx-alpha'), cwd: '/tmp/fixture' },
+    { sessionId: sid('fx-beta'), updatedAt: Date.now() - 60_000, running: false, blank: false, cwd: '/tmp/fixture' },
     { sessionId: sid('fx-gamma'), updatedAt: Date.now() - 120_000, running: false, blank: false, cwd: '/tmp/fixture' },
   ]
   const logs = new Map<SessionId, SessionEvent[]>([[sid('fx-alpha'), buildAlphaLog()]])
@@ -1556,9 +1565,8 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   ])
   let fixtureDefaultPreset = 'standard'
   const nextTurn = new Map<SessionId, number>([[sid('fx-alpha'), 75]])
-  let nextSession = 1
   let nextRpc = 1
-  let attachedSessions = options.empty ? 0 : 1
+  const attachedSessions = options.empty ? 0 : 1
   // Workspace entities mirroring the host registry: the fixture sessions all
   // live under one workspace, whose account carries them in attach order.
   const wid = (raw: string): WorkspaceId => raw as WorkspaceId
@@ -2263,7 +2271,186 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     replays.set(id, { timer: setTimeout(tick, 80), finish })
   }
 
-  const api: ApiProxy = {
+  const fixtureTeamId = (value: string): FixtureTeamId => value as FixtureTeamId
+  const fixtureTeamChannelId = (teamId: FixtureTeamId): FixtureTeamChannelId => (
+    `fx-team-channel-${String(teamId)}` as FixtureTeamChannelId
+  )
+  const fixtureTeamEnvelopeId = (value: string): FixtureTeamEnvelopeId => value as FixtureTeamEnvelopeId
+  const fixtureTeamEpoch = 1_750_000_000_000
+  let nextFixtureTeam = 1
+  let nextFixtureTeamEnvelope = 1
+  const fixtureTeams = new Map<FixtureTeamId, FixtureTeamState>()
+
+  const fixtureTeamState = (
+    teamId: FixtureTeamId,
+    objective: string,
+    ordinal: number,
+  ): FixtureTeamState => {
+    const goal: FixtureTeamState['goal'] = {
+      teamId,
+      revision: 1,
+      objective,
+      phase: 'active',
+      budgets: {},
+    }
+    const coordinatorId = `fx-team-coordinator-${String(teamId)}` as FixtureTeamState['participants'][number]['id']
+    const coordinatorSessionId = sessions[0]?.sessionId ?? (() => {
+      const sessionId = sid(`fx-team-session-${String(teamId)}`)
+      sessions.push({ sessionId, updatedAt: Date.now(), running: false, blank: false, cwd: '/tmp/fixture' })
+      logs.set(sessionId, [])
+      modelSelections.set(sessionId, { provider: 'test-provider', model: 'test-model' })
+      nextTurn.set(sessionId, 1)
+      return sessionId
+    })()
+    return {
+      team: {
+        id: teamId,
+        depth: 0,
+        maxTeamDepth: 4,
+        goal,
+        phase: 'active',
+        cursor: 0,
+        createdAt: fixtureTeamEpoch + ordinal,
+        updatedAt: fixtureTeamEpoch + ordinal,
+      },
+      goal,
+      rules: {},
+      budgets: {},
+      participants: [
+        {
+          id: `fx-team-human-${String(teamId)}` as FixtureTeamState['participants'][number]['id'],
+          teamId,
+          kind: 'human',
+          displayName: 'Fixture human',
+          role: 'human',
+          capabilities: [],
+          phase: 'active',
+        },
+        {
+          id: coordinatorId,
+          teamId,
+          kind: 'local-agent',
+          displayName: 'Fixture coordinator',
+          role: 'coordinator',
+          capabilities: [],
+          phase: 'active',
+        },
+      ],
+      activations: [{
+        activation: {
+          id: `fx-team-activation-${String(teamId)}` as FixtureTeamState['activations'][number]['activation']['id'],
+          teamId,
+          participantId: coordinatorId,
+          status: 'idle',
+        },
+        sessionId: coordinatorSessionId,
+        provider: 'fixture',
+      }],
+      tasks: [],
+      workspaceAllocations: [],
+      channelIds: [fixtureTeamChannelId(teamId)],
+    }
+  }
+  const advanceFixtureTeam = (
+    state: FixtureTeamState,
+    phase: FixtureTeamState['team']['phase'] = state.team.phase,
+  ): FixtureTeamState => ({
+    ...state,
+    team: {
+      ...state.team,
+      phase,
+      cursor: state.team.cursor + 1,
+      updatedAt: state.team.updatedAt + 1,
+    },
+  })
+  const completeFixtureTeam = (state: FixtureTeamState): FixtureTeamState => {
+    const goal: FixtureTeamState['goal'] = { ...state.goal, phase: 'complete' }
+    const advanced = advanceFixtureTeam(state, 'completed')
+    return {
+      ...advanced,
+      goal,
+      team: {
+        ...advanced.team,
+        goal,
+      },
+    }
+  }
+  const withFixtureTeam = <P, T>(
+    request: RpcRequest<P>,
+    teamId: FixtureTeamId,
+    read: (state: FixtureTeamState) => T,
+  ): Promise<RpcResponse<T>> => {
+    const state = fixtureTeams.get(teamId)
+    if (state === undefined) {
+      return err(request, {
+        code: 'team-not-found',
+        message: `no fixture Team ${String(teamId)}`,
+        details: { teamId },
+      })
+    }
+    return ok(request, read(state))
+  }
+  /** Apply the public page contract to a fixture projection without over-reading it. */
+  const boundedFixturePage = <T>(
+    items: readonly T[],
+    afterCursor: number | undefined,
+    requestedLimit: number | undefined,
+  ): { items: readonly T[]; nextCursor?: number } => {
+    const limit = requestedLimit ?? 128
+    const start = afterCursor === undefined || afterCursor >= items.length
+      ? afterCursor === undefined ? 0 : items.length
+      : afterCursor + 1
+    const selected = items.slice(start, start + limit + 1)
+    return {
+      items: selected.slice(0, limit),
+      ...selected.length > limit ? { nextCursor: start + limit - 1 } : {},
+    }
+  }
+  /** Build the deterministic channel projection used by fixture Team routes. */
+  const fixtureChannel = (
+    state: FixtureTeamState,
+    adapter: ResponseValue<'team.channel.open'>['manifest']['adapter'] = { type: 'direct', version: 3 },
+    participants: ResponseValue<'team.channel.open'>['manifest']['participants'] = state.participants.map(participant => ({
+      id: participant.id,
+      role: participant.role,
+    })),
+    limits: ResponseValue<'team.channel.open'>['manifest']['limits'] = {},
+    phase: ResponseValue<'team.channel.open'>['phase'] = 'active',
+    viewPolicy?: ResponseValue<'team.channel.open'>['manifest']['viewPolicy'],
+  ): ResponseValue<'team.channel.open'> => ({
+    manifest: {
+      id: fixtureTeamChannelId(state.team.id),
+      teamId: state.team.id,
+      adapter,
+      ...viewPolicy === undefined ? {} : { viewPolicy },
+      participants,
+      limits,
+    },
+    phase,
+    cursor: phase === 'closed' ? 2 : 0,
+  })
+  /** Find the fixture Team that owns its stable default channel. */
+  const withFixtureChannel = <P, T>(
+    request: RpcRequest<P>,
+    channelId: FixtureTeamChannelId,
+    read: (state: FixtureTeamState) => T,
+  ): Promise<RpcResponse<T>> => {
+    const state = [...fixtureTeams.values()].find(candidate => candidate.channelIds.includes(channelId))
+    if (state === undefined) return teamManagementUnavailable(request)
+    return ok(request, read(state))
+  }
+  /** Keep the fixture's legacy Team state deterministic for management routes. */
+  const teamManagementUnavailable = <P, T>(request: RpcRequest<P>): Promise<RpcResponse<T>> => err(request, {
+    code: 'internal',
+    message: 'fixture Team management route is not implemented',
+    details: {},
+  })
+  if (!options.empty) {
+    const teamId = fixtureTeamId('fx-team-alpha')
+    fixtureTeams.set(teamId, fixtureTeamState(teamId, 'Demonstrate the fixture Team API.', 0))
+  }
+
+  const api: FixtureApi = {
     sessions: {
       list: request => ok(request, { items: [...sessions].sort((a, b) => b.updatedAt - a.updatedAt) }),
       search: (request, signal) => {
@@ -2305,75 +2492,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           hasMore: matches.length > SESSION_SEARCH_RESULT_LIMIT,
         })
       },
-      create: async (request) => {
-        const workspace = request.payload.workspaceId === undefined
-          ? undefined
-          : workspaces.find(w => w.workspaceId === request.payload.workspaceId)
-        if (request.payload.workspaceId !== undefined && workspace === undefined) {
-          return err(request, {
-            code: 'workspace-not-found',
-            message: `no workspace ${request.payload.workspaceId}`,
-            details: { workspaceId: request.payload.workspaceId },
-          })
-        }
-        const cwd = workspace?.path ?? request.payload.cwd ?? '/tmp/fixture'
-        const requestedId = request.payload.sessionId
-        const attachWorkspace = (sessionId: SessionId): void => {
-          /* v8 ignore next -- callers enter only when a target Workspace exists. */
-          if (workspace === undefined || workspace.sessionIds.includes(sessionId)) return
-          workspace.sessionIds = [sessionId, ...workspace.sessionIds]
-          workspace.updatedAt = new Date().toISOString()
-          emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } })
-        }
-        const attachFailure = (
-          sessionId: SessionId,
-          workspaceId: WorkspaceId,
-        ): Promise<RpcResponse<{ sessionId: SessionId }>> => err(request, {
-          code: 'workspace-attach-failed' as const,
-          message: `fixture rejected Workspace attachment for ${sessionId}`,
-          details: { sessionId, workspaceId },
-        })
-        if (requestedId !== undefined) {
-          const existing = summaryOf(requestedId)
-          if (existing !== undefined) {
-            if (existing.cwd !== cwd) {
-              return err(request, {
-                code: 'session-conflict',
-                message: `session ${requestedId} already uses ${existing.cwd ?? 'no cwd'}`,
-                details: { sessionId: requestedId, requestedCwd: cwd, ...existing.cwd === undefined ? {} : { existingCwd: existing.cwd } },
-              })
-            }
-            if (workspace !== undefined && !workspace.sessionIds.includes(requestedId)) {
-              if (options.failWorkspaceAttach) return attachFailure(requestedId, workspace.workspaceId)
-              attachWorkspace(requestedId)
-            }
-            return ok(request, { sessionId: requestedId })
-          }
-        }
-        const created: SessionSummary = {
-          sessionId: requestedId ?? sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: true, cwd,
-        }
-        sessions.push(created)
-        modelSelections.set(created.sessionId, { provider: 'test-provider', model: 'test-model' })
-        attachedSessions += 1
-        const emitSession = (): void => {
-          // Mirrors the host: the frame fires at creation, so blank is constantly true.
-          emitHost({ type: 'host/session-added', sessionId: created.sessionId, blank: true, cwd })
-        }
-        if (workspace !== undefined && options.failWorkspaceAttach) {
-          emitSession()
-          return attachFailure(created.sessionId, workspace.workspaceId)
-        }
-        if (workspace !== undefined && options.createFrameOrder === 'workspace-first') {
-          attachWorkspace(created.sessionId)
-          emitSession()
-        } else {
-          emitSession()
-          if (workspace !== undefined) attachWorkspace(created.sessionId)
-        }
-        if (options.dropSessionCreateResponse) throw new Error('fixture: dropped session.create response after publication')
-        return ok(request, { sessionId: created.sessionId })
-      },
       rename: (request) => {
         const missing = requireSession(request)
         if (missing !== undefined) return missing
@@ -2394,56 +2512,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         })
         const appended = logOf(sessionId).at(-1) as SessionEvent
         return ok(request, { title: normalized, seq: appended.seq })
-      },
-      fork: (request) => {
-        const { sessionId, atSeq } = request.payload
-        const source = summaryOf(sessionId)
-        if (source === undefined) {
-          return err(request, {
-            code: 'session-not-found',
-            message: `no session ${sessionId}`,
-            details: { sessionId },
-          })
-        }
-        const log = logs.get(sessionId) ?? []
-        const lastSeq = log.at(-1)?.seq ?? -1
-        const anchoredBoundary = atSeq === undefined
-          ? undefined
-          : log.find(e => e.type === 'turn/end' && e.seq >= atSeq)
-        const boundary = anchoredBoundary
-          ?? (atSeq === undefined || atSeq > lastSeq
-            ? log.findLast(e => e.type === 'turn/end')
-            : undefined)
-        if (boundary === undefined) {
-          return err(request, {
-            code: 'fork-unavailable',
-            message: atSeq !== undefined && atSeq <= lastSeq
-              ? `session ${sessionId} has not completed the turn containing event ${String(atSeq)}`
-              : `session ${sessionId} has no completed turn`,
-            details: { sessionId },
-          })
-        }
-        let cut = boundary.seq + 1
-        while (cut < log.length && log[cut]?.type !== 'turn/start') cut++
-        const child: SessionSummary = {
-          sessionId: sid(`fx-${nextSession++}`), updatedAt: Date.now(), running: false, blank: false,
-          parentSessionId: sessionId,
-          ...source.cwd === undefined ? {} : { cwd: source.cwd },
-        }
-        logs.set(child.sessionId, log.slice(0, cut))
-        sessions.push(child)
-        emitHost({
-          type: 'host/session-added', sessionId: child.sessionId, blank: false,
-          parentSessionId: sessionId,
-          ...source.cwd === undefined ? {} : { cwd: source.cwd },
-        })
-        const workspace = workspaces.find(w => w.sessionIds.includes(sessionId))
-        if (workspace !== undefined) {
-          workspace.sessionIds = [child.sessionId, ...workspace.sessionIds]
-          workspace.updatedAt = new Date().toISOString()
-          emitHost({ type: 'host/workspace-changed', workspace: { ...workspace } })
-        }
-        return ok(request, { sessionId: child.sessionId })
       },
       history: async (request) => {
         const log = logs.get(request.payload.sessionId) ?? []
@@ -2601,19 +2669,285 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         return ok(request, { accepted: true as const })
       },
     },
-    subagents: {
-      list: request => ok(request, { entries: [], parentAvailable: true }),
-      history: (request) => {
-        const log = logs.get(request.payload.childSessionId) ?? []
-        return Promise.resolve(ok(
-          request,
-          pageOf(log, request.payload.beforeSeq, request.payload.maxMessages ?? 50),
-        ))
+    teams: {
+      inboxRespond: request => err(request, { code: 'bad-request', message: 'Fixture inbox has no action continuation', details: { issues: [] } }),
+      inboxRead: request => ok(request, { items: [], displayCursor: -1, cursor: -1 }),
+      inboxWatch: request => ok(request, { items: [], displayCursor: -1, cursor: -1 }),
+      inboxAcknowledge: request => err(request, { code: 'bad-request', message: 'Fixture inbox has no retained delivery to acknowledge', details: { issues: [] } }),
+      list: request => ok(request, {
+        ...boundedFixturePage(
+          [...fixtureTeams.values()].flatMap(state => state.team.archivedAt === undefined ? [state.team] : []),
+          request.payload.afterCursor,
+          request.payload.limit,
+        ),
+      }),
+      get: request => withFixtureTeam(request, request.payload.teamId, state => state),
+      create: (request) => {
+        const teamId = fixtureTeamId(`fx-team-${nextFixtureTeam++}`)
+        const state = fixtureTeamState(teamId, request.payload.objective, nextFixtureTeam)
+        fixtureTeams.set(teamId, state)
+        return ok(request, state)
       },
-      prompt: request => Promise.resolve(ok(request, {
-        messageId: `fixture-message-${request.payload.childSessionId}` as never,
+      resume: request => withFixtureTeam(request, request.payload.teamId, state => state),
+      start: (request) => {
+        const teamId = fixtureTeamId(`fx-team-${nextFixtureTeam++}`)
+        const state = advanceFixtureTeam(fixtureTeamState(teamId, request.payload.objective, nextFixtureTeam))
+        fixtureTeams.set(teamId, state)
+        return ok(request, {
+          state,
+          envelopeId: fixtureTeamEnvelopeId(`fx-team-envelope-${nextFixtureTeamEnvelope++}`),
+        })
+      },
+      postInput: (request) => {
+        if (options.rejectPrompt && request.payload.content?.some(part => part.type === 'image')) {
+          return err(request, {
+            code: 'attachment-error',
+            message: 'fixture: image side exceeds the deployment limit',
+            details: { reason: 'IMAGE_DIMENSION_TOO_LARGE' },
+          })
+        }
+        return withFixtureTeam(request, request.payload.teamId, (state) => {
+          fixtureTeams.set(state.team.id, advanceFixtureTeam(state))
+          return { envelopeId: fixtureTeamEnvelopeId(`fx-team-envelope-${nextFixtureTeamEnvelope++}`) }
+        })
+      },
+      waitFinal: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const completed = completeFixtureTeam(state)
+        fixtureTeams.set(completed.team.id, completed)
+        return {
+          teamId: completed.team.id,
+          channelId: fixtureTeamChannelId(completed.team.id),
+          envelopeId: fixtureTeamEnvelopeId(`fx-team-final-${String(completed.team.id)}`),
+          text: `Fixture Team final: ${completed.goal.objective}`,
+        }
+      }),
+      cancel: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const cancelled = advanceFixtureTeam(state, 'cancelled')
+        fixtureTeams.set(state.team.id, cancelled)
+        return { accepted: true as const, phase: cancelled.team.phase }
+      }),
+      archive: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        if (state.team.phase !== 'completed' && state.team.phase !== 'failed' && state.team.phase !== 'cancelled') {
+          throw new Error(`fixture Team '${state.team.id}' is not terminal`)
+        }
+        const archivedAt = Date.now()
+        const archived = {
+          ...state,
+          team: { ...state.team, archivedAt, cursor: state.team.cursor + 1, updatedAt: archivedAt },
+        }
+        fixtureTeams.set(state.team.id, archived)
+        return archived
+      }),
+      goalUpdate: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const goal = {
+          ...state.goal,
+          revision: state.goal.revision + 1,
+          ...request.payload.objective === undefined ? {} : { objective: request.payload.objective },
+          ...request.payload.budgets === undefined ? {} : { budgets: request.payload.budgets },
+        }
+        const next = advanceFixtureTeam({ ...state, goal, team: { ...state.team, goal } })
+        fixtureTeams.set(state.team.id, next)
+        return next
+      }),
+      goalTransition: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const goal = {
+          ...state.goal,
+          revision: state.goal.revision + 1,
+          phase: request.payload.phase,
+          ...request.payload.blocker === undefined ? {} : { blocker: request.payload.blocker },
+        }
+        const next = advanceFixtureTeam({ ...state, goal, team: { ...state.team, goal } })
+        fixtureTeams.set(state.team.id, next)
+        return next
+      }),
+      quiescence: request => withFixtureTeam(request, request.payload.teamId, state => ({
+        teamId: state.team.id,
+        quiescent: state.tasks.length === 0,
+        reasons: state.tasks.length === 0 ? [] : ['tasks-active'],
+        activeTaskIds: state.tasks.filter(task => task.phase === 'pending' || task.phase === 'assigned' || task.phase === 'running' || task.phase === 'review').map(task => task.id),
+        activeActivationIds: state.activations.filter(binding => binding.activation.status !== 'offline').map(binding => binding.activation.id),
+        activeWorkspaceAllocationIds: state.workspaceAllocations.filter(allocation => allocation.lifecycle !== 'released').map(allocation => allocation.id),
+        openChannelIds: state.channelIds,
       })),
-      interrupt: request => Promise.resolve(ok(request, { accepted: true as const })),
+      metrics: request => ok(request, {
+        activeAdmissions: 0,
+        pendingDeliveries: 0,
+        activeActivations: 0,
+        activeTasks: 0,
+        stalledTeams: 0,
+        replayLag: 0,
+        lastTaskLatencyMs: 0,
+        lastReceiptLatencyMs: 0,
+        taskLatency: emptyTeamLatencyHistogram(),
+        receiptLatency: emptyTeamLatencyHistogram(),
+        workspaceConflicts: 0,
+        teamEvents: 0,
+        channelEvents: 0,
+        policyDenials: 0,
+        adapterFailures: 0,
+        deliveryClaims: 0,
+        taskAssignments: 0,
+        taskRetries: 0,
+        teamCompactions: 0,
+        channelCompactions: 0,
+        checkpointFailures: 0,
+        auditProjectionRepairs: 0,
+        auditProjectionFailures: 0,
+        updatedAt: 0,
+      }),
+      auditRead: request => withFixtureTeam(request, request.payload.teamId, state => ({
+        teamId: state.team.id,
+        ...request.payload.channelId === undefined ? {} : { channelId: request.payload.channelId },
+        items: [],
+      })),
+      artifactRead: request => teamManagementUnavailable(request),
+      artifactList: request => withFixtureTeam(request, request.payload.teamId, () => boundedFixturePage(
+        [],
+        request.payload.afterCursor,
+        request.payload.limit,
+      )),
+      memberList: request => withFixtureTeam(request, request.payload.teamId, state => boundedFixturePage(
+        state.participants,
+        request.payload.afterCursor,
+        request.payload.limit,
+      )),
+      memberInvite: request => teamManagementUnavailable(request),
+      memberActivate: request => teamManagementUnavailable(request),
+      memberRemove: request => teamManagementUnavailable(request),
+      memberInterrupt: request => teamManagementUnavailable(request),
+      channelCatalog: request => teamManagementUnavailable(request),
+      channelList: request => teamManagementUnavailable(request),
+      channelInput: request => teamManagementUnavailable(request),
+      channelAttachment: request => teamManagementUnavailable(request),
+      channelAdmission: request => teamManagementUnavailable(request),
+      channelInvitation: request => teamManagementUnavailable(request),
+      channelInvitationAcknowledge: request => teamManagementUnavailable(request),
+      channelOpen: request => withFixtureTeam(request, request.payload.teamId, state => fixtureChannel(
+        state,
+        request.payload.adapter,
+        request.payload.participants,
+        request.payload.limits,
+        'active',
+        request.payload.viewPolicy,
+      )),
+      channelSummarize: request => err(request, { code: 'internal', message: 'Fixture channels have no durable summary Consumer', details: {} }),
+      channelPost: request => withFixtureChannel(request, request.payload.channelId, (state) => {
+        const human = state.participants.find(participant => participant.kind === 'human' && participant.phase === 'active')
+        if (human === undefined) return undefined as never
+        const {
+          channelId, expectedCursor, audience, kind, payload, delivery, priority,
+          idempotencyKey, causationId, correlationId, taskId, traceId, ttlMs,
+        } = request.payload
+        return {
+          id: fixtureTeamEnvelopeId(`fx-team-envelope-${nextFixtureTeamEnvelope++}`),
+          teamId: state.team.id,
+          channelId,
+          sequence: expectedCursor + 1,
+          senderId: human.id,
+          audience,
+          kind,
+          payload,
+          delivery,
+          priority: priority ?? 'normal',
+          createdAt: Date.now(),
+          ...idempotencyKey === undefined ? {} : { idempotencyKey },
+          ...causationId === undefined ? {} : { causationId },
+          ...correlationId === undefined ? {} : { correlationId },
+          ...taskId === undefined ? {} : { taskId },
+          ...traceId === undefined ? {} : { traceId },
+          ...ttlMs === undefined ? {} : { ttlMs },
+        }
+      }),
+      channelRead: request => withFixtureChannel(request, request.payload.channelId, state => ({
+        channel: fixtureChannel(state), records: [],
+      })),
+      channelClose: request => withFixtureChannel(request, request.payload.channelId, state => fixtureChannel(
+        state,
+        { type: 'direct', version: 3 },
+        undefined,
+        {},
+        'closed',
+      )),
+      channelWatch: request => withFixtureChannel(request, request.payload.channelId, state => ({
+        kind: 'changed', cursor: Math.max(state.team.cursor, request.payload.afterCursor ?? -1) + 1,
+      })),
+      taskCreate: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const {
+          teamId, parentTaskId, subject, description, blockedBy, requiredCapabilities,
+          priority, readScopes, writeScopes, workspaceMode, budget, reviewPolicy, maxAttempts, integration, idempotencyKey,
+        } = request.payload
+        const human = state.participants.find(participant => participant.kind === 'human' && participant.phase === 'active')
+        if (human === undefined) throw new Error('fixture Team has no active human participant')
+        const id = `fx-team-task-${String(state.team.id)}-${state.tasks.length + 1}` as FixtureTeamTaskId
+        const task = {
+          id,
+          teamId,
+          revision: 1,
+          execution: { kind: 'participant' as const },
+          createCommand: {
+            creator: {
+              teamId,
+              participantId: human.id,
+            },
+            idempotencyKey,
+          },
+          ...parentTaskId === undefined ? {} : { parentTaskId },
+          subject,
+          description,
+          ...integration === undefined ? {} : { integration },
+          phase: 'pending' as const,
+          blockedBy,
+          requiredCapabilities,
+          priority,
+          readScopes,
+          writeScopes,
+          workspaceMode,
+          budget,
+          reviewPolicy,
+          maxAttempts,
+          attemptCount: 0,
+          attemptHistory: [],
+          reviewHistory: [],
+        } as ResponseValue<'team.task.create'>
+        fixtureTeams.set(state.team.id, {
+          ...advanceFixtureTeam(state),
+          tasks: [...state.tasks, task],
+        })
+        return task
+      }),
+      taskGet: request => teamManagementUnavailable(request),
+      taskList: request => withFixtureTeam(request, request.payload.teamId, state => boundedFixturePage(
+        state.tasks,
+        request.payload.afterCursor,
+        request.payload.limit,
+      )),
+      workflowPlanList: request => withFixtureTeam(request, request.payload.teamId, state => boundedFixturePage(
+        state.workflowPlans ?? [],
+        request.payload.afterCursor,
+        request.payload.limit,
+      )),
+      taskUpdate: request => withFixtureTeam(request, request.payload.teamId, (state) => {
+        const current = state.tasks.find(task => task.id === request.payload.taskId)
+        if (current === undefined) return undefined as never
+        const updated = {
+          ...current,
+          revision: current.revision + 1,
+          ...request.payload.subject === undefined ? {} : { subject: request.payload.subject },
+          ...request.payload.description === undefined ? {} : { description: request.payload.description },
+          ...request.payload.blockedBy === undefined ? {} : { blockedBy: request.payload.blockedBy },
+        } as ResponseValue<'team.task.update'>
+        fixtureTeams.set(state.team.id, {
+          ...advanceFixtureTeam(state),
+          tasks: state.tasks.map(task => task.id === updated.id ? updated : task),
+        })
+        return updated
+      }),
+      taskCancel: request => teamManagementUnavailable(request),
+      taskDelete: request => teamManagementUnavailable(request),
+      taskReview: request => teamManagementUnavailable(request),
+      taskWatch: request => withFixtureTeam(request, request.payload.teamId, state => ({
+        kind: 'changed', cursor: Math.max(state.team.cursor, request.payload.afterCursor ?? -1) + 1,
+      })),
     },
     host: {
       describe: request => ok(request, {
@@ -3135,7 +3469,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
  * moves to the isomorphic pipeline (InProcessApiClient over toFetchHandler(fixtureImpl)).
  */
 export class FixtureApiClient extends AbstractApiClient {
-  private readonly api: ApiProxy
+  private readonly api: FixtureApi
   /** Generic Remote caller backed by the same in-memory state as the legacy fixture API. */
   readonly rpc: ClientConnectionRpc
 
@@ -3177,20 +3511,59 @@ export class FixtureApiClient extends AbstractApiClient {
     switch (method) {
       case 'session.list': return this.api.sessions.list(request)
       case 'session.search': return this.api.sessions.search(request, signal)
-      case 'session.create': return this.api.sessions.create(request)
       case 'session.history': return this.api.sessions.history(request)
       case 'session.models': return this.api.sessions.models(request)
       case 'session.selectModel': return this.api.sessions.selectModel(request)
       case 'session.rename': return this.api.sessions.rename(request)
-      case 'session.fork': return this.api.sessions.fork(request)
       case 'session.prompt': return this.api.sessions.prompt(request)
       case 'session.attachment': return this.api.sessions.attachment(request)
       case 'session.updateQueue': return this.api.sessions.updateQueue(request)
       case 'session.cancel': return this.api.sessions.cancel(request)
-      case 'subagent.list': return this.api.subagents.list(request)
-      case 'subagent.history': return this.api.subagents.history(request)
-      case 'subagent.prompt': return this.api.subagents.prompt(request, signal)
-      case 'subagent.interrupt': return this.api.subagents.interrupt(request)
+      case 'team.inbox.respond': return this.api.teams.inboxRespond(request)
+      case 'team.inbox.read': return this.api.teams.inboxRead(request)
+      case 'team.inbox.watch': return this.api.teams.inboxWatch(request)
+      case 'team.inbox.acknowledge': return this.api.teams.inboxAcknowledge(request)
+      case 'team.channel.catalog': return this.api.teams.channelCatalog(request)
+      case 'team.channel.list': return this.api.teams.channelList(request)
+      case 'team.channel.input': return this.api.teams.channelInput(request)
+      case 'team.channel.attachment': return this.api.teams.channelAttachment(request)
+      case 'team.channel.admission': return this.api.teams.channelAdmission(request)
+      case 'team.channel.invitation': return this.api.teams.channelInvitation(request)
+      case 'team.channel.invitation.acknowledge': return this.api.teams.channelInvitationAcknowledge(request)
+      case 'team.list': return this.api.teams.list(request)
+      case 'team.get': return this.api.teams.get(request)
+      case 'team.create': return this.api.teams.create(request, signal)
+      case 'team.resume': return this.api.teams.resume(request, signal)
+      case 'team.start': return this.api.teams.start(request, signal)
+      case 'team.postInput': return this.api.teams.postInput(request)
+      case 'team.waitFinal': return this.api.teams.waitFinal(request, signal)
+      case 'team.cancel': return this.api.teams.cancel(request)
+      case 'team.archive': return this.api.teams.archive(request)
+      case 'team.goal.update': return this.api.teams.goalUpdate(request)
+      case 'team.goal.transition': return this.api.teams.goalTransition(request)
+      case 'team.quiescence': return this.api.teams.quiescence(request)
+      case 'team.metrics': return this.api.teams.metrics(request)
+      case 'team.audit.read': return this.api.teams.auditRead(request)
+      case 'team.artifact.read': return this.api.teams.artifactRead(request, signal)
+      case 'team.member.list': return this.api.teams.memberList(request)
+      case 'team.member.invite': return this.api.teams.memberInvite(request)
+      case 'team.member.activate': return this.api.teams.memberActivate(request)
+      case 'team.member.remove': return this.api.teams.memberRemove(request)
+      case 'team.member.interrupt': return this.api.teams.memberInterrupt(request)
+      case 'team.channel.open': return this.api.teams.channelOpen(request)
+      case 'team.channel.summarize': return this.api.teams.channelSummarize(request)
+      case 'team.channel.post': return this.api.teams.channelPost(request)
+      case 'team.channel.read': return this.api.teams.channelRead(request)
+      case 'team.channel.close': return this.api.teams.channelClose(request)
+      case 'team.channel.watch': return this.api.teams.channelWatch(request, signal)
+      case 'team.task.create': return this.api.teams.taskCreate(request)
+      case 'team.task.get': return this.api.teams.taskGet(request)
+      case 'team.task.list': return this.api.teams.taskList(request)
+      case 'team.task.update': return this.api.teams.taskUpdate(request)
+      case 'team.task.cancel': return this.api.teams.taskCancel(request)
+      case 'team.task.delete': return this.api.teams.taskDelete(request)
+      case 'team.task.review': return this.api.teams.taskReview(request)
+      case 'team.task.watch': return this.api.teams.taskWatch(request, signal)
       case 'host.describe': return this.api.host.describe(request)
       case 'host.pickDirectory': return this.api.host.pickDirectory(request, new AbortController().signal)
       case 'host.listDirectory': return this.api.host.listDirectory(request, new AbortController().signal)
@@ -3228,6 +3601,7 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'llm.models': return this.api.llm.models(request)
       case 'llm.discoverModels': return this.api.llm.discoverModels(request, signal)
     }
+    return Promise.reject(new Error('fixture: unsupported RPC method'))
   }
 
   protected override openMux(
@@ -3279,8 +3653,5 @@ function fixtureOptionsFromLocation(): FixtureOptions {
   return {
     empty: query.get('fixture') === 'empty',
     rejectPrompt: query.get('fixturePrompt') === 'reject',
-    failWorkspaceAttach: query.get('fixtureAttach') === 'fail',
-    dropSessionCreateResponse: query.get('fixtureSessionCreate') === 'drop-response',
-    createFrameOrder: query.get('fixtureFrames') === 'workspace-first' ? 'workspace-first' : 'session-first',
   }
 }

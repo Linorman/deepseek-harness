@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, parse } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceEmitResult } from '../src/workspace.ts'
 
@@ -88,7 +88,7 @@ describe('typertPlugin', () => {
     plugin.writeBundle({ dir: other })
 
     expect(generated).not.toHaveBeenCalled()
-    expect(() => { plugin.writeBundle({ dir: join(root, '..', 'outside', 'lib') }) })
+    expect(() => { plugin.writeBundle({ dir: parse(root).root }) })
       .toThrow('cannot find workspace root')
   })
 

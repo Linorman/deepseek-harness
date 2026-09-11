@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-storage
+# @clocky/clocky-storage
 
 [English](README.md) | 中文
 
@@ -7,8 +7,8 @@
 ## 结构
 
 - `ctx.storage.backend`：名称 → 后端表。多个后端并排保持挂载（`json`、`sqlite`）；为消费方提供服务的后端由该消费方自身的配置决定（领域层的路由表），绝非中心的全局选择。`register()` 返回资源释放函数；注册重复名称或查找未知名称时都会明确报错。
-- `ctx.storage.mount(form, facility)`／`ctx.storage.form(form)`：数据形式挂载。`StorageForms` 可通过合并扩展；领域层合并 `domain`，并通过 `ctx.storage.domain` 访问。
-- 后端拥有一种介质，并公开其支持的数据形状**分面**。当前分面为 `kv`；`src/backend.ts` 负责定义其确切约定。
+- `ctx.storage.mount(form, facility)`／`ctx.storage.form(form)`：数据形式挂载。`StorageForms` 可通过合并扩展；领域层和日志层分别合并 `domain` 与 `log`，并通过 `ctx.storage.domain` 和 `ctx.storage.log` 访问。
+- 后端拥有一种介质，并公开其支持的数据形状**分面**。`kv`存储当前记录；`log`提供带预期尾序列的仅追加流、检查点以及由检查点保护的 prefix compaction。`src/backend.ts`负责两者的确切约定。
 
 ## 模型体验
 
@@ -28,5 +28,4 @@
 
 ## 已知限制与暂缓事项
 
-- **`kv` 是唯一的数据形状**：后端目前只有一个分面需要实现。
-- **数据形式按需解析**：在领域插件挂载前读取 `ctx.storage.domain` 会抛出 `form-not-mounted`；组装会按相应顺序排列插件（错误配置会明确报错，而不是静默推迟处理）。
+- **数据形式按需解析**：在其插件挂载前读取 `ctx.storage.domain` 或 `ctx.storage.log` 会抛出 `form-not-mounted`；组装会按相应顺序排列插件（错误配置会明确报错，而不是静默推迟处理）。

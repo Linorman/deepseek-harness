@@ -8,7 +8,7 @@ import SessionStore, { SessionId } from '@clocky/clocky-session'
 import type { Session, SessionEvent, SessionHeader } from '@clocky/clocky-session'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 import {
-  encodeSegment, eventLines, logPath, projectDir, projectKey, scanLog, sessionDir, SessionLogScanner, toHeaderLine,
+  encodeSegment, eventLines, logPath, parseHeaderMeta, projectDir, projectKey, scanLog, sessionDir, SessionLogScanner, toHeaderLine,
 } from '../src/format.ts'
 import { runPersistenceContract, meta, oneTurnLog, appendLog } from '../../session-persistence/tests/contract.ts'
 import { runCoordinatorContract, type CoordinatorFixture } from '../../session-persistence/tests/coordinator-contract.ts'
@@ -896,7 +896,6 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
       version: 0,
       id: 'invalid-created-at',
       createdAt,
-      delegationDepth: 0,
     }) + '\n'
     expect(() => scanLog(Buffer.from(log))).toThrow(/session header/)
   })
@@ -907,17 +906,17 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
   })
 
   it.each([
-    ['missing', undefined],
+    ['a zero value', 0],
     ['a string', '1'],
     ['fractional', 1.5],
     ['negative', -1],
-  ])('rejects a session header with %s delegationDepth', (_label, delegationDepth) => {
+  ])('rejects a session header with retired delegationDepth (%s)', (_label, delegationDepth) => {
     const log = JSON.stringify({
       type: 'session',
       version: 0,
       id: 'invalid-depth',
       createdAt: 1,
-      ...delegationDepth === undefined ? {} : { delegationDepth },
+      delegationDepth,
     }) + '\n'
     expect(() => scanLog(Buffer.from(log))).toThrow(/session header/)
   })
@@ -932,7 +931,6 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
       version: 0,
       id: SessionId('composed'),
       createdAt: 1,
-      delegationDepth: 0,
       agentPreset: 'minimal',
     })
     const log = `${JSON.stringify(line)}\n`
@@ -940,6 +938,59 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
     // The preset decides the resumed session's tools and prompt; dropping it
     // on disk would restore a composition the logged history contradicts.
     expect(scanLog(Buffer.from(log)).meta.agentPreset).toBe('minimal')
+  })
+
+  it('round-trips paired Team and Participant header references', () => {
+    const line = toHeaderLine({
+      version: 0,
+      id: SessionId('team-participant'),
+      createdAt: 1,
+      teamId: 'team-jsonl',
+      participantId: 'participant-jsonl',
+    })
+    const encoded = JSON.stringify(line)
+
+    expect(line).toMatchObject({ teamId: 'team-jsonl', participantId: 'participant-jsonl' })
+    expect(scanLog(Buffer.from(`${encoded}\n`)).meta).toMatchObject({
+      teamId: 'team-jsonl',
+      participantId: 'participant-jsonl',
+    })
+    expect(parseHeaderMeta(encoded)).toMatchObject({ teamId: 'team-jsonl', participantId: 'participant-jsonl' })
+  })
+
+  it('keeps headers without Team or Participant references compatible', () => {
+    const encoded = JSON.stringify(toHeaderLine({
+      version: 0,
+      id: SessionId('no-team-participant'),
+      createdAt: 1,
+    }))
+
+    expect(scanLog(Buffer.from(`${encoded}\n`)).meta).toMatchObject({ id: 'no-team-participant' })
+    expect(parseHeaderMeta(encoded)).toMatchObject({ id: 'no-team-participant' })
+  })
+
+  it('does not parse null as a session header', () => {
+    expect(parseHeaderMeta('null')).toBeUndefined()
+  })
+
+  it.each([
+    { teamId: 'team-only' },
+    { participantId: 'participant-only' },
+    { teamId: '', participantId: 'participant' },
+    { teamId: 'team', participantId: '' },
+    { teamId: 1, participantId: 'participant' },
+    { teamId: 'team', participantId: 1 },
+  ])('rejects an invalid paired Team and Participant header reference', (binding) => {
+    const encoded = JSON.stringify({
+      type: 'session',
+      version: 0,
+      id: 'invalid-team-participant',
+      createdAt: 1,
+      ...binding,
+    })
+
+    expect(() => scanLog(Buffer.from(`${encoded}\n`))).toThrow(/session header/)
+    expect(parseHeaderMeta(encoded)).toBeUndefined()
   })
 
   it('rejects a session header whose agentPreset is not a string', () => {
@@ -950,7 +1001,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
 
   it('a seq gap after the last turn/end bounds the preserved tail (torn fragment tolerated)', () => {
     const log = [
-      JSON.stringify({ type: 'session', version: 0, id: 'g', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'g', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       JSON.stringify({ type: 'step/start', seq: 2, time: 2, data: { turn: 1, step: 1 } }), // gap: missing seq 1
     ].join('\n') + '\n'
@@ -962,7 +1013,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
 
   it('rejects a seq gap BEFORE a later committed turn/end (committed data damaged)', () => {
     const log = [
-      JSON.stringify({ type: 'session', version: 0, id: 'g2', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'g2', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       JSON.stringify({ type: 'step/start', seq: 2, time: 2, data: { turn: 1, step: 1 } }), // gap: missing seq 1
       JSON.stringify({ type: 'turn/end', seq: 3, time: 3, data: { turn: 1, reason: { kind: 'completed' } } }),
@@ -974,7 +1025,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
 
   it('rejects a corrupt line BEFORE a later committed turn/end (committed data damaged)', () => {
     const log = [
-      JSON.stringify({ type: 'session', version: 0, id: 'c', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'c', createdAt: 1 }),
       '{not json', // corrupt, sits in the committed region (a turn/end follows)
       JSON.stringify({ type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'completed' } } }),
     ].join('\n') + '\n'
@@ -982,7 +1033,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
   })
 
   it('a header-only log (no event lines at all) preserves nothing — committedBytes is the header', () => {
-    const log = JSON.stringify({ type: 'session', version: 0, id: 'h0', createdAt: 1, delegationDepth: 0 }) + '\n'
+    const log = JSON.stringify({ type: 'session', version: 0, id: 'h0', createdAt: 1 }) + '\n'
     const scanned = scanLog(Buffer.from(log))
     expect(scanned.events).toEqual([])
     // committedBytes falls back to the header line's end (no preserved events).
@@ -991,7 +1042,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
 
   it('a corrupt line after the last turn/end bounds the preserved tail', () => {
     const log = [
-      JSON.stringify({ type: 'session', version: 0, id: 'c2', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'c2', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       '{not json', // corrupt crash fragment, no turn/end committed
     ].join('\n') + '\n'
@@ -1002,7 +1053,7 @@ describe('JsonlSessionPersistence: scanLog unit', () => {
 
   it('tolerates a seq gap AFTER a turn/end (uncommitted tail)', () => {
     const log = [
-      JSON.stringify({ type: 'session', version: 0, id: 't', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 't', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       JSON.stringify({ type: 'turn/end', seq: 1, time: 2, data: { turn: 1, reason: { kind: 'completed' } } }),
       JSON.stringify({ type: 'step/start', seq: 9, time: 3, data: { turn: 2, step: 1 } }), // gap in uncommitted tail
@@ -1099,7 +1150,7 @@ describe('JsonlSessionPersistence: default packed chunk rows', () => {
     // file, hand-planted so this packed-config backend adopts it on load).
     await mkdir(sessionDir(root, '/work', m.id), { recursive: true })
     await writeFile(rawLogPath(root, '/work', m.id), [
-      JSON.stringify({ type: 'session', version: 0, id: 'mixed', createdAt: 1000, cwd: '/work', delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'mixed', createdAt: 1000, cwd: '/work' }),
       ...log.map(e => JSON.stringify(e)),
     ].join('\n') + '\n')
     // Adopt the stored log (cursor = stored length), then append a second turn
@@ -1123,7 +1174,7 @@ describe('JsonlSessionPersistence: default packed chunk rows', () => {
 
   it('scanLog: a packed row advances the seq cursor by its whole run', () => {
     const logText = [
-      JSON.stringify({ type: 'session', version: 0, id: 'rows', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'rows', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       JSON.stringify({ type: 'text-chunks', seq0: 1, time0: 2, data: { turn: 1, step: 1, index: 0, dt: [1, 1], texts: ['a', 'b', 'c'] } }),
       JSON.stringify({ type: 'turn/end', seq: 4, time: 5, data: { turn: 1, reason: { kind: 'completed' } } }),
@@ -1135,7 +1186,7 @@ describe('JsonlSessionPersistence: default packed chunk rows', () => {
 
   it('scanLog: a malformed packed row in the committed region rejects like corrupt JSON', () => {
     const logText = [
-      JSON.stringify({ type: 'session', version: 0, id: 'bad-row', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'bad-row', createdAt: 1 }),
       // dt arity mismatch — row validation throws, so the line is a committed hole.
       JSON.stringify({ type: 'text-chunks', seq0: 0, time0: 1, data: { turn: 1, step: 1, index: 0, dt: [], texts: ['a', 'b'] } }),
       JSON.stringify({ type: 'turn/end', seq: 2, time: 3, data: { turn: 1, reason: { kind: 'completed' } } }),
@@ -1145,7 +1196,7 @@ describe('JsonlSessionPersistence: default packed chunk rows', () => {
 
   it('scanLog: a packed row with a mid-run seq gap after the last turn/end drops the whole row', () => {
     const logText = [
-      JSON.stringify({ type: 'session', version: 0, id: 'row-gap', createdAt: 1, delegationDepth: 0 }),
+      JSON.stringify({ type: 'session', version: 0, id: 'row-gap', createdAt: 1 }),
       JSON.stringify({ type: 'turn/start', seq: 0, time: 1, data: { turn: 1 } }),
       // seq0 skips 1 — the run's first member is already a gap; no turn/end follows.
       JSON.stringify({ type: 'text-chunks', seq0: 2, time0: 2, data: { turn: 1, step: 1, index: 0, dt: [1, 1], texts: ['a', 'b', 'c'] } }),
@@ -1290,7 +1341,7 @@ describe('JsonlSessionPersistence: edge cases', () => {
     // `readFirstLine` accumulates chunks before `list()` parses it.
     const id = SessionId('big')
     await mkdir(sessionDir(root, undefined, id), { recursive: true })
-    const bigHeader = JSON.stringify({ type: 'session', version: 0, id: 'big', createdAt: 1, delegationDepth: 0, pad: 'x'.repeat(9000) })
+    const bigHeader = JSON.stringify({ type: 'session', version: 0, id: 'big', createdAt: 1, pad: 'x'.repeat(9000) })
     await writeFile(rawLogPath(root, undefined, id), bigHeader + '\n')
     const ids = (await ctx.sessionPersistence.list()).map(x => x.id)
     expect(ids).toContain('big')
@@ -1332,7 +1383,7 @@ describe('JsonlSessionPersistence: edge cases', () => {
     const dir = join(projectDir(root, undefined), 'invalid-id')
     await mkdir(dir, { recursive: true })
     await writeFile(join(dir, 'session.jsonl'), JSON.stringify({
-      type: 'session', version: 0, id: '', createdAt: 1, delegationDepth: 0,
+      type: 'session', version: 0, id: '', createdAt: 1,
     }) + '\n')
 
     await expect(ctx.sessionPersistence.list()).rejects.toThrow(/header id cannot name a storage path/)

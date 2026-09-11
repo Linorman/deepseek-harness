@@ -1,0 +1,20 @@
+{
+  "adapter": "direct-v4",
+  "members": 3,
+  "explicitToolMessages": 1,
+  "broadcastMessages": 1,
+  "fastSources": 2,
+  "delayedSources": 1,
+  "receipts": 3,
+  "orderedContent": [
+    "text",
+    "image",
+    "text"
+  ],
+  "receiverModelRequests": [
+    1,
+    1
+  ],
+  "automaticChannelReplies": 0,
+  "groupFinal": "rejected"
+}

@@ -53,9 +53,11 @@
     "@clocky/cordis": "workspace:^",
     "@clocky/clocky-attachment": "workspace:^",
     "@clocky/clocky-host-apiproxy": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
     "@clocky/clocky-commands": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
     "@clocky/clocky-tools": "workspace:^"
   },
   "devDependencies": {
@@ -65,9 +67,11 @@
     "@clocky/cordis": "workspace:^",
     "@clocky/clocky-attachment": "workspace:^",
     "@clocky/clocky-host-apiproxy": "workspace:^",
+    "@clocky/clocky-product-principal": "workspace:^",
     "@clocky/clocky-commands": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
     "@clocky/clocky-tools": "workspace:^"
   }
 }

@@ -1,0 +1,23 @@
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+# This fixture stops after proving Session view durability; closure recovery is
+# covered by the dedicated lifecycle suites and would classify the synthetic
+# coordinator wake as a missing final before the view assertion.
+- id: team-closure-driver
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: headless-team-channel-view-mock
+    model: headless-team-channel-view-mock
+
+- insert:
+    - id: headless-team-channel-view-llm
+      name: './snapshot-fixtures/headless-team-channel-view-llm.ts'
+
+    - id: headless-team-channel-view-driver
+      name: './snapshot-fixtures/headless-team-channel-view-driver.ts'

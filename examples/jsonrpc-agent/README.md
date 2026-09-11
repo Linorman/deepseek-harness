@@ -8,33 +8,32 @@ The model-facing tools are:
 
 - `bash`, foreground only
 - `read`, `write`, and `edit`
-- `subagent`, using one foreground in-process spawn provider
 - `todo_write`
 
-The surrounding runtime also loads JSONL session persistence and automatic context compaction. `maxTokensAsSuccess` keeps a token-limited model turn as an accepted evaluation result while preserving its `max-tokens` reason.
+The surrounding runtime also loads JSONL Session persistence, the local Team Hub/Link/Agent Client/TeamRun stack, and automatic context compaction. Each SDK request creates a Team whose coordinator receives input through direct v3 and returns only through `team_final`.
 
 ## Runtime environment
 
 | Variable | Purpose |
 |---|---|
-| `DEEPSEEK_API_KEY` | Credential passed to the OpenAI-compatible host endpoint |
-| `DEEPSEEK_BASE_URL` | Host endpoint used by `dsh-llm-deepseek` |
-| `DSH_CWD` | Agent workspace for bash and filesystem tools |
-| `DSH_CONTEXT_WINDOW` | Context capacity recorded for the `DSH_MODEL` catalog entry in the minimal variant |
-| `DSH_MAX_TOKENS_AS_SUCCESS` | `true` (default) accepts token-limited results; `false` reports them as errors |
-| `DSH_MODEL` | Default model used by `minimal.py`; `--model` takes precedence |
-| `DSH_SESSION_ROOT` | JSONL session directory |
-| `DSH_SYSTEM_PROMPT` | Deployment-provided coding persona |
+| `TEST_API_KEY` | Credential passed to the configured OpenAI-compatible endpoint |
+| `baseURL` in `cordis.yml` | Host endpoint used by the configured provider profile; edit the profile for a deployment endpoint |
+| `CLOCKY_CWD` | Agent workspace for bash and filesystem tools |
+| `CLOCKY_CONTEXT_WINDOW` | Context capacity recorded for the `CLOCKY_MODEL` catalog entry in the minimal variant |
+| `CLOCKY_PROVIDER` | Provider route used by `minimal.py`; `--provider` takes precedence |
+| `CLOCKY_MODEL` | Model used by `minimal.py`; `--model` takes precedence |
+| `CLOCKY_SESSION_ROOT` | JSONL session directory |
+| `CLOCKY_SYSTEM_PROMPT` | Deployment-provided coding persona |
 
-Pass the config path through the Python SDK's `cordis` option or `DSH_CORDIS_CONFIG`. The bundled executable already carries every plugin named by this file; the target machine does not need Node.js.
+Pass the config path through the Python SDK's `cordis` option or `CLOCKY_CORDIS_CONFIG`. The bundled executable already carries every plugin named by this file; the target machine does not need Node.js.
 
 ## Minimal variant
 
-[`minimal.cordis.yml`](minimal.cordis.yml) is the complete standalone counterpart of the Web `minimal` preset. `DSH_SYSTEM_PROMPT` selects its system prompt, with `You are a helpful software engineer assistant.` as the fallback. It suppresses every system-prompt runtime-context contribution for fresh sessions and mounts no context-compaction plugin. Its model-facing tools are exactly:
+[`minimal.cordis.yml`](minimal.cordis.yml) is the complete standalone counterpart of the Web `minimal` preset. `CLOCKY_SYSTEM_PROMPT` selects its system prompt, with `You are a helpful software engineer assistant.` as the fallback. It suppresses every system-prompt runtime-context contribution for fresh sessions and mounts no context-compaction plugin. Its model-facing tools are exactly:
 
 - owner-scoped persistent `bash`
 - `str_replace_editor` with `view`, `create`, `str_replace`, and `insert`
 
-It composes the local PTY, bare `fs-local` backend, danger-full-access policy for persistent Bash, and uncompressed JSONL persistence needed by the bundled runtime. Bash and absolute editor paths can modify any path available to the runtime process, so run this variant only against a disposable checkout or container. The persistent PTY requires a POSIX terminal environment and is not a Windows agent interface.
+It composes the local PTY, bare `fs-local` backend, danger-full-access policy for persistent Bash, uncompressed JSONL persistence, and the same local Team stack needed by the bundled runtime. Bash and absolute editor paths can modify any path available to the runtime process, so run this variant only against a disposable checkout or container. The persistent PTY requires a POSIX terminal environment and is not a Windows agent interface.
 
-[`minimal.py`](minimal.py) runs the composition through the Python SDK and uses `DSH_MODEL` as its default model. The [Python SDK tutorial](../../docs/user/guide/python-sdk.md) covers installation, execution, workspace selection, and session identity; the [SDK reference](../../python/sdk/README.md) owns runtime lifecycle and result semantics.
+[`minimal.py`](minimal.py) runs the composition through the Python SDK and requires a provider/model pair from `--provider`/`--model` or `CLOCKY_PROVIDER`/`CLOCKY_MODEL`. The [Python SDK tutorial](../../docs/user/guide/python-sdk.md) covers installation, execution, workspace selection, and session identity; the [SDK reference](../../python/sdk/README.md) owns runtime lifecycle and result semantics.

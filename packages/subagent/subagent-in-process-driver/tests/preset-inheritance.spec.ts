@@ -61,6 +61,7 @@ function spawnRequest(parent: Agent) {
     descriptor: snapshotSubagentDescriptor({
       mode: 'one-shot' as const,
       provider: 'spawn',
+      depth: 1,
       label: 'child task',
     }),
   }

@@ -255,6 +255,29 @@
   font-weight: 600;
 }
 
+.maxTokensContinue {
+  flex: none;
+  align-self: center;
+  min-height: 26px;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 7px;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--clocky-alias-state-warn-primary);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.maxTokensContinue:hover {
+  background: var(--clocky-alias-interactive-bg-hover);
+}
+
+.maxTokensContinue:focus-visible {
+  outline: 2px solid var(--clocky-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
 @keyframes retry-shimmer {
   from {
     background-position: 100% 50%;

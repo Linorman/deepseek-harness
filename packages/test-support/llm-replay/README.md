@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-llm-replay
+# @clocky/clocky-llm-replay
 
 English | [中文](README.zh.md)
 
@@ -26,19 +26,19 @@ Replay keys every call by its calling session id (`GenerateOptions.sessionId`, s
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `file` | string | `$DSH_SNAPSHOT_FILE` | Path to the primary (parent) `session.jsonl` fixture. Required (config or env). |
-| `overrideFile` | string | `$DSH_SNAPSHOT_OVERRIDE` | Optional `ReplayOverrideDoc` sidecar for the primary session: a bare `ReplayEntry[]` replaces its derived script, while `{ patches }` augments it by call index. |
-| `childFiles` | string[] | `$DSH_SNAPSHOT_CHILD_FILES` (path-delimited) | Recorded subagent child-session logs for a nested scenario; empty for a single-session scenario. |
+| `file` | string | `$CLOCKY_SNAPSHOT_FILE` | Path to the primary (parent) `session.jsonl` fixture. Required (config or env). |
+| `overrideFile` | string | `$CLOCKY_SNAPSHOT_OVERRIDE` | Optional `ReplayOverrideDoc` sidecar for the primary session: a bare `ReplayEntry[]` replaces its derived script, while `{ patches }` augments it by call index. |
+| `childFiles` | string[] | `$CLOCKY_SNAPSHOT_CHILD_FILES` (path-delimited) | Recorded subagent child-session logs for a nested scenario; empty for a single-session scenario. |
 | `providers` | `ReplayProviderConfig[]` | — | Optional replay-only provider and model catalog. Each provider may set `retryPolicy`, and each model may publish `contextWindow` and an `inputModalities` array containing only `text` and `image`; invalid modalities fail during plugin loading. Configured routes dispatch through the replay adapter and never perform provider I/O. |
 | `paceMs` | number | — (burst) | Optional per-chunk delay in ms so downstream transports (e.g. the web SSE mux observed by a real browser) see genuinely incremental delivery. A realism knob only — tests must not depend on it for correctness. Non-negative integer; abort during a pace wait cancels the stream promptly. |
 
 ```yaml
 - id: llm-replay
-  name: '@deepseek-ai/dsh-llm-replay'
+  name: '@clocky/clocky-llm-replay'
   config:
     providers:
-      - id: deepseek-official
-        name: DeepSeek
+      - id: test-provider
+        name: Test Provider
         retryPolicy:
           mode: normal
           backoff:
@@ -46,11 +46,11 @@ Replay keys every call by its calling session id (`GenerateOptions.sessionId`, s
             maxDelayMs: 1
             jitterRatio: 0
         models:
-          - id: deepseek-v4-flash
+          - id: test-model
             contextWindow: 128000
-          - id: deepseek-v4-pro
-  # file/overrideFile/childFiles default to $DSH_SNAPSHOT_FILE /
-  # $DSH_SNAPSHOT_OVERRIDE / $DSH_SNAPSHOT_CHILD_FILES, set by the snapshot
+          - id: test-model-pro
+  # file/overrideFile/childFiles default to $CLOCKY_SNAPSHOT_FILE /
+  # $CLOCKY_SNAPSHOT_OVERRIDE / $CLOCKY_SNAPSHOT_CHILD_FILES, set by the snapshot
   # harness per scenario.
 ```
 

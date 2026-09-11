@@ -58,7 +58,6 @@ export function conversationSnapshot(sessionId: SessionId): ConversationSnapshot
     pending: [],
     queue: [],
     running: false,
-    subagent: null,
     composerPhase: 'active',
     removed: false,
     openState: 'open',

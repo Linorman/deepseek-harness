@@ -17,7 +17,7 @@ import { StorageError } from '@clocky/clocky-storage'
  * row). Bumped only on a breaking change to the table layout; any other
  * stamped version rejects — this unreleased format has no migrations.
  */
-export const STORAGE_SQLITE_SCHEMA_VERSION = 1
+export const STORAGE_SQLITE_SCHEMA_VERSION = 2
 
 /**
  * Journal modes the backend will run under. `wal` is the default; the
@@ -97,6 +97,28 @@ function configureDatabase(db: DatabaseSync, path: string, journalMode: JournalM
     CREATE TABLE IF NOT EXISTS unit_globals (
       unit  TEXT PRIMARY KEY REFERENCES units(name),
       value TEXT NOT NULL
+    ) STRICT
+  `)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS log_streams (
+      name          TEXT PRIMARY KEY,
+      version       INTEGER NOT NULL,
+      tail_sequence INTEGER NOT NULL
+    ) STRICT
+  `)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS log_entries (
+      stream   TEXT NOT NULL REFERENCES log_streams(name),
+      sequence INTEGER NOT NULL,
+      value    TEXT NOT NULL,
+      PRIMARY KEY (stream, sequence)
+    ) STRICT
+  `)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS log_checkpoints (
+      stream   TEXT PRIMARY KEY REFERENCES log_streams(name),
+      sequence INTEGER NOT NULL,
+      value    TEXT NOT NULL
     ) STRICT
   `)
   if (onDisk === 0) {

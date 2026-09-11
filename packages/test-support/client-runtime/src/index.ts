@@ -1,7 +1,7 @@
 /**
  * jsdom slot test runtime: a real small runtime — Cordis `Context`, the
  * runtime `SlotRegistry`, and the UI renderer — assembled around
- * test-owned session/workspace doubles, so feature specs exercise
+ * test-owned session/workspace/Team-task doubles, so feature specs exercise
  * declaration, registration, scope, store, inject, rendering, updates, and
  * disposal without hand-building the machinery per suite.
  *
@@ -33,6 +33,7 @@ import type {
 } from '@clocky/clocky-client-ui-slots'
 import { registerDomSnapshotSerializer } from './snapshot.ts'
 import { TestSessions } from './sessions.ts'
+import { TestTeamTasks } from './team-tasks.ts'
 import { TestWorkspaces } from './workspaces.ts'
 import type { Stabilizer } from './fixtures.ts'
 
@@ -41,6 +42,7 @@ export { domSnapshotSerializer, registerDomSnapshotSerializer } from './snapshot
 export { FixtureSession, TestSessions } from './sessions.ts'
 export { stubSettingsScope } from './settings-scope.ts'
 export type { StubSettingsScope } from './settings-scope.ts'
+export { TestTeamTasks } from './team-tasks.ts'
 export { TestWorkspaces } from './workspaces.ts'
 export { TestRemote } from './remote.ts'
 export { conversationSnapshot, workspaceListState } from './fixtures.ts'
@@ -201,6 +203,8 @@ export class SlotTestRuntime {
   readonly sessions: TestSessions
   /** Workspaces double (list observable, recorded intent actions). */
   readonly workspaces: TestWorkspaces
+  /** Team task double (list observable, local draft, recorded intent actions). */
+  readonly teamTasks: TestTeamTasks
 
   private readonly stabilizer: Stabilizer = async (fn) => {
     await act(async () => { await fn() })
@@ -221,8 +225,10 @@ export class SlotTestRuntime {
     this.root = new TestRoot(slots, this.stabilizer)
     this.sessions = new TestSessions(this.stabilizer, ctx)
     this.workspaces = new TestWorkspaces(this.stabilizer)
+    this.teamTasks = new TestTeamTasks(this.stabilizer)
     ctx.provide('sessions', this.sessions)
     ctx.provide('workspaces', this.workspaces)
+    ctx.provide('teamTasks', this.teamTasks)
     // Capturing install: the production renderer does the rendering; the
     // wrapper only takes the host face for storeOf (no machinery copied).
     const renderer = createSlotRenderer()
@@ -236,7 +242,7 @@ export class SlotTestRuntime {
 
   /**
    * Assemble a runtime: real Context, mounted SlotRegistry, installed
-   * renderer, and the session/workspace doubles provided as services.
+   * renderer, and the session/workspace/Team-task doubles provided as services.
    * @returns the ready runtime.
    */
   static async create(): Promise<SlotTestRuntime> {

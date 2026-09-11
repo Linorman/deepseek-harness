@@ -1,0 +1,33 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+- id: team-scheduler-dag
+  disabled: true
+- id: agent-default-model
+  config:
+    provider: task-ranking-model
+    model: task-ranking-model
+- id: team-run
+  config:
+    workerPreset: standard
+    workerCount: 2
+- id: team-hub
+  config:
+    rankingLatencyBucketsMs: !!js >-
+        process.env.CLOCKY_RANKING_STAGE === 'train' ? [1000] : [1]
+    rankingCostRateBuckets: [0, 1, 10]
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_RANKING_BACKEND === 'json'
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_RANKING_BACKEND
+    routes: {}
+- insert:
+    - id: task-ranking-json
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_RANKING_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('team-storage-json')
+    - id: task-ranking-driver
+      name: './snapshot-fixtures/headless-task-ranking-driver.ts'

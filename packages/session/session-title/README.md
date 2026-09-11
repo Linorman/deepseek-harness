@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-session-title
+# @clocky/clocky-session-title
 
 English | [中文](README.zh.md)
 

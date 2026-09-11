@@ -21,10 +21,13 @@
       "path": "../../core/session"
     },
     {
-      "path": "../../subagent/subagent"
+      "path": "../../core/team"
     },
     {
       "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../attachment/attachment"
     }
   ]
 }

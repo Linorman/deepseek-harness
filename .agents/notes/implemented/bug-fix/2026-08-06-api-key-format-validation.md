@@ -8,11 +8,11 @@ English | [中文](2026-08-06-api-key-format-validation.zh.md)
 
 An API key holding characters no HTTP header value can carry was accepted by every configuration surface and failed only when a request was built, far from the field that caused it.
 
-Pasting a key containing an emoji, CJK text, or a full-width punctuation mark into the web Models page reported a successful save. The first turn then failed with `Cannot convert argument to a ByteString because the character at index 7 has a value of 55357 which is greater than 255` — the index and code point are UTF-16 internals with no action attached, and they disclose the code point of one character of the key. `llm-deepseek` produced this because `fetch` builds the `Bearer` header inside the `try` in [adapter.ts](../../../../packages/llm/llm-deepseek/src/adapter.ts), whose `catch` labels every failure `TRANSPORT`; that label is in `DEFAULT_RETRYABLE_CODES`, so a permanent, deterministic fault was also retried three times.
+Pasting a key containing an emoji, CJK text, or a full-width punctuation mark into the web Models page reported a successful save. The first turn then failed with `Cannot convert argument to a ByteString because the character at index 7 has a value of 55357 which is greater than 255` — the index and code point are UTF-16 internals with no action attached, and they disclose the code point of one character of the key. The provider request path produced this because `fetch` builds the `Bearer` header inside the `try` in [discovery.ts](../../../../packages/llm/llm-pi-ai/src/discovery.ts), whose `catch` labels every failure `TRANSPORT`; that label is in `DEFAULT_RETRYABLE_CODES`, so a permanent, deterministic fault was also retried three times.
 
 `llm-pi-ai` was worse on the same input. Its discovery probe builds the same header with a bare `fetch` in [discovery.ts](../../../../packages/llm/llm-pi-ai/src/discovery.ts) and wrapped every failure as `could not reach <url>`, so a local key fault was reported as an unreachable network. The probe is reachable from the unsaved draft: `ProviderEditor` puts the typed `keyDraft` into its probe request, so the model-listing button sent an illegal key before anything was stored.
 
-Whitespace passed every check. `ProviderEditor` tested `keyDraft.length`, so a key of three spaces was stored and then authenticated as `Bearer` plus blanks. Neither adapter checked a credential- or environment-sourced key — the path the Models page writes, and therefore the path users actually take.
+Whitespace passed every check. `ProviderEditor` tested `keyDraft.length`, so a key of three spaces was stored and then authenticated as `Bearer` plus blanks. Neither provider request path checked a credential- or environment-sourced key — the path the Models page writes, and therefore the path users actually take.
 
 ## Decision
 
@@ -36,29 +36,28 @@ The rule applies to a value that was *provided*; deciding whether one was provid
 
 **A blank field in the web UI.** The key input opens empty even for a provider whose key is already stored — the `keyStored` copy reads "Configured — enter a new value to replace" — so blank means *keep what is stored*. `ProviderEditor` skips `credentials.set` entirely when the draft is empty, and that stays a no-op: a blank field never blocks submit, or editing a base URL would demand re-entering the key.
 
-**A resolved value that is whitespace-only.** This is invalid at both adapters because it cannot authenticate a request. In the browser it is also a field-level failure: the field is where a person just typed, and silently discarding what they typed is never the right answer.
+**A resolved value that is whitespace-only.** This is invalid at every provider request path because it cannot authenticate a request. In the browser it is also a field-level failure: the field is where a person just typed, and silently discarding what they typed is never the right answer.
 
 `normalizeApiKey` therefore takes `string`, never `string | undefined`.
 
 ### Where the rule lives
 
-`normalizeApiKey` is a module of the `dsh-llm` Service Definition, beside [attribution.ts](../../../../packages/llm/llm/src/attribution.ts), which already owns shared header concerns. Both adapters depend on the seam and both need the rule, so it has two current consumers rather than a speculative one. It returns the trimmed value or a reason (`empty`, `illegalCharacters`).
+`normalizeApiKey` is a module of the `clocky-llm` Service Definition, beside [attribution.ts](../../../../packages/llm/llm/src/attribution.ts), which already owns shared header concerns. The pi-ai request and discovery paths depend on the seam and both need the rule, so it has two current consumers rather than a speculative one. It returns the trimmed value or a reason (`empty`, `illegalCharacters`).
 
-Both adapters also need the identical "refuse a stored credential" diagnosis, differing only by package prefix. `LlmError` is declared in the Service Definition's `index.ts`, so `assertUsableApiKey(raw, pkg, ref)` lives there beside it and neither adapter carries a local copy. The predicate module stays dependency-free: importing `LlmError` into `api-key.ts` would cycle with `index.ts`'s re-export of it.
+The pi-ai request and discovery paths also need the identical "refuse a stored credential" diagnosis. `LlmError` is declared in the Service Definition's `index.ts`, so `assertUsableApiKey(raw, pkg, ref)` lives there beside it and neither path carries a local copy. The predicate module stays dependency-free: importing `LlmError` into `api-key.ts` would cycle with `index.ts`'s re-export of it.
 
-The client cannot import any of this: client packages reference only client packages, so `packages/client/ui-settings-models` mirrors the predicate in its own `apiKey.ts` and owns the localized messages, exactly as `validateDeepSeekModels` mirrors the host's `catalogModel` schema. Each side names the other in a comment.
+The client cannot import any of this: client packages reference only client packages, so `packages/client/ui-settings-models` mirrors the predicate in its own `apiKey.ts` and owns the localized messages, exactly as `validateModels` mirrors the host's catalog model schema. Each side names the other in a comment.
 
 ### What each surface does
 
 | Surface | Behavior |
 |---|---|
-| `dsh-llm` | Owns `normalizeApiKey`, `assertUsableApiKey`, and `INVALID_CREDENTIAL_CODE`, which is deliberately outside `DEFAULT_RETRYABLE_CODES`. |
-| `llm-deepseek` `resolveApiKey` | Normalizes what the credentials seam or environment returns, rejecting with `INVALID_CREDENTIAL` naming the Models page and never echoing the key. |
+| `clocky-llm` | Owns `normalizeApiKey`, `assertUsableApiKey`, and `INVALID_CREDENTIAL_CODE`, which is deliberately outside `DEFAULT_RETRYABLE_CODES`. |
 | `llm-pi-ai` `resolveApiKey` | Normalizes the credential and environment paths. A profile naming no credential still returns `undefined`, so ambient and OAuth routes are unaffected. |
 | `llm-pi-ai` `discoverModels` | Normalizes before building the header, so an illegal key is a credential fault rather than an unreachable endpoint. A probe carrying no key stays unauthenticated. |
 | `ui-settings-models` | Mirrors the charset rule, adds the shape heuristic, trims `keyDraft` before probe and `credentials.set`, and fixes the `stringAt` emptiness test. A blank field remains a no-op that submits; a field holding only whitespace is a field-level failure. Submit **and the endpoint interrogation** are both gated, so a refused key never spends a round trip to be told what the field already says, and the failure renders on the field, matching the existing `modelFailure` pattern. |
 
-`ProviderEditor` serves both the DeepSeek and pi-ai layouts, so one client change covers both providers. `CustomProviderCard` carries the same judgement for a hand-declared route.
+`ProviderEditor` serves the pi-ai layout and the generic fallback, while `CustomProviderCard` carries the same judgement for a hand-declared route.
 
 `credentials-local` is deliberately untouched. It stores credentials generally, and printable-ASCII is a constraint of HTTP headers rather than of credential storage; its existing refusal of values no dotenv style can represent stands as it was.
 
@@ -66,9 +65,9 @@ The client cannot import any of this: client packages reference only client pack
 
 **A validation module shared by client and host.** Rejected by the source-plane layout: client packages reference only client packages plus `vendor/cordis` and `runtime-diagnostics/invariants`, and widening that to reach a host package would collide the two `Context` merges the split exists to keep apart. Mirroring a one-line predicate with a test on each side is the established shape here.
 
-**A per-adapter thrower in each of `llm-deepseek` and `llm-pi-ai`.** The first plan gave each adapter its own, differing only by the package prefix in the message, with a duplication-gate exemption to excuse the pair. Rejected before implementation: `LlmError` is declared in the Service Definition, so that package can own the diagnosis outright, and an exemption there would have hidden exactly the duplication it was covering for.
+**A per-path thrower in the pi-ai request and discovery modules.** The first plan gave each path its own copy, differing only by the package prefix in the message, with a duplication-gate exemption to excuse the pair. Rejected before implementation: `LlmError` is declared in the Service Definition, so that package can own the diagnosis outright, and an exemption there would have hidden exactly the duplication it was covering for.
 
-**Sniffing the `TypeError` in the adapter's `catch`.** This would classify the ByteString failure after the fact, leaving the header construction itself unguarded. It depends on the wording of a Node error message, so it degrades silently across runtime versions, and it cannot help `llm-pi-ai`, whose request header is built inside the pi-ai SDK. Refusing the key before handing it over works for both adapters and for the discovery probe.
+**Sniffing the `TypeError` in the request `catch`.** This would classify the ByteString failure after the fact, leaving the header construction itself unguarded. It depends on the wording of a Node error message, so it degrades silently across runtime versions, and it cannot help the pi-ai SDK request path. Refusing the key before handing it over works for both the request and discovery paths.
 
 **Enforcing in `credentials-local.set`.** It would catch every writer at once, including a hand-edited file. It lost because that provider stores credentials of every kind, and a rule derived from HTTP header encoding does not belong to it.
 
@@ -94,7 +93,7 @@ The costliest way to get this wrong would have been to treat absence as invalidi
 
 `packages/llm/llm/tests/api-key.spec.ts` drives `normalizeApiKey` and `assertUsableApiKey` over the whole input table — empty, whitespace-only, padded, interior-space, C0 control, emoji, CJK, full-width, latin-1, and the printable-ASCII boundary — and pins that a refusal carries `INVALID_CREDENTIAL` and no part of the key.
 
-`packages/llm/llm-deepseek/tests/` covers the stored-credential path end to end in `dynamic-config.spec.ts`, through the real credentials seam rather than a stub. `packages/llm/llm-pi-ai/tests/` covers the discovery probe, including that a probe with no key sends no `authorization` header.
+`packages/llm/llm-pi-ai/tests/` covers the stored-credential path through the real credentials seam and the discovery probe, including that a probe with no key sends no `authorization` header.
 
 `packages/client/ui-settings-models/tests/` pins `apiKeyFailure` over the same table plus the paste-shape cases, and drives both cards: a blank field submits without writing a credential, a whitespace-only field fails on the field, an illegal or wrapped key blocks submit and the interrogation alike, a padded key is trimmed before `credentials.set` and before an interrogation, and a hand-declared route can be created with no key at all.
 

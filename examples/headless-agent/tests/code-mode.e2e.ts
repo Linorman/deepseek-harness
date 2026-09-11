@@ -25,6 +25,7 @@ import LocalJobRegistry from '@clocky/clocky-jobs-local'
 import * as ToolTasks from '@clocky/clocky-tool-jobs'
 import CordisHostRunner from '@clocky/clocky-cordis-host-runner'
 import * as ToolCordis from '@clocky/clocky-tool-cordis'
+import { hasRealModel, realModel, realModelProviders } from './harness.ts'
 
 /**
  * With-key Code Mode proof: a real model receives only `run_code`, composes two
@@ -57,7 +58,7 @@ async function codeModeHarness(cwd: string): Promise<Context> {
   await harness.plugin(ToolRuntime, { mode: 'code' })
   await harness.plugin(AgentRegistry)
   await harness.plugin(AgentLoop, { agents: [] })
-  await harness.plugin(LlmPiAi, { providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY' } } })
+  await harness.plugin(LlmPiAi, { providers: realModelProviders() })
   await harness.plugin(LocalSubprocessRuntime)
   await harness.plugin(BashEnvPlugin)
   await harness.plugin(LocalBashExecutor, { cwd, timeoutMs: 30_000 })
@@ -78,7 +79,7 @@ async function workspaceCodeModeHarness(): Promise<Context> {
   await harness.plugin(WorkspaceContext, { maxBytes: 65536 })
   await harness.plugin(AgentLoop, { agents: [] })
   await harness.plugin(LlmPiAi, {
-    providers: { deepseek: { apiKeyEnv: 'DEEPSEEK_API_KEY', models: [{ id: 'deepseek-v4-flash' }] } },
+    providers: realModelProviders(),
   })
   await harness.plugin(WorkerThreadCodeRuntime, {})
   return harness
@@ -351,11 +352,11 @@ function waitForIdle(harness: Context, agent: Agent): Promise<void> {
   })
 }
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY)('Code Mode: real model writes a program over real tools', () => {
+describe.skipIf(!hasRealModel)('Code Mode: real model writes a program over real tools', () => {
   it('collapses the wire tool list to [run_code], bridges sub-calls, and returns curated output', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'clocky-code-mode-e2e-'))
     ctx = await codeModeHarness(workdir)
-    const agent = ctx.agentLoop.create(SessionId('e2e-code-mode'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-code-mode'), realModel)
 
     agent.followup(createUserMessage({
       content: [{
@@ -407,7 +408,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY)('Code Mode: real model writes a p
     const handle = await ctx.agents.create({
       sessionId: SessionId('e2e-code-mode-workspace-session'),
       meta: { cwd: workdir },
-      agentOptions: { provider: 'deepseek', model: 'deepseek-v4-flash' },
+      agentOptions: realModel,
     })
 
     handle.agent.followup(createUserMessage({

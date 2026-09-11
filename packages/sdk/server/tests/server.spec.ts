@@ -1,6 +1,3 @@
-import { createUserMessage } from '@clocky/clocky-llm'
-import { createServer } from 'node:http'
-import type { IncomingMessage, Server, ServerResponse } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -13,8 +10,18 @@ import * as agentCore from '@clocky/clocky-agent-spine-demo'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
 import SubagentRuntime, { type SubagentResult, type SubagentRunEndInfo } from '@clocky/clocky-subagent'
+import { channelSummaryHumanProofInput, emptyTeamLatencyHistogram, TeamError } from '@clocky/clocky-team'
+import { TeamArtifactError } from '@clocky/clocky-team-artifact'
+import { ProductPrincipalError, productPrincipalId } from '@clocky/clocky-product-principal'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
+import type { TeamHumanActorProof, TeamHumanActorProofInput } from '@clocky/clocky-team'
 import type { JsonRpcTransportPeer } from '@clocky/clocky-sdk-protocol'
 import { HarnessSdkJsonRpcServer } from '../src/index.ts'
+import {
+  SDK_TEST_CREDENTIAL,
+  installTestProductPrincipals,
+  testProductPrincipals,
+} from './product-auth.ts'
 
 class FakeTransport implements JsonRpcTransportPeer {
   notifications: { method: string; params?: Record<string, unknown> }[] = []
@@ -28,41 +35,15 @@ class FakeTransport implements JsonRpcTransportPeer {
   }
 }
 
-const servers: Server[] = []
-
 afterEach(async () => {
-  await Promise.all(servers.splice(0).map(server => new Promise(resolve => server.close(resolve))))
   vi.unstubAllEnvs()
 })
-
-async function mockCompletionServer(): Promise<{ url: string; requests: unknown[]; headers: IncomingMessage['headers'][] }> {
-  const requests: unknown[] = []
-  const headers: IncomingMessage['headers'][] = []
-  const server = createServer((request: IncomingMessage, response: ServerResponse) => {
-    let body = ''
-    request.on('data', (chunk: Buffer) => { body += chunk.toString('utf8') })
-    request.on('end', () => {
-      requests.push(JSON.parse(body))
-      headers.push(request.headers)
-      response.writeHead(200, { 'content-type': 'text/event-stream' })
-      response.write('data: {"choices":[{"delta":{"role":"assistant","content":null,"reasoning_content":""}}]}\n\n')
-      response.write('data: {"choices":[{"delta":{"content":"done"}}]}\n\n')
-      response.write('data: {"choices":[{"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":1}}\n\n')
-      response.write('data: [DONE]\n\n')
-      response.end()
-    })
-  })
-  servers.push(server)
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
-  const address = server.address()
-  if (address === null || typeof address === 'string') throw new Error('no port')
-  return { url: `http://127.0.0.1:${address.port}`, requests, headers }
-}
 
 const TEST_MODEL_IDS = ['dsagent-model', 'plain-model', 'preinstalled-model', 'model', 'new-model', 'test-model']
 
 async function makeHarness(storageDir: string, endpoint = 'http://127.0.0.1:9') {
   const ctx = new Context()
+  await installTestProductPrincipals(ctx)
   await ctx.plugin(agentCore, { workspaceContext: false })
   await ctx.plugin(LlmPiAi, {
     providers: {
@@ -121,154 +102,1469 @@ async function settleSubagent(
 }
 
 describe('HarnessSdkJsonRpcServer', () => {
-  it('refuses a prompt before the SDK handshake selects a model', async () => {
+  it('refuses Team creation before the SDK handshake selects a model', async () => {
+    const teamRuns = { create: vi.fn() }
     const ctx = {
       on: vi.fn(() => () => undefined),
       agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
       get: () => undefined,
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
 
-    await expect(server.prompt({
-      sessionId: 'before-initialize',
+    await expect(server.createTeam({
+      objective: 'Before initialization.',
       contentBlocks: [{ type: 'text', text: 'hello' }],
     })).rejects.toThrow('SDK server is not initialized with a provider and model')
+    expect(teamRuns.create).not.toHaveBeenCalled()
     await server.shutdown()
   })
 
-  it('creates a harness agent and calls the configured OpenAI-compatible endpoint', { timeout: 15_000 }, async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-'))
-    const llmServer = await mockCompletionServer()
-    vi.stubEnv('TEST_API_KEY', 'test-key')
-    vi.stubEnv('TEST_BASE_URL', llmServer.url)
-    const ctx = await makeHarness(storageDir, llmServer.url)
-    try {
-      const transport = new FakeTransport()
-      const server = new HarnessSdkJsonRpcServer(ctx, transport)
+  it('retains an authenticated connection context for every post-initialization dispatch and fails closed after revocation', async () => {
+    const controller = new AbortController()
+    let invalid = false
+    const withCall = vi.fn(async <T>(operation: (call: unknown) => Promise<T>): Promise<T> => {
+      if (invalid) throw new ProductPrincipalError('credential reflected only by the provider', 'PRODUCT_AUTH_INVALID')
+      return await operation(Object.freeze({
+        principal: Object.freeze({
+          id: productPrincipalId('sdk-dispatch-principal'),
+          issuer: 'local',
+          subject: 'sdk-dispatch-user',
+          assurance: 'test',
+          credentialGeneration: 1,
+        }),
+        credentialGeneration: 1,
+        signal: controller.signal,
+      }))
+    })
+    const release = vi.fn(async () => { invalid = true; controller.abort() })
+    const authenticate = vi.fn(async ({ credential }: { readonly credential: string }) => {
+      if (credential !== SDK_TEST_CREDENTIAL) throw new Error(credential)
+      return { withCall, revoke: release }
+    })
+    const teams = { getMetrics: vi.fn(() => ({ activeAdmissions: 0 })) }
+    const inbox = { read: vi.fn(async () => ({ items: [], displayCursor: -1, cursor: -1 })),
+      watch: vi.fn(async () => ({ items: [], displayCursor: -1, cursor: -1 })),
+      acknowledge: vi.fn(async () => ({ displayCursor: 2 })) }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? { authenticate }
+        : name === 'teamHumanDelivery' ? inbox : name === 'teams'
+          ? teams
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
 
-      const init = await server.handleRequest('initialize', {
-        cwd: storageDir,
-        provider: 'test-provider',
-        model: 'dsagent-model',
-        maxTokens: 321,
-      }) as { serverInfo: { name: string } }
-      expect(init.serverInfo.name).toBe('clocky-sdk-runtime')
+    await expect(server.handleRequest('team/metrics', {})).rejects.toMatchObject({
+      data: { code: 'PRODUCT_AUTH_REQUIRED' },
+    })
+    await expect(server.handleRequest('initialize', {
+      credential: SDK_TEST_CREDENTIAL,
+      cwd: process.cwd(),
+      provider: 'test-provider',
+      model: 'test-model',
+    })).resolves.toMatchObject({ serverInfo: { name: 'clocky-sdk-runtime' } })
+    await expect(server.handleRequest('team/metrics', {})).resolves.toEqual({ activeAdmissions: 0 })
+    expect(authenticate).toHaveBeenCalledWith({ provider: 'local', credential: SDK_TEST_CREDENTIAL })
+    expect(withCall).toHaveBeenCalledOnce()
+    await expect(server.handleRequest('team/inbox-read', {})).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
+    await expect(server.handleRequest('team/inbox-watch', { afterCursor: -1, limit: 1 })).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
+    await expect(server.handleRequest('team/inbox-acknowledge', { throughCursor: 2 })).resolves.toEqual({ displayCursor: 2 })
+    expect(inbox.read).toHaveBeenCalledWith(expect.objectContaining({ principal: expect.objectContaining({ id: 'sdk-dispatch-principal' }) }), {})
+    await expect(server.handleRequest('team/inbox-read', { principalId: 'forged' })).rejects.toMatchObject({ code: -32602 })
+    expect(inbox.read).toHaveBeenCalledOnce()
 
-      const receipt = await server.handleRequest('session/prompt', {
-        sessionId: 'main',
-        contentBlocks: [{ type: 'text', text: 'fix it' }],
-      })
-      expect((receipt as { messageId?: unknown }).messageId).toBeTypeOf('string')
+    invalid = true
+    await expect(server.handleRequest('team/metrics', {})).rejects.toMatchObject({
+      data: { code: 'PRODUCT_AUTH_INVALID' },
+      message: 'Product authentication is invalid',
+    })
+    await expect(server.handleRequest('team/metrics', {})).rejects.toMatchObject({
+      data: { code: 'PRODUCT_AUTH_REQUIRED' },
+    })
+    await server.shutdown()
+  })
 
-      await vi.waitFor(() => { expect(llmServer.requests).toHaveLength(1) })
-      const body = llmServer.requests[0] as { model: string; messages: { role: string }[]; max_completion_tokens?: number }
-      expect(body.model).toBe('dsagent-model')
-      expect(body.max_completion_tokens).toBe(321)
-      expect(body.messages[0]?.role).toBe('system')
-      expect(body.messages.at(-1)?.role).toBe('user')
-      expect(llmServer.headers[0]?.authorization).toBe('Bearer test-key')
-      expect(transport.notifications.some(n => n.method === 'session.event')).toBe(true)
-      await vi.waitFor(() => {
-        expect(transport.notifications.findLast(n => n.method === 'session.status')).toEqual({
-          method: 'session.status',
-          params: { sessionId: 'main', status: 'idle' },
+  it('keeps current TeamRun wait and cancel operations bound to their creating principal across reinitialization', async () => {
+    const ownerCredential = 'sdk-owner-credential'
+    const otherCredential = 'sdk-other-credential'
+    const authenticate = vi.fn(async ({ credential }: { readonly credential?: string }) => {
+      const principal = credential === ownerCredential
+        ? Object.freeze({
+          id: productPrincipalId('sdk-owner-principal'), issuer: 'test', subject: 'owner', assurance: 'test', credentialGeneration: 1,
         })
-      })
-
-      await server.handleRequest('session/prompt', {
-        sessionId: 'main',
-        contentBlocks: [{ type: 'text', text: 'again' }],
-      })
-      await vi.waitFor(() => { expect(llmServer.requests).toHaveLength(2) })
-
-      const orphanHandle = await ctx.agents.create({
-        sessionId: SessionId('orphan-session'),
-        meta: { cwd: storageDir },
-        agentOptions: { provider: 'test-provider', model: 'dsagent-model' },
-      })
-      orphanHandle.agent.followup(createUserMessage({ content: [{ type: 'text', text: 'outside the sdk session map' }], source: { kind: 'user' } }))
-      await orphanHandle.agent.whenIdle()
-      await orphanHandle.dispose()
-      expect(llmServer.requests).toHaveLength(3)
-
-      await server.handleRequest('shutdown', undefined)
-    } finally {
-      await ctx.fiber.dispose()
-      await rm(storageDir, { recursive: true, force: true })
+        : credential === otherCredential
+          ? Object.freeze({
+            id: productPrincipalId('sdk-other-principal'), issuer: 'test', subject: 'other', assurance: 'test', credentialGeneration: 1,
+          })
+          : undefined
+      if (principal === undefined) throw new ProductPrincipalError('Product authentication is invalid', 'PRODUCT_AUTH_INVALID')
+      const controller = new AbortController()
+      let revoked = false
+      return {
+        async withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>): Promise<T> {
+          if (revoked || controller.signal.aborted) {
+            throw new ProductPrincipalError('Product authentication is invalid', 'PRODUCT_AUTH_INVALID')
+          }
+          return await operation(Object.freeze({
+            principal,
+            credentialGeneration: principal.credentialGeneration,
+            signal: controller.signal,
+          }))
+        },
+        async revoke(): Promise<void> {
+          revoked = true
+          controller.abort()
+        },
+      }
+    })
+    let serial = 0
+    const teamRuns = {
+      create: vi.fn(async () => ({
+        teamId: `owner-team-${++serial}`,
+        coordinatorLease: { localAgent: { session: { id: SessionId(`owner-coordinator-${serial}`) } } },
+      })),
+      postHumanInput: vi.fn(async ({ teamId }: { readonly teamId: string }) => ({ id: `input-${teamId}` })),
+      waitForFinal: vi.fn(async ({ teamId }: { readonly teamId: string }) => ({
+        teamId, channelId: `channel-${teamId}`, envelopeId: `final-${teamId}`, text: `Finished ${teamId}.`,
+      })),
+      cancel: vi.fn(async () => undefined),
     }
-  })
-
-  it('queues overlapping prompts for one session without blocking other sessions', async () => {
-    const mainFollowup = vi.fn<Agent['followup']>()
-    const mainAgent = ({
-      id: SessionId('main'),
-      followup: mainFollowup,
-    } satisfies Pick<Agent, 'id' | 'followup'>) as unknown as Agent
-    const otherFollowup = vi.fn<Agent['followup']>()
-    const otherAgent = ({
-      id: SessionId('other'),
-      followup: otherFollowup,
-    } satisfies Pick<Agent, 'id' | 'followup'>) as unknown as Agent
-    const mainHandle = { agent: mainAgent, dispose: vi.fn(() => Promise.resolve()) }
-    const otherHandle = { agent: otherAgent, dispose: vi.fn(() => Promise.resolve()) }
-    const create = vi.fn(async (options: { sessionId: SessionId }) =>
-      String(options.sessionId) === 'main' ? mainHandle : otherHandle)
-    const liveAgents = new Map<string, Agent>([['main', mainAgent], ['other', otherAgent]])
+    const teams = {
+      getTeam: vi.fn(async ({ teamId }: { readonly teamId: string }) => ({
+        team: { id: teamId, cursor: 1, phase: 'cancelled' as const },
+      })),
+    }
     const ctx = {
       on: vi.fn(() => () => undefined),
-      agents: { create, get: (id: SessionId) => liveAgents.get(String(id)) },
-      get: () => ({ listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? { authenticate }
+        : name === 'teams'
+          ? teams
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
-    server.initialize({ cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
-    const prompt = (sessionId: string, text: string) => server.prompt({
-      sessionId,
-      contentBlocks: [{ type: 'text', text }],
+    const initialize = async (credential: string): Promise<void> => {
+      await server.initialize({ credential, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    }
+
+    await initialize(ownerCredential)
+    const waited = await server.createTeam({ objective: 'Wait under owner.', contentBlocks: [{ type: 'text', text: 'Wait.' }] })
+    const cancelled = await server.createTeam({ objective: 'Cancel under owner.', contentBlocks: [{ type: 'text', text: 'Cancel.' }] })
+    const records = (server as unknown as {
+      productTeams: Map<string, { readonly owner: ReturnType<typeof productPrincipalId> }>
+    }).productTeams
+    expect(records.get(waited.teamId)?.owner).toBe(productPrincipalId('sdk-owner-principal'))
+    expect(JSON.stringify([...records.values()])).not.toContain(ownerCredential)
+
+    await initialize(otherCredential)
+    const deniedWait = await server.handleRequest('team/wait-final', { teamId: waited.teamId }).then(
+      () => { throw new Error('other principal unexpectedly waited for owner Team') },
+      (error: unknown) => error,
+    )
+    expect(deniedWait).toMatchObject({
+      data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
     })
+    const deniedCancel = await server.cancelTeam({ teamId: cancelled.teamId }).then(
+      () => { throw new Error('other principal unexpectedly cancelled owner Team') },
+      (error: unknown) => error,
+    )
+    expect(deniedCancel).toMatchObject({
+      data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+    })
+    expect(String(deniedWait)).not.toContain(ownerCredential)
+    expect(String(deniedWait)).not.toContain(otherCredential)
+    expect(String(deniedCancel)).not.toContain(ownerCredential)
+    expect(String(deniedCancel)).not.toContain(otherCredential)
+    expect(teamRuns.waitForFinal).not.toHaveBeenCalled()
+    expect(teamRuns.cancel).not.toHaveBeenCalled()
 
-    expect((await prompt('main', 'first')).messageId).toBeTypeOf('string')
-    expect((await prompt('main', 'overlap')).messageId).toBeTypeOf('string')
-    expect((await prompt('other', 'independent')).messageId).toBeTypeOf('string')
-
-    expect(mainFollowup).toHaveBeenCalledTimes(2)
-    expect(otherFollowup).toHaveBeenCalledOnce()
+    await initialize(ownerCredential)
+    await expect(server.waitForTeamFinal({ teamId: waited.teamId })).resolves.toMatchObject({ teamId: waited.teamId })
+    await expect(server.handleRequest('team/cancel', { teamId: cancelled.teamId })).resolves.toEqual({ phase: 'cancelled' })
+    expect(teamRuns.waitForFinal).toHaveBeenCalledWith({
+      teamId: waited.teamId,
+      humanOwner: { kind: 'product-principal', principalId: productPrincipalId('sdk-owner-principal') },
+    })
+    expect(teamRuns.cancel).toHaveBeenCalledWith(cancelled.teamId, {
+      kind: 'product-principal', principalId: productPrincipalId('sdk-owner-principal'),
+    })
     await server.shutdown()
-    expect(mainHandle.dispose).toHaveBeenCalledOnce()
-    expect(otherHandle.dispose).toHaveBeenCalledOnce()
   })
 
-  it('rejects a prompt for a session whose agent was disposed outside the server', async () => {
-    const followup = vi.fn<Agent['followup']>()
-    const agent = ({
-      id: SessionId('zombie'),
-      followup,
-      whenIdle: vi.fn(() => Promise.resolve()),
-    } satisfies Pick<Agent, 'id' | 'followup' | 'whenIdle'>) as unknown as Agent
-    const handle = { agent, dispose: vi.fn(() => Promise.resolve()) }
-    // The registry drops the agent after creation, modelling an agent-loop-only
-    // reload that leaves the server's SessionRecord pointing at a detached agent.
-    let live = true
-    const ctx = {
-      on: vi.fn(() => () => undefined),
-      agents: {
-        create: vi.fn(async () => handle),
-        get: (id: SessionId) => (live && String(id) === 'zombie' ? agent : undefined),
+  it('keeps an actor-free SDK resume authorization live through TeamRun provider preflight', async () => {
+    let proofLive = false
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<undefined>()
+    const authorization = {
+      isLive: vi.fn(() => proofLive),
+      assert: vi.fn(async () => {
+        if (!proofLive) throw new TeamError('Human resume authorization is revoked', 'TEAM_ACTOR_PROOF_INVALID')
+        return { team: { id: 'resumed-team', cursor: 4, phase: 'active' } }
+      }),
+      close: vi.fn(),
+    }
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        expect(input).toEqual({
+          teamId: 'resumed-team',
+          operation: 'activate',
+          fence: { kind: 'cursor', cursor: 4 },
+          payload: { teamId: 'resumed-team', expectedCursor: 4 },
+        })
+        proofLive = true
+        try {
+          return await operation(Object.freeze({}) as TeamHumanActorProof)
+        } finally {
+          proofLive = false
+        }
       },
-      get: () => ({ listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }),
+    }
+    const teams = {
+      authorizeHumanResume: vi.fn(async (request: Record<string, unknown>) => {
+        expect(request).toMatchObject({ teamId: 'resumed-team', expectedCursor: 4 })
+        expect(Object.hasOwn(request, 'actor')).toBe(true)
+        return authorization
+      }),
+    }
+    const teamRuns = {
+      resume: vi.fn(async (request: {
+        readonly teamId: string
+        readonly authorization?: { readonly isLive: () => boolean; readonly assert: () => Promise<unknown> }
+      }) => {
+        expect(request.teamId).toBe('resumed-team')
+        const retained = request.authorization
+        if (retained === undefined) throw new Error('SDK resume did not retain human authorization')
+        expect(retained.isLive()).toBe(true)
+        await retained.assert()
+        entered.resolve(undefined)
+        await release.promise
+        return {
+          teamId: 'resumed-team',
+          coordinatorLease: { localAgent: { session: { id: SessionId('resumed-coordinator') } } },
+        }
+      }),
+      waitForFinal: vi.fn(async ({ teamId }: { readonly teamId: string }) => ({
+        teamId,
+        channelId: 'resumed-channel',
+        envelopeId: 'resumed-final',
+        text: 'Resumed final.',
+      })),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
-    server.initialize({ cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
-    const prompt = (text: string) => server.prompt({
-      sessionId: 'zombie',
-      contentBlocks: [{ type: 'text', text }],
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    const pending = server.resumeTeam({ teamId: 'resumed-team', expectedCursor: 4 })
+    await entered.promise
+    expect(proofLive).toBe(true)
+    expect(authorization.isLive()).toBe(true)
+    release.resolve(undefined)
+    await expect(pending).resolves.toEqual({ teamId: 'resumed-team', coordinatorSessionId: 'resumed-coordinator' })
+    expect(authorization.close).toHaveBeenCalledOnce()
+    await expect(server.waitForTeamFinal({ teamId: 'resumed-team' }))
+      .resolves.toMatchObject({ teamId: 'resumed-team' })
+    expect(teamRuns.waitForFinal).toHaveBeenCalledWith({
+      teamId: 'resumed-team',
+      humanOwner: { kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal') },
+    })
+    await expect(server.handleRequest('team/resume', {
+      teamId: 'resumed-team', expectedCursor: 4, actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('rejects foreign, stale, revoked, and binderless SDK resume before coordinator recovery', async () => {
+    const foreign = new TeamError('Authenticated principal owns no active human Team participant', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
+    const stale = new TeamError('Team cursor is stale', 'TEAM_CURSOR_CONFLICT')
+    const revoked = new TeamError('Human resume authorization is revoked', 'TEAM_ACTOR_PROOF_INVALID')
+    let mode: 'foreign' | 'stale' | 'revoked' = 'foreign'
+    const authorization = {
+      isLive: () => false,
+      assert: async () => { throw revoked },
+      close: vi.fn(),
+    }
+    const humanActors = {
+      async withProof<T>(
+        _call: AuthenticatedProductCall,
+        _input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      authorizeHumanResume: vi.fn(async () => {
+        if (mode === 'foreign') throw foreign
+        if (mode === 'stale') throw stale
+        return authorization
+      }),
+    }
+    const teamRuns = {
+      resume: vi.fn(async (request: { readonly authorization?: { readonly assert: () => Promise<unknown> } }) => {
+        const retained = request.authorization
+        if (retained === undefined) throw new Error('SDK resume did not retain authorization')
+        await retained.assert()
+        throw new Error('revoked authorization unexpectedly reached coordinator provider')
+      }),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    for (const expected of [foreign, stale]) {
+      const failure = await server.handleRequest('team/resume', { teamId: 'resumed-team', expectedCursor: 4 }).then(
+        () => { throw new Error('resume unexpectedly succeeded') },
+        (error: unknown) => error,
+      )
+      expect(failure).toBe(expected)
+      expect(String(failure)).not.toContain(SDK_TEST_CREDENTIAL)
+      mode = 'stale'
+    }
+    mode = 'revoked'
+    await expect(server.handleRequest('team/resume', { teamId: 'resumed-team', expectedCursor: 4 })).rejects.toBe(revoked)
+    expect(teamRuns.resume).toHaveBeenCalledOnce()
+    expect(authorization.close).toHaveBeenCalledOnce()
+    await server.shutdown()
+  })
+
+  it('rejects SDK resume before Team lookup when the human binder is absent', async () => {
+    const authorizeHumanResume = vi.fn()
+    const get = vi.fn((name: string) => {
+      if (name === 'productPrincipals') return testProductPrincipals()
+      if (name === 'teamHumanActors') return undefined
+      if (name === 'teams') return { authorizeHumanResume }
+      return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+    })
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    get.mockClear()
+    await expect(server.handleRequest('team/resume', { teamId: 'resumed-team', expectedCursor: 4 })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+    })
+    expect(get).not.toHaveBeenCalledWith('teams')
+    expect(authorizeHumanResume).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('binds one actor-free SDK channel post to the current authenticated human proof', async () => {
+    const postRequests: Record<string, unknown>[] = []
+    const postChannelEnvelope = vi.fn(async (request: Record<string, unknown>) => {
+      postRequests.push(request)
+      return {
+        id: 'envelope-1',
+        teamId: 'team-1',
+        channelId: 'channel-1',
+        senderId: 'human-1',
+        audience: ['coordinator-1'],
+        kind: 'message',
+        payload: { text: 'SDK-authenticated post.' },
+        delivery: 'turn',
+        priority: 'normal',
+        sequence: 1,
+        createdAt: 1,
+        ...request,
+      }
+    })
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        expect(input).toMatchObject({
+          teamId: 'team-1',
+          operation: 'send',
+          fence: { kind: 'cursor', cursor: 3 },
+          payload: {
+            expectedCursor: 3,
+            draft: {
+              channelId: 'channel-1',
+              audience: ['coordinator-1'],
+              kind: 'message',
+              payload: { text: 'SDK-authenticated post.' },
+            },
+          },
+        })
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      getChannel: vi.fn(async () => ({ manifest: { teamId: 'team-1' } })),
+      postChannelEnvelope,
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/channel-post', {
+      channelId: 'channel-1',
+      expectedCursor: 3,
+      audience: ['coordinator-1'],
+      kind: 'message',
+      payload: { text: 'SDK-authenticated post.' },
+      delivery: 'turn',
+    })).resolves.toMatchObject({ value: { senderId: 'human-1' } })
+    const postRequest = postRequests[0]
+    if (postRequest === undefined) throw new Error('SDK channel post did not reach the Team provider')
+    expect(postRequest['expectedCursor']).toBe(3)
+    const draft = postRequest['draft']
+    if (typeof draft !== 'object' || draft === null || Array.isArray(draft)) {
+      throw new Error('SDK channel post has no object draft')
+    }
+    expect((draft as Record<string, unknown>)['channelId']).toBe('channel-1')
+    expect(postRequest['actor']).toBeDefined()
+
+    await expect(server.handleRequest('team/channel-post', {
+      channelId: 'channel-1',
+      expectedCursor: 3,
+      audience: ['coordinator-1'],
+      kind: 'message',
+      payload: { text: 'SDK-authenticated post.' },
+      delivery: 'turn',
+      actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('binds actor-free SDK member and channel lifecycle writes to the current authenticated human proof', async () => {
+    const inputs: TeamHumanActorProofInput[] = []
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        inputs.push(input)
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      inviteParticipant: vi.fn(async (request: Record<string, unknown>) => ({ id: 'invited', ...request })),
+      transitionParticipantPhase: vi.fn(async (request: Record<string, unknown>) => ({ id: 'member', ...request })),
+      requestParticipantInterrupt: vi.fn(async (request: Record<string, unknown>) => ({ id: 'interrupt', ...request })),
+      openChannel: vi.fn(async (request: Record<string, unknown>) => ({ manifest: { id: 'opened', ...request } })),
+      getChannel: vi.fn(async () => ({ manifest: { teamId: 'team-1' } })),
+      closeChannel: vi.fn(async (request: Record<string, unknown>) => ({ phase: 'closed', ...request })),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/member-invite', {
+      teamId: 'team-1', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [],
+    })).resolves.toMatchObject({ value: { id: 'invited' } })
+    await expect(server.handleRequest('team/member-activate', {
+      teamId: 'team-1', participantId: 'member-1', expectedCursor: 2,
+    })).resolves.toMatchObject({ value: { phase: 'active' } })
+    await expect(server.handleRequest('team/member-remove', {
+      teamId: 'team-1', participantId: 'member-1', expectedCursor: 3,
+    })).resolves.toMatchObject({ value: { phase: 'left' } })
+    await expect(server.handleRequest('team/member-interrupt', {
+      teamId: 'team-1', participantId: 'member-1', expectedCursor: 4,
+    })).resolves.toMatchObject({ value: { id: 'interrupt' } })
+    await expect(server.handleRequest('team/channel-open', {
+      teamId: 'team-1', expectedCursor: 5, adapter: { type: 'direct', version: 1 }, participants: [], limits: {},
+    })).resolves.toMatchObject({ value: { manifest: { authorityKind: 'human' } } })
+    await expect(server.handleRequest('team/channel-close', {
+      channelId: 'channel-1', expectedCursor: 6, reason: 'done',
+    })).resolves.toMatchObject({ value: { phase: 'closed' } })
+
+    expect(inputs.map(input => [input.operation, input.teamId, input.fence])).toEqual([
+      ['invite', 'team-1', { kind: 'cursor', cursor: 1 }],
+      ['activate', 'team-1', { kind: 'cursor', cursor: 2 }],
+      ['close', 'team-1', { kind: 'cursor', cursor: 3 }],
+      ['interrupt', 'team-1', { kind: 'cursor', cursor: 4 }],
+      ['channel-open', 'team-1', { kind: 'cursor', cursor: 5 }],
+      ['close', 'team-1', { kind: 'cursor', cursor: 6 }],
+    ])
+    expect(inputs[0]?.payload).toMatchObject({ displayName: 'Worker', role: 'worker' })
+    expect(inputs[4]?.payload).toMatchObject({ adapter: { type: 'direct', version: 1 }, participants: [] })
+    expect(inputs[5]?.payload).toMatchObject({ channelId: 'channel-1', reason: 'done' })
+
+    await expect(server.handleRequest('team/member-invite', {
+      teamId: 'team-1', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [], actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('binds actor-free SDK task writes to the current authenticated human proof', async () => {
+    const inputs: TeamHumanActorProofInput[] = []
+    const reviewRequests: Record<string, unknown>[] = []
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        inputs.push(input)
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      createTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-create', ...request })),
+      updateTaskDetails: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-update', ...request })),
+      cancelTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-cancel', ...request })),
+      deleteTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-delete', ...request })),
+      resolveTaskReview: vi.fn(async (request: Record<string, unknown>) => {
+        reviewRequests.push(request)
+        return { id: 'task-review', ...request }
+      }),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/task-create', {
+      teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'sdk-task-create-1', subject: 'Task', description: 'Do the task.',
+      blockedBy: [], requiredCapabilities: ['typescript'], priority: 2, readScopes: ['source'], writeScopes: ['source'],
+      workspaceMode: 'shared', budget: { turns: 2 }, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+    })).resolves.toMatchObject({ value: { id: 'task-create' } })
+    await expect(server.handleRequest('team/task-update', {
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised', blockedBy: ['task-0'],
+    })).resolves.toMatchObject({ value: { id: 'task-update' } })
+    await expect(server.handleRequest('team/task-cancel', {
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 3, reason: 'Only this task.',
+    })).resolves.toMatchObject({ value: { id: 'task-cancel' } })
+    await expect(server.handleRequest('team/task-delete', {
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 4,
+    })).resolves.toMatchObject({ value: { id: 'task-delete' } })
+    await expect(server.handleRequest('team/task-review', {
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 5, decision: 'accepted', reason: 'Reviewed.',
+    })).resolves.toMatchObject({ value: { id: 'task-review' } })
+
+    expect(inputs.map(input => [input.operation, input.teamId, input.fence])).toEqual([
+      ['task-mutate', 'team-1', { kind: 'cursor', cursor: 1 }],
+      ['task-mutate', 'team-1', { kind: 'revision', revision: 2 }],
+      ['task-mutate', 'team-1', { kind: 'revision', revision: 3 }],
+      ['task-mutate', 'team-1', { kind: 'revision', revision: 4 }],
+      ['task-mutate', 'team-1', { kind: 'revision', revision: 5 }],
+    ])
+    expect(inputs[0]?.payload).toMatchObject({
+      teamId: 'team-1', expectedCursor: 1, createCommand: { idempotencyKey: 'sdk-task-create-1' }, subject: 'Task',
+      requiredCapabilities: ['typescript'], budget: { turns: 2 },
+    })
+    expect(inputs[1]?.payload).toMatchObject({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised' })
+    expect(inputs[2]?.payload).toEqual({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 3, reason: 'Only this task.' })
+    expect(inputs[4]?.payload).toEqual({
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 5, nextPhase: 'completed', reason: 'Reviewed.',
+    })
+    const reviewRequest = reviewRequests[0]
+    if (reviewRequest === undefined) throw new Error('SDK task review did not reach the Team provider')
+    expect(reviewRequest).not.toHaveProperty('participantId')
+
+    await expect(server.handleRequest('team/task-create', {
+      teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'sdk-task-create-2', subject: 'Task', description: 'Do the task.',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {},
+      reviewPolicy: { kind: 'none' }, maxAttempts: 1, actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await expect(server.handleRequest('team/task-review', {
+      teamId: 'team-1', taskId: 'task-1', expectedRevision: 5, participantId: 'forged-reviewer', decision: 'accepted', reason: 'Reviewed.',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('binds actor-free SDK goal mutations to the current authenticated human proof', async () => {
+    const inputs: TeamHumanActorProofInput[] = []
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        inputs.push(input)
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      updateTeamGoal: vi.fn(async (request: Record<string, unknown>) => ({
+        team: { id: 'team-1', goal: { revision: 8 }, ...request },
+      })),
+      transitionTeamGoalPhase: vi.fn(async (request: Record<string, unknown>) => ({
+        team: { id: 'team-1', goal: { revision: 9 }, ...request },
+      })),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/goal-update', {
+      teamId: 'team-1', expectedRevision: 7, objective: 'Ship the authenticated goal.', budgets: { turns: 4 },
+    })).resolves.toMatchObject({ state: { team: { id: 'team-1' } } })
+    await expect(server.handleRequest('team/goal-transition', {
+      teamId: 'team-1', expectedRevision: 8, phase: 'blocked', blocker: { code: 'external', message: 'Waiting on approval.' },
+    })).resolves.toMatchObject({ state: { team: { id: 'team-1' } } })
+
+    expect(inputs).toEqual([
+      {
+        teamId: 'team-1',
+        operation: 'goal-mutate',
+        fence: { kind: 'revision', revision: 7 },
+        payload: { teamId: 'team-1', expectedRevision: 7, objective: 'Ship the authenticated goal.', budgets: { turns: 4 } },
+      },
+      {
+        teamId: 'team-1',
+        operation: 'goal-mutate',
+        fence: { kind: 'revision', revision: 8 },
+        payload: {
+          teamId: 'team-1', expectedRevision: 8, phase: 'blocked', blocker: { code: 'external', message: 'Waiting on approval.' },
+        },
+      },
+    ])
+    await expect(server.handleRequest('team/goal-update', {
+      teamId: 'team-1', expectedRevision: 7, objective: 'Forged.', actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await expect(server.handleRequest('team/goal-transition', {
+      teamId: 'team-1', expectedRevision: 8, phase: 'paused', participantId: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('rejects SDK channel posting before Team lookup when the human binder is absent', async () => {
+    const getChannel = vi.fn()
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => {
+        if (name === 'productPrincipals') return testProductPrincipals()
+        if (name === 'teamHumanActors') return undefined
+        if (name === 'teams') return { getChannel }
+        return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+      },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    await expect(server.handleRequest('team/channel-post', {
+      channelId: 'channel-1',
+      expectedCursor: 3,
+      audience: ['coordinator-1'],
+      kind: 'message',
+      payload: { text: 'Denied before lookup.' },
+      delivery: 'turn',
+    })).rejects.toMatchObject({ data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' } })
+    expect(getChannel).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('rejects SDK member and channel lifecycle writes before Team lookup when the human binder is absent', async () => {
+    const teams = {
+      inviteParticipant: vi.fn(),
+      transitionParticipantPhase: vi.fn(),
+      requestParticipantInterrupt: vi.fn(),
+      openChannel: vi.fn(),
+      getChannel: vi.fn(),
+      closeChannel: vi.fn(),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => {
+        if (name === 'productPrincipals') return testProductPrincipals()
+        if (name === 'teamHumanActors') return undefined
+        if (name === 'teams') return teams
+        return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+      },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    const writes: readonly [string, Record<string, unknown>][] = [
+      ['team/member-invite', { teamId: 'team-1', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'worker', capabilities: [] }],
+      ['team/member-activate', { teamId: 'team-1', participantId: 'member-1', expectedCursor: 2 }],
+      ['team/member-remove', { teamId: 'team-1', participantId: 'member-1', expectedCursor: 3 }],
+      ['team/member-interrupt', { teamId: 'team-1', participantId: 'member-1', expectedCursor: 4 }],
+      ['team/channel-open', { teamId: 'team-1', expectedCursor: 5, adapter: { type: 'direct', version: 1 }, participants: [], limits: {} }],
+      ['team/channel-close', { channelId: 'channel-1', expectedCursor: 6 }],
+    ]
+    for (const [method, params] of writes) {
+      await expect(server.handleRequest(method, params)).rejects.toMatchObject({
+        data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+      })
+    }
+    expect(teams.inviteParticipant).not.toHaveBeenCalled()
+    expect(teams.transitionParticipantPhase).not.toHaveBeenCalled()
+    expect(teams.requestParticipantInterrupt).not.toHaveBeenCalled()
+    expect(teams.openChannel).not.toHaveBeenCalled()
+    expect(teams.getChannel).not.toHaveBeenCalled()
+    expect(teams.closeChannel).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('rejects SDK task writes before Team lookup when the human binder is absent', async () => {
+    const teams = {
+      createTask: vi.fn(),
+      updateTaskDetails: vi.fn(),
+      cancelTask: vi.fn(),
+      deleteTask: vi.fn(),
+      resolveTaskReview: vi.fn(),
+    }
+    const get = vi.fn((name: string) => {
+      if (name === 'productPrincipals') return testProductPrincipals()
+      if (name === 'teamHumanActors') return undefined
+      if (name === 'teams') return teams
+      return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+    })
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    get.mockClear()
+    const writes: readonly [string, Record<string, unknown>][] = [
+      ['team/task-create', {
+        teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'sdk-task-create-missing-binder', subject: 'Task', description: 'Do the task.',
+        blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      }],
+      ['team/task-update', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised' }],
+      ['team/task-cancel', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 3 }],
+      ['team/task-delete', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 4 }],
+      ['team/task-review', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 5, decision: 'accepted', reason: 'Reviewed.' }],
+    ]
+    for (const [method, params] of writes) {
+      await expect(server.handleRequest(method, params)).rejects.toMatchObject({
+        data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+      })
+    }
+    expect(get).not.toHaveBeenCalledWith('teams')
+    expect(teams.createTask).not.toHaveBeenCalled()
+    expect(teams.updateTaskDetails).not.toHaveBeenCalled()
+    expect(teams.cancelTask).not.toHaveBeenCalled()
+    expect(teams.deleteTask).not.toHaveBeenCalled()
+    expect(teams.resolveTaskReview).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('rejects SDK goal mutations before Team lookup when the human binder is absent', async () => {
+    const teams = {
+      updateTeamGoal: vi.fn(),
+      transitionTeamGoalPhase: vi.fn(),
+    }
+    const get = vi.fn((name: string) => {
+      if (name === 'productPrincipals') return testProductPrincipals()
+      if (name === 'teamHumanActors') return undefined
+      if (name === 'teams') return teams
+      return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+    })
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    get.mockClear()
+    const writes: readonly [string, Record<string, unknown>][] = [
+      ['team/goal-update', { teamId: 'team-1', expectedRevision: 7, objective: 'Denied before lookup.' }],
+      ['team/goal-transition', { teamId: 'team-1', expectedRevision: 8, phase: 'paused' }],
+    ]
+    for (const [method, params] of writes) {
+      await expect(server.handleRequest(method, params)).rejects.toMatchObject({
+        data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+      })
+    }
+    expect(get).not.toHaveBeenCalledWith('teams')
+    expect(teams.updateTeamGoal).not.toHaveBeenCalled()
+    expect(teams.transitionTeamGoalPhase).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('never reflects an initialization credential when a product provider fails', async () => {
+    const secret = 'sdk-provider-secret-must-not-leak'
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? { authenticate: async () => { throw new Error(secret) } }
+        : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+
+    const failure = await server.handleRequest('initialize', {
+      credential: secret,
+      cwd: process.cwd(),
+      provider: 'test-provider',
+      model: 'test-model',
+    }).then(
+      () => { throw new Error('initialization unexpectedly succeeded') },
+      (error: unknown) => error,
+    )
+    expect(failure).toMatchObject({ data: { code: 'PRODUCT_AUTH_INVALID' }, message: 'Product authentication is invalid' })
+    expect(String(failure)).not.toContain(secret)
+    await server.shutdown()
+  })
+
+  it('serves process-local Team metrics through the SDK control plane', async () => {
+    const metrics = {
+      activeAdmissions: 0,
+      pendingDeliveries: 0,
+      activeActivations: 0,
+      activeTasks: 0,
+      stalledTeams: 0,
+      replayLag: 0,
+      lastTaskLatencyMs: 0,
+      lastReceiptLatencyMs: 0,
+      taskLatency: emptyTeamLatencyHistogram(),
+      receiptLatency: emptyTeamLatencyHistogram(),
+      workspaceConflicts: 0,
+      teamEvents: 4,
+      channelEvents: 3,
+      policyDenials: 1,
+      adapterFailures: 0,
+      deliveryClaims: 2,
+      taskAssignments: 1,
+      taskRetries: 0,
+      teamCompactions: 0,
+      channelCompactions: 0,
+      checkpointFailures: 0,
+      auditProjectionRepairs: 5,
+      auditProjectionFailures: 0,
+      updatedAt: 42,
+    }
+    const teams = { getMetrics: vi.fn(() => metrics) }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'teams'
+        ? teams
+        : name === 'productPrincipals'
+          ? testProductPrincipals()
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/metrics', {})).resolves.toEqual(metrics)
+    expect(teams.getMetrics).toHaveBeenCalledOnce()
+    await server.shutdown()
+  })
+
+  it('forwards every bounded Team page cursor and limit to the provider', async () => {
+    const teams = {
+      listTeamsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 4, request })),
+      listParticipantsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 5, request })),
+      readChannelPage: vi.fn(async (request: unknown) => ({ channel: {}, records: [], nextCursor: 6, request })),
+      listTasksPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 7, request })),
+      listArtifactsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 8, request })),
+      listWorkflowPlansPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 10, request })),
+      readAudit: vi.fn(async (request: unknown) => ({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9, request })),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'teams'
+        ? teams
+        : name === 'productPrincipals'
+          ? testProductPrincipals()
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/list', { afterCursor: 2, limit: 3 })).resolves.toMatchObject({ items: [], nextCursor: 4 })
+    await expect(server.handleRequest('team/member-list', { teamId: 'team', afterCursor: 3, limit: 4 })).resolves.toMatchObject({ items: [], nextCursor: 5 })
+    await expect(server.handleRequest('team/channel-read', { channelId: 'channel', afterCursor: 4, limit: 5 })).resolves.toMatchObject({ value: { records: [], nextCursor: 6 } })
+    await expect(server.handleRequest('team/task-list', { teamId: 'team', afterCursor: 5, limit: 6 })).resolves.toMatchObject({ items: [], nextCursor: 7 })
+    await expect(server.handleRequest('team/workflow-plan-list', { teamId: 'team', afterCursor: 6, limit: 7 })).resolves.toMatchObject({ items: [] })
+    await expect(server.handleRequest('team/artifact-list', { teamId: 'team', afterCursor: 7, limit: 8 })).resolves.toMatchObject({ items: [] })
+    await expect(server.handleRequest('team/audit-read', { teamId: 'team', afterCursor: 6, limit: 7 }))
+      .resolves.toMatchObject({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9 })
+    expect(teams.listTeamsPage).toHaveBeenCalledWith({ afterCursor: 2, limit: 3 })
+    expect(teams.listParticipantsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 3, limit: 4 })
+    expect(teams.readChannelPage).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 4, limit: 5 })
+    expect(teams.listTasksPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 5, limit: 6 })
+    expect(teams.listArtifactsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 7, limit: 8 })
+    expect(teams.listWorkflowPlansPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 6, limit: 7 })
+    expect(teams.readAudit).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 6, limit: 7 })
+    await server.shutdown()
+  })
+
+  it('reads only visible durable Team artifacts and maps provider failures', async () => {
+    const visible = { id: 'visible', provider: 'local', kind: 'report' as const, uri: 'artifact://visible', visibility: 'team' as const }
+    const artifactsById = new Map([
+      ['visible', visible],
+      ['proposal', { ...visible, id: 'proposal' }],
+      ['retained-loss-artifact', { ...visible, id: 'retained-loss-artifact' }],
+      ['child-report', { ...visible, id: 'child-report' }],
+    ])
+    const teams = {
+      getArtifact: vi.fn(async ({ artifactId }: { readonly artifactId: string }) => artifactsById.get(artifactId)),
+    }
+    const artifacts = {
+      getProvider: vi.fn(() => ({ name: 'local' })),
+      read: vi.fn(async () => new Uint8Array([116, 101, 115, 116])),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'teams'
+        ? teams
+        : name === 'teamArtifacts'
+          ? artifacts
+          : name === 'productPrincipals'
+            ? testProductPrincipals()
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).resolves.toEqual({
+      artifact: visible,
+      bytes: 4,
+      data: 'dGVzdA==',
+    })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'proposal' }))
+      .resolves.toMatchObject({ artifact: { id: 'proposal' }, bytes: 4 })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'retained-loss-artifact' }))
+      .resolves.toMatchObject({ artifact: { id: 'retained-loss-artifact' }, bytes: 4 })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'private-loss-artifact' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
+    })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'private' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
+    })
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'missing' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
     })
 
-    expect((await prompt('while live')).messageId).toBeTypeOf('string')
-    live = false
-    await expect(prompt('after detach')).rejects.toThrow('session agent was disposed outside the server: zombie')
-    // The detached agent was never driven by the rejected prompt.
-    expect(followup).toHaveBeenCalledOnce()
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'child-report' }))
+      .resolves.toMatchObject({ artifact: { id: 'child-report', uri: 'artifact://visible' }, bytes: 4 })
+    expect(artifacts.read).toHaveBeenLastCalledWith('local', { reference: { ...visible, id: 'child-report' } })
+    const readsBeforeCollision = artifacts.read.mock.calls.length
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'ambiguous-report' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
+    })
+    expect(artifacts.read).toHaveBeenCalledTimes(readsBeforeCollision)
+
+    artifacts.getProvider.mockReturnValue(undefined as never)
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_UNAVAILABLE' },
+    })
+    artifacts.getProvider.mockReturnValue({ name: 'local' })
+    artifacts.read.mockRejectedValueOnce(new TeamArtifactError('missing', 'TEAM_ARTIFACT_NOT_FOUND'))
+    await expect(server.handleRequest('team/artifact-read', { teamId: 'team', artifactId: 'visible' })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_ARTIFACT_NOT_FOUND' },
+    })
     await server.shutdown()
+  })
+
+  it('does not expose generic Team phase mutation through the SDK control plane', async () => {
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/phase', {})).rejects.toThrow('unknown SDK runtime method')
+    await server.shutdown()
+  })
+
+  it('rejects every still-generic Team write until the SDK carries an authenticated actor', async () => {
+    const teamRuns = {
+      waitForFinal: vi.fn(),
+      cancel: vi.fn(),
+    }
+    const get = vi.fn((name: string) => name === 'teams'
+      ? {}
+      : name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? undefined
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] })
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    get.mockClear()
+
+    const genericWrites: readonly (readonly [string, Record<string, unknown>])[] = [
+      ['team/resume', { teamId: 'detached', expectedCursor: 0 }],
+      ['team/wait-final', { teamId: 'detached' }],
+      ['team/cancel', { teamId: 'detached' }],
+    ]
+    for (const [method, params] of genericWrites) {
+      await expect(server.handleRequest(method, params)).rejects.toMatchObject({
+        code: -32_002,
+        data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+        message: 'SDK Team management requires an authenticated human-proof route, but the mounted Team provider does not expose one.',
+      })
+    }
+    expect(get).not.toHaveBeenCalledWith('teams')
+    expect(teamRuns.waitForFinal).not.toHaveBeenCalled()
+    expect(teamRuns.cancel).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('discovers installed channel capabilities and scopes explicit summaries to the authenticated human', async () => {
+    const actor = Object.freeze({}) as TeamHumanActorProof
+    let revoked = false
+    const scopes: TeamHumanActorProofInput[] = []
+    const humanActors = { async withProof<T>(call: AuthenticatedProductCall, input: TeamHumanActorProofInput,
+      operation: (proof: TeamHumanActorProof) => Promise<T>): Promise<T> {
+      call.signal.throwIfAborted()
+      if (revoked) throw new TeamError('Membership revoked', 'TEAM_ACTOR_PROOF_INVALID')
+      scopes.push(input)
+      return await operation(actor)
+    } }
+    const capabilities = { allowedPolicies: ['summarized-window'], maxSourceEnvelopes: 8,
+      maxSourceBytes: 65536, maxSummaryBytes: 1024, maxHistorySpan: 32 }
+    const value = { type: 'channel/summary', sequence: 9, createdAt: 2,
+      coveredSequenceRange: { from: 3, to: 5 }, sourceFingerprint: `sha256:${'0'.repeat(64)}`,
+      sourceEnvelopeIds: ['source'], text: 'Saved.', policy: { type: 'summarized-window', version: 1 }, idempotencyKey: 'selection' }
+    const summaries = { describe: () => capabilities, summarize: vi.fn(async (input: { requester: TeamHumanActorProof }) => {
+      expect(input.requester).toBe(actor)
+      return value
+    }) }
+    const teams = { listAdapters: () => [{ type: 'discussion', version: 1 }], listViewPolicies: () => [{ type: 'summarized-window', version: 1 }],
+      getChannel: vi.fn(async () => ({ manifest: { teamId: 'team-1' } })) }
+    const ctx = { on: vi.fn(() => () => undefined), agents: { create: vi.fn(), get: vi.fn() }, teamRuns: {},
+      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? humanActors
+        : name === 'teams' ? teams : name === 'teamChannelSummaries' ? summaries : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await expect(server.handleRequest('team/channel-catalog', {})).rejects.toBeDefined()
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    expect(await server.handleRequest('team/channel-catalog', {})).toEqual({ adapters: teams.listAdapters(), viewPolicies: teams.listViewPolicies(), summary: capabilities })
+    expect(scopes).toEqual([])
+    const params = { channelId: 'channel-1', expectedCursor: 8, coveredSequenceRange: { from: 3, to: 5 }, idempotencyKey: 'selection' }
+    await expect(server.handleRequest('team/channel-summarize', params)).resolves.toEqual({ value })
+    expect(scopes).toEqual([channelSummaryHumanProofInput('team-1' as never, params as never)])
+    expect(summaries.summarize).toHaveBeenCalledWith({ requester: actor, ...params })
+    await expect(server.handleRequest('team/channel-summarize', { ...params, requester: 'forged' })).rejects.toMatchObject({ code: -32_602 })
+    await expect(server.handleRequest('team/channel-catalog', { actor: 'forged' })).rejects.toMatchObject({ code: -32_602 })
+    revoked = true
+    await expect(server.handleRequest('team/channel-summarize', params)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(summaries.summarize).toHaveBeenCalledTimes(1)
+    await server.shutdown()
+  })
+
+  it('binds channel pagination to exact authenticated membership and rejects forged or foreign selections', async () => {
+    const actor = Object.freeze({}) as TeamHumanActorProof
+    const scopes: TeamHumanActorProofInput[] = []
+    let revoked = false
+    const humanActors = { async withProof<T>(call: AuthenticatedProductCall, input: TeamHumanActorProofInput,
+      operation: (proof: TeamHumanActorProof) => Promise<T>): Promise<T> {
+      expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+      scopes.push(input)
+      if (revoked) throw new TeamError('Membership revoked', 'TEAM_ACTOR_PROOF_INVALID')
+      if (input.teamId !== 'team-1') throw new TeamError('Not a member', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
+      return await operation(actor)
+    } }
+    const teams = { listTeamChannels: vi.fn(async (input: { actor: TeamHumanActorProof }) => {
+      expect(input.actor).toBe(actor)
+      return { items: [], nextCursor: 4 }
+    }) }
+    const ctx = { on: vi.fn(() => () => undefined), agents: { create: vi.fn(), get: vi.fn() }, teamRuns: {},
+      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? humanActors
+        : name === 'teams' ? teams : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    const params = { teamId: 'team-1', afterCursor: 2, limit: 2 }
+    await expect(server.handleRequest('team/channel-list', params)).resolves.toEqual({ items: [], nextCursor: 4 })
+    expect(scopes).toEqual([{ teamId: 'team-1', operation: 'channel-list-read', fence: { kind: 'read' }, payload: params }])
+    await expect(server.handleRequest('team/channel-list', { ...params, actor: 'forged' })).rejects.toMatchObject({ code: -32_602 })
+    await expect(server.handleRequest('team/channel-list', { ...params, limit: 0 })).rejects.toMatchObject({ code: -32_602 })
+    await expect(server.handleRequest('team/channel-list', { ...params, teamId: 'foreign' })).rejects.toMatchObject({ code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' })
+    revoked = true
+    await expect(server.handleRequest('team/channel-list', params)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(teams.listTeamChannels).toHaveBeenCalledTimes(1)
+    await server.shutdown()
+  })
+
+  it('reads channel admission only through current membership proofs and rejects forged, foreign, and revoked calls', async () => {
+    const actor = Object.freeze({}) as TeamHumanActorProof
+    const foreign = new TeamError('Principal is not a Team member', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
+    const revoked = new TeamError('Channel metadata proof was revoked', 'TEAM_ACTOR_PROOF_INVALID')
+    const crossTeam = new TeamError('Channel belongs to another Team', 'TEAM_INVALID_ARGUMENT')
+    let mode: 'allow' | 'foreign' | 'revoked' = 'allow'
+    let live = false
+    const scopes: TeamHumanActorProofInput[] = []
+    const value = { channel: { phase: 'pending' }, invitations: [{ status: 'pending' }], expectedNext: { kind: 'none' }, protocolStatus: { kind: 'other' } }
+    const humanActors = {
+      async withProof<T>(call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof) => Promise<T>): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        scopes.push(input)
+        if (mode === 'foreign') throw foreign
+        live = mode !== 'revoked'
+        try { return await operation(actor) } finally { live = false }
+      },
+    }
+    const teams = {
+      getChannelAdmission: vi.fn(),
+      getHumanChannelAdmission: vi.fn(async (input: { actor: TeamHumanActorProof; teamId: string; channelId: string }) => {
+        expect(input.actor).toBe(actor)
+        if (!live) throw revoked
+        if (input.teamId !== 'team-1') throw crossTeam
+        return value
+      }),
+    }
+    const ctx = { on: vi.fn(() => () => undefined), agents: { create: vi.fn(), get: vi.fn() }, teamRuns: {},
+      get: (name: string) => name === 'productPrincipals' ? testProductPrincipals() : name === 'teamHumanActors' ? humanActors
+        : name === 'teams' ? teams : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    const params = { teamId: 'team-1', channelId: 'channel-1' }
+    await expect(server.handleRequest('team/channel-admission', params)).resolves.toEqual({ value })
+    expect(scopes).toEqual([{ teamId: 'team-1', operation: 'channel-admission-read', fence: { kind: 'read' }, payload: params }])
+    expect(live).toBe(false)
+    await expect(server.handleRequest('team/channel-admission', { ...params, actor: 'forged' })).rejects.toMatchObject({ code: -32_602 })
+    expect(scopes).toHaveLength(1)
+    await expect(server.handleRequest('team/channel-admission', { ...params, teamId: 'other-team' })).rejects.toBe(crossTeam)
+    mode = 'foreign'
+    await expect(server.handleRequest('team/channel-admission', params)).rejects.toBe(foreign)
+    mode = 'revoked'
+    await expect(server.handleRequest('team/channel-admission', params)).rejects.toBe(revoked)
+    expect(teams.getChannelAdmission).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('archives a detached terminal Team through an exact authenticated human proof', async () => {
+    const inputs: TeamHumanActorProofInput[] = []
+    const archiveRequests: Record<string, unknown>[] = []
+    const humanActors = {
+      async withProof<T>(
+        call: AuthenticatedProductCall,
+        input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
+        inputs.push(input)
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = {
+      archiveTeam: vi.fn(async (request: Record<string, unknown>) => {
+        archiveRequests.push(request)
+        return { team: { id: 'detached-terminal', archivedAt: 12 } }
+      }),
+    }
+    const teamRuns = { archiveTerminal: vi.fn() }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/archive', {
+      teamId: 'detached-terminal', expectedCursor: 8,
+    })).resolves.toEqual({ teamId: 'detached-terminal', archivedAt: 12 })
+    expect(inputs).toEqual([{
+      teamId: 'detached-terminal',
+      operation: 'close',
+      fence: { kind: 'cursor', cursor: 8 },
+      payload: { teamId: 'detached-terminal', expectedCursor: 8 },
+    }])
+    expect(archiveRequests).toHaveLength(1)
+    const archiveRequest = archiveRequests[0]
+    if (archiveRequest === undefined) throw new Error('SDK archive did not reach the Team provider')
+    expect(archiveRequest).toMatchObject({ teamId: 'detached-terminal', expectedCursor: 8 })
+    expect(Object.hasOwn(archiveRequest, 'actor')).toBe(true)
+    expect(teamRuns.archiveTerminal).not.toHaveBeenCalled()
+
+    await expect(server.handleRequest('team/archive', {
+      teamId: 'detached-terminal', expectedCursor: 8, actor: 'forged',
+    })).rejects.toMatchObject({ code: -32_602 })
+    await server.shutdown()
+  })
+
+  it('rejects SDK archive before Team lookup when the human binder is absent', async () => {
+    const archiveTeam = vi.fn()
+    const get = vi.fn((name: string) => {
+      if (name === 'productPrincipals') return testProductPrincipals()
+      if (name === 'teamHumanActors') return undefined
+      if (name === 'teams') return { archiveTeam }
+      return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
+    })
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns: {},
+      get,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    get.mockClear()
+
+    await expect(server.handleRequest('team/archive', {
+      teamId: 'detached-terminal', expectedCursor: 8,
+    })).rejects.toMatchObject({ data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' } })
+    expect(get).not.toHaveBeenCalledWith('teams')
+    expect(archiveTeam).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('propagates foreign and stale archive rejections without TeamRun fallback', async () => {
+    const foreign = new TeamError('Authenticated principal owns no active human Team participant', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
+    const stale = new TeamError('Team cursor is stale', 'TEAM_CURSOR_CONFLICT')
+    let mode: 'foreign' | 'stale' = 'foreign'
+    const humanActors = {
+      async withProof<T>(
+        _call: AuthenticatedProductCall,
+        _input: TeamHumanActorProofInput,
+        operation: (actor: TeamHumanActorProof) => Promise<T>,
+      ): Promise<T> {
+        if (mode === 'foreign') throw foreign
+        return await operation(Object.freeze({}) as TeamHumanActorProof)
+      },
+    }
+    const teams = { archiveTeam: vi.fn(async () => { throw stale }) }
+    const teamRuns = { archiveTerminal: vi.fn() }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : name === 'teamHumanActors'
+          ? humanActors
+          : name === 'teams'
+            ? teams
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    await expect(server.handleRequest('team/archive', {
+      teamId: 'foreign-terminal', expectedCursor: 8,
+    })).rejects.toBe(foreign)
+    expect(teams.archiveTeam).not.toHaveBeenCalled()
+    mode = 'stale'
+    await expect(server.handleRequest('team/archive', {
+      teamId: 'stale-terminal', expectedCursor: 9,
+    })).rejects.toBe(stale)
+    expect(teams.archiveTeam).toHaveBeenCalledOnce()
+    expect(teamRuns.archiveTerminal).not.toHaveBeenCalled()
+    await server.shutdown()
+  })
+
+  it('creates, completes, and cancels only Teams owned by this runtime', async () => {
+    let serial = 0
+    const teamRuns = {
+      create: vi.fn(async () => ({
+        teamId: `team-${++serial}`,
+        coordinatorLease: { localAgent: { session: { id: SessionId(`coordinator-${serial}`) } } },
+      })),
+      postHumanInput: vi.fn(async ({ teamId }: { teamId: string }) => ({ id: `input-${teamId}` })),
+      waitForFinal: vi.fn(async ({ teamId }: { teamId: string }) => ({
+        teamId,
+        channelId: `channel-${teamId}`,
+        envelopeId: `final-${teamId}`,
+        text: `Finished ${teamId}.`,
+      })),
+      cancel: vi.fn(async () => undefined),
+    }
+    const teams = {
+      getTeam: vi.fn(async ({ teamId }: { teamId: string }) => ({
+        team: { id: teamId, cursor: 4, phase: 'cancelled' as const },
+      })),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'teams'
+        ? teams
+        : name === 'productPrincipals'
+          ? testProductPrincipals()
+          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model', maxTokens: 321 })
+    const created = await server.createTeam({ objective: 'Fix it.', contentBlocks: [{ type: 'text', text: 'Fix it.' }] })
+    expect(created).toEqual({ teamId: 'team-1', coordinatorSessionId: 'coordinator-1', envelopeId: 'input-team-1' })
+    expect(teamRuns.create).toHaveBeenCalledWith({
+      admitHumanChannel: expect.any(Function) as (request: unknown) => Promise<void>,
+      signal: expect.any(AbortSignal) as AbortSignal,
+      objective: 'Fix it.',
+      cwd: process.cwd(),
+      selection: { provider: 'test-provider', model: 'test-model' },
+      humanOwner: { kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal') },
+      maxTokens: 321,
+    })
+    expect(teamRuns.postHumanInput).toHaveBeenCalledWith({
+      teamId: 'team-1', content: [{ type: 'text', text: 'Fix it.' }], delivery: 'turn',
+      humanOwner: { kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal') },
+    })
+    await expect(server.waitForTeamFinal({ teamId: created.teamId })).resolves.toEqual({
+      teamId: 'team-1', channelId: 'channel-team-1', envelopeId: 'final-team-1', text: 'Finished team-1.',
+    })
+    await expect(server.cancelTeam({ teamId: created.teamId })).rejects.toMatchObject({
+      data: { code: 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE' },
+    })
+    await expect(server.handleRequest('team/create', {
+      objective: 'Reject tool payload.',
+      contentBlocks: [{ type: 'tool-call', id: 'call', name: 'bash', arguments: '{}' }],
+    })).rejects.toMatchObject({ code: -32_602 })
+    expect(teamRuns.create).toHaveBeenCalledTimes(1)
+
+    const active = await server.createTeam({ objective: 'Cancel it.', contentBlocks: [{ type: 'text', text: 'Cancel it.' }] })
+    await expect(server.cancelTeam({ teamId: active.teamId })).resolves.toEqual({ phase: 'cancelled' })
+    expect(teamRuns.cancel).toHaveBeenCalledWith('team-2', {
+      kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal'),
+    })
+    await server.shutdown()
+  })
+
+  it('waits for an in-flight product Team creation before cancelling active ownership on shutdown', async () => {
+    const createEntered = Promise.withResolvers<undefined>()
+    const create = Promise.withResolvers<{
+      teamId: string
+      coordinatorLease: { localAgent: { session: { id: SessionId } } }
+    }>()
+    const inputEntered = Promise.withResolvers<undefined>()
+    const input = Promise.withResolvers<{ id: string }>()
+    const teamRuns = {
+      create: vi.fn(() => {
+        createEntered.resolve(undefined)
+        return create.promise
+      }),
+      postHumanInput: vi.fn(() => {
+        inputEntered.resolve(undefined)
+        return input.promise
+      }),
+      cancel: vi.fn(async () => undefined),
+    }
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create: vi.fn(), get: vi.fn() },
+      teamRuns,
+      get: (name: string) => name === 'productPrincipals'
+        ? testProductPrincipals()
+        : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+    await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+
+    const creating = server.createTeam({ objective: 'Race shutdown.', contentBlocks: [{ type: 'text', text: 'Race shutdown.' }] })
+    await createEntered.promise
+    const shuttingDown = server.shutdown()
+    create.resolve({
+      teamId: 'race-team',
+      coordinatorLease: { localAgent: { session: { id: SessionId('race-coordinator') } } },
+    })
+    await inputEntered.promise
+    input.resolve({ id: 'race-input' })
+
+    await expect(creating).resolves.toEqual({
+      teamId: 'race-team', coordinatorSessionId: 'race-coordinator', envelopeId: 'race-input',
+    })
+    await expect(shuttingDown).resolves.toEqual({})
+    expect(teamRuns.cancel).toHaveBeenCalledWith('race-team', {
+      kind: 'product-principal', principalId: productPrincipalId('sdk-test-principal'),
+    })
   })
 
   it('forwards whole-agent status without attributing a turn outcome', async () => {
@@ -295,7 +1591,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     await ctx.fiber.dispose()
   })
 
-  it('notifies the host when a child session is created with parent lineage', async () => {
+  it('does not project child-session lineage onto the SDK wire', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-'))
     const ctx = await makeHarness(storageDir)
     try {
@@ -309,13 +1605,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         meta: { cwd: storageDir, parentSession: SessionId('main') },
       })
 
-      expect(transport.notifications).toContainEqual({
-        method: 'subagent.started',
-        params: {
-          parentSessionId: 'main',
-          childSessionId: 'child-session',
-        },
-      })
+      expect(transport.notifications).toEqual([])
 
       await server.shutdown()
     } finally {
@@ -324,30 +1614,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('creates an SDK session without an optional system prompt', { timeout: 15_000 }, async () => {
-    const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-no-system-'))
-    const llmServer = await mockCompletionServer()
-    vi.stubEnv('TEST_API_KEY', 'test-key')
-    vi.stubEnv('TEST_BASE_URL', llmServer.url)
-    const ctx = await makeHarness(storageDir, llmServer.url)
-    try {
-      const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
-
-      server.initialize({ cwd: storageDir, provider: 'test-provider', model: 'plain-model' })
-      await server.prompt({
-        sessionId: 'plain',
-        contentBlocks: [{ type: 'text', text: 'hello' }],
-      })
-
-      await vi.waitFor(() => { expect(llmServer.requests).toHaveLength(1) })
-      await server.shutdown()
-    } finally {
-      await ctx.fiber.dispose()
-      await rm(storageDir, { recursive: true, force: true })
-    }
-  })
-
-  it('notifies the host when a subagent run settles', async () => {
+  it('does not project direct-subagent completion onto the SDK wire', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-end-'))
     const ctx = await makeHarness(storageDir)
     try {
@@ -386,29 +1653,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         stopReason: 'error',
       }, () => parentlessHandle.dispose())
 
-      expect(transport.notifications).toContainEqual({
-        method: 'subagent.finished',
-        params: {
-          provider: 'spawn',
-          agentId: 'child-session',
-          parentSessionId: 'main',
-          childSessionId: 'child-session',
-          status: 'ok',
-          stopReason: 'completed',
-          lastAssistantMessage: [{ type: 'text', text: 'child done' }],
-        },
-      })
-      expect(transport.notifications).toContainEqual({
-        method: 'subagent.finished',
-        params: {
-          provider: 'spawn',
-          agentId: 'parentless-child-session',
-          parentSessionId: 'main',
-          childSessionId: 'parentless-child-session',
-          status: 'error',
-          stopReason: 'error',
-        },
-      })
+      expect(transport.notifications).toEqual([])
 
       await parentHandle.dispose()
       await server.shutdown()
@@ -457,7 +1702,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('retains locality across continuation runs on one live child', async () => {
+  it('does not publish continuation-run lifecycle details', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-continuation-'))
     const ctx = await makeHarness(storageDir)
     try {
@@ -489,10 +1734,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         lastAssistantMessage: [{ type: 'text', text: 'second' }],
       }, () => childHandle.dispose())
 
-      expect(transport.notifications.filter(notification =>
-        notification.method === 'subagent.finished'
-        && notification.params?.childSessionId === 'continuation-child',
-      )).toHaveLength(2)
+      expect(transport.notifications).toEqual([])
 
       await parentHandle.dispose()
       await server.shutdown()
@@ -502,7 +1744,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('correlates reused local ids by parent scope when runs settle out of order', async () => {
+  it('does not publish reused direct-subagent ids', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-reuse-'))
     const ctx = await makeHarness(storageDir)
     try {
@@ -572,20 +1814,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       await firstRun.result
       await Promise.resolve()
 
-      const finished = transport.notifications.filter(notification =>
-        notification.method === 'subagent.finished'
-        && notification.params?.childSessionId === 'reused-child',
-      )
-      expect(finished.map(notification => notification.params?.lastAssistantMessage)).toEqual([
-        [{ type: 'text', text: 'same lifetime' }],
-        [{ type: 'text', text: 'new lifetime' }],
-        [{ type: 'text', text: 'old lifetime' }],
-      ])
-      expect(finished.map(notification => notification.params?.parentSessionId)).toEqual([
-        'old-parent',
-        'new-parent',
-        'old-parent',
-      ])
+      expect(transport.notifications).toEqual([])
 
       await firstRun.dispose()
       await sameLifetimeRun.dispose()
@@ -601,7 +1830,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('keeps locality bound to the accepted run across provider re-registration', async () => {
+  it('does not publish direct-subagent details across provider re-registration', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-provider-reuse-'))
     const ctx = await makeHarness(storageDir)
     try {
@@ -666,21 +1895,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       localResult.resolve({ output: [{ type: 'text', text: 'local' }], stopReason: 'completed' })
       await localRun.result
       await Promise.resolve()
-      expect(transport.notifications.filter(notification =>
-        notification.method === 'subagent.finished'
-        && notification.params?.childSessionId === 'provider-reuse-child',
-      )).toEqual([{
-        method: 'subagent.finished',
-        params: {
-          provider: 'reused-provider',
-          agentId: 'provider-reuse-child',
-          parentSessionId: 'provider-reuse-parent',
-          childSessionId: 'provider-reuse-child',
-          status: 'ok',
-          stopReason: 'completed',
-          lastAssistantMessage: [{ type: 'text', text: 'local' }],
-        },
-      }])
+      expect(transport.notifications).toEqual([])
 
       await localRun.dispose()
       await remoteRun.dispose()
@@ -693,7 +1908,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('uses the recorded local flag when start was missed and ignores remote runs', async () => {
+  it('does not publish direct-subagent details when the server misses run start', async () => {
     const storageDir = await mkdtemp(join(tmpdir(), 'clocky-jsonrpc-subagent-fallback-'))
     const ctx = await makeHarness(storageDir)
     let parentHandle: AgentHandle | undefined
@@ -736,7 +1951,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         signal: new AbortController().signal,
       })
       const transport = new FakeTransport()
-      const server = new HarnessSdkJsonRpcServer(ctx, transport, { maxTokensAsSuccess: true })
+      const server = new HarnessSdkJsonRpcServer(ctx, transport)
 
       missedStartResult.resolve({ output: [], stopReason: 'max-tokens' })
       await missedStartRun.result
@@ -765,34 +1980,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         stopReason: 'error',
       })
 
-      // A result without output omits lastAssistantMessage from the wire; it
-      // never sends `[]`.
-      expect(transport.notifications).toContainEqual({
-        method: 'subagent.finished',
-        params: {
-          provider: 'fork',
-          agentId: 'fallback-child-session',
-          parentSessionId: 'fallback-parent',
-          childSessionId: 'fallback-child-session',
-          status: 'ok',
-          stopReason: 'max-tokens',
-        },
-      })
-      expect(transport.notifications).toContainEqual({
-        method: 'subagent.finished',
-        params: {
-          provider: 'fork',
-          agentId: 'failed-child-session',
-          parentSessionId: 'fallback-parent',
-          childSessionId: 'failed-child-session',
-          status: 'error',
-          stopReason: 'error',
-        },
-      })
-      expect(transport.notifications.some(n =>
-        n.method === 'subagent.finished'
-        && n.params?.agentId === 'missing-child-agent',
-      )).toBe(false)
+      expect(transport.notifications).toEqual([])
 
       await server.shutdown()
     } finally {
@@ -814,7 +2002,7 @@ describe('HarnessSdkJsonRpcServer', () => {
 
       expect(inspect.hasAdapterFor('test-provider')).toBe(true)
       expect(inspect.hasAdapterFor('missing-provider')).toBe(false)
-      server.initialize({ cwd: storageDir, provider: 'test-provider', model: 'preinstalled-model' })
+      await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'preinstalled-model' })
 
       expect(ctx.get('llm')?.listProviders().filter(provider => provider.id === 'test-provider')).toEqual([{ id: 'test-provider', name: 'test-provider' }])
       await server.shutdown()
@@ -831,8 +2019,8 @@ describe('HarnessSdkJsonRpcServer', () => {
     try {
       const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
 
-      expect(() => server.initialize({ cwd: storageDir, provider: 'private', model: 'new-model' }))
-        .toThrow('no adapter registered for provider "private"')
+      await expect(server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'private', model: 'new-model' }))
+        .rejects.toThrow('no adapter registered for provider "private"')
 
       expect(ctx.get('llm')?.listProviders()).toEqual([{ id: 'test-provider', name: 'test-provider' }])
       await server.shutdown()
@@ -849,12 +2037,11 @@ describe('HarnessSdkJsonRpcServer', () => {
       const ctx = await makeHarness(storageDir)
       try {
         const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
-        expect(() => server.initialize({
-          cwd: storageDir,
+        await expect(server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: storageDir,
           provider: 'test-provider',
           model: 'model',
           maxTokens,
-        })).toThrow('initialize maxTokens must be a positive safe integer')
+        })).rejects.toThrow('initialize maxTokens must be a positive safe integer')
         await server.shutdown()
       } finally {
         await ctx.fiber.dispose()
@@ -883,6 +2070,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     const ctx = await makeHarness(storageDir)
     try {
       const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
+      await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'test-model' })
 
       await expect(server.handleRequest('does/not/exist', {}))
         .rejects
@@ -895,87 +2083,28 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
   })
 
-  it('coalesces concurrent session creation and retries a failed creation', async () => {
-    let resolveShared: ((handle: AgentHandle) => void) | undefined
-    const sharedCreation = new Promise<AgentHandle>((resolve) => { resolveShared = resolve })
-    const sharedHandle = { agent: {} as Agent, dispose: vi.fn(() => Promise.resolve()) }
-    const retryHandle = { agent: {} as Agent, dispose: vi.fn(() => Promise.resolve()) }
-    const create = vi.fn<(options: unknown) => Promise<AgentHandle>>()
-      .mockReturnValueOnce(sharedCreation)
-      .mockRejectedValueOnce(new Error('creation failed'))
-      .mockResolvedValueOnce(retryHandle)
-    const ctx = {
-      on: vi.fn(() => () => undefined),
-      agents: { create, get: () => undefined },
-      get: () => ({ listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }),
-    } as unknown as Context
-    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
-      initialize(params: { cwd: string; provider: string; model: string }): unknown
-      getOrCreateSession(sessionId: string): Promise<{ handle: AgentHandle }>
-      shutdown(): Promise<Record<string, never>>
-    }
-
-    server.initialize({ cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
-
-    const first = server.getOrCreateSession('shared')
-    const second = server.getOrCreateSession('shared')
-    expect(create).toHaveBeenCalledTimes(1)
-    resolveShared?.(sharedHandle)
-    const [firstRecord, secondRecord] = await Promise.all([first, second])
-    expect(firstRecord).toBe(secondRecord)
-
-    await expect(server.getOrCreateSession('retry')).rejects.toThrow('creation failed')
-    await expect(server.getOrCreateSession('retry')).resolves.toMatchObject({ handle: retryHandle })
-    expect(create).toHaveBeenCalledTimes(3)
-
-    await server.shutdown()
-    expect(sharedHandle.dispose).toHaveBeenCalledOnce()
-    expect(retryHandle.dispose).toHaveBeenCalledOnce()
-    await expect(server.getOrCreateSession('after-shutdown')).rejects.toThrow('SDK server is shutting down')
-  })
-
-  it('resolves a relative cwd before creating the session', async () => {
-    const create = vi.fn<(options: unknown) => Promise<AgentHandle>>()
-      .mockResolvedValue({ agent: {} as Agent, dispose: () => Promise.resolve() })
-    const ctx = {
-      on: vi.fn(() => () => undefined),
-      agents: { create, get: () => undefined },
-      get: () => ({ listProviders: () => [{ id: 'mock', name: 'Mock' }] }),
-    } as unknown as Context
-    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
-      initialize(params: { cwd: string; provider: string; model: string; maxTokens?: number }): unknown
-      getOrCreateSession(sessionId: string): Promise<unknown>
-      shutdown(): Promise<Record<string, never>>
-    }
-
-    server.initialize({ cwd: '.', provider: 'mock', model: 'model', maxTokens: 123 })
-    await server.getOrCreateSession('relative')
-
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      meta: { cwd: process.cwd() },
-      agentOptions: { provider: 'mock', model: 'model', maxTokens: 123 },
-    }))
-    await server.shutdown()
-  })
-
-  it('settles every teardown and aggregates multiple failures', async () => {
-    const firstDispose = vi.fn(() => { throw new Error('first teardown failed') })
-    const secondDispose = vi.fn(() => Promise.reject(new Error('second teardown failed')))
+  it('settles every product-Team teardown and aggregates multiple failures', async () => {
+    const firstCancel = vi.fn(() => { throw new Error('first teardown failed') })
+    const secondCancel = vi.fn(() => Promise.reject(new Error('second teardown failed')))
+    const cancel = vi.fn((teamId: string) => teamId === 'first' ? firstCancel() : secondCancel())
     const ctx = {
       on: vi.fn(() => () => undefined),
       agents: { create: vi.fn(), get: () => undefined },
+      teamRuns: { cancel },
       get: () => undefined,
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
-      sessions: Map<string, { handle: AgentHandle; lastTurnEnd: undefined; activePrompt: boolean }>
+      productTeams: Map<string, { run: { teamId: string }; state: 'active' | 'terminal' }>
       shutdown(): Promise<Record<string, never>>
     }
-    server.sessions.set('first', { handle: { agent: {} as Agent, dispose: firstDispose }, lastTurnEnd: undefined, activePrompt: false })
-    server.sessions.set('second', { handle: { agent: {} as Agent, dispose: secondDispose }, lastTurnEnd: undefined, activePrompt: false })
+    server.productTeams.set('first', { run: { teamId: 'first' }, state: 'active' })
+    server.productTeams.set('second', { run: { teamId: 'second' }, state: 'active' })
+    server.productTeams.set('terminal', { run: { teamId: 'terminal' }, state: 'terminal' })
 
     await expect(server.shutdown()).rejects.toThrow('SDK server teardown failed')
-    expect(firstDispose).toHaveBeenCalledOnce()
-    expect(secondDispose).toHaveBeenCalledOnce()
+    expect(firstCancel).toHaveBeenCalledOnce()
+    expect(secondCancel).toHaveBeenCalledOnce()
+    expect(cancel).not.toHaveBeenCalledWith('terminal')
   })
 
   it('continues teardown after a subscription disposer fails', async () => {
@@ -993,6 +2122,6 @@ describe('HarnessSdkJsonRpcServer', () => {
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
 
     await expect(server.shutdown()).rejects.toBe(listenerFailure)
-    expect(on).toHaveBeenCalledTimes(4)
+    expect(on).toHaveBeenCalledTimes(5)
   })
 })

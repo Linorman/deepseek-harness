@@ -6,6 +6,7 @@ import {
 } from '@clocky/clocky-subprocess-local/src/process-inspector.ts'
 import type { ProcessInspectorInternals } from '@clocky/clocky-subprocess-local/src/process-inspector.ts'
 import { WindowsProcessInspector } from '@clocky/clocky-subprocess-local/src/windows-inspector.ts'
+import type { DarwinProcessState } from '../src/darwin-process-state.ts'
 
 function stat(pid: number, pgrp: number, session: number, tpgid: number, started: string, parentPid = 1, state = 'S'): string {
   const rest = [state, String(parentPid), String(pgrp), String(session), '99', String(tpgid)]
@@ -26,6 +27,7 @@ function fakeInternals() {
   const memories = new Map<string, Buffer>()
   const fds = new Map<number, string>()
   const kills: Array<[number, NodeJS.Signals]> = []
+  const macProcesses = new Map<number, DarwinProcessState>()
   let nextFd = 10
   let ps = ''
   let tpgid = '0'
@@ -59,9 +61,10 @@ function fakeInternals() {
       return ps
     },
     kill(pid, signal) { kills.push([pid, signal]) },
+    darwinProcessState: pid => macProcesses.get(pid),
   }
   return {
-    internals, files, dirs, memories, kills,
+    internals, files, dirs, memories, kills, macProcesses,
     setPs(value: string) { ps = value },
     setTpgid(value: string) { tpgid = value },
   }
@@ -214,28 +217,41 @@ describe('macOS process inspector', () => {
   it('reads tpgid and process trees, contains cycles, and identity-fences signals', () => {
     const fake = fakeInternals()
     fake.setTpgid('55\n')
-    fake.setPs(' 10 1 Mon Jul 21 10:00:00 2026\n 11 10 Mon Jul 21 10:00:01 2026\n 12 11 Mon Jul 21 10:00:02 2026\n 13 99 Mon Jul 21 10:00:03 2026\nmalformed\n')
+    fake.setPs(' 10\n 11\n 12\n 13\n 14\nmalformed\n')
+    fake.macProcesses.set(10, { parentPid: 1, started: '100:1', active: true })
+    fake.macProcesses.set(11, { parentPid: 10, started: '100:2', active: true })
+    fake.macProcesses.set(12, { parentPid: 11, started: '100:3', active: true })
+    fake.macProcesses.set(13, { parentPid: 99, started: '100:4', active: true })
     const inspector = createProcessInspector('darwin', 'arm64', fake.internals)
     expect(inspector.foregroundPgid(10)).toBe(55)
+    expect(inspector.hasExactIdentity).toBe(true)
     expect(inspector.isStdinWaiting(55)).toBe(false)
     expect(inspector.processTree(10)).toEqual([
-      { pid: 12, started: 'Mon Jul 21 10:00:02 2026' },
-      { pid: 11, started: 'Mon Jul 21 10:00:01 2026' },
-      { pid: 10, started: 'Mon Jul 21 10:00:00 2026' },
+      { pid: 12, started: '100:3' },
+      { pid: 11, started: '100:2' },
+      { pid: 10, started: '100:1' },
     ])
     expect(inspector.processTree(99)).toEqual([])
     expect(inspector.processSession(10)).toEqual([])
-    expect(inspector.isAlive({ pid: 11, started: 'Mon Jul 21 10:00:01 2026' })).toBe(true)
+    expect(inspector.isAlive({ pid: 11, started: '100:2' })).toBe(true)
     inspector.signalGroup(55, 'SIGTSTP')
-    inspector.signalProcess({ pid: 11, started: 'Mon Jul 21 10:00:01 2026' }, 'SIGKILL')
+    inspector.signalProcess({ pid: 11, started: '100:2' }, 'SIGKILL')
     inspector.signalProcess({ pid: 12, started: 'missing' }, 'SIGTERM')
     expect(fake.kills).toEqual([[-55, 'SIGTSTP'], [11, 'SIGKILL']])
 
-    fake.setPs(' 10 11 Mon Jul 21 10:00:00 2026\n 11 10 Mon Jul 21 10:00:01 2026\n')
+    fake.setPs(' 10\n 11\n')
+    fake.macProcesses.set(10, { parentPid: 11, started: '100:1', active: true })
     expect(inspector.processTree(10)).toEqual([
-      { pid: 11, started: 'Mon Jul 21 10:00:01 2026' },
-      { pid: 10, started: 'Mon Jul 21 10:00:00 2026' },
+      { pid: 11, started: '100:2' },
+      { pid: 10, started: '100:1' },
     ])
+    fake.macProcesses.set(11, { parentPid: 10, started: '100:5', active: true })
+    inspector.signalProcess({ pid: 11, started: '100:2' }, 'SIGTERM')
+    expect(inspector.isAlive({ pid: 11, started: '100:2' })).toBe(false)
+    fake.macProcesses.set(11, { parentPid: 10, started: '100:5', active: false })
+    expect(inspector.isAlive({ pid: 11, started: '100:5' })).toBe(false)
+    expect(inspector.isAlive({ pid: 14, started: '100:5' })).toBe(false)
+    expect(fake.kills).toEqual([[-55, 'SIGTSTP'], [11, 'SIGKILL']])
   })
 
   it('returns undefined for missing or invalid foreground groups and dispatches platform inspectors', () => {

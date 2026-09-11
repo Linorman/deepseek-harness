@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-session-telemetry
+# @clocky/clocky-session-telemetry
 
 [English](README.md) | 中文
 

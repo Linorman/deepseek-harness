@@ -1,11 +1,11 @@
-/** In-memory ACP transport fixture over the real agent factory and loop. */
+/** Real local Team-run ACP transport fixture. */
 
+import { mkdir, mkdtemp, rm } from 'node:fs/promises'
+import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
-import { createHash } from 'node:crypto'
 import {
   ClientSideConnection,
   ndJsonStream,
-  type Agent as AcpAgent,
   type Client,
   type RequestPermissionRequest,
   type RequestPermissionResponse,
@@ -14,35 +14,56 @@ import {
 } from '@agentclientprotocol/sdk'
 import AttachmentStore, { AttachmentError, AttachmentId } from '@clocky/clocky-attachment'
 import type { ImageAttachmentLimits, ImageAttachmentRef, SaveImageAttachment, StoredImageAttachment } from '@clocky/clocky-attachment'
-import { type GenerateOptions, LlmAdapter, type LlmResolvedModelInfo, type StreamChunk } from '@clocky/clocky-llm'
+import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
 import AgentLoop from '@clocky/clocky-agent-loop'
 import { mountAgentLoopTestDependencies } from '@clocky/clocky-agent-loop-testkit'
+import AgentRuntime from '@clocky/clocky-agent-runtime'
+import * as InProcessRuntime from '@clocky/clocky-agent-runtime-in-process'
+import { CallId, LlmAdapter, type GenerateOptions, type LlmResolvedModelInfo, type StreamChunk } from '@clocky/clocky-llm'
+import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
+import Storage from '@clocky/clocky-storage'
+import * as StorageJson from '@clocky/clocky-storage-json'
+import * as StorageLog from '@clocky/clocky-storage-log'
+import TeamHub from '@clocky/clocky-team-hub'
+import * as TeamActivationController from '@clocky/clocky-team-activation-controller'
+import * as TeamAgentClient from '@clocky/clocky-team-agent-client'
+import * as DirectChannel from '@clocky/clocky-team-channel-direct'
+import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
+import * as TeamClosureDriver from '@clocky/clocky-team-closure-driver'
+import TeamClosureDriverHub from '@clocky/clocky-team-closure-driver/hub'
+import TeamClosureDriveBackendRegistry from '@clocky/clocky-team-closure-driver/registry'
+import TeamLinkRegistry from '@clocky/clocky-team-link'
+import * as TeamLinkLocal from '@clocky/clocky-team-link-local'
+import * as TeamRun from '@clocky/clocky-team-run'
+import * as ToolTeam from '@clocky/clocky-tool-team'
 import * as AcpPlugin from '../src/index.ts'
 import type { AcpConfig } from '../src/index.ts'
 
-/** Scripted adapter for protocol tests. */
-class MockAdapter extends LlmAdapter {
+const IMAGE_LIMITS: ImageAttachmentLimits = {
+  maxImageBytes: 1024,
+  maxImagesPerMessage: 4,
+  maxMessageImageBytes: 2048,
+  maxImagePixels: 1024,
+  maxImageDimension: 2000,
+  mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
+}
+
+export type Scenario =
+  | { readonly kind: 'final'; readonly text: string; readonly assistantText?: string; readonly missingImage?: boolean }
+  | { readonly kind: 'hang' }
+  | { readonly kind: 'no-final' }
+  | { readonly kind: 'error'; readonly message: string }
+
+/** Scripted adapter that finishes a Team task with `team_final` unless its scenario says otherwise. */
+class TeamRunAdapter extends LlmAdapter {
   readonly requests: GenerateOptions[] = []
+  readonly started = Promise.withResolvers<undefined>()
 
   constructor(
-    private readonly script: (StreamChunk[] | 'hang')[],
+    private readonly scenarios: Scenario[],
     private readonly imageCapable: boolean,
   ) {
     super()
-  }
-
-  override providerInfo(provider: string) {
-    if (provider !== 'mock') throw new Error(`MockAdapter: unknown provider ${provider}`)
-    return { id: 'mock', name: 'Mock' }
-  }
-
-  override listModels(provider: string) {
-    return Promise.resolve(provider === 'mock' ? [{
-      provider: 'mock',
-      id: 'mock',
-      name: 'Mock',
-      inputModalities: this.imageCapable ? ['text', 'image'] as const : ['text'] as const,
-    }] : [])
   }
 
   override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
@@ -54,39 +75,47 @@ class MockAdapter extends LlmAdapter {
     })
   }
 
-  async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
-    this.requests.push(options)
-    const entry = this.script.shift()
-    if (entry === undefined) throw new Error('MockAdapter: script exhausted')
-    if (entry === 'hang') {
-      yield { type: 'block-start', index: 0, blockType: 'text' }
-      yield { type: 'text-delta', index: 0, text: 'partial' }
-      await new Promise<void>((_resolve, reject) => {
-        if (options.signal?.aborted) {
-          reject(new Error('aborted'))
-          return
-        }
-        options.signal?.addEventListener('abort', () => { reject(new Error('aborted')) }, { once: true })
-      })
+  async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    if (options.purpose === 'session-title') {
+      yield { type: 'finish', reason: { kind: 'stop' } }
       return
     }
-    for (const chunk of entry) {
-      if (options.signal?.aborted) throw new Error('aborted')
-      yield chunk
+    this.requests.push(options)
+    if (hasTeamFinal(options.messages)) {
+      yield { type: 'finish', reason: { kind: 'stop' } }
+      return
+    }
+    const scenario = this.scenarios.shift()
+    if (scenario === undefined) throw new Error('TeamRunAdapter: scenario exhausted')
+    switch (scenario.kind) {
+      case 'final':
+        yield* finalChunks(finalChannelId(options.system), scenario.text, scenario.assistantText, scenario.missingImage)
+        return
+      case 'hang':
+        this.started.resolve(undefined)
+        yield { type: 'block-start', index: 0, blockType: 'text' }
+        yield { type: 'text-delta', index: 0, text: 'partial' }
+        await new Promise<void>((_resolve, reject) => {
+          if (options.signal?.aborted) {
+            reject(abortError(options.signal.reason))
+            return
+          }
+          options.signal?.addEventListener('abort', () => { reject(abortError(options.signal?.reason)) }, { once: true })
+        })
+        return
+      case 'no-final':
+        yield { type: 'finish', reason: { kind: 'stop' } }
+        return
+      case 'error':
+        yield { type: 'finish', reason: { kind: 'error', failure: { code: 'MOCK', message: scenario.message } } }
+        return
+      default:
+        scenario satisfies never
     }
   }
 }
 
-const IMAGE_LIMITS: ImageAttachmentLimits = {
-  maxImageBytes: 1024,
-  maxImagesPerMessage: 4,
-  maxMessageImageBytes: 2048,
-  maxImagePixels: 1024,
-  maxImageDimension: 2000,
-  mediaTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
-}
-
-/** In-memory durable store for ACP wire-order and lifecycle tests. */
+/** In-memory attachment store used for ACP image admission and output projection tests. */
 class MemoryAttachmentStore extends AttachmentStore {
   readonly imageLimits = IMAGE_LIMITS
   readonly saved: SaveImageAttachment[] = []
@@ -101,9 +130,8 @@ class MemoryAttachmentStore extends AttachmentStore {
 
   saveImage(input: SaveImageAttachment): Promise<ImageAttachmentRef> {
     this.saved.push(input)
-    const digest = createHash('sha256').update(input.data).digest('hex')
     const ref: ImageAttachmentRef = {
-      attachmentId: AttachmentId(`sha256:${digest}`),
+      attachmentId: AttachmentId(`memory:${this.saved.length}`),
       mediaType: input.mediaType,
       bytes: input.data.byteLength,
       width: 1,
@@ -121,123 +149,176 @@ class MemoryAttachmentStore extends AttachmentStore {
   }
 }
 
-/** Scripted text response ending in a clean stop. */
-export function textResponse(text: string): StreamChunk[] {
-  return [
-    { type: 'block-start', index: 0, blockType: 'text' },
-    ...Array.from(text, (char): StreamChunk => ({ type: 'text-delta', index: 0, text: char })),
-    { type: 'block-end', index: 0, block: { type: 'text', text } },
-    { type: 'usage', usage: { inputTokens: 5, outputTokens: text.length } },
-    { type: 'finish', reason: { kind: 'stop' } },
-  ]
-}
-
-/** Scripted response ending at the output-token ceiling. */
-export function maxTokensResponse(text: string): StreamChunk[] {
-  return [
-    { type: 'block-start', index: 0, blockType: 'text' },
-    ...Array.from(text, (char): StreamChunk => ({ type: 'text-delta', index: 0, text: char })),
-    { type: 'block-end', index: 0, block: { type: 'text', text } },
-    { type: 'finish', reason: { kind: 'max-tokens' } },
-  ]
-}
-
-/** Scripted response that fails after publishing an uncommitted partial chunk. */
-export function errorResponse(message: string): StreamChunk[] {
-  return [
-    { type: 'block-start', index: 0, blockType: 'text' },
-    { type: 'text-delta', index: 0, text: 'partial' },
-    { type: 'finish', reason: { kind: 'error', failure: { message, code: 'PROVIDER_ERROR' } } },
-  ]
-}
-
-export type CapturedUpdate = SessionNotification['update']
+type CapturedUpdate = SessionNotification['update']
 
 export interface BridgeHarness {
-  ctx: Context
-  client: ClientSideConnection
-  adapter: MockAdapter
-  attachments: MemoryAttachmentStore | undefined
-  updates: CapturedUpdate[]
-  sessionUpdates: { sessionId: string; update: CapturedUpdate }[]
-  permissionRequests: RequestPermissionRequest[]
+  readonly ctx: Context
+  readonly client: ClientSideConnection
+  readonly adapter: TeamRunAdapter
+  readonly attachments: MemoryAttachmentStore | undefined
+  readonly updates: CapturedUpdate[]
+  readonly sessionUpdates: { readonly sessionId: string; readonly update: CapturedUpdate }[]
+  readonly permissionRequests: RequestPermissionRequest[]
   onPermission: (request: RequestPermissionRequest) => RequestPermissionResponse
-  onSessionUpdateError: (() => void) | undefined
-  closeClientTransport: () => Promise<void>
-  abortClientTransport: () => Promise<void>
-  acpFiber: Awaited<ReturnType<Context['plugin']>>
-  /** The AgentLoop fiber, so a test can reload the loop out from under the bridge. */
-  loopFiber: Awaited<ReturnType<Context['plugin']>>
-  dispose: () => Promise<void>
+  beforeSessionUpdate: (() => Promise<void>) | undefined
+  readonly acpFiber: Awaited<ReturnType<Context['plugin']>>
+  readonly closeClientTransport: () => Promise<void>
+  readonly dispose: () => Promise<void>
 }
 
-type AcpConfigOverrides = { [K in keyof AcpConfig]?: AcpConfig[K] | undefined }
-
-/** Build the bridge and a connected SDK client over cross-wired byte streams. */
+/** Compose the real local Team path behind a connected in-memory ACP client. */
 export async function makeBridgeHarness(options: {
-  script?: (StreamChunk[] | 'hang')[]
-  config?: AcpConfigOverrides
-  persona?: string
-  imageCapable?: boolean
-  attachments?: boolean
+  readonly scenarios?: Scenario[]
+  readonly imageCapable?: boolean
+  readonly attachments?: boolean
+  readonly persona?: string
+  readonly config?: Omit<AcpConfig, 'stream'>
 } = {}): Promise<BridgeHarness> {
-  const adapter = new MockAdapter(options.script ?? [], options.imageCapable === true)
+  const root = await temporaryRoot()
   const ctx = new Context()
+  const adapter = new TeamRunAdapter(options.scenarios ?? [{ kind: 'final', text: 'done' }], options.imageCapable === true)
   await mountAgentLoopTestDependencies(ctx, { systemPrompt: { persona: options.persona ?? '' } })
   if (options.attachments !== false) await ctx.plugin(MemoryAttachmentStore)
-  const loopFiber = await ctx.plugin(AgentLoop, { agents: [] })
   ctx.llm.registerAdapter(['mock'], adapter)
+  await ctx.plugin(AgentDefaultModelConfig, { provider: 'mock', model: 'mock' })
+  await ctx.plugin(JsonlSessionPersistence, { root, compression: 'none' })
+  await ctx.plugin(AgentLoop, { agents: [] })
+  await ctx.plugin(Storage)
+  await ctx.plugin(StorageJson, { root: join(root, 'hub') })
+  await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
+  await ctx.plugin(TeamHub)
+  await ctx.plugin(DirectChannel)
+  await ctx.plugin(TeamChannelAdmission)
+  await ctx.plugin(AgentRuntime)
+  await ctx.plugin(InProcessRuntime, { providerName: 'in-process' })
+  await ctx.plugin(TeamActivationController)
+  await ctx.plugin(TeamLinkRegistry)
+  await ctx.plugin(TeamLinkLocal, {
+    providerName: 'local', pageSize: 32, disposalTimeoutMs: 100, notificationRetryDelayMs: 1,
+  })
+  await ctx.plugin(TeamAgentClient, { reconnectDelayMs: 1, disposalTimeoutMs: 100 })
+  await ctx.plugin(TeamClosureDriveBackendRegistry)
+  await ctx.plugin(TeamClosureDriverHub, { backend: 'hub' })
+  await ctx.plugin(TeamClosureDriver, {
+    backend: 'hub', maxTeamsPerDrive: 128, pageSize: 32, disposalTimeoutMs: 100,
+  })
+  await ctx.plugin(ToolTeam)
+  await ctx.plugin(TeamRun)
 
   const agentToClient = new TransformStream<Uint8Array, Uint8Array>()
   const clientToAgent = new TransformStream<Uint8Array, Uint8Array>()
   const clientToAgentWriter = clientToAgent.writable.getWriter()
-  const clientOutput = new WritableStream<Uint8Array>({
-    write: chunk => clientToAgentWriter.write(chunk),
-  })
   const agentStream: Stream = ndJsonStream(agentToClient.writable, clientToAgent.readable)
-  const clientStream: Stream = ndJsonStream(clientOutput, agentToClient.readable)
-
+  const clientStream: Stream = ndJsonStream(new WritableStream<Uint8Array>({
+    write: chunk => clientToAgentWriter.write(chunk),
+  }), agentToClient.readable)
   const updates: CapturedUpdate[] = []
   const sessionUpdates: { sessionId: string; update: CapturedUpdate }[] = []
   const permissionRequests: RequestPermissionRequest[] = []
-  const harness: BridgeHarness = {
+  const harness = {
     ctx,
     adapter,
     attachments: ctx.get('attachments') as MemoryAttachmentStore | undefined,
     updates,
     sessionUpdates,
     permissionRequests,
-    onPermission: () => ({ outcome: { outcome: 'cancelled' } }),
-    onSessionUpdateError: undefined,
+    onPermission: (_request: RequestPermissionRequest): RequestPermissionResponse => ({ outcome: { outcome: 'cancelled' } }),
+    beforeSessionUpdate: undefined as (() => Promise<void>) | undefined,
     client: undefined as unknown as ClientSideConnection,
-    acpFiber: undefined as unknown as BridgeHarness['acpFiber'],
-    loopFiber,
+    acpFiber: undefined as unknown as Awaited<ReturnType<Context['plugin']>>,
     closeClientTransport: async () => { await clientToAgentWriter.close() },
-    abortClientTransport: async () => { await clientToAgentWriter.abort(new Error('client transport failed')) },
-    dispose: async () => { await ctx.fiber.dispose() },
+    dispose: async () => {
+      try {
+        await ctx.fiber.dispose()
+      } finally {
+        await rm(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 25 })
+      }
+    },
+  } satisfies Omit<BridgeHarness, 'client' | 'acpFiber'> & {
+    client: ClientSideConnection
+    acpFiber: Awaited<ReturnType<Context['plugin']>>
   }
-
-  const makeClient = (_agent: AcpAgent): Client => ({
-    sessionUpdate(params: SessionNotification): Promise<void> {
+  const client: Client = {
+    sessionUpdate(params): Promise<void> {
       updates.push(params.update)
       sessionUpdates.push({ sessionId: params.sessionId, update: params.update })
-      if (harness.onSessionUpdateError !== undefined) return Promise.reject(new Error('client update rejected'))
-      return Promise.resolve()
+      return harness.beforeSessionUpdate?.() ?? Promise.resolve()
     },
-    requestPermission(params: RequestPermissionRequest): Promise<RequestPermissionResponse> {
+    requestPermission(params): Promise<RequestPermissionResponse> {
       permissionRequests.push(params)
       return Promise.resolve(harness.onPermission(params))
     },
-  })
-
-  const config = { stream: agentStream, ...options.config } as AcpConfig
-  if (!(options.config && 'provider' in options.config)) config.provider = 'mock'
-  if (!(options.config && 'model' in options.config)) config.model = 'mock'
+  }
   harness.acpFiber = await ctx.plugin({
     name: 'acp-test',
     inject: [...AcpPlugin.inject],
-    apply: (inner: Context) => { AcpPlugin.apply(inner, config) },
+    apply: (inner: Context) => { AcpPlugin.apply(inner, { ...options.config, stream: agentStream }) },
   })
-  harness.client = new ClientSideConnection(makeClient, clientStream)
+  harness.client = new ClientSideConnection(() => client, clientStream)
   return harness
+}
+
+/** Return the one final Team channel id injected into a coordinator system prompt. */
+function finalChannelId(system: string | undefined): string {
+  const channelId = system?.match(/call team_final with channel_id ([^\s]+) and/u)?.[1]
+  if (channelId === undefined) throw new Error('TeamRunAdapter: coordinator prompt did not include a final channel id')
+  return channelId
+}
+
+/** Detect a follow-up model request after a `team_final` tool call. */
+function hasTeamFinal(messages: GenerateOptions['messages']): boolean {
+  return messages.some(message => message.role === 'assistant'
+    && message.content.some(block => block.type === 'tool-call' && block.name === 'team_final'))
+}
+
+/** Emit one optional committed assistant text block and the required explicit final tool call. */
+function* finalChunks(
+  channelId: string,
+  text: string,
+  assistantText: string | undefined,
+  missingImage: boolean | undefined,
+): Generator<StreamChunk> {
+  let index = 0
+  if (assistantText !== undefined) {
+    yield { type: 'block-start', index, blockType: 'text' }
+    yield { type: 'text-delta', index, text: assistantText }
+    yield { type: 'block-end', index, block: { type: 'text', text: assistantText } }
+    index += 1
+  }
+  if (missingImage) {
+    yield { type: 'block-start', index, blockType: 'image' }
+    yield {
+      type: 'block-end',
+      index,
+      block: {
+        type: 'image',
+        attachment: {
+          attachmentId: AttachmentId('missing'),
+          mediaType: 'image/png',
+          bytes: 1,
+          width: 1,
+          height: 1,
+        },
+      },
+    }
+    index += 1
+  }
+  const id = CallId(`team-final-${text}`)
+  const argumentsText = JSON.stringify({ channel_id: channelId, text })
+  yield { type: 'block-start', index, blockType: 'tool-call' }
+  yield { type: 'tool-call-delta', index, id, name: 'team_final', argumentsDelta: argumentsText }
+  yield { type: 'block-end', index, block: { type: 'tool-call', id, name: 'team_final', arguments: argumentsText } }
+  yield { type: 'finish', reason: { kind: 'tool-calls' } }
+}
+
+/** Allocate a repository-local durable fixture root. */
+async function temporaryRoot(): Promise<string> {
+  const parent = join(process.cwd(), '.tmp')
+  await mkdir(parent, { recursive: true })
+  return await mkdtemp(join(parent, 'acp-team-'))
+}
+
+/** Normalize optional AbortSignal reasons for Promise rejection linting. */
+function abortError(reason: unknown): Error {
+  return reason instanceof Error ? reason : new Error('aborted')
 }

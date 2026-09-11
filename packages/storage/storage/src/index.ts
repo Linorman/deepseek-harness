@@ -14,6 +14,14 @@ export { StorageError } from './error.ts'
 export type { StorageErrorCode } from './error.ts'
 export { UNIT_NAME_RE } from './backend.ts'
 export type { StorageBackend, KvFacet, KvUnit, KvUnitDescriptor } from './backend.ts'
+export {
+  EMPTY_LOG_SEQUENCE,
+} from './log.ts'
+export type {
+  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogFacet, LogStream,
+  LogStreamDescriptor, LogStreamInfo,
+} from './log.ts'
+export { assertLogCompactionBounds, assertLogCompactionRequest } from './compaction.ts'
 
 /**
  * Derive the Cordis lifecycle service that one named backend plugin provides.
@@ -35,8 +43,8 @@ declare module '@clocky/cordis' {
 
 /**
  * Data forms mountable on the hub, keyed by form name. Form owners extend
- * this map via declaration merging (the domain layer merges
- * `domain: DomainFacility`) and mount the facility in their `apply`.
+ * this map via declaration merging (the domain and log layers merge their
+ * facilities) and mount the facility in their `apply`.
  */
 export interface StorageForms {}
 
@@ -89,6 +97,11 @@ export class Storage extends Service {
   /** Domain data form; present once the domain layer plugin is loaded. */
   get domain(): StorageForms extends { domain: infer D } ? D : never {
     return this.form('domain' as keyof StorageForms)
+  }
+
+  /** Mounted append-only-log data form, when `clocky-storage-log` is loaded. */
+  get log(): StorageForms extends { log: infer L } ? L : never {
+    return this.form('log' as keyof StorageForms)
   }
 }
 

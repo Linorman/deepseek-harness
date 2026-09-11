@@ -19,7 +19,6 @@ function ok<T>(request: RpcRequest<unknown>, value: T): Promise<RpcResponse<T>> 
 /** Scripted impl: every method resolves an empty-ish OK unless a case overrides it. */
 function scriptedApi(overrides: {
   sessions?: Partial<ApiProxy['sessions']>
-  subagents?: Partial<ApiProxy['subagents']>
   host?: Partial<ApiProxy['host']>
   skills?: Partial<ApiProxy['skills']>
   agentPresets?: Partial<ApiProxy['agentPresets']>
@@ -37,7 +36,6 @@ function scriptedApi(overrides: {
     sessions: {
       list: r => ok(r, { items: [] }),
       search: r => ok(r, { items: [], hasMore: false }),
-      create: r => ok(r, { sessionId: sid('s-new') }),
       history: r => ok(r, {
         events: [],
         hasMore: false,
@@ -53,7 +51,6 @@ function scriptedApi(overrides: {
         selected: { provider: r.payload.provider, model: r.payload.model },
       }),
       rename: r => ok(r, { title: 'renamed', seq: 0 }),
-      fork: r => ok(r, { sessionId: sid('s-fork') }),
       prompt: r => ok(r, { accepted: true as const }),
       attachment: r => ok(r, {
         attachment: { attachmentId: 'a' as never, mediaType: 'image/png', bytes: 1, width: 1, height: 1 },
@@ -62,13 +59,6 @@ function scriptedApi(overrides: {
       updateQueue: r => ok(r, { accepted: true as const }),
       cancel: r => ok(r, { accepted: true as const }),
       ...overrides.sessions,
-    },
-    subagents: {
-      list: r => ok(r, { entries: [], parentAvailable: false }),
-      history: r => ok(r, { events: [], hasMore: false }),
-      prompt: r => ok(r, { messageId: 'message-1' as never }),
-      interrupt: r => ok(r, { accepted: true as const }),
-      ...overrides.subagents,
     },
     host: {
       describe: r => ok(r, {
@@ -204,21 +194,6 @@ describe('unary round trip', () => {
       .rejects.toThrow(/240 Unicode code points/)
   })
 
-  it('routes session fork with its optional cut anchor through the wire', async () => {
-    let seen: RpcRequest<{ sessionId: SessionId; atSeq?: number }> | undefined
-    const api = scriptedApi({
-      sessions: {
-        fork: (request) => {
-          seen = request
-          return ok(request, { sessionId: sid('s-child') })
-        },
-      },
-    })
-    const response = await client(api).sessions.fork({ sessionId: sid('s-parent'), atSeq: 7 })
-    expect(seen?.payload).toEqual({ sessionId: 's-parent', atSeq: 7 })
-    expect(response.result).toEqual({ ok: true, value: { sessionId: 's-child' } })
-  })
-
   it('routes workspace rename, delete, and ordering through the wire', async () => {
     const api = scriptedApi()
     const c = client(api)
@@ -278,35 +253,9 @@ describe('unary round trip', () => {
     }
   })
 
-  it('round-trips subagent.interrupt and rejects a one-shot or incomplete address', async () => {
-    const interrupt = vi.fn((r: RpcRequest<unknown>) => ok(r, { accepted: true as const }))
-    const api = scriptedApi({ subagents: { interrupt } })
-    const c = client(api)
-
-    const accepted = await c.subagents.interrupt({
-      parentSessionId: sid('parent'), childSessionId: sid('child'), mode: 'continuable',
-    })
-    expect(accepted.result).toEqual({ ok: true, value: { accepted: true } })
-    expect(interrupt).toHaveBeenCalledTimes(1)
-
-    // The wire schema owns the mode fence: a one-shot address never reaches the impl.
-    const oneShot = await c.subagents.interrupt({
-      parentSessionId: sid('parent'), childSessionId: sid('child'), mode: 'one-shot',
-    } as never)
-    expect(oneShot.result.ok).toBe(false)
-    if (!oneShot.result.ok) expect(oneShot.result.error.code).toBe('bad-request')
-
-    const incomplete = await c.subagents.interrupt({
-      parentSessionId: sid('parent'), mode: 'continuable',
-    } as never)
-    expect(incomplete.result.ok).toBe(false)
-    if (!incomplete.result.ok) expect(incomplete.result.error.code).toBe('bad-request')
-    expect(interrupt).toHaveBeenCalledTimes(1)
-  })
-
   it('rejects a method/path mismatch as bad-request', async () => {
     const handler = toFetchHandler(scriptedApi())
-    const body = { type: 'client-request', rpcId: 'r1', method: 'session.create', payload: {} }
+    const body = { type: 'client-request', rpcId: 'r1', method: 'session.prompt', payload: {} }
     const response = await handler.fetch('http://clocky.internal/api/session.list', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
     expect(response.status).toBe(200)
     const parsed = await response.json() as { result: { ok: boolean; error?: { code: string; message: string } } }
@@ -332,9 +281,22 @@ describe('unary round trip', () => {
 
   it('maps carrier failures to HTTP statuses and the client throws transport failure', async () => {
     const handler = toFetchHandler(scriptedApi())
-    // Unknown method → 404.
+    // Unknown methods, including retired Session and subagent product routes, return 404.
     const notFound = await handler.fetch('http://clocky.internal/api/no.such', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
     expect(notFound.status).toBe(404)
+    for (const path of [
+      'session.create',
+      'session.fork',
+      'subagent.list',
+      'subagent.history',
+      'subagent.prompt',
+      'subagent.interrupt',
+    ]) {
+      const retired = await handler.fetch(`http://clocky.internal/api/${path}`, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+      })
+      expect(retired.status).toBe(404)
+    }
     // Non-JSON body → 400.
     const badBody = await handler.fetch('http://clocky.internal/api/session.list', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{oops' })
     expect(badBody.status).toBe(400)

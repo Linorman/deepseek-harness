@@ -2,7 +2,7 @@
 import type { Context } from '@clocky/cordis'
 import { resolveSlotLabel, type BoundActions } from '@clocky/clocky-client-ui-slots'
 import {
-  resolveWorkspacePath, type ISessions, type SessionId,
+  resolveWorkspacePath, type ISessions, type ObservableSnapshot, type SessionId,
 } from '@clocky/clocky-client-runtime/client'
 // Type-only: the ctx.settingsScope Context merge. Cross-plugin collaboration
 // goes through the service, never a value import (client bundle purity gate).
@@ -16,13 +16,14 @@ import type {
   ComposerChainProps, ConversationInjected, ConversationSessionHeaderInjected, ConversationSessionInjected,
   DetailsInjected,
 } from './contract/slots.ts'
-import type { InputNotice } from './input/contract.ts'
+import type { InputNotice, InputState } from './input/contract.ts'
 import { createChatStore } from './stores.ts'
 import { ConversationController, UnsupportedImageMediaTypeError } from './service.ts'
 import type { IConversation } from './service.ts'
 import { ComposerBlockRegistry } from './input/blocks.ts'
 import type { ComposerBlock } from './input/blocks.ts'
 import { InputHub } from './input/hub.ts'
+import { SessionInputShell } from './input/facade.ts'
 import { ComposerSubmissionPolicy } from './input/submission-policy.ts'
 import { InputBar } from './skeleton/InputBar.tsx'
 import { EnterBehaviorRow } from './settings/EnterBehaviorRow.tsx'
@@ -49,7 +50,7 @@ declare module '@clocky/clocky-client-ui-slots' {
 
 /** Services required by the conversation plugin. */
 export const inject = [
-  'slots', 'layout', 'sessions', 'workspaces', 'locale', 'connection', 'remote', 'settingsScope',
+  'slots', 'layout', 'sessions', 'workspaces', 'teamTasks', 'locale', 'connection', 'remote', 'settingsScope',
   'conversationEvents', 'conversationViews',
 ]
 
@@ -72,6 +73,14 @@ const ABSENT_LEXICON = {
 }
 const ABSENT_MENU_LAUNCHER = {
   getSnapshot: (): string | null => null,
+  subscribe: () => () => {},
+}
+const ABSENT_TEAM_DRAFT_INPUT: ObservableSnapshot<InputState | undefined> = {
+  getSnapshot: () => undefined,
+  subscribe: () => () => {},
+}
+const ABSENT_TEAM_DRAFT_NOTICES: ObservableSnapshot<InputNotice | null> = {
+  getSnapshot: () => null,
   subscribe: () => () => {},
 }
 
@@ -164,10 +173,62 @@ export function apply(ctx: Context): void {
     subscribe: (fn: () => void) => slots.subscribe('conversation.view', fn),
     version: () => slots.getVersion('conversation.view'),
   }
-
   // The per-session input machine registry (SessionInputResolver face; published as
   // ctx.conversation.input by the service below sharing this one instance).
   const inputHub = new InputHub(ctx, t)
+
+  const teamDraftInput = new SessionInputShell({
+    actx: ctx,
+    defaultSink: async (text, imageIds, _mode, signal) => {
+      if (imageIds.length > 0) return { kind: 'error', text: t('image.unsupportedType') }
+      try {
+        const draft = ctx.teamTasks.list.getSnapshot().draft
+        const selection = await ctx.teamTasks.start({
+          text,
+          ...draft?.cwd === undefined ? {} : { cwd: draft.cwd },
+          ...draft?.agentPreset === undefined ? {} : { agentPreset: draft.agentPreset },
+          ...draft?.selection === undefined ? {} : { selection: draft.selection },
+        }, signal)
+        await sessions.refresh()
+        sessions.open(selection.coordinatorSessionId)
+        return { kind: 'success' }
+      } catch (error: unknown) {
+        return { kind: 'error', text: error instanceof Error ? error.message : String(error) }
+      }
+    },
+    commandImages: {
+      serialize: () => Promise.resolve([]),
+      release: () => {},
+      unsupportedNotice: () => t('image.unsupportedType'),
+    },
+  })
+  const teamDraftInputSource: ObservableSnapshot<InputState | undefined> = {
+    getSnapshot: () => ctx.teamTasks.list.getSnapshot().draft === undefined
+      ? undefined
+      : teamDraftInput.state.getSnapshot(),
+    subscribe: (listener) => {
+      const disposeDraft = ctx.teamTasks.list.subscribe(listener)
+      const disposeInput = teamDraftInput.state.subscribe(listener)
+      return () => {
+        disposeDraft()
+        disposeInput()
+      }
+    },
+  }
+  const teamDraftNotices: ObservableSnapshot<InputNotice | null> = {
+    getSnapshot: () => ctx.teamTasks.list.getSnapshot().draft === undefined
+      ? null
+      : teamDraftInput.notices.getSnapshot(),
+    subscribe: (listener) => {
+      const disposeDraft = ctx.teamTasks.list.subscribe(listener)
+      const disposeNotices = teamDraftInput.notices.subscribe(listener)
+      return () => {
+        disposeDraft()
+        disposeNotices()
+      }
+    },
+  }
+  ctx.effect(() => () => { teamDraftInput.dispose() }, 'ui-conversation: Team draft input')
 
   // The composer-block registry: a plugin that knows a session cannot send —
   // ui-model-selection, when no adapter serves the session's route — raises a block
@@ -207,36 +268,18 @@ export function apply(ctx: Context): void {
       'conversation.input.left': { kind: 'list', scope: 'session' },
       'conversation.input.right': { kind: 'list', scope: 'session' },
       'conversation.hero.brand.mark': { kind: 'single', scope: 'root' },
+      // Legacy WorkspacePicker compositions may occupy this root slot; the
+      // shell renders it only when an occupant is present.
       'conversation.hero.workspace': { kind: 'single', scope: 'root' },
-      'conversation.hero.agentPreset': { kind: 'single', scope: 'root' },
     },
     inject: (sessionId: SessionId | undefined): ConversationInjected => ({
-      hooks: { composerBlock: sessionId === undefined ? ABSENT_BLOCK : composerBlocks.storeFor(sessionId) },
-      selectWorkspace: async (workspaceId) => {
-        const nextId = await workspaces.connectWorkspace(workspaceId)
-        if (sessionId !== undefined && nextId !== sessionId) {
-          const from = inputHub.shell(sessionId)
-          const draft = from.snapshot.draft
-          const imageIds = from.snapshot.imageIds
-          const next = inputHub.shell(nextId)
-          if (imageIds.length === 0 || next.addImages(imageIds)) {
-            if (draft !== '') {
-              next.setDraft(draft)
-              from.setDraft('')
-            }
-            if (imageIds.length > 0) {
-              for (const id of imageIds) from.removeImage(id)
-            }
-          }
-        }
-        sessions.open(nextId)
+      hooks: {
+        composerBlock: sessionId === undefined ? ABSENT_BLOCK : composerBlocks.storeFor(sessionId),
       },
     }),
   }, ConversationRoot)
 
-  // The strict session body fills the resident scrollport without owning it;
-  // the Hero/composer path therefore stays fixed while the first blank
-  // session appears after a Workspace pick.
+  // The strict session body fills the resident scrollport without owning it.
   slots.register({
     name: 'conversation.session',
     children: {
@@ -259,14 +302,12 @@ export function apply(ctx: Context): void {
     name: 'conversation.session.header',
     locale: NS,
     children: {
-      'conversation.session.header.lineage': { kind: 'single', scope: 'session' },
       'conversation.session.header.actions': { kind: 'list', scope: 'session' },
       'conversation.session.header.utilities': { kind: 'list', scope: 'session' },
     },
     store: chatStore,
     inject: (): ConversationSessionHeaderInjected => ({
       views,
-      open: (id) => { sessions.open(id) },
     }),
   }, ConversationSessionHeader)
 
@@ -286,12 +327,15 @@ export function apply(ctx: Context): void {
     children: {
       'conversation.input.attachments': { kind: 'single', scope: 'session-maybe' },
       'conversation.input.plan': { kind: 'single', scope: 'session' },
-      'conversation.input.model': { kind: 'single', scope: 'session' },
+      // Model selection also stays available for the unsubmitted Team draft;
+      // the first Team message carries the draft selection into team.start.
+      'conversation.input.model': { kind: 'single', scope: 'session-maybe' },
     },
     inject: (sessionId: SessionId | undefined): ComposerBarInjected => {
       if (sessionId === undefined) {
         return {
-          keyboard: undefined,
+          keyboard: teamDraftInput,
+          teamDraftActions: teamDraftInput.actions,
           addImages: undefined,
           removeImage: undefined,
           draftImages: undefined,
@@ -300,7 +344,13 @@ export function apply(ctx: Context): void {
           toggleCommandMenu: undefined,
           stop: undefined,
           command: undefined,
-          hooks: { notices: ABSENT_NOTICES, lexicon: ABSENT_LEXICON, menuLauncher: ABSENT_MENU_LAUNCHER },
+          hooks: {
+            teamDraftInput: teamDraftInputSource,
+            teamDraftNotices,
+            notices: ABSENT_NOTICES,
+            lexicon: ABSENT_LEXICON,
+            menuLauncher: ABSENT_MENU_LAUNCHER,
+          },
         }
       }
       const conversation = concreteConversation(ctx)
@@ -308,6 +358,7 @@ export function apply(ctx: Context): void {
       const inputTriggers = inputHub.inputTriggers(sessionId)
       return {
         keyboard: shell,
+        teamDraftActions: undefined,
         addImages: (files) => {
           try {
             const images = conversation.createDraftImages(files)
@@ -356,6 +407,8 @@ export function apply(ctx: Context): void {
           return result.ok && result.value.matched
         },
         hooks: {
+          teamDraftInput: ABSENT_TEAM_DRAFT_INPUT,
+          teamDraftNotices: ABSENT_TEAM_DRAFT_NOTICES,
           notices: shell.notices,
           lexicon: shell.lexicon,
           menuLauncher: inputTriggers?.launcher ?? ABSENT_MENU_LAUNCHER,
@@ -409,19 +462,22 @@ export function apply(ctx: Context): void {
           actions.setInspect({ callId })
           actions.setView('trajectory')
         },
+        continueOutput: () => {
+          const shell = inputHub.shell(sessionId)
+          const snapshot = shell.snapshot
+          if (snapshot.phase !== 'plain' || snapshot.draft.trim() !== '' || snapshot.imageIds.length > 0) {
+            shell.notify('info', t('message.maxTokens.draftBusy'))
+            return
+          }
+          shell.setDraft('continue')
+          shell.submit('queue')
+        },
         chatScroll: {
           save: (position) => {
             if (position === null) chatScrollPositions.delete(sessionId)
             else chatScrollPositions.set(sessionId, position)
           },
           read: () => chatScrollPositions.get(sessionId) ?? null,
-        },
-        forkAt: (seq) => {
-          sessions.fork({ sessionId, atSeq: seq, increaseTitle: true })
-            .then((childId) => { sessions.open(childId) })
-            .catch(() => {
-              // Fork or child-rename failure keeps the source view untouched.
-            })
         },
       }
     },

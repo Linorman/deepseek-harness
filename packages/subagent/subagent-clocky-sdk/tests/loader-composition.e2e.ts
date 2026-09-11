@@ -34,6 +34,15 @@ async function jsonlFiles(dir: string): Promise<string[]> {
   return paths.flat()
 }
 
+async function sessionJsonlFiles(dir: string): Promise<string[]> {
+  const files = await jsonlFiles(dir)
+  const sessions = await Promise.all(files.map(async (path) => {
+    const header = JSON.parse((await readFile(path, 'utf8')).split('\n', 1)[0] ?? '{}') as { type?: unknown }
+    return header.type === 'session' ? path : undefined
+  }))
+  return sessions.filter((path): path is string => path !== undefined)
+}
+
 async function sessionEvents(log: string): Promise<SessionEvent[]> {
   const lines = (await readFile(log, 'utf8')).trimEnd().split('\n')
   return lines.slice(1).map(line => JSON.parse(line) as SessionEvent)
@@ -74,12 +83,12 @@ describe('SDK subagent cwd inheritance through a real cordis.yml', () => {
       inspect: async (cwd) => {
         // The child reports realpaths; canonicalize the temp workspace to match.
         workspace = realpathSync(cwd)
-        const parentLogs = await jsonlFiles(join(cwd, '.sessions'))
+        const parentLogs = await sessionJsonlFiles(join(cwd, '.sessions'))
         expect(parentLogs).toHaveLength(1)
         events = await sessionEvents(parentLogs[0] as string)
         // The child runtime persisted its own transcript in ITS cwd — which
         // must be the parent session's workspace for the inheritance to hold.
-        const childLogs = await jsonlFiles(join(cwd, '.child-sessions'))
+        const childLogs = await sessionJsonlFiles(join(cwd, '.child-sessions'))
         expect(childLogs).toHaveLength(1)
         childEvents = await sessionEvents(childLogs[0] as string)
       },

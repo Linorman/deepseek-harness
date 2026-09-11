@@ -9,8 +9,6 @@ import { ModelSelect } from '../src/client/ModelSelect.tsx'
 import { zh } from '../src/client/locales.ts'
 import { zh as commonZh } from '@clocky/clocky-client-locale/src/locales/zh.ts'
 
-// The seat's key domain is model ∪ common; the stub mirrors the real lookup
-// chain: package dictionary, then common vocabulary, then the key.
 const t: ComponentProps<typeof ModelSelect>['t'] = (key, params) => {
   const template = (zh as Record<string, string>)[key]
     ?? (commonZh as Record<string, string>)[key]
@@ -54,14 +52,7 @@ describe('ModelSelect reasoning effort', () => {
       directory.set(state({ current: selection }))
       return true
     })
-    render(<ModelSelect
-      locked={false}
-      available
-      directory={directory}
-      load={vi.fn()}
-      select={select}
-      t={t}
-    />)
+    render(<ModelSelect locked={false} available directory={directory} load={vi.fn()} select={select} t={t} />)
 
     const trigger = screen.getByRole('button', {
       name: '选择模型，当前 Test Model，推理等级 High',
@@ -95,14 +86,7 @@ describe('ModelSelect reasoning effort', () => {
       }],
       current: { provider: 'provider', model: 'model' },
     }))
-    render(<ModelSelect
-      locked={false}
-      available
-      directory={directory}
-      load={vi.fn()}
-      select={vi.fn().mockResolvedValue(true)}
-      t={t}
-    />)
+    render(<ModelSelect locked={false} available directory={directory} load={vi.fn()} select={vi.fn().mockResolvedValue(true)} t={t} />)
 
     fireEvent.click(screen.getByRole('button', {
       name: '选择模型，当前 Model，推理等级 Default',
@@ -117,14 +101,7 @@ describe('ModelSelect reasoning effort', () => {
       current: { provider: 'test-provider', model: 'removed-model' },
     }))
     const select = vi.fn().mockResolvedValue(true)
-    render(<ModelSelect
-      locked={false}
-      available
-      directory={directory}
-      load={vi.fn()}
-      select={select}
-      t={t}
-    />)
+    render(<ModelSelect locked={false} available directory={directory} load={vi.fn()} select={select} t={t} />)
 
     const trigger = screen.getByRole('button', { name: '选择模型' })
     expect(trigger.textContent).toContain('选择模型')
@@ -149,36 +126,13 @@ describe('ModelSelect reasoning effort', () => {
       directory.set(state({ groups, status: 'error', error: 'model-unavailable: session already contains images' }))
       return false
     })
-    render(<ModelSelect
-      locked={false}
-      available
-      directory={directory}
-      load={vi.fn()}
-      select={select}
-      t={t}
-    />)
+    render(<ModelSelect locked={false} available directory={directory} load={vi.fn()} select={select} t={t} />)
 
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /Test Model Pro/ }))
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：model-unavailable: session already contains images')
-    // The selection failure does not render the in-menu load strip (no Retry).
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
-  })
-
-  it('renders no Agent-bound control for an addressed subagent session', () => {
-    const load = vi.fn()
-    render(<ModelSelect
-      locked={false}
-      available={false}
-      directory={createSnapshotStore(state())}
-      load={load}
-      select={vi.fn().mockResolvedValue(false)}
-      t={t}
-    />)
-
-    expect(screen.queryByRole('button')).toBeNull()
-    expect(load).not.toHaveBeenCalled()
   })
 })

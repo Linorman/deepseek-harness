@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
-import type { Agent } from '@clocky/clocky-agent'
+import { openAgentWorkspaceLease, type Agent } from '@clocky/clocky-agent'
 import { Session, SessionId } from '@clocky/clocky-session'
 import SandboxPolicyService, { SANDBOX_MODES, effectiveSandboxMode, setSandboxMode } from '@clocky/clocky-sandbox-policy'
 import SystemPrompt, { renderContextSnapshot, renderPrompt } from '@clocky/clocky-system-prompt'
@@ -121,6 +121,22 @@ describe('SandboxPolicyService', () => {
   it('uses the configured root when a session has no cwd', async () => {
     const ctx = await mounted({ workspaceRoot: '/fallback' })
     expect(ctx.sandboxPolicy.resolve({ session: session('sess-no-cwd') }).workspaceRoot).toBe(resolve('/fallback'))
+  })
+
+  it('uses the current Team allocation before the Session cwd', async () => {
+    const ctx = await mounted({ mode: 'workspace-write', workspaceRoot: '/fallback' })
+    const active = session('sess-team-allocation', '/projects/session')
+    const agent = { session: active, ctx: new Context() } as unknown as Agent
+    const lease = openAgentWorkspaceLease(agent)
+    const dispose = lease.publishRoot('/projects/allocation')
+
+    expect(ctx.sandboxPolicy.resolve({ session: active, agent })).toEqual({
+      mode: 'workspace-write',
+      workspaceRoot: resolve('/projects/allocation'),
+      sessionId: 'sess-team-allocation',
+    })
+    dispose()
+    lease.dispose()
   })
 
   it('rejects a mode outside the closed vocabulary at load', async () => {

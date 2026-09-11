@@ -40,7 +40,7 @@ const WAIT_POLL_INTERVAL_MS = 10
 /**
  * One step of a scenario's deterministic input script (`input.json`). The
  * harness interprets these in order. `newSession` captures the server-issued
- * (random) session id into a `{{sessionId}}` variable that later steps
+ * (random) wire id into a `{{sessionId}}` variable that later protocol steps
  * reference, since a committed file cannot know the id in advance.
  *
  * `promptAndCancel` starts a prompt without awaiting completion, waits for a
@@ -120,8 +120,22 @@ export interface HarvestedLog {
   createdAt: number
   /** The parent session id, if this log is a subagent child (header `parentSession`). */
   parentSession?: string
+  /** The Team that owns this Session when it is an activated Team participant. */
+  teamId?: string
+  /** The Team participant that owns this Session when Team provenance is present. */
+  participantId?: string
   /** The full `.jsonl` file content. */
   content: string
+}
+
+/** Team provenance for the local coordinator transcript that backs one ACP wire session. */
+export interface TeamCoordinatorTranscript {
+  /** Durable Team identity from the coordinator Session header. */
+  readonly teamId: string
+  /** Durable local coordinator Session identity. */
+  readonly coordinatorSessionId: string
+  /** Durable coordinator participant identity from the Session header. */
+  readonly coordinatorParticipantId: string
 }
 
 /** The result of running a scenario: raw stdout + the harvested session log(s). */
@@ -130,8 +144,10 @@ export interface RunResult {
   rawStdout: string
   /** stderr (for diagnostics on failure). */
   stderr: string
-  /** The session id the server issued (undefined if no session was created). */
+  /** The opaque wire session id the server issued (undefined if no session was created). */
   sessionId?: string
+  /** Team provenance for the selected coordinator transcript, when the Agent requires it. */
+  team?: TeamCoordinatorTranscript
   /** The generated cwd the session ran in (the bash workspace). */
   cwd: string
   /** Filesystem-resolved spellings of {@link cwd} that child processes may report. */
@@ -196,7 +212,17 @@ export interface RunOptions {
    * the default.
    */
   configPath?: string
+  /** Maximum wait for a TeamRun-created coordinator transcript after `session/new`. */
+  coordinatorTranscriptTimeoutMs?: number
 }
+
+interface ActiveSession {
+  readonly wireSessionId: string
+  readonly transcriptSessionId: string
+  readonly team?: TeamCoordinatorTranscript
+}
+
+type TeamCoordinatorLog = HarvestedLog & Required<Pick<HarvestedLog, 'teamId' | 'participantId'>>
 
 /**
  * Derive one stable, fixed-length spill root owned by this scenario.
@@ -236,7 +262,7 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
   // Everything past the temp-dir creation is followed by failure-safe cleanup,
   // so a failure in workspace seeding, spawn, or any step never leaks resources.
   let launched: LaunchedAcpTestAgent | undefined
-  let sessionId: string | undefined
+  let session: ActiveSession | undefined
   let sessionLogs: HarvestedLog[] = []
   const outcome = await (async (): Promise<RunResult> => {
     // Seed the workspace if the scenario ships one (a file the agent reads/edits).
@@ -296,6 +322,23 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
     const active = launched
     await active.spawned
     const { client } = active
+    const discoveredCoordinatorSessions = new Set<string>()
+    const createSession = async (): Promise<void> => {
+      const { sessionId: wireSessionId } = await client.newSession({ cwd, mcpServers: [] })
+      const team = opts.agent.transcriptMode === 'team-coordinator'
+        ? await waitForTeamCoordinatorTranscript(
+          sessionsRoot,
+          discoveredCoordinatorSessions,
+          opts.coordinatorTranscriptTimeoutMs,
+        )
+        : undefined
+      if (team !== undefined) discoveredCoordinatorSessions.add(team.coordinatorSessionId)
+      session = {
+        wireSessionId,
+        transcriptSessionId: team?.coordinatorSessionId ?? wireSessionId,
+        ...team === undefined ? {} : { team },
+      }
+    }
 
     for (const step of input.steps) {
       await runStep(
@@ -303,8 +346,9 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
         step,
         cwd,
         match => active.waitForUpdate(match),
-        () => sessionId,
-        (id) => { sessionId = id },
+        createSession,
+        () => session?.wireSessionId,
+        () => session?.transcriptSessionId,
         (id, timeoutMs, minimumTurn) => waitForPersistedTurnStart(sessionsRoot, id, timeoutMs, minimumTurn),
         (id, timeoutMs) => waitForPersistedTurnEnd(sessionsRoot, id, timeoutMs),
         (child, timeoutMs, minimumTurn) => waitForPersistedChildTurnEnd(sessionsRoot, child, timeoutMs, minimumTurn),
@@ -330,7 +374,8 @@ export async function runScenario(input: InputScript, opts: RunOptions): Promise
       stderr: launched.stderr(),
       cwd,
       cwdAliases,
-      ...sessionId !== undefined ? { sessionId } : {},
+      ...session === undefined ? {} : { sessionId: session.wireSessionId },
+      ...session?.team === undefined ? {} : { team: session.team },
       sessionLogs,
     }
   })().then(
@@ -381,8 +426,9 @@ async function runStep(
   step: InputStep,
   cwd: string,
   waitForUpdate: (match: (u: SessionNotification['update']) => boolean) => Promise<SessionNotification['update']>,
-  getSessionId: () => string | undefined,
-  setSessionId: (id: string) => void,
+  createSession: () => Promise<void>,
+  getWireSessionId: () => string | undefined,
+  getTranscriptSessionId: () => string | undefined,
   waitForTurnStart: (sessionId: string, timeoutMs?: number, minimumTurn?: number) => Promise<void>,
   waitForTurnEnd: (sessionId: string, timeoutMs?: number) => Promise<void>,
   waitForChildTurnEnd: (child: number, timeoutMs?: number, minimumTurn?: number) => Promise<void>,
@@ -398,11 +444,9 @@ async function runStep(
         clientCapabilities: {},
       })
       return
-    case 'newSession': {
-      const { sessionId } = await client.newSession({ cwd, mcpServers: [] })
-      setSessionId(sessionId)
+    case 'newSession':
+      await createSession()
       return
-    }
     case 'newSessionExpectError': {
       // The bridge rejects a session/new that widens the workspace scope
       // (non-empty additionalDirectories / mcpServers — unimplemented). The SDK
@@ -419,19 +463,19 @@ async function runStep(
       return
     }
     case 'prompt': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: prompt before newSession')
       await client.prompt({ sessionId, prompt: [{ type: 'text', text: step.text }] })
       return
     }
     case 'promptContent': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: promptContent before newSession')
       await client.prompt({ sessionId, prompt: step.content })
       return
     }
     case 'promptAndWaitForAgentMessage': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: promptAndWaitForAgentMessage before newSession')
       const updateDone = waitForUpdate(update => update.sessionUpdate === 'agent_message_chunk'
         && update.content.type === 'text' && update.content.text === step.waitForText)
@@ -440,7 +484,7 @@ async function runStep(
       return
     }
     case 'promptExpectError': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: promptExpectError before newSession')
       // The model fails this turn (a recorded provider error), so the bridge
       // answers the prompt with a JSON-RPC error and the SDK rejects. That
@@ -452,7 +496,7 @@ async function runStep(
       return
     }
     case 'promptAndCancel': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: promptAndCancel before newSession')
       // Dispatch without awaiting because the fixture does not settle on its
       // own. Wait for an external readiness marker or the durable turn start
@@ -461,7 +505,7 @@ async function runStep(
       if (step.waitForFile !== undefined) {
         await waitForWorkspaceFile(cwd, step.waitForFile.path, step.waitForFile.timeoutMs)
       } else {
-        await waitForTurnStart(sessionId)
+        await waitForTurnStart(getTranscriptSessionId() as string)
       }
       await client.cancel({ sessionId })
       await promptDone
@@ -471,7 +515,7 @@ async function runStep(
       await waitForWorkspaceFile(cwd, step.path, step.timeoutMs)
       return
     case 'waitForTurnEnd': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForTurnEnd before newSession')
       await waitForTurnEnd(sessionId, step.timeoutMs)
       return
@@ -480,37 +524,37 @@ async function runStep(
       await waitForChildTurnEnd(step.child ?? 1, step.timeoutMs, step.minimumTurn)
       return
     case 'waitForGoalPhase': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForGoalPhase before newSession')
       await waitForGoalPhase(sessionId, step.phase, step.timeoutMs)
       return
     }
     case 'waitForInboxMessage': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForInboxMessage before newSession')
       await waitForInboxMessage(sessionId, step.text, step.timeoutMs)
       return
     }
     case 'waitForTitleAfterTurnEnd': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForTitleAfterTurnEnd before newSession')
       await waitForTitleAfterTurnEnd(sessionId, step.timeoutMs)
       return
     }
     case 'waitForEventAfterTurnEnd': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForEventAfterTurnEnd before newSession')
       await waitForEventAfterTurnEnd(sessionId, step.type, step.timeoutMs)
       return
     }
     case 'waitForTurnStart': {
-      const sessionId = getSessionId()
+      const sessionId = getTranscriptSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: waitForTurnStart before newSession')
       await waitForTurnStart(sessionId, step.timeoutMs, step.minimumTurn)
       return
     }
     case 'cancel': {
-      const sessionId = getSessionId()
+      const sessionId = getWireSessionId()
       if (sessionId === undefined) throw new Error('snapshot-harness: cancel before newSession')
       if (step.waitForFile !== undefined) {
         await waitForWorkspaceFile(cwd, step.waitForFile.path, step.waitForFile.timeoutMs)
@@ -521,6 +565,37 @@ async function runStep(
     default:
       throw new Error(`snapshot-harness: unknown input op ${JSON.stringify(step)}`)
   }
+}
+
+/** Wait for a newly created TeamRun coordinator Session selected by durable header provenance. */
+async function waitForTeamCoordinatorTranscript(
+  root: string,
+  seenSessionIds: ReadonlySet<string>,
+  timeoutMs = DEFAULT_WAIT_TIMEOUT_MS,
+): Promise<TeamCoordinatorTranscript> {
+  let transcript!: TeamCoordinatorTranscript
+  try {
+    await vi.waitFor(async () => {
+      const candidate = (await harvestSessionLogs(root)).filter(isTeamCoordinatorLog)
+        .find(log => !seenSessionIds.has(log.id))
+      if (candidate === undefined) {
+        throw new Error('Team coordinator Session pending')
+      }
+      transcript = {
+        teamId: candidate.teamId,
+        coordinatorSessionId: candidate.id,
+        coordinatorParticipantId: candidate.participantId,
+      }
+    }, { interval: WAIT_POLL_INTERVAL_MS, timeout: timeoutMs })
+  } catch {
+    throw new Error(`snapshot-harness: Team coordinator Session did not persist within ${timeoutMs}ms`)
+  }
+  return transcript
+}
+
+/** Recognize a root Session carrying the durable Team/Participant provenance of the active coordinator. */
+function isTeamCoordinatorLog(log: HarvestedLog): log is TeamCoordinatorLog {
+  return log.parentSession === undefined && typeof log.teamId === 'string' && typeof log.participantId === 'string'
 }
 
 /** Wait until persistence exposes an open turn for the selected session. */
@@ -759,11 +834,19 @@ async function harvestSessionLogs(root: string): Promise<HarvestedLog[]> {
     if (basename(file) !== 'session.jsonl') continue
     const content = await readFile(join(root, file), 'utf8')
     const firstLine = content.split('\n').find(line => line.trim().length > 0) ?? '{}'
-    const header = JSON.parse(firstLine) as { id?: unknown; createdAt?: unknown; parentSession?: unknown }
+    const header = JSON.parse(firstLine) as {
+      id?: unknown
+      createdAt?: unknown
+      parentSession?: unknown
+      teamId?: unknown
+      participantId?: unknown
+    }
     logs.push({
       id: typeof header.id === 'string' ? header.id : '',
       createdAt: typeof header.createdAt === 'number' ? header.createdAt : 0,
       ...typeof header.parentSession === 'string' ? { parentSession: header.parentSession } : {},
+      ...typeof header.teamId === 'string' ? { teamId: header.teamId } : {},
+      ...typeof header.participantId === 'string' ? { participantId: header.participantId } : {},
       content,
     })
   }

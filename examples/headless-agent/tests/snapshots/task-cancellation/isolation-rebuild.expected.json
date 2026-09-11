@@ -1,0 +1,16 @@
+{
+  "scenario": "rebuild",
+  "sameActivation": true,
+  "firstApprovalReal": true,
+  "otherApprovalRetained": true,
+  "queuedTaskWasNotRun": false,
+  "resumedOtherTask": true,
+  "clientReconstructed": true,
+  "taskOutcomes": [
+    "cancelled",
+    "cancelled"
+  ],
+  "teamBeforeCleanup": "active",
+  "allocationsReleased": true,
+  "files": "before"
+}

@@ -1,1 +1,1 @@
-{"sessionId":"{{sessionId}}","finalResponse":"PERSISTENT_TOOLS_OK"}
+{"teamId":"team-{{sessionId}}","finalResponse":"PERSISTENT_TOOLS_OK","final":{"teamId":"team-{{sessionId}}","channelId":"channel-{{sessionId}}","envelopeId":"envelope-{{sessionId}}","text":"PERSISTENT_TOOLS_OK"}}

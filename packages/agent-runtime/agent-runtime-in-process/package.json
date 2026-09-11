@@ -1,0 +1,68 @@
+{
+  "name": "@clocky/clocky-agent-runtime-in-process",
+  "description": "In-process fresh, fork, and resume provider for Participant-bound AgentRuntime activations",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/agent-runtime/agent-runtime-in-process"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@clocky/schemastery": "workspace:^"
+  },
+  "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@clocky/clocky-agent-presets": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-loop": "workspace:^",
+    "@clocky/clocky-agent-loop-testkit": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-agent-runtime": "workspace:^",
+    "@clocky/cordis-plugin-include": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-session-persistence-jsonl": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  }
+}

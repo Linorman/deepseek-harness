@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Context } from '@clocky/cordis'
-import { codingHarness, finalText, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
+import { codingHarness, finalText, hasRealModel, realModel, SYSTEM_PROMPT, waitForIdle } from './harness.ts'
 import { SessionId } from '@clocky/clocky-session'
 
 /**
@@ -25,11 +25,11 @@ afterEach(async () => {
   workdir = undefined
 })
 
-describe.skipIf(!process.env.DEEPSEEK_API_KEY)('full loop: real model + real bash tool', () => {
+describe.skipIf(!hasRealModel)('full loop: real model + real bash tool', () => {
   it('runs a bash command on request and reports its output', async () => {
     workdir = await mkdtemp(join(tmpdir(), 'clocky-full-loop-e2e-'))
     ctx = await codingHarness(workdir, { persona: SYSTEM_PROMPT })
-    const agent = ctx.agentLoop.create(SessionId('e2e-loop'), { provider: 'deepseek', model: 'deepseek-v4-flash' })
+    const agent = ctx.agentLoop.create(SessionId('e2e-loop'), realModel)
 
     agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Run `echo e2e-ok` with the bash tool and tell me its exact output.' }], source: { kind: 'user' } }))
     await waitForIdle(ctx, agent)

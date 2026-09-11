@@ -96,3 +96,56 @@ jobs:
           path: dist/npm/*
           if-no-files-found: error
           retention-days: 7
+
+      - name: Assemble packed consumer inputs
+        run: |
+          mkdir -p dist/consumer/clocky dist/consumer/vendor dist/consumer/landlock
+          cp dist/npm/*.tgz dist/consumer/clocky/
+          cp dist/npm-vendor/*.tgz dist/consumer/vendor/
+          cp dist/npm-landlock/*.tgz dist/consumer/landlock/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clocky-packed-consumer
+          path: dist/consumer
+          if-no-files-found: error
+          retention-days: 7
+
+  packed-consumer-matrix:
+    name: Packed consumer (${{ matrix.platform }})
+    needs: pack
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: macos
+            runner: macos-latest
+          - platform: windows
+            runner: windows-latest
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.PRIMARY_NODE_VERSION }}
+
+      - name: Install verification dependencies (immutable)
+        run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: clocky-packed-consumer
+          path: dist/consumer
+
+      - name: Verify packed consumer on ${{ matrix.platform }}
+        run: pnpm run release:verify-packed-install --family clocky --from dist/consumer/clocky --from dist/consumer/vendor --from dist/consumer/landlock

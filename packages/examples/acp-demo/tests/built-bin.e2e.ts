@@ -32,10 +32,16 @@ const decompress = promisify(zstdDecompress)
 
 const clockyPackages = [
   'examples/agent-spine-demo', 'core/agent', 'core/session', 'core/system-prompt',
-  'core/tools', 'core/agent-loop', 'llm/llm', 'shell/shell',
+  'core/tools', 'core/agent-default-model', 'core/agent-runtime', 'core/team', 'core/team-link',
+  'core/agent-loop', 'llm/llm', 'shell/shell',
   'shell/bash-local', 'shell/tool-bash', 'subprocess/subprocess', 'subprocess/subprocess-local', 'context/agent-instructions', 'runtime-diagnostics/invariants', 'boot/app-boot',
-  'session/session-persistence',
+  'session/session-persistence', 'settings/settings',
   'session/session-checkpoint-policy', 'session/session-persistence-jsonl',
+  'storage/storage', 'storage/storage-json', 'storage/storage-log',
+  'agent-runtime/agent-runtime-in-process',
+  'team/team-hub', 'team/team-channel-direct',
+  'team/team-activation-controller', 'team/team-link-local', 'team/team-agent-client',
+  'team/tool-team', 'team/tool-team-goal', 'team/team-run',
   'acp/acp', 'examples/acp-demo', 'util/home-paths',
 ]
 const vendorPackages = [
@@ -78,9 +84,20 @@ async function makeConsumer(): Promise<string> {
     await link(dirname(resolved), dep, nm)
   }
   await writeFile(join(dir, 'mock-llm.mjs'), [
-    "import { LlmAdapter } from '@clocky/clocky-llm'",
+    "import { CallId, LlmAdapter } from '@clocky/clocky-llm'",
     'class Mock extends LlmAdapter {',
-    '  async * stream() {',
+    '  async * stream(options) {',
+    "    const final = options.messages.some(message => message.role === 'assistant' && message.content.some(block => block.type === 'tool-call' && block.name === 'team_final'))",
+    "    if (!final && options.purpose !== 'session-title') {",
+    '      const channelId = options.system?.match(/call team_final with channel_id ([^\\s]+) and/u)?.[1]',
+    "      if (channelId === undefined) throw new Error('missing TeamRun final channel')",
+    "      const argumentsText = JSON.stringify({ channel_id: channelId, text: 'ACP BUILT OK' })",
+    "      yield { type: 'block-start', index: 0, blockType: 'tool-call' }",
+    "      yield { type: 'tool-call-delta', index: 0, id: CallId('built-team-final'), name: 'team_final', argumentsDelta: argumentsText }",
+    "      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: CallId('built-team-final'), name: 'team_final', arguments: argumentsText } }",
+    "      yield { type: 'finish', reason: { kind: 'tool-calls' } }",
+    '      return',
+    '    }',
     "    yield { type: 'block-start', index: 0, blockType: 'text' }",
     "    yield { type: 'text-delta', index: 0, text: 'ACP BUILT OK' }",
     "    yield { type: 'block-end', index: 0, block: { type: 'text', text: 'ACP BUILT OK' } }",
@@ -187,7 +204,11 @@ describe.skipIf(!existsSync(acpBin))('clocky-acp-demo BUILT bin (node lib/bin.js
     }).toBeTypeOf('string')
     const compressed = await readFile(join(sessionsRoot, log!))
     expect(compressed.subarray(0, 4).toString('hex')).toBe('28b52ffd')
-    expect(JSON.parse((await decompress(compressed)).toString())).toMatchObject({ type: 'session', id: sessionId })
+    const header = JSON.parse((await decompress(compressed)).toString()) as Record<string, unknown>
+    expect(header.type).toBe('session')
+    expect(typeof header.teamId).toBe('string')
+    expect(typeof header.participantId).toBe('string')
+    expect(header.id).not.toBe(sessionId)
     expect(stderr.join('')).not.toContain('without inject')
     // stdout purity: every emitted line is a JSON-RPC frame, no logger leak.
     for (const line of rawOut.join('').split('\n').filter(l => l.trim().length > 0)) {

@@ -4,7 +4,7 @@ import Loader from '@clocky/cordis-plugin-loader'
 import { agentEvents, type Agent } from '@clocky/clocky-agent'
 import LlmRuntime, { CallId, type GenerateOptions, LlmAdapter, type StreamChunk } from '@clocky/clocky-llm'
 import SessionStore, { SessionId } from '@clocky/clocky-session'
-import type { SessionEvent, SessionHeader } from '@clocky/clocky-session'
+import type { Session, SessionEvent, SessionHeader } from '@clocky/clocky-session'
 import SessionPersistence from '@clocky/clocky-session-persistence'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import ToolRuntime, { TOOL_ABORTED_BEFORE_DISPATCH } from '@clocky/clocky-tools'
@@ -17,6 +17,7 @@ class TestPersistence extends SessionPersistence {
 
   locate(_meta: SessionHeader): undefined { return undefined }
   create(_meta: SessionHeader): Promise<void> { return Promise.resolve() }
+  materializeHeader(_session: Session): Promise<void> { return Promise.resolve() }
   append(_id: SessionId, _events: readonly SessionEvent[]): Promise<void> { return Promise.resolve() }
   load(_id: SessionId): Promise<{ meta: SessionHeader; events: SessionEvent[] }> {
     return Promise.reject(new Error('not used'))

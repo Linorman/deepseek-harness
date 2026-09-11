@@ -1,31 +1,22 @@
 /**
- * @clocky/clocky-headless — one-shot direct Agent driver. The bundle patch
- * rides over clocky-base without Host, HTTP, or browser plugins; this runner
- * creates one Agent through the core registry, drives the task to quiescence,
- * flushes its Session, prints the final assistant text, and exits.
+ * @clocky/clocky-headless — one-shot Team driver. The bundle patch rides over
+ * clocky-base without Host, HTTP, or browser plugins; this runner creates a
+ * Team, posts the task as human input, prints its explicit final, and exits.
  *
  * @module @clocky/clocky-headless
  */
 
-import { randomUUID } from 'node:crypto'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import { installModelSelection } from '@clocky/clocky-agent'
-import type { ModelSelectionRef } from '@clocky/clocky-agent'
-import type {} from '@clocky/clocky-agent-default-model'
-import { createUserMessage } from '@clocky/clocky-llm'
-import { SessionId } from '@clocky/clocky-session'
-import type { SessionEvent } from '@clocky/clocky-session'
-// Empty type imports carry the loader Context merge for the settlement await
-// and the cmdline Context merge for the appExit host value.
 import type {} from '@clocky/cordis-plugin-loader'
 import type {} from '@clocky/clocky-cmdline'
+import type {} from '@clocky/clocky-team-run'
 
 /** Stable Cordis plugin name. */
 export const name = 'headless-runner'
 
-/** Core services required before the one-shot turn can start. */
-export const inject = ['agentDefaultModel', 'agents', 'sessions']
+/** Core service required before the one-shot Team can start. */
+export const inject = ['teamRuns']
 
 /** Plugin config: the task resolved from this app's injected provider service. */
 export interface Config {
@@ -36,12 +27,6 @@ export interface Config {
 export const Config: z<Config> = z.object({
   task: z.string().required(),
 })
-
-/** Outcome of one owned run interval. */
-interface RunOutcome {
-  text: string
-  reason: SessionEvent<'turn/end'>['data']['reason'] | undefined
-}
 
 /** Process-facing effects of one run: output streams plus the launcher's bounded exit request. */
 interface HeadlessIo {
@@ -57,94 +42,35 @@ export const internals: { stdout: HeadlessIo['stdout']; stderr: HeadlessIo['stde
   stderr: process.stderr,
 }
 
-/** Aggregate the last assistant text and turn outcome in one owned interval. */
-function summarize(events: readonly SessionEvent[], firstSeq: number): RunOutcome {
-  let started = false
-  let text = ''
-  let reason: SessionEvent<'turn/end'>['data']['reason'] | undefined
-  for (const event of events) {
-    if (event.seq < firstSeq) continue
-    if (event.type === 'turn/start') {
-      started = true
-      continue
-    }
-    if (!started) continue
-    if (event.type === 'assistant/message') {
-      const joined = event.data.message.content
-        .filter(block => block.type === 'text')
-        .map(block => block.text)
-        .join('')
-      if (joined !== '') text = joined
-    }
-    if (event.type === 'turn/end') reason = event.data.reason
-  }
-  return { text, reason }
-}
-
-/** Report an unexpected direct-driver failure and request a failing exit. */
+/** Report an unexpected Team-run failure and request a failing exit. */
 function fail(io: HeadlessIo, error: unknown): void {
   io.stderr.write(`clocky: ${error instanceof Error ? error.message : String(error)}\n`)
   io.exit(1)
 }
 
 /**
- * Run one task through a freshly created Agent and request process exit.
- * @param ctx - plugin context carrying the Agent, default model, Session, and launcher IO services.
+ * Run one task through a newly created Team and request process exit.
+ * @param ctx - plugin context carrying the Team-run and launcher IO services.
  * @param task - one-shot task text.
  * @param io - process-facing effects.
  */
 async function run(ctx: Context, task: string, io: HeadlessIo): Promise<void> {
-  // Loader siblings mount concurrently. Await the complete application before
-  // creating an Agent so its scoped tools and adapters are not half-composed.
   await ctx.get('loader')?.await()
-  const agents = ctx.get('agents')
-  const defaultModel = ctx.get('agentDefaultModel')
-  const sessions = ctx.get('sessions')
-  // Early process shutdown can dispose the tree while settlement is pending.
-  if (agents === undefined || defaultModel === undefined || sessions === undefined) return
-
-  const selection = defaultModel.currentSelection()
-  if (selection === undefined) {
-    fail(io, new Error('no model is configured; select a provider and model before running a task'))
-    return
-  }
-  // This bundle composes no preset roster, so the model-facing rows sit in the
-  // host plane and the agent reads them from the global layer. A deployment
-  // that DOES configure one has to join it here first
-  // (@clocky/clocky-agent-presets README, "Composing a child agent").
-  const { agent } = await agents.create({
-    sessionId: SessionId(`session-${randomUUID()}`),
-    meta: { cwd: process.cwd() },
-    agentOptions: { provider: selection.provider, model: selection.model },
-    setup: (agentCtx) => {
-      const selected: ModelSelectionRef = { current: selection, assembled: undefined }
-      installModelSelection(agentCtx, selected)
-    },
-  })
-  await agent.whenIdle()
-  const firstSeq = agent.session.seq
-  agent.followup(createUserMessage({
-    content: [{ type: 'text', text: task }],
-    source: { kind: 'user' },
-  }))
-  await agent.whenIdle()
-  await sessions.flush(agent.session)
-  const outcome = summarize(agent.session.events, firstSeq)
-  io.stdout.write(outcome.text + '\n')
-  if (outcome.reason?.kind === 'error') {
-    io.stderr.write(`clocky: ${outcome.reason.error.code}: ${outcome.reason.error.message}\n`)
-  }
-  io.exit(outcome.reason?.kind === 'completed' ? 0 : 1)
+  const teamRuns = ctx.get('teamRuns')
+  if (teamRuns === undefined) return
+  const team = await teamRuns.create({ objective: task, cwd: process.cwd() })
+  await teamRuns.postHumanInput({ teamId: team.teamId, content: [{ type: 'text', text: task }], delivery: 'turn' })
+  const final = await teamRuns.waitForFinal({ teamId: team.teamId })
+  io.stdout.write(final.text + '\n')
+  io.exit(0)
 }
 
 /**
- * Mount the one-shot direct driver.
- * @param ctx - plugin context carrying core services and the launcher-provided exit request.
+ * Mount the one-shot Team driver.
+ * @param ctx - plugin context carrying the Team-run service and launcher-provided exit request.
  * @param config - validated task config.
  */
 export function apply(ctx: Context, config: Config): void {
-  // Read through the global service store, not the property proxy: appExit is
-  // an optional host value, never an injected dependency.
   const exit = ctx.get('appExit')
   if (exit === undefined) {
     throw new Error('headless-runner: the launcher must provide ctx.appExit before the tree mounts')

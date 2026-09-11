@@ -1,0 +1,26 @@
+{
+  "scenario": "headless-final-restart",
+  "backend": "sqlite",
+  "window": "intent",
+  "independentHost": true,
+  "initial": {
+    "teamPhase": "quiescing",
+    "goalPhase": "complete",
+    "sinkAdmissions": 0,
+    "humanReceipts": 0,
+    "quiesced": false
+  },
+  "recovered": {
+    "teamPhase": "stalled",
+    "goalPhase": "complete",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactActivationInStall": true,
+    "quiesced": false,
+    "recoveryDescriptor": false,
+    "finalText": "DURABLE_TEAM_FINAL_AFTER_HOST_LOSS",
+    "sinkAdmissions": 1,
+    "humanReceipts": 1,
+    "closureCount": 1,
+    "channelPhase": "active"
+  }
+}

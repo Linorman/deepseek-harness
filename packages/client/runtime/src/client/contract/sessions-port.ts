@@ -7,13 +7,13 @@
  * dependency.
  */
 
-import type { SessionId, WorkspaceId } from '@clocky/clocky-api-remotes/client'
+import type { SessionId } from '@clocky/clocky-api-remotes/client'
 import type { ObservableSnapshot } from './store.ts'
 
 /** Session-list row facts sibling domains read: recency, blank-reuse eligibility, and its cwd canon. */
 export interface SessionsPortSummary {
   id: SessionId
-  /** Empty-log bit (blank sessions are reused by New Session instead of minting another). */
+  /** Empty-log bit reported by the Host summary. */
   blank: boolean
   cwd?: string
   updatedAt: number
@@ -31,12 +31,6 @@ export interface SessionsPortList {
 export interface SessionsPort {
   /** Observable list snapshot (read face only; writes stay inside the sessions domain). */
   readonly list: ObservableSnapshot<SessionsPortList>
-  /**
-   * Create a session on the host.
-   * @param opts - target workspace.
-   * @returns the new session id.
-   */
-  create(opts: { workspaceId: WorkspaceId }): Promise<SessionId>
   /**
    * Select a session as current.
    * @param id - session id (must exist in the list store).

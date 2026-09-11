@@ -14,7 +14,7 @@ The [archived message-chrome decision](../../archived/feature/2026-07-29-web-mes
 
 `assistantActionsSeqs` takes `ConversationSnapshot.turnEnds` and grants the row only within a turn that has a `turn/end` in the window. Ownership inside a completed turn is unchanged: its last content-text assistant. A turn still producing steps grants nothing, so its narration never mounts the row, and the seat appears once, under the settled answer, when the turn closes.
 
-This is the same completion fact the branch control and the run-time label already use, so the three parts of one row now agree. Turn completion is read from the durable `turn/end` event rather than inferred from `running`, the streaming partial, or in-flight tool calls, matching the [completed-turn-tail decision](2026-08-02-message-fork-actions-require-completed-turn-tail.md). Every reason kind closes a turn, so an aborted turn's frozen tail keeps its footer, and a crash-orphaned turn receives its `turn/end` from log repair on load.
+Turn completion is read from the durable `turn/end` event rather than inferred from `running`, the streaming partial, or in-flight tool calls. Every reason kind closes a turn, so an aborted turn's frozen tail keeps its footer, and a crash-orphaned turn receives its `turn/end` from log repair on load.
 
 `hasContentText` moves to `chat-flow.ts` and `AssistantMarkdown` imports it, so the ownership gate and the mount gate cannot drift apart.
 

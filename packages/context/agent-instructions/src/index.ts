@@ -11,7 +11,7 @@
 
 import type { Context } from '@clocky/cordis'
 import { isDeepStrictEqual } from 'node:util'
-import type { Agent, PreStepDecision } from '@clocky/clocky-agent'
+import { resolveAgentWorkspaceRoot, type Agent, type PreStepDecision } from '@clocky/clocky-agent'
 import { createUserMessage } from '@clocky/clocky-llm'
 import type { Session, UserMessage } from '@clocky/clocky-session'
 import type { ToolExecution, ToolExecutionResult, ToolExecutionToken } from '@clocky/clocky-tools'
@@ -121,7 +121,7 @@ export function apply(ctx: Context, config: Config): void {
     let desiredBaseline = false
     const authorityMessages = [...claimed]
     /* v8 ignore next -- normal agents carry an absolute session cwd. */
-    const cwd = agent.session.header.cwd ?? process.cwd()
+    const cwd = resolveAgentWorkspaceRoot(agent) ?? process.cwd()
     const projectRoot = await findProjectRoot(cwd, resolved.projectRootMarkers, fileSystem, signal)
     const identity = workspaceBaselineIdentity(resolved, cwd, projectRoot)
     const visibleBaseline = visibleBaselineSource(agent, authorityMessages)

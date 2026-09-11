@@ -43,10 +43,11 @@ describe('startup RPC budget', () => {
       const url = new URL(request.url())
       if (url.pathname.startsWith('/api/')) calls.push(url.pathname.slice('/api/'.length))
     })
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl)
-    // Boot settles when the workspace picker is interactive; the trailing wait
+    // Boot settles when the Team draft is interactive; the trailing wait
     // absorbs the first-connection reset wave the budget must include.
-    await page.getByRole('textbox', { name: 'Choose workspace' }).waitFor({ timeout: 30_000 })
+    await page.getByPlaceholder('Describe what you want to build').waitFor({ timeout: 30_000 })
     await page.waitForTimeout(3000)
     const describeCount = calls.filter(method => method === 'settings.describe').length
     expect(describeCount, `startup /api calls:\n${calls.join('\n')}`).toBe(DESCRIBE_BUDGET)

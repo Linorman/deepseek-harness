@@ -322,6 +322,11 @@ class ClockyFamily extends ReleaseFamily {
   readonly patterns = ['packages/!(experimental)/*/package.json', 'apps/*/package.json'] as const
   readonly tagPrefix = 'clocky-v'
 
+  /** Exclude private compatibility packages from the publish set while allowing the shared version bump to see them. */
+  override members(root: string): ReleaseMember[] {
+    return super.members(root).filter(member => member.manifest.private !== true)
+  }
+
   /** Require current artifacts from a complete official client build. */
   override verifyBuildArtifacts(root: string): void {
     readClientBuildRecord(root, officialClientBuildEnvironment(root))

@@ -4,7 +4,7 @@
 - id: base
   name: '@clocky/cordis-plugin-include'
   config:
-    path: ./cordis.yml
+    path: ./legacy-subagent.cordis.yml
 
 - id: report-fence
   name: './tests/fixtures/subagent-report-fence.ts'

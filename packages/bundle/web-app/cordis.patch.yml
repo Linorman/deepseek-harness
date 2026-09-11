@@ -48,6 +48,12 @@
     - id: code-runtime
       name: '@clocky/clocky-code-runtime-worker-thread'
 
+    # The Web Host owns the shipped local authentication boundary. It waits for
+    # a real Web invocation, so --help never rotates a bootstrap credential.
+    - id: product-principal-local
+      name: '@clocky/clocky-host-product-principal-local'
+      inject: [webStartup]
+
     - id: storage
       name: '@clocky/clocky-storage'
 
@@ -55,6 +61,183 @@
       name: '@clocky/clocky-storage-json'
       config:
         root: !!js clockyHomePath('storages')
+
+    - id: storage-sqlite
+      name: '@clocky/clocky-storage-sqlite'
+      config:
+        path: !!js clockyHomePath('team-storage.sqlite')
+
+    - id: storage-log
+      name: '@clocky/clocky-storage-log'
+      config:
+        backend: sqlite
+        routes: {}
+
+    - id: team-hub
+      name: '@clocky/clocky-team-hub'
+      config:
+        maxTeamDepth: 1
+        maxModelTokensPerTeam: 100000000
+
+
+    - id: team-human-client
+      name: '@clocky/clocky-team-human-client'
+      config:
+        storagePageSize: 32
+        maxPageSize: 32
+        maxDeliveryBytes: 262144
+        maxPendingOperations: 128
+        watchTimeoutMs: 30000
+        pollIntervalMs: 250
+    - id: team-human-actor
+      name: '@clocky/clocky-team-human-actor'
+
+    - id: team-channel-summary
+      name: '@clocky/clocky-team-channel-summary'
+      config:
+        allowedPolicies: [directed, summarized-window]
+        maxSourceEnvelopes: 64
+        maxSourceBytes: 65536
+        maxSummaryBytes: 4096
+        maxHistorySpan: 128
+        disposalTimeoutMs: 5000
+
+    - id: team-channel-direct
+      name: '@clocky/clocky-team-channel-direct'
+
+    - id: team-channel-basic
+      name: '@clocky/clocky-team-channel-basic'
+
+    - id: team-workspace
+      name: '@clocky/clocky-team-workspace'
+
+    - id: team-artifact
+      name: '@clocky/clocky-team-artifact'
+
+    - id: team-artifact-local
+      name: '@clocky/clocky-team-artifact-local'
+      config:
+        root: !!js clockyHomePath('team-artifacts')
+        retention:
+          graceMs: 86400000
+          maxObjectsPerDrive: 128
+          pulseIntervalMs: 3600000
+          disposalTimeoutMs: 5000
+
+    - id: team-workspace-shared
+      name: '@clocky/clocky-team-workspace-shared'
+      config:
+        root: !!js process.cwd()
+        allowTeamWorkspacePath: true
+        observationStateRoot: !!js clockyHomePath('team-workspace-observations')
+
+    - id: team-workspace-recovery
+      name: '@clocky/clocky-team-workspace-recovery'
+      inject: [loader]
+      intercept:
+        loader:
+          await: true
+      config:
+        maxTeamsPerDrive: 128
+        pageSize: 32
+
+    - id: team-channel-task-assignment
+      name: '@clocky/clocky-team-channel-task-assignment'
+
+    - id: team-channel-workflow
+      name: '@clocky/clocky-team-channel-workflow'
+
+    - id: team-agent-runtime
+      name: '@clocky/clocky-agent-runtime'
+
+    - id: team-agent-runtime-in-process
+      name: '@clocky/clocky-agent-runtime-in-process'
+
+    - id: team-activation-controller
+      name: '@clocky/clocky-team-activation-controller'
+
+    - id: team-link
+      name: '@clocky/clocky-team-link'
+
+    - id: team-link-local
+      name: '@clocky/clocky-team-link-local'
+
+    - id: team-channel-admission
+      name: '@clocky/clocky-team-channel-admission'
+
+    - id: team-agent-client
+      name: '@clocky/clocky-team-agent-client'
+      config:
+        consumeWorkspace: true
+        maxTaskOutputContinuations: 3
+
+    - id: tool-team
+      name: '@clocky/clocky-tool-team'
+
+    - id: team-delegation
+      name: '@clocky/clocky-team-delegation'
+      config:
+        maxOperationsPerDrive: 32
+        channelPageSize: 128
+        pulseIntervalMs: 1000
+
+    - id: team-placement-default
+      name: '@clocky/clocky-team-placement-default'
+      config:
+        routes: []
+        maxActivationsPerDrive: 8
+        maxCursorRetries: 4
+
+    - id: team-scheduler-dag
+      name: '@clocky/clocky-team-scheduler-dag'
+      config:
+        leaseDurationMs: 3600000
+        maxAssignmentsPerDrive: 8
+        maxExpirationsPerDrive: 1
+        maxWakeDispatchesPerDrive: 8
+        maxConflictsPerDrive: 4
+        maxActiveAttemptsPerParticipant: 1
+        permittedWorkspaceModes: [shared]
+        pulseIntervalMs: 1000
+        disposalTimeoutMs: 5000
+
+    - id: team-closure-drive-registry
+      name: '@clocky/clocky-team-closure-driver/registry'
+
+    - id: team-closure-driver-hub
+      name: '@clocky/clocky-team-closure-driver/hub'
+      config:
+        backend: hub
+
+    - id: team-closure-driver
+      name: '@clocky/clocky-team-closure-driver'
+      config:
+        backend: hub
+        maxTeamsPerDrive: 128
+        pageSize: 32
+        disposalTimeoutMs: 5000
+        pulseIntervalMs: 1000
+
+    - id: team-run
+      name: '@clocky/clocky-team-run'
+      config:
+        workerCount: 1
+        maxWorkerCount: 32
+        maxCoordinatorOutputContinuations: 3
+        workerPreset: minimal
+        reviewerPreset: minimal
+
+    - id: command-team-goal
+      name: '@clocky/clocky-command-team-goal'
+
+    - id: tool-team-channel-summary
+      name: '@clocky/clocky-team-channel-summary/tool'
+
+    - id: tool-team-goal
+      name: '@clocky/clocky-tool-team-goal'
+
+    - id: tool-team-task
+      name: '@clocky/clocky-tool-team-task'
 
     - id: storage-domain
       name: '@clocky/clocky-storage-domain'
@@ -91,8 +274,7 @@
       name: '@clocky/clocky-session-stats'
 
     # Resolve bind host, SSH launch, and display once at boot, then mount the
-    # matching dual-face directory picker. Mount -native or -browse directly in
-    # an overlay to pin the interaction.
+    # matching host directory-picker backend.
     - id: directory-picker
       name: '@clocky/clocky-host-directory-picker-auto'
 
@@ -101,9 +283,13 @@
       name: '@clocky/clocky-host-plugin-inventory'
 
     # The API gateway: the transport-agnostic dispatch face every client shape
-    # shares. The base layer's agent-default-model service owns the default model.
+    # shares. Wait for the human-proof binder before exposing Team mutations;
+    # otherwise an early task delete can race the provider and fail as if no
+    # authenticated Team actor exists. The base layer's agent-default-model
+    # service owns the default model.
     - id: api-gateway
       name: '@clocky/clocky-host-apiproxy'
+      inject: [teamHumanActors]
 
     - id: cordis-host-runner
       name: '@clocky/clocky-cordis-host-runner'
@@ -142,6 +328,7 @@
         printUrl: true
         surfaceContext: true
         trustedHosts: !!js ctx.webStartup.trustedHosts
+        productPrincipalProvider: local
 
     # The client-plugin reload chain, always mounted: it is idle until a
     # rebuild watcher (pnpm run dev:web) actually rewrites client bundles. It
@@ -169,6 +356,7 @@
         # A deployment adding authorities keeps this expression and concatenates
         # its literals, for example: ['app.internal', ...ctx.webRuntime.trustedHosts].
         trustedHosts: !!js ctx.webRuntime.trustedHosts
+        productPrincipalProvider: !!js ctx.webRuntime.productPrincipalProvider
 
     - id: api-remotes
       name: '@clocky/clocky-api-remotes'
@@ -193,6 +381,9 @@
 
     - id: ui-sidebar
       name: '@clocky/clocky-client-ui-sidebar'
+
+    - id: ui-team
+      name: '@clocky/clocky-client-ui-team'
 
     - id: ui-settings
       name: '@clocky/clocky-client-ui-settings'
@@ -219,19 +410,10 @@
     - id: ui-cordis
       name: '@clocky/clocky-client-ui-cordis'
 
-    # Durable workflow lifecycle as an independent Chat node after the
-    # existing generic workflow tool row.
-    - id: ui-workflow-run
-      name: '@clocky/clocky-client-ui-workflow-run'
-
     # Turn tail: the produced-files row under each closing assistant message.
     # Remove this entry to turn the surface off; the tail hole renders empty.
     - id: ui-deliverables
       name: '@clocky/clocky-client-ui-deliverables'
-
-
-    - id: ui-workspace
-      name: '@clocky/clocky-client-ui-workspace'
 
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the reference sources (ui-skill / ui-reference).
@@ -244,9 +426,6 @@
     - id: ui-skill
       name: '@clocky/clocky-client-ui-skill'
 
-    - id: ui-subagent
-      name: '@clocky/clocky-client-ui-subagent'
-
     - id: ui-reference
       name: '@clocky/clocky-client-ui-reference'
 
@@ -254,16 +433,12 @@
     - id: ui-jobs
       name: '@clocky/clocky-client-ui-jobs'
 
-    # Goal surface: GoalBar in the input dock over the goal session projection.
-    - id: ui-goal
-      name: '@clocky/clocky-client-ui-goal'
-
     # Per-message feedback: Like/Dislike plus an optional note in the
     # assistant-message action strip, over the messageFeedback Remote.
     - id: ui-message-feedback
       name: '@clocky/clocky-client-ui-message-feedback'
 
-    # Model selection: the /model popupSelect + composer seat over session.models.
+    # Model selection: the /model popupSelect + composer seat over Session and Team-draft catalogs.
     - id: ui-model-selection
       name: '@clocky/clocky-client-ui-model-selection'
 
@@ -293,7 +468,7 @@
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #
 # Every row below composes what ONE agent contributes to the host registries:
-# its tools, its prompt sections, its delegation backends. The base keeps them
+# its tools and prompt sections. The base keeps them
 # for the TUI, which is single-session and composes its agent process-wide; the
 # Web surface disables them here and lets each session mount a preset instead.
 #
@@ -314,9 +489,8 @@
   disabled: true
 
 # The background-job REGISTRY stays on the host plane; only the model-facing
-# `job_*` controls move. Its producers — `tool-bash` here, `tool-terminal` and a
-# non-continuable `tool-subagent` elsewhere — are preset rows that resolve it
-# with `ctx.get`, and an entry-local realm around the registry is invisible to
+# `job_*` controls move. Its producers resolve it with `ctx.get`, and an
+# entry-local realm around the registry is invisible to
 # every sibling row outside that realm, so `run_in_background` answered
 # "background jobs unavailable" while the controls sat in the catalog. That is
 # the `goals` criterion read from inside the preset: a Service a row outside its
@@ -350,14 +524,17 @@
 - id: tool-skill
   disabled: true
 
-# The goal SERVICE, its session driver, and the `/goal` command STAY on the
-# host plane; only the model-facing tool moves. The Gateway serves the goal
-# domain as Remote endpoints, and a Remote method picks its receiver Service
-# from a generated descriptor — it resolves `goals` on the host, so a
-# per-session realm would answer `service-unavailable` for every browser call.
-# That is the `shell-env` criterion read from the other side: injection is not
-# the only host relationship a Service can have. The registry is keyed by
-# session, so one host instance serves every session exactly as before presets.
+# Team owns Web objectives. Its scoped `/goal` command is installed after TeamRun;
+# the base same-Session Goal stack and its automatic rounds stay absent.
+
+- id: goal
+  disabled: true
+
+- id: goal-round-driver
+  disabled: true
+
+- id: command-goal
+  disabled: true
 
 - id: tool-goal
   disabled: true
@@ -379,40 +556,6 @@
   disabled: true
 
 - id: tool-result-pruner
-  disabled: true
-
-# The subagent registry and its backends STAY in the host plane. `subagents` is
-# a process singleton with a cross-session query surface (`listChildren`,
-# `followup`) that the host api-proxy serves to the browser, and a provider
-# registers under a globally unique name, so a per-session copy would both
-# starve that host row and collide on the second session. What a preset
-# chooses is which delegation TOOLS its agent sees, below.
-
-- id: tool-subagent-control
-  disabled: true
-
-- id: tool-subagent-list-agents
-  disabled: true
-
-- id: tool-subagent
-  disabled: true
-
-- id: tool-subagent-fork
-  disabled: true
-
-# `tool-subagent-report` is host-plane for the same reason as the registry, not
-# because a preset may not want it: it registers a CONTINUABLE SETUP on that
-# singleton rather than a tool this agent calls, and the setup list is not
-# scope-aware — one copy per mounted preset means every child gets `report`
-# registered once per live session, which throws on the second.
-
-- id: workflow-worker-thread
-  disabled: true
-
-- id: tool-workflow
-  disabled: true
-
-- id: tool-ralph
   disabled: true
 
 - id: agent-instructions

@@ -7,16 +7,16 @@
 
 import { EventEmitter } from 'node:events'
 import { spawn, type ChildProcess } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { createLaunchEnvironmentSnapshot, CLOCKY_LAUNCH_ENVIRONMENT_KEY } from '@clocky/clocky-launch-environment'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import type { WebServer } from '@clocky/clocky-host-webserver'
-import { apply, Config, internals } from '../src/index.ts'
+import { apply, BrowserHandoffManager, Config, internals } from '../src/index.ts'
 
 vi.mock('node:child_process', async importOriginal => ({
   ...await importOriginal<typeof import('node:child_process')>(),
@@ -32,6 +32,7 @@ vi.mock('node:os', async importOriginal => ({
 }))
 
 let dist: string | undefined
+const temporaryRoots: string[] = []
 
 beforeEach(() => {
   vi.stubEnv('SSH_CONNECTION', '')
@@ -44,23 +45,33 @@ afterEach(() => {
   vi.unstubAllEnvs()
   internals.resolveDistIndex = originalResolve
   internals.openBrowser = originalOpenBrowser
-  if (dist !== undefined) rmSync(dist, { recursive: true, force: true })
+  for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true })
   dist = undefined
 })
 
 const originalResolve = internals.resolveDistIndex
 const originalOpenBrowser = internals.openBrowser
+const TEST_BOOTSTRAP_CREDENTIAL = 'test-browser-bootstrap-credential'
+const TEST_TEMP_ROOT = join(process.cwd(), '.tmp', 'p0-security-audit')
 
-type BrowserLauncher = ChildProcess & { stderr: PassThrough }
+type BrowserLauncher = ChildProcess & { stderr: PassThrough; stdin: PassThrough }
 
 /** Minimal browser-launcher process for the native handoff adapter. */
 function launcher(): BrowserLauncher {
-  return Object.assign(new EventEmitter(), { stderr: new PassThrough() }) as unknown as BrowserLauncher
+  return Object.assign(new EventEmitter(), { stderr: new PassThrough(), stdin: new PassThrough() }) as unknown as BrowserLauncher
+}
+
+/** Create one test-owned temporary directory below the repository. */
+function temporaryDirectory(prefix: string): string {
+  mkdirSync(TEST_TEMP_ROOT, { recursive: true, mode: 0o700 })
+  const directory = mkdtempSync(join(TEST_TEMP_ROOT, prefix))
+  temporaryRoots.push(directory)
+  return directory
 }
 
 /** Stage a dist fixture and point the bundle's resolver at it. */
 function stageDist(): string {
-  dist = mkdtempSync(join(tmpdir(), 'clocky-web-app-'))
+  dist = temporaryDirectory('clocky-web-app-')
   mkdirSync(join(dist, 'dist'))
   const index = join(dist, 'dist', 'index.html')
   writeFileSync(index, '<head></head><body>shell</body>')
@@ -81,6 +92,16 @@ function fakeHttpServer(host: '127.0.0.1' | '0.0.0.0' = '127.0.0.1'): { server: 
     renderIndex: (html: string) => html,
   } as unknown as WebServer
   return { server, seat: () => fallback }
+}
+
+/** Supply the configured local bootstrap provider to tests that exercise browser handoff. */
+function provideProductPrincipal(ctx: Context): void {
+  ctx.provide('productPrincipals', {
+    bootstrapCredential: (provider: string) => {
+      if (provider !== 'local') throw new Error('unexpected product-principal provider')
+      return TEST_BOOTSTRAP_CREDENTIAL
+    },
+  } as never)
 }
 
 /** A fake Loader whose settlement the test controls (the URL line waits on it). */
@@ -105,6 +126,7 @@ describe('web-app runtime glue', () => {
     ]))
     const { server, seat } = fakeHttpServer('0.0.0.0')
     ctx.provide('webServer', server)
+    provideProductPrincipal(ctx)
     const contributions: BashContribution[] = []
     ctx.provide('shellEnv', {
       register: (contribution: BashContribution) => {
@@ -126,10 +148,13 @@ describe('web-app runtime glue', () => {
     expect(ctx.get('webRuntime')).toEqual({
       lanAddresses: ['192.168.1.5'],
       trustedHosts: ['192.168.1.5', 'lab.internal'],
+      productPrincipalProvider: 'local',
     })
     expect(log).toHaveBeenCalledWith('clocky web: http://127.0.0.1:4567 (LAN: http://192.168.1.5:4567)')
     expect(log).toHaveBeenCalledWith('clocky web: opening the default browser; pass --no-open to disable')
-    expect(openBrowser).toHaveBeenCalledWith('http://127.0.0.1:4567')
+    expect(openBrowser).toHaveBeenCalledWith(
+      'http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL, expect.any(BrowserHandoffManager),
+    )
     expect(lifecycle).toEqual([
       'clocky web: http://127.0.0.1:4567 (LAN: http://192.168.1.5:4567)',
       'clocky web: opening the default browser; pass --no-open to disable',
@@ -223,6 +248,7 @@ describe('web-app runtime glue', () => {
     // can request the complete app immediately.
     const settled = new Context()
     settled.provide('webServer', fakeHttpServer().server)
+    provideProductPrincipal(settled)
     let release: () => void
     const settlement = new Promise<void>((resolve) => { release = resolve })
     provideLoader(settled, () => settlement)
@@ -234,7 +260,9 @@ describe('web-app runtime glue', () => {
     release!()
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).toHaveBeenCalledWith('clocky web: http://127.0.0.1:4567')
-    expect(openBrowser).toHaveBeenCalledWith('http://127.0.0.1:4567')
+    expect(openBrowser).toHaveBeenCalledWith(
+      'http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL, expect.any(BrowserHandoffManager),
+    )
     await settled.fiber.dispose()
 
     // Failed path: Loader reports the sibling failure; the app prints no URL
@@ -301,10 +329,11 @@ describe('web-app runtime glue', () => {
   it.each([
     ['Error', new Error('no desktop'), 'no desktop'],
     ['non-Error', 'desktop unavailable', 'desktop unavailable'],
-  ] as const)('keeps the server running and reports the manual URL when a browser failure is %s', async (_kind, failure, reason) => {
+  ] as const)('keeps the server running and reports a browser failure without leaking auth material for %s', async (_kind, failure, reason) => {
     stageDist()
     const ctx = new Context()
     ctx.provide('webServer', fakeHttpServer().server)
+    provideProductPrincipal(ctx)
     internals.openBrowser = vi.fn(async () => { throw failure })
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -312,34 +341,91 @@ describe('web-app runtime glue', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(log).toHaveBeenCalledWith('clocky web: opening the default browser; pass --no-open to disable')
     expect(diagnostic).toHaveBeenCalledWith(
-      `web-app: could not open the default browser because ${reason}; visit http://127.0.0.1:4567 manually`,
+      `web-app: could not open the default browser because ${reason}`,
     )
     expect(ctx.get('webServer')).toBeDefined()
     await ctx.fiber.dispose()
   })
 
+  it('removes a private handoff document after the loopback bootstrap accepts it', async () => {
+    stageDist()
+    const handoffRoot = temporaryDirectory('clocky-web-consumed-handoff-')
+    const ctx = new Context()
+    ctx.provide('webServer', fakeHttpServer().server)
+    provideProductPrincipal(ctx)
+    let artifactPath: string | undefined
+    let handoffId: string | undefined
+    let opened!: () => void
+    const openedPromise = new Promise<void>((resolve) => { opened = resolve })
+    internals.openBrowser = async (url, credential, handoffs) => {
+      const artifact = await handoffs!.create(url, credential!)
+      artifactPath = fileURLToPath(artifact.url)
+      handoffId = artifact.id
+      opened()
+    }
+    apply(ctx, new Config({
+      openBrowser: true,
+      printUrl: false,
+      surfaceContext: false,
+      trustedHosts: [],
+      browserHandoffDirectory: handoffRoot,
+    }))
+    await openedPromise
+    expect(existsSync(artifactPath!)).toBe(true)
+    ctx.emit('product-auth/browser-handoff-consumed', handoffId!)
+    await vi.waitFor(() => { expect(existsSync(artifactPath!)).toBe(false) })
+    await ctx.fiber.dispose()
+  })
+
+  it('does not publish a handoff artifact when teardown races document creation', async () => {
+    const handoffRoot = temporaryDirectory('clocky-web-racing-handoff-')
+    const handoffs = new BrowserHandoffManager({ directory: handoffRoot, ttlMs: 60_000 })
+    const creating = handoffs.create('http://127.0.0.1:4567', TEST_BOOTSTRAP_CREDENTIAL)
+    await handoffs.close()
+    await expect(creating).rejects.toThrow('browser handoff manager is closed')
+    expect(existsSync(handoffRoot) ? readdirSync(handoffRoot) : []).toEqual([])
+  })
+
   it('scrubs the helper environment and reports helper spawn or exit failures', async () => {
     vi.stubEnv('DEEPSEEK_API_KEY', 'must-not-reach-browser')
     vi.stubEnv('CLOCKY_HOME', '/must-not-reach-browser')
+    const handoffRoot = temporaryDirectory('clocky-web-handoff-')
+    const handoffs = new BrowserHandoffManager({ directory: handoffRoot, ttlMs: 60_000 })
     const completed = launcher()
     vi.mocked(spawn).mockReturnValueOnce(completed)
-    const completion = originalOpenBrowser('http://127.0.0.1:4567')
+    const secret = 'secret-not-in-process-arguments'
+    const completion = originalOpenBrowser('http://127.0.0.1:4567', secret, handoffs)
+    await vi.waitFor(() => { expect(spawn).toHaveBeenCalledTimes(1) })
     const [command, args, options] = vi.mocked(spawn).mock.calls[0]!
     expect(command).toBe(process.execPath)
-    expect(args).toEqual([
-      '--input-type=module',
-      '--eval', expect.stringContaining('await import('),
-      '--', 'http://127.0.0.1:4567',
-    ])
+    expect(args?.slice(0, 4)).toEqual(['--input-type=module', '--eval', expect.stringContaining('await import('), '--'])
+    const handoffUrl = args?.[4]
+    expect(handoffUrl).toMatch(/^file:\/\//)
     expect(args?.[2]).toContain("if (process.platform === 'win32')")
     expect(args?.[2]).toContain('launcher.ref()')
+    expect(args?.[2]).toContain('open(process.argv[1])')
+    expect(args?.[2]).not.toContain('process.stdin')
+    expect(args?.[2]).not.toContain('clocky-product-bootstrap')
+    expect(args?.join(' ')).not.toContain(secret)
+    expect(args?.join(' ')).not.toContain(encodeURIComponent(secret))
     expect(options?.env).not.toHaveProperty('DEEPSEEK_API_KEY')
     expect(options?.env).not.toHaveProperty('CLOCKY_HOME')
     expect(options?.env?.PATH).toBe(process.env.PATH)
     expect(options?.stdio).toEqual(['ignore', 'inherit', 'pipe'])
+    const handoffPath = fileURLToPath(handoffUrl!)
+    const handoffDocument = readFileSync(handoffPath, 'utf8')
+    const handoffId = /name="handoffId" value="([A-Za-z0-9_-]{43})"/u.exec(handoffDocument)?.[1]
+    expect(handoffDocument).toContain('action="http://127.0.0.1:4567/api/bootstrap"')
+    expect(handoffDocument).toContain(secret)
+    expect(handoffUrl).not.toContain(secret)
+    expect(handoffUrl).not.toContain(encodeURIComponent(secret))
+    expect(statSync(handoffPath).mode & 0o077).toBe(0)
+    expect(statSync(join(handoffPath, '..')).mode & 0o077).toBe(0)
     completed.emit('close', 0)
     await expect(completion).resolves.toBeUndefined()
     expect(completed.listenerCount('error')).toBe(0)
+    await handoffs.consume(handoffId!)
+    expect(existsSync(handoffPath)).toBe(false)
 
     const completedWithStderr = launcher()
     vi.mocked(spawn).mockReturnValueOnce(completedWithStderr)
@@ -358,6 +444,19 @@ describe('web-app runtime glue', () => {
     failedWithReason.emit('close', 1)
     await reasonAssertion
 
+    const credentialFailure = launcher()
+    vi.mocked(spawn).mockReturnValueOnce(credentialFailure)
+    const redacted = originalOpenBrowser('http://127.0.0.1:4567', 'never-log-this-bootstrap-credential', handoffs)
+    const redactedAssertion = expect(redacted).rejects.toThrow('[redacted]')
+    await vi.waitFor(() => { expect(spawn).toHaveBeenCalledTimes(4) })
+    const retainedHandoffUrl = vi.mocked(spawn).mock.calls[3]?.[1]?.[4]
+    if (typeof retainedHandoffUrl !== 'string') throw new Error('failed browser launch did not receive a handoff file')
+    const retainedHandoffPath = fileURLToPath(retainedHandoffUrl)
+    credentialFailure.stderr?.write('Error: never-log-this-bootstrap-credential\n')
+    credentialFailure.emit('close', 1)
+    await redactedAssertion
+    expect(existsSync(retainedHandoffPath)).toBe(true)
+
     const failed = launcher()
     vi.mocked(spawn).mockReturnValueOnce(failed)
     const failure = originalOpenBrowser('http://127.0.0.1:4567')
@@ -374,5 +473,6 @@ describe('web-app runtime glue', () => {
     errored.emit('error', new Error('spawn failed'))
     await errorAssertion
     expect(errored.listenerCount('close')).toBe(0)
+    await handoffs.close()
   })
 })

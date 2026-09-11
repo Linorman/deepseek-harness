@@ -22,6 +22,7 @@ export default defineConfig({
     standardDecoratorPlugin(),
   ],
   test: {
+    setupFiles: ['./scripts/test-dom.ts'],
     execArgv: vitestExecArgv,
     include: [
       'apps/web/tests/**/*.e2e.ts',

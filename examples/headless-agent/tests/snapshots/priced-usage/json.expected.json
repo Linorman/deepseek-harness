@@ -1,0 +1,21 @@
+{
+  "scenario": "priced-usage-replay",
+  "sessionUsageMessages": 1,
+  "producer": "team-agent-client",
+  "provider": "priced-usage-model",
+  "model": "priced-usage-model",
+  "usage": {
+    "inputTokens": 2,
+    "outputTokens": 1
+  },
+  "costUnits": 7,
+  "oldCursorReplay": "unchanged",
+  "freshCursorReplay": "unchanged",
+  "usageRecords": 1,
+  "realTaskList": "empty",
+  "toolCancelled": true,
+  "modelRequests": 1,
+  "terminal": "cancelled",
+  "goal": "active",
+  "coordinatorQuiesced": true
+}

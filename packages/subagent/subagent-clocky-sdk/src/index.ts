@@ -4,7 +4,7 @@
  * session, model route, and tools — driven over stdio JSON-RPC through the
  * TypeScript SDK client, so it shares no Cordis context and advertises no
  * parent-enforced start capabilities; the ONE thing it reads off
- * `request.parent` is the session's workspace cwd. This plugin uses named
+ * `request.parent` is its resolved workspace root. This plugin uses named
  * exports only; a default would hide its loader metadata (see
  * `docs/postmortem/0001-acp-default-export-drops-inject.md`).
  * @module @clocky/clocky-subagent-clocky-sdk
@@ -12,6 +12,7 @@
 
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { SubagentCapabilities, SubagentProvider, SubagentStartRequest } from '@clocky/clocky-subagent'
 import { assertPositiveFinite, NO_START_CAPABILITIES, resolveChildCwd, validateConfiguredCwd } from '@clocky/clocky-subagent'
 import {
@@ -37,15 +38,16 @@ export interface Config {
    * Working directory override for the child process and its SDK session
    * workspace. Must be non-empty; a relative path resolves against the
    * harness launch directory at load, and the result must be an existing
-   * directory. When omitted, each child inherits its delegating parent
-   * session's cwd — and starting one from a parent session that has no cwd
-   * fails.
+   * directory. When omitted, each child inherits its delegating parent's
+   * resolved workspace root — and starting one without a usable root fails.
    */
   cwd?: string
   /** Provider route the child runtime initializes with. */
   provider: string
   /** Model the child runtime initializes with. */
   model: string
+  /** Opaque product credential sent only in the child SDK initialization handshake. */
+  credential?: string
   /** Optional per-request output-token cap for the child runtime. */
   maxTokens?: number
   /**
@@ -75,6 +77,7 @@ export const Config: z<Config> = z.object({
   cwd: z.string(),
   provider: z.string().required(),
   model: z.string().required(),
+  credential: z.string().min(1),
   maxTokens: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER),
   env: z.dict(z.string()).default({}),
   shutdownTimeoutMs: z.number().default(DEFAULT_SHUTDOWN_TIMEOUT_MS),
@@ -83,7 +86,13 @@ export const Config: z<Config> = z.object({
 })
 
 /** The shape after schemastery applied defaults (`cwd`, `provider`, `model`, and `maxTokens` have none). */
-type ResolvedConfig = Required<Omit<Config, 'cwd' | 'maxTokens'>> & Pick<Config, 'cwd' | 'maxTokens'>
+type ResolvedConfig = Required<Omit<Config, 'cwd' | 'maxTokens' | 'credential'>> & Pick<Config, 'cwd' | 'maxTokens' | 'credential'>
+
+/** Resolve the configured override or the exact delegating Agent's current workspace root. */
+function resolveCwd(configured: string | undefined, request: SubagentStartRequest): string {
+  if (configured !== undefined) return configured
+  return resolveChildCwd('subagent-clocky-sdk', undefined, resolveAgentWorkspaceRoot(request.parent))
+}
 
 /**
  * The SDK provider. Advertises NO start-time capabilities: an out-of-process
@@ -101,9 +110,10 @@ class SdkSubagentProvider implements SubagentProvider {
     const spec: SdkRunSpec = {
       command: this.config.command,
       args: this.config.args,
-      cwd: resolveChildCwd('subagent-clocky-sdk', this.config.cwd, request.parent.session.header.cwd),
+      cwd: resolveCwd(this.config.cwd, request),
       provider: this.config.provider,
       model: this.config.model,
+      ...this.config.credential === undefined ? {} : { credential: this.config.credential },
       ...this.config.maxTokens === undefined ? {} : { maxTokens: this.config.maxTokens },
       env: this.config.env,
       shutdownTimeoutMs: this.config.shutdownTimeoutMs,

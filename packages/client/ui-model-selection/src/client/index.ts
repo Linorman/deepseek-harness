@@ -1,18 +1,15 @@
 /**
- * Model selection plugin, browser half — TWO entries over ONE per-session
- * directory owned by ModelDirectoryResolver (`ctx.modelDirectories`). The /model popupSelect
- * contribution and the composer's named `conversation.input.model` seat both
- * load the session's provider-grouped advisory directory (`session.models`)
- * and submit through `session.selectModel` via the same directory instance,
- * so the host-reported current selection is the single fact both surfaces echo
- * — a switch made in either entry is what the other shows next. Failures
- * ride each entry's own retry surface (popup shell error/retry; seat menu
- * inline error) without forking the state. Addressed subagent sessions expose
- * neither entry because those Agent-bound RPCs would activate persisted
- * history outside the direct-parent continuation path.
+ * Model selection plugin, browser half — TWO entries over ONE shared directory
+ * per target owned by ModelDirectoryResolver (`ctx.modelDirectories`). The
+ * /model popupSelect contribution and the composer's named
+ * `conversation.input.model` seat share an ordinary Session directory; the
+ * seat also adopts a host-scoped directory for an unsubmitted Team draft,
+ * retaining its selection until `team.start`. Failures ride each entry's own
+ * retry surface without forking the state.
  */
 // Type-only: the carrier types, the forwarded Host-event face and the ctx.remote merge.
 import type { ModelSelection, SessionModels } from '@clocky/clocky-api-remotes/client'
+import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
 import type { CommandUiContract, SelectOption } from '@clocky/clocky-client-ui-commands/client'
 // Type-only: pulls the ui-conversation SlotMap merge (the input.model seat).
@@ -27,7 +24,7 @@ import { ModelSelect } from './ModelSelect.tsx'
 import { en, zh, type ModelKey } from './locales.ts'
 
 export { ModelDirectory } from './directory.ts'
-export type { ModelDirectoryState } from './directory.ts'
+export type { ModelDirectoryBackend, ModelDirectoryState } from './directory.ts'
 export { ModelDirectoryResolver } from './service.ts'
 export type { ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
@@ -96,6 +93,11 @@ function selectionOf(state: ModelDirectoryState, id: string): ModelSelection | u
 /** Dictionary namespace owned by this plugin. */
 const NS = 'model'
 
+/** Store supplied to the session-maybe seat while no Team draft is available. */
+const EMPTY_DIRECTORY = createSnapshotStore<ModelDirectoryState>({
+  current: null, routable: null, groups: [], failures: [], status: 'idle', error: null,
+})
+
 /** Required services: the contribution registry, the seat's slot registry, locale, and the service's own faces. */
 export const inject = ['commandUi', 'connection', 'locale', 'sessions', 'slots', 'remote']
 
@@ -122,23 +124,14 @@ export function apply(ctx: ClientContext): void {
   ctx.inject(['commandUi', 'modelDirectories'], (scope: ClientContext) => {
     const command = scope.get('commandUi') as CommandUiContract
     const models = scope.modelDirectories
-    const sessions = scope.sessions
     scope.effect(() => command.register({
       name: 'model',
       description: t('command.description'),
-      available: session => sessions.subagentAddress(session.sessionId) === undefined,
+      available: () => true,
       ui: {
         kind: 'popupSelect',
-        options: async (session) => {
-          if (sessions.subagentAddress(session.sessionId) !== undefined) {
-            throw new Error('model selection is unavailable for addressed subagent sessions')
-          }
-          return optionsOf(await models.directoryFor(session.sessionId).load(), t)
-        },
+        options: async session => optionsOf(await models.directoryFor(session.sessionId).load(), t),
         onSelect: async (option, session) => {
-          if (sessions.subagentAddress(session.sessionId) !== undefined) {
-            throw new Error('model selection is unavailable for addressed subagent sessions')
-          }
           const directory = models.directoryFor(session.sessionId)
           const selection = selectionOf(directory.store.getSnapshot(), option.id)
           if (selection === undefined) {
@@ -153,22 +146,22 @@ export function apply(ctx: ClientContext): void {
   // Entry 2: the composer's named model seat over the SAME directory.
   ctx.inject(['slots', 'modelDirectories'], (scope: ClientContext) => {
     const models = scope.modelDirectories
-    const sessions = scope.sessions
     scope.slots.inject('conversation.input.model', () => scope.slots.register({
       name: 'conversation.input.model',
       locale: NS,
       inject: (sessionId): ModelSelectInjected => {
-        const directory = models.directoryFor(sessionId)
-        const available = sessions.subagentAddress(sessionId) === undefined
+        const directory = sessionId === undefined
+          ? models.draftDirectory()
+          : models.directoryFor(sessionId)
         return {
-          available,
-          directory: directory.store,
+          available: directory !== undefined,
+          directory: directory?.store ?? EMPTY_DIRECTORY,
           load: () => {
-            if (available) directory.load().catch(() => { /* surfaced on the store */ })
+            directory?.load().catch(() => { /* surfaced on the store */ })
           },
-          select: (selection: ModelSelection) => available
-            ? directory.select(selection).then(() => true, () => false)
-            : Promise.resolve(false),
+          select: (selection: ModelSelection) => directory === undefined
+            ? Promise.resolve(false)
+            : directory.select(selection).then(() => true, () => false),
         }
       },
     }, ModelSelect))

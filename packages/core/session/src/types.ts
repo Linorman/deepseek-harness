@@ -2,6 +2,7 @@ import type { Branded } from '@clocky/clocky-brand'
 import type {
   AssistantMessage,
   CallId,
+  ContentBlock,
   LlmCallConfig,
   LlmCallConfigAdapterDefaults,
   LlmFailure,
@@ -71,6 +72,17 @@ export interface SessionHeader {
   readonly createdAt: number
   /** Absolute working directory the session was created in (if any). */
   readonly cwd?: string
+  /**
+   * Opaque Team-owned id for the Team that owns this Session's local
+   * Participant. The Session layer stores the serialized reference without
+   * resolving Team membership; it is present only with `participantId`.
+   */
+  readonly teamId?: string
+  /**
+   * Opaque Team-owned id for the local Participant represented by this Session.
+   * It is present only with `teamId`.
+   */
+  readonly participantId?: string
   /** The session this one was forked from (seed lineage), if any. */
   readonly parentSession?: SessionId
   /**
@@ -78,17 +90,6 @@ export interface SessionHeader {
    * boundary lets resume and replay distinguish parent history from child work.
    */
   readonly seedLength?: number
-  /**
-   * Coarse product classification for a session created as a subagent child.
-   * This is presentation metadata, not proof that the child is continuable.
-   */
-  readonly origin?: 'subagent'
-  /**
-   * Delegation depth: absent (zero) for a top-level session, parent depth + 1
-   * for a subagent child. Persisted so a recursion budget survives restart and
-   * resume — a runtime-only depth would reset a resumed child to top-level.
-   */
-  readonly delegationDepth?: number
   /**
    * Id of the agent preset this session's agent was composed from, when the
    * deployment composes per session. Durable because the preset decides the
@@ -112,11 +113,11 @@ export interface CreateSessionOptions {
    */
   readonly meta?: {
     readonly cwd?: string
+    readonly teamId?: string
+    readonly participantId?: string
     readonly parentSession?: SessionId
     readonly createdAt?: number
     readonly seedLength?: number
-    readonly origin?: 'subagent'
-    readonly delegationDepth?: number
     readonly agentPreset?: string
   }
 }
@@ -227,6 +228,68 @@ export interface RequestContext {
  */
 export type RequestHeaderReason = 'initial' | 'resume' | 'change'
 
+/** Exact versioned implementation identity used to render one Team channel view. */
+export interface TeamChannelViewImplementationRef {
+  /** Registered implementation family. */
+  readonly type: string
+  /** Frozen implementation version. */
+  readonly version: number
+}
+
+/** Immutable review fence retained with one Team channel view. */
+export interface TeamChannelViewReviewFence {
+  /** Completed task-attempt selected for review. */
+  readonly attemptId: string
+  /** Task revision that selected this review delivery. */
+  readonly reviewRevision: number
+  /** Participant authorized to review the selected attempt. */
+  readonly reviewerId: string
+  /** Participant that submitted the reviewed attempt and receives the response. */
+  readonly initiatorId?: string | undefined
+}
+
+/**
+ * Exact model-facing result of one non-direct Team channel delivery claim.
+ * The stored `content` is the sole reconstruction input; readers never
+ * re-render a live channel, adapter, or view policy.
+ */
+export interface TeamChannelViewEventData {
+  /** Team that owns the source channel. */
+  readonly teamId: string
+  /** Channel that produced this model-visible view. */
+  readonly channelId: string
+  /** Adapter implementation that accepted the source records. */
+  readonly adapter: TeamChannelViewImplementationRef
+  /** View-policy implementation that selected and rendered the content. */
+  readonly viewPolicy: TeamChannelViewImplementationRef
+  /** Envelope whose pending delivery triggered this claim. */
+  readonly triggeringEnvelopeId: string
+  /** Ordered, duplicate-free Envelope provenance for the rendered content. */
+  readonly sourceEnvelopeIds: string[]
+  /** Agent inbox treatment selected for this delivery. */
+  readonly delivery: 'context' | 'turn' | 'steer'
+  /** Exact user-role content sent to the model. */
+  readonly content: ContentBlock[]
+  /** Causal source Envelope, when the adapter retained one. */
+  readonly causationId?: string | undefined
+  /** Related Team task, when this view belongs to one. */
+  readonly taskId?: string | undefined
+  /** Review fence that binds a later review decision to this view. */
+  readonly review?: TeamChannelViewReviewFence | undefined
+}
+
+/** Durable provenance derived with a user message from one Team channel view event. */
+export interface TeamChannelViewMessageSource extends Omit<TeamChannelViewEventData, 'content'> {
+  /** Distinguishes a pre-rendered Team channel view from ordinary inbox input. */
+  readonly kind: 'team-channel-view'
+}
+
+declare module '@clocky/clocky-llm' {
+  interface MessageSourceMap {
+    'team-channel-view': TeamChannelViewMessageSource
+  }
+}
+
 /**
  * The merge-extensible, append-only source of truth for an agent interaction.
  * Message history is derived from this log. Every event is lossless JSON and
@@ -262,6 +325,12 @@ export interface SessionEventMap {
    * project their `content` verbatim; `source` tells them apart.
    */
   'user/message': UserMessage
+  /**
+   * One non-direct Team channel view rendered before its delivery receipt.
+   * It derives exactly one user-role message from its stored `content` and is
+   * required because omitting it would change model-history reconstruction.
+   */
+  'team/channel-view': TeamChannelViewEventData
   /** Raw stream chunk — token-level replay fidelity. */
   'assistant/chunk': { turn: number; step: number; chunk: StreamChunk }
   /**
@@ -346,6 +415,7 @@ export type SessionEventType = keyof SessionEventMap
  */
 export type SurfaceEventType =
   | 'user/message'
+  | 'team/channel-view'
   | 'assistant/message'
   | 'tool/result'
 
@@ -400,7 +470,7 @@ export interface SurfaceIntent {
  *
  * The {@link sourceEventSeqs} and {@link surfaceOp} fields are conditional:
  * they only exist on {@link SurfaceEventType} variants (`user/message`,
- * `assistant/message`, `tool/result`).
+ * `team/channel-view`, `assistant/message`, `tool/result`).
  * Non-surface events (boundary markers, chunks, usage, errors) never carry
  * surface metadata — the compiler enforces this at `Session.append()`
  * call sites.
@@ -423,7 +493,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
      * defaulting to required means a forgotten marker over-refuses (an
      * inconvenience) rather than silently resuming a gutted session.
      */
-    ignorable?: true
+    ignorable?: K extends 'team/channel-view' ? never : true
   } & (K extends SurfaceEventType ? {
     /**
      * Seq numbers of earlier events that this event cites as sources

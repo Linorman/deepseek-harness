@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import SubagentRuntime from '@clocky/clocky-subagent'
-import type { Agent } from '@clocky/clocky-agent'
+import { AgentWorkspaceUnavailableError, openAgentWorkspaceLease, type Agent } from '@clocky/clocky-agent'
 import { MAX_TIMER_DELAY_MS } from '@clocky/clocky-timeout'
 import type { SubprocessOutcome } from '@clocky/clocky-subprocess'
 import * as acp from '../src/index.ts'
@@ -25,7 +25,7 @@ import { spawnSubprocess } from '@clocky/clocky-subprocess-local/src/spawn.ts'
 
 const mockServer = fileURLToPath(new URL('./mock-acp-server.ts', import.meta.url))
 
-/** A parent Agent stub. The ACP backend reads exactly one thing off it: the session header's cwd (the workspace its child inherits). */
+/** A parent Agent stub whose resolved workspace root falls back to its Session header. */
 const fakeParent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
 
 function request(text = 'p', signal = new AbortController().signal) {
@@ -217,6 +217,27 @@ describe('cwd resolution', () => {
     }
   })
 
+  it('uses a live allocation root from the delegating Agent before its session cwd', async () => {
+    const allocationRoot = realpathSync(mkdtempSync(join(tmpdir(), 'acp-allocation-root-')))
+    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const lease = openAgentWorkspaceLease(parent)
+    try {
+      lease.publishRoot(allocationRoot)
+      const ctx = await setup({ MOCK_ECHO_CWD: '1' })
+      try {
+        const run = await ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal })
+        const result = await run.result
+        await run.dispose()
+        expect(text(result.output)).toBe(`${allocationRoot}\n${allocationRoot}`)
+      } finally {
+        await ctx.fiber.dispose()
+      }
+    } finally {
+      lease.dispose()
+      rmSync(allocationRoot, { recursive: true, force: true })
+    }
+  })
+
   it('rejects before spawning when neither config.cwd nor the parent session provides one', async () => {
     const tmp = mkdtempSync(join(tmpdir(), 'acp-no-cwd-'))
     const sentinel = join(tmp, 'spawned')
@@ -252,10 +273,16 @@ describe('cwd resolution', () => {
         env: { MOCK_ECHO_CWD: '1' },
       })
       const parent = { id: 'parent', session: { header: { cwd: parentDir } } } as unknown as Agent
-      const run = await ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal })
-      const result = await run.result
-      await run.dispose()
-      expect(text(result.output)).toBe(`${configured}\n${configured}`)
+      const lease = openAgentWorkspaceLease(parent)
+      try {
+        lease.markUnavailable()
+        const run = await ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal })
+        const result = await run.result
+        await run.dispose()
+        expect(text(result.output)).toBe(`${configured}\n${configured}`)
+      } finally {
+        lease.dispose()
+      }
     } finally {
       rmSync(configured, { recursive: true, force: true })
       rmSync(parentDir, { recursive: true, force: true })
@@ -350,6 +377,21 @@ describe('cwd resolution', () => {
     const parent = { id: 'parent', session: { header: { cwd: 'relative/workspace' } } } as unknown as Agent
     await expect(ctx.subagents.start('acp', { prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal }))
       .rejects.toThrow('must be an absolute path')
+  })
+
+  it('fails closed when the parent workspace lease is unavailable', async () => {
+    const parent = { id: 'parent', session: { header: { cwd: process.cwd() } } } as unknown as Agent
+    const lease = openAgentWorkspaceLease(parent)
+    const ctx = await setup()
+    try {
+      lease.markUnavailable()
+      await expect(ctx.subagents.start('acp', {
+        prompt: [{ type: 'text' as const, text: 'p' }], parent, signal: new AbortController().signal,
+      })).rejects.toThrow(AgentWorkspaceUnavailableError)
+    } finally {
+      lease.dispose()
+      await ctx.fiber.dispose()
+    }
   })
 
   it('rejects a parent session cwd that names a FILE, not a directory', async () => {

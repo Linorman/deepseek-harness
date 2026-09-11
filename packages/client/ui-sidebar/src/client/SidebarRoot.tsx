@@ -5,9 +5,11 @@
  * mid-slide. At settle the wide-only content unmounts and the four upper
  * controls enter the 56px rail from the same horizontal offset (one icon each,
  * same top-down order) on one fade that ends with the slide. The bottom-pinned
- * settings control only fades. The workspace/session browsing region between
- * the New Session button and the foot is the `sidebar.workspaces` registrant's,
- * and the foot holds `sidebar.settings` plus `sidebar.footer.action`; the shell
+ * settings control only fades. The Team browsing region between the New Task
+ * button and the foot is the `sidebar.teamTasks` registrant's; an optional
+ * `sidebar.workspaces` occupant is retained for explicit legacy/custom
+ * compositions, and the foot holds `sidebar.settings` plus
+ * `sidebar.footer.action`; the shell
  * hands them the wide flag (plus an expand request callback for the browser).
  *
  * The column also owns whether the scroll regions nested in it draw a
@@ -42,7 +44,7 @@ const SCROLLBAR_LINGER_MS = 2000
 export function SidebarRoot({
   collapsed,
   width,
-  startSession,
+  startTask,
   toggleSidebar,
   t,
   renderSlot,
@@ -126,14 +128,14 @@ export function SidebarRoot({
       onPointerLeave={() => { armLinger() }}
     >
       <div className={css.logoRow}>
-        {/* Expanded, the brand doubles as a New Session shortcut; the
+        {/* Expanded, the brand doubles as a New Task shortcut; the
             collapsed rail's logo is the expand toggle below instead. */}
         {wide && (
           <button
             type="button"
             className={clsx(css.brand, css.wide)}
             aria-label={t('session.new.label')}
-            onClick={() => { startSession() }}
+            onClick={() => { startTask() }}
           >
             <span className={css.brandIdentity} aria-hidden="true">
               <span className={css.brandMark}>
@@ -180,20 +182,23 @@ export function SidebarRoot({
           type="button"
           className={css.newSession}
           aria-label={t('session.new.label')}
-          onClick={() => { startSession() }}
+          onClick={() => { startTask() }}
         >
           <IconNewChatOutline16 size={wide ? 14 : 18} />
           {wide && <span className={clsx(css.newSessionLabel, css.wide)}>{t('session.new')}</span>}
         </button>
       </Tooltip>
 
-      {/* The browsing region fills the column between the controls and the
-          foot in both states; its rail icon column rides the same slot. */}
+      {/* The Team browsing region fills the column between controls and foot. */}
       <div className={css.regionArea}>
-        {renderSlot('sidebar.workspaces', {
+        {renderSlot('sidebar.teamTasks', {
           wide,
           expandSidebar: () => { if (collapsed) toggleSidebar() },
         })}
+        {renderSlot('sidebar.workspaces', {
+          wide,
+          expandSidebar: () => { if (collapsed) toggleSidebar() },
+        }, { fallback: null })}
       </div>
 
       {/* Footer actions stack above Settings in both sidebar widths. */}

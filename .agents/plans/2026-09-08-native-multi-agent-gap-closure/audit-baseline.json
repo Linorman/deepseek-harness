@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-08T20:23:54.083468+08:00",
+  "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "branch": "master",
+  "scope": "Current shared dirty worktree; evidence-referenced sources only, not a whole-repository restore snapshot. No source implementation changed during this audit.",
+  "evidenceRule": "These hashes detect subsequent source drift. They do not assert that historical tests ran against this exact hash set. HEAD alone does not reproduce uncommitted implementation.",
+  "sourceFileCount": 64,
+  "sourceFiles": [
+    {
+      "path": ".agents/notes/proposed/architecture/2026-08-27-native-multi-agent-work-system.md",
+      "sha256": "6fa59d206b4220b54c05f901e2d1d4113c3d33629afca247eb478bbcd93b800f"
+    },
+    {
+      "path": ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p0-safety-closure.md",
+      "sha256": "4896b67af5fc0d3d8902a7ab26a98046756128f7669da9507958834e046f7fbe"
+    },
+    {
+      "path": ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+      "sha256": "37a19f4229d4987e377743428ae05860361f250fcbc0c922aaeb118349bec234"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/acceptance-map.md",
+      "sha256": "5a2cf5fb96eb75f4df51baddd3d9111c52d8c9d8c529da7a0ee6da188b52f532"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/current-state.md",
+      "sha256": "46dfe4d9f9ff5d205ecb27fa143db5f03954ea9b3eac5d5cb520fd97c42f825f"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/wp13-system-verification.md",
+      "sha256": "b41750f61d5284f8194e729a222c020e5dd0d0d7041f42f2933e76c4d3fca9dc"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "4f159b5d3f49df7d470af6b18a44eb66d2e852bb419d4cd616c13e83b5942b69"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "5de7da837a21c7e7882d0aef2d2e6472d172c48ab64b3e4f846873e9e04add00"
+    },
+    {
+      "path": "apps/web/tests/team-channel.snapshot.ts",
+      "sha256": "b7e044a2e17ffaed8e240a87bba7a85b03508e6cb65f808a5564528967558542"
+    },
+    {
+      "path": "examples/headless-agent/tests/child-delegation.snapshot.ts",
+      "sha256": "084fadd534efc93f0e064969272c870810d2a2740f1fd48928096d63d85b75aa"
+    },
+    {
+      "path": "examples/headless-agent/tests/closed-channel-outbox.snapshot.ts",
+      "sha256": "e25edefb3059c81be752d0a49a0f01e49e0727f2aa765884175157598d821c78"
+    },
+    {
+      "path": "examples/headless-agent/tests/remote-team-message.snapshot.ts",
+      "sha256": "c9749ff2988d4ced7f5d0cee8a35c8a03fe6a03e11817b168e09fca87045ff2e"
+    },
+    {
+      "path": "examples/headless-agent/tests/review-projection.snapshot.ts",
+      "sha256": "75baa5c9dba99566a3b79aa0f93c5ac2533fb7a243270382b254c6be1ce882b9"
+    },
+    {
+      "path": "package.json",
+      "sha256": "364cff7b6ed894f1e1ee139fbe00f97aba41138f0602f5f1a753a1dc59575d21"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/package.json",
+      "sha256": "45992a579c29a9e46f2b8df1ef3a8b986b09d60ef2b50de175f839690825c5ea"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts",
+      "sha256": "1d314b1eddbbc0c4eba685e50f6431fc9d9874de6aa0927951e41205c326496c"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/tsdown.config.ts",
+      "sha256": "f240a6ed3fbd41dec9a42680a877bdf1247d42cb73cf9723892fa4c1c4e00ebb"
+    },
+    {
+      "path": "packages/agent-runtime/agent-runtime-acp/src/index.ts",
+      "sha256": "49296c7919f12b50ad79bb035877821121b116f7e7972c3af3144ae46c2c4f63"
+    },
+    {
+      "path": "packages/agent-runtime/agent-runtime-sdk/tsdown.config.ts",
+      "sha256": "44679f8b533d25d30e215d985453423832405937c96961e56559d19c68719d5e"
+    },
+    {
+      "path": "packages/client/runtime/src/client/teams/service.ts",
+      "sha256": "5ca39c536df07894ad821f1faaf818b7353ad0356b0f6da2de1bf19c45dbd15f"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamManagementDialog.tsx",
+      "sha256": "48caeb4ad78f73174d209a460c68f55be6edf4e7e68e173d6a6772b70729ccc6"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamPage.tsx",
+      "sha256": "c8a4d659e6549da05a21e307afc424fbbd0132a725b02d2c0a968d37fef357fb"
+    },
+    {
+      "path": "packages/client/ui-team/tests/channel-protocols.client.spec.tsx",
+      "sha256": "9e51ca9d22d31b7cec1891169bf16be33c1f0d74910195faceafe30e8796baf1"
+    },
+    {
+      "path": "packages/core/session/src/index.ts",
+      "sha256": "7e3b23d21552933d734e2fc1a02245368d2c8be92e2867e006681d0e7cc1d24e"
+    },
+    {
+      "path": "packages/core/session/src/types.ts",
+      "sha256": "b9a1b7fc00f44b25831849a1e4a69d95916f9e76186c4e4f0edbbb23985a73f5"
+    },
+    {
+      "path": "packages/core/team/src/human-delivery-types.ts",
+      "sha256": "95037c380e9f9670f95a45a507439d1b4c8018a5980854057c084092bf3452a2"
+    },
+    {
+      "path": "packages/core/team/src/metrics.ts",
+      "sha256": "9f4913018ba49a473a125d301bb86162315c3fc19c15910a287ba3448f2ea383"
+    },
+    {
+      "path": "packages/core/team/src/schema.ts",
+      "sha256": "015f3dc24e5ee255d4f1c34adf03cb934403f0315bef0c9a176bd42302610455"
+    },
+    {
+      "path": "packages/core/team/src/telemetry.ts",
+      "sha256": "8eec7fa6b275e85fc4d98cb40772155ccc957a7cb50f233b1f97f58fa10b6cf8"
+    },
+    {
+      "path": "packages/core/team/src/types.ts",
+      "sha256": "5f6dc79a66e159a83c56d2cc259ce34b7311ae8e7234d10672e4ebeac2a94852"
+    },
+    {
+      "path": "packages/e2b/team-workspace-e2b/src/index.ts",
+      "sha256": "e8701e785a8c7480bed51fc63758f2321d29f2c77eaf15f2fd3fa68a665be87d"
+    },
+    {
+      "path": "packages/host/apiproxy/src/api-proxy.ts",
+      "sha256": "166c0bcbe716e4af168b400236923f6ff1833e74ab5c0862891b40c54b6e2a3e"
+    },
+    {
+      "path": "packages/host/apiproxy/src/api/teams.ts",
+      "sha256": "64ea1543879613245b95e1811515b6f47041abcbb650c58464ed67d085995e91"
+    },
+    {
+      "path": "packages/sdk/server/src/server.ts",
+      "sha256": "db74a90aaa5327a623dec44d7c646bed56af4c843ab5b75b2516e4d3464e284e"
+    },
+    {
+      "path": "packages/subagent/subagent/package.json",
+      "sha256": "92b6651755d32a0a89e1c140d35c3bb42c80d00c5564111f269c1b4f98f5d125"
+    },
+    {
+      "path": "packages/subagent/tool-subagent/package.json",
+      "sha256": "52f8c5b4fa5021d0f8b4a466b6c8780386b1a145256ad9175c0011a816d7c1ec"
+    },
+    {
+      "path": "packages/team/team-activation-controller/src/index.ts",
+      "sha256": "1f329d75bfe4493475481d918c1ef0f568677d667229f80cd6e167e8b121c966"
+    },
+    {
+      "path": "packages/team/team-activation-recovery/src/index.ts",
+      "sha256": "7f88f92abc5fe5f42dcdea367ffb8a1a55e13738603f08b7fd3b77a1385857c0"
+    },
+    {
+      "path": "packages/team/team-channel-admission/src/principal.ts",
+      "sha256": "edcb525530e841c09bce611f1ada297d587350a27bcab08f4a81afafe7401fb7"
+    },
+    {
+      "path": "packages/team/team-channel-workflow/src/workflow.ts",
+      "sha256": "4dcc82999c1c0ebef9622c04bcef0a2f24ffaa32df96ecea387c155f1100e7c6"
+    },
+    {
+      "path": "packages/team/team-delegation/src/index.ts",
+      "sha256": "90b1cec7bca49aab5f1b6f206af91fb386c18237943b09e1c92068614f74b43f"
+    },
+    {
+      "path": "packages/team/team-delegation/tests/delegation.spec.ts",
+      "sha256": "02eb27331e8efbde54dd3e6cac2f39a2ecc538e009c574836074a81864b70a2c"
+    },
+    {
+      "path": "packages/team/team-hub/src/index.ts",
+      "sha256": "a7f745007e5cececb309879500f03bddf8cbdb6fda0fe4ca406dec074ae6d21d"
+    },
+    {
+      "path": "packages/team/team-hub/src/workspace-observation.ts",
+      "sha256": "6c0f833f33f6905c963414d5673f29173f7942804dff71011e84b9e8bbf23757"
+    },
+    {
+      "path": "packages/team/team-hub/tests/child-result.spec.ts",
+      "sha256": "acfd2d39eb8893b4a2662e5a0386d67893c65cdcbb5a731c8e747e776b02a015"
+    },
+    {
+      "path": "packages/team/team-hub/tests/load.spec.ts",
+      "sha256": "2644df389670d56ff6c3be8b26d58f662ecdb97ee9fb76e8ffd7591f0bc42a3b"
+    },
+    {
+      "path": "packages/team/team-hub/tests/replay-properties.spec.ts",
+      "sha256": "0049b0b88e919a8138dde7a6ba1a3557e7313bd02cc3d3c6af65839ff471cffe"
+    },
+    {
+      "path": "packages/team/team-hub/tests/usage-replay.spec.ts",
+      "sha256": "d218d070cc254fe0dcf466564638659cbe024e5970daedbed01d3bbab620fe4d"
+    },
+    {
+      "path": "packages/team/team-human-client/src/index.ts",
+      "sha256": "477ece36a0594f595198dc9038c3aca814108b427abe1deb46659f73f43ff023"
+    },
+    {
+      "path": "packages/team/team-placement-default/src/index.ts",
+      "sha256": "0798474340bcafafb59eaf8a2c131c4a8a8b7f8071bb80f9e033473ff72234f0"
+    },
+    {
+      "path": "packages/team/team-run/src/index.ts",
+      "sha256": "3f257eba7eec9fcff9bc578a8f48f33a8059981a8f3eea3043696c228a6aa44e"
+    },
+    {
+      "path": "packages/team/team-scheduler-dag/src/index.ts",
+      "sha256": "ee25110baa886f67ab0f3cf528a849759d70ea7722f8ab3b9ad7e53458576f7c"
+    },
+    {
+      "path": "packages/team/team-scheduler-dag/src/ranking.ts",
+      "sha256": "9293fcd403c96201d2f7f3db6473070f6a29858df2b3e1f1468b067ec930b5fb"
+    },
+    {
+      "path": "packages/team/team-telemetry-otel/src/alerts.ts",
+      "sha256": "69b6ad8b7ac1b30ec5f46a80ffb918316c91fbe8ca2f7c75c63b6566e6b371db"
+    },
+    {
+      "path": "packages/team/team-telemetry-otel/src/index.ts",
+      "sha256": "55126a20fe7e0e61725a365843d30fabf182be4c91a69f2140d814c6e4254346"
+    },
+    {
+      "path": "packages/team/team-workspace-shared/src/index.ts",
+      "sha256": "4e400c83e26d0a43ea4018fa45451c2035d15e7f95361062d062213bbed1efcb"
+    },
+    {
+      "path": "packages/team/tool-team-task/src/index.ts",
+      "sha256": "c7afb24c8aad9006e5f543bb56cb23c35c3c0f0c4824919e8fb5f554a2a739ed"
+    },
+    {
+      "path": "packages/typert/generator/src/analyzer.ts",
+      "sha256": "00c3327e107c0a3346d73737bfe5396356f6c8fbad4e83ebafad64e559bb3120"
+    },
+    {
+      "path": "python/sdk-runtime/package.json",
+      "sha256": "3b017b39de5c0596013160df5e63433f82ef1ab55ae3220ebd336ba7b032d5e1"
+    },
+    {
+      "path": "scripts/gen-cordis-catalog.ts",
+      "sha256": "230bbb29772e2beb9179d84ad958e944f038ed0c10f67b05d7a0081cb501b1ed"
+    },
+    {
+      "path": "scripts/gen-doc-graphs.ts",
+      "sha256": "86fc7c7a32d448898fd8a8b364630217c65f0c7d59b911a21f39f685b6d141f8"
+    },
+    {
+      "path": "scripts/publint-all.ts",
+      "sha256": "e08d3201c29f43c3a9371f015f9e4a071c0d2ad6be9800ef5dcffc24acffbf17"
+    },
+    {
+      "path": "scripts/release/families.ts",
+      "sha256": "f3771e82b742e4190c488fbeee4d54b8127ae25649c9ac4a13f4ef4899247f02"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "38caedf536a19024985c38a9e032b2769666198e33e56652aa6fcff5133f2c45"
+    }
+  ],
+  "supplementedAt": "2026-09-08T20:34:51.005224+08:00",
+  "auditEnvironment": {
+    "node": "v25.9.0",
+    "pnpm": "11.19.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "qualification": "Observed during this documentation audit; not inferred as the environment of every historical command. No credential values recorded."
+  }
+}

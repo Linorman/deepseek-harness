@@ -14,11 +14,11 @@ Goal Round 的 `complete` 或 `blocked` 成功不再调用 `concludeTurn()`。�
 
 指令措辞通过在 `deepseek-v4-pro` 上用重构的 Goal Round 转录做 A/B 采样选定：结构化指令（结果、验证、产物、后续）在完整度上稳定优于极简“总结一下”；补充“以会话内证据为准”的 grounding 条款让无依据细节从断言事实退为带保留的建议；而无指令对照组的收尾方差很大，包括言之凿凿的文件级细节编造。
 
-为让 keyless 证明可脚本化，快照设施补了一项能力：`dsh-llm-replay` 会针对实时请求解析脚本条目中的 `{{fromRequest:<regex>}}` 占位符，因为静态伴随文件不可能预知模型必须回填进 `update_goal` 的随机生成 goal id。
+为让 keyless 证明可脚本化，快照设施补了一项能力：`clocky-llm-replay` 会针对实时请求解析脚本条目中的 `{{fromRequest:<regex>}}` 占位符，因为静态伴随文件不可能预知模型必须回填进 `update_goal` 的随机生成 goal id。
 
 ## 验证
 
-`tool-goal` 包测试钉住两个终态 action 注入的上下文（source、标签、objective、禁止再调工具条款）与不存在的 `concludesTurn`，以及人类直接 pause 与 complete 的不注入路径，文件覆盖率 100%。`llm-replay` 单元测试钉住占位符约定：最后一次匹配取胜的捕获、无捕获组时整体匹配回退，以及未匹配、非法、未闭合模式的明确报错。新增 keyless ACP 快照 `goal-wrapup` 驱动成品应用走完 create → 第一轮 → 自主 complete，并在持久会话日志与 ACP stdout 流中同时断言 plugin 来源的收尾注入、同轮内的收尾 assistant 消息与 `completed` 轮次结束。
+`tool-goal` 包测试钉住两个终态 action 注入的上下文（source、标签、objective、禁止再调工具条款）与不存在的 `concludesTurn`，以及人类直接 pause 与 complete 的不注入路径，文件覆盖率 100%。`llm-replay` 单元测试钉住占位符约定：最后一次匹配取胜的捕获、无捕获组时整体匹配回退，以及未匹配、非法、未闭合模式的明确报错。当前没有 Team 产品快照演练自主 Goal 收尾 transcript。
 
 ## 曾考虑的替代方案
 

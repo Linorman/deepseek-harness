@@ -14,6 +14,7 @@ import type { ConversationNodeDefinition } from '../src/client/contract/conversa
 import { Session } from '../src/client/sessions/session.ts'
 import type { SessionRuntime } from '../src/client/sessions/service.ts'
 import type { WorkspaceRuntime } from '../src/client/workspaces/service.ts'
+import type { TeamTaskRuntime } from '../src/client/teams/service.ts'
 import { FakeApiClient, fakeRemote, ok } from './fake-api.client.ts'
 
 interface Bench {
@@ -94,7 +95,7 @@ describe('runtime client apply', () => {
     bench.sinks?.onConnected?.({ version: '0', cwd: '/f', attachedSessions: 0, home: '/h', canOpenPath: true })
   })
 
-  it('selects the recent Workspace once when the first baselines have no current session', async () => {
+  it('starts a local Team draft instead of creating a recent Workspace Session', async () => {
     const bench = await mount()
     bench.api.onWorkspaceList = () => Promise.resolve(ok({
       items: [{
@@ -109,14 +110,14 @@ describe('runtime client apply', () => {
 
     const sessions = bench.ctx.get('sessions') as SessionRuntime
     const workspaces = bench.ctx.get('workspaces') as WorkspaceRuntime
-    expect(bench.api.callsOf('session.create')).toEqual([{ workspaceId: 'w-recent' }])
-    expect(sessions.list.getSnapshot().current).toBe('fk-new')
+    const teamTasks = bench.ctx.get('teamTasks') as TeamTaskRuntime
+    expect(sessions.list.getSnapshot().current).toBeUndefined()
+    expect(teamTasks.list.getSnapshot().draft?.phase).toBe('ready')
 
     sessions.clear()
     await workspaces.refresh()
     await flushMicrotasks()
     expect(sessions.list.getSnapshot().current).toBeUndefined()
-    expect(bench.api.callsOf('session.create')).toHaveLength(1)
   })
 
   it('wires registry changes into resident Sessions during the runtime apply pass', async () => {

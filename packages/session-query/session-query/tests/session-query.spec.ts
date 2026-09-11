@@ -2,7 +2,7 @@ import { createUserMessage, createMessage } from '@clocky/clocky-llm'
 import { describe, expect, it, vi } from 'vitest'
 import { Context, type Fiber } from '@clocky/cordis'
 import SessionStore, { SESSION_FORMAT_VERSION, SessionId } from '@clocky/clocky-session'
-import type { SessionEvent, SessionHeader, SessionId as SessionIdType } from '@clocky/clocky-session'
+import type { Session, SessionEvent, SessionHeader, SessionId as SessionIdType } from '@clocky/clocky-session'
 import SessionPersistence, { SessionPersistenceCorruptionError, SessionPersistenceRevision } from '@clocky/clocky-session-persistence'
 import SessionQueryEngine, {
   SESSION_QUERY_DEFAULT_PERSISTED_INSPECT_CONCURRENCY,
@@ -68,6 +68,8 @@ class TestPersistence extends SessionPersistence {
     TestPersistence.entries.set(meta.id, { meta: structuredClone(meta), events: [] })
     return Promise.resolve()
   }
+
+  materializeHeader(_session: Session): Promise<void> { return Promise.resolve() }
 
   append(id: SessionIdType, events: readonly SessionEvent[]): Promise<void> {
     const entry = TestPersistence.entries.get(id)
@@ -1077,7 +1079,7 @@ describe('session-query exact reads', () => {
     const sharedEntry = TestPersistence.entries.get(shared.id)!
     sharedEntry.meta = { ...sharedEntry.meta, cwd: '/conflict' }
     await expect(ctx.sessionQuery.listSessions()).rejects.toThrow(expectCode('SESSION_QUERY_SOURCE_CONFLICT'))
-    sharedEntry.meta = { ...sharedEntry.meta, cwd: '/same', delegationDepth: 1 }
+    sharedEntry.meta = { ...sharedEntry.meta, cwd: '/same', agentPreset: 'different' }
     await expect(ctx.sessionQuery.listSessions()).rejects.toThrow(expectCode('SESSION_QUERY_SOURCE_CONFLICT'))
     await persistence.dispose()
     await expect(ctx.sessionQuery.listSessions()).resolves.toEqual([

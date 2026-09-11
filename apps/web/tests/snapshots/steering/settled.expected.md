@@ -1,6 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Use the ask_user_question tool to" [disabled]
+  - text: {{workspace}}
   - img
   - text: Standard mode
   - button "Session log":
@@ -9,7 +8,7 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- text: Use the ask_user_question tool to ask me exactly one question with id "checkpoint", question "Ready to continue?", header "Checkpoint", and options labeled "Yes" and "No". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}
+- text: "Direct message from participant-{{uuid}}: Use the ask_user_question tool to ask me exactly one question with id \"checkpoint\", question \"Ready to continue?\", header \"Checkpoint\", and options labeled \"Yes\" and \"No\". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":
@@ -24,7 +23,7 @@
   - img
   - img
   - text: Ask question 1/1 answered
-- text: "Interjection: include the word BANANA in your final reply. {{clock}}"
+- text: "Direct message from participant-{{uuid}}: Interjection: include the word BANANA in your final reply. {{clock}}"
 - button "Copy":
   - img
 - button "Think The user selected \"Yes\" and wants me to include the word \"BANANA\" in my final reply. Let me acknowledge their answer.":
@@ -38,13 +37,10 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation":
-  - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
 - textbox "Message the agent"
-- button "Commands":
+- button "Commands" [disabled]:
   - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
 - button "Select model, current Test Model":
   - text: Test Model
   - img

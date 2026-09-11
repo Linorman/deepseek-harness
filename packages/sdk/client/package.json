@@ -35,6 +35,7 @@
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-sdk-protocol": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
     "@clocky/cordis": "workspace:^"
   },
   "devDependencies": {
@@ -42,6 +43,7 @@
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-sdk-protocol": "workspace:^",
     "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-team": "workspace:^",
     "@clocky/cordis": "workspace:^"
   }
 }

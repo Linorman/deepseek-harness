@@ -1,0 +1,42 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../core/product-principal"
+    },
+    {
+      "path": "../../storage/storage-log"
+    },
+    {
+      "path": "../../storage/storage"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../team-channel-basic"
+    },
+    {
+      "path": "../team-channel-direct"
+    },
+    {
+      "path": "../team-channel-workflow"
+    }
+  ]
+}

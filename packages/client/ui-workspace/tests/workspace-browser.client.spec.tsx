@@ -30,8 +30,7 @@ const sessionState = (items: readonly SessionSummary[], overrides: Partial<Sessi
   byId: Object.fromEntries(items.map(item => [item.id, item])),
   current: undefined,
   phase: 'ready',
-  subagentsByParent: {}, jobsBySession: {},
-  currentAddress: undefined,
+  jobsBySession: {},
   ...overrides,
 })
 const workspace = (id: string, sessionIds: string[], title = id): WorkspaceView => ({
@@ -67,12 +66,10 @@ function mount(overrides: Partial<WorkspaceBrowserProps> = {}) {
     useWorkspaces: hook(workspaceState([])),
     useStore: bindSnapshotSelector(store),
     actions: store.actions,
-    startSession: vi.fn(),
     open: vi.fn(),
     searchSessions: vi.fn(async () => ({ items: [], hasMore: false })),
     searchResultLimit: 20,
     renameSession: vi.fn(async () => {}),
-    forkSession: vi.fn(),
     renameWorkspace: vi.fn(async () => {}),
     deleteWorkspace: vi.fn(async () => {}),
     archiveSession: vi.fn(async () => {}),
@@ -381,7 +378,7 @@ describe('WorkspaceBrowser', () => {
 
   it('renders a fork child as a top-level row without a session twist', () => {
     const parent = summary('parent-s', 2)
-    const child = { ...summary('child-s', 1), parentId: parent.id }
+    const child = { ...summary('child-s', 1) }
     mount({
       useSessions: hook(sessionState([parent, child])),
       useWorkspaces: hook(workspaceState([workspace('alpha', ['parent-s', 'child-s'])])),
@@ -392,35 +389,14 @@ describe('WorkspaceBrowser', () => {
     expect(screen.getByText('child-s').closest('[role="treeitem"]')?.getAttribute('draggable')).toBe('true')
   })
 
-  it('expands the target group before starting a session from its ＋', () => {
-    const startSession = vi.fn()
-    const b = mount({
-      useSessions: hook(sessionState([summary('alpha-s', 1)])),
-      useWorkspaces: hook(workspaceState([workspace('alpha', ['alpha-s'])])),
-      startSession,
-    })
-    startSession.mockImplementation(() => {
-      expect(b.store.getSnapshot().groupExpansion).toEqual({ alpha: true })
-    })
-    expect(screen.queryByText('alpha-s')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: '在“alpha”中新建会话' }))
-    expect(b.store.getSnapshot().groupExpansion).toEqual({ alpha: true })
-    expect(screen.getByText('alpha-s')).toBeTruthy()
-    expect(startSession).toHaveBeenCalledWith(wid('alpha'))
-  })
-
-  it('auto-expands the Ungrouped bucket for a loose current session; its header has no menu and its ＋ is inert', () => {
-    const startSession = vi.fn()
+  it('auto-expands the Ungrouped bucket for a loose current session and keeps its header menu-free', () => {
     mount({
       useSessions: hook(sessionState([summary('loose', 1)], { current: sid('loose') })),
       useWorkspaces: hook(workspaceState([workspace('alpha', [])])),
-      startSession,
     })
     // The loose session's group is UNGROUPED_KEY: expanded by the effect.
     expect(screen.getByText('loose')).toBeTruthy()
     expect(screen.queryByRole('button', { name: '工作区“未分组”的操作' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: '在“未分组”中新建会话' }))
-    expect(startSession).not.toHaveBeenCalled()
   })
 
   it('keeps an already-expanded group when the selection moves within it', () => {
@@ -438,7 +414,7 @@ describe('WorkspaceBrowser', () => {
     expect(screen.queryByText('b')).toBeNull()
   })
 
-  it('shows only the current blank session as the localized New Session, excluded from search', () => {
+  it('renders blank sessions with their stored titles and includes them in search', () => {
     const currentBlank = summary('alpha-blank', 9, { blank: true })
     const staleBlank = summary('beta-blank', 8, { blank: true })
     const sessions = sessionState(
@@ -451,87 +427,17 @@ describe('WorkspaceBrowser', () => {
         workspace('alpha', ['alpha-blank']), workspace('beta', ['beta-blank']),
       ])),
     })
-    expect(screen.getByText('新会话')).toBeTruthy()
-    expect(screen.queryByText('alpha-blank')).toBeNull()
+    expect(screen.getByText('alpha-blank')).toBeTruthy()
     expect(screen.queryByText('beta-blank')).toBeNull()
 
-    rerender(b, { useSessions: hook({ ...sessions, current: staleBlank.id }) })
-    expect(screen.getAllByText('新会话')).toHaveLength(1)
+    fireEvent.click(screen.getByText('beta'))
+    expect(screen.getByText('beta-blank')).toBeTruthy()
     b.store.actions.setGroupBy('flat')
     rerender(b, {})
-    expect(screen.getAllByText('新会话')).toHaveLength(1)
-    // Search excludes blank rows entirely — neither the canonical stored
-    // title nor the localized display label participates in matching.
-    fireEvent.change(screen.getByPlaceholderText('搜索会话…'), { target: { value: 'new session' } })
-    expect(screen.queryByText('新会话')).toBeNull()
-    fireEvent.change(screen.getByPlaceholderText('搜索会话…'), { target: { value: '新会话' } })
-    expect(screen.queryByText('新会话')).toBeNull()
-  })
-
-  it('promotes the blank selected by New Session in its grouped and flat orders', async () => {
-    const items = [
-      summary('old', 100),
-      summary('blank', 150, { blank: true }),
-      summary('mid', 200),
-    ]
-    const startSession = vi.fn()
-    const b = mount({
-      useSessions: hook(sessionState(items)),
-      useWorkspaces: hook(workspaceState([workspace('alpha', ['old', 'blank', 'mid'])])),
-      startSession,
-    })
-    await waitFor(() => {
-      expect(b.store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['old', 'blank', 'mid'])
-    })
-    startSession.mockImplementation(() => {
-      rerender(b, { useSessions: hook(sessionState(items, { current: sid('blank') })) })
-    })
-    fireEvent.click(screen.getByRole('button', { name: '在“alpha”中新建会话' }))
-    expect(startSession).toHaveBeenCalledWith(wid('alpha'))
-    await waitFor(() => {
-      expect(b.store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['blank', 'old', 'mid'])
-      expect(b.store.getSnapshot().sessionOrderByAccount[FLAT_SESSION_ORDER_KEY]).toEqual(['blank'])
-    })
-    b.store.actions.setGroupBy('flat')
-    await waitFor(() => {
-      expect(b.store.getSnapshot().sessionOrderByAccount[FLAT_SESSION_ORDER_KEY]).toEqual(['blank', 'mid', 'old'])
-    })
-  })
-
-  it('does not repeat blank promotion after a manual drag or the first prompt', async () => {
-    const insertSessionBefore = vi.fn(async () => {})
-    const b = mount({
-      useSessions: hook(sessionState([
-        summary('old', 100),
-        summary('blank', 150, { blank: true }),
-        summary('mid', 200),
-      ], { current: sid('blank') })),
-      useWorkspaces: hook(workspaceState([workspace('alpha', ['old', 'blank', 'mid'])])),
-      insertSessionBefore,
-    })
-    await waitFor(() => {
-      expect(b.store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['blank', 'old', 'mid'])
-    })
-    const blank = screen.getByText('新会话').closest('[role="treeitem"]') as HTMLElement
-    const mid = screen.getByText('mid').closest('[role="treeitem"]') as HTMLElement
-    mid.getBoundingClientRect = () => ({
-      top: 150, bottom: 184, left: 0, right: 200, width: 200, height: 34, x: 0, y: 150, toJSON: () => ({}),
-    })
-    fireEvent.dragStart(blank, { dataTransfer: dragData() })
-    fireDrag(mid, 'drop', 180)
-    expect(b.store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['old', 'mid', 'blank'])
-    expect(insertSessionBefore).toHaveBeenCalledWith(wid('alpha'), sid('blank'), undefined)
-
-    rerender(b, {
-      useSessions: hook(sessionState([
-        summary('old', 100),
-        summary('blank', 150),
-        summary('mid', 200),
-      ], { current: sid('blank') })),
-    })
-    await waitFor(() => {
-      expect(b.store.getSnapshot().sessionOrderByAccount.alpha).toEqual(['old', 'mid', 'blank'])
-    })
+    expect(screen.getByText('alpha-blank')).toBeTruthy()
+    expect(screen.getByText('beta-blank')).toBeTruthy()
+    fireEvent.change(screen.getByPlaceholderText('搜索会话…'), { target: { value: 'beta-blank' } })
+    expect(screen.getByText('beta-blank')).toBeTruthy()
   })
 
   it('shows local metadata matches immediately, then clears back to the grouped tree', async () => {

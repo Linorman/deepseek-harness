@@ -202,6 +202,13 @@ describe('FileSystemSkillProvider', () => {
 
     const noGit = await tempDir('skill-no-git')
     await writeSkill(join(noGit, '.clocky/skills'), 'fallback-root', 'Fallback root')
+    await ctx.plugin(TestFileSystem)
+    const fileSystem = ctx.fs as TestFileSystem
+    // Hide enclosing project markers when TMPDIR itself is inside a Git checkout.
+    for (let current = noGit; ; current = dirname(current)) {
+      fileSystem.statOverrides.set(join(current, '.git'), undefined)
+      if (dirname(current) === current) break
+    }
     expect((await ctx.skills.list({ cwd: noGit })).map(skill => skill.name)).toContain('fallback-root')
   })
 

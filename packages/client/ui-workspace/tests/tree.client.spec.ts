@@ -18,7 +18,7 @@ const list = (...items: SessionSummary[]): SessionListState => ({
   ids: items.map(item => item.id),
   byId: Object.fromEntries(items.map(item => [item.id, item])),
   current: undefined,
-  phase: 'ready', subagentsByParent: {}, jobsBySession: {}, currentAddress: undefined,
+  phase: 'ready', jobsBySession: {},
 })
 const workspace = (id: string, sessionIds: string[], title = id): WorkspaceView => ({
   workspaceId: wid(id), path: `/projects/${id}`, title,
@@ -68,7 +68,7 @@ describe('deriveGroups', () => {
     ])
   })
 
-  it('shows only the current blank session in its Workspace count and tree', () => {
+  it('includes blank sessions in their Workspace count and tree', () => {
     const currentBlank = { ...summary('current-blank', 5), blank: true }
     const staleBlank = { ...summary('stale-blank', 4), blank: true }
     const real = summary('shown', 3)
@@ -79,17 +79,14 @@ describe('deriveGroups', () => {
     const groups = deriveGroups(
       sessions, [workspace('first', ['shown', 'current-blank', 'stale-blank'])], noArchive, view(['first']),
     )
-    expect(groups[0]!.sessions.map(session => session.id)).toEqual([real.id, currentBlank.id])
+    expect(groups[0]!.sessions.map(session => session.id)).toEqual([real.id, currentBlank.id, staleBlank.id])
     const blankNode = groups[0]!.sessions.find(session => session.id === currentBlank.id)!
-    // The stored placeholder title stays canonical; the renderer swaps in
-    // the localized New Session label via the blank flag.
-    expect(blankNode.title).toBe('New Session')
+    expect(blankNode.title).toBe('current-blank')
     expect(blankNode.blank).toBe(true)
     expect(groups[0]!.sessions.find(session => session.id === real.id)!.blank).toBe(false)
-    expect(groups[0]!.sessionCount).toBe(2)
-    // A non-current blank stray never surfaces an Ungrouped bucket either.
+    expect(groups[0]!.sessionCount).toBe(3)
     const strayGroups = deriveGroups(list({ ...summary('stray', 2), blank: true }), [workspace('first', [])], noArchive, view())
-    expect(strayGroups.map(group => group.key)).toEqual(['first'])
+    expect(strayGroups.map(group => group.key)).toEqual(['first', UNGROUPED_KEY])
   })
 
   it('projects the completion reminder into session and search rows (absent = false)', () => {
@@ -108,49 +105,17 @@ describe('deriveGroups', () => {
     expect(search.items[0]?.completed).toBe(true)
   })
 
-  it('hides subagent-origin sessions without hiding ordinary forks', () => {
-    const parent = summary('parent', 1)
-    const subagent = {
-      ...summary('subagent', 3), parentId: parent.id, origin: 'subagent' as const, running: true,
-    }
-    const grandchild = {
-      ...summary('grandchild', 4), parentId: subagent.id, origin: 'subagent' as const, running: true,
-    }
-    const fork = { ...summary('fork', 2), parentId: subagent.id }
-    const forkChild = {
-      ...summary('fork-child', 5), parentId: fork.id, origin: 'subagent' as const, running: true,
-    }
-    const sessions = { ...list(parent, fork, subagent, grandchild, forkChild), current: subagent.id }
-    const groups = deriveGroups(
-      sessions,
-      [workspace('first', ['parent', 'fork', 'subagent', 'grandchild', 'fork-child'])],
-      noArchive,
-      view(['first']),
-    )
-
-    expect(groups[0]!.sessions.map(node => node.id)).toEqual([parent.id, fork.id])
-    expect(groups[0]!.sessionCount).toBe(2)
-    expect(groups[0]!.sessions[0]).toMatchObject({ running: false, runningSubagentCount: 2 })
-    expect(groups[0]!.sessions[1]).toMatchObject({ running: false, runningSubagentCount: 1 })
-    expect(deriveFlat(sessions, noArchive).map(node => [node.id, node.runningSubagentCount])).toEqual([
-      [fork.id, 1], [parent.id, 2],
-    ])
-    expect(deriveSearchResults(
-      sessions, [workspace('first', ['parent', 'fork'])], 'parent', noArchive,
-      { items: [], hasMore: false }, 10,
-    ).items[0]).toMatchObject({ id: parent.id, runningSubagentCount: 2 })
-  })
 
   it('ignores fork lineage and sorts every ungrouped session as a top-level row', () => {
     const parent = summary('parent', 1)
-    const oldChild = { ...summary('old-child', 10), parentId: parent.id }
-    const newChild = { ...summary('new-child', 20), parentId: parent.id }
-    const tieB = { ...summary('tie-b', 20), parentId: parent.id }
-    const tieA = { ...summary('tie-a', 20), parentId: parent.id }
-    const self = { ...summary('self', 2), parentId: sid('self') }
-    const orphan = { ...summary('orphan', 3), parentId: sid('missing') }
-    const cycleA = { ...summary('cycle-a', 4), parentId: sid('cycle-b') }
-    const cycleB = { ...summary('cycle-b', 5), parentId: sid('cycle-a') }
+    const oldChild = { ...summary('old-child', 10) }
+    const newChild = { ...summary('new-child', 20) }
+    const tieB = { ...summary('tie-b', 20) }
+    const tieA = { ...summary('tie-a', 20) }
+    const self = { ...summary('self', 2) }
+    const orphan = { ...summary('orphan', 3) }
+    const cycleA = { ...summary('cycle-a', 4) }
+    const cycleB = { ...summary('cycle-b', 5) }
     const groups = deriveGroups(
       list(parent, oldChild, newChild, tieB, tieA, self, orphan, cycleA, cycleB),
       [],
@@ -208,30 +173,20 @@ describe('deriveGroups', () => {
 describe('deriveFlat', () => {
   it('flattens every session — fork children included — newest-first with id tiebreak', () => {
     const parent = summary('parent', 10)
-    const child = { ...summary('child', 30), parentId: parent.id }
+    const child = { ...summary('child', 30) }
     const tieB = summary('tie-b', 20)
     const tieA = summary('tie-a', 20)
     const rows = deriveFlat(list(parent, child, tieB, tieA), noArchive)
     expect(rows.map(row => row.id)).toEqual([sid('child'), sid('tie-a'), sid('tie-b'), sid('parent')])
   })
 
-  it('hides subagent-origin rows but keeps ordinary forks', () => {
-    const parent = summary('parent', 1)
-    const fork = { ...summary('fork', 2), parentId: parent.id }
-    const subagent = { ...summary('subagent', 3), parentId: parent.id, origin: 'subagent' as const }
-    const rows = deriveFlat(
-      { ...list(parent, fork, subagent), current: subagent.id },
-      noArchive,
-    )
-    expect(rows.map(row => row.id)).toEqual([fork.id, parent.id])
-  })
 
   it('tolerates ids whose summary has not landed yet', () => {
     const partial: SessionListState = { ...list(summary('present', 1)), ids: [sid('ghost'), sid('present')] }
     expect(deriveFlat(partial, noArchive).map(row => row.id)).toEqual([sid('present')])
   })
 
-  it('shows only the current blank session and excludes blanks from search', () => {
+  it('includes blank sessions in the flat list', () => {
     const currentBlank = { ...summary('current-blank', 9), blank: true }
     const staleBlank = { ...summary('stale-blank', 8), blank: true }
     const sessions = {
@@ -239,9 +194,9 @@ describe('deriveFlat', () => {
       current: currentBlank.id,
     }
     const rows = deriveFlat(sessions, noArchive)
-    expect(rows.map(row => row.id)).toEqual([currentBlank.id, sid('real')])
-    expect(rows.map(row => row.title)).toEqual(['New Session', 'real'])
-    expect(rows.map(row => row.blank)).toEqual([true, false])
+    expect(rows.map(row => row.id)).toEqual([currentBlank.id, staleBlank.id, sid('real')])
+    expect(rows.map(row => row.title)).toEqual(['current-blank', 'stale-blank', 'real'])
+    expect(rows.map(row => row.blank)).toEqual([true, true, false])
   })
 
   it('hides archived sessions in flat mode', () => {
@@ -306,7 +261,6 @@ describe('deriveSearchResults', () => {
           title: 'Needle title',
           workspace: 'Alpha',
           running: false,
-          runningSubagentCount: 0,
           pendingInteraction: 'plan-review',
           completed: false,
           snippet: 'title session body excerpt',
@@ -316,7 +270,6 @@ describe('deriveSearchResults', () => {
           title: 'Ordinary title',
           workspace: 'Needle Workspace',
           running: false,
-          runningSubagentCount: 0,
           completed: false,
         },
         {
@@ -324,7 +277,6 @@ describe('deriveSearchResults', () => {
           title: 'content-hit',
           workspace: 'c',
           running: false,
-          runningSubagentCount: 0,
           completed: false,
           snippet: 'body needle excerpt',
         },
@@ -333,19 +285,17 @@ describe('deriveSearchResults', () => {
     })
   })
 
-  it('excludes blank sessions from search regardless of query or content hits', () => {
+  it('includes blank sessions in search results', () => {
     const currentBlank = { ...summary('opaque-current', 5), blank: true }
-    const staleBlank = { ...summary('new session stale', 4), blank: true }
+    const staleBlank = { ...summary('opaque-stale', 4), blank: true }
     const sessions = {
       ...list(currentBlank, staleBlank),
       current: currentBlank.id,
     }
-    // Blank placeholders never match — not their localized-display title, not
-    // their id, and not even a backend content hit naming them.
     const result = deriveSearchResults(
       sessions,
-      [workspace('first', ['opaque-current', 'new session stale'])],
-      'new session',
+      [workspace('first', ['opaque-current', 'opaque-stale'])],
+      'opaque',
       noArchive,
       {
         items: [
@@ -356,7 +306,7 @@ describe('deriveSearchResults', () => {
       },
       10,
     )
-    expect(result.items).toEqual([])
+    expect(result.items.map(item => item.id)).toEqual([currentBlank.id, staleBlank.id])
   })
 
   it('uses the supplied cap and preserves either local overflow or backend hasMore', () => {

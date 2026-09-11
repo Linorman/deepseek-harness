@@ -1,0 +1,26 @@
+# Isolated native Team composition for the Loader snapshot; no experimental Team rows are mounted.
+- id: storage
+  name: '@clocky/clocky-storage'
+
+- id: storage-json
+  name: '@clocky/clocky-storage-json'
+  config:
+    root: .native-team-store
+
+- id: storage-log
+  name: '@clocky/clocky-storage-log'
+  config:
+    backend: json
+    routes: {}
+
+- id: team-hub
+  name: '@clocky/clocky-team-hub'
+
+- id: team-channel-direct
+  name: '@clocky/clocky-team-channel-direct'
+
+- id: team-link
+  name: '@clocky/clocky-team-link'
+
+- id: team-link-local
+  name: '@clocky/clocky-team-link-local'

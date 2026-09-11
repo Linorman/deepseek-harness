@@ -1,0 +1,35 @@
+{
+  "scenario": "human-approval-restart",
+  "backend": "json",
+  "outcome": "cancellation",
+  "independentHost": true,
+  "initialApproval": "cancelled",
+  "cleanupAt": "intent",
+  "originalPendingRetained": true,
+  "approvalHistoryRecords": 2,
+  "sessionApprovalAsked": 1,
+  "sessionApprovalDecided": 0,
+  "lostPromiseOutcome": "not-reconstructed",
+  "oldSessionBytesUnchanged": true,
+  "unapprovedWrites": 0,
+  "recovered": {
+    "approval": "approval",
+    "approvalPhase": "cancelled",
+    "approvalOutcome": {
+      "kind": "team-cancelled"
+    },
+    "detailsRetained": true,
+    "task": "running",
+    "taskAttempt": "retained-unsettled",
+    "workspace": "active",
+    "oldEpochs": 2,
+    "quiescedEpochs": 0,
+    "team": "stalled",
+    "goal": "active",
+    "stallCode": "ACTIVATION_TERMINATION_UNCONFIRMED",
+    "exactUnprovenEpoch": true,
+    "modelRequests": 0,
+    "newApprovalCalls": 0,
+    "fileUnchanged": true
+  }
+}

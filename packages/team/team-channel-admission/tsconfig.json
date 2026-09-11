@@ -1,0 +1,36 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../team-human-actor"
+    },
+    {
+      "path": "../../core/product-principal"
+    },
+    {
+      "path": "../team-channel-direct"
+    },
+    {
+      "path": "../team-channel-basic"
+    }
+  ]
+}

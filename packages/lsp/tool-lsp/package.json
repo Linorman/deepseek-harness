@@ -32,6 +32,7 @@
   ],
   "license": "MIT",
   "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-lsp": "workspace:^",

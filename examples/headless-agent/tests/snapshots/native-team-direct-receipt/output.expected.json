@@ -1,0 +1,146 @@
+{
+  "scenario": "native-team-direct-receipt",
+  "team": {
+    "objective": "Prove a native direct delivery receives one durable receipt.",
+    "phase": "active",
+    "participants": [
+      {
+        "name": "coordinator",
+        "role": "coordinator",
+        "phase": "active"
+      },
+      {
+        "name": "worker",
+        "role": "worker",
+        "phase": "active"
+      }
+    ],
+    "activations": [
+      {
+        "participant": "coordinator",
+        "provider": "in-process",
+        "sessionId": "session-native-team-coordinator",
+        "status": "idle"
+      },
+      {
+        "participant": "worker",
+        "provider": "in-process",
+        "sessionId": "session-native-team-worker",
+        "status": "idle"
+      }
+    ]
+  },
+  "channel": {
+    "adapter": "direct@1",
+    "phase": "active",
+    "records": [
+      {
+        "type": "channel/opened",
+        "sequence": 0,
+        "adapter": "direct@1",
+        "participants": [
+          "coordinator",
+          "worker"
+        ]
+      },
+      {
+        "type": "channel/phase",
+        "sequence": 1,
+        "phase": "pending"
+      },
+      {
+        "type": "channel/invitation",
+        "sequence": 2,
+        "participant": "coordinator",
+        "required": true,
+        "revision": 1,
+        "status": "pending"
+      },
+      {
+        "type": "channel/invitation",
+        "sequence": 3,
+        "participant": "worker",
+        "required": true,
+        "revision": 1,
+        "status": "pending"
+      },
+      {
+        "type": "channel/acknowledged",
+        "sequence": 4,
+        "participant": "coordinator",
+        "required": true,
+        "revision": 1,
+        "status": "acknowledged"
+      },
+      {
+        "type": "channel/acknowledged",
+        "sequence": 5,
+        "participant": "worker",
+        "required": true,
+        "revision": 1,
+        "status": "acknowledged"
+      },
+      {
+        "type": "channel/phase",
+        "sequence": 6,
+        "phase": "active"
+      },
+      {
+        "type": "channel/envelope",
+        "sequence": 7,
+        "sender": "coordinator",
+        "audience": [
+          "worker"
+        ],
+        "delivery": "context",
+        "kind": "message",
+        "text": "Review the durable receipt.",
+        "teamMatchesChannel": true,
+        "channelMatchesWal": true
+      },
+      {
+        "type": "channel/receipt",
+        "sequence": 8,
+        "recipient": "worker",
+        "envelopeMatchesDelivery": true,
+        "acknowledgedEnvelopeSequence": 7
+      },
+      {
+        "type": "channel/envelope",
+        "sequence": 9,
+        "sender": "coordinator",
+        "audience": [
+          "worker"
+        ],
+        "delivery": "context",
+        "kind": "message",
+        "text": "This delivery expires before acknowledgement.",
+        "teamMatchesChannel": true,
+        "channelMatchesWal": true
+      },
+      {
+        "type": "channel/delivery-expired",
+        "sequence": 10,
+        "recipient": "worker",
+        "envelopeMatchesDelivery": false,
+        "expiredEnvelopeSequence": 9
+      },
+      {
+        "type": "channel/summary",
+        "sequence": 11,
+        "sourceEnvelopeCount": 2,
+        "coveredSequenceRange": {
+          "from": 7,
+          "to": 9
+        }
+      }
+    ],
+    "pendingDeliveriesForWorker": 0
+  },
+  "delivery": {
+    "intent": "context",
+    "claimBindsWorkerActivation": true,
+    "receiptBindsWorker": true,
+    "receiptMatchesEnvelope": true
+  }
+}

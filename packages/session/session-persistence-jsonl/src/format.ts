@@ -36,10 +36,10 @@ export interface HeaderLine {
   id: SessionId
   createdAt: number
   cwd?: string
+  teamId?: string
+  participantId?: string
   parentSession?: SessionId
   seedLength?: number
-  origin?: 'subagent'
-  delegationDepth: number
   agentPreset?: string
 }
 
@@ -55,10 +55,10 @@ export function toHeaderLine(header: SessionHeader): HeaderLine {
     id: header.id,
     createdAt: header.createdAt,
     ...header.cwd !== undefined ? { cwd: header.cwd } : {},
+    ...header.teamId !== undefined ? { teamId: header.teamId } : {},
+    ...header.participantId !== undefined ? { participantId: header.participantId } : {},
     ...header.parentSession !== undefined ? { parentSession: header.parentSession } : {},
     ...header.seedLength !== undefined ? { seedLength: header.seedLength } : {},
-    ...header.origin !== undefined ? { origin: header.origin } : {},
-    delegationDepth: header.delegationDepth ?? 0,
     ...header.agentPreset !== undefined ? { agentPreset: header.agentPreset } : {},
   }
 }
@@ -69,24 +69,23 @@ export function toHeaderLine(header: SessionHeader): HeaderLine {
  * @returns the header, absent optional fields omitted.
  */
 export function fromHeaderLine(line: HeaderLine): SessionHeader {
-  if (Object.hasOwn(line, 'sandboxMode') || Object.hasOwn(line, 'approvalPolicy')) {
-    throw new Error('session header uses retired policy baseline fields')
-  }
+  assertNoRetiredHeaderFields(line)
   return {
     version: line.version,
     id: line.id,
     createdAt: line.createdAt,
     ...line.cwd !== undefined ? { cwd: line.cwd } : {},
+    ...line.teamId !== undefined ? { teamId: line.teamId } : {},
+    ...line.participantId !== undefined ? { participantId: line.participantId } : {},
     ...line.parentSession !== undefined ? { parentSession: line.parentSession } : {},
     ...line.seedLength !== undefined ? { seedLength: line.seedLength } : {},
-    ...line.origin !== undefined ? { origin: line.origin } : {},
-    delegationDepth: line.delegationDepth,
     ...line.agentPreset !== undefined ? { agentPreset: line.agentPreset } : {},
   }
 }
 
 /** Type guard: a parsed first line is a well-formed session header. */
 function isHeaderLine(value: unknown): value is HeaderLine {
+  assertNoRetiredHeaderFields(value)
   return (
     typeof value === 'object' && value !== null
     && (value as { type?: unknown }).type === 'session'
@@ -96,15 +95,31 @@ function isHeaderLine(value: unknown): value is HeaderLine {
     && Number.isSafeInteger((value as { createdAt: number }).createdAt)
     && (value as { createdAt: number }).createdAt >= 0
     && !Object.is((value as { createdAt: number }).createdAt, -0)
-    && typeof (value as { delegationDepth?: unknown }).delegationDepth === 'number'
-    && Number.isSafeInteger((value as { delegationDepth: number }).delegationDepth)
-    && (value as { delegationDepth: number }).delegationDepth >= 0
-    && !Object.is((value as { delegationDepth: number }).delegationDepth, -0)
-    && ((value as { origin?: unknown }).origin === undefined
-      || (value as { origin?: unknown }).origin === 'subagent')
+    && (
+      ((value as { teamId?: unknown }).teamId === undefined
+        && (value as { participantId?: unknown }).participantId === undefined)
+      || (typeof (value as { teamId?: unknown }).teamId === 'string'
+        && (value as { teamId: string }).teamId.length > 0
+        && typeof (value as { participantId?: unknown }).participantId === 'string'
+        && (value as { participantId: string }).participantId.length > 0)
+    )
     && ((value as { agentPreset?: unknown }).agentPreset === undefined
       || typeof (value as { agentPreset?: unknown }).agentPreset === 'string')
   )
+}
+
+/** Refuse product header fields retired in favor of durable subagent events. */
+function assertNoRetiredHeaderFields(value: unknown): void {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return
+  const record = value as Record<string, unknown>
+  for (const key of ['origin', 'delegationDepth'] as const) {
+    if (Object.hasOwn(record, key)) {
+      throw new Error(`session header field "${key}" was removed; use the subagent/descriptor event`)
+    }
+  }
+  if (Object.hasOwn(record, 'sandboxMode') || Object.hasOwn(record, 'approvalPolicy')) {
+    throw new Error('session header uses retired policy baseline fields')
+  }
 }
 
 /**

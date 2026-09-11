@@ -9,6 +9,8 @@ Use this skill to run relevant local evidence once before a `deepseek-harness` p
 
 ## Inspect the outgoing change
 
+For local edits with no push or PR request, select evidence from the task's actual diff; no remote base fetch or publication is required. The push and stack procedures below apply only to authorized publication work. Checking facts with Git is not a request for user confirmation.
+
 1. Confirm the checkout and branch.
 
 ```sh
@@ -29,7 +31,7 @@ The command never guesses or fetches a base. Supply the ref verified from curren
 There is no universal local baseline beyond the hooks. Every behavior change needs the narrowest available test or purpose-built check that would fail for its regression; add broader checks only for surfaces the diff actually reaches.
 
 - **Package or script behavior:** run the owning Vitest file or focused test name. Add adjacent package tests when a shared contract changes; leave repository-wide coverage to CI unless the change is genuinely cross-cutting or the user requests it.
-- **Documentation, Agent Notes, catalogs, or doc-linked comments:** run `pnpm run doc-sync`; run full lint when the documentation workflow requires it.
+- **Documentation, Agent Notes, catalogs, or doc-linked comments:** run `pnpm run doc-sync`; add lint for changed code, JSDoc, or lint configuration. Contributor instructions and skills also need applicable metadata validation, but no product snapshot unless the shipped agent's prompt or behavior changes.
 - **Model-, editor-, CLI-, or terminal-visible output:** run the focused keyless snapshot or real runnable-example scenario that owns the output.
 - **Package manifests, public exports, build configuration, worker/bin entries, or built runtime paths:** run `pnpm run build`, the relevant hygiene checks, and the owning built-artifact smoke.
 - **Real provider or agent behavior:** run the relevant `pnpm run test:e2e` target when credentials are available; never print secrets.

@@ -1,8 +1,5 @@
 - banner:
-  - navigation "Session hierarchy":
-    - button "Use only Cordis tools. First" [disabled]
-  - img
-  - text: Standard mode
+  - text: Use only Cordis tools. First
   - button "Session log":
     - text: Session log
     - img
@@ -59,8 +56,6 @@
   - img
 - button "Bad response":
   - img
-- button "Branch into a new conversation":
-  - img
 - text: {{clock}} Ran for {{duration}}
 - button "Context injection cordis-host-runner":
   - img
@@ -72,8 +67,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} Use only Cordis tools. Call cordis_stop with pluginId "snap-1". After it succeeds, reply exactly CORDIS_UI_DONE and stop. {{clock}}
 - button "Copy":
@@ -88,8 +81,6 @@
 - button "Good response":
   - img
 - button "Bad response":
-  - img
-- button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}}
 - textbox "Message the agent"

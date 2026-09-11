@@ -63,6 +63,6 @@ After the triplet is sealed, never edit, move, translate, reformat, or delete it
 
 ## Validate and report
 
-Run the archive verifier's focused test, `pnpm run verify-archived-agent-notes`, `pnpm run doc-sync`, `pnpm run lint`, and `git diff --check`; select any additional evidence through [dsh-pre-push-checks](../dsh-pre-push-checks/SKILL.md).
+For note edits, run `pnpm run doc-sync` and `git diff --check`; the aggregate includes archive validation. After archiving, run `pnpm run verify-archived-agent-notes` to check the newly sealed triplets. Run the archive verifier's focused test and lint when its implementation changes, not merely because a new active note required a supersession search. Select additional evidence through [dsh-pre-push-checks](../dsh-pre-push-checks/SKILL.md) and reuse passing checks for unchanged inputs.
 
 Report active implemented notes kept, implemented notes archived, rejected notes kept/deleted, proposed notes rejected if any, and every genuinely borderline case with its word count and chosen outcome. Do not claim archived outbound links are valid: the archive verifier intentionally never checks them.

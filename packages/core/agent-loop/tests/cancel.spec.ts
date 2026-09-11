@@ -993,3 +993,23 @@ describe('Agent.cancel()', () => {
     await ctx.fiber.dispose()
   })
 })
+
+
+it('resumePending continues retained wakes after cancellation without promoting injected context', async () => {
+  for (const queued of ['followup', 'context'] as const) {
+    const adapter = new MockAdapter(['hang', textResponse('retained response')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId(`resume-${queued}`), { provider: 'mock', model: 'mock' })
+    send(agent, 'active')
+    await new Promise(resolve => setTimeout(resolve, 30))
+    const message = createUserMessage({ content: [{ type: 'text', text: 'retained' }], source: { kind: 'user' } })
+    if (queued === 'followup') agent.followup(message)
+    else agent.inject(message)
+    agent.cancel({ kind: 'user' }, { keepInbox: true, resumePending: true })
+    await agent.whenIdle()
+    expect(adapter.requests).toHaveLength(queued === 'followup' ? 2 : 1)
+    expect(userTexts(agent)).toEqual(queued === 'followup' ? ['active', 'retained'] : ['active'])
+    expect(agent.inbox.hasPending).toBe(queued === 'context')
+    await ctx.fiber.dispose()
+  }
+})

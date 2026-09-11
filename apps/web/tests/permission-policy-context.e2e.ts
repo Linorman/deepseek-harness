@@ -12,14 +12,16 @@ import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { canonicalPath } from '@clocky/clocky-sandbox'
 import type { SessionEvent } from '@clocky/clocky-session'
 import {
-  assertFixtureInventory, fixtureUserPrompts, launchWebScaffold, recordFixture,
+  assertFixtureInventory, closedSessionFixture, fixtureUserPrompts, launchWebScaffold, recordFixture,
+  seedSession,
   watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/permission-policy-context', import.meta.url))
 const FIXTURE = fileURLToPath(new URL('./snapshots/permission-policy-context/session.jsonl', import.meta.url))
 const MODE = webSnapshotMode()
+const SEED_ID = 'permission-policy-context-web-e2e'
 
 const PROMPTS = [
   'Can you create or edit a normal file right now under the current policy? Answer directly in one sentence. Do not call a tool just to discover the policy.',
@@ -68,7 +70,10 @@ describe('web e2e: current sandbox policy reaches the model before tools', () =>
   const sessionEvents: SessionEvent[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold(MODE === 'record' ? {} : { replayFixture: FIXTURE })
+    scaffold = await launchWebScaffold(MODE === 'record'
+      ? { legacyWorkspaceSurface: true }
+      : { legacyWorkspaceSurface: true, replayFixture: FIXTURE })
+    await seedSession(scaffold, closedSessionFixture(), SEED_ID)
     disposeApproval = scaffold.ctx.on('approval/request', () => Promise.resolve('allowed-once'), { prepend: true })
     scaffold.ctx.on('session/event', (session, event: SessionEvent) => {
       sessionWorkspace = session.header.cwd
@@ -77,9 +82,16 @@ describe('web e2e: current sandbox policy reaches the model before tools', () =>
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
-    await connectFreshWorkspace(page, scaffold.workspaceCwd)
+    const group = page.locator('[role="treeitem"]').first()
+    await group.waitFor({ timeout: 15_000 })
+    if (await group.getAttribute('aria-expanded') !== 'true') await group.click()
+    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    await sessionRow.waitFor({ timeout: 15_000 })
+    await sessionRow.click()
+    await page.locator('[aria-label^="Access mode"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {
@@ -150,10 +162,13 @@ describe('web e2e: current sandbox policy reaches the model before tools', () =>
     const calls = sessionEvents.filter(
       (event): event is Extract<SessionEvent, { type: 'tool/call' }> => event.type === 'tool/call',
     )
-    expect(calls.every(call => call.data.turn === 4)).toBe(true)
     expect(calls.length).toBeGreaterThanOrEqual(2)
     const firstCall = calls[0]
     if (firstCall === undefined) throw new Error('neutral policy task produced no tool call')
+    // The bootstrap Session used by this command-focused lane consumes one
+    // closed turn before the four model prompts; assert the tool calls stay on
+    // the final turn without coupling the behavior to that seed's numbering.
+    expect(calls.every(call => call.data.turn === firstCall.data.turn)).toBe(true)
     expect(callArgs(firstCall)['sandbox_permissions']).toBeUndefined()
     expect(calls.some(call => callArgs(call)['sandbox_permissions'] !== undefined)).toBe(true)
     expect(sessionEvents.some(event => event.type === 'tool/result'

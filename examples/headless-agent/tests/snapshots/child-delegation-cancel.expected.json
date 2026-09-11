@@ -1,0 +1,19 @@
+{
+  "scenario": "cancel",
+  "parent": "completed",
+  "task": "cancelled",
+  "child": "cancelled",
+  "parentCalls": [
+    "team_task_delegate",
+    "team_task_cancel",
+    "team_task_wait",
+    "team_final"
+  ],
+  "childCalls": [],
+  "humanChildParticipants": 0,
+  "childActivationsQuiesced": true,
+  "childQuiescent": true,
+  "parentArchiveRejected": true,
+  "parentArchived": true,
+  "result": null
+}

@@ -815,6 +815,8 @@ describe('worktree-local Lefthook installer', { timeout: 30_000 }, () => {
   it('does not publish worktree integration when the pairing driver probe fails', async () => {
     const fixture = createFixture()
     rmSync(join(fixture.main, 'node_modules/tsx'), { recursive: true, force: true })
+    // A project-local temporary directory must not resolve the enclosing repository's tsx installation.
+    write(join(fixture.main, 'node_modules/tsx/package.json'), '{"name":"tsx","exports":{"./esm":"./missing.mjs"}}\n')
 
     const result = await runInstaller(fixture, fixture.main)
 

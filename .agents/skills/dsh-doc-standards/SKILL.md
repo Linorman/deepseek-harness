@@ -34,7 +34,7 @@ Then check constraints that make placement expensive or wrong:
 
 ## Audit the corpus
 
-After the structural pass, hunt the standard's slop checklist with the cheapest probes first. Verify and fetch the PR's live base, then run `pnpm --silent run change-scope --base <verified-base-ref>` to identify committed and dirty paths before applying semantic judgment. After a retarget or base merge, rerun the report and audit prose introduced by the new base.
+For a requested corpus audit, hunt the standard's slop checklist with the cheapest probes first. Keep ordinary edits scoped to the named documents and their affected references. For PR work, verify and fetch the live base, then run `pnpm --silent run change-scope --base <verified-base-ref>` to identify committed and dirty paths before applying semantic judgment. After a retarget or base merge, rerun the report and audit prose introduced by the new base. Local documentation work needs no PR or remote fetch.
 
 1. Measure: `pnpm run verify-doc-budgets --list`, then `git ls-files '*.md' ':(exclude)vendor/**' | xargs wc -w | sort -rn | head -30` to spot unbudgeted outliers.
 2. Hunt reasoning-transcript leakage — narrated history, dead design-session citations, review choreography, control-flow narration, test walkthroughs — with [dsh-trim-cot-leakage](../dsh-trim-cot-leakage/SKILL.md), which defines the taxonomy, recall batteries, and rules for what to keep or delete. Preserve only a non-obvious contract or durable rationale; the same rationale repeated beside sibling methods keeps one home.
@@ -53,4 +53,4 @@ Apply the ordered relocate-condense-raise policy in [docs/AGENTS.md](../../../do
 
 ## Validation and PR hygiene
 
-Run at least `pnpm run doc-sync`, `pnpm run lint`, and `git diff --check`; JSDoc changes may regenerate catalogs. If a paired doc changed, follow the [lightweight routine path](../../../docs/AGENTS.md#writing-rules) and run `pnpm run verify-translation-pairing --write <pair>`. The PR body should give word deltas, explain any deliberately long exception, and list checks.
+For documentation edits, run `pnpm run doc-sync` and `git diff --check`. Add lint for changed code, JSDoc, or lint configuration; Markdown-only edits do not require a separate lint/build run. JSDoc changes may regenerate catalogs. If a paired doc changed, update its counterpart through the [lightweight routine path](../../../docs/AGENTS.md#writing-rules) and re-record with `pnpm run verify-translation-pairing --write <pair>` before validation. Reuse passing evidence for unchanged inputs. In PRs, explain budget exceptions and list checks; include word deltas when the task concerns length.

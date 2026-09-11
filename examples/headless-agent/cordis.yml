@@ -27,6 +27,32 @@
             contextWindow: 128000
           - id: deepseek-v4-flash
             contextWindow: 128000
+      # Explicit local OpenAI-compatible route for real-model development
+      # tests. The canonical local endpoint is part of this example's static
+      # composition; the environment only selects the route.
+      local-vllm:
+        apiKeyEnv: CLOCKY_LOCAL_MODEL_API_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:18000/v1
+        compat:
+          supportsDeveloperRole: false
+          supportsReasoningEffort: true
+          maxTokensField: max_tokens
+        reasoning: !!js "process.env.CLOCKY_LOCAL_MODEL_REASONING_EFFORT ?? undefined"
+        defaultContextWindow: 131072
+        defaultMaxTokens: 5120
+        models:
+          - id: !!js process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit'
+            contextWindow: 131072
+            maxTokens: 5120
+            reasoningEfforts:
+              off:
+              minimal: low
+              low: low
+              medium: medium
+              high: xhigh
+              xhigh: xhigh
+              max: xhigh
 
 # Managed child-process groups for the bash executor (spawn/kill/output plumbing).
 - id: subprocess
@@ -45,8 +71,8 @@
   config:
     agents:
       - id: main
-        provider: !!js "process.env.CLOCKY_SNAPSHOT === undefined || process.env.CLOCKY_SNAPSHOT === 'record' ? 'deepseek' : 'test-provider'"
-        model: !!js "process.env.CLOCKY_SNAPSHOT === undefined || process.env.CLOCKY_SNAPSHOT === 'record' ? 'deepseek-v4-flash' : 'test-model'"
+        provider: !!js "process.env.CLOCKY_SNAPSHOT !== undefined && process.env.CLOCKY_SNAPSHOT !== 'record' ? 'test-provider' : (process.env.CLOCKY_LOCAL_MODEL_BASE_URL ? 'local-vllm' : 'deepseek')"
+        model: !!js "process.env.CLOCKY_SNAPSHOT !== undefined && process.env.CLOCKY_SNAPSHOT !== 'record' ? 'test-model' : (process.env.CLOCKY_LOCAL_MODEL_BASE_URL ? (process.env.CLOCKY_LOCAL_MODEL_ID ?? 'Qwen3.8-27B-AWQ-4bit') : 'deepseek-v4-flash')"
         cwd: !!js process.cwd()
     workspaceContext:
       maxBytes: 65536

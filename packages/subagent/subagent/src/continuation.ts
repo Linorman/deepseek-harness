@@ -422,6 +422,7 @@ export class SubagentContinuationManager {
     const descriptor = snapshotSubagentDescriptor({
       mode: 'continuable',
       provider: spec.provider,
+      depth: childDepth,
       label: spec.label,
       ...agentProvider !== undefined ? { agentProvider } : {},
       ...agentModel !== undefined ? { agentModel } : {},
@@ -459,7 +460,7 @@ export class SubagentContinuationManager {
         childId,
         provider: spec.provider,
         parent,
-        create: { seed, meta: childSessionMeta(parent, childDepth, lineageSeedLength), delegatedPolicies },
+        create: { seed, meta: childSessionMeta(parent, lineageSeedLength), delegatedPolicies },
         agentOptions: resolveChildAgentOptions(parent, request.agentOptions, childDepth),
         composition: { persona: request.persona, toolFilter: request.toolFilter },
         signal: spec.signal,
@@ -981,6 +982,7 @@ export class SubagentContinuationManager {
         agentOptions: {
           ...descriptor.agentProvider !== undefined ? { provider: descriptor.agentProvider } : {},
           ...descriptor.agentModel !== undefined ? { model: descriptor.agentModel } : {},
+          subagentDepth: descriptor.depth,
         },
         composition: { persona: descriptor.persona, toolFilter: descriptor.toolFilter },
         signal: options.signal,

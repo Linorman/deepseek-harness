@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-06-list-agents-residency-vocabulary.md
-2026-08-06-list-agents-residency-vocabulary.md: 01fff958921465909f5cd300dc355fdac6ec0772
-2026-08-06-list-agents-residency-vocabulary.zh.md: f0819626009bc9f1201898248e51474c91650f05
+2026-08-06-list-agents-residency-vocabulary.md: 484e47c4189e3f8e6eb14dd8a117160cd236d0da
+2026-08-06-list-agents-residency-vocabulary.zh.md: a2cf8be0856ae270a1a0fce00fa69e9ab5212616

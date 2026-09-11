@@ -9,9 +9,9 @@ Extract reusable logic into `packages/`, where per-file coverage and README gate
 Each example has both:
 
 - **Keyless:** boot the real `cordis.yml` through the Loader, drive it, and assert output and clean exit. Catches invalid Loader exports that hand-mounted tests miss ([postmortem](../docs/postmortem/0001-acp-default-export-drops-inject.md)).
-- **With-key:** send a live-model prompt and verify external state, not the model's claim. Self-skip without `DEEPSEEK_API_KEY`; see [testing.md](../docs/testing.md).
+- **With-key:** send a live-model prompt and verify external state, not the model's claim. Provider-specific suites self-skip without their required credential; `headless-agent`, text ACP, and the shipped Team test lanes additionally accept the local OpenAI-compatible route when `CLOCKY_LOCAL_MODEL_BASE_URL` is configured. See [testing.md](../docs/testing.md).
 
-Keyless process smokes use `@deepseek-ai/dsh-loader-smoke` for Loader launch resolution; terminal tests wrap that launch in a pseudo-terminal. Tests supply paths, environment, input, and assertions. Every checked-in test Cordis config lives under its corresponding `examples/<agent>/` leaf. Map a package-owned config to `examples/<agent>/tests/fixtures/<group>/<package>/cordis.yml`, keep its driver and assertions package-local, and declare every package it names in both root `tsconfig.json` references and `examples/package.json`.
+Keyless process smokes use `@clocky/clocky-loader-smoke` for Loader launch resolution; terminal tests wrap that launch in a pseudo-terminal. Tests supply paths, environment, input, and assertions. Every checked-in test Cordis config lives under its corresponding `examples/<agent>/` leaf. Map a package-owned config to `examples/<agent>/tests/fixtures/<group>/<package>/cordis.yml`, keep its driver and assertions package-local, and declare every package it names in both root `tsconfig.json` references and `examples/package.json`.
 
 Do not inventory example tests here; the `tests/` trees and root scripts are authoritative.
 

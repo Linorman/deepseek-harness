@@ -1,239 +1,141 @@
-/** Direct one-shot Agent driving, durable aggregation, flushing, and exit mapping. */
+/** One-shot Team runner output, ordering, error, and launcher lifecycle. */
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
-import AgentRegistry, { Inbox } from '@clocky/clocky-agent'
-import type { Agent, AgentHandle, CreateAgentOptions } from '@clocky/clocky-agent'
-import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
-import { createAssistantMessage } from '@clocky/clocky-llm'
-import SessionStore from '@clocky/clocky-session'
-import type { Session, UserMessage } from '@clocky/clocky-session'
 import { apply, Config, internals } from '../src/index.ts'
 
+const TEAM_ID = 'team-1'
 const originalInternals = { ...internals }
+
 afterEach(() => { Object.assign(internals, originalInternals) })
 
-interface Script {
-  before?(session: Session): void
-  afterPrompt(session: Session, message: UserMessage): Promise<void> | void
+interface CreateRequest {
+  objective: string
+  cwd: string
 }
 
-function appendTurn(
-  session: Session,
-  turn: number,
-  message: UserMessage,
-  text: string | undefined,
-  completed: boolean,
-): void {
-  session.append('turn/start', { turn })
-  session.append('step/start', { turn, step: 1 })
-  session.append('user/message', message, { surfaceOp: 'append' })
-  if (text !== undefined) {
-    session.append('assistant/message', {
-      turn,
-      step: 1,
-      message: createAssistantMessage({
-        content: [{ type: 'text', text }],
-        source: { provider: 'test-provider', model: 'test-model' },
-      }),
-    }, { surfaceOp: 'append' })
-  }
-  session.append('step/end', { turn, step: 1 })
-  session.append('turn/end', {
-    turn,
-    reason: completed
-      ? { kind: 'completed' }
-      : { kind: 'aborted', reason: { kind: 'user' } },
-  })
+interface HumanInputRequest {
+  teamId: string
+  content: readonly [{ type: 'text'; text: string }]
+  delivery: 'turn'
 }
 
-/** Mount the real registries around a small scripted Agent factory. */
-async function bench(script: Script): Promise<{
+interface FinalWaitRequest {
+  teamId: string
+}
+
+interface TeamRunScript {
+  create?(request: CreateRequest): Promise<{ teamId: string }> | { teamId: string }
+  postHumanInput?(request: HumanInputRequest): Promise<void> | void
+  waitForFinal?(request: FinalWaitRequest): Promise<{ text: string }> | { text: string }
+}
+
+interface Calls {
+  create: CreateRequest[]
+  postHumanInput: HumanInputRequest[]
+  waitForFinal: FinalWaitRequest[]
+}
+
+async function bench(script: TeamRunScript = {}): Promise<{
   ctx: Context
-  run(): Promise<{ code: number; out: string; err: string; order: string[] }>
+  run(): Promise<{ code: number; out: string; err: string; order: string[]; calls: Calls }>
 }> {
   const ctx = new Context()
-  await ctx.plugin(SessionStore)
-  await ctx.plugin(AgentRegistry)
-  await ctx.plugin(AgentDefaultModelConfig, { provider: 'test-provider', model: 'test-model' })
-  ctx.agents.setFactory({
-    async createAgent(ownerCtx: Context, options: CreateAgentOptions): Promise<AgentHandle> {
-      const session = ctx.sessions.create(options.sessionId, {
-        ...options.meta === undefined ? {} : { meta: options.meta },
-      })
-      let idle = Promise.resolve()
-      const agent = {} as Agent
-      const agentCtx = ownerCtx.extend({ agent })
-      Object.assign(agent, {
-        id: session.id,
-        options: options.agentOptions ?? {},
-        session,
-        inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
-        status: 'idle',
-        ctx: agentCtx,
-        cancel: () => {},
-        runMaintenance: () => Promise.reject(new Error('not used')),
-        send: () => {},
-        followup: (message: UserMessage) => {
-          agent.inbox.append('next-turn', message)
-          idle = Promise.resolve().then(() => script.afterPrompt(session, message))
-        },
-        steer: () => {},
-        inject: () => {},
-        whenIdle: () => idle,
-      } satisfies Partial<Agent>)
-      await options.setup?.(agentCtx)
-      script.before?.(session)
-      ctx.agents.register(agent)
-      return { agent, dispose: () => Promise.resolve() }
+  const order: string[] = []
+  const calls: Calls = { create: [], postHumanInput: [], waitForFinal: [] }
+  const teamRuns = {
+    async create(request: CreateRequest): Promise<{ teamId: string }> {
+      order.push('create')
+      calls.create.push(request)
+      return await (script.create?.(request) ?? { teamId: TEAM_ID })
     },
-    resume: () => Promise.reject(new Error('not used')),
-  })
+    async postHumanInput(request: HumanInputRequest): Promise<unknown> {
+      order.push('post')
+      calls.postHumanInput.push(request)
+      return await script.postHumanInput?.(request)
+    },
+    async waitForFinal(request: FinalWaitRequest): Promise<{ text: string }> {
+      order.push('wait')
+      calls.waitForFinal.push(request)
+      return await (script.waitForFinal?.(request) ?? { text: 'final answer' })
+    },
+  }
+  ctx.provide('teamRuns', teamRuns as never)
   return {
     ctx,
     run: async () => {
       let out = ''
       let err = ''
-      const order: string[] = []
-      ctx.on('session/flush', () => { order.push('flush') })
       internals.stdout = { write: (chunk: string) => { out += chunk; return true } }
       internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
       const exited = new Promise<number>((resolve) => {
         ctx.provide('appExit', (code: number) => { order.push('exit'); resolve(code) })
       })
       apply(ctx, { task: 'do the thing' })
-      return { code: await exited, out, err, order }
+      return { code: await exited, out, err, order, calls }
     },
   }
 }
 
 describe('headless runner', () => {
-  it('aggregates the final text across the complete idle-to-idle interval and flushes before exit', async () => {
-    const test = await bench({
-      before(session) {
-        const setupMessage = {
-          role: 'user', content: [{ type: 'text', text: 'setup' }], source: { kind: 'user' }, id: 'setup',
-        } as UserMessage
-        appendTurn(session, 0, setupMessage, 'pre-task noise', true)
-      },
-      async afterPrompt(session, message) {
-        await Promise.resolve()
-        appendTurn(session, 1, message, '', true)
-        appendTurn(session, 2, message, 'final answer', true)
-      },
-    })
+  it('creates a Team, posts human input, waits for its explicit final, and exits after printing it', async () => {
+    const test = await bench()
     const result = await test.run()
     expect(result).toEqual({
       code: 0,
       out: 'final answer\n',
       err: '',
-      order: ['flush', 'exit'],
+      order: ['create', 'post', 'wait', 'exit'],
+      calls: {
+        create: [{ objective: 'do the thing', cwd: process.cwd() }],
+        postHumanInput: [{ teamId: TEAM_ID, content: [{ type: 'text', text: 'do the thing' }], delivery: 'turn' }],
+        waitForFinal: [{ teamId: TEAM_ID }],
+      },
     })
     await test.ctx.fiber.dispose()
   })
 
-  it('waits for asynchronously appended events instead of racing Agent idleness', async () => {
+  it('waits for an asynchronously available explicit final', async () => {
     const test = await bench({
-      afterPrompt: async (session, message) => {
+      waitForFinal: async () => {
         await new Promise(resolve => setTimeout(resolve, 5))
-        appendTurn(session, 1, message, 'race-free answer', true)
+        return { text: 'race-free answer' }
       },
     })
     expect(await test.run()).toMatchObject({ code: 0, out: 'race-free answer\n', err: '' })
     await test.ctx.fiber.dispose()
   })
 
-  it('exits 1 when the final turn does not complete', async () => {
+  it('reports a Team-run creation failure before it posts human input', async () => {
     const test = await bench({
-      afterPrompt(session, message) { appendTurn(session, 1, message, undefined, false) },
-    })
-    expect(await test.run()).toMatchObject({ code: 1, out: '\n', err: '' })
-    await test.ctx.fiber.dispose()
-  })
-
-  it('prints the durable model failure when the final turn ends in error', async () => {
-    const test = await bench({
-      afterPrompt(session, message) {
-        session.append('turn/start', { turn: 1 })
-        session.append('step/start', { turn: 1, step: 1 })
-        session.append('user/message', message, { surfaceOp: 'append' })
-        session.append('step/end', { turn: 1, step: 1 })
-        session.append('turn/end', {
-          turn: 1,
-          reason: { kind: 'error', error: { code: 'SERVER', message: 'provider unavailable' } },
-        })
-      },
+      create: () => Promise.reject(new Error('a default provider and model are required to activate the Team coordinator')),
     })
     expect(await test.run()).toMatchObject({
       code: 1,
-      out: '\n',
-      err: 'clocky: SERVER: provider unavailable\n',
+      out: '',
+      err: 'clocky: a default provider and model are required to activate the Team coordinator\n',
+      order: ['create', 'exit'],
+      calls: { create: [{ objective: 'do the thing', cwd: process.cwd() }], postHumanInput: [], waitForFinal: [] },
     })
     await test.ctx.fiber.dispose()
   })
 
-  it('exits 1 when the owned interval contains no turn', async () => {
-    const test = await bench({ afterPrompt: () => {} })
-    expect(await test.run()).toMatchObject({ code: 1, out: '\n', err: '' })
-    await test.ctx.fiber.dispose()
-  })
-
-  it('reports missing model configuration before creating an Agent', async () => {
-    const ctx = new Context()
-    let out = ''
-    let err = ''
-    internals.stdout = { write: (chunk: string) => { out += chunk; return true } }
-    internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
-    const exited = new Promise<number>((resolve) => { ctx.provide('appExit', resolve) })
-    ctx.provide('agentDefaultModel', { currentSelection: () => undefined } as never)
-    ctx.provide('sessions', {} as never)
-    ctx.provide('agents', { create: () => { throw new Error('must not create an Agent') } } as never)
-
-    apply(ctx, { task: 't' })
-
-    expect(await exited).toBe(1)
-    expect(out).toBe('')
-    expect(err).toBe('clocky: no model is configured; select a provider and model before running a task\n')
-    await ctx.fiber.dispose()
-  })
-
-  it('reports a direct Agent creation failure', async () => {
-    const ctx = new Context()
-    let err = ''
-    internals.stdout = { write: () => true }
-    internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
-    const exited = new Promise<number>((resolve) => {
-      ctx.provide('appExit', resolve)
-    })
-    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'p', model: 'm' }) } as never)
-    ctx.provide('sessions', { flush: () => Promise.resolve(true) } as never)
-    ctx.provide('agents', { create: () => Promise.reject(new Error('factory exploded')) } as never)
-    apply(ctx, { task: 't' })
-    expect(await exited).toBe(1)
-    expect(err).toBe('clocky: factory exploded\n')
-    await ctx.fiber.dispose()
-  })
-
-  it('stringifies a non-Error Agent creation failure', async () => {
-    const ctx = new Context()
-    let err = ''
-    internals.stdout = { write: () => true }
-    internals.stderr = { write: (chunk: string) => { err += chunk; return true } }
-    const exited = new Promise<number>((resolve) => {
-      ctx.provide('appExit', resolve)
-    })
-    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'p', model: 'm' }) } as never)
-    ctx.provide('sessions', { flush: () => Promise.resolve(true) } as never)
+  it('stringifies a non-Error Team-run failure', async () => {
     const rejected = {
       then(_resolve: (value: never) => void, reject: (reason: unknown) => void): void {
-        reject('factory exploded')
+        reject('final delivery failed')
       },
     }
-    ctx.provide('agents', { create: () => rejected } as never)
-    apply(ctx, { task: 't' })
-    expect(await exited).toBe(1)
-    expect(err).toBe('clocky: factory exploded\n')
-    await ctx.fiber.dispose()
+    const test = await bench({
+      waitForFinal: () => rejected as never,
+    })
+    expect(await test.run()).toMatchObject({
+      code: 1,
+      out: '',
+      err: 'clocky: final delivery failed\n',
+      order: ['create', 'post', 'wait', 'exit'],
+    })
+    await test.ctx.fiber.dispose()
   })
 
   it('abandons a run when the tree is disposed during Loader settlement', async () => {
@@ -243,9 +145,7 @@ describe('headless runner', () => {
     internals.stderr = { write: () => true }
     ctx.provide('appExit', () => { exited = true })
     const services = ctx.plugin((child: Context) => {
-      child.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'p', model: 'm' }) } as never)
-      child.provide('sessions', {} as never)
-      child.provide('agents', {} as never)
+      child.provide('teamRuns', {} as never)
     })
     await services
     let release: () => void
@@ -259,9 +159,10 @@ describe('headless runner', () => {
     await ctx.fiber.dispose()
   })
 
-  it('fails loud without the launcher-provided exit request', () => {
+  it('fails loud without the launcher-provided exit request', async () => {
     const ctx = new Context()
     expect(() => { apply(ctx, { task: 't' }) }).toThrow('must provide ctx.appExit')
+    await ctx.fiber.dispose()
   })
 
   it('validates config: the task is required', () => {

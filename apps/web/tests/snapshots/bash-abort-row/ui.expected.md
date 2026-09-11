@@ -1,13 +1,12 @@
 - banner:
-  - navigation "Session hierarchy":
-    - 'button "Run two shell commands: wait" [disabled]'
+  - text: {{workspace}}
   - button "Session log":
     - text: Session log
     - img
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- text: "Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
+- text: "Direct message from participant-{{uuid}}: Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
 - button "Copy":
   - img
 - button "Context injection @clocky/clocky-system-prompt":

@@ -1,3 +1,5 @@
+import { teamHumanActionResponseResultSchema } from '../api/teams.schema.ts'
+import { teamHumanInboxPageSchema, teamHumanInboxAcknowledgementSchema } from '../api/teams.schema.ts'
 /**
  * Client side of the fetch carrier. AbstractApiClient holds every protocol invariant: rpcId minting,
  * four-quadrant envelope wrap/unwrap, zod parsing, in-process SSE frame decoding, and the payload-direct
@@ -20,8 +22,6 @@ import {
 import {
   sessionCancelValueSchema,
   sessionAttachmentValueSchema,
-  sessionCreateValueSchema,
-  sessionForkValueSchema,
   sessionHistoryValueSchema,
   sessionListValueSchema,
   sessionModelsValueSchema,
@@ -62,11 +62,48 @@ import {
 } from '../api/credentials.schema.ts'
 import { llmDiscoverModelsValueSchema, llmModelsValueSchema, llmProvidersValueSchema } from '../api/llm.schema.ts'
 import {
-  subagentHistoryValueSchema,
-  subagentInterruptValueSchema,
-  subagentListValueSchema,
-  subagentPromptValueSchema,
-} from '../api/subagents.schema.ts'
+  teamCancelValueSchema,
+  teamArchiveValueSchema,
+  teamGoalTransitionValueSchema,
+  teamGoalUpdateValueSchema,
+  teamArtifactReadValueSchema,
+  teamArtifactListValueSchema,
+  teamQuiescenceValueSchema,
+  teamMetricsValueSchema,
+  teamAuditReadValueSchema,
+  teamChannelCloseValueSchema,
+  teamChannelOpenValueSchema,
+  teamChannelInputValueSchema,
+  teamChannelAttachmentValueSchema,
+  teamChannelListValueSchema,
+  teamChannelCatalogValueSchema,
+  teamChannelAdmissionValueSchema,
+  teamChannelInvitationValueSchema,
+  teamChannelPostValueSchema,
+  teamChannelSummarizeValueSchema,
+  teamChannelReadValueSchema,
+  teamChannelWatchValueSchema,
+  teamFinalSchema,
+  teamInputReceiptSchema,
+  teamListValueSchema,
+  teamMemberInterruptValueSchema,
+  teamMemberInviteValueSchema,
+  teamMemberListValueSchema,
+  teamMemberActivateValueSchema,
+  teamMemberRemoveValueSchema,
+  teamResumeValueSchema,
+  teamStartValueSchema,
+  teamStateValueSchema,
+  teamTaskCreateValueSchema,
+  teamTaskCancelValueSchema,
+  teamTaskDeleteValueSchema,
+  teamTaskReviewValueSchema,
+  teamTaskGetValueSchema,
+  teamTaskListValueSchema,
+  teamWorkflowPlanListValueSchema,
+  teamTaskUpdateValueSchema,
+  teamTaskWatchValueSchema,
+} from '../api/teams.schema.ts'
 
 /**
  * Client consumption face of the contract (shape a): same domain tree as ApiProxy, but unary
@@ -88,22 +125,64 @@ export interface IApiClient {
   sessions: {
     list(payload: RequestPayload<'session.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.list'>>>
     search(payload: RequestPayload<'session.search'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.search'>>>
-    create(payload: RequestPayload<'session.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.create'>>>
     history(payload: RequestPayload<'session.history'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.history'>>>
     models(payload: RequestPayload<'session.models'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.models'>>>
     selectModel(payload: RequestPayload<'session.selectModel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.selectModel'>>>
     rename(payload: RequestPayload<'session.rename'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.rename'>>>
-    fork(payload: RequestPayload<'session.fork'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.fork'>>>
     prompt(payload: RequestPayload<'session.prompt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.prompt'>>>
     attachment(payload: RequestPayload<'session.attachment'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.attachment'>>>
     updateQueue(payload: RequestPayload<'session.updateQueue'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.updateQueue'>>>
     cancel(payload: RequestPayload<'session.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.cancel'>>>
   }
-  subagents: {
-    list(payload: RequestPayload<'subagent.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.list'>>>
-    history(payload: RequestPayload<'subagent.history'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.history'>>>
-    prompt(payload: RequestPayload<'subagent.prompt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.prompt'>>>
-    interrupt(payload: RequestPayload<'subagent.interrupt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'subagent.interrupt'>>>
+  teams: {
+    inboxRespond(payload: RequestPayload<'team.inbox.respond'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.respond'>>>
+    inboxRead(payload: RequestPayload<'team.inbox.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.read'>>>
+    inboxWatch(payload: RequestPayload<'team.inbox.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.watch'>>>
+    inboxAcknowledge(payload: RequestPayload<'team.inbox.acknowledge'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.acknowledge'>>>
+
+    list(payload: RequestPayload<'team.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.list'>>>
+    get(payload: RequestPayload<'team.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.get'>>>
+    create(payload: RequestPayload<'team.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.create'>>>
+    resume(payload: RequestPayload<'team.resume'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.resume'>>>
+    start(payload: RequestPayload<'team.start'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.start'>>>
+    postInput(payload: RequestPayload<'team.postInput'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.postInput'>>>
+    waitFinal(payload: RequestPayload<'team.waitFinal'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.waitFinal'>>>
+    cancel(payload: RequestPayload<'team.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.cancel'>>>
+    archive(payload: RequestPayload<'team.archive'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.archive'>>>
+    goalUpdate(payload: RequestPayload<'team.goal.update'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.goal.update'>>>
+    goalTransition(payload: RequestPayload<'team.goal.transition'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.goal.transition'>>>
+    quiescence(payload: RequestPayload<'team.quiescence'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.quiescence'>>>
+    metrics(payload: RequestPayload<'team.metrics'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.metrics'>>>
+    auditRead(payload: RequestPayload<'team.audit.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.audit.read'>>>
+    artifactRead(payload: RequestPayload<'team.artifact.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.artifact.read'>>>
+    artifactList(payload: RequestPayload<'team.artifact.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.artifact.list'>>>
+    memberList(payload: RequestPayload<'team.member.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.list'>>>
+    memberInvite(payload: RequestPayload<'team.member.invite'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.invite'>>>
+    memberActivate(payload: RequestPayload<'team.member.activate'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.activate'>>>
+    memberRemove(payload: RequestPayload<'team.member.remove'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.remove'>>>
+    memberInterrupt(payload: RequestPayload<'team.member.interrupt'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.interrupt'>>>
+    channelInput(payload: RequestPayload<'team.channel.input'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.input'>>>
+    channelAttachment(payload: RequestPayload<'team.channel.attachment'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.attachment'>>>
+    channelCatalog(payload: RequestPayload<'team.channel.catalog'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.catalog'>>>
+    channelList(payload: RequestPayload<'team.channel.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.list'>>>
+    channelAdmission(payload: RequestPayload<'team.channel.admission'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.admission'>>>
+    channelInvitation(payload: RequestPayload<'team.channel.invitation'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.invitation'>>>
+    channelInvitationAcknowledge(payload: RequestPayload<'team.channel.invitation.acknowledge'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.invitation.acknowledge'>>>
+    channelOpen(payload: RequestPayload<'team.channel.open'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.open'>>>
+    channelPost(payload: RequestPayload<'team.channel.post'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.post'>>>
+    channelSummarize(payload: RequestPayload<'team.channel.summarize'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.summarize'>>>
+    channelRead(payload: RequestPayload<'team.channel.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.read'>>>
+    channelClose(payload: RequestPayload<'team.channel.close'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.close'>>>
+    channelWatch(payload: RequestPayload<'team.channel.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.channel.watch'>>>
+    taskCreate(payload: RequestPayload<'team.task.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.create'>>>
+    taskGet(payload: RequestPayload<'team.task.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.get'>>>
+    taskList(payload: RequestPayload<'team.task.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.list'>>>
+    workflowPlanList(payload: RequestPayload<'team.workflow.plan.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.workflow.plan.list'>>>
+    taskUpdate(payload: RequestPayload<'team.task.update'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.update'>>>
+    taskCancel(payload: RequestPayload<'team.task.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.cancel'>>>
+    taskDelete(payload: RequestPayload<'team.task.delete'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.delete'>>>
+    taskReview(payload: RequestPayload<'team.task.review'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.review'>>>
+    taskWatch(payload: RequestPayload<'team.task.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.watch'>>>
   }
   host: {
     describe(payload: RequestPayload<'host.describe'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'host.describe'>>>
@@ -172,20 +251,61 @@ export interface IApiClient {
 const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseValue<K>>> } = {
   'session.list': sessionListValueSchema,
   'session.search': sessionSearchValueSchema,
-  'session.create': sessionCreateValueSchema,
   'session.history': sessionHistoryValueSchema,
   'session.models': sessionModelsValueSchema,
   'session.selectModel': sessionSelectModelValueSchema,
   'session.rename': sessionRenameValueSchema,
-  'session.fork': sessionForkValueSchema,
   'session.prompt': sessionPromptValueSchema,
   'session.attachment': sessionAttachmentValueSchema,
   'session.updateQueue': sessionUpdateQueueValueSchema,
   'session.cancel': sessionCancelValueSchema,
-  'subagent.list': subagentListValueSchema,
-  'subagent.history': subagentHistoryValueSchema,
-  'subagent.prompt': subagentPromptValueSchema,
-  'subagent.interrupt': subagentInterruptValueSchema,
+  'team.list': teamListValueSchema,
+  'team.get': teamStateValueSchema,
+  'team.create': teamStateValueSchema,
+  'team.resume': teamResumeValueSchema,
+  'team.start': teamStartValueSchema,
+  'team.postInput': teamInputReceiptSchema,
+  'team.waitFinal': teamFinalSchema,
+  'team.cancel': teamCancelValueSchema,
+  'team.archive': teamArchiveValueSchema,
+  'team.goal.update': teamGoalUpdateValueSchema,
+  'team.goal.transition': teamGoalTransitionValueSchema,
+  'team.quiescence': teamQuiescenceValueSchema,
+  'team.inbox.respond': teamHumanActionResponseResultSchema,
+  'team.inbox.read': teamHumanInboxPageSchema,
+  'team.inbox.watch': teamHumanInboxPageSchema,
+  'team.inbox.acknowledge': teamHumanInboxAcknowledgementSchema,
+  'team.metrics': teamMetricsValueSchema,
+  'team.audit.read': teamAuditReadValueSchema,
+  'team.artifact.read': teamArtifactReadValueSchema,
+  'team.artifact.list': teamArtifactListValueSchema,
+  'team.member.list': teamMemberListValueSchema,
+  'team.member.invite': teamMemberInviteValueSchema,
+  'team.member.activate': teamMemberActivateValueSchema,
+  'team.member.remove': teamMemberRemoveValueSchema,
+  'team.member.interrupt': teamMemberInterruptValueSchema,
+  'team.channel.input': teamChannelInputValueSchema,
+  'team.channel.attachment': teamChannelAttachmentValueSchema,
+  'team.channel.catalog': teamChannelCatalogValueSchema,
+  'team.channel.list': teamChannelListValueSchema,
+  'team.channel.admission': teamChannelAdmissionValueSchema,
+  'team.channel.invitation': teamChannelInvitationValueSchema,
+  'team.channel.invitation.acknowledge': teamChannelInvitationValueSchema,
+  'team.channel.open': teamChannelOpenValueSchema,
+  'team.channel.post': teamChannelPostValueSchema,
+  'team.channel.summarize': teamChannelSummarizeValueSchema,
+  'team.channel.read': teamChannelReadValueSchema,
+  'team.channel.close': teamChannelCloseValueSchema,
+  'team.channel.watch': teamChannelWatchValueSchema,
+  'team.task.create': teamTaskCreateValueSchema,
+  'team.task.cancel': teamTaskCancelValueSchema,
+  'team.task.delete': teamTaskDeleteValueSchema,
+  'team.task.review': teamTaskReviewValueSchema,
+  'team.task.get': teamTaskGetValueSchema,
+  'team.task.list': teamTaskListValueSchema,
+  'team.workflow.plan.list': teamWorkflowPlanListValueSchema,
+  'team.task.update': teamTaskUpdateValueSchema,
+  'team.task.watch': teamTaskWatchValueSchema,
   'host.describe': hostDescribeValueSchema,
   'host.pickDirectory': hostPickDirectoryValueSchema,
   'host.listDirectory': hostListDirectoryValueSchema,
@@ -412,23 +532,66 @@ export abstract class AbstractApiClient implements IApiClient {
   readonly sessions: IApiClient['sessions'] = {
     list: (payload, signal) => this.callUnary('session.list', payload, signal),
     search: (payload, signal) => this.callUnary('session.search', payload, signal),
-    create: (payload, signal) => this.callUnary('session.create', payload, signal),
     history: (payload, signal) => this.callUnary('session.history', payload, signal),
     models: (payload, signal) => this.callUnary('session.models', payload, signal),
     selectModel: (payload, signal) => this.callUnary('session.selectModel', payload, signal),
     rename: (payload, signal) => this.callUnary('session.rename', payload, signal),
-    fork: (payload, signal) => this.callUnary('session.fork', payload, signal),
     prompt: (payload, signal) => this.callUnary('session.prompt', payload, signal),
     attachment: (payload, signal) => this.callUnary('session.attachment', payload, signal),
     updateQueue: (payload, signal) => this.callUnary('session.updateQueue', payload, signal),
     cancel: (payload, signal) => this.callUnary('session.cancel', payload, signal),
   }
 
-  readonly subagents: IApiClient['subagents'] = {
-    list: (payload, signal) => this.callUnary('subagent.list', payload, signal),
-    history: (payload, signal) => this.callUnary('subagent.history', payload, signal),
-    prompt: (payload, signal) => this.callUnary('subagent.prompt', payload, signal),
-    interrupt: (payload, signal) => this.callUnary('subagent.interrupt', payload, signal),
+  readonly teams: IApiClient['teams'] = {
+    list: (payload, signal) => this.callUnary('team.list', payload, signal),
+    get: (payload, signal) => this.callUnary('team.get', payload, signal),
+    create: (payload, signal) => this.callUnary('team.create', payload, signal),
+    resume: (payload, signal) => this.callUnary('team.resume', payload, signal),
+    start: (payload, signal) => this.callUnary('team.start', payload, signal),
+    postInput: (payload, signal) => this.callUnary('team.postInput', payload, signal),
+    // A final result is user-paced and may legitimately outlast the carrier's
+    // health deadline; caller or connection cancellation still stops the wait.
+    waitFinal: (payload, signal) => this.callUnary('team.waitFinal', payload, signal, 'caller-signal-only'),
+    cancel: (payload, signal) => this.callUnary('team.cancel', payload, signal),
+    archive: (payload, signal) => this.callUnary('team.archive', payload, signal),
+    goalUpdate: (payload, signal) => this.callUnary('team.goal.update', payload, signal),
+    goalTransition: (payload, signal) => this.callUnary('team.goal.transition', payload, signal),
+    quiescence: (payload, signal) => this.callUnary('team.quiescence', payload, signal),
+    inboxRespond: (payload, signal) => this.callUnary('team.inbox.respond', payload, signal),
+    inboxRead: (payload, signal) => this.callUnary('team.inbox.read', payload, signal),
+    inboxWatch: (payload, signal) => this.callUnary('team.inbox.watch', payload, signal, 'caller-signal-only'),
+    inboxAcknowledge: (payload, signal) => this.callUnary('team.inbox.acknowledge', payload, signal),
+    metrics: (payload, signal) => this.callUnary('team.metrics', payload, signal),
+    auditRead: (payload, signal) => this.callUnary('team.audit.read', payload, signal),
+    artifactRead: (payload, signal) => this.callUnary('team.artifact.read', payload, signal),
+    artifactList: (payload, signal) => this.callUnary('team.artifact.list', payload, signal),
+    memberList: (payload, signal) => this.callUnary('team.member.list', payload, signal),
+    memberInvite: (payload, signal) => this.callUnary('team.member.invite', payload, signal),
+    memberActivate: (payload, signal) => this.callUnary('team.member.activate', payload, signal),
+    memberRemove: (payload, signal) => this.callUnary('team.member.remove', payload, signal),
+    memberInterrupt: (payload, signal) => this.callUnary('team.member.interrupt', payload, signal),
+    channelInput: (payload, signal) => this.callUnary('team.channel.input', payload, signal),
+    channelAttachment: (payload, signal) => this.callUnary('team.channel.attachment', payload, signal),
+    channelCatalog: (payload, signal) => this.callUnary('team.channel.catalog', payload, signal),
+    channelList: (payload, signal) => this.callUnary('team.channel.list', payload, signal),
+    channelAdmission: (payload, signal) => this.callUnary('team.channel.admission', payload, signal),
+    channelInvitation: (payload, signal) => this.callUnary('team.channel.invitation', payload, signal),
+    channelInvitationAcknowledge: (payload, signal) => this.callUnary('team.channel.invitation.acknowledge', payload, signal),
+    channelOpen: (payload, signal) => this.callUnary('team.channel.open', payload, signal),
+    channelPost: (payload, signal) => this.callUnary('team.channel.post', payload, signal),
+    channelSummarize: (payload, signal) => this.callUnary('team.channel.summarize', payload, signal),
+    channelRead: (payload, signal) => this.callUnary('team.channel.read', payload, signal),
+    channelClose: (payload, signal) => this.callUnary('team.channel.close', payload, signal),
+    channelWatch: (payload, signal) => this.callUnary('team.channel.watch', payload, signal, 'caller-signal-only'),
+    taskCreate: (payload, signal) => this.callUnary('team.task.create', payload, signal),
+    taskGet: (payload, signal) => this.callUnary('team.task.get', payload, signal),
+    taskList: (payload, signal) => this.callUnary('team.task.list', payload, signal),
+    workflowPlanList: (payload, signal) => this.callUnary('team.workflow.plan.list', payload, signal),
+    taskUpdate: (payload, signal) => this.callUnary('team.task.update', payload, signal),
+    taskCancel: (payload, signal) => this.callUnary('team.task.cancel', payload, signal),
+    taskDelete: (payload, signal) => this.callUnary('team.task.delete', payload, signal),
+    taskReview: (payload, signal) => this.callUnary('team.task.review', payload, signal),
+    taskWatch: (payload, signal) => this.callUnary('team.task.watch', payload, signal, 'caller-signal-only'),
   }
 
   readonly host: IApiClient['host'] = {

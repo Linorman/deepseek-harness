@@ -78,11 +78,12 @@ describe('web e2e: whole-session stats survive history paging', () => {
 
   beforeAll(async () => {
     if (MODE === 'record') throw new Error('stats-paged-history is a keyless assembled snapshot')
-    scaffold = await launchWebScaffold({})
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     await seedSession(scaffold, buildSeed(TURNS), SEED_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
   }, 120_000)

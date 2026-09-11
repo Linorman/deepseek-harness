@@ -1,0 +1,27 @@
+{
+  "profile": "product-admin",
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": [
+    "Scrollbar",
+    "Toast"
+  ],
+  "sourceRoots": [
+    "packages/client/ui-team/src",
+    "packages/client/ui-sidebar/src",
+    "packages/client/ui-theme/src"
+  ],
+  "ownership": {
+    "Scrollbar": "ui-theme",
+    "Toast": "ui-primitives",
+    "Select/Listbox": "authored",
+    "Date": "not applicable"
+  },
+  "commands": {
+    "client": "pnpm run test:gui",
+    "build": "pnpm run build"
+  },
+  "requiredCommands": [
+    "client",
+    "build"
+  ]
+}

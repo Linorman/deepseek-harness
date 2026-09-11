@@ -291,6 +291,11 @@ const subsystemGroups = [
     ['skills.md', '技能', 'Skills'],
     ['workflow.md', '工作流', 'Workflows'],
     ['subagent.md', '子代理', 'Subagents'],
+    ['agent-runtime.md', 'Agent 激活运行时', 'Agent runtime'],
+    ['team.md', 'Team 工作系统', 'Team work system'],
+    ['team-link.md', 'Team Link', 'Team Links'],
+    ['team-workspace.md', 'Team 工作区', 'Team workspaces'],
+    ['team-artifact.md', 'Team Artifact', 'Team artifacts'],
   ]],
   ['策略与交互', 'Policy and interaction', [
     ['approval.md', '审批', 'Approvals'],
@@ -394,6 +399,7 @@ const reference = [
     ['adding-an-llm-adapter.md', '新增 LLM Adapter', 'Adding an LLM adapter'],
     ['adding-a-settings-card.md', '新增设置卡片', 'Adding a settings card'],
     ['extension-cookbook.md', '扩展模式', 'Extension patterns'],
+    ['deploying-a-team-link-hub.md', '部署 Team Link Hub', 'Deploy Team Link Hub'],
   ] as const).map(([file, rootLabel, enLabel], order): PairedPage => ({
     source: `docs/cookbook/${file}`,
     route: `reference/cookbook/${file}`,
@@ -408,7 +414,7 @@ const reference = [
     label: { root: '新增 Conversation Node', en: 'Adding a Conversation Node' },
     sidebar: { root: 'zh-reference', en: 'en-reference' },
     section: { root: '开发手册', en: 'Cookbook' },
-    order: 5,
+    order: 6,
   }]),
 ]
 

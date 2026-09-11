@@ -3,8 +3,8 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { dirname, join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import {
   gitBlobHash,
   gitIndexPaths,
@@ -95,9 +95,11 @@ describe('translation pairing snapshots', () => {
 
   it('fails before a sidecar can reference an unavailable object', () => {
     const root = mkdtempSync(join(tmpdir(), 'clocky-translation-pairing-'))
+    vi.stubEnv('GIT_CEILING_DIRECTORIES', dirname(root))
     try {
       expect(() => storeGitBlob(root, Buffer.from('snapshot'))).toThrow('git hash-object -w --stdin failed')
     } finally {
+      vi.unstubAllEnvs()
       rmSync(root, { recursive: true, force: true })
     }
   })

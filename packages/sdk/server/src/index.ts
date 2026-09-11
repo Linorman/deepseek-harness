@@ -12,19 +12,21 @@
 import type { Context } from '@clocky/cordis'
 import type { Readable, Writable } from 'node:stream'
 import Schema from '@clocky/schemastery'
+import type {} from '@clocky/cordis-plugin-loader'
+import type {} from '@clocky/clocky-product-principal'
 import { JsonRpcLineTransport } from '@clocky/clocky-sdk-protocol'
 import { HarnessSdkJsonRpcServer } from './server.ts'
 
 export * from './server.ts'
 
 export const name = 'sdk-jsonrpc-server'
-// Only the agent factory is required; initialize reads the optional LLM seam with ctx.get().
-export const inject = ['agents']
+// Activation placement needs the Agent factory; every product request owns a TeamRun and authenticated connection.
+export const inject = ['agents', 'teamRuns', 'productPrincipals']
 
 /** JSON-RPC deployment config plus runtime-only test hooks. */
 export interface JsonRpcConfig {
-  /** Report max-token turn/subagent termination as a successful SDK result. */
-  maxTokensAsSuccess?: boolean
+  /** Product-principal provider that authenticates one SDK connection handshake. */
+  productPrincipalProvider?: string
   /** Transport input override; production uses `process.stdin`. */
   input?: Readable
   /** Transport output override; production uses `process.stdout`. */
@@ -34,18 +36,16 @@ export interface JsonRpcConfig {
 }
 
 export const Config: Schema<JsonRpcConfig> = Schema.object({
-  maxTokensAsSuccess: Schema.boolean().default(false),
+  productPrincipalProvider: Schema.string().min(1).pattern(/^\S(?:.*\S)?$/).default('local'),
 })
 
 /**
  * Serve SDK requests over the configured streams. Effect disposal shuts down
- * SDK-created agents and closes the transport. A `shutdown` response is flushed
+ * SDK-created Teams and closes the transport. A `shutdown` response is flushed
  * before the root runtime is disposed and the process exits 0; the app bin
  * owns root-context disposal for EOF and signals.
  */
 export function apply(ctx: Context, config: JsonRpcConfig): void {
-  // Cordis applies the schema default before invoking the plugin.
-  const resolvedConfig = config as JsonRpcConfig & { maxTokensAsSuccess: boolean }
   // Protocol shutdown owns the complete runtime process, so it must await the
   // root lifecycle (including persistence) before exiting.
   const rootFiber = ctx.root.fiber
@@ -57,9 +57,7 @@ export function apply(ctx: Context, config: JsonRpcConfig): void {
   const exit = config.exit ?? ((code: number): void => { process.exit(code) })
 
   const transport = new JsonRpcLineTransport(input, output)
-  const server = new HarnessSdkJsonRpcServer(ctx, transport, {
-    maxTokensAsSuccess: resolvedConfig.maxTokensAsSuccess,
-  })
+  const server = new HarnessSdkJsonRpcServer(ctx, transport, config.productPrincipalProvider ?? 'local')
 
   // Share one exit task so racing shutdown requests cannot dispose the root or
   // exit the process more than once.

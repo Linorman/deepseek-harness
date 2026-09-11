@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-31-team-artifact-storage-and-pricing.md
+2026-08-31-team-artifact-storage-and-pricing.md: 8274db3d86b02b1851cc8c881c4f3b284c6256b2
+2026-08-31-team-artifact-storage-and-pricing.zh.md: 267643e50f58b4752412e4b2f9f0faa02113f664

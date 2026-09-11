@@ -2,14 +2,9 @@
 // renderer: wheel input only navigates to the semantic target; assertions pin
 // content identity and interaction routing rather than scroll geometry or
 // mounted row counts.
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
-import type { StreamChunk } from '@clocky/clocky-llm'
-import type { ReplayEntry, ReplayOverrideDoc } from '@clocky/clocky-llm-replay'
 import { SessionId, type SessionEvent } from '@clocky/clocky-session'
 import { createChatScrollFixture } from './chat-scroll-fixture.ts'
 import {
@@ -28,30 +23,11 @@ const TOOL_TURN = FIXTURE_TURNS
 const BRANCH_TURN = 80
 const TARGET_CALL_1 = 'chat-scroll-088-1'
 const TARGET_CALL_2 = 'chat-scroll-088-2'
-const CONTINUE_PROMPT = 'CHAT_INTERACTION_CONTINUE Continue from this exact branch point.'
-const CONTINUE_FIRST = 'CHAT_INTERACTION_CONTINUE_FIRST'
-const CONTINUE_DONE = 'CHAT_INTERACTION_CONTINUE_DONE'
 const FIXTURE = createChatScrollFixture({
   markerPrefix: 'INTERACTION',
   title: 'CHAT_INTERACTION long semantic identity session',
   turns: FIXTURE_TURNS,
 })
-
-function continuationChunks(): StreamChunk[] {
-  const response = `${CONTINUE_FIRST} The fork retained the intended prefix. ${CONTINUE_DONE}.`
-  return [
-    { type: 'block-start', index: 0, blockType: 'text' },
-    { type: 'text-delta', index: 0, text: `${CONTINUE_FIRST} ` },
-    { type: 'text-delta', index: 0, text: `The fork retained the intended prefix. ${CONTINUE_DONE}.` },
-    { type: 'block-end', index: 0, block: { type: 'text', text: response } },
-    { type: 'usage', usage: { inputTokens: 512, outputTokens: 32 } },
-    { type: 'finish', reason: { kind: 'stop' } },
-  ]
-}
-
-function replayEntry(chunks: StreamChunk[]): ReplayEntry {
-  return { kind: 'chunks', chunks }
-}
 
 function carries(event: SessionEvent, marker: string): boolean {
   return JSON.stringify(event).includes(marker)
@@ -129,32 +105,19 @@ function assistantKey(event: SessionEvent<'assistant/message'>): string {
   return conversationContextKey('assistant-step', `${event.data.turn}:${event.data.step}`)
 }
 
-function turnTailKey(turn: number): string {
-  return conversationContextKey('turn-tail', String(turn))
-}
-
 describe('web e2e: long Chat interaction contract', () => {
   let browser: Browser
   let page: Page
-  let replayDir: string
   let scaffold: WebScaffold
   let tripwire: ReturnType<typeof watchConsole>
 
   beforeAll(async () => {
-    replayDir = await mkdtemp(join(tmpdir(), 'clocky-chat-interaction-replay-'))
-    const replayOverride = join(replayDir, 'replay.override.json')
-    const replay: ReplayOverrideDoc = [replayEntry(continuationChunks())]
-    await writeFile(replayOverride, JSON.stringify(replay))
-    scaffold = await launchWebScaffold({
-      replayFixture: join(replayDir, 'override-only.jsonl'),
-      replayOverride,
-      replayContextWindow: 10_000_000,
-      paceMs: 18,
-    })
+    scaffold = await launchWebScaffold({ legacyWorkspaceSurface: true })
     await seedSession(scaffold, FIXTURE.log, SESSION_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser, 900)
     tripwire = watchConsole(page)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await openSeed(page)
@@ -164,10 +127,6 @@ describe('web e2e: long Chat interaction contract', () => {
     const failures: unknown[] = []
     await browser?.close().catch((error: unknown) => failures.push(error))
     await scaffold?.close().catch((error: unknown) => failures.push(error))
-    if (replayDir !== undefined) {
-      await rm(replayDir, { recursive: true, force: true })
-        .catch((error: unknown) => failures.push(error))
-    }
     if (failures.length === 1) throw failures[0]
     if (failures.length > 1) throw new AggregateError(failures, 'long Chat interaction cleanup failed')
   })
@@ -187,10 +146,6 @@ describe('web e2e: long Chat interaction contract', () => {
     const branchAssistantMarker = FIXTURE.markers.assistant(BRANCH_TURN)
     const branchUserEvent = requiredEvent(source.session.events, 'user/message', branchUserMarker)
     const branchAssistantEvent = requiredEvent(source.session.events, 'assistant/message', branchAssistantMarker)
-    const boundary = source.session.events.find((event): event is SessionEvent<'turn/end'> => (
-      event.type === 'turn/end' && event.data.turn === BRANCH_TURN
-    ))
-    if (boundary === undefined) throw new Error(`turn ${String(BRANCH_TURN)} has no turn/end event`)
     const expectedUserText = textContent(branchUserEvent.data.content)
 
     await wheelUntilMounted(page, `[data-chat-call-id="${TARGET_CALL_2}"]`, -1_100)
@@ -243,7 +198,6 @@ describe('web e2e: long Chat interaction contract', () => {
     await wheelUntilMounted(page, `[data-chat-anchor-key="${branchUserKey}"]`, -1_100)
     const userRow = page.locator(`[data-chat-anchor-key="${branchUserKey}"]`)
     const assistantRow = page.locator(`[data-chat-anchor-key="${branchAssistantKey}"]`)
-    const turnTailRow = page.locator(`[data-chat-anchor-key="${turnTailKey(BRANCH_TURN)}"]`)
     expect(await userRow.textContent()).toContain(branchUserMarker)
     expect(await assistantRow.textContent()).toContain(branchAssistantMarker)
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
@@ -252,43 +206,7 @@ describe('web e2e: long Chat interaction contract', () => {
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()), { timeout: 5_000 })
       .toBe(expectedUserText)
 
-    await turnTailRow.hover()
-    await turnTailRow.getByRole('button', { name: 'Branch into a new conversation', exact: true }).click()
-    await expect.poll(
-      () => scaffold.ctx.agents.list().find(agent => agent.session.header.parentSession === SessionId(SESSION_ID)),
-      { timeout: 15_000 },
-    ).toBeDefined()
-    const child = scaffold.ctx.agents.list()
-      .find(agent => agent.session.header.parentSession === SessionId(SESSION_ID))
-    if (child === undefined) throw new Error('message branch did not create a child session')
-    expect(child.session.header.seedLength).toBe(boundary.seq + 1)
-    expect(child.session.events.some(event => carries(event, branchAssistantMarker))).toBe(true)
-    expect(child.session.events.some(event => carries(event, FIXTURE.markers.user(BRANCH_TURN + 1)))).toBe(false)
-    expect(child.session.events.some(event => carries(event, FIXTURE.markers.user(FIXTURE.turns)))).toBe(false)
-
-    const currentCrumb = page.getByRole('navigation', { name: 'Session hierarchy' })
-      .getByRole('button').last()
-    await expect.poll(() => currentCrumb.textContent(), { timeout: 15_000 })
-      .toBe(`${FIXTURE.title} (1)`)
-    await page.getByText(branchAssistantMarker, { exact: false }).last().waitFor({ timeout: 15_000 })
-    const settled = scaffold.whenTurnSettled(60_000)
-    const composer = page.locator('textarea:enabled').last()
-    await composer.fill(CONTINUE_PROMPT)
-    await page.getByRole('button', { name: 'Send message', exact: true }).click()
-    await expect.poll(() => page.getByText(CONTINUE_PROMPT, { exact: true }).count(), { timeout: 15_000 }).toBe(1)
-    expect(await settled).toBe(child.session.id)
-    await page.getByText(CONTINUE_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
-    await expect.poll(() => page.locator('[data-streaming="true"]').count(), { timeout: 15_000 }).toBe(0)
-    expect(await composer.inputValue()).toBe('')
-    expect(await composer.isEnabled()).toBe(true)
-    expect(source.session.events.some(event => carries(event, CONTINUE_PROMPT))).toBe(false)
-    expect(child.session.events.filter(event => (
-      event.type === 'user/message' && carries(event, CONTINUE_PROMPT)
-    ))).toHaveLength(1)
-    const lastTurnEnd = child.session.events.findLast((event): event is SessionEvent<'turn/end'> => (
-      event.type === 'turn/end'
-    ))
-    expect(lastTurnEnd?.data.reason).toEqual({ kind: 'completed' })
+    expect(await page.getByRole('button', { name: 'Branch into a new conversation' }).count()).toBe(0)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   }, 180_000)

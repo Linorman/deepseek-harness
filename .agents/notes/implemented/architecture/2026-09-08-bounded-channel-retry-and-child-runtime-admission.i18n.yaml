@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-08-bounded-channel-retry-and-child-runtime-admission.md
+2026-09-08-bounded-channel-retry-and-child-runtime-admission.md: ed8a6cc327abbeee8da9217c2b424dfcb7b8d5f3
+2026-09-08-bounded-channel-retry-and-child-runtime-admission.zh.md: c623c027e5cedc365bb15d60d7cf6d3ea16cc505

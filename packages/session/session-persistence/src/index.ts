@@ -7,7 +7,7 @@
 
 import { Context, Service } from '@clocky/cordis'
 import { SessionPreparation } from '@clocky/clocky-session'
-import type { SessionEvent, SessionId, SessionHeader } from '@clocky/clocky-session'
+import type { Session, SessionEvent, SessionId, SessionHeader } from '@clocky/clocky-session'
 import type { SessionPersistenceRevision } from './revision.ts'
 
 // Re-export the metadata vocabulary so Consumers import it from the Service Definition.
@@ -131,6 +131,15 @@ export abstract class SessionPersistence extends Service {
    * @param meta - the immutable header (id, version, cwd, lineage) to record.
    */
   abstract create(meta: SessionHeader): Promise<void>
+
+  /**
+   * Durably write a Session's header even when its event log is empty. A
+   * provider may use this before publishing an Agent whose header provenance
+   * must survive a process restart.
+   * @param session - Session whose immutable header must become materialized.
+   * @returns resolution after the header is durable.
+   */
+  abstract materializeHeader(session: Session): Promise<void>
 
   /**
    * Durably persist a batch of events. Honors the append-only and contiguous-

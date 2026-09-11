@@ -27,6 +27,18 @@
       "path": "../../core/agent"
     },
     {
+      "path": "../../core/agent-default-model"
+    },
+    {
+      "path": "../../core/agent-runtime"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../core/team-link"
+    },
+    {
       "path": "../../session-query/session-query"
     },
     {
@@ -43,6 +55,42 @@
     },
     {
       "path": "../../session/session-persistence-jsonl"
+    },
+    {
+      "path": "../../storage/storage"
+    },
+    {
+      "path": "../../storage/storage-json"
+    },
+    {
+      "path": "../../storage/storage-log"
+    },
+    {
+      "path": "../../agent-runtime/agent-runtime-in-process"
+    },
+    {
+      "path": "../../team/team-hub"
+    },
+    {
+      "path": "../../team/team-channel-direct"
+    },
+    {
+      "path": "../../team/team-activation-controller"
+    },
+    {
+      "path": "../../team/team-link-local"
+    },
+    {
+      "path": "../../team/team-agent-client"
+    },
+    {
+      "path": "../../team/tool-team"
+    },
+    {
+      "path": "../../team/tool-team-goal"
+    },
+    {
+      "path": "../../team/team-run"
     },
     {
       "path": "../../runtime-diagnostics/invariants"

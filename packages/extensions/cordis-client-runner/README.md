@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-cordis-client-runner
+# @clocky/clocky-cordis-client-runner
 
 English | [中文](README.zh.md)
 

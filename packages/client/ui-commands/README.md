@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-client-ui-commands
+# @clocky/clocky-client-ui-commands
 
 English | [中文](README.zh.md)
 

@@ -58,6 +58,16 @@ describe('isTrustedApiRequest', () => {
     expect(isTrustedApiRequest(request({ host: '127.0.0.1:3080', origin: 'null' }), [])).toBe(false)
   })
 
+  it('permits only the loopback opaque-origin document navigation requested by the private bootstrap form', () => {
+    const handoff = {
+      host: '127.0.0.1:3080', origin: 'null', 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document',
+    }
+    expect(isTrustedApiRequest(request(handoff), [], { allowOpaqueLoopbackNavigation: true })).toBe(true)
+    expect(isTrustedApiRequest(request({ ...handoff, 'sec-fetch-mode': 'cors' }), [], { allowOpaqueLoopbackNavigation: true })).toBe(false)
+    expect(isTrustedApiRequest(request({ ...handoff, 'sec-fetch-dest': 'iframe' }), [], { allowOpaqueLoopbackNavigation: true })).toBe(false)
+    expect(isTrustedApiRequest(request({ ...handoff, host: 'harness.example' }), ['harness.example'], { allowOpaqueLoopbackNavigation: true })).toBe(false)
+  })
+
   it('accepts a same-origin browser request, with or without an Origin header', () => {
     expect(isTrustedApiRequest(request({
       host: 'localhost:3080',

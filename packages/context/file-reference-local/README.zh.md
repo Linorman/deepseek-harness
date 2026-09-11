@@ -1,4 +1,4 @@
-# `@deepseek-ai/dsh-file-reference-local`
+# `@clocky/clocky-file-reference-local`
 
 [English](README.md) | 中文
 

@@ -51,10 +51,11 @@ describe.skipIf(MODE === 'record' || !HAS_PWSH)('web e2e: pwsh calls use the bas
   beforeAll(async () => {
     const fixture = await readFile(SEED, 'utf8')
     expect(fixtureUserPrompts(fixture), 'seed fixture must carry the single drive prompt').toEqual([PROMPT])
-    scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY })
+    scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY, legacyWorkspaceSurface: true })
     await seedSession(scaffold, fixture, SEED_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
+    await scaffold.authenticateBrowserPage(page)
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
   }, 120_000)

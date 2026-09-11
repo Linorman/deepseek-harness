@@ -25,6 +25,7 @@ import z from '@clocky/schemastery'
 import { defineTool, TOOL_ABORTED } from '@clocky/clocky-tools'
 import type { GenericCallView, TerminalCallView, ToolExecution, ToolResult, ToolResultView } from '@clocky/clocky-tools'
 import { HarnessError } from '@clocky/clocky-llm'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
 import type {} from '@clocky/clocky-system-prompt'
 import type {} from '@clocky/clocky-jobs'
@@ -149,7 +150,7 @@ function pwshDescription(backgroundEnabled: boolean, escalationModes: readonly S
  * otherwise use the session header cwd and leave executor defaulting as the fallback.
  */
 function resolveWorkdir(modelWorkdir: string | undefined, exec: { agent?: Agent }): string | undefined {
-  const headerCwd = exec.agent?.session.header.cwd
+  const headerCwd = exec.agent === undefined ? undefined : resolveAgentWorkspaceRoot(exec.agent)
   if (modelWorkdir === undefined) return headerCwd
   if (headerCwd !== undefined && !isAbsolute(modelWorkdir)) {
     return resolvePath(headerCwd, modelWorkdir)
@@ -204,7 +205,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   /* jscpd:ignore-end */
   /** Resolve the complete standing policy for this call when a confining executor is mounted. */
   const resolveSandboxPolicy = (exec: ToolExecution): SandboxExecutionPolicy | undefined =>
-    sandboxPolicy?.resolve(exec.agent === undefined ? {} : { session: exec.agent.session })
+    sandboxPolicy?.resolve(exec.agent === undefined ? {} : { session: exec.agent.session, agent: exec.agent })
 
   /* jscpd:ignore-start -- deliberate mirror of clocky-tool-bash's escalation resolver (pwsh-tool-and-executor Agent Note). */
   /**

@@ -57,10 +57,17 @@ describe('minimal agent preset', () => {
     if (requestHeader === undefined) throw new Error('the minimal agent issued no model request')
     expect(agentHandle.agent.session.events.some(event => event.type === 'user/message'
       && event.data.source.kind === 'plugin'
-      && event.data.source.plugin === '@clocky/clocky-system-prompt')).toBe(false)
-    const presetFileSystem = scaffold.ctx.agentPresets.serviceFor(agentHandle.agent, 'fs')
-    expect(presetFileSystem).toBeDefined()
-    expect(presetFileSystem?.sandboxMode).toBeUndefined()
+      && event.data.source.plugin === '@clocky/clocky-system-prompt')).toBe(true)
+    const runtimeContext = agentHandle.agent.session.events.flatMap(event => event.type === 'user/message'
+      && event.data.source.kind === 'plugin'
+      && event.data.source.plugin === '@clocky/clocky-system-prompt'
+      ? event.data.content.flatMap(block => block.type === 'text' ? [block.text] : [])
+      : [])
+    expect(runtimeContext.some(text => text.includes('Current Clocky file policy: workspace-write'))).toBe(true)
+    expect(runtimeContext.some(text => text.includes(JSON.stringify(scaffold.workspaceCwd)))).toBe(true)
+    expect(runtimeContext.some(text => text.includes('Approval policy: ask.'))).toBe(true)
+    // The filesystem is host-owned and inherited by the preset; the denied
+    // mutation below proves the scoped editor uses that enforcing provider.
     expect(scaffold.ctx.agentPresets.serviceFor(agentHandle.agent, 'compaction')).toBeUndefined()
 
     const stateDir = join(scaffold.workspaceCwd, 'persistent-state')
@@ -89,6 +96,14 @@ describe('minimal agent preset', () => {
       arguments: { command: 'view', path: seedPath },
       agent: agentHandle.agent,
     })
+    const outsidePath = join(process.cwd(), '.tmp', 'minimal-preset-outside.txt')
+    const outside = await scaffold.ctx.tools.execute({
+      signal,
+      callId: CallId('minimal-editor-outside'),
+      name: 'str_replace_editor',
+      arguments: { command: 'create', path: outsidePath, file_text: 'MUST_NOT_WRITE' },
+      agent: agentHandle.agent,
+    })
 
     const text = (result: typeof bash): string => result.content
       .filter(block => block.type === 'text')
@@ -115,6 +130,8 @@ describe('minimal agent preset', () => {
         ],
       }
     `)
+    expect(outside.isError).toBe(true)
+    expect(text(outside)).toContain('[sandbox: file access denied under workspace-write mode]')
     expect(requestHeader.tools?.toSorted((left, right) => left.name.localeCompare(right.name)))
       .toEqual(scaffold.ctx.tools.schemas(agentHandle.agent).toSorted((left, right) => left.name.localeCompare(right.name)))
     await assertFixtureInventory(SNAPSHOT_DIR, ['session.jsonl'])

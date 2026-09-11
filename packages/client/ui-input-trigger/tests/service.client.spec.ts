@@ -179,7 +179,7 @@ describe('sessionOf', () => {
   it('warms the roster once at controller birth with the session projection', async () => {
     const { inputTriggers, mint } = await serviceBench()
     const cmd = deferredSource('/', 'command')
-    const sub = deferredSource('@', 'subagent')
+    const sub = deferredSource('@', 'worker')
     inputTriggers.registerSource(cmd.source)
     inputTriggers.registerSource(sub.source)
     const a = mint('a')
@@ -321,12 +321,12 @@ describe('track', () => {
   it('trigger switch reseeds the roster', () => {
     const { controller } = controllerBench([
       deferredSource('/', 'command').source,
-      deferredSource('@', 'subagent').source,
+      deferredSource('@', 'worker').source,
     ])
     controller.track('/g', 2, { tier: 'plain' }, 1)
     expect(controller.menu.getSnapshot().groups.map(g => g.source)).toEqual(['command'])
     controller.track('@w', 2, { tier: 'plain' }, 1)
-    expect(controller.menu.getSnapshot().groups.map(g => g.source)).toEqual(['subagent'])
+    expect(controller.menu.getSnapshot().groups.map(g => g.source)).toEqual(['worker'])
   })
 
   it('all sources settling empty auto-closes; a later settle of a gone generation is silent', async () => {
@@ -417,7 +417,7 @@ describe('programmatic source launcher', () => {
 describe('scope-birth warm', () => {
   it('construction warms every source once with the session projection', () => {
     const cmd = deferredSource('/', 'command')
-    const sub = deferredSource('@', 'subagent')
+    const sub = deferredSource('@', 'worker')
     controllerBench([cmd.source, sub.source])
     expect(cmd.warm).toHaveBeenCalledExactlyOnceWith({ sessionId: sid('a') })
     expect(sub.warm).toHaveBeenCalledExactlyOnceWith({ sessionId: sid('a') })
@@ -598,7 +598,7 @@ describe('lexicon', () => {
     const { controller } = controllerBench([
       lexSource('/', 'command', undefined, false), // no hook: not polled
       skill,
-      lexSource('@', 'subagent', ['worker-1']),
+      lexSource('@', 'worker', ['worker-1']),
     ])
     const rolls = controller.lexicon.getSnapshot()
     expect([...rolls.keys()]).toEqual(['/', '@'])
@@ -616,7 +616,7 @@ describe('lexicon', () => {
     const { controller } = controllerBench([
       lexSource('/', 'skill', ['b', 'a']),
       lexSource('/', 'prompt', ['c']),
-      lexSource('@', 'subagent', undefined), // not hot: '@' stays absent
+      lexSource('@', 'worker', undefined), // not hot: '@' stays absent
     ])
     const rolls = controller.lexicon.getSnapshot()
     expect(rolls.get('/')).toEqual(['b', 'a', 'c'])
@@ -828,7 +828,7 @@ describe('adjudicate', () => {
   it('skips sources of another trigger; all-undefined answers undefined', async () => {
     const atHook = vi.fn(() => Promise.resolve('handled' as const))
     const { controller } = controllerBench([
-      enterSource('@', 'subagent', atHook),
+      enterSource('@', 'worker', atHook),
       enterSource('/', 'command', () => Promise.resolve(undefined)),
     ])
     await expect(controller.adjudicate('/xyz', new AbortController().signal, { images: 0 })).resolves.toBeUndefined()

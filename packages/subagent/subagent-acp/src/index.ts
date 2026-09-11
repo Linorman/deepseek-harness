@@ -1,7 +1,7 @@
 /**
  * Out-of-process ACP subagent backend. Each child has its own process, session, model, and
  * tools, so it shares no Cordis context and advertises no parent-enforced start capabilities;
- * the ONE thing it reads off `request.parent` is the session's workspace cwd (see
+ * the ONE thing it reads off `request.parent` is its resolved workspace root (see
  * {@link resolveCwd}). This plugin uses named exports only; a default would hide its
  * loader metadata (see `docs/postmortem/0001-acp-default-export-drops-inject.md`).
  * @module @clocky/clocky-subagent-acp
@@ -11,6 +11,7 @@ import { accessSync, constants, statSync } from 'node:fs'
 import { isAbsolute, resolve } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
+import { resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type {
   ResolvedSubagentStartRequest,
   SubagentCapabilities,
@@ -35,8 +36,8 @@ export interface Config {
    * Working directory override for the child process and its ACP session.
    * Must be non-empty; a relative path resolves against the harness launch
    * directory at load, and the result must be an existing directory. When
-   * omitted, each child inherits its delegating parent session's cwd — and
-   * starting one from a parent session that has no cwd fails.
+   * omitted, each child inherits its delegating parent's resolved workspace
+   * root — and starting one without a usable root fails.
    */
   cwd?: string
   /**
@@ -123,19 +124,19 @@ function assertUsableCwd(label: string, cwd: string): string {
 
 /**
  * Resolve the child's working directory: the deployment `cwd` override when
- * configured (already validated at load), else the parent session's workspace
- * cwd (validated here, its earliest resolvable point). Fails loud when neither
+ * configured (already validated at load), else the parent Agent's resolved
+ * workspace root (validated here, its earliest resolvable point). Fails loud when neither
  * exists — falling back to the harness process cwd would silently bind the
  * child to the server's launch directory instead of the delegating session's
  * workspace (one server process serves many sessions, each with its own cwd).
  */
 function resolveCwd(configured: string | undefined, request: SubagentStartRequest): string {
   if (configured !== undefined) return configured
-  const parentCwd = request.parent.session.header.cwd
-  if (parentCwd === undefined) {
-    throw new Error('subagent-acp: no working directory for the child — configure `cwd` or delegate from a parent session that has one')
+  const parentRoot = resolveAgentWorkspaceRoot(request.parent)
+  if (parentRoot === undefined) {
+    throw new Error('subagent-acp: no working directory for the child — configure `cwd` or delegate from a parent Agent with one')
   }
-  return assertUsableCwd('parent session cwd', parentCwd)
+  return assertUsableCwd('parent workspace root', parentRoot)
 }
 
 /**
@@ -178,7 +179,7 @@ export function apply(ctx: Context, config: Config): void {
   // `path.resolve('')` is the process cwd — an empty string would silently
   // reintroduce the launch-directory fallback this resolution removed.
   if (resolved.cwd === '') {
-    throw new Error('subagent-acp: config cwd must not be empty — omit the key to inherit the parent session cwd')
+    throw new Error('subagent-acp: config cwd must not be empty — omit the key to inherit the parent workspace root')
   }
   // Interpret a relative configured cwd against the harness launch directory
   // ONCE, at load, and fail a misconfigured directory here — not per start.
