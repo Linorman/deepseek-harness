@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Agent } from '@clocky/clocky-agent'
 import { resolveExampleLaunch } from '@clocky/clocky-loader-smoke'
-import { startSdkRun } from '@clocky/clocky-subagent-clocky-sdk/src/run.ts'
+import { startSdkRun } from '@clocky/clocky-compat-subagent-clocky-sdk/src/run.ts'
 import {
   SDK_SUBAGENT_COMMITTED_OUTPUT,
   SDK_SUBAGENT_TEAM_FINAL,

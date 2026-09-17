@@ -7,7 +7,7 @@ import { CallId } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk } from '@clocky/clocky-llm'
 import { InProcessApiClient, RpcId, toFetchHandler } from '@clocky/clocky-host-apiproxy'
 import type { RpcResponse } from '@clocky/clocky-host-apiproxy'
-import { teamWorkflowPlanSchema } from '@clocky/clocky-team'
+import { teamWorkflowPlanSchema, teamWorkflowPlanIdSchema } from '@clocky/clocky-team'
 import type { TeamId, TeamStateSnapshot } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-product-principal'
 import { ApprovalModel, MODEL, BEFORE } from './headless-human-approval-driver.ts'
@@ -161,7 +161,25 @@ async function run(ctx: Context, model: WorkflowCancellationModel) {
     await call(async client => await client.teams.waitFinal({ teamId }))
     const terminal = await ctx.teams.getTeam({ teamId })
     assert.equal(terminal.team.phase, 'completed')
+    const sessions = await call(async client => await client.sessions.list({}))
+    for (const binding of terminal.activations) {
+      assert.deepEqual(sessions.items.find(row => row.sessionId === binding.sessionId)?.team,
+        { teamId, participantId: binding.activation.participantId })
+    }
     assert.equal(terminal.workflowPlans?.[0]?.phase, 'cancelled')
+    const inspected = await call(async client => await client.teams.workflowPlanInspect({
+      teamId, planId: teamWorkflowPlanIdSchema.parse(planId), limit: 1 }))
+    assert.equal(inspected.record.phase, 'cancelled')
+    assert.equal(inspected.items.length, 1)
+    assert.equal(inspected.total, plan.tasks.length)
+    assert(!('plan' in inspected.record) && !('result' in inspected.record))
+    if (inspected.nextCursor !== undefined) {
+      const next = await call(async client => await client.teams.workflowPlanInspect({
+        teamId, planId: teamWorkflowPlanIdSchema.parse(planId), limit: 1,
+        afterCursor: inspected.nextCursor, expectedRevision: inspected.record.revision }))
+      assert.equal(next.record.revision, inspected.record.revision)
+      assert.notEqual(next.items[0]?.templateId, inspected.items[0]?.templateId)
+    }
     assert(terminal.workspaceAllocations.every(allocation => allocation.lifecycle === 'released'))
     assert.equal(await readFile(join(process.cwd(), 'approval.txt'), 'utf8'), BEFORE)
     return { via, authenticatedTeam: true, target: 'cancelled', dependent: 'cancelled', transitive: 'cancelled',

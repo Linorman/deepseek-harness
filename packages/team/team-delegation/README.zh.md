@@ -6,7 +6,7 @@
 
 ## Delegation 生命周期
 
-该 Consumer 使用有界的事件驱动 drive 与 restart discovery。`maxOperationsPerDrive`限制单个 parent 的推进次数，`channelPageSize`限制 child-result read，`teamPageSize`限制每个 pulse 发现的 Team 数量，`pulseIntervalMs`控制 restart-safe discovery interval。Parent delegation proof、child-creation proof、channel-consent proof、request-post proof 和 child-result proof 只在选定 operation 仍然 live 时保留。
+该 Consumer 使用有界的事件驱动 drive 与 restart discovery。`maxOperationsPerDrive`限制单个 parent 的推进次数，`channelPageSize`限制 child-result read，`teamPageSize`限制每个 pulse 发现的 Team 数量，`pulseIntervalMs`控制 restart-safe discovery interval。`drive()`完成一个有界轮次后返回；剩余推进与合并事件对每个 parent 最多排队一个后续轮次。Close 取消排队轮次，失败轮次等待新事件、显式 drive 或 discovery pulse。Child 终态 snapshot 移除 parent/channel 路由，但仍用其 ancestry 唤醒 parent 结算；stalled child 保留路由。Discovery 不缓存终态历史，close 释放剩余路由缓存。Parent delegation proof、child-creation proof、channel-consent proof、request-post proof 和 child-result proof 只在选定 operation 仍然 live 时保留。
 
 Child creation 使用 parent task 冻结的 authority grant、budget 与 workspace path。Child task 不会申请 Participant activation lease。Child runtime 绑定一个 consult channel，其中 parent-service 是 initiator、child coordinator 是 respondent；parent objective 是唯一 request，coordinator response 通过其因果 Envelope identity 接纳。Child 不能通过 root Team final-result sink 完成。
 

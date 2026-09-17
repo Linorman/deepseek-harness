@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /**
  * Explicit one-shot same-host recovery of stale Team activation epochs.
  * @module @clocky/clocky-team-activation-recovery
@@ -147,7 +148,7 @@ async function recoverOnce(
   proofs: ActivationRecoveryProofIssuer,
   signal: AbortSignal = new AbortController().signal,
 ): Promise<void> {
-  let afterCursor = -1
+  let afterCursor: TeamListPageRequest['afterCursor'] = -1
   do {
     signal.throwIfAborted()
     const page = await ctx.teams.listTeamsPage({ afterCursor, limit: resolved.pageSize })
@@ -194,7 +195,7 @@ async function recoverOnce(
       }
     }
     if (page.nextCursor === undefined) break
-    if (page.nextCursor <= afterCursor) {
+    if (page.nextCursor === afterCursor) {
       throw new TeamError('Activation recovery received a non-advancing Team page', 'TEAM_CURSOR_CONFLICT')
     }
     afterCursor = page.nextCursor

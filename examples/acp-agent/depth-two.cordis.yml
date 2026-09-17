@@ -5,9 +5,9 @@
     path: ./legacy-subagent.cordis.yml
     patches:
       - id: tool-subagent
-        name: '@clocky/clocky-tool-subagent'
+        name: '@clocky/clocky-compat-tool-subagent'
         config:
           provider: spawn
-          toolName: subagent
+          toolName: legacy_subagent
           backgroundMode: continuable
           maxDepth: 2

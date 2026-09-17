@@ -4,10 +4,12 @@
 
 以子进程方式驱动 Clocky 运行时、走 stdio JSON-RPC 的 TypeScript 客户端 SDK——[Python SDK](../../../python/README.zh.md)（`clocky`）的设计孪生，共享同一个运行时对端、协议与分层：`Clocky` 是高层自有运行 API，`HarnessClient` 是低层协议客户端。包（package）根枚举消费方接口：两层客户端、面向调用方的类型和 `JsonRpcResponseError`；源模块、规范化辅助函数与订阅投递机制不供消费方导入。纯库：不在任何 Cordis 上下文注册；它所 spawn 的运行时进程是一个完整 harness，其组成由自己的 `cordis.yml` 决定。
 
-与 Python SDK 不同，启动规格完全显式（`command`/`args`）：本包面向仓库近旁的 TypeScript 消费方，包括 [`clocky-subagent-clocky-sdk`](../../subagent/subagent-clocky-sdk/README.zh.md) 后端和自动化；它们知道自己要启动哪个运行时。捆绑运行时解析（寻找打包可执行文件）仍归 Python 发行版负责。
+与 Python SDK 不同，启动规格完全显式（`command`/`args`）：本包面向仓库近旁的 TypeScript 消费方，包括 [`clocky-subagent-clocky-sdk`](../../compat/subagent-clocky-sdk/README.zh.md) 后端和自动化；它们知道自己要启动哪个运行时。捆绑运行时解析（寻找打包可执行文件）仍归 Python 发行版负责。
 
 
 `Clocky` 与 `HarnessClient` 提供 `inboxRead({ afterCursor?, limit? })`、`inboxWatch(...)` 和 `inboxAcknowledge({ throughCursor })`。这些方法选择初始化时已认证 principal 的持久 final inbox，不接受 caller identity。读取省略 cursor 时从共享 display position 继续；display acknowledgement 永不创建 channel receipt。[Inbox Consumer](../../team/team-human-client/README.zh.md) 拥有持久化、权限、限制与当前缺口。
+
+Team-list continuation 是 opaque string，`-1` 表示新扫描。`scanned` 表示 discovery 工作量；即使 `items` 为空，也应根据 `nextCursor` 继续。遇到 `TEAM_DISCOVERY_CURSOR_EXPIRED` 时开启新扫描。Member、task 和 channel cursor 仍为数值。
 
 ## Clocky
 
@@ -28,6 +30,8 @@ console.log(result.finalResponse)
 子进程在首次使用时惰性启动，并在多次 `run()` 之间持续归实例所有；必须 `close()`（或 `await using`），子进程才总能被回收。`credential` 是只在 `initialize` 期间发送的不透明产品凭据；客户端会从子进程环境移除它，拒绝它出现在启动 command/arguments 中，并在客户端错误中脱敏。`start()` 记忆化 `initialize` 握手（工作区 cwd——在通过协议传输之前解析为绝对路径——加 provider/model 路由和可选的正整数 `maxTokens` 输出上限）；握手失败会回收运行时并换入全新客户端，后续调用用新子进程重试（直到终结性的 `close()`）。该上限作用于每个 Team coordinator 请求；压缩（compaction）插件单独持有摘要上限。`createTeam(input, { objective? })`返回带 Hub 铸造的 `id`、coordinator transcript id、`waitForFinal()` 与 `cancel()` 的 `HarnessTeam`。这些方法只在 spawn 的 runtime 仍持有该 TeamRun 时可用。任一终态操作结算后，`HarnessTeam.archive()`会将观察到的 cursor 绑定到 authenticated human 的`close`authority；同一 authenticated owner 可通过`HarnessClient.archiveTeam()`归档 terminal、detached 或 restarted Team。`HarnessTeam.resume()`以及通用 member/channel/goal/task mutation helper 都使用连接的 authenticated human proof，wire 上不携带 actor 或 proof。
 
 `run(input, { objective?, onNotification? })`创建一个 Team、接纳初始 human Envelope，并等待其显式 final result。它返回 `RunResult { teamId, finalResponse, final, events, notifications }`；`final`包含 final channel 与 Envelope id，`finalResponse`就是该面向 human 的 final text。`events`与`notifications`都只包含 coordinator Session，且按协议传输顺序排列。提示词文本默认作为 objective；无文本 content 必须提供 `objective`。`resumeTeam(teamId)`会先读取新鲜 Team cursor，再提交经认证且不含 actor 的 resume request；持久 Team id 不是认证。传输丢失、超时、过期 fence 与协议违例也会导致 Promise 被拒绝。
+
+`inspectTeamTask({ teamId, taskId, section: "record" })`读取当前字段及历史计数。选择`"attempts"`或`"reviews"`，传入`afterCursor`、`limit`，并将返回的版本用作`expectedRevision`，即可读取有界历史窗口。响应必须匹配所请求的 Team、任务、分区、版本及窗口；任务变化后需要刷新当前记录。此读取省略私有产物引用，不激活 Agent。
 
 ## HarnessClient
 

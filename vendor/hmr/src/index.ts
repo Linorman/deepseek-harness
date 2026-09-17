@@ -86,6 +86,17 @@ async function findWatchRoot(filename: string): Promise<{ filename: string; root
   }
 }
 
+/** Fingerprint one exact path without reading its content or enumerating its parent. */
+async function configStamp(filename: string): Promise<string | null> {
+  try {
+    const value = await stat(filename, { bigint: true })
+    return `${value.dev}:${value.ino}:${value.size}:${value.mtimeNs}:${value.ctimeNs}`
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw error
+  }
+}
+
 class Hmr extends Service {
   static inject = ['loader', 'timer']
 
@@ -97,6 +108,7 @@ class Hmr extends Service {
   private readonly closing = new AbortController()
   private readonly registrations = new Set<Promise<() => Promise<void>>>()
   private readonly configs = new Map<string, ConfigRegistration>()
+  private readonly configPollIntervalMs: number
   private readonly configRefreshes = new WeakMap<object, ConfigRefresh>()
   private readonly refreshTasks = new Set<Promise<void>>()
 
@@ -123,6 +135,10 @@ class Hmr extends Service {
 
   constructor(ctx: Context, public config: Hmr.Config) {
     super(ctx, 'hmr')
+    this.configPollIntervalMs = config.configPollIntervalMs ?? 1000
+    if (!Number.isSafeInteger(this.configPollIntervalMs) || this.configPollIntervalMs < 1) {
+      throw new TypeError('configPollIntervalMs must be a positive safe integer')
+    }
     if (!this.ctx.loader.internal) {
       throw new Error('--expose-internals is required for HMR service')
     }
@@ -182,10 +198,30 @@ class Hmr extends Service {
         ignoreInitial: false,
       })
       this.configs.set(watchFilename, watched)
+      let stamp: string | null | undefined
+      let stopped = false
+      let stopPolling: (() => void) | undefined
+      const nativeClose = watched.close
+      watched.close = () => {
+        stopped = true
+        stopPolling?.()
+        return nativeClose()
+      }
+      const reconcile = async () => {
+        const next = await configStamp(watchFilename)
+        if (next === stamp) return
+        const initial = stamp === undefined
+        stamp = next
+        if (initial && next === null) return
+        await refresh()
+      }
+      const schedule = () => {
+        if (!stopped && !this.closing.signal.aborted) this.refreshConfig(watched, filename, reconcile)
+      }
       const onChange = (path: string) => {
         const observed = resolve(path)
         if (observed !== filename && observed !== watchFilename) return
-        this.refreshConfig(watched, filename, refresh)
+        schedule()
       }
       watched.watcher.on('add', onChange)
       watched.watcher.on('change', onChange)
@@ -203,6 +239,8 @@ class Hmr extends Service {
         dispose = caller.effect(() => cleanup, 'hmr.registerConfig()')
         await watched.ready
         this.assertRegistrationActive()
+        stopPolling = caller.interval(schedule, this.configPollIntervalMs)
+        schedule()
         return dispose
       } catch (error) {
         await cleanup()
@@ -626,6 +664,8 @@ class Hmr extends Service {
 namespace Hmr {
   export interface Config extends ChokidarOptions {
     base?: string
+    /** Reconcile exact configuration-file metadata at this interval to recover missed native events. */
+    configPollIntervalMs?: number
     root: string[]
     debounce: number
     ignored: string[]
@@ -633,6 +673,7 @@ namespace Hmr {
 
   export const Config: z<Config> = z.object({
     base: z.string(),
+    configPollIntervalMs: z.natural().min(1).role('ms').default(1000),
     root: z.array(String).role('table').default(['.']),
     ignored: z.array(String).role('table').default([
       '**/node_modules',

@@ -6,15 +6,15 @@
 
 | 包 | 职责 | ctx 键 |
 |---|---|---|
-| [`subagent/`](subagent/README.zh.md) | 定义提供方注册、委派和继续执行 | `ctx.subagents` |
-| [`subagent-inprocess/`](subagent-in-process-driver/README.zh.md) | 提供共享的进程内运行驱动器 | 无 |
-| [`subagent-spawn-in-process/`](subagent-spawn-in-process/README.zh.md) | 启动全新的进程内子 agent | 注册到 `ctx.subagents` |
-| [`subagent-fork-in-process/`](subagent-fork-in-process/README.zh.md) | 从父 agent 已完成的历史记录启动进程内子 agent | 注册到 `ctx.subagents` |
-| [`subagent-acp/`](subagent-acp/README.zh.md) | 通过 ACP（Agent Client Protocol）启动进程外子 agent | 注册到 `ctx.subagents` |
-| [`subagent-clocky-sdk/`](subagent-clocky-sdk/README.zh.md) | 通过 TypeScript SDK 启动进程外 Harness 子 agent | 注册到 `ctx.subagents` |
-| [`tool-subagent/`](tool-subagent/README.zh.md) | 向模型公开委派操作 | 注册到 `ctx.tools` |
-| [`tool-subagent-control/`](tool-subagent-control/README.zh.md) | 向模型公开子级消息发送和列举操作 | 注册到 `ctx.tools` |
-| [`tool-subagent-report/`](tool-subagent-report/README.zh.md) | 提供从子级到父级的报告通道 | 注册到子级作用域 |
+| [`subagent/`](../compat/subagent/README.zh.md) | 定义提供方注册、委派和继续执行 | `ctx.subagents` |
+| [`subagent-inprocess/`](../compat/subagent-in-process-driver/README.zh.md) | 提供共享的进程内运行驱动器 | 无 |
+| [`subagent-spawn-in-process/`](../compat/subagent-spawn-in-process/README.zh.md) | 启动全新的进程内子 agent | 注册到 `ctx.subagents` |
+| [`subagent-fork-in-process/`](../compat/subagent-fork-in-process/README.zh.md) | 从父 agent 已完成的历史记录启动进程内子 agent | 注册到 `ctx.subagents` |
+| [`subagent-acp/`](../compat/subagent-acp/README.zh.md) | 通过 ACP（Agent Client Protocol）启动进程外子 agent | 注册到 `ctx.subagents` |
+| [`subagent-clocky-sdk/`](../compat/subagent-clocky-sdk/README.zh.md) | 通过 TypeScript SDK 启动进程外 Harness 子 agent | 注册到 `ctx.subagents` |
+| [`tool-subagent/`](../compat/tool-subagent/README.zh.md) | 向模型公开委派操作 | 注册到 `ctx.tools` |
+| [`tool-subagent-control/`](../compat/tool-subagent-control/README.zh.md) | 向模型公开子级消息发送和列举操作 | 注册到 `ctx.tools` |
+| [`tool-subagent-report/`](../compat/tool-subagent-report/README.zh.md) | 提供从子级到父级的报告通道 | 注册到子级作用域 |
 
 参见有关[能力家族](../../.agents/notes/implemented/feature/2026-06-21-subagent-capability-seam.zh.md)、[可继续执行的子级](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.zh.md)和[控制工具](../../.agents/notes/implemented/simplification/2026-07-26-merge-subagent-control-service.zh.md)的决策。
 

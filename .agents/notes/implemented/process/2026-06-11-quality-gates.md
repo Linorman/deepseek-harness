@@ -21,6 +21,8 @@ Every mechanically checkable AGENTS.md promise gets a command that exits non-zer
 - knip (dead code/deps), publint (package correctness), workspace constraints (workspace rules: private, cordis peer+dev, uniform version, ESM), and a NodeNext consumer typecheck for built package declarations.
 - lefthook pre-commit applies project-free Oxlint validation and [safe fixes with a bounded retry](2026-08-09-oxlint-only-fix-workflow.md), rejects staged whitespace, and checks the vendor manifest; pre-push runs incremental typecheck. CI runs the full matrix on node 22.19/24/26 plus built application smokes for the Headless, TUI, ACP, JSON-RPC, workflow, and code-runtime entry paths.
 
+`doc-sync` checks both the manifest-derived module graph and the curated service-ownership graphs. A fresh service graph cannot substitute for a fresh package dependency graph.
+
 ## Consequences
 
 - Conventions survive agent turnover; cheap commit/push defects fail locally and exhaustive violations fail in CI.

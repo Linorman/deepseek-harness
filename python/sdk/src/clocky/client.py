@@ -11,7 +11,7 @@ import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, TypeAlias, TypeVar
+from typing import Callable, Literal, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -36,6 +36,11 @@ from .models import (
     TeamWaitFinalResponse,
     TeamListResponse,
     TeamGetResponse,
+    TeamSelectionResponse,
+    TeamMemberInspectResponse,
+    TeamTaskInspectResponse,
+    TeamBrowseResponse,
+    TeamMemberSessionResponse,
     TeamGoalUpdateRequest,
     TeamGoalUpdateResponse,
     TeamGoalTransitionRequest,
@@ -43,6 +48,8 @@ from .models import (
     TeamQuiescenceResponse,
     TeamMetricsResponse,
     TeamHumanInboxPage,
+    TeamWorkflowInspection,
+    TeamHumanActionView,
     TeamHumanActionResponseRequest,
     TeamHumanActionResponseResult,
     TeamHumanInboxAcknowledgement,
@@ -236,7 +243,7 @@ class HarnessClient:
             response_model=TeamResumeResponse,
         )
 
-    def list_teams(self, after_cursor: int | None = None, limit: int | None = None) -> TeamListResponse:
+    def list_teams(self, after_cursor: str | Literal[-1] | None = None, limit: int | None = None) -> TeamListResponse:
         """Read one bounded page of durable Teams visible to the runtime."""
         payload: JsonObject = {}
         if after_cursor is not None:
@@ -244,6 +251,92 @@ class HarnessClient:
         if limit is not None:
             payload["limit"] = limit
         return self.request("team/list", payload, response_model=TeamListResponse)
+
+    def get_team_member_session(self, team_id: str, participant_id: str) -> TeamMemberSessionResponse:
+        """Resolve a member's latest published Session without activating it."""
+        result = self.request("team/member-session", {"teamId": team_id, "participantId": participant_id}, response_model=TeamMemberSessionResponse)
+        activation = result.binding.activation
+        if activation.teamId != team_id or activation.participantId != participant_id:
+            raise SdkProtocolError("team/member-session response belongs to a different Team or participant")
+        return result
+
+    def inspect_team_task(self, team_id: str, task_id: str, section: Literal["record", "attempts", "reviews"], *,
+                          expected_revision: int | None = None, after_cursor: int | None = None,
+                          limit: int | None = None) -> TeamTaskInspectResponse:
+        """Inspect current fields or a bounded history page, pinned to the selected task revision."""
+        if section == "record" and (after_cursor is not None or limit is not None):
+            raise ValueError("Task record inspection does not accept history pagination")
+        params: JsonObject = {"teamId": team_id, "taskId": task_id, "section": section}
+        if expected_revision is not None:
+            params["expectedRevision"] = expected_revision
+        if after_cursor is not None:
+            params["afterCursor"] = after_cursor
+        if limit is not None:
+            params["limit"] = limit
+        result = self.request("team/task-inspect", params, response_model=TeamTaskInspectResponse)
+        value = result.inspection
+        if (value.teamId != team_id or value.taskId != task_id or value.section != section
+                or expected_revision is not None and value.revision != expected_revision
+                or value.section != "record" and value.startCursor != (-1 if after_cursor is None else after_cursor)):
+            raise SdkProtocolError("team/task-inspect response does not match its task selection")
+        return result
+
+    def browse_team(self, team_id: str, kind: Literal["tasks", "members", "workflowPlans"], *,
+                    after_cursor: int | None = None, limit: int | None = None) -> TeamBrowseResponse:
+        """Read bounded display summaries without task or workflow history."""
+        params: JsonObject = {"teamId": team_id, "kind": kind}
+        if after_cursor is not None:
+            params["afterCursor"] = after_cursor
+        if limit is not None:
+            params["limit"] = limit
+        result = self.request("team/browse", params, response_model=TeamBrowseResponse)
+        if result.page.teamId != team_id or result.page.kind != kind:
+            raise SdkProtocolError("team/browse response belongs to a different Team or collection")
+        return result
+
+    def inspect_workflow_plan(self, team_id: str, plan_id: str, *, expected_revision: int | None = None,
+                              after_cursor: int = -1, limit: int | None = None) -> TeamWorkflowInspection:
+        """Read current workflow metadata and one revision-pinned task window."""
+        params: dict[str, object] = {"teamId": team_id, "planId": plan_id, "afterCursor": after_cursor}
+        if expected_revision is not None:
+            params["expectedRevision"] = expected_revision
+        if limit is not None:
+            params["limit"] = limit
+        value = self.request("team/workflow-plan-inspect", params, response_model=TeamWorkflowInspection)
+        if value.record.teamId != team_id or value.record.id != plan_id or value.startCursor != after_cursor:
+            raise SdkProtocolError("Workflow inspection response does not match its selection")
+        if expected_revision is not None and value.record.revision != expected_revision:
+            raise SdkProtocolError("Workflow inspection response does not match its revision")
+        return value
+
+    def read_team_action(self, team_id: str, action_id: str) -> TeamHumanActionView:
+        """Read one bounded current human action, checking its exact ownership."""
+        action = self.request("team/action-read", {"teamId": team_id, "actionId": action_id}, response_model=TeamHumanActionView)
+        if action.teamId != team_id or action.id != action_id:
+            raise SdkProtocolError("Action response belongs to a different Team or action")
+        return action
+
+    def inspect_team_member(self, team_id: str, participant_id: str, *, after_cursor: int | None = None,
+                            limit: int | None = None, expected_team_cursor: int | None = None) -> TeamMemberInspectResponse:
+        """Read non-secret member metadata and a cursor-pinned capability page."""
+        params: JsonObject = {"teamId": team_id, "participantId": participant_id}
+        for key, value in [("afterCursor", after_cursor), ("limit", limit), ("expectedTeamCursor", expected_team_cursor)]:
+            if value is not None:
+                params[key] = value
+        result = self.request("team/member-inspect", params, response_model=TeamMemberInspectResponse)
+        detail = result.detail
+        if detail.record.teamId != team_id or detail.record.id != participant_id or detail.startCursor != (after_cursor if after_cursor is not None else -1):
+            raise SdkProtocolError("Member inspection belongs to another member or capability window")
+        if expected_team_cursor is not None and detail.teamCursor != expected_team_cursor:
+            raise SdkProtocolError("Member inspection Team cursor changed")
+        return result
+
+    def get_team_selection(self, team_id: str, *, include_metadata: bool = False) -> TeamSelectionResponse:
+        """Read bounded selection data without activating an Agent."""
+        params: dict[str, object] = {"teamId": team_id}
+        if include_metadata:
+            params["includeMetadata"] = True
+        return self.request("team/selection", params, response_model=TeamSelectionResponse)
 
     def get_team(self, team_id: str) -> TeamGetResponse:
         """Read one complete durable Team projection."""

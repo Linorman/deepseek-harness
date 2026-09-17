@@ -107,7 +107,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       const stream = await open(descriptor)
       if (!descriptor.name.startsWith('team/')) return stream
       const append = stream.append.bind(stream)
-      stream.append = async (expectedSequence, values) => {
+      stream.append = async (expectedSequence, values, options) => {
         const changed = values.map(object).find(record => record.type === 'workspace-allocation/changed')
         const allocation = changed === undefined ? undefined : teamWorkspaceAllocationSnapshotSchema.parse(changed.allocation)
         if (allocation?.lifecycle === 'released') {
@@ -138,7 +138,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
             await new Promise<never>(() => {})
           }
         }
-        const result = await append(expectedSequence, values)
+        const result = await append(expectedSequence, values, options)
         if (allocation?.lifecycle === 'active') {
           const files = (await promises.readdir(stateRoot)).filter(file => file.startsWith('baseline-') && file.endsWith('.json'))
           assert.equal(files.length, 1)

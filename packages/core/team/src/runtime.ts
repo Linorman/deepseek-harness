@@ -1,3 +1,12 @@
+import type { TeamMemberInspectRequest, TeamMemberInspection } from './types.ts'
+import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from './types.ts'
+import type { TeamHumanActionReadRequest } from './types.ts'
+import type { TeamSelectionRequest } from './types.ts'
+import type { TeamTaskInspectRequest, TeamTaskInspection } from './types.ts'
+import type { TeamBrowseRequest, TeamBrowsePage } from './types.ts'
+import type { TeamMemberSessionRequest, TeamMemberSessionSnapshot } from './types.ts'
+import type { TeamSelectionSnapshot } from './types.ts'
+import type { ActivationReservationRequest, ActivationReservationSnapshot } from './types.ts'
 import type { TeamChannelListRequest, TeamChannelListPage } from './types.ts'
 import type { TeamSystemChildResultProof, TeamSystemChildResultProofSource, TeamSystemChildResultProofResolution, TeamChildResultCommandRequest, TeamChildCancelRequest, TeamTaskDelegationResultAdmitRequest, TeamDelegationResultAdmission } from './types.ts'
 import { teamSystemChildResultScopeSchema } from './schema.ts'
@@ -2634,6 +2643,49 @@ export abstract class TeamRuntime extends Service {
    */
   abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
 
+  /** Read one current human action without copying the Team projection.
+   * @param request - Exact Team and action identity.
+   * @returns the bounded action snapshot; unsupported providers reject.
+   */
+  getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support human-action reads', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /** Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.
+   * @param request - Team selected for read-only inspection.
+   * @returns the lightweight selection projection; no activation is created or resumed.
+   */
+  abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>
+
+  /** Read bounded display summaries without materializing task/plan execution history.
+   * @param request - Team, collection, provider-order cursor and requested row limit.
+   * @returns a byte- and row-limited page, with actual scan work and optional continuation.
+   */
+  abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>
+
+  /** Read current task fields or one bounded attempt/review history page, without private artifact references.
+   * @param request - Exact Team/task, section, optional revision fence and history continuation.
+   * @returns detached data capped by the provider's response budget; indivisible oversized records reject.
+   */
+  abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>
+
+
+  /** Resolve the latest published Session of one retained Team member without starting an Agent.
+   * @param request - exact owning Team and member.
+   * @returns published binding, including offline history; missing members or bindings reject.
+   */
+  abstract getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot>
+
+  /** Read non-secret member metadata and one capability page without activating an Agent.
+   * @param request - Team/member identity and optional cursor-pinned capability continuation.
+   * @returns bounded detail; a changed Team cursor rejects continuation until refreshed.
+   */
+  abstract inspectMember(request: TeamMemberInspectRequest): Promise<TeamMemberInspection>
+
+
+
+
   /**
    * Retain one host-mediated approval/question in the Team journal. Providers
    * that do not offer durable interaction records fail explicitly so callers
@@ -2724,8 +2776,8 @@ export abstract class TeamRuntime extends Service {
 
   /**
    * List a bounded page of visible Team summaries for product and transport consumers.
-   * @param request - provider-order cursor and page limit.
-   * @returns detached Team summaries and an optional continuation cursor.
+   * @param request - opaque discovery position or -1, plus a physical scan-work limit.
+   * @returns detached summaries, scanned work and an optional continuation, including for empty pages.
    */
   abstract listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage>
 
@@ -2758,7 +2810,7 @@ export abstract class TeamRuntime extends Service {
    * the caller aborts its local wait. Providers omit `request.signal` before
    * parsing the JSON-only request fields; cancellation changes no durable data.
    * @param request - Team identity, last observed journal cursor, and optional local cancellation.
-   * @returns whether the cursor advanced or the provider closed the watch.
+   * @returns an advanced cursor, or closed at an immutable archived tail or provider shutdown.
    * @throws when `request.signal` aborts before the watch resolves.
    */
   abstract watchTeam(request: TeamWatchRequest): Promise<TeamWatchResult>
@@ -2944,6 +2996,19 @@ export abstract class TeamRuntime extends Service {
    */
   abstract bindActivation(request: ActivationBindRequest): Promise<ActivationBindingSnapshot>
 
+  /** Reserve capacity before invoking an activation provider.
+   * @param request - Exact controller-owned startup identity and cursor.
+   * @returns the durable startup reservation.
+   */
+  abstract reserveActivation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
+  /** Release an unpublished startup only after its controller proves cleanup.
+   * @param request - Exact reservation, owner and current cursor.
+   * @returns the reservation carrying its durable release time.
+   */
+  abstract releaseActivationReservation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
+
   /**
    * Persist one permitted residency-status transition for a bound activation.
    * @param request - source-owned runtime proof, Team/activation identity, observed cursor, and next status.
@@ -3034,6 +3099,15 @@ export abstract class TeamRuntime extends Service {
   admitWorkflowPlan(request: TeamWorkflowPlanAdmissionRequest): Promise<TeamWorkflowPlanSnapshot> {
     void request
     return Promise.reject(new TeamError('Team provider does not support durable workflow plans', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /** Read current workflow metadata and one task/dependency window.
+   * @param request - Exact workflow, optional revision and page selection.
+   * @returns a bounded inspection without complete plan or result bodies.
+   */
+  inspectWorkflowPlan(request: TeamWorkflowInspectRequest): Promise<TeamWorkflowInspection> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support workflow inspection', 'TEAM_INVALID_ARGUMENT'))
   }
 
   /**

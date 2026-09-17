@@ -150,7 +150,7 @@ async function setup(reconcileRelease: TeamWorkspaceProvider['reconcileRelease']
 
 /** Build a lightweight Team/Workspace context for bounded recovery-drive branches. */
 function fakeDriveContext(options: {
-  readonly pages: readonly { readonly items: readonly { readonly id: string }[]; readonly nextCursor?: number }[]
+  readonly pages: readonly { readonly items: readonly { readonly id: string }[]; readonly nextCursor?: string }[]
   readonly state: TeamStateSnapshot
   readonly reconcileRelease?: TeamWorkspaceProvider['reconcileRelease']
   readonly confirmRelease?: (input: Record<string, unknown>) => Promise<void>
@@ -160,7 +160,10 @@ function fakeDriveContext(options: {
   const unregistered = vi.fn()
   let proofSource: TeamSystemWorkspaceAllocationProofSource | undefined
   const teams = {
-    listTeamsPage: vi.fn(async () => options.pages[pageIndex++] ?? { items: [] }),
+    listTeamsPage: vi.fn(async () => {
+      const page = options.pages[pageIndex++] ?? { items: [] }
+      return { ...page, scanned: page.items.length }
+    }),
     getTeam: vi.fn(async () => options.state),
     registerSystemWorkspaceAllocationProofSource: vi.fn((source: TeamSystemWorkspaceAllocationProofSource) => {
       proofSource = source
@@ -383,7 +386,7 @@ describe('Team workspace release recovery', () => {
     const reconcile = vi.fn(async () => {})
     const ctx = await setup(reconcile)
     await WorkspaceRecovery.apply(ctx, {
-      maxTeamsPerDrive: 1, pageSize: 1, confirmationAttempts: 2, confirmationRetryDelayMs: 1,
+      maxTeamsPerDrive: 8, pageSize: 4, confirmationAttempts: 2, confirmationRetryDelayMs: 1,
     })
     const active = await releaseRequested(ctx, false)
     const failed = Promise.withResolvers<undefined>()
@@ -409,7 +412,7 @@ describe('Team workspace release recovery', () => {
     it(`retries ${error.message} without requiring a new release event`, async () => {
       const reconcile = vi.fn(async () => {})
       const ctx = await setup(reconcile)
-      await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, readAttempts: 2, readRetryDelayMs: 1 })
+      await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, readAttempts: 2, readRetryDelayMs: 1 })
       const active = await releaseRequested(ctx, false)
       const input = {
         teamId: active.teamId, expectedCursor: (await ctx.teams.getTeam({ teamId: active.teamId })).team.cursor,
@@ -438,7 +441,7 @@ describe('Team workspace release recovery', () => {
       const pending = await releaseRequested(ctx)
       const failure = Object.assign(new Error('permanent storage failure'), { code })
       const read = vi.spyOn(ctx.teams, 'getTeam').mockRejectedValue(failure)
-      const recovery = WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, readAttempts: 3, readRetryDelayMs: 1 })
+      const recovery = WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, readAttempts: 3, readRetryDelayMs: 1 })
       await expect(recovery).rejects.toThrow('Team workspace recovery settlement failed')
       expect(read).toHaveBeenCalledOnce()
       expect(reconcile).not.toHaveBeenCalled()
@@ -450,7 +453,7 @@ describe('Team workspace release recovery', () => {
   it('reports an event-drive read rejection and stops after the configured attempts', async () => {
     const reconcile = vi.fn(async () => {})
     const ctx = await setup(reconcile)
-    await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, readAttempts: 2, readRetryDelayMs: 1 })
+    await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, readAttempts: 2, readRetryDelayMs: 1 })
     const active = await releaseRequested(ctx, false)
     const input = {
       teamId: active.teamId, expectedCursor: (await ctx.teams.getTeam({ teamId: active.teamId })).team.cursor,
@@ -470,7 +473,7 @@ describe('Team workspace release recovery', () => {
     const ctx = await setup(async () => {})
     await releaseRequested(ctx)
     const read = vi.spyOn(ctx.teams, 'getTeam').mockRejectedValue(new TeamError('read forbidden', 'TEAM_POLICY_DENIED'))
-    await expect(WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, readAttempts: 3, readRetryDelayMs: 1 }))
+    await expect(WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, readAttempts: 3, readRetryDelayMs: 1 }))
       .rejects.toThrow('Team workspace recovery settlement failed')
     expect(read).toHaveBeenCalledOnce()
     read.mockRestore()
@@ -482,7 +485,7 @@ describe('Team workspace release recovery', () => {
     await releaseRequested(ctx)
     const confirm = vi.spyOn(ctx.teams, 'confirmWorkspaceAllocationRelease').mockRejectedValue(new Error('confirmation unavailable'))
     const preserve = vi.spyOn(ctx.teams, 'preserveWorkspaceAllocation').mockRejectedValue(new Error('preservation unavailable'))
-    await expect(WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, confirmationAttempts: 2, confirmationRetryDelayMs: 1 }))
+    await expect(WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, confirmationAttempts: 2, confirmationRetryDelayMs: 1 }))
       .rejects.toThrow('Team workspace recovery settlement failed')
     expect(confirm).toHaveBeenCalledTimes(2)
     expect(preserve).toHaveBeenCalledOnce()
@@ -529,7 +532,7 @@ describe('Team workspace release recovery', () => {
     const ctx = await setup(reconcile)
     const pending = await releaseRequested(ctx)
     const confirm = vi.spyOn(ctx.teams, 'confirmWorkspaceAllocationRelease').mockRejectedValue(new Error('confirmation unavailable'))
-    await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 1, pageSize: 1, confirmationAttempts: 2, confirmationRetryDelayMs: 1 })
+    await WorkspaceRecovery.apply(ctx, { maxTeamsPerDrive: 8, pageSize: 4, confirmationAttempts: 2, confirmationRetryDelayMs: 1 })
     expect((await ctx.teams.getTeam({ teamId: pending.teamId })).workspaceAllocations[0]).toMatchObject({
       lifecycle: 'preserved', preservationReason: { code: 'WORKSPACE_RELEASE_RECOVERY_FAILED' },
     })
@@ -571,23 +574,23 @@ describe('Team workspace release recovery', () => {
     const active = driveAllocation('active')
     const first = fakeDriveContext({
       pages: [
-        { items: [{ id: String(active.teamId) }], nextCursor: 11 },
+        { items: [{ id: String(active.teamId) }], nextCursor: '11' },
         { items: [] },
       ],
       state: driveState(active),
     })
     await WorkspaceRecovery.apply(first.ctx, { maxTeamsPerDrive: 2, pageSize: 1 })
     expect(first.teams.listTeamsPage).toHaveBeenNthCalledWith(1, { afterCursor: -1, limit: 1 })
-    expect(first.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: 11, limit: 1 })
+    expect(first.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: '11', limit: 1 })
     await first.ctx.fiber.dispose()
 
     const bounded = fakeDriveContext({
-      pages: [{ items: [{ id: 'one' }], nextCursor: 99 }, { items: [{ id: 'two' }] }],
+      pages: [{ items: [{ id: 'one' }], nextCursor: '99' }, { items: [{ id: 'two' }] }],
       state: driveState(active),
     })
     await WorkspaceRecovery.apply(bounded.ctx, { maxTeamsPerDrive: 1, pageSize: 8 })
     await vi.waitFor(() => {
-      expect(bounded.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: 99, limit: 1 })
+      expect(bounded.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: '99', limit: 1 })
     })
     const boundedProofSource = bounded.proofSource()
     if (boundedProofSource === undefined) throw new Error('recovery proof source was not registered')
@@ -600,8 +603,8 @@ describe('Team workspace release recovery', () => {
     const candidate = driveAllocation('active')
     const context = fakeDriveContext({
       pages: [
-        { items: [{ id: 'one' }], nextCursor: 0 },
-        { items: [{ id: 'two' }], nextCursor: 0 },
+        { items: [{ id: 'one' }], nextCursor: '0' },
+        { items: [{ id: 'two' }], nextCursor: '0' },
       ],
       state: driveState(candidate),
     })
@@ -630,7 +633,7 @@ describe('Team workspace release recovery', () => {
       confirmRelease: async ({ actor }) => { JSON.stringify(actor) },
     })
     vi.spyOn(warning.ctx.logger, 'warn').mockImplementation(() => undefined)
-    await WorkspaceRecovery.apply(warning.ctx, { maxTeamsPerDrive: 1, pageSize: 1, confirmationAttempts: 2, confirmationRetryDelayMs: 1 })
+    await WorkspaceRecovery.apply(warning.ctx, { maxTeamsPerDrive: 8, pageSize: 4, confirmationAttempts: 2, confirmationRetryDelayMs: 1 })
     expect(warning.teams.confirmWorkspaceAllocationRelease).toHaveBeenCalledTimes(2)
     expect(warning.teams.preserveWorkspaceAllocation).toHaveBeenCalledOnce()
     await warning.ctx.fiber.dispose()
@@ -668,7 +671,7 @@ describe('Team workspace release recovery', () => {
   it('cleans up proof registration on an initial drive failure and logs recurring failures', async () => {
     const failed = fakeDriveContext({ pages: [], state: driveState(driveAllocation()) })
     failed.teams.listTeamsPage.mockRejectedValue(new Error('startup scan failed'))
-    await expect(WorkspaceRecovery.apply(failed.ctx, { maxTeamsPerDrive: 1, pageSize: 1, readAttempts: 1 }))
+    await expect(WorkspaceRecovery.apply(failed.ctx, { maxTeamsPerDrive: 8, pageSize: 4, readAttempts: 1 }))
       .rejects.toThrow('Team list recovery read failed')
     expect(failed.unregistered).toHaveBeenCalledOnce()
     await failed.ctx.fiber.dispose()
@@ -677,7 +680,7 @@ describe('Team workspace release recovery', () => {
     const recurring = fakeDriveContext({ pages: [], state: driveState(driveAllocation()) })
     recurring.teams.listTeamsPage.mockImplementation(async () => {
       calls += 1
-      if (calls === 1) return { items: [] }
+      if (calls === 1) return { items: [], scanned: 0 }
       await new Promise<void>((resolve) => { setTimeout(resolve, 10) })
       throw new Error('recurring scan failed')
     })
@@ -693,7 +696,7 @@ describe('Team workspace release recovery', () => {
     vi.useFakeTimers()
     try {
       const candidate = driveAllocation('release-requested', 'provider-base-version')
-      const pages: { readonly items: readonly { readonly id: string }[]; readonly nextCursor?: number }[] = [{ items: [] }]
+      const pages: { readonly items: readonly { readonly id: string }[]; readonly nextCursor?: string }[] = [{ items: [] }]
       const reconciliationStarted = Promise.withResolvers<undefined>()
       const reconciliationRelease = Promise.withResolvers<undefined>()
       const context = fakeDriveContext({
@@ -747,7 +750,7 @@ describe('Team workspace release recovery', () => {
     const fiber = await context.ctx.plugin(WorkspaceRecovery, { maxTeamsPerDrive: 1, pageSize: 1, pulseIntervalMs: 1 })
     owner.dispose = fiber.dispose
     const pages = context.teams.listTeamsPage
-    pages.mockImplementationOnce(async () => ({ items: [{ id: String(candidate.teamId) }] }))
+    pages.mockImplementationOnce(async () => ({ items: [{ id: String(candidate.teamId) }], scanned: 1 }))
     await vi.waitFor(() => {
       expect(context.teams.confirmWorkspaceAllocationRelease).toHaveBeenCalledOnce()
     }, { timeout: 1_000 })

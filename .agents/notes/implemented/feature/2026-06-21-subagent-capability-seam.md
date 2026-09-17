@@ -31,11 +31,11 @@ A new package group `packages/subagent/`:
 
 | Package | Role |
 |---|---|
-| `@clocky/clocky-subagent` | interface: `SubagentRuntime` (`ctx.subagents`), `SubagentProvider`, `SubagentRun`, the request/result/capability vocabulary, the `subagent/*` events |
-| `@clocky/clocky-subagent-spawn-in-process` | implementation: a fresh in-process child via `ctx.agents.create` |
-| `@clocky/clocky-subagent-fork-in-process` | implementation: an in-process child seeded with a snapshot of the parent's log |
-| `@clocky/clocky-subagent-acp` | implementation: an ACP client driving a configured child process |
-| `@clocky/clocky-tool-subagent` | consumer: the model-facing `subagent` tool over `ctx.subagents` |
+| `@clocky/clocky-compat-subagent` | interface: `SubagentRuntime` (`ctx.subagents`), `SubagentProvider`, `SubagentRun`, the request/result/capability vocabulary, the `subagent/*` events |
+| `@clocky/clocky-compat-subagent-spawn-in-process` | implementation: a fresh in-process child via `ctx.agents.create` |
+| `@clocky/clocky-compat-subagent-fork-in-process` | implementation: an in-process child seeded with a snapshot of the parent's log |
+| `@clocky/clocky-compat-subagent-acp` | implementation: an ACP client driving a configured child process |
+| `@clocky/clocky-compat-tool-subagent` | consumer: the model-facing `subagent` tool over `ctx.subagents` |
 
 ### The primitive: async `start → SubagentRun`
 

@@ -105,7 +105,7 @@ describe('SidebarRoot shell', () => {
     expect(b.toggleSidebar).toHaveBeenCalledOnce()
   })
 
-  it('renders generic brand fallbacks when no package fills the slots', () => {
+  it('renders the product name and a single fallback mark when no package fills the slots', () => {
     vi.stubEnv('CLOCKY_CLIENT_COMMIT_HASH', '0123456')
     const { container } = render(<SidebarRoot
       collapsed={false} width={300}
@@ -115,11 +115,8 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(screen.getByText('0123456')).toBeTruthy()
-    const wordmark = [...container.querySelectorAll('svg')]
-      .find(svg => svg.getAttribute('viewBox') === '0 0 156 24')
-    expect(wordmark).not.toBeUndefined()
-    expect(wordmark?.getAttribute('width')).toBe('156')
+    expect(screen.getByText('Clocky').getAttribute('title')).toBe('0123456')
+    expect([...container.querySelectorAll('svg')].filter(svg => svg.getAttribute('viewBox') === '0 0 156 24')).toHaveLength(0)
   })
 
   it('hands the Team region its wide flag and clamps expandSidebar to the collapsed state', () => {

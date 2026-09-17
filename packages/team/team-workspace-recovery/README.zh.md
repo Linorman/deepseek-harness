@@ -14,8 +14,7 @@
 
 每次 confirmation 或 preservation 都使用短生命周期的 `TeamSystemWorkspaceAllocationProof`。provider 只接收 Team journal 保留的 allocation metadata 与准确 task-attempt identity；filesystem root 和 credential 不会写入 Team journal。无法证明的缺失、dirty 或其他 provider resource 会被 preserved，不会凭猜测重新创建或删除。
 
-即使未配置 pulse，持久的 `release-requested` 事件也会触发合并后的 single-flight drive。每轮遵守已配置的 Team 数量上限，其他分支失败不会跳过已选中的 allocation，所有分支结算后再汇总错误。卸载先停止接纳事件和 timer 工作，等待已接纳的 provider 操作及其持久确认，最后撤销 proof source。
-非推进的 Team-list continuation 会让 drive 以 `TEAM_CURSOR_CONFLICT` 失败，而不会重复读取同一 page。
+即使未配置 pulse，持久的 `release-requested` 事件也会触发合并后的 single-flight drive。每轮遵守已配置的 Team 数量上限，其他分支失败不会跳过已选中的 allocation，所有分支结算后再汇总错误。卸载先停止接纳事件和 timer 工作，等待已接纳的 provider 操作及其持久确认，最后撤销 proof source。 非推进的 Team-list continuation 会让 drive 以 `TEAM_CURSOR_CONFLICT` 失败，而不会重复读取同一 page。
 
 `readAttempts` 默认 `3`，`readRetryDelayMs` 默认 `100` 毫秒。它们独立于 release confirmation 重试暂时失败的 Team 和 Team-page 读取，因此读取失败后无需等待新的 allocation 事件。可识别的持久格式错误、Team 权限错误和文件系统权限错误会立即停止重试；I/O 重试耗尽后会报告全部失败。卸载期间，已接纳的读取重试在撤销 proof 前完成结算。`readRetryDelayMs`、`confirmationRetryDelayMs` 和 `pulseIntervalMs` 不得超过 Node 的 `2147483647` 毫秒 timer 上限。
 

@@ -15,10 +15,10 @@ it('refreshes and opens a live child Team, then settles parent cancellation thro
     { kind: 'chunks', chunks: [
       { type: 'block-start', index: 0, blockType: 'tool-call' },
       { type: 'tool-call-delta', index: 0, id: 'child-delegate', name: 'team_task_delegate', argumentsDelta: JSON.stringify({
-        subject: 'Child navigation probe', instructions: 'Run the child navigation probe.', read_scopes: [], write_scopes: [], budget: {},
+        subject: 'Child navigation probe', instructions: 'Run the child navigation probe.', read_scopes: [], write_scopes: [], budget: { maxChildTeams: 0, maxLiveActivations: 3 },
       }) },
       { type: 'block-end', index: 0, block: { type: 'tool-call', id: 'child-delegate', name: 'team_task_delegate', arguments: JSON.stringify({
-        subject: 'Child navigation probe', instructions: 'Run the child navigation probe.', read_scopes: [], write_scopes: [], budget: {},
+        subject: 'Child navigation probe', instructions: 'Run the child navigation probe.', read_scopes: [], write_scopes: [], budget: { maxChildTeams: 0, maxLiveActivations: 3 },
       }) } },
       { type: 'finish', reason: { kind: 'tool-calls' } },
     ] },
@@ -55,6 +55,12 @@ it('refreshes and opens a live child Team, then settles parent cancellation thro
     const settled = scaffold.whenTurnSettled(60_000)
     await rpc('team.postInput', { teamId: created.team.id, text: '请委派一个 child Team 并返回进度。', delivery: 'turn' })
     await settled
+    const coordinator = created.participants.find(member => member.role === 'coordinator')
+    const binding = created.activations.find(binding => binding.activation.participantId === coordinator?.id)
+    if (binding !== undefined) {
+      const session = await scaffold.ctx.sessionPersistence.inspect(binding.sessionId)
+      await writeFile(join(output, 'tool-results.json'), JSON.stringify(session.events.filter(event => event.type === 'tool/result'), null, 2))
+    }
     let childTask: TeamTaskSnapshot | undefined
     await expect.poll(async () => {
       const tasks = await rpc<{ items: readonly TeamTaskSnapshot[] }>('team.task.list', { teamId: created!.team.id, afterCursor: -1, limit: 32 })
@@ -66,9 +72,10 @@ it('refreshes and opens a live child Team, then settles parent cancellation thro
 
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '验证 child Team 浏览器导航 进行中' }).click()
-    await page.getByRole('button', { name: '打开任务详情' }).click()
-    const panel = page.locator('[data-team-detail-panel]')
+    const panel = page.locator('[data-team-workspace-page]')
+    await panel.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '任务', exact: true }).click()
     await panel.getByRole('button', { name: '刷新任务', exact: true }).click()
+    await panel.getByRole('button', { name: 'Child navigation probe', exact: true }).click()
     await panel.getByRole('button', { name: '打开子任务', exact: true }).waitFor()
     await panel.getByRole('button', { name: '打开子任务', exact: true }).click()
     await expect.poll(async () => (await rpc<TeamStateSnapshot>('team.get', { teamId: childTeamId })).team.parentTeamId).toBe(created.team.id)

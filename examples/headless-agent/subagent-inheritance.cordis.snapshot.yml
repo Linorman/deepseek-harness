@@ -49,18 +49,18 @@
     goals: false
 
 - id: subagent
-  name: '@clocky/clocky-subagent'
+  name: '@clocky/clocky-compat-subagent'
 
 - id: subagent-spawn-in-process
-  name: '@clocky/clocky-subagent-spawn-in-process'
+  name: '@clocky/clocky-compat-subagent-spawn-in-process'
   config:
     providerName: spawn
 
 - id: tool-subagent
-  name: '@clocky/clocky-tool-subagent'
+  name: '@clocky/clocky-compat-tool-subagent'
   config:
     provider: spawn
-    toolName: subagent
+    toolName: legacy_subagent
     maxDepth: 1
 
 # Await the persisted resume before the headless driver inspects root agents.

@@ -1,3 +1,10 @@
+import { teamMemberInspectInputSchema } from '../api/teams.schema.ts'
+import { teamWorkflowInspectRequestSchema } from '@clocky/clocky-team/schema'
+import { teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
+import { teamSelectionRequestSchema } from '@clocky/clocky-team/schema'
+import { teamTaskInspectRequestSchema } from '../api/teams.schema.ts'
+import { teamBrowseInputSchema } from '../api/teams.schema.ts'
+import { teamMemberSessionRequestSchema } from '../api/teams.schema.ts'
 import { teamHumanActionResponseInputSchema } from '../api/teams.schema.ts'
 import { teamHumanInboxReadInputSchema, teamHumanInboxAcknowledgeInputSchema } from '../api/teams.schema.ts'
 /**
@@ -51,14 +58,6 @@ import {
   agentPresetReadRequestSchema, agentPresetRemoveRequestSchema, agentPresetSelectRequestSchema,
 } from '../api/agent-presets.schema.ts'
 import {
-  goalCreateRequestSchema,
-  goalEditRequestSchema,
-  goalPauseRequestSchema,
-  goalResumeRequestSchema,
-  goalCompleteRequestSchema,
-  goalClearRequestSchema,
-} from '../api/goals.schema.ts'
-import {
   settingsDescribeRequestSchema, settingsMutateRequestSchema, settingsOpenDocumentRequestSchema,
   settingsReplaceRequestSchema, settingsUpdateRequestSchema,
 } from '../api/settings.schema.ts'
@@ -67,7 +66,8 @@ import {
 } from '../api/credentials.schema.ts'
 import { llmDiscoverModelsRequestSchema, llmModelsRequestSchema, llmProvidersRequestSchema } from '../api/llm.schema.ts'
 import {
-  teamArchiveRequestSchema, teamArtifactListRequestSchema, teamArtifactReadRequestSchema, teamAuditReadRequestSchema, teamCancelRequestSchema,
+  teamArchiveRequestSchema, teamArtifactListRequestSchema, teamArtifactReadRequestSchema,
+  teamAuditReadRequestSchema, teamCancelRequestSchema,
   teamGoalTransitionRequestSchema, teamGoalUpdateRequestSchema,
   teamMetricsRequestSchema,
   teamChannelCloseRequestSchema,
@@ -135,6 +135,13 @@ const UNARY_ROUTES: UnaryRoutes = {
   'session.updateQueue': { schema: sessionUpdateQueueRequestSchema, invoke: (api, r) => api.sessions.updateQueue(r) },
   'session.cancel': { schema: sessionCancelRequestSchema, invoke: (api, r) => api.sessions.cancel(r) },
   'team.list': { schema: teamListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.list'>(api, r, team => team.list(r)) },
+  'team.workflow.plan.inspect': { schema: teamWorkflowInspectRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.workflow.plan.inspect'>(api, r, team => team.workflowPlanInspect(r)) },
+  'team.action.read': { schema: teamHumanActionReadRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.action.read'>(api, r, team => team.actionRead(r)) },
+  'team.selection': { schema: teamSelectionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.selection'>(api, r, team => team.selection(r)) },
+  'team.member.inspect': { schema: teamMemberInspectInputSchema, invoke: (api, r) => unavailableTeamApi<'team.member.inspect'>(api, r, team => team.memberInspect(r)) },
+  'team.member.session': { schema: teamMemberSessionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.session'>(api, r, team => team.memberSession(r)) },
+  'team.task.inspect': { schema: teamTaskInspectRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.inspect'>(api, r, team => team.taskInspect(r)) },
+  'team.browse': { schema: teamBrowseInputSchema, invoke: (api, r) => unavailableTeamApi<'team.browse'>(api, r, team => team.browse(r)) },
   'team.get': { schema: teamGetRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.get'>(api, r, team => team.get(r)) },
   'team.create': { schema: teamCreateRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.create'>(api, r, team => team.create(r, signal)) },
   'team.resume': { schema: teamResumeRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.resume'>(api, r, team => team.resume(r, signal)) },
@@ -200,12 +207,6 @@ const UNARY_ROUTES: UnaryRoutes = {
   'agentPreset.copy': { schema: agentPresetCopyRequestSchema, invoke: (api, r) => api.agentPresets.copy(r) },
   'agentPreset.openDocument': { schema: agentPresetOpenDocumentRequestSchema, invoke: (api, r, signal) => api.agentPresets.openDocument(r, signal) },
   'agentPreset.remove': { schema: agentPresetRemoveRequestSchema, invoke: (api, r) => api.agentPresets.remove(r) },
-  'goal.create': { schema: goalCreateRequestSchema, invoke: (api, r) => api.goals.create(r) },
-  'goal.edit': { schema: goalEditRequestSchema, invoke: (api, r) => api.goals.edit(r) },
-  'goal.pause': { schema: goalPauseRequestSchema, invoke: (api, r) => api.goals.pause(r) },
-  'goal.resume': { schema: goalResumeRequestSchema, invoke: (api, r) => api.goals.resume(r) },
-  'goal.complete': { schema: goalCompleteRequestSchema, invoke: (api, r) => api.goals.complete(r) },
-  'goal.clear': { schema: goalClearRequestSchema, invoke: (api, r) => api.goals.clear(r) },
   'settings.describe': { schema: settingsDescribeRequestSchema, invoke: (api, r) => api.settings.describe(r) },
   'settings.openDocument': { schema: settingsOpenDocumentRequestSchema, invoke: (api, r, signal) => api.settings.openDocument(r, signal) },
   'settings.update': { schema: settingsUpdateRequestSchema, invoke: (api, r) => api.settings.update(r) },

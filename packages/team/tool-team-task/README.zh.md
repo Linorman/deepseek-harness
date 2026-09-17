@@ -4,22 +4,24 @@
 
 `@clocky/clocky-tool-team-task`只会在 live 默认 [`TeamRun`](../team-run/README.zh.md) coordinator 的 scoped Agent 中注册 default task tool 与声明式 workflow tool。它从 `ctx.teamRuns`取得 opaque coordinator capability；每次运行操作时，TeamRun 都会重新验证该 capability、live Agent 及其 activation。其他 Team-bound Agent 和普通 Session 都不会获得这些 tool。
 
+Reviewer 失败表现为可处理的 wait 错误，不隐式判定 worker 失败或生成审阅决定。修正 reviewer，或在安排替代工作前明确取消原任务。其他 Team 工作 stalled 时，已完成任务的证据仍可读取。
+
 ## 操作
 
-`team_worker_pool_set(worker_count)`允许 coordinator 选择目标 worker pool 大小。对于包含多个可并行 workstream 的 non-trivial objective（包括 research、analysis、writing、planning、data、operations、coding、testing 或组合），coordinator 应在启动独立 task 前至少设置为 2。TeamRun 会将其限制在 deployment ceiling 内，激活新增 worker、回收空闲多余 worker，并返回 requested/target/active/idle/busy/queued count；触顶或当前 capacity 满时 `saturated` 为 `true`。该操作不会等待忙碌 worker；ready task 可以先准入，由 scheduler 等待空闲 worker。
+`team_worker_pool_set(worker_count)` 在部署上限内调整 worker pool，返回 requested、target、active、idle、busy、queued 和 saturation 状态。忙碌 worker 完成已有工作，ready task 可以排队。委派策略由 coordinator prompt 统一说明。
 
-`team_task_start(subject, instructions, read_scopes?, write_scopes?)`会创建一个有界的默认 worker task。调用方提供简洁的 subject、完整 instructions、预期 deliverable 与 validation，以及可选的 filesystem region。对于包含多个可并行 workstream 的 non-trivial objective，coordinator 应在等待前至少启动两个独立 task。只有并行修改 shared workspace 的 writer 才使用窄且互不重叠的 workspace-relative file scope；不修改文件的 research、analysis、writing、planning、data、operations 或 review task 保持空 scope；如果只有一个 worker 可以安全写入共享 artifact，则为其他 worker 安排只读工作。tool 会把 coordinator 当前 workspace 内的绝对路径转换成 workspace-relative 形式，拒绝 workspace 外路径，并将 workspace 根规范化为 `.`。省略的 scope array 会变成显式 empty array。结果包含 `task_id`、当前 task `phase` 以及下文说明的审阅事实。
+`team_task_start(subject, instructions, read_scopes?, write_scopes?)` 准入一个有界 worker task，brief 明确交付物和验收。并行 writer 使用窄且不重叠的路径，不涉及文件的任务保持空 scope。coordinator workspace 内的绝对路径转换为相对路径，外部路径拒绝。结果返回 `task_id`、`phase` 和审阅事实。委派应能节省时间或上下文，并产出可独立验证的工作。
 
-`team_task_wait(task_id)`会等待通过同一 coordinator capability 创建的 task，包括已配置的审阅。它返回紧凑的 terminal result：completion summary、可用时保留的 failure code 与 message，或 terminal phase。取消 tool call 只会取消本地 wait，不会取消 task execution。结果不会包含 worker transcript、activation detail、Team identity 或 lease fact。
+`team_task_wait(task_id)` 等待通过同一 coordinator capability 准入的任务，包括配置的审阅。完成结果保留已有的 `summary`、`evidence`、`artifacts`、`changed_paths`、`verification` 和 `integration`。失败结果始终以 `outcome` 区分 `failed`、`released` 和 `lease-expired`，并保留已有 failure code/message。超大渲染结果由现有 tool spill policy 处理，保留可读取的完整结果定位信息。取消调用只停止等待；结果不包含 worker 对话和 lease 内部状态。
 
-`team_task_list()`会返回通过该 coordinator capability 创建的每个非 workflow task 的当前紧凑 phase。`team_task_watch(after_cursor?)`会等待 Team cursor 前进，并用新 cursor 返回同样有界的 task snapshot；取消调用只会停止这一次本地 watch。这些操作暴露 phase 和审阅事实，不包含 worker transcript 或 lease progress。
+`team_task_list()`会返回通过该 coordinator capability 创建的每个非 workflow task 的当前紧凑 phase。`team_task_watch(after_cursor?)`会等待 Team cursor 前进，并用新 cursor 返回同样有界的 task snapshot；取消调用只会停止这一次本地 watch。这些操作暴露 phase 和审阅事实，不包含 worker transcript 或 lease progress。 首次 watch 省略 `after_cursor` 获取即时快照，后续使用 watch 返回的 cursor；list 不返回 cursor。
 
 Start、list、watch 和 wait 返回 `review_policy`：`{ kind: 'none' }` 或 `{ kind: 'participant', reviewer_id }`。其 `review_result` 是 active attempt 对应的 `{ attempt_id, decision: 'accepted' | 'rework' }`；没有 active attempt 时，选择最近结算的 attempt。`null` 表示该选中 attempt 尚无审阅决定，不表示没有配置 reviewer。新的 attempt 不会继承较早 attempt 的决定。结果不包含审阅理由和完整历史。
 
 
 `team_task_propose_owner(task_id, participant_id?)`会为 owned pending task 设置或清除 durable scheduler hint。被命名的 Participant 不会因为 proposal 获得 authority 或 lease；scheduler 仍可以选择其他合格 Participant。
 
-`team_workflow_start(plan)`准入一个完整的 JSON-serializable `TeamWorkflowPlan`。每个 task template 使用与 `team_task_start` 相同的 workspace-relative scope 规则：coordinator 当前 workspace 内的绝对路径会被转换，workspace 外路径会在准入前拒绝。plan 包含明确的 task template 和 plan-local dependency、有界 concurrency/attempt limit、基于 role 的 versioned workflow channel graph，以及 task-result projection。TeamRun 会在创建任何 durable task 或 workflow channel 前校验完整 graph，并返回稳定的 `plan_id`。
+`team_workflow_start(plan)`准入一个完整的 JSON-serializable `TeamWorkflowPlan`。每个 task template 使用与 `team_task_start` 相同的 workspace-relative scope 规则：coordinator 当前 workspace 内的绝对路径会被转换，workspace 外路径会在准入前拒绝。plan 包含明确的 task template 和 plan-local dependency、有界 concurrency/attempt limit、基于 role 的 versioned workflow channel graph，以及 task-result projection。TeamRun 会在创建任何 durable task 或 workflow channel 前校验完整 graph，并返回稳定的 `plan_id`。 模型可见 schema 完整定义 task、bounds、channel 和 result 的嵌套字段，并提供可执行的两阶段示例。`channel.viewPolicy` 必填。worker capability 从 coordinator prompt 获取；示例通过明确的文件路径在依赖任务之间交接。
 
 `team_workflow_task_cancel(plan_id, task_template_id, reason?)` 停止所拥有 workflow 的一个任务。无法满足依赖且尚未执行的后继取消，独立节点继续。`team_workflow_wait(plan_id)` 等待全部绑定任务并返回 plan 汇总 phase 与选定的终态 task fact。其 result 来自 durable task attempt；取消这次调用不会取消 plan。
 
@@ -71,11 +73,11 @@ schema 在 current coordinator scope 内保持稳定。每个 request 与 result
 
 #### What the model sees
 
-scoped [`team_task_wait`](../../../docs/tool-catalog.zh.md#team_task_wait) schema，随后是紧凑 terminal phase、completion summary 或 retained failure fact，以及 policy 和匹配 attempt 的审阅决定。worker transcript、activation identifier、Team identifier 和 lease 不会进入 model-visible result。
+scoped [`team_task_wait`](../../../docs/tool-catalog.zh.md#team_task_wait) schema 返回终态、完整保留的工作证据及准确失败原因，并包含审阅策略和选定 attempt 的决定；不包含 worker 对话与 lease 内部状态。
 
 #### Token effect
 
-每次 completed wait 会增加一个 coordinator-scoped schema 和一个紧凑 result。其他 Agent 不会获得该 schema。
+每次 completed wait 增加一个 coordinator-scoped schema 和保留的结果字段。证据大小决定动态 token 消耗；挂载的 tool spill policy 限制渲染预览并保留完整结果。其他 Agent 不会获得该 schema。
 
 #### KV Cache effect
 

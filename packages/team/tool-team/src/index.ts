@@ -4,6 +4,7 @@
  * @module @clocky/clocky-tool-team
  */
 
+import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import type { Agent } from '@clocky/clocky-agent'
@@ -734,7 +735,7 @@ function requireAbsent(value: string | undefined, name: string, outcome: string)
   }
 }
 
-/** Locate the sole durable task-assignment source that authorizes one report. */
+/** Require one consistent durable assignment across original and continuation inputs. */
 function assignmentSource(agent: Agent, taskId: string, attemptId: string, operation = 'team_task_report'): TaskAssignmentSource {
   const parsedTaskId = parseIdentifier(teamTaskIdSchema, taskId, 'task_id')
   const parsedAttemptId = parseIdentifier(taskAttemptIdSchema, attemptId, 'attempt_id')
@@ -742,13 +743,14 @@ function assignmentSource(agent: Agent, taskId: string, attemptId: string, opera
     const source = sourceFromEvent(event)
     return source !== undefined && source.taskId === parsedTaskId && source.attemptId === parsedAttemptId ? [source] : []
   })
-  if (sources.length !== 1) {
+  const source = sources[0]
+  if (source === undefined || sources.some(candidate => !isDeepStrictEqual(candidate, source))) {
     throw reportError(
-      `${operation} requires exactly one durable task-assignment source for task '${taskId}' attempt '${attemptId}'`,
+      `${operation} requires one consistent durable task-assignment source for task '${taskId}' attempt '${attemptId}'`,
       'TEAM_TASK_REPORT_ASSIGNMENT_REQUIRED',
     )
   }
-  return sources[0] as TaskAssignmentSource
+  return source
 }
 
 /** Parse a future-compatible task-assignment source from one durable user message. */

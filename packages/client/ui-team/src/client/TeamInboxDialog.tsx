@@ -9,6 +9,7 @@ import css from './TeamBrowser.module.css'
 
 /** Plain callbacks used by the global inbox and by current Team action cards. */
 export interface TeamInboxControls {
+  readonly recoverInbox?: NonNullable<ITeamTasks['recoverInbox']> | undefined
   readonly refreshInbox: NonNullable<ITeamTasks['refreshInbox']>
   readonly loadMoreInbox: NonNullable<ITeamTasks['loadMoreInbox']>
   readonly watchInbox: NonNullable<ITeamTasks['watchInbox']>
@@ -38,11 +39,11 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
   const [discard, setDiscard] = useState(false)
   const [draftGeneration, setDraftGeneration] = useState(0)
   const pendingOperation = useRef<(() => void | Promise<unknown>) | undefined>()
-  const { refreshInbox, watchInbox, loadMoreInbox, acknowledgeInbox, readAction, respondAction, openActionContext } = controls
+  const { recoverInbox, refreshInbox, watchInbox, loadMoreInbox, acknowledgeInbox, readAction, respondAction, openActionContext } = controls
   const entries = [...new Map(state.items.map(item => [item.kind === 'action'
     ? `action:${item.teamId}:${item.action.id}` : `delivery:${item.sequence}`, item])).values()]
   const unreadLoaded = state.items.filter(item => item.sequence > state.displayCursor).length
-  const error = operationError ?? watchError ?? state.error?.message
+  const error = operationError ?? (state.error?.code === 'team-inbox-compacted' ? t('inbox.compacted') : watchError ?? state.error?.message)
 
   useEffect(() => {
     readRequest.current?.abort()
@@ -78,11 +79,15 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
     if (dirty.size > 0) { pendingOperation.current = operation; setDiscard(true) }
     else void execute(operation)
   }
-  const read = (history: boolean): Promise<void> => {
+  const read = (history: boolean | 'retained'): Promise<void> => {
     readRequest.current?.abort()
     setWatchError(undefined)
     const controller = new AbortController()
     readRequest.current = controller
+    if (history === 'retained') {
+      if (recoverInbox === undefined) throw new Error('Inbox history recovery is unavailable')
+      return recoverInbox(controller.signal)
+    }
     return refreshInbox(history, controller.signal)
   }
   const respond = async (input: TeamActionResponseInput, signal?: AbortSignal): Promise<TeamActionResponseResult> => {
@@ -101,6 +106,9 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
       </div>
       {state.phase === 'loading' && <p role="status" className={css.muted}>{t('inbox.loading')}</p>}
       {error !== undefined && <p role="alert" className={css.error}>{error}</p>}
+      {state.error?.code === 'team-inbox-compacted' && state.error.details.firstCursor !== undefined && recoverInbox !== undefined &&
+        <Button disabled={state.phase === 'loading' || busy.size > 0}
+          onClick={() => { requestOperation(async () => { await read('retained') }) }}>{t('inbox.retainedHistory')}</Button>}
       {entries.length === 0 && state.phase !== 'loading' && <p className={css.muted}>{t('inbox.empty')}</p>}
       {entries.map((item) => {
         const team = teams.find(candidate => candidate.id === item.teamId)
@@ -120,7 +128,8 @@ export function TeamInboxDialog({ state, teams, translate: t, onClose, openTeam,
         </section>
       })}
       {(state.nextCursor !== undefined || state.hasNewer) && <div className={css.actions}>
-        <Button disabled={state.loadingMore || state.phase === 'loading'} onClick={() => { void loadMoreInbox(readRequest.current?.signal) }}>{t(state.hasNewer ? 'inbox.newMessages' : 'detail.loadMore')}</Button>
+        <Button disabled={busy.size > 0 || state.loadingMore || state.phase === 'loading'}
+          onClick={() => { requestOperation(async () => { await loadMoreInbox(readRequest.current?.signal) }) }}>{t(state.hasNewer ? 'inbox.newMessages' : 'detail.loadMore')}</Button>
         {state.loadingMore && <p role="status" className={css.muted}>{t('inbox.loading')}</p>}
       </div>}
       {state.acknowledging && <p role="status" className={css.muted}>{t('inbox.acknowledging')}</p>}

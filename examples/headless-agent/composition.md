@@ -30,25 +30,25 @@ flowchart LR
   cfg --> plugin_headless_compaction_basic
   plugin_headless_session_projection["session-projection<br/>@clocky/clocky-session-projection"]
   cfg --> plugin_headless_session_projection
-  plugin_headless_subagent["subagent<br/>@clocky/clocky-subagent"]
+  plugin_headless_subagent["subagent<br/>@clocky/clocky-compat-subagent"]
   cfg --> plugin_headless_subagent
-  plugin_headless_subagent_spawn_in_process["subagent-spawn-in-process<br/>@clocky/clocky-subagent-spawn-in-process"]
+  plugin_headless_subagent_spawn_in_process["subagent-spawn-in-process<br/>@clocky/clocky-compat-subagent-spawn-in-process"]
   cfg --> plugin_headless_subagent_spawn_in_process
-  plugin_headless_subagent_fork_in_process["subagent-fork-in-process<br/>@clocky/clocky-subagent-fork-in-process"]
+  plugin_headless_subagent_fork_in_process["subagent-fork-in-process<br/>@clocky/clocky-compat-subagent-fork-in-process"]
   cfg --> plugin_headless_subagent_fork_in_process
-  plugin_headless_tool_subagent_control["tool-subagent-control<br/>@clocky/clocky-tool-subagent-control"]
+  plugin_headless_tool_subagent_control["tool-subagent-control<br/>@clocky/clocky-compat-tool-subagent-control"]
   cfg --> plugin_headless_tool_subagent_control
-  plugin_headless_tool_subagent_report["tool-subagent-report<br/>@clocky/clocky-tool-subagent-report"]
+  plugin_headless_tool_subagent_report["tool-subagent-report<br/>@clocky/clocky-compat-tool-subagent-report"]
   cfg --> plugin_headless_tool_subagent_report
-  plugin_headless_tool_subagent["tool-subagent<br/>@clocky/clocky-tool-subagent"]
+  plugin_headless_tool_subagent["tool-subagent<br/>@clocky/clocky-compat-tool-subagent"]
   cfg --> plugin_headless_tool_subagent
-  plugin_headless_tool_subagent_fork["tool-subagent-fork<br/>@clocky/clocky-tool-subagent"]
+  plugin_headless_tool_subagent_fork["tool-subagent-fork<br/>@clocky/clocky-compat-tool-subagent"]
   cfg --> plugin_headless_tool_subagent_fork
-  plugin_headless_workflow_worker_thread["workflow-worker-thread<br/>@clocky/clocky-workflow-worker-thread"]
+  plugin_headless_workflow_worker_thread["workflow-worker-thread<br/>@clocky/clocky-compat-workflow-worker-thread"]
   cfg --> plugin_headless_workflow_worker_thread
-  plugin_headless_tool_workflow["tool-workflow<br/>@clocky/clocky-tool-workflow"]
+  plugin_headless_tool_workflow["tool-workflow<br/>@clocky/clocky-compat-tool-workflow"]
   cfg --> plugin_headless_tool_workflow
-  plugin_headless_tool_ralph["tool-ralph<br/>@clocky/clocky-tool-ralph"]
+  plugin_headless_tool_ralph["tool-ralph<br/>@clocky/clocky-compat-tool-ralph"]
   cfg --> plugin_headless_tool_ralph
   plugin_headless_tool_todo["tool-todo<br/>@clocky/clocky-tool-todo"]
   cfg --> plugin_headless_tool_todo
@@ -73,16 +73,16 @@ flowchart LR
 | `token-meter` | `@clocky/clocky-token-meter` |
 | `compaction-basic` | `@clocky/clocky-compaction-basic` |
 | `session-projection` | `@clocky/clocky-session-projection` |
-| `subagent` | `@clocky/clocky-subagent` |
-| `subagent-spawn-in-process` | `@clocky/clocky-subagent-spawn-in-process` |
-| `subagent-fork-in-process` | `@clocky/clocky-subagent-fork-in-process` |
-| `tool-subagent-control` | `@clocky/clocky-tool-subagent-control` |
-| `tool-subagent-report` | `@clocky/clocky-tool-subagent-report` |
-| `tool-subagent` | `@clocky/clocky-tool-subagent` |
-| `tool-subagent-fork` | `@clocky/clocky-tool-subagent` |
-| `workflow-worker-thread` | `@clocky/clocky-workflow-worker-thread` |
-| `tool-workflow` | `@clocky/clocky-tool-workflow` |
-| `tool-ralph` | `@clocky/clocky-tool-ralph` |
+| `subagent` | `@clocky/clocky-compat-subagent` |
+| `subagent-spawn-in-process` | `@clocky/clocky-compat-subagent-spawn-in-process` |
+| `subagent-fork-in-process` | `@clocky/clocky-compat-subagent-fork-in-process` |
+| `tool-subagent-control` | `@clocky/clocky-compat-tool-subagent-control` |
+| `tool-subagent-report` | `@clocky/clocky-compat-tool-subagent-report` |
+| `tool-subagent` | `@clocky/clocky-compat-tool-subagent` |
+| `tool-subagent-fork` | `@clocky/clocky-compat-tool-subagent` |
+| `workflow-worker-thread` | `@clocky/clocky-compat-workflow-worker-thread` |
+| `tool-workflow` | `@clocky/clocky-compat-tool-workflow` |
+| `tool-ralph` | `@clocky/clocky-compat-tool-ralph` |
 | `tool-todo` | `@clocky/clocky-tool-todo` |
 | `fs-local` | `@clocky/clocky-fs-local` |
 | `fs-observation-policy` | `@clocky/clocky-fs-observation-policy` |

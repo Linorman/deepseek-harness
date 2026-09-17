@@ -1,5 +1,4 @@
 /** Provision explicitly routed Team participants before deterministic task assignment. @module */
-import { randomUUID } from 'node:crypto'
 import { Service } from '@clocky/cordis'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
@@ -64,6 +63,7 @@ export class TeamPlacement extends Service {
   private readonly stopping = new AbortController()
   private readonly pending = new Map<TeamId, { readonly operation: Promise<number>; readonly signal: AbortSignal }>()
   private readonly leases = new Set<TeamActivationLease>()
+  private readonly rolePreparations = new Map<TeamId, { readonly operation: Promise<void>; readonly signal: AbortSignal }>()
   private closed: Promise<void> | undefined
 
   /** @param ctx - Authoritative Team, activation and runtime services. @param config - Explicit bounded routes. */
@@ -99,22 +99,78 @@ export class TeamPlacement extends Service {
     return operation
   }
 
-  /** Stop new preparation, cancel provider admission and await every owned activation release. */
+  /** Prepare declared workflow roles before channel admission or task publication.
+   * @param teamId - Team whose active membership authorizes the roles.
+   * @param roles - Unique roles already resolved by the workflow compiler.
+   * @param signal - Cancellation of this compilation.
+   * @returns resolution when every agent role has a resident activation; unavailable routes reject.
+   */
+  async prepareRoles(teamId: TeamId, roles: readonly string[], signal?: AbortSignal): Promise<void> {
+    const cancellation = signal === undefined ? this.stopping.signal : AbortSignal.any([signal, this.stopping.signal])
+    cancellation.throwIfAborted()
+    const prior = this.rolePreparations.get(teamId)
+    if (prior !== undefined) {
+      await prior.operation
+      await this.prepareRoles(teamId, roles, signal)
+      return
+    }
+    const operation = this.prepareRoleOwners(teamId, roles, cancellation)
+    this.rolePreparations.set(teamId, { operation, signal: cancellation })
+    try { await operation }
+    finally { this.rolePreparations.delete(teamId) }
+  }
+
+  private async prepareRoleOwners(teamId: TeamId, roles: readonly string[], signal: AbortSignal): Promise<void> {
+    const initial = await this.ctx.teams.getTeam({ teamId })
+    const selected = roles.flatMap((role) => {
+      const matches = initial.participants.filter(value => value.role === role && value.phase === 'active')
+      if (matches.length !== 1) throw new TeamError(`Workflow role '${role}' must identify one active participant`, 'TEAM_INVALID_ARGUMENT')
+      const participant = matches[0] as ParticipantSnapshot
+      if (participant.kind !== 'local-agent' && participant.kind !== 'remote-agent') return []
+      const previous = initial.activations.filter(value => value.activation.participantId === participant.id).at(-1)
+      if (previous !== undefined && (previous.activation.status === 'idle' || previous.activation.status === 'running')) return []
+      const route = this.config.routes.find(route => route.provider === participant.provider
+        && route.preset === participant.preset && route.model === participant.model && route.roles.includes(role))
+      if (route === undefined) throw new TeamError(`Workflow role '${role}' requires one configured placement route`, 'TEAM_INVALID_ARGUMENT')
+      return [{ participant, route }]
+    })
+    if (selected.length > this.config.maxActivationsPerDrive) {
+      throw new TeamError('Workflow roles exceed the placement activation budget', 'TEAM_CHANNEL_BACKPRESSURE')
+    }
+    for (const { participant, route } of selected) {
+      signal.throwIfAborted()
+      const current = await this.ctx.teams.getTeam({ teamId })
+      if (!await this.activateOwner(current, undefined, participant, route, signal)) {
+        signal.throwIfAborted()
+        throw new TeamError(`Workflow role '${participant.role}' requires activation recovery`, 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+      }
+    }
+  }
+
+  /** Stop new preparation and cancel provider admission; failed releases remain available to a later close.
+   * @returns Shared in-flight cleanup; rejects with collected failures until all owned leases settle.
+   */
   close(): Promise<void> {
-    this.closed ??= this.closeOwned()
+    this.closed ??= this.closeOwned().catch((error: unknown) => {
+      this.closed = undefined
+      throw error
+    })
     return this.closed
   }
 
   private async closeOwned(): Promise<void> {
     const admitted = [...this.pending.values()]
+    const roles = [...this.rolePreparations.values()]
     this.stopping.abort(new Error('Team placement unloaded'))
     const preparations = await Promise.allSettled(admitted.map(entry => entry.operation))
     const failures: unknown[] = preparations.flatMap((result, index) => result.status === 'rejected'
       && result.reason !== admitted[index]?.signal.reason ? [result.reason as unknown] : [])
-    const settled = await Promise.allSettled([...this.leases].map(lease => lease.dispose()))
+    const preparedRoles = await Promise.allSettled(roles.map(entry => entry.operation))
+    failures.push(...preparedRoles.flatMap((result, index) => result.status === 'rejected'
+      && result.reason !== roles[index]?.signal.reason ? [result.reason as unknown] : []))
+    const settled = await Promise.allSettled([...this.leases].map(lease => this.releaseLease(lease)))
     failures.push(...settled.flatMap(result => result.status === 'rejected' ? [result.reason as unknown] : []))
     if (failures.length > 0) throw new AggregateError(failures, 'Team placement activation cleanup failed')
-    this.leases.clear()
   }
 
   private async prepareTeam(teamId: TeamId, signal: AbortSignal): Promise<number> {
@@ -140,13 +196,10 @@ export class TeamPlacement extends Service {
       const participants = state.participants.filter(participant => !selectedOwners.has(participant.id) && candidate(task, participant))
         .sort((a, b) => Number(b.id === task.proposedOwnerId) - Number(a.id === task.proposedOwnerId) || a.id.localeCompare(b.id))
       for (const participant of participants) {
-        const routes = this.config.routes.filter(route => route.provider === participant.provider
+        const route = this.config.routes.find(route => route.provider === participant.provider
           && route.preset === participant.preset && route.model === participant.model && route.roles.includes(participant.role))
-        if (routes.length === 0) continue
-        if (routes.length !== 1) throw new TeamError(`Participant '${participant.id}' matches ambiguous placement routes`, 'TEAM_INVALID_ARGUMENT')
-        const route = routes[0] as PlacementRoute
-        if (!matchesTaskPlacement(task.placement, participant, route.provider)) continue
-        if (await this.activateTaskOwner(state, task, participant, route, signal)) {
+        if (route === undefined) continue
+        if (await this.activateOwner(state, task, participant, route, signal)) {
           count += 1
           selectedOwners.add(participant.id)
           break
@@ -156,22 +209,26 @@ export class TeamPlacement extends Service {
     return count
   }
 
-  private async activateTaskOwner(
-    initial: TeamStateSnapshot, task: TeamTaskSnapshot, participant: ParticipantSnapshot, route: PlacementRoute,
+  private async activateOwner(
+    initial: TeamStateSnapshot, task: TeamTaskSnapshot | undefined, participant: ParticipantSnapshot, route: PlacementRoute,
     signal: AbortSignal,
   ): Promise<boolean> {
     const previous = initial.activations.filter(value => value.activation.participantId === participant.id).at(-1)
+    if (task === undefined && previous !== undefined
+      && (previous.activation.status === 'idle' || previous.activation.status === 'running')) return true
     // Recovery owns unfenced epochs; a task-driven fresh start must never bypass it.
     if (previous !== undefined && (previous.activation.status !== 'offline' || previous.quiescedAt === undefined)) return false
-    const sessionId = previous?.sessionId ?? SessionId(`team-placement-${randomUUID()}`)
+    const sessionId = previous?.sessionId ?? SessionId(`team-placement-${initial.team.id}-${participant.id}`)
     for (let attempt = 0; attempt < this.config.maxCursorRetries; attempt += 1) {
       signal.throwIfAborted()
       const current = await this.ctx.teams.getTeam({ teamId: initial.team.id })
-      const freshTask = current.tasks.find(value => value.id === task.id)
-      if (freshTask === undefined || !ready(freshTask, current)) return false
+      const freshTask = task === undefined ? undefined : current.tasks.find(value => value.id === task.id)
+      if (task !== undefined && (freshTask === undefined || !ready(freshTask, current))) return false
+      if (current.team.phase !== 'active' || current.team.cancellation !== undefined
+        || !current.participants.some(value => value.id === participant.id && value.phase === 'active')) return false
       try {
         const workspaces = this.ctx.get('teamWorkspaces')
-        if (workspaces !== undefined && !await workspaces.preflight(freshTask.workspaceMode, {
+        if (workspaces !== undefined && freshTask !== undefined && !await workspaces.preflight(freshTask.workspaceMode, {
           task: freshTask,
           participant,
           route: {
@@ -188,27 +245,29 @@ export class TeamPlacement extends Service {
             options: { provider: route.modelProvider, model: route.modelId, maxTokens: route.maxTokens } },
           signal,
         })
-        if (workspaces !== undefined) {
+        this.leases.add(lease)
+        if (workspaces !== undefined && freshTask !== undefined) {
           let eligible: boolean
           try {
             eligible = await workspaces.eligible(freshTask.workspaceMode, { task: freshTask, binding: lease.binding })
           } catch (error: unknown) {
-            try { await lease.dispose() }
+            try { await this.releaseLease(lease) }
             catch (disposeError: unknown) { throw new AggregateError([error, disposeError], 'Placement workspace eligibility cleanup failed') }
             throw error
           }
           if (!eligible) {
-            await lease.dispose()
+            await this.releaseLease(lease)
             return false
           }
         }
-        this.leases.add(lease)
         const after = await this.ctx.teams.getTeam({ teamId: initial.team.id })
-        const stillNeeded = after.tasks.some(value => candidate(value, participant)
-          && (ready(value, after) || value.lease?.activationId === lease.binding.activation.id))
+        const stillNeeded = task === undefined
+          ? after.team.phase === 'active' && after.team.cancellation === undefined
+            && after.participants.some(value => value.id === participant.id && value.phase === 'active')
+          : after.tasks.some(value => candidate(value, participant)
+            && (ready(value, after) || value.lease?.activationId === lease.binding.activation.id))
         if (signal.aborted || !stillNeeded) {
-          await lease.dispose()
-          this.leases.delete(lease)
+          await this.releaseLease(lease)
           return false
         }
         return true
@@ -217,6 +276,11 @@ export class TeamPlacement extends Service {
       }
     }
     throw new TeamError(`Placement for participant '${participant.id}' exhausted cursor retries`, 'TEAM_CURSOR_CONFLICT')
+  }
+
+  private async releaseLease(lease: TeamActivationLease): Promise<void> {
+    await lease.dispose()
+    this.leases.delete(lease)
   }
 }
 
@@ -247,9 +311,8 @@ export const inject = ['teams', 'teamActivations', 'agentRuntimes']
 /** Install the placement Consumer and retain its admitted operations through disposal.
  * @param ctx - Deployment context with the declared providers.
  * @param config - Complete placement route configuration.
- * @returns asynchronous disposal of every accepted activation.
  */
-export function apply(ctx: Context, config: Config): () => Promise<void> {
+export function apply(ctx: Context, config: Config): void {
   const placement = new TeamPlacement(ctx, config)
-  return () => placement.close()
+  ctx.effect(() => () => placement.close())
 }

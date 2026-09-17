@@ -113,10 +113,14 @@ function history(options: { missing?: boolean; wrongCause?: boolean; live?: bool
   )
   for (const [id, rows] of [[parentId, parent], [childId, child]] as const) {
     let projection
-    for (const [cursor, record] of rows.entries()) projection = foldTeamRecord(projection, teamJournalRecordSchema.parse(record), cursor, id)
+    for (const [cursor, record] of rows.entries()) {
+      projection = foldTeamRecord(projection, teamJournalRecordSchema.parse(record), cursor, id)
+    }
   }
   let projection
-  for (const [cursor, record] of wal.entries()) projection = foldChannelRecord(projection, channelRecordSchema.parse(record), cursor, channelId, consultChannelAdapter)
+  for (const [cursor, record] of wal.entries()) {
+    projection = foldChannelRecord(projection, channelRecordSchema.parse(record), cursor, channelId, consultChannelAdapter)
+  }
   return { parent, child, wal, response, request }
 }
 async function storage(backend: 'json' | 'sqlite', root: string) {
@@ -254,7 +258,7 @@ for (const backend of ['json', 'sqlite'] as const) describe(`child result (${bac
     await expect(f.ctx.teams.completeChildTeam({ actor: Object.freeze({}) as TeamSystemChildResultProof,
       childTeamId: childId, expectedCursor: state.team.cursor })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
     f.ctx.teams.registerPolicy('close', { name: 'retire-child-owner', async apply(_request, next) {
-      owner.retireResultSource()
+      await owner.retireResultSource()
       return await next()
     } })
     await expect(owner.complete(admission)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
@@ -322,6 +326,11 @@ for (const backend of ['json', 'sqlite'] as const) describe(`child result (${bac
     const admission = await owner.admit()
     expect(admission).toMatchObject({ binding, requestEnvelopeId: f.data.request.id, responseEnvelopeId: f.data.response.id, text: 'Child work complete.' })
     expect((await f.ctx.teams.getTeam({ teamId: parentId })).tasks[0]).toMatchObject({ phase: 'running', delegation: { phase: 'settling', result: admission } })
+    const inspected = await f.ctx.teams.inspectTask({ teamId: parentId, taskId: binding.parentTaskId, section: 'record' })
+    expect(inspected).toMatchObject({ section: 'record', history: { attempts: 0, reviews: 0 },
+      task: { delegation: { result: { text: admission.text } } } })
+    expect(await f.ctx.teams.inspectTask({ teamId: parentId, taskId: binding.parentTaskId, section: 'attempts', expectedRevision: inspected.revision }))
+      .toMatchObject({ section: 'attempts', items: [], total: 0 })
     expect(await pendingServiceResponses(f.ctx)).toBe(1)
     const completed = await owner.complete(admission)
     expect(completed.team).toMatchObject({ phase: 'completed', childResultAdmission: { parent: admission } })
@@ -329,7 +338,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`child result (${bac
     for (const row of await storedRows(f.ctx, `team/${childId}`, TEAM_JOURNAL_FORMAT_VERSION)) {
       projection = foldTeamRecord(projection, teamJournalRecordSchema.parse(row.value), row.sequence, childId)
     }
-    const checkpoint = teamProjectionData(projection!)
+    if (projection === undefined) throw new Error('Child journal contains no projection')
+    const checkpoint = teamProjectionData(projection)
     expect(() => teamProjectionFromData({ ...checkpoint, team: { ...checkpoint.team,
       childResultAdmission: { ...checkpoint.team.childResultAdmission!, admittedAt: checkpoint.team.updatedAt + 1 } } }))
       .toThrow('child result admission exceeds its Team lifetime')
@@ -351,7 +361,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`child result (${bac
     restored.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY)
     const state = await restored.teams.getTeam({ teamId: childId }); const epoch = state.activations[0]!
     await quiesceTestActivation(restored, { teamId: childId, expectedCursor: state.team.cursor,
-      activationId: epoch.activation.id, participantId: epoch.activation.participantId, sessionId: epoch.sessionId, provider: epoch.provider })
+      activationId: epoch.activation.id, participantId: epoch.activation.participantId,
+      sessionId: epoch.sessionId, provider: epoch.provider })
     const ready = await restored.teams.getTeam({ teamId: childId }); const closure = ready.team.closure!
     const actor = Object.freeze({}) as TeamSystemClosureDriverProof
     const scope: TeamSystemClosureDriverScope = { kind: 'closure-recover-complete', teamId: childId,
@@ -365,7 +376,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`child result (${bac
   })
   it('rejects fabricated parent acceptance and wrong response causation', async () => {
     const f = await setup(backend); const owner = authority(f.ctx)
-    const fake = teamDelegationResultAdmissionSchema.parse({ binding, requestEnvelopeId: f.data.request.id, requestSequence: f.data.request.sequence,
+    const fake = teamDelegationResultAdmissionSchema.parse({ binding,
+      requestEnvelopeId: f.data.request.id, requestSequence: f.data.request.sequence,
       responseEnvelopeId: f.data.response.id, responseSequence: f.data.response.sequence,
       contentFingerprint: fingerprintTeamChildResultContent(f.data.response.payload), text: f.data.response.payload.text,
       artifacts: [], parentTaskRevision: 3, parentCursor: 7, admittedAt: 1115 })

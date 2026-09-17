@@ -4,6 +4,8 @@
   // node types (packages that need them override locally).
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    // Referenced declarations keep Host and Client Context merges in their owning programs.
+    "disableSourceOfProjectReferenceRedirect": true,
     "jsx": "react-jsx",
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "typeRoots": ["./scripts/types", "./node_modules/@types"],

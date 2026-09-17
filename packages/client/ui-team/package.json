@@ -46,25 +46,27 @@
   },
   "license": "MIT",
   "peerDependencies": {
+    "@clocky/clocky-client-connection": "workspace:^",
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
-    "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
+    "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/cordis": "workspace:^"
   },
   "devDependencies": {
+    "@clocky/clocky-client-connection": "workspace:^",
     "@clocky/clocky-client-locale": "workspace:^",
     "@clocky/clocky-client-runtime": "workspace:^",
     "@clocky/clocky-client-test-runtime": "workspace:^",
-    "@clocky/clocky-client-ui-primitives": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
+    "@clocky/clocky-client-ui-primitives": "workspace:^",
     "@clocky/clocky-client-ui-sidebar": "workspace:^",
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/cordis": "workspace:^",
     "@testing-library/react": "^16.1.0",
     "@types/react": "~18.3.1",
-    "@clocky/cordis": "workspace:^",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -73,5 +75,9 @@
     "lib/invariant.js",
     "lib/client.js",
     "lib/types/**/*.d.ts"
-  ]
+  ],
+  "dependencies": {
+    "@aws-crypto/sha256-js": "5.2.0",
+    "zod": "4.4.3"
+  }
 }

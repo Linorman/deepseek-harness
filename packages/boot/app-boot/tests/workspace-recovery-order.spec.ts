@@ -40,6 +40,7 @@ async function rows(surface: string, root: string): Promise<EntryOptions[]> {
       .replace('root: !!js process.cwd()', `root: ${JSON.stringify(root)}`)
       .replace("observationStateRoot: !!js clockyHomePath('team-workspace-observations')",
         `observationStateRoot: ${JSON.stringify(join(root, 'team-workspace-observations'))}`)
+      .replaceAll('!!js clockyHomePath()', JSON.stringify(join(root, 'clocky-home')))
     return (load(text) as EntryOptions[])[0]!
   })
 }
@@ -48,6 +49,7 @@ async function setup(surface: string) {
   await promises.mkdir(join(repository, '.tmp'), { recursive: true })
   const root = await promises.mkdtemp(join(repository, '.tmp/workspace-loader-order-'))
   roots.push(root)
+  await promises.mkdir(join(root, 'clocky-home'))
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(Loader)

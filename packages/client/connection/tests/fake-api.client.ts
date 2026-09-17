@@ -199,7 +199,7 @@ export class FakeApiClient implements IApiClient {
   }
 
   onTeamList: (payload: RequestPayload<'team.list'>) => Promise<RpcResponse<ResponseValue<'team.list'>>>
-    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('fk-team'), 'Fake Team objective').team] }))
+    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('fk-team'), 'Fake Team objective').team], scanned: 1 }))
   onTeamGet: (payload: RequestPayload<'team.get'>) => Promise<RpcResponse<ResponseValue<'team.get'>>>
     = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Fake Team objective')))
   onTeamCreate: (payload: RequestPayload<'team.create'>) => Promise<RpcResponse<ResponseValue<'team.create'>>>
@@ -270,7 +270,23 @@ export class FakeApiClient implements IApiClient {
   onTeamTaskDelete: (payload: RequestPayload<'team.task.delete'>) => Promise<RpcResponse<ResponseValue<'team.task.delete'>>>
     = () => Promise.resolve(teamManagementError())
 
+  onTeamMemberSession: (payload: RequestPayload<'team.member.session'>) => Promise<RpcResponse<ResponseValue<'team.member.session'>>>
+    = async (payload) => {
+      const response = await this.onTeamGet({ teamId: payload.teamId })
+      if (!response.result.ok) return { ...response, result: response.result }
+      const binding = response.result.value.activations.findLast(value => value.activation.participantId === payload.participantId)
+      if (binding === undefined) throw new Error('Fake member has no Session binding')
+      return ok({ activation: binding.activation, sessionId: binding.sessionId, provider: binding.provider })
+    }
+
   readonly teams: IApiClient['teams'] = {
+    memberInspect: payload => this.record('team.member.inspect', payload, Promise.resolve(teamManagementError())),
+    workflowPlanInspect: payload => this.record('team.workflow.plan.inspect', payload, Promise.resolve(teamManagementError())),
+    actionRead: payload => this.record('team.action.read', payload, Promise.resolve(teamManagementError())),
+    taskInspect: payload => this.record('team.task.inspect', payload, Promise.resolve(teamManagementError())),
+    browse: payload => this.record('team.browse', payload, Promise.resolve(teamManagementError())),
+    memberSession: payload => this.record('team.member.session', payload, this.onTeamMemberSession(payload)),
+    selection: payload => this.record('team.selection', payload, Promise.resolve(teamManagementError())),
     inboxRespond: payload => this.record('team.inbox.respond', payload, Promise.resolve(teamManagementError())),
     inboxRead: payload => this.record('team.inbox.read', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
     inboxWatch: payload => this.record('team.inbox.watch', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
@@ -373,15 +389,6 @@ export class FakeApiClient implements IApiClient {
 
   readonly skills: IApiClient['skills'] = {
     list: (payload: unknown) => this.record('skill.list', payload, this.onSkillList(payload)),
-  }
-
-  readonly goals: IApiClient['goals'] = {
-    create: payload => this.record('goal.create', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    edit: payload => this.record('goal.edit', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    pause: payload => this.record('goal.pause', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    resume: payload => this.record('goal.resume', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    complete: payload => this.record('goal.complete', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    clear: payload => this.record('goal.clear', payload, Promise.resolve(ok({ cleared: true as const }))),
   }
 
   readonly settings: IApiClient['settings'] = {

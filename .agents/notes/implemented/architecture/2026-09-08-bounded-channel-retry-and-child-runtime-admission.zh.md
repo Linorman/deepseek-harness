@@ -98,7 +98,7 @@ TeamRun 现在支持在 frozen product template 中配置 JSON-friendly `placeme
 
 Authenticated HTTP supervisor 现在会在 client 和 endpoint 的每个请求读取配置凭证。因此已有 client/listener 无需重建即可接受轮换后的环境变量；启动后凭证变为空时会以 `SUPERVISOR_UNAVAILABLE` 或 HTTP 503 fail closed。Endpoint suite 通过 7 个 tests，另有 1 个 Linux-only skip；TypeScript face 与 targeted lint 均通过。
 
-原 subagent 与 model-authored workflow family 现在是 private compatibility package，只由显式 examples 消费。Clocky release family 和 Python runtime carrier 排除它们；product tool catalog 跳过这些 private tool manifest；legacy cutover gate 检查 default config、carrier dependency、catalog、public release member 和 packed tarball。当前 release pack 包含 249 个 public Clocky tarball 且没有 compatibility tarball，AgentRuntime/ACP/SDK package 保持可发行且未被删除。
+同 Session Goal、subagent 与模型编写 workflow 的包位于 private `packages/compat/`，名称为 `@clocky/clocky-compat-*`。其模型工具使用 `legacy_*` 名称；可配置名称在注册前验证，兼容工具不能占用 Team 工具名。显式 examples 保留这些消费者。产品 Host client 提供 Team goal 方法，同 Session Goal RPC 及其未使用的 UI 不进入产品；产品 tool/config catalog 排除这些包。Cutover gate 拒绝公开包通过 dependency 或 peer dependency 引用兼容包，包括同 Session Goal 栈；默认配置中的 disabled 项也接受检查。Session 的 `parentSession` 只表示 fork lineage，subagent discovery 要求自有 descriptor。
 
 本地 cold replacement 现在会在 AgentRuntime provider 被撤销、本地 stale-epoch fencer 缺失，或该 fencer 无法终止所拥有 epoch 时持久化 typed Team stall。对应 code 为 `AGENT_RUNTIME_PROVIDER_UNAVAILABLE`、`AGENT_RUNTIME_FENCER_UNAVAILABLE` 和 `AGENT_RUNTIME_FENCE_FAILED`；这些 local-owner case 可以没有 supervisor descriptor，而 supervisor-owned recovery 继续保留准确 descriptor 与 generation 检查。聚焦的 controller/schema slice 通过 29 个 tests。
 

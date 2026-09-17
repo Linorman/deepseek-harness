@@ -1,12 +1,13 @@
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Context } from '@clocky/cordis'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFailed, vi } from 'vitest'
 import AgentRuntime from '@clocky/clocky-agent-runtime'
 import type { ActivationHandle, AgentRuntimeProvider } from '@clocky/clocky-agent-runtime'
 import { SessionId } from '@clocky/clocky-session'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
+import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import TeamHub from '@clocky/clocky-team-hub'
 import {
@@ -29,15 +30,16 @@ afterEach(async () => {
 })
 
 /** Run admission against the real Hub, controller and human resume authorization. */
-async function setup(mountController = true) {
+async function setup(mountController = true, backend: 'json' | 'sqlite' = 'json') {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp', 'controller-admission-'))
   roots.push(root)
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(Storage)
-  await ctx.plugin(StorageJson, { root })
-  await ctx.plugin(StorageLog, { backend: 'json', routes: {} })
+  if (backend === 'json') await ctx.plugin(StorageJson, { root })
+  else await ctx.plugin(StorageSqlite, { path: join(root, 'team.sqlite') })
+  await ctx.plugin(StorageLog, { backend, routes: {} })
   await ctx.plugin(TeamHub)
   await ctx.plugin(AgentRuntime)
   let sequence = 0
@@ -124,7 +126,7 @@ async function team(ctx: Context, dispose = true) {
 }
 
 /** Reconstruct an offline residency report whose process still requires a provider fence. */
-async function recoverableTeam(ctx: Context, maxTokens: number | undefined, preset?: string) {
+async function recoverableTeam(ctx: Context, maxTokens: number | undefined, preset?: string, status: 'offline' | 'idle' = 'offline') {
   const created = await createTestRootTeam(ctx, { goal: { objective: 'Resume a provider-owned epoch.', budgets: {} }, rules: {}, budgets: {} })
   const teamId = created.team.id
   const human = await participant(ctx, teamId, 'human', 'owner')
@@ -146,12 +148,12 @@ async function recoverableTeam(ctx: Context, maxTokens: number | undefined, pres
   proofs.set(bindProof, { kind: 'activation-controller-bind', ...bind })
   await ctx.teams.bindActivation({ actor: bindProof, ...bind })
   proofs.delete(bindProof)
-  const status = { teamId, activationId: binding.activation.id,
-    expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor, status: 'offline' as const }
+  const statusInput = { teamId, activationId: binding.activation.id,
+    expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor, status }
   const statusProof = Object.freeze({}) as TeamSystemActivationProof
-  proofs.set(statusProof, { kind: 'activation-controller-status', ...status,
+  proofs.set(statusProof, { kind: 'activation-controller-status', ...statusInput,
     participantId: coordinator.id, sessionId: binding.sessionId, provider: binding.provider })
-  await ctx.teams.updateActivationStatus({ actor: statusProof, ...status })
+  if (status === 'offline') await ctx.teams.updateActivationStatus({ actor: statusProof, ...statusInput })
   proofs.delete(statusProof)
   unregister()
   const humanAuthorization = await authorize(ctx, teamId, human)
@@ -161,6 +163,119 @@ async function recoverableTeam(ctx: Context, maxTokens: number | undefined, pres
 }
 
 describe('controller recovery admission', () => {
+  it.each(['provider', 'writeback', 'unload'] as const)('keeps accepted stale-fence %s work owned until settlement during close', async (pause) => {
+    let phase = 'service setup'
+    onTestFailed(() => { console.error(`stale-fence close failed during ${phase}`) })
+    const { ctx } = await setup(false, 'sqlite')
+    phase = 'durable fixture creation'
+    const owner = await recoverableTeam(ctx, undefined)
+    phase = 'controller setup'
+    const controller = await ctx.plugin(Controller)
+    const service = ctx.teamActivations
+    const entered = Promise.withResolvers<undefined>()
+    const released = Promise.withResolvers<undefined>()
+    const unregister = ctx.agentRuntimes.registerFencer({ provider: 'admission-runtime', validate() {},
+      async fence() { if (pause !== 'writeback') { entered.resolve(undefined); await released.promise } } })
+    if (pause === 'writeback') {
+      const fence = ctx.teams.fenceActivation.bind(ctx.teams)
+      vi.spyOn(ctx.teams, 'fenceActivation').mockImplementationOnce(async (request) => {
+        entered.resolve(undefined)
+        await released.promise
+        return await fence(request)
+      })
+    }
+    const fencing = ctx.teamActivations.fenceStale(owner.request)
+    phase = 'provider entry'
+    await Promise.race([entered.promise, fencing])
+    await expect(ctx.teamActivations.fenceStale(owner.request)).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+    await expect(ctx.teamActivations.coldReplace({ ...owner.request, signal: new AbortController().signal }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+    await expect(ctx.teamActivations.activate({ teamId: owner.teamId, participantId: owner.coordinator.id,
+      expectedCursor: (await ctx.teams.getTeam({ teamId: owner.teamId })).team.cursor,
+      provider: owner.binding.provider, sessionId: owner.binding.sessionId, seed: { kind: 'resume' },
+      agent: { options: {} }, signal: new AbortController().signal })).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+    let closed = false
+    if (pause === 'unload') unregister()
+    const closing = (pause === 'unload' ? controller.dispose() : service.close()).then(() => { closed = true })
+    try {
+      phase = 'pending close'
+      await new Promise(resolve => setImmediate(resolve))
+      expect(closed).toBe(false)
+      if (pause !== 'unload') await expect(service.fenceStale(owner.request)).rejects.toMatchObject({ code: 'TEAM_DISPOSED' })
+      released.resolve(undefined)
+      phase = 'durable settlement'
+      await Promise.all([fencing, closing])
+      phase = 'durable verification'
+      expect((await ctx.teams.getTeam({ teamId: owner.teamId })).activations[0]).toMatchObject({
+        activation: { status: 'offline' }, quiescenceSource: 'fenced',
+      })
+    } finally {
+      released.resolve(undefined)
+      await Promise.allSettled([fencing, closing])
+      unregister()
+      owner.humanAuthorization.close()
+    }
+  })
+
+  it('rejects stale-fence targets that do not name the exact owned epoch', async () => {
+    const { ctx, handles } = await setup()
+    const owner = await team(ctx, false)
+    const dispose = vi.spyOn(handles[0]!, 'dispose')
+    try {
+      for (const target of [
+        { activationId: activationIdSchema.parse('another-epoch') },
+        { sessionId: SessionId('another-session') },
+        { provider: 'another-provider' },
+      ]) {
+        await expect(ctx.teamActivations.fenceStale({ ...owner.request, ...target }))
+          .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+        expect(dispose).not.toHaveBeenCalled()
+      }
+      await ctx.teamActivations.fenceStale(owner.request)
+      expect(dispose).toHaveBeenCalledOnce()
+      expect((await ctx.teams.getTeam({ teamId: owner.teamId })).activations[0]?.quiescedAt).toBeDefined()
+    } finally { owner.humanAuthorization.close() }
+  })
+
+  it.each(['offline', 'idle'] as const)('requires provider termination evidence for an unowned %s epoch before durable stale fencing', async (status) => {
+    const { ctx } = await setup(false)
+    const owner = await recoverableTeam(ctx, undefined, undefined, status)
+    await ctx.plugin(Controller)
+    const before = await ctx.teams.getTeam({ teamId: owner.teamId })
+    const fence = vi.fn(async () => {}).mockRejectedValueOnce(new Error('Termination unknown'))
+    try {
+      await expect(ctx.teamActivations.fenceStale(owner.request))
+        .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_FENCE_UNAVAILABLE' })
+      expect(await ctx.teams.getTeam({ teamId: owner.teamId })).toEqual(before)
+      const unregister = ctx.agentRuntimes.registerFencer({ provider: 'admission-runtime', validate() {}, fence })
+      try {
+        await expect(ctx.teamActivations.fenceStale(owner.request)).rejects.toThrow('Termination unknown')
+        expect(await ctx.teams.getTeam({ teamId: owner.teamId })).toEqual(before)
+        await ctx.teamActivations.fenceStale(owner.request)
+        expect(fence).toHaveBeenCalledTimes(2)
+        expect(fence).toHaveBeenLastCalledWith({ ...owner.binding, activation: { ...owner.binding.activation, status } })
+        const after = await ctx.teams.getTeam({ teamId: owner.teamId })
+        expect(after.activations[0]?.quiescenceSource).toBe('fenced')
+        expect(after.activations[0]?.quiescedAt).toBeDefined()
+        await ctx.teamActivations.fenceStale(owner.request)
+        expect(fence).toHaveBeenCalledTimes(2)
+      } finally { unregister() }
+    } finally { owner.humanAuthorization.close() }
+  })
+
+  it('does not record a stale fence after human authorization revokes during provider termination', async () => {
+    const { ctx } = await setup(false)
+    const owner = await recoverableTeam(ctx, undefined)
+    await ctx.plugin(Controller)
+    const before = await ctx.teams.getTeam({ teamId: owner.teamId })
+    const unregister = ctx.agentRuntimes.registerFencer({ provider: 'admission-runtime', validate() {},
+      async fence() { owner.humanAuthorization.close() } })
+    try {
+      await expect(ctx.teamActivations.fenceStale(owner.request)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      expect(await ctx.teams.getTeam({ teamId: owner.teamId })).toEqual(before)
+    } finally { unregister(); owner.humanAuthorization.close() }
+  })
+
   it.each([
     ['retired provider', 'provider' as const],
     ['missing fencer', 'fencer' as const],

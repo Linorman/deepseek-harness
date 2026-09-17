@@ -6,8 +6,7 @@
 
 ## 配置
 
-`backend`指定配对的 Hub bridge；`maxTeamsPerDrive`、`pageSize`、`disposalTimeoutMs`和`observerRetryAttempts`是正数部署选择。`pulseIntervalMs`可选，在启动后重复有界 discovery。必须在本 Consumer 之前挂载`/registry` service entry与`/hub` bridge；`inject`会强制该屏障，缺失或 retired backend 会以`TEAM_CLOSURE_DRIVE_BACKEND_UNAVAILABLE`失败。
-重复或回退的 Team-list continuation 会让 discovery pass 以 `TEAM_CURSOR_CONFLICT` 失败，而不会保留同一 cursor 再次扫描。
+`backend`指定配对的 Hub bridge；`maxTeamsPerDrive`、`pageSize`、`disposalTimeoutMs`和`observerRetryAttempts`是正数部署选择。`pulseIntervalMs`可选，在启动后重复有界 discovery。必须在本 Consumer 之前挂载`/registry` service entry与`/hub` bridge；`inject`会强制该屏障，缺失或 retired backend 会以`TEAM_CLOSURE_DRIVE_BACKEND_UNAVAILABLE`失败。 重复或回退的 Team-list continuation 会让 discovery pass 以 `TEAM_CURSOR_CONFLICT` 失败，而不会保留同一 cursor 再次扫描。
 
 ## Backend 协议
 

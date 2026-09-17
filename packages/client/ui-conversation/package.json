@@ -71,7 +71,6 @@
     "@clocky/clocky-tools": "workspace:^",
     "@clocky/clocky-settings": "workspace:^",
     "@clocky/clocky-client-ui-layout": "workspace:^",
-    "@clocky/clocky-goal": "workspace:^",
     "@clocky/clocky-permission-presets": "workspace:^",
     "@clocky/clocky-plan-mode": "workspace:^",
     "@clocky/clocky-tool-todo": "workspace:^"
@@ -93,7 +92,6 @@
     "@clocky/clocky-client-ui-slots": "workspace:^",
     "@clocky/clocky-commands": "workspace:^",
     "@clocky/clocky-compaction": "workspace:^",
-    "@clocky/clocky-goal": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-llm-retry": "workspace:^",
     "@clocky/clocky-permission-presets": "workspace:^",

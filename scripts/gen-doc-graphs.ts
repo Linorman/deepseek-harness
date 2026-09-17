@@ -66,7 +66,6 @@ const GROUP_ORDER = [
   'llm',
   'core',
   'typert',
-  'goal',
   'process',
   'bash',
   'pty',
@@ -75,9 +74,8 @@ const GROUP_ORDER = [
   'fs',
   'skill',
   'compact',
-  'subagent',
+  'compat',
   'tasks',
-  'workflow',
   'web',
   'spill',
   'todo',
@@ -135,7 +133,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session',
     title: 'In-memory session store',
     mode: 'core',
-    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'subagent-inprocess', 'invariants', 'message-feedback'],
+    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'compat-subagent-in-process-driver', 'invariants', 'message-feedback'],
     note: 'Owns append-only Session instances and emits the durable session event feed.',
   },
   {
@@ -299,7 +297,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'tools',
     title: 'Tool registry and guarded execution pipeline',
     mode: 'core',
-    consumers: ['agent-loop', 'tool-ask-user', 'tool-bash', 'tool-cordis', 'tool-fs', 'tool-terminal', 'tool-skill', 'tool-subagent', 'tool-todo', 'tool-web'],
+    consumers: ['agent-loop', 'tool-ask-user', 'tool-bash', 'tool-cordis', 'tool-fs', 'tool-terminal', 'tool-skill', 'compat-tool-subagent', 'tool-todo', 'tool-web'],
     note: 'Registers capabilities, owns Code Mode transport, and routes calls through pre-policy, monotonic guards, around dispatch, post-policy, and final-result observation.',
   },
   {
@@ -361,7 +359,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'agent',
     title: 'Agent service',
     mode: 'core',
-    consumers: ['agent-loop', 'acp', 'subagent-inprocess'],
+    consumers: ['agent-loop', 'acp', 'compat-subagent-in-process-driver', 'team-delegation'],
     note: 'Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation.',
   },
   {
@@ -390,7 +388,7 @@ const SERVICE_ROLES: ServiceRole[] = [
   },
   {
     key: 'goals',
-    pkg: 'goal',
+    pkg: 'compat-goal',
     title: 'Same-session goal domain',
     mode: 'core',
     note: 'Folds revisioned objective state from the session log and keeps live continuation activation process-local.',
@@ -409,7 +407,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Subprocess seam',
     mode: 'seam',
     implementations: ['subprocess-local', 'subprocess-e2b'],
-    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash', 'lsp-stdio', 'subagent-acp'],
+    consumers: ['bash-local', 'bash-sandbox', 'terminal-bash', 'lsp-stdio', 'compat-subagent-acp'],
     note: 'The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP subagent backend spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation.',
   },
   {
@@ -503,11 +501,11 @@ const SERVICE_ROLES: ServiceRole[] = [
   },
   {
     key: 'subagents',
-    pkg: 'subagent',
+    pkg: 'compat-subagent',
     title: 'Subagent provider and continuation service',
     mode: 'seam',
-    implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-clocky-sdk'],
-    consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
+    implementations: ['compat-subagent-spawn-in-process', 'compat-subagent-fork-in-process', 'compat-subagent-acp', 'compat-subagent-clocky-sdk'],
+    consumers: ['compat-tool-subagent', 'compat-tool-subagent-control', 'compat-tool-ralph'],
     note: 'Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route.',
   },
   {
@@ -516,7 +514,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Team work-system Service Definition',
     mode: 'seam',
     implementations: ['team-hub'],
-    consumers: ['team-channel-direct', 'team-channel-task-assignment', 'team-link-local', 'team-link-websocket-hub', 'team-workspace-shared', 'team-agent-client', 'team-activation-recovery', 'command-team-goal', 'tool-team', 'tool-team-goal', 'team-run', 'team-scheduler-dag'],
+    consumers: ['team-channel-direct', 'team-channel-task-assignment', 'team-link-local', 'team-link-websocket-hub', 'team-workspace-shared', 'team-agent-client', 'team-activation-recovery', 'command-team-goal', 'tool-team', 'tool-team-goal', 'team-run', 'team-scheduler-dag', 'team-channel-admission', 'team-channel-summary', 'team-delegation'],
     note: 'Defines independent Team identities, durable provider operations, adapter and policy registration, and post-commit observers; team-hub owns local journals, WALs, fenced task attempts, goal state, admission, receipts, and ephemeral delivery claims, while adapters, workspace providers, local clients, scoped human commands, and scoped report tools consume the public runtime.',
   },
   {
@@ -599,7 +597,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'team-run',
     title: 'Local product Team-run owner',
     mode: 'core',
-    consumers: ['headless', 'web-app', 'tool-team-goal', 'tool-team-task'],
+    consumers: ['headless', 'web-app', 'tool-team-goal', 'tool-team-task', 'team-delegation'],
     note: 'Creates the local default human/coordinator/worker topology, accepts trusted human input, receipts explicit final output, and settles its narrow completed lifecycle without driving an Agent loop.',
   },
   {
@@ -633,7 +631,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Team task workspace registry',
     mode: 'seam',
     implementations: ['team-workspace-shared', 'team-workspace-worktree'],
-    consumers: ['team-scheduler-dag'],
+    consumers: ['team-scheduler-dag', 'team-delegation'],
     note: 'Resolves immutable task workspace modes to providers; the shared provider verifies exact local Session roots, the worktree provider verifies exact current lease ownership before Git allocation, and schedulers query eligibility without allocating roots or waking Agents.',
   },
   {
@@ -659,7 +657,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Background job registry',
     mode: 'seam',
     implementations: ['jobs-local'],
-    consumers: ['tool-bash', 'tool-terminal', 'tool-subagent', 'tool-jobs'],
+    consumers: ['tool-bash', 'tool-terminal', 'compat-tool-subagent', 'tool-jobs'],
     note: 'Producers (background bash, PTY sends, and subagent delegations) register running work; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry.',
   },
   {
@@ -707,11 +705,11 @@ const SERVICE_ROLES: ServiceRole[] = [
   },
   {
     key: 'workflowEngine',
-    pkg: 'workflow',
+    pkg: 'compat-workflow',
     title: 'Workflow script engine',
     mode: 'seam',
-    implementations: ['workflow-worker-thread'],
-    consumers: ['tool-workflow', 'tool-ralph'],
+    implementations: ['compat-workflow-worker-thread'],
+    consumers: ['compat-tool-workflow', 'compat-tool-ralph'],
     note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
   },
   {
@@ -1362,7 +1360,7 @@ export function collectPackageSources(project: TypeScriptProject): PackageSource
   return project.sourceFiles().flatMap((sourceFile): PackageSource[] => {
     const rel = project.relativePath(sourceFile)
     const match = /^packages\/[^/]+\/([^/]+)\/src\/.+\.ts$/.exec(rel)
-    return match?.[1] ? [{ rel, pkg: match[1], sourceFile }] : []
+    return match?.[1] ? [{ rel, pkg: rel.startsWith('packages/compat/') ? `compat-${match[1]}` : match[1], sourceFile }] : []
   }).sort((left, right) => left.rel.localeCompare(right.rel))
 }
 

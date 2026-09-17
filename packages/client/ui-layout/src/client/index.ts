@@ -9,6 +9,7 @@
  */
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
 import type {} from '@clocky/clocky-client-ui-theme/client'
+import type {} from '@clocky/clocky-client-locale/client'
 import type { PanelActions } from './service.ts'
 import { AppFrame } from './AppFrame.tsx'
 import { createLayoutStore } from './stores.ts'
@@ -32,6 +33,8 @@ declare module '@clocky/cordis' {
 
 declare module '@clocky/clocky-client-ui-slots' {
   interface SlotMap {
+    /** Selected Team workspace, independent of the current Session. */
+    'team.workspace': { kind: 'single'; scope: 'root' }
     // The 'root' entry itself is the runtime's built-in slot (declared
     // there); these four are the frame's children, declared by the same
     // register() call that contributes AppFrame. Session owners never pass
@@ -82,6 +85,10 @@ declare module '@clocky/clocky-client-ui-slots' {
      */
     'shell.overlay': { kind: 'list'; scope: 'root' }
   }
+  interface LocaleNamespaceMap {
+    /** Session inspection navigation owned by the application frame. */
+    layout: 'session' | 'back' | 'expand' | 'restore'
+  }
 }
 
 // OwnerShare contracts — the render-side share the slot owner supplies at
@@ -105,7 +112,7 @@ export interface ConvOwnerProps {}
 export interface DetailsOwnerProps {}
 
 /** Required services (cordis fiber inject — the loader passes all module exports as an object plugin). */
-export const inject = ['slots', 'theme']
+export const inject = ['slots', 'theme', 'sessions', 'locale']
 
 /**
  * Client plugin body: provide ctx.layout, then one register() call — AppFrame
@@ -115,11 +122,17 @@ export const inject = ['slots', 'theme']
  */
 export function apply(ctx: ClientContext): void {
   const layout = new LayoutController()
+  ctx.effect(() => ctx.locale.register('layout', {
+    en: { session: 'Execution record', back: 'Back to team', expand: 'Expand', restore: 'Restore' },
+    zh: { session: '执行记录', back: '返回团队', expand: '展开', restore: '还原' },
+  }), 'ui-layout: dictionaries')
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('layout', layout)
     const disposeRegistration = ctx.slots.register({
       name: 'root',
+      locale: 'layout',
       children: {
+        'team.workspace': { kind: 'single', scope: 'root' },
         'sidebar': { kind: 'single', scope: 'root' },
         'conversation': { kind: 'single', scope: 'session-maybe' },
         'details': { kind: 'single', scope: 'session' },
@@ -132,7 +145,7 @@ export function apply(ctx: ClientContext): void {
       // conversation business actions belong to their registrants.
       inject: (actions: PanelActions) => {
         layout.attachPanels(actions)
-        return {}
+        return { closeSession: () => { ctx.sessions.clear() } }
       },
     }, AppFrame)
     return () => {

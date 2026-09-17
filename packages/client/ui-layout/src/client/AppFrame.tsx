@@ -12,7 +12,8 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { PropsRenderSlots, PropsRuntime, PropsStore } from '@clocky/clocky-client-ui-slots'
+import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@clocky/clocky-client-ui-slots'
+import { SessionStage } from './SessionStage.tsx'
 import { computeColumns, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from './columns.ts'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
@@ -20,8 +21,10 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay'>
+  & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay' | 'team.workspace'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
+  & PropsLocale<'layout'>
+  & { closeSession: () => void }
 
 /** Center column grid item (session-body building block). */
 function CenterColumn(props: { children?: ReactNode }) {
@@ -87,10 +90,25 @@ function DragHandle(props: { side: 'sidebar' | 'details'; left: number; onStart:
 export function AppFrame({
   useStore,
   useSessions,
+  useTeamTasks,
+  closeSession,
+  t,
   actions,
   renderSlot,
 }: AppFrameProps) {
   const panels = useStore(s => s)
+  const selectedTeam = useTeamTasks?.(s => s.current)
+  const sessionId = useSessions(s => s.current)
+  const sessionContext = useTeamTasks?.((s) => {
+    const selected = s.selected
+    if (selected === undefined) return undefined
+    const objective = selected.state.metadata?.kind === 'available'
+      ? selected.state.metadata.goal.objective : selected.state.goal.objective.text
+    const coordinator = selected.state.coordinator
+    return coordinator.kind === 'bound' && coordinator.binding.sessionId === sessionId
+      ? `${objective} / ${coordinator.name.text}` : objective
+  })
+  const inspecting = selectedTeam !== undefined
   const detailsSession = useSessions((s) => {
     const current = s.current
     return current !== undefined && s.byId[current]?.blank === false ? current : undefined
@@ -165,12 +183,13 @@ export function AppFrame({
     <div
       ref={frameRef}
       className={css.frame}
-      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr) ${cols.details}px` }}
+      style={{ gridTemplateColumns: `${cols.sidebar}px minmax(0, 1fr)` }}
+      data-team-workspace={inspecting || undefined}
       data-sidebar-collapsed={sidebarCollapsed || undefined}
       data-details-collapsed={cols.details === 0 || undefined}
       data-dragging={dragging || undefined}
     >
-      <div className={css.sidebarCol}>
+      <div className={css.sidebarCol} data-clocky-navigation>
         {/* Render-site slot call with live concession output: a closed
             sidebar keeps the mounted slot at the compact-rail width, and the
             component sees its rendered state as owner params decided here
@@ -187,15 +206,23 @@ export function AppFrame({
             the shell's own pending rendering. The conversation
             is session-maybe; the strict details entry naturally renders
             empty while no session is current. */}
-        <CenterColumn>{renderSlot('conversation', {})}</CenterColumn>
-        <DetailsColumn>{renderSlot('details', {})}</DetailsColumn>
+        <CenterColumn>
+          {renderSlot('team.workspace', {})}
+          <SessionStage inspecting={inspecting} visible={!inspecting || sessionId !== undefined}
+            title={t('session')} context={sessionContext} backLabel={t('back')} expandLabel={t('expand')} restoreLabel={t('restore')} close={closeSession}>
+            <div className={css.sessionColumns} data-session-columns style={{ gridTemplateColumns: `minmax(0, 1fr) ${cols.details}px` }}>
+              <CenterColumn>{renderSlot('conversation', {})}</CenterColumn>
+              <DetailsColumn>{renderSlot('details', {})}</DetailsColumn>
+            </div>
+          </SessionStage>
+        </CenterColumn>
       </>
       <div className={css.overlayLayer} data-shell-overlay>
         {renderSlot('shell.overlay', {})}
       </div>
       {/* The collapsed rail is fixed-width: no resize handle while closed. */}
       {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
+      {!inspecting && cols.details > 0 && <DragHandle side="details" left={viewport - cols.details} onStart={onDetailsStart} onDrag={onDetailsDrag} onEnd={onDragEnd} />}
     </div>
   )
 }

@@ -1,8 +1,10 @@
+import type { TeamLoadedContext } from './TeamPage.tsx'
+import type { TeamTaskDetailState, ITeamTasks } from '@clocky/clocky-client-runtime/client'
 /** Revision-fenced task authoring, review, and artifact integration forms. */
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button, Input, Modal } from '@clocky/clocky-client-ui-primitives'
-import type { ParticipantId, TeamManagementCommand, TeamTaskId, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
+import type { ParticipantId, TeamManagementCommand, TeamTaskId } from '@clocky/clocky-client-runtime/client'
 import type { TeamKey } from './locales.ts'
 import css from './TeamBrowser.module.css'
 
@@ -17,21 +19,26 @@ export type TeamTaskDialogTarget = { readonly kind: 'taskCreate' }
  * @param props - task target, current Team, locale, and authenticated mutation owner.
  * @returns an application dialog retaining fields across rejected mutations.
  */
-export function TeamTaskDialog({ target, state, translate: t, manage, onClose }: {
+export function TeamTaskDialog({ target, state, inspection, readTaskDetail, translate: t, manage, onClose }: {
+  readonly inspection?: TeamTaskDetailState | undefined
+  readonly readTaskDetail?: ITeamTasks['readTaskDetail']
   readonly target: TeamTaskDialogTarget
-  readonly state: TeamTaskSelection['state']
+  readonly state: TeamLoadedContext
   readonly translate: (key: TeamKey, vars?: Record<string, unknown>) => string
   readonly manage: (command: TeamManagementCommand, signal?: AbortSignal) => Promise<void>
   readonly onClose: () => void
 }) {
   const id = useId()
-  const task = 'taskId' in target ? state.tasks.find(item => item.id === target.taskId) : undefined
+  const detail = 'taskId' in target && inspection?.taskId === target.taskId && inspection.teamId === state.team.id ? inspection : undefined
+  const task = detail?.record.value?.task
   const [baselineRevision, setBaselineRevision] = useState(task?.revision)
-  const revisionChanged = !['taskCreate', 'taskIntegrate'].includes(target.kind) && task?.revision !== baselineRevision
+  const revisionChanged = target.kind !== 'taskCreate' && (task?.revision !== baselineRevision || detail?.hasNewer === true)
+  const reading = detail?.record.loading === true || detail?.latest.loading === true || detail?.disconnected === true
+    || detail?.record.error !== undefined || detail?.latest.error !== undefined
   const unavailable = (target.kind === 'taskReview' && task?.phase !== 'review')
     || (target.kind === 'taskUpdate' && (task?.phase !== 'pending' || task.lease !== undefined))
     || (target.kind === 'taskIntegrate' && task?.phase !== 'completed')
-  const reviewedAttempt = task?.attemptHistory.at(-1)
+  const reviewedAttempt = detail?.latest.value
   const creating = target.kind === 'taskCreate' || target.kind === 'taskIntegrate'
   const [subject, setSubject] = useState(target.kind === 'taskIntegrate' ? t('taskForm.integrateSubject', { subject: task?.subject ?? '' }) : task?.subject ?? '')
   const [description, setDescription] = useState(target.kind === 'taskIntegrate' ? '' : task?.description ?? '')
@@ -56,7 +63,9 @@ export function TeamTaskDialog({ target, state, translate: t, manage, onClose }:
   const [integrationTarget, setIntegrationTarget] = useState('')
   const [expectedTarget, setExpectedTarget] = useState('')
   const [integrationMode, setIntegrationMode] = useState<'proposal' | 'integrate'>('proposal')
-  const completedAttempts = task?.attemptHistory.filter(attempt => attempt.outcome.kind === 'completed') ?? []
+  const completedAttempts = [...new Map([...(detail?.attempts.value?.items ?? []),
+    ...(detail?.latest.value === undefined ? [] : [detail.latest.value])].filter(attempt => attempt.outcome.kind === 'completed')
+    .map(attempt => [attempt.id, attempt])).values()]
   const [sourceAttemptId, setSourceAttemptId] = useState(completedAttempts.at(-1)?.id)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -81,7 +90,7 @@ export function TeamTaskDialog({ target, state, translate: t, manage, onClose }:
     'aria-describedby': invalid === field ? `${id}-error` : undefined,
   })
   const submit = async (): Promise<void> => {
-    if (request.current !== undefined || revisionChanged || unavailable) return
+    if (request.current !== undefined || revisionChanged || unavailable || reading) return
     setError(undefined); setInvalid(undefined)
     let command: TeamManagementCommand
     if (target.kind === 'taskReview') {
@@ -152,15 +161,20 @@ export function TeamTaskDialog({ target, state, translate: t, manage, onClose }:
   const footer = <div className={css.actions}>
     <Button data-task-dialog-cancel disabled={busy} onClick={close}>{t('cancel')}</Button>
     {busy && <Button onClick={() => { request.current?.abort(); setError(t('manage.cancelledRead')) }}>{t('detail.cancelRead')}</Button>}
-    <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || revisionChanged || unavailable}>{title}</Button>
+    <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || revisionChanged || unavailable || reading}>{title}</Button>
   </div>
   return <Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent ?? ''}>
     <form id={`${id}-form`} ref={form} noValidate className={css.managementForm} onSubmit={(event) => { event.preventDefault(); void submit() }}>
+      {detail?.record.error !== undefined && <p role="alert">{detail.record.error}</p>}
+      {detail?.latest.error !== undefined && <p role="alert">{detail.latest.error}</p>}
       {unavailable && <p className={css.notice} role="status">{t('taskForm.unavailable')}</p>}
       {revisionChanged && !unavailable && <div className={css.notice} role="status">
         <p>{t('taskForm.changed')}</p>
         {target.kind === 'taskUpdate' && <p>{task?.subject} · {task?.description}</p>}
-        <Button onClick={() => { setBaselineRevision(task?.revision); setError(undefined) }}>{t('taskForm.useLatest')}</Button>
+        <Button disabled={reading} onClick={() => {
+          if (detail?.hasNewer) void readTaskDetail?.(detail.teamId, detail.taskId)
+          else { setBaselineRevision(task?.revision); setError(undefined) }
+        }}>{t(detail?.hasNewer ? 'taskView.refresh' : 'taskForm.useLatest')}</Button>
       </div>}
       {target.kind === 'taskReview' ? <>
         <p><strong>{task?.subject}</strong></p>
@@ -216,6 +230,13 @@ export function TeamTaskDialog({ target, state, translate: t, manage, onClose }:
         </>}
         {target.kind === 'taskIntegrate' && <>
           <fieldset id={`${id}-attempt`} tabIndex={-1} className={css.managementChoices} disabled={busy}><legend>{t('taskForm.sourceAttempt')}</legend>
+            {detail !== undefined && readTaskDetail !== undefined && <>
+              <Button size="sm" disabled={detail.attempts.loading || reading || revisionChanged}
+                onClick={() => { void readTaskDetail(detail.teamId, detail.taskId, 'attempts', 'first') }}>{t('detail.firstPage')}</Button>
+              {detail.attempts.value?.nextCursor !== undefined && <Button size="sm" disabled={detail.attempts.loading || reading || revisionChanged}
+                onClick={() => { void readTaskDetail(detail.teamId, detail.taskId, 'attempts', 'next') }}>{t('taskView.nextHistory')}</Button>}
+              {detail.attempts.error !== undefined && <p role="alert">{detail.attempts.error}</p>}
+            </>}
             {completedAttempts.map(attempt => <label key={attempt.id}><input type="radio" name={`${id}-attempt`} checked={sourceAttemptId === attempt.id} onChange={() => { setSourceAttemptId(attempt.id) }} />{attempt.id}</label>)}
           </fieldset>
           <label htmlFor={`${id}-provider`}>{t('taskForm.integrationProvider')}</label><Input {...fieldA11y('provider')} disabled={busy} value={provider} onChange={(event) => { setProvider(event.target.value) }} />

@@ -121,12 +121,12 @@ export class AppWebEntry {
       this.page.setState(entry.options.name, STATE_LABELS[entry.fiber.state])
     })
 
-    const rows = this.manifest.plugins.map(row => row.id)
+    const rows = this.manifest.plugins
     this.page.setTotal(rows.length)
     await prefetching
-    await Promise.all(rows.map(async (name) => {
+    await Promise.all(rows.map(async ({ id: name, config }) => {
       this.page.setState(name, 'loading')
-      const id = await loader.create({ name })
+      const id = await loader.create({ name, ...config === undefined ? {} : { config: structuredClone(config) } })
       if (loader.resolve(id).fiber === undefined) this.page.setState(name, 'failed')
     }))
 

@@ -14,7 +14,7 @@ import {
   StorageError,
 } from '@clocky/clocky-storage'
 import type {
-  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor,
+  LogAppendOptions, LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor,
 } from '@clocky/clocky-storage'
 import { writeAtomic } from './atomic.ts'
 import { parseLog, serializeLog } from './log-format.ts'
@@ -85,9 +85,10 @@ class JsonLogStream implements LogStream {
   get firstSequence(): number { return this.state.firstSequence ?? 0 }
   get tailSequence(): number { return tailOf(this.state) }
 
-  async append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult> {
+  async append(expectedSequence: number, values: readonly unknown[], options?: LogAppendOptions): Promise<LogAppendResult> {
     assertSequence('expectedSequence', expectedSequence)
     if (values.length === 0) throw new Error(`log stream '${this.name}' append values must be non-empty`)
+    const summary = options === undefined ? undefined : jsonSnapshot(options.summary, `log stream '${this.name}' summary`)
     const snapshots = values.map(value => jsonSnapshot(value, `log stream '${this.name}' append value`))
     return await this.enqueue(async () => {
       const tail = tailOf(this.state)
@@ -101,7 +102,7 @@ class JsonLogStream implements LogStream {
         ...this.state.entries,
         ...snapshots.map((value, index) => ({ sequence: tail + index + 1, value })),
       ]
-      const next: LogState = { ...this.state, entries: nextEntries }
+      const next: LogState = { ...this.state, entries: nextEntries, summary }
       await writeAtomic(this.path, serializeLog(this.descriptor, next))
       this.state = next
       return { tailSequence: tailOf(next) }

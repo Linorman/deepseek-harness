@@ -2,7 +2,6 @@
 
 import type { Context } from '@clocky/cordis'
 import commandsRemote from '@clocky/clocky-commands/remote'
-import goalsRemote from '@clocky/clocky-goal/remote'
 import dynamicRemote from '@clocky/clocky-cordis-host-runner/remote'
 import fileReferencesRemote from '@clocky/clocky-file-reference/remote'
 import pluginInventoryRemote from '@clocky/clocky-host-plugin-inventory/remote'
@@ -14,7 +13,6 @@ export type { TypertClientRemote as ClientRemote } from '@clocky/clocky-typert-p
 export type { PluginInventorySnapshot } from '@clocky/clocky-host-plugin-inventory/types'
 export type {} from '@clocky/clocky-commands/remote'
 export type {} from '@clocky/clocky-file-reference/remote'
-export type {} from '@clocky/clocky-goal/remote'
 export type {} from '@clocky/clocky-host-plugin-inventory/remote'
 export type {} from '@clocky/clocky-message-feedback/remote'
 export type {} from '@clocky/clocky-session-reference/remote'
@@ -115,7 +113,7 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposers: Array<() => Promise<void>> = []
   try {
     for (const contribution of [
-      commandsRemote, goalsRemote, dynamicRemote, fileReferencesRemote,
+      commandsRemote, dynamicRemote, fileReferencesRemote,
       pluginInventoryRemote, messageFeedbackRemote, sessionReferencesRemote,
     ]) {
       disposers.push(await ctx.remote.$mount(contribution))

@@ -20,7 +20,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  BrandPlaceholderMark, BrandPlaceholderWordmark, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
+  BrandPlaceholderMark, IconNewChatOutline16, IconPanelLeftOutline16, Tooltip,
 } from '@clocky/clocky-client-ui-primitives'
 import type { SidebarRootComponentProps } from './contract/slots.ts'
 import css from './SidebarRoot.module.css'
@@ -143,14 +143,7 @@ export function SidebarRoot({
               </span>
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
-                  fallback: (
-                    <>
-                      <BrandPlaceholderWordmark size={24} />
-                      {process.env.CLOCKY_CLIENT_COMMIT_HASH
-                        ? <span className={css.buildRevision}>{process.env.CLOCKY_CLIENT_COMMIT_HASH}</span>
-                        : null}
-                    </>
-                  ),
+                  fallback: <span title={process.env.CLOCKY_CLIENT_COMMIT_HASH}>{t('brand.name')}</span>,
                 })}
               </span>
             </span>

@@ -17,7 +17,7 @@ import { StorageError } from '@clocky/clocky-storage'
  * row). Bumped only on a breaking change to the table layout; any other
  * stamped version rejects — this unreleased format has no migrations.
  */
-export const STORAGE_SQLITE_SCHEMA_VERSION = 2
+export const STORAGE_SQLITE_SCHEMA_VERSION = 3
 
 /**
  * Journal modes the backend will run under. `wal` is the default; the
@@ -103,7 +103,8 @@ function configureDatabase(db: DatabaseSync, path: string, journalMode: JournalM
     CREATE TABLE IF NOT EXISTS log_streams (
       name          TEXT PRIMARY KEY,
       version       INTEGER NOT NULL,
-      tail_sequence INTEGER NOT NULL
+      tail_sequence INTEGER NOT NULL,
+      summary       TEXT
     ) STRICT
   `)
   db.exec(`

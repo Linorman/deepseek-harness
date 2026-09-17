@@ -261,7 +261,6 @@ export function gatesForMode(selected: Mode): Gate[] {
           docTypecheckEnv: { CLOCKY_DOC_TYPECHECK_USE_BUILD_OUTPUT: '1' },
           docTypecheckScript: 'doc-typecheck:contracts-ready',
         }),
-        pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
       ]
     case 'hygiene':
       return [
@@ -277,6 +276,7 @@ export function gatesForMode(selected: Mode): Gate[] {
 
 function ciSharedStaticGates(): Gate[] {
   return [
+    pnpmScript('source-outputs', 'verify-source-outputs'),
     pnpmScript('runtime-closure', 'verify-runtime-closure', { label: 'runtime closure' }),
     pnpmScript('constraints', 'constraints'),
     pnpmScript('legacy-cutover', 'verify-legacy-cutover', { label: 'legacy cutover' }),
@@ -299,7 +299,7 @@ function ciPrimaryGates(): Gate[] {
     ...ciSharedStaticGates(),
     typertContractsGate(),
     pnpmScript('typecheck', 'typecheck:contracts-ready', { needs: ['typert-contracts'] }),
-    lintGate({ needs: ['typert-contracts'] }),
+    lintGate({ needs: ['typecheck'] }),
     pnpmScript('duplication', 'duplication'),
     ...coverageGates(),
     changedPackageCoverageGate(['coverage', 'coverage-exempt-heavy']),
@@ -309,7 +309,6 @@ function ciPrimaryGates(): Gate[] {
       docTypecheckNeeds: ['typert-contracts'],
       docTypecheckScript: 'doc-typecheck:contracts-ready',
     }),
-    pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
     pnpmScript('knip', 'knip'),
     // The prepared typecheck and build both drive Client tsc, while build also
     // repeats the Host contract pass. Wait for all three consumers so build
@@ -350,7 +349,7 @@ function nodeCompatSmokeGates(options: { cliSmoke?: boolean } = {}): Gate[] {
     pnpmExec('source-worker-smoke', [
       'vitest',
       'run',
-      'packages/workflow/workflow-worker-thread/tests/source-worker.compat.spec.ts',
+      'packages/compat/workflow-worker-thread/tests/source-worker.compat.spec.ts',
     ], { label: 'source worker smoke' }),
     pnpmExec('jsonl-zstd-smoke', [
       'vitest',
@@ -408,7 +407,6 @@ function ciStaticGates(options: { ownsBuild: boolean }): Gate[] {
         : {},
       docsBuildScript: 'docs:build:mpa',
     }),
-    pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
     pnpmScript('knip', 'knip'),
   ]
 }
@@ -666,6 +664,7 @@ function flagEnabled(envName: string): boolean {
 function hygieneLeafGates(options: { artifactNeeds?: string[] } = {}): Gate[] {
   const artifactOptions = options.artifactNeeds === undefined ? {} : { needs: options.artifactNeeds }
   return [
+    pnpmScript('source-outputs', 'verify-source-outputs'),
     pnpmScript('rescope-vendor', 'rescope-vendor:check', { label: 'vendor rescope' }),
     pnpmScript('knip', 'knip'),
     pnpmScript('publint', 'publint', artifactOptions),
@@ -716,6 +715,7 @@ function docSyncLeafGates(options: {
     pnpmScript('tool-catalog', 'verify-tool-catalog', { label: 'tool catalog' }),
     pnpmScript('config-catalog', 'verify-config-catalog', { label: 'config catalog' }),
     pnpmScript('persistence-catalog', 'verify-persistence-catalog', { label: 'persistence catalog' }),
+    pnpmScript('module-graph', 'verify-module-graph', { label: 'module graph' }),
     pnpmScript('public-repository-links', 'verify-public-repository-links', { label: 'public repository links' }),
     pnpmScript('doc-refs', 'verify-doc-refs', { label: 'doc refs' }),
     pnpmScript('package-paths', 'verify-package-paths', { label: 'package paths' }),
@@ -749,7 +749,7 @@ function builtBinSmokeGate(needs: string[] = ['build']): Gate {
     // Built execution consumers: the only automated proof that package-name
     // imports reach their lib/ entrypoints under plain Node. The e2e lane runs
     // unbuilt, so these files self-skip there.
-    'packages/workflow/workflow-worker-thread/tests/built-worker.e2e.ts',
+    'packages/compat/workflow-worker-thread/tests/built-worker.e2e.ts',
     'packages/code-runtime/code-runtime-worker-thread/tests/built-lib.e2e.ts',
     'packages/lsp/lsp-stdio/tests/built-lib.e2e.ts',
   ], {

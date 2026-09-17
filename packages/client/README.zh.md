@@ -24,7 +24,6 @@ clocky web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共�
 | [`ui-workspace/`](ui-workspace/README.zh.md) | 为非产品组合提供 Workspace 界面。 |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面。 |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树和按工具键控的视图。 |
-| [`ui-goal/`](ui-goal/README.zh.md) | 展示和管理当前目标。 |
 | [`ui-trajectory/`](ui-trajectory/README.zh.md) | 提供 agent（智能体）活动的其他视图。 |
 | [`ui-commands/`](ui-commands/README.zh.md) | 提供会话感知的命令发现与分发。 |
 | [`ui-input-trigger/`](ui-input-trigger/README.zh.md) | 协调内联命令和引用建议。 |

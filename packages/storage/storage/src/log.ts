@@ -42,6 +42,20 @@ export interface LogStreamInfo extends LogStreamDescriptor {
   readonly checkpointSequence?: number
 }
 
+/** Consumer metadata at an exact durable tail; it cannot authorize log compaction. */
+export interface LogSummary {
+  /** Tail of the batch that atomically committed this summary. */
+  readonly sequence: number
+  /** Detached JSON metadata; it need not reconstruct journal history. */
+  readonly value: unknown
+}
+
+/** Optional consumer projection committed atomically with an append batch. */
+export interface LogAppendOptions {
+  /** JSON projection of the resulting tail; omission clears any previous summary. */
+  readonly summary: unknown
+}
+
 /** Result of one successful atomic append. */
 export interface LogAppendResult {
   /** Tail sequence after the complete batch is durable. */
@@ -72,12 +86,36 @@ export interface LogFacet {
    */
   open(descriptor: LogStreamDescriptor): Promise<LogStream>
 
+  /** Read the consumer summary without opening or replaying journal entries.
+   * Missing streams or absent summaries return undefined. Format mismatches and
+   * metadata exceeding maxBytes reject; this method does not validate history.
+   * @param descriptor - Exact stream identity and durable format.
+   * @param maxBytes - Positive maximum bytes read/materialized for metadata.
+   * @returns the summary at the atomically observed durable tail.
+   */
+  readSummary?(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined>
+
   /**
    * Enumerate materialized streams. A malformed stream rejects rather than
    * hiding durable state from recovery.
    * @returns stream metadata in stable name order.
    */
   list(): Promise<readonly LogStreamInfo[]>
+
+  /** Scan names without opening journals or materializing log values.
+   * Each yielded value accounts for at most one directory entry or indexed row;
+   * undefined accounts for an examined entry outside the requested prefix.
+   * @param prefix - UTF-8 stream-name prefix selected by the consumer.
+   * @param maxNameBytes - Maximum decoded name size; oversized names reject.
+   * @returns a caller-owned iterator whose return closes retained scan resources.
+   */
+  scanNames?(prefix: string, maxNameBytes: number): AsyncIterable<string | undefined>
+
+  /** Check materialization without reading journal values.
+   * @param name - Exact stream name.
+   * @returns whether a durable stream document or metadata row exists.
+   */
+  has?(name: string): Promise<boolean>
 }
 
 /**
@@ -97,9 +135,10 @@ export interface LogStream extends LogStreamDescriptor {
    * `sequence-conflict`.
    * @param expectedSequence - Tail observed by the caller, or -1 for an empty stream.
    * @param values - Non-empty JSON-serializable values to append atomically.
+   * @param options - Optional tail summary; omission invalidates the previous summary.
    * @returns the tail after the batch is durable.
    */
-  append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult>
+  append(expectedSequence: number, values: readonly unknown[], options?: LogAppendOptions): Promise<LogAppendResult>
 
   /**
    * Read at most `limit` entries strictly after `afterSequence`, preserving

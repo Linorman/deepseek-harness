@@ -12,8 +12,7 @@
 
 ## 配置
 
-`provider`、`profile`和 `hostId`均为必填，且必须是没有首尾空白的非空值。`kind`默认为 `sdk-local-cold-replace`，且必须匹配 provider 的 durable plan。`pulseIntervalMs` 可选地启用有界重复 scan。`pageSize`默认每页发现 128 个 Team；`supervisorHosts`添加准确远程执行主机。卸载先等待已接纳 pulse 工作结算，再释放 proof owner。请在受控 Hub-start window 中、匹配的 runtime provider 和 activation controller 之后挂载此 Consumer。
-重复或回退的 Team-list continuation 会让 startup recovery 以 `TEAM_CURSOR_CONFLICT` 失败，而不会重复扫描同一 page。
+`provider`、`profile`和 `hostId`均为必填，且必须是没有首尾空白的非空值。`kind`默认为 `sdk-local-cold-replace`，且必须匹配 provider 的 durable plan。`pulseIntervalMs` 可选地启用有界重复 scan。`pageSize`默认每页发现 128 个 Team；`supervisorHosts`添加准确远程执行主机。卸载先等待已接纳 pulse 工作结算，再释放 proof owner。请在受控 Hub-start window 中、匹配的 runtime provider 和 activation controller 之后挂载此 Consumer。 重复或回退的 Team-list continuation 会让 startup recovery 以 `TEAM_CURSOR_CONFLICT` 失败，而不会重复扫描同一 page。
 
 ## 模型体验
 

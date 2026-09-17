@@ -23,7 +23,7 @@ Host 服务访问都无法编译。
 
 import 一个 Client 包——无论值还是类型——都会把它整个 TypeScript 工程、以及它引用的每个工程
 拉进 **Host 构建图**。这已经坑过本 lane 一次：四个 Client 消费方包引用了 `api/remotes` 的
-Client face，而该 face 必须等 Host tsdown 生成 `@clocky/clocky-goal/remote` 之后才能编译，
+Client face，而该 face 必须等 Host tsdown 生成 `@clocky/clocky-compat-goal/remote` 之后才能编译，
 于是 Host 构建阶段变成在等一个由它自己产出的产物。
 
 当某个场景需要 Client 持有的常量或纯函数时，改为在此处镜像一份，并紧挨着一条注释掉的

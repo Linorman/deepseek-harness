@@ -102,6 +102,48 @@ it('shows an unsupported details format without constructing a guessed question 
   expect(view.queryByRole('button', { name: 'Submit answers' })).toBeNull()
 })
 
+it('keeps a typed answer when new requests are advertised and asks before loading them', async () => {
+  const request = action('question')
+  const item: TeamInboxPage['items'][number] = { kind: 'action', sequence: 0, teamId: request.teamId,
+    principalId: 'principal' as never, recipientId: 'human' as never, action: request, text: 'question' }
+  const owners = controls(request)
+  const onClose = vi.fn()
+  const openTeam = async () => {}
+  const state = inboxState([item])
+  const view = render(<TeamInboxDialog state={state} teams={[]} translate={makeTranslate(en)}
+    onClose={onClose} openTeam={openTeam} {...owners} />)
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await view.findByRole('button', { name: 'Submit answers' })
+  fireEvent.change(view.getByLabelText('Other answer'), { target: { value: 'Keep my answer while new work arrives' } })
+  view.rerender(<TeamInboxDialog state={{ ...state, hasNewer: true }} teams={[]} translate={makeTranslate(en)}
+    onClose={onClose} openTeam={openTeam} {...owners} />)
+  expect((view.getByLabelText('Other answer') as HTMLTextAreaElement).value).toBe('Keep my answer while new work arrives')
+  expect(owners.loadMoreInbox).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Load new messages' }))
+  expect(owners.loadMoreInbox).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Keep editing' }))
+  expect((view.getByLabelText('Other answer') as HTMLTextAreaElement).value).toBe('Keep my answer while new work arrives')
+})
+
+it('requires confirmation before replacing an inbox page with unsent answers', async () => {
+  const request = action('question')
+  const item: TeamInboxPage['items'][number] = { kind: 'action', sequence: 0, teamId: request.teamId,
+    principalId: 'principal' as never, recipientId: 'human' as never, action: request, text: 'question' }
+  const owners = controls(request)
+  const view = render(<TeamInboxDialog state={{ ...inboxState([item]), nextCursor: 0 }} teams={[]} translate={makeTranslate(en)}
+    onClose={vi.fn()} openTeam={async () => {}} {...owners} />)
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await view.findByRole('button', { name: 'Submit answers' })
+  fireEvent.change(view.getByLabelText('Other answer'), { target: { value: 'Preserve this answer' } })
+  fireEvent.click(view.getByRole('button', { name: 'Next page' }))
+  expect(owners.loadMoreInbox).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Keep editing' }))
+  expect((view.getByLabelText('Other answer') as HTMLTextAreaElement).value).toBe('Preserve this answer')
+  fireEvent.click(view.getByRole('button', { name: 'Next page' }))
+  fireEvent.click(view.getByRole('button', { name: 'Discard and continue' }))
+  await waitFor(() => { expect(owners.loadMoreInbox).toHaveBeenCalledOnce() })
+})
+
 it('folds append-only action revisions and confirms before discarding a typed answer', async () => {
   const request = action('question')
   const principalId = 'principal' as TeamInboxPage['items'][number]['principalId']
@@ -129,4 +171,27 @@ it('folds append-only action revisions and confirms before discarding a typed an
   await waitFor(() => { expect(onClose).toHaveBeenCalledOnce() })
   view.unmount()
   await act(async () => { await Promise.resolve() })
+})
+
+it('offers explicit retained-history recovery after an inbox compaction error', async () => {
+  const request = action('question')
+  const recoverInbox = vi.fn(async () => {})
+  const item: TeamInboxPage['items'][number] = { kind: 'action', sequence: 0, teamId: request.teamId,
+    principalId: 'principal' as never, recipientId: 'human' as never, action: request, text: 'Question' }
+  const state = { ...inboxState([item]), phase: 'error' as const,
+    error: { code: 'team-inbox-compacted' as const, message: 'Earlier history is unavailable', details: { firstCursor: 8 } } }
+  const view = render(<TeamInboxDialog {...controls(request)} recoverInbox={recoverInbox} state={state} teams={[]}
+    translate={makeTranslate(en)} onClose={() => {}} openTeam={async () => {}} />)
+  expect(recoverInbox).not.toHaveBeenCalled()
+  expect(view.getByText('Earlier inbox history is no longer retained.')).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: 'Check current request' }))
+  await view.findByRole('button', { name: 'Submit answers' })
+  fireEvent.change(view.getByLabelText('Other answer'), { target: { value: 'Keep my answer' } })
+  fireEvent.click(view.getByRole('button', { name: 'View retained history' }))
+  expect(recoverInbox).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Keep editing' }))
+  expect((view.getByLabelText('Other answer') as HTMLTextAreaElement).value).toBe('Keep my answer')
+  fireEvent.click(view.getByRole('button', { name: 'View retained history' }))
+  fireEvent.click(view.getByRole('button', { name: 'Discard and continue' }))
+  await waitFor(() => { expect(recoverInbox).toHaveBeenCalledOnce() })
 })

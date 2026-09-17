@@ -13,9 +13,9 @@ import {
   resolveAgentWorkspaceRoot,
 } from '@clocky/clocky-agent'
 import type { Agent, AgentCancelCause, AgentWorkspaceLease, PreStepDecision } from '@clocky/clocky-agent'
-import { createUserMessage, freezeMessage, MessageId } from '@clocky/clocky-llm'
+import { freezeMessage, MessageId } from '@clocky/clocky-llm'
 import type { UserMessage } from '@clocky/clocky-llm'
-import { TeamLinkError } from '@clocky/clocky-team-link'
+import { TeamLinkConnectionError, TeamLinkError } from '@clocky/clocky-team-link'
 import type {
   TeamLink,
   TeamLinkBoundLinkBorrower,
@@ -82,6 +82,7 @@ import type {
   TeamStateSnapshot,
   TeamReviewAssignmentSource,
   TeamTaskAssignmentSource,
+  TaskAttemptFailure,
   TaskLeaseSnapshot,
   TeamTaskSnapshot,
   TeamActorProofLease,
@@ -103,6 +104,8 @@ const DEFAULT_DISPOSAL_TIMEOUT_MS = 5_000
 const DEFAULT_RECONNECT_DELAY_MS = 100
 const DEFAULT_WORKSPACE_MUTATION_MAX_ATTEMPTS = 3
 const DEFAULT_TASK_OUTPUT_CONTINUATIONS = 3
+const DEFAULT_TASK_REPORT_REMINDERS = 1
+const DEFAULT_TASK_HANDOFF_BYTES = 16_384
 const DIRECT_CHANNEL_V1_KEY = adapterKey(DIRECT_CHANNEL_ADAPTER_V1)
 const DIRECT_CHANNEL_V2_KEY = adapterKey(DIRECT_CHANNEL_ADAPTER_V2)
 const DIRECT_CHANNEL_V3_KEY = adapterKey(DIRECT_CHANNEL_ADAPTER_V3)
@@ -122,6 +125,10 @@ export interface Config {
   readonly consumeWorkspace?: boolean
   /** Maximum automatic continuation turns after a worker reaches the model output limit. */
   readonly maxTaskOutputContinuations?: number
+  /** Maximum reminders after a worker ends normally without reporting its running attempt; zero disables this recovery. */
+  readonly maxTaskReportReminders?: number
+  /** Maximum UTF-8 bytes of prior-attempt evidence appended to a new assignment, including truncation notice. */
+  readonly maxTaskHandoffBytes?: number
 }
 
 /** Schemastery validator for {@link Config}. */
@@ -131,6 +138,8 @@ export const Config: z<Config> = z.object({
   reconnectDelayMs: z.number().step(1).min(1).default(DEFAULT_RECONNECT_DELAY_MS),
   workspaceMutationMaxAttempts: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_WORKSPACE_MUTATION_MAX_ATTEMPTS),
   consumeWorkspace: z.boolean().default(false),
+  maxTaskHandoffBytes: z.number().step(1).min(128).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_TASK_HANDOFF_BYTES),
+  maxTaskReportReminders: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_TASK_REPORT_REMINDERS),
   maxTaskOutputContinuations: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_TASK_OUTPUT_CONTINUATIONS),
 })
 
@@ -189,7 +198,9 @@ interface ResolvedConfig {
   readonly reconnectDelayMs: number
   readonly workspaceMutationMaxAttempts: number
   readonly consumeWorkspace: boolean
+  readonly maxTaskReportReminders: number
   readonly maxTaskOutputContinuations: number
+  readonly maxTaskHandoffBytes: number
 }
 
 /** One Client-owned Link lifetime for a still-current local Agent binding. */
@@ -283,7 +294,7 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
   private readonly workspaceLossDisposers = new Map<string, () => void>()
   private readonly workspaceLossOperations = new Map<string, Promise<void>>()
   private readonly workspaceReleaseOperations = new Map<string, Promise<void>>()
-  private readonly taskOutputContinuations = new Map<string, number>()
+  private readonly taskTurnOperations = new Map<number, Promise<void>>()
   private readonly physicallyReleasedWorkspaces = new Set<string>()
   private readonly reconnectTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private readonly accepted = new Set<Promise<void>>()
@@ -300,6 +311,8 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
   private readonly workspaceMutationMaxAttempts: number
   private closeAdmissionSettled = false
   private readonly consumeWorkspace: boolean
+  private readonly maxTaskHandoffBytes: number
+  private readonly maxTaskReportReminders: number
   private readonly maxTaskOutputContinuations: number
   private readonly binding: Binding
   private readonly onTerminate: ((reason: TeamLinkTerminationReason) => Promise<void>) | undefined
@@ -320,6 +333,8 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     this.workspaceMutationMaxAttempts = resolved.workspaceMutationMaxAttempts
     this.consumeWorkspace = resolved.consumeWorkspace
     this.maxTaskOutputContinuations = resolved.maxTaskOutputContinuations
+    this.maxTaskReportReminders = resolved.maxTaskReportReminders
+    this.maxTaskHandoffBytes = resolved.maxTaskHandoffBytes
     this.binding = bindingFor(request.agent, request.binding)
     this.onTerminate = request.onTerminate
     this.bindings.set(bindingKey(this.binding.teamId, this.binding.participantId), this.binding)
@@ -335,6 +350,9 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
       if (this.closing) return { kind: 'reject' }
       return await this.awaitFlushBarriers(agent, messages, next)
     }, { prepend: true })
+    this.listeners.push(this.ctx.on('team-link/provider-added', (provider) => {
+      if (provider.name === this.linkProvider) this.scheduleConnection(this.binding)
+    }))
     this.listeners.push(this.ctx.on('agent/disposed', ({ agent }) => {
       if (agent !== this.binding.agent) return
       this.bindings.delete(bindingKey(this.binding.teamId, this.binding.participantId))
@@ -397,7 +415,6 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
    */
   releaseTaskAllocation(taskId: string, attemptId: string): void {
     const key = workspaceKey(taskId, attemptId)
-    this.taskOutputContinuations.delete(key)
     this.releaseWorkspace(key)
   }
 
@@ -482,36 +499,30 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
   }
 
   /**
-   * Continue an assigned worker task after its model turn reached the output cap.
+   * Recover a truncated or unreported worker turn, or settle an exhausted request failure.
    * The assignment and lease are re-read before waking the Agent so a stale
    * turn cannot resurrect a cancelled or replaced attempt.
    * @param event - The exact Session turn-end event observed by the client.
    */
   observeTurnEnd(event: SessionEvent): void {
-    if (event.type !== 'turn/end' || event.data.reason.kind !== 'max-tokens' || this.closing) return
+    if (event.type !== 'turn/end' || this.closing
+      || !['max-tokens', 'completed', 'error'].includes(event.data.reason.kind)
+      || event.data.reason.kind === 'completed' && this.maxTaskReportReminders === 0) return
     const assignment = taskAssignmentForTurn(this.binding.agent.session.events, event.data.turn)
     if (assignment === undefined
       || assignment.teamId !== this.binding.teamId
       || assignment.activationId !== this.binding.activationId) return
-    const key = workspaceKey(assignment.taskId, assignment.attemptId)
-    const continuations = (this.taskOutputContinuations.get(key) ?? 0) + 1
-    if (continuations > this.maxTaskOutputContinuations) {
-      this.ctx.logger.warn(
-        `team-agent-client: worker task '${assignment.taskId}' reached the output continuation limit`,
-      )
-      this.track(this.failTaskAfterOutputLimit(assignment, key),
-        `worker task '${assignment.taskId}' output-limit settlement`)
-      return
-    }
-    this.taskOutputContinuations.set(key, continuations)
-    this.track(this.continueTaskAfterOutputLimit(assignment, key),
-      `worker task '${assignment.taskId}' output-limit continuation`)
+    if (this.taskTurnOperations.has(event.data.turn)) return
+    const operation = this.recoverTaskTurn(assignment, event)
+      .finally(() => { this.taskTurnOperations.delete(event.data.turn) })
+    this.taskTurnOperations.set(event.data.turn, operation)
+    this.track(operation, `worker task '${assignment.taskId}' turn recovery`)
   }
 
-  /** Queue one bounded task continuation only while the exact lease remains live. */
-  private async continueTaskAfterOutputLimit(
+  /** Queue one durable continuation only while the exact lease remains live. */
+  private async recoverTaskTurn(
     assignment: TeamTaskAssignmentSource,
-    key: string,
+    event: SessionEvent<'turn/end'>,
   ): Promise<void> {
     const agent = this.binding.agent
     if (!this.isCurrentBinding(this.binding) || this.ctx.agents.get(agent.id) !== agent) return
@@ -519,54 +530,70 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     const task = state.tasks.find(candidate => candidate.id === assignment.taskId)
     const lease = task?.lease
     const activation = state.activations.find(candidate => candidate.activation.id === this.binding.activationId)
-    if (task?.phase !== 'running'
+    if (!this.isCurrentBinding(this.binding) || this.ctx.agents.get(agent.id) !== agent
+      || task?.phase !== 'running' || task.cancellation !== undefined
       || lease?.attemptId !== assignment.attemptId
       || lease.participantId !== this.binding.participantId
       || lease.activationId !== this.binding.activationId
       || lease.expiresAt <= Date.now()
       || activation?.sessionId !== agent.session.id
-      || (activation.activation.status !== 'idle' && activation.activation.status !== 'running')) {
-      this.taskOutputContinuations.delete(key)
+      || (activation.activation.status !== 'idle' && activation.activation.status !== 'running')) return
+    if (event.data.reason.kind === 'error') {
+      await this.settleTaskFailure(assignment, event.data.reason.error)
       return
     }
-    agent.followup(createUserMessage({
-      content: [{
-        type: 'text',
-        text: `The assigned Team task reached the model output limit before it was reported. Continue the same task from the existing context; do not restart or delegate it. When finished, call team_task_report with task_id ${assignment.taskId} and attempt_id ${assignment.attemptId}. If the task cannot be completed, report the failure or release the attempt instead of ending with text only.`,
-      }],
-      source: { kind: 'plugin', plugin: 'team-agent-client' },
-    }))
-    await this.ctx.sessions.flush(agent.session)
+    const kind = event.data.reason.kind === 'max-tokens' ? 'output-limit' : 'missing-report'
+    const limit = kind === 'output-limit' ? this.maxTaskOutputContinuations : this.maxTaskReportReminders
+    const id = MessageId(`team-task-continuation:${kind}:${assignment.envelopeId}:${String(event.data.turn)}`)
+    const continuations = taskContinuationIds(agent.session.events, assignment, kind)
+    if (continuations.has(id)) return
+    if (continuations.size >= limit) {
+      await this.settleTaskFailure(assignment, {
+        code: kind === 'output-limit' ? 'TEAM_WORKER_OUTPUT_LIMIT' : 'TEAM_TASK_REPORT_MISSING',
+        message: `worker exhausted ${String(limit)} ${kind} continuation turns without reporting the task`,
+      })
+      return
+    }
+    const barrier = this.installFlushBarrier(agent, assignment.envelopeId)
+    try {
+      agent.followup(freezeMessage({
+        id,
+        role: 'user',
+        content: [{
+          type: 'text',
+          text: `The assigned Team task ${kind === 'output-limit' ? 'reached the model output limit' : 'ended without a task report'}. Continue the same task from the existing context; do not restart or delegate it. When finished, call team_task_report with task_id ${assignment.taskId} and attempt_id ${assignment.attemptId}. If the task cannot be completed, report the failure or release the attempt instead of ending with text only.`,
+        }],
+        source: assignment,
+      }))
+      await this.ctx.sessions.flush(agent.session)
+      barrier.resolve()
+      this.removeFlushBarrier(agent, assignment.envelopeId, barrier)
+    } catch (error: unknown) {
+      barrier.reject(error)
+      throw error
+    }
   }
 
-  /** Fail an exhausted running attempt so the scheduler does not wait for lease expiry. */
-  private async failTaskAfterOutputLimit(
+  /** Settle an exact failed worker turn without waiting for lease expiry. */
+  private async settleTaskFailure(
     assignment: TeamTaskAssignmentSource,
-    key: string,
+    failure: TaskAttemptFailure,
   ): Promise<void> {
     const state = await this.requireWorkspaceTeams().getTeam({ teamId: this.binding.teamId })
     const task = state.tasks.find(candidate => candidate.id === assignment.taskId)
     const lease = task?.lease
     const activation = state.activations.find(candidate => candidate.activation.id === this.binding.activationId)
-    if (task?.phase !== 'running'
+    if (!this.isCurrentBinding(this.binding) || task?.phase !== 'running' || task.cancellation !== undefined
       || lease?.attemptId !== assignment.attemptId
       || lease.participantId !== this.binding.participantId
       || lease.activationId !== this.binding.activationId
-      || activation?.sessionId !== this.binding.agent.session.id) {
-      this.taskOutputContinuations.delete(key)
-      return
-    }
+      || lease.expiresAt <= Date.now()
+      || activation?.sessionId !== this.binding.agent.session.id) return
     await this.withLink(async link => await link.settleTaskAttempt({
       taskId: assignment.taskId,
       attemptId: assignment.attemptId,
       expectedRevision: task.revision,
-      outcome: {
-        kind: 'failed',
-        failure: {
-          code: 'TEAM_WORKER_OUTPUT_LIMIT',
-          message: `worker reached the model output limit ${String(this.maxTaskOutputContinuations)} times without reporting the task`,
-        },
-      },
+      outcome: { kind: 'failed', failure: { code: failure.code, message: failure.message } },
     }))
   }
 
@@ -692,19 +719,19 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
         ),
       ])
       if (terminal.kind !== 'released' && !connection.remoteTerminating && this.isCurrentConnection(connection)) {
-        reconnect = true
         const terminalFailure = terminal.kind === 'failed'
           ? terminal.error
           : new Error(`Team Link '${link.provider}' closed unexpectedly`)
+        reconnect = !(terminalFailure instanceof TeamLinkConnectionError) || terminalFailure.retryable
         this.ctx.logger.warn(
           `team-agent-client: Agent '${binding.agent.id}' Team Link ended: ${renderError(terminalFailure)}`,
         )
       }
     } catch (error: unknown) {
       if (this.isCurrentConnection(connection)) {
-        reconnect = true
+        reconnect = !(error instanceof TeamLinkConnectionError) || error.retryable
         this.ctx.logger.warn(
-          `team-agent-client: Agent '${binding.agent.id}' Team Link connection failed: ${renderError(error)}`,
+          `team-agent-client: Agent '${binding.agent.id}' Team Link connection ${reconnect ? 'failed' : 'paused until provider reconfiguration or a new activation'}: ${renderError(error)}`,
         )
       }
     } finally {
@@ -976,7 +1003,7 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
         connection,
         envelope,
         claim,
-        taskAssignmentMessage(assignment, task, binding.activationId, allocation?.root, allocation?.id),
+        taskAssignmentMessage(assignment, task, binding.activationId, this.maxTaskHandoffBytes, allocation?.root, allocation?.id),
       )
     } catch (error: unknown) {
       if (allocation !== undefined) this.releaseWorkspace(workspaceKey(task.id, assignment.attemptId))
@@ -1084,6 +1111,8 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
       this.flushedEnvelopeSources.set(sourceKey, binding.agent.session.id)
       this.removeFlushBarrierByKey(sourceKey, this.flushBarriers.get(sourceKey))
     }
+    if (!this.isCurrentConnection(connection) || connection.link !== link
+      || this.ctx.agents.get(binding.agent.id) !== binding.agent) return
     await link.acknowledge(envelope.channelId, envelope.id, claim.channel.cursor)
     this.flushedEnvelopeSources.delete(sourceKey)
   }
@@ -1895,7 +1924,6 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     for (const timer of this.reconnectTimers.values()) clearTimeout(timer)
     this.reconnectTimers.clear()
     this.bindings.clear()
-    this.taskOutputContinuations.clear()
     const connections = [...this.connections.values()]
     this.connections.clear()
     for (const connection of connections) this.disconnect(connection)
@@ -2510,6 +2538,7 @@ function taskAssignmentMessage(
   assignment: TaskAssignmentEnvelope,
   task: TeamTaskSnapshot & { readonly lease: TaskLeaseSnapshot },
   activationId: ActivationId,
+  maxHandoffBytes: number,
   workspaceRoot?: string,
   workspaceAllocationId?: TeamWorkspaceAllocationSnapshot['id'],
 ): UserMessage {
@@ -2520,7 +2549,8 @@ function taskAssignmentMessage(
     content: [{
       type: 'text',
       text: `Team task assignment: ${task.subject}\n\n${task.description}\n\nTask: ${task.id}\nAttempt: ${lease.attemptId}`
-        + (workspaceRoot === undefined ? '' : `\nWorkspace root: ${workspaceRoot}`),
+        + (workspaceRoot === undefined ? '' : `\nWorkspace root: ${workspaceRoot}`)
+        + previousAttemptHandoff(task, maxHandoffBytes),
     }],
     source: {
       kind: 'team-task-assignment',
@@ -2639,7 +2669,15 @@ function bindingFor(agent: Agent, durableBinding: ActivationBindingSnapshot): Bi
 
 /** Resolve and validate the configuration shared by discovery and fixed-binding delivery owners. */
 function resolveConfig(config: Config): ResolvedConfig {
+  const maxTaskReportReminders = config.maxTaskReportReminders ?? DEFAULT_TASK_REPORT_REMINDERS
+  if (!Number.isSafeInteger(maxTaskReportReminders) || maxTaskReportReminders < 0) {
+    throw new TypeError('maxTaskReportReminders must be a non-negative safe integer')
+  }
+  const maxTaskHandoffBytes = positiveLimit('maxTaskHandoffBytes', config.maxTaskHandoffBytes ?? DEFAULT_TASK_HANDOFF_BYTES)
+  if (maxTaskHandoffBytes < 128) throw new TypeError('maxTaskHandoffBytes must allow at least 128 UTF-8 bytes')
   return {
+    maxTaskHandoffBytes,
+    maxTaskReportReminders,
     linkProvider: linkProviderName(config.linkProvider ?? DEFAULT_LINK_PROVIDER),
     disposalTimeoutMs: positiveLimit(
       'disposalTimeoutMs',
@@ -2757,4 +2795,37 @@ function taskAssignmentForTurn(
     if (event.type === 'turn/end' && event.data.turn === turn) break
   }
   return assignment
+}
+
+/** Count persisted continuation admissions for the exact attempt, including already claimed input. */
+function taskContinuationIds(events: readonly SessionEvent[], assignment: TeamTaskAssignmentSource, kind: 'output-limit' | 'missing-report'): Set<MessageId> {
+  const ids = new Set<MessageId>()
+  for (const event of events) {
+    if (event.type !== 'agent/inbox/spliced') continue
+    for (const message of event.data.inserted) {
+      if (message.source.kind === 'team-task-assignment'
+        && message.source.teamId === assignment.teamId
+        && message.source.taskId === assignment.taskId
+        && message.source.attemptId === assignment.attemptId
+        && message.source.activationId === assignment.activationId
+        && message.id.startsWith(`team-task-continuation:${kind}:`)) ids.add(message.id)
+    }
+  }
+  return ids
+}
+
+/** Carry the latest attempt's evidence to any replacement worker without copying its conversation. */
+function previousAttemptHandoff(task: TeamTaskSnapshot, maxBytes: number): string {
+  const previous = task.attemptHistory.at(-1)
+  if (previous === undefined) return ''
+  const review = task.reviewHistory.findLast(candidate => candidate.attemptId === previous.id)
+  const text = `\n\nPrevious attempt evidence (use it to address the failure or requested rework):\n${JSON.stringify({
+    attemptId: previous.id,
+    ...review === undefined ? {} : { review: { nextPhase: review.nextPhase, reason: review.reason } },
+    outcome: previous.outcome,
+  })}`
+  const bytes = Buffer.from(text)
+  if (bytes.byteLength <= maxBytes) return text
+  const notice = '\n[Handoff truncated; ask the coordinator for missing evidence.]'
+  return new TextDecoder().decode(bytes.subarray(0, maxBytes - Buffer.byteLength(notice)), { stream: true }) + notice
 }

@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-通过 JSON-RPC stdio 提供的仅面向自动化的 [ACP（Agent Client Protocol）](https://agentclientprotocol.com) 服务器。ACP 将每个客户端会话投影为一个本地 Team run：它接收 human 文本／图片输入、流式传递已提交的 coordinator 输出、接收显式 Team final 结果、转发一次性权限请求，并请求软中断。仓库中的主要客户端是 [`clocky-subagent-acp`](../../subagent/subagent-acp/README.zh.md)。
+通过 JSON-RPC stdio 提供的仅面向自动化的 [ACP（Agent Client Protocol）](https://agentclientprotocol.com) 服务器。ACP 将每个客户端会话投影为一个本地 Team run：它接收 human 文本／图片输入、流式传递已提交的 coordinator 输出、接收显式 Team final 结果、转发一次性权限请求，并请求软中断。仓库中的主要客户端是 [`clocky-subagent-acp`](../../compat/subagent-acp/README.zh.md)。
 
 此包是传输适配器，而非 UI 集成或能力 seam。它不公开编辑器导航、transcript（文本记录）回放、命令、模式、配置选择器、信息征集、推理（reasoning）、计划、标题或工具展示。交互式渲染与向用户提问属于 Web 宿主和客户端模块。
 

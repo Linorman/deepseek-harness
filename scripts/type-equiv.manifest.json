@@ -169,57 +169,57 @@
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalRef",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalPhase",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalBlockReason",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalSnapshot",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalView",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalSnapshotChangeMeta",
-      "source": "packages/goal/goal/src/domain.ts"
+      "source": "packages/compat/goal/src/domain.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalClearChangeMeta",
-      "source": "packages/goal/goal/src/domain.ts"
+      "source": "packages/compat/goal/src/domain.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalMessageSource",
-      "source": "packages/goal/goal/src/domain.ts"
+      "source": "packages/compat/goal/src/domain.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "CreateGoalRequest",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "EditGoalRequest",
-      "source": "packages/goal/goal/src/types.ts"
+      "source": "packages/compat/goal/src/types.ts"
     },
     {
       "doc": "docs/subsystems/goal.md",
       "symbol": "GoalChanged",
-      "source": "packages/goal/goal/src/domain.ts"
+      "source": "packages/compat/goal/src/domain.ts"
     },
     {
       "doc": "docs/subsystems/schedule.md",
@@ -1253,92 +1253,92 @@
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentCapabilities",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentStartRequest",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "ResolvedSubagentStartRequest",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "CoordinatorMessageSource",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentReportMessageSource",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentReportDelivery",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentSettledMessageSource",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentReportOptions",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentFollowupOptions",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentInterruptAuthority",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentDescendantListEntry",
-      "source": "packages/subagent/subagent/src/list-children.ts"
+      "source": "packages/compat/subagent/src/list-children.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "ContinuableStart",
-      "source": "packages/subagent/subagent/src/continuation.ts"
+      "source": "packages/compat/subagent/src/continuation.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "ContinuableCreateRequest",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "ContinuableCreateSpec",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentResult",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentStopReasonMap",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentRun",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/subagent.md",
       "symbol": "SubagentProvider",
-      "source": "packages/subagent/subagent/src/types.ts"
+      "source": "packages/compat/subagent/src/types.ts"
     },
     {
       "doc": "docs/subsystems/web.md",
@@ -1398,22 +1398,22 @@
     {
       "doc": "docs/subsystems/workflow.md",
       "symbol": "WorkflowStartRequest",
-      "source": "packages/workflow/workflow/src/runtime-types.ts"
+      "source": "packages/compat/workflow/src/runtime-types.ts"
     },
     {
       "doc": "docs/subsystems/workflow.md",
       "symbol": "WorkflowMeta",
-      "source": "packages/workflow/workflow/src/types.ts"
+      "source": "packages/compat/workflow/src/types.ts"
     },
     {
       "doc": "docs/subsystems/workflow.md",
       "symbol": "WorkflowResult",
-      "source": "packages/workflow/workflow/src/types.ts"
+      "source": "packages/compat/workflow/src/types.ts"
     },
     {
       "doc": "docs/subsystems/workflow.md",
       "symbol": "WorkflowRun",
-      "source": "packages/workflow/workflow/src/runtime-types.ts"
+      "source": "packages/compat/workflow/src/runtime-types.ts"
     },
     {
       "doc": "docs/subsystems/lsp.md",

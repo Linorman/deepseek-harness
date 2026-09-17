@@ -1,3 +1,4 @@
+import { sessionSummarySchema } from '../src/api/sessions.schema.ts'
 import { describe, expect, it, vi } from 'vitest'
 import type { ApiProxy, HostFrame, MuxFrame } from '../src/api/index.ts'
 import type { ClientResponse, RpcMessage, RpcReceipt, RpcRequest } from '../src/api/rpc.ts'
@@ -187,26 +188,6 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
     skills: {
       async list(request) {
         return { rpcId: request.rpcId, result: { ok: true, value: { skills: [{ name: 'commit-helper', description: 'Git commits', modelInvocable: true }] } } }
-      },
-    },
-    goals: {
-      async create(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
-      },
-      async edit(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
-      },
-      async pause(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
-      },
-      async resume(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
-      },
-      async complete(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
-      },
-      async clear(request) {
-        return { rpcId: request.rpcId, result: { ok: false, error: { code: 'internal', message: 'stub', details: {} } } }
       },
     },
     settings: {
@@ -634,6 +615,54 @@ describe('client respond and transport failures', () => {
     await expect(broken.respond({ type: 'client-response', rpcId: RpcId('r'), result: { ok: true, value: null } }))
       .rejects.toThrow('transport failure for /api/respond')
     await expect(collect(broken.events.mux({}, new AbortController().signal))).rejects.toThrow('transport failure for /api/events.mux')
+  })
+
+  it('accepts paired Session ownership but rejects partial or role-bearing metadata', () => {
+    const base = { sessionId: 'session', updatedAt: 1, running: false, blank: false }
+    expect(sessionSummarySchema.parse({ ...base, team: { teamId: 'team', participantId: 'member' } })).toMatchObject({
+      team: { teamId: 'team', participantId: 'member' },
+    })
+    for (const team of [{ teamId: 'team' }, { participantId: 'member' },
+      { teamId: '', participantId: 'member' }, { teamId: 'team', participantId: 'member', role: 'coordinator' }]) {
+      expect(sessionSummarySchema.safeParse({ ...base, team }).success).toBe(false)
+    }
+  })
+
+  it('rejects an action response that belongs to another Team or action', async () => {
+    const base = { teamId: 'team', id: 'action', kind: 'question', phase: 'pending', sessionId: 'session',
+      participantId: 'member', sourceId: 'source', details: {}, createdAt: 1, updatedAt: 1 }
+    for (const patch of [{ teamId: 'foreign' }, { id: 'foreign' }]) {
+      const lying = new InProcessApiClient({ fetch: async (input, init) => {
+        const request = await new Request(input, init).json() as { rpcId: string }
+        return Response.json({ type: 'server-response', rpcId: request.rpcId, result: { ok: true, value: { ...base, ...patch } } })
+      } })
+      await expect(lying.teams.actionRead({ teamId: 'team' as never, actionId: 'action' as never }))
+        .rejects.toThrow('does not match its action selection')
+    }
+  })
+
+  it('rejects task inspection responses for a foreign task, section, revision or window', async () => {
+    const base = { teamId: 'team', taskId: 'task', revision: 2, teamCursor: 3, section: 'attempts', startCursor: -1,
+      total: 0, scanned: 0, items: [] }
+    for (const patch of [{ teamId: 'foreign' }, { taskId: 'foreign' }, { section: 'reviews' }, { revision: 3 }, { startCursor: 0 }]) {
+      const lying = new InProcessApiClient({ fetch: async (input, init) => {
+        const request = await new Request(input, init).json() as { rpcId: string }
+        return Response.json({ type: 'server-response', rpcId: request.rpcId, result: { ok: true, value: { ...base, ...patch } } })
+      } })
+      await expect(lying.teams.taskInspect({ teamId: 'team' as never, taskId: 'task' as never, section: 'attempts', expectedRevision: 2 }))
+        .rejects.toThrow(/does not match its task selection/)
+    }
+  })
+
+  it('rejects a browse result for a different Team or collection', async () => {
+    const base = { teamId: 'team', kind: 'members', total: 0, scanned: 0, teamCursor: 1, items: [] }
+    for (const value of [{ ...base, teamId: 'foreign' }, { ...base, kind: 'tasks' }]) {
+      const lying = new InProcessApiClient({ fetch: async (input, init) => {
+        const request = await new Request(input, init).json() as { rpcId: string }
+        return Response.json({ type: 'server-response', rpcId: request.rpcId, result: { ok: true, value } })
+      } })
+      await expect(lying.teams.browse({ teamId: 'team' as never, kind: 'members' })).rejects.toThrow(/different Team or collection/)
+    }
   })
 
   it('throws on an rpcId echo mismatch', async () => {

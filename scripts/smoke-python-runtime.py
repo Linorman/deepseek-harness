@@ -10,6 +10,7 @@ import json
 import os
 import queue
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -53,6 +54,10 @@ SNAPSHOT_PRODUCT_CREDENTIAL = "python-sdk-snapshot-product-credential"
 TEAM_CHILD_PROMPT = "Delegate one bounded child Team and return its result."
 TEAM_CHILD_RESULT = "PYTHON_CHILD_TEAM_RESULT"
 TEAM_CHILD_FINAL = "PYTHON_PARENT_TEAM_FINAL"
+TEAM_CHILD_CANCEL_PROMPT = "Delegate one bounded child Team and wait for its cancellation."
+TEAM_CHILD_CANCEL_INSTRUCTIONS = "Hold the delegated child until its parent cancels."
+TEAM_CHILD_STARTED = threading.Event()
+TEAM_CHILD_RELEASED = threading.Event()
 SNAPSHOT_PLUGIN_CODE = """\
 return (ctx) => {
   ctx.effect(() => harness.registerTool(ctx, harness.defineTool({
@@ -386,6 +391,18 @@ class MockModelHandler(BaseHTTPRequestHandler):
 
     requests: list[dict[str, object]] = []
 
+    def do_GET(self) -> None:
+        if self.path == "/_clocky-child-ready":
+            body = b"1" if TEAM_CHILD_STARTED.is_set() else b"0"
+        elif self.path == "/_clocky-request-count":
+            body = str(len(self.requests)).encode()
+        else:
+            self.send_error(404)
+            return
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_POST(self) -> None:
         content_length = int(self.headers.get("content-length", "0"))
         body = json.loads(self.rfile.read(content_length))
@@ -394,10 +411,14 @@ class MockModelHandler(BaseHTTPRequestHandler):
         self.send_header("content-type", "text/event-stream")
         self.end_headers()
         chunks = completion_chunks(body)
-        for chunk in chunks:
-            self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
-        self.wfile.write(b"data: [DONE]\n\n")
-        self.wfile.flush()
+        try:
+            for chunk in chunks:
+                self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+            self.wfile.write(b"data: [DONE]\n\n")
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            # Cancelled model requests close their HTTP stream before the held response is released.
+            return
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
@@ -422,9 +443,12 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
                 raise AssertionError(f"child delegation returned no task id: {tool_text}")
             return tool_call_chunks("python-child-wait", "team_task_wait", {"task_id": task_id})
         if tool_name == "team_task_wait":
-            if '"phase":"completed"' not in tool_text and '"phase": "completed"' not in tool_text:
+            cancelled = any(isinstance(message, dict) and TEAM_CHILD_CANCEL_PROMPT in message_text(message.get("content"))
+                            for message in messages)
+            expected_phase = "cancelled" if cancelled else "completed"
+            if json.loads(tool_text).get("phase") != expected_phase:
                 raise AssertionError(f"child delegation did not complete: {tool_text}")
-            channel = re.search(r"call team_final with channel_id ([^\\s]+) and", json.dumps(body))
+            channel = re.search(r"call team_final with channel_id (\S+) and", json.dumps(body))
             if channel is None:
                 raise AssertionError("parent child-delegation request has no final channel")
             return tool_call_chunks("python-parent-final", "team_final", {
@@ -432,7 +456,8 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
             })
         if tool_name == "team_final":
             if any(
-                isinstance(message, dict) and TEAM_CHILD_PROMPT in message_text(message.get("content"))
+                isinstance(message, dict) and any(prompt in message_text(message.get("content"))
+                                                  for prompt in (TEAM_CHILD_PROMPT, TEAM_CHILD_CANCEL_PROMPT))
                 for message in messages
             ):
                 return text_chunks(TEAM_CHILD_FINAL)
@@ -489,6 +514,7 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         SNAPSHOT_WORKFLOW_CHILD_PROMPT,
         SNAPSHOT_PROMPT,
         TEAM_CHILD_PROMPT,
+        TEAM_CHILD_CANCEL_PROMPT,
         CODE_PROMPT,
         WORKFLOW_PROMPT,
         FS_SEARCH_PROMPT,
@@ -498,22 +524,27 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         (candidate for candidate in user_prompts if candidate in scenario_prompts),
         message_text(latest.get("content")),
     )
-    if prompt == TEAM_CHILD_PROMPT:
+    if prompt in (TEAM_CHILD_PROMPT, TEAM_CHILD_CANCEL_PROMPT):
         assert_advertised_tool(body, "team_task_delegate")
         return tool_call_chunks(
             "python-child-delegate",
             "team_task_delegate",
             {
                 "subject": "Run one Python packaged child Team",
-                "instructions": "Complete the delegated child objective.",
+                "instructions": TEAM_CHILD_CANCEL_INSTRUCTIONS if prompt == TEAM_CHILD_CANCEL_PROMPT else "Complete the delegated child objective.",
                 "read_scopes": [],
                 "write_scopes": [],
-                "budget": {},
+                "budget": {"maxChildTeams": 0, "maxLiveActivations": 1},
             },
         )
+    if any(TEAM_CHILD_CANCEL_INSTRUCTIONS in prompt for prompt in user_prompts):
+        TEAM_CHILD_STARTED.set()
+        if not TEAM_CHILD_RELEASED.wait(60):
+            raise AssertionError("packaged child cancellation did not release its held model request")
+        return text_chunks("Cancelled child request released.")
     if any("Complete the delegated child objective." in prompt for prompt in user_prompts):
         assert_advertised_tool(body, "team_final")
-        channel = re.search(r"call team_final with channel_id ([^\\s]+) and", json.dumps(body))
+        channel = re.search(r"call team_final with channel_id (\S+) and", json.dumps(body))
         if channel is None:
             raise AssertionError("child Team request has no final channel")
         return tool_call_chunks("python-child-final", "team_final", {
@@ -874,8 +905,8 @@ def main() -> None:
     parser.add_argument("--exe", type=Path)
     parser.add_argument("--update-snapshots", action="store_true")
     args = parser.parse_args()
-    if args.scenario in {"all", "sdk-custom", "sdk-child-team", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "direct"} and args.exe is None:
-        parser.error("--exe is required for custom, child-team, minimal, snapshot, and direct scenarios")
+    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "direct"} and args.exe is None:
+        parser.error("--exe is required for all, custom, minimal, snapshot, and direct scenarios")
     if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-snapshot"}:
         parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-snapshot, or all")
     if args.exe is not None and not args.exe.is_file():
@@ -888,8 +919,7 @@ def main() -> None:
             assert args.exe is not None
             smoke_sdk_custom(model.url, args.exe.resolve())
         if args.scenario in {"all", "sdk-child-team"}:
-            assert args.exe is not None
-            smoke_sdk_child_team(model.url, args.exe.resolve())
+            smoke_sdk_child_team(model.url, None if args.exe is None else args.exe.resolve())
         if args.scenario in {"all", "sdk-minimal"}:
             assert args.exe is not None
             smoke_sdk_minimal(model.url, args.exe.resolve(), args.update_snapshots)
@@ -957,64 +987,152 @@ def smoke_sdk_custom(base_url: str, executable: Path) -> None:
         assert_session_logs(sessions, root, EXPECTED_TEXT, CODE_WORKER_TEXT, WORKFLOW_WORKER_TEXT)
 
 
-def smoke_sdk_child_team(base_url: str, executable: Path) -> None:
-    """Exercise the packaged Python runtime's parent-to-child Team tool path."""
-    from clocky import Clocky
+def smoke_sdk_child_team(base_url: str, executable: Path | None = None) -> None:
+    """Verify installed child completion/cancellation and durable rereads after process restart."""
+    if executable is None:
+        from clocky_runtime import bundled_runtime_path
+        executable = bundled_runtime_path()
+    for cancelled in (False, True):
+        smoke_sdk_child_team_case(base_url, executable, cancelled)
+    smoke_sdk_child_team_case(base_url, executable, True, crash=True)
 
+
+def smoke_sdk_child_team_case(base_url: str, executable: Path, cancelled: bool, *, crash: bool = False) -> None:
+    from clocky import Clocky, JsonRpcError
+    from clocky_runtime import bundled_default_config_path
+
+    TEAM_CHILD_STARTED.clear()
+    TEAM_CHILD_RELEASED.clear()
     with project_temporary_directory(prefix="clocky-sdk-child-team-") as temporary:
         root = Path(temporary).resolve()
         sessions = root / "sessions"
-        runtime_root = Path(__file__).resolve().parent.parent / "python" / "sdk-runtime"
-        runtime_temp_root = runtime_root / ".tmp"
-        runtime_temp_root.mkdir(parents=True, exist_ok=True)
         credential = "python-sdk-child-product-credential"
-        with tempfile.TemporaryDirectory(prefix="clocky-sdk-child-team-", dir=runtime_temp_root) as config_temporary:
-            cordis = Path(config_temporary) / "cordis.yml"
-            bundled_config = runtime_root / "src" / "clocky_runtime" / "runtime" / "cordis.yml"
-            cordis.write_text(bundled_config.read_text().replace(
-                "baseURL: http://127.0.0.1:9",
-                f"baseURL: {base_url}",
-                1,
-            ))
-            with Clocky(
-                credential=credential,
-                provider="test-provider",
-                model="smoke-model",
-                cwd=str(root),
-                runtime_cwd=str(runtime_root),
-                session_root=str(sessions),
-                cordis=str(cordis),
-                runtime_bin=str(executable),
-                env={
-                    "TEST_API_KEY": "sk-keyless-smoke",
-                    "TEST_BASE_URL": base_url,
-                    "TEST_MODEL": "smoke-model",
-                    "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(credential.encode()).hexdigest(),
-                },
-                request_timeout_seconds=60,
-                shutdown_timeout_seconds=2,
-            ) as harness:
-                result = harness.run(TEAM_CHILD_PROMPT)
-                page = harness.list_teams(limit=16)
-                roots = [item for item in page.items if item.get("parentTeamId") is None]
-                if len(roots) != 1:
-                    raise AssertionError(f"child Team smoke expected one root Team, got {page.items!r}")
-                parent_id = roots[0]["id"]
-                state = harness.get_team(parent_id).state
-                child_tasks = [task for task in state.get("tasks", []) if task.get("execution", {}).get("kind") == "child-team"]
-                if len(child_tasks) != 1:
-                    raise AssertionError(f"child Team smoke expected one child task, got {state.get('tasks')!r}")
-                task = child_tasks[0]
-                child_id = task.get("delegation", {}).get("childTeamId")
-                if not isinstance(child_id, str):
-                    raise AssertionError(f"child Team smoke did not retain child identity: {task!r}")
-                child_state = harness.get_team(child_id).state
-                if child_state.get("team", {}).get("phase") != "completed":
-                    raise AssertionError(f"child Team smoke did not complete child Team: {child_state!r}")
-                if task.get("delegation", {}).get("result", {}).get("text") != TEAM_CHILD_RESULT:
-                    raise AssertionError(f"child Team smoke lost admitted result: {task!r}")
-        if result.final_response != TEAM_CHILD_FINAL:
-            raise AssertionError(f"child Team smoke returned unexpected final: {result.final_response!r}")
+        cordis = root / "cordis.yml"
+        cordis.write_text(bundled_default_config_path().read_text().replace(
+            "baseURL: http://127.0.0.1:9", f"baseURL: {base_url}", 1,
+        ))
+
+        def runtime():
+            return Clocky(
+                credential=credential, provider="test-provider", model="smoke-model",
+                cwd=str(root), runtime_cwd=str(root), session_root=str(sessions),
+                cordis=str(cordis), runtime_bin=str(executable),
+                env={"TEST_API_KEY": "sk-keyless-smoke", "TEST_BASE_URL": base_url,
+                     "TEST_MODEL": "smoke-model",
+                     "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(credential.encode()).hexdigest()},
+                request_timeout_seconds=60, shutdown_timeout_seconds=2,
+            )
+
+        def audit(harness, team_id, channel_id=None):
+            rows = []
+            cursor = None
+            while True:
+                page = harness.team_audit(team_id, channel_id=channel_id, after_cursor=cursor, limit=32)
+                rows.extend(page.items)
+                if page.nextCursor is None:
+                    return rows
+                assert page.nextCursor != cursor, "audit cursor did not advance"
+                cursor = page.nextCursor
+
+        def evidence(harness, parent_id):
+            parent = harness.get_team(parent_id).state
+            tasks = [task for task in parent["tasks"] if task["execution"]["kind"] == "child-team"]
+            assert len(tasks) == 1, tasks
+            task = tasks[0]
+            child_id = task["delegation"]["childTeamId"]
+            child = harness.get_team(child_id).state
+            expected = "cancelled" if cancelled else "completed"
+            assert child["team"]["phase"] == task["phase"] == expected
+            assert child["team"]["parentTaskId"] == task["id"]
+            assert harness.team_quiescence(child_id).value["quiescent"] is True
+            assert harness.team_quiescence(parent_id).value["quiescent"] is True
+            parent_audit = audit(harness, parent_id)
+            child_audit = audit(harness, child_id)
+            charges = [row["facts"]["charge"] for row in parent_audit if row["type"] == "usage/child-charged"]
+            assert len({charge["id"] for charge in charges}) == len(charges)
+            assert all(charge["sourceTeamId"] == child_id and charge["parentTaskId"] == task["id"] for charge in charges)
+            bindings = [row for row in child_audit if row["type"] == "team/child-run-bound"]
+            assert len(bindings) == 1
+            if not cancelled:
+                assert charges
+                result = task["delegation"]["result"]
+                assert result["text"] == TEAM_CHILD_RESULT
+                assert child["team"]["childResultAdmission"]["parent"] == result
+                run = child["team"]["childRun"]
+                channel = audit(harness, child_id, run["channelId"])
+                receipts = [row for row in channel if row["type"] == "channel/receipt"
+                            and row["facts"]["participantId"] == run["parentServiceId"]
+                            and row["facts"]["envelopeId"] == result["responseEnvelopeId"]]
+                assert len(receipts) == 1
+                assert len([row for row in child_audit if row["type"] == "team/child-result-admitted"]) == 1
+            return {"task": task, "childId": child_id, "charges": charges}
+
+        with runtime() as harness:
+            try:
+                team = harness.create_team(TEAM_CHILD_CANCEL_PROMPT if cancelled else TEAM_CHILD_PROMPT)
+                if cancelled:
+                    assert TEAM_CHILD_STARTED.wait(30), "child model request never started"
+                    tasks = harness.get_team(team.id).state["tasks"]
+                    assert len(tasks) == 1
+                    task = tasks[0]
+                    if crash:
+                        before = task
+                        before_child = harness.get_team(task["delegation"]["childTeamId"]).state
+                        process = harness.client._proc
+                        assert process is not None
+                        process.kill()
+                        assert process.wait(timeout=10) == -signal.SIGKILL
+                        requests_at_crash = len(MockModelHandler.requests)
+                    else:
+                        harness.client.cancel_team_task({"teamId": team.id, "taskId": task["id"],
+                                                         "expectedRevision": task["revision"], "reason": "Cancel a live packaged child."})
+                if not crash:
+                    final = team.wait_for_final()
+                    assert final.text == TEAM_CHILD_FINAL, final
+                    before = evidence(harness, team.id)
+            finally:
+                TEAM_CHILD_RELEASED.set()
+        with runtime() as recovered:
+            if crash:
+                deadline = time.monotonic() + 15
+                while True:
+                    state = recovered.get_team(team.id).state
+                    if state["team"]["phase"] == "stalled":
+                        break
+                    assert time.monotonic() < deadline, f"crashed child did not produce a named stall: {state!r}"
+                    time.sleep(0.05)
+                tasks = state["tasks"]
+                assert len(tasks) == 1
+                assert tasks[0]["id"] == before["id"]
+                assert tasks[0]["phase"] == "running"
+                child_id = tasks[0]["delegation"]["childTeamId"]
+                assert child_id == before["delegation"]["childTeamId"]
+                assert tasks[0]["delegation"].get("result") is None
+                assert state["team"]["stallReason"]["code"] == "TEAM_DELEGATION_WORKSPACE_UNAVAILABLE"
+                assert state["team"].get("archivedAt") is None
+                assert recovered.team_quiescence(team.id).value["quiescent"] is False
+                child = recovered.get_team(child_id).state
+                assert [item["activation"]["id"] for item in child["activations"]] == [
+                    item["activation"]["id"] for item in before_child["activations"]]
+                assert all(item.get("quiescedAt") is None for item in child["activations"])
+                try:
+                    recovered.client.archive_team(team.id)
+                except JsonRpcError as error:
+                    assert "cannot be archived from 'stalled'" in error.message, error
+                else:
+                    raise AssertionError("archived a parent with an unconfirmed live child")
+                assert len([row for row in audit(recovered, child_id) if row["type"] == "team/child-run-bound"]) == 1
+                assert len(MockModelHandler.requests) == requests_at_crash, "restart started unproven replacement work"
+                print(json.dumps({"sdk": "installed-python", "scenario": "live-child-crash",
+                                  "stallCode": state["team"]["stallReason"]["code"],
+                                  "newModelRequests": 0, "epochRetained": True, "archiveRejected": True}))
+                return
+            assert evidence(recovered, team.id) == before
+            state = recovered.get_team(team.id).state
+            cursor = state["team"]["cursor"]
+            recovered.client.archive_team(team.id, expected_cursor=cursor)
+            recovered.client.archive_team(team.id, expected_cursor=cursor)
+            assert len([row for row in audit(recovered, team.id) if row["type"] == "team/archived"]) == 1
 
 
 def smoke_sdk_minimal(base_url: str, executable: Path, update_snapshots: bool) -> None:

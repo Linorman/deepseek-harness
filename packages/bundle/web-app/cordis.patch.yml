@@ -130,6 +130,8 @@
         root: !!js process.cwd()
         allowTeamWorkspacePath: true
         observationStateRoot: !!js clockyHomePath('team-workspace-observations')
+        observationExcludedRoots:
+          - !!js clockyHomePath()
 
     - id: team-workspace-recovery
       name: '@clocky/clocky-team-workspace-recovery'
@@ -221,6 +223,8 @@
     - id: team-run
       name: '@clocky/clocky-team-run'
       config:
+        maxChildTeams: 32
+        maxLiveActivations: 128
         workerCount: 1
         maxWorkerCount: 32
         maxCoordinatorOutputContinuations: 3
@@ -522,21 +526,6 @@
   disabled: true
 
 - id: tool-skill
-  disabled: true
-
-# Team owns Web objectives. Its scoped `/goal` command is installed after TeamRun;
-# the base same-Session Goal stack and its automatic rounds stay absent.
-
-- id: goal
-  disabled: true
-
-- id: goal-round-driver
-  disabled: true
-
-- id: command-goal
-  disabled: true
-
-- id: tool-goal
   disabled: true
 
 - id: plan-mode

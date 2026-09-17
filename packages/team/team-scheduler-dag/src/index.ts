@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team-channel-admission'
 import type {} from '@clocky/clocky-team-placement-default'
 /**
@@ -89,6 +90,7 @@ export const inject = ['teamChannelAdmission', 'teams', 'teamWorkspaces']
 const DEFAULT_STALL_AFTER_UNASSIGNABLE_DRIVES = 3
 const DEFAULT_TEAM_PAGE_SIZE = 128
 const DEFAULT_CHANNEL_PAGE_SIZE = 128
+const DEFAULT_REVIEW_DISPATCHES_PER_DRIVE = 8
 const TEAM_SCHEDULER_ENVELOPE_POST_PROOF_SOURCE = 'team-scheduler-dag'
 const TEAM_SCHEDULER_TASK_REVIEW_PROOF_SOURCE = 'team-scheduler-dag'
 const TEAM_SCHEDULER_PHASE_PROOF_SOURCE = 'team-scheduler-dag'
@@ -106,6 +108,8 @@ export interface Config {
   readonly maxExpirationsPerDrive: number
   /** Maximum existing assignment channels validated or repaired during one Team drive. */
   readonly maxWakeDispatchesPerDrive: number
+  /** Maximum review requests dispatched or responses recovered during one Team drive. */
+  readonly maxReviewDispatchesPerDrive?: number
   /** Maximum state-race rereads after assignment or expiry CAS conflicts. */
   readonly maxConflictsPerDrive: number
   /** Maximum assigned or running attempts one participant may hold. */
@@ -136,6 +140,7 @@ export const Config: z<Config> = z.object({
   maxAssignmentsPerDrive: z.number().step(1).min(1),
   maxExpirationsPerDrive: z.number().step(1).min(1),
   maxWakeDispatchesPerDrive: z.number().step(1).min(1),
+  maxReviewDispatchesPerDrive: z.number().step(1).min(1).default(DEFAULT_REVIEW_DISPATCHES_PER_DRIVE),
   maxConflictsPerDrive: z.number().step(1).min(1),
   maxActiveAttemptsPerParticipant: z.number().step(1).min(1),
   permittedWorkspaceModes: z.array(z.union(['shared', 'worktree', 'sandbox', 'remote'] as const)).min(1),
@@ -182,6 +187,7 @@ declare module '@clocky/cordis' {
 
 /** Validated configuration retained in scheduler-owned lookup forms. */
 interface ResolvedConfig {
+  readonly maxReviewDispatchesPerDrive: number
   readonly leaseDurationMs: number
   readonly maxAssignmentsPerDrive: number
   readonly maxExpirationsPerDrive: number
@@ -263,6 +269,8 @@ type WakeLeasedTeamTask = LeasedTeamTask & {
 /** Team task scheduler that leaves durable authority to the mounted Team provider. */
 export class TeamDagScheduler {
   private readonly config: ResolvedConfig
+  private discoveryCursor: TeamListPageRequest['afterCursor'] = -1
+  private readonly scheduledDrives = new Map<string, ReturnType<typeof setImmediate>>()
   private readonly drives = new Map<string, TeamDrive>()
   private readonly accepted = new Set<Promise<void>>()
   private readonly listeners: (() => void)[] = []
@@ -365,11 +373,11 @@ export class TeamDagScheduler {
   }
 
   /**
-   * Check consumption/time ceilings, expire due leases, then assign ready work for one Team or every discovered Team.
+   * Check consumption/time ceilings, expire due leases, then assign ready work for one Team or one discovery page.
    * This method owns no deadline timer: callers or an explicit deployment pulse decide
    * when expiry is scanned.
    * @param request - optional Team restriction for this coalesced drive.
-   * @returns resolution after the selected Team drive or discovery sweep settles.
+   * @returns resolution after that round or page; coalesced changes run in later event-loop turns.
    */
   drive(request: TeamSchedulerDriveRequest = {}): Promise<void> {
     if (this.closing) return Promise.resolve()
@@ -392,20 +400,24 @@ export class TeamDagScheduler {
 
   /** Discover current Teams, joining each existing per-Team coalesced drive. */
   private async driveAllTeams(): Promise<void> {
-    let afterCursor = -1
-    for (;;) {
-      const page = await this.ctx.teams.listTeamsPage({ afterCursor, limit: this.config.teamPageSize })
-      if (this.closing) return
-      await Promise.all(page.items.map(team => this.requestTeamDrive(team.id)))
-      if (page.nextCursor === undefined) return
-      if (page.nextCursor <= afterCursor) throw new TeamError('scheduler Team discovery returned a non-advancing cursor', 'TEAM_CURSOR_CONFLICT')
-      afterCursor = page.nextCursor
+    const afterCursor = this.discoveryCursor
+    let page
+    try { page = await this.ctx.teams.listTeamsPage({ afterCursor, limit: this.config.teamPageSize }) }
+    catch (error: unknown) {
+      if (error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') { this.discoveryCursor = -1; return }
+      throw error
     }
+    if (this.closing) return
+    if (page.nextCursor === afterCursor) throw new TeamError('scheduler Team discovery returned a non-advancing cursor', 'TEAM_CURSOR_CONFLICT')
+    this.discoveryCursor = page.nextCursor ?? -1
+    await Promise.all(page.items.map(team => this.requestTeamDrive(team.id)))
   }
 
   /** Return one current or newly created coalesced Team drive. */
   private requestTeamDrive(teamId: TeamId): Promise<void> {
     const key = teamKey(teamId)
+    const scheduled = this.scheduledDrives.get(key)
+    if (scheduled !== undefined) { clearImmediate(scheduled); this.scheduledDrives.delete(key) }
     const current = this.drives.get(key)
     if (current !== undefined) {
       current.requested = true
@@ -431,7 +443,7 @@ export class TeamDagScheduler {
     }
   }
 
-  /** Drain all signals coalesced for one Team without allowing a listener storm to overlap CAS decisions. */
+  /** Finish one bounded round; coalesced follow-up signals receive a later event-loop turn. */
   private async runTeamDrive(drive: TeamDrive): Promise<void> {
     let retries = 0
     try {
@@ -439,7 +451,7 @@ export class TeamDagScheduler {
         drive.requested = false
         try {
           await this.driveTeam(drive.teamId)
-          retries = 0
+          break
         } catch (error: unknown) {
           // A cursor can advance between the drive's read and a bounded
           // channel-maintenance or assignment CAS. `driveTeam` retries its
@@ -447,14 +459,23 @@ export class TeamDagScheduler {
           // before surfacing a non-race failure to the scheduler owner.
           // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() can race the retry delay.
           if (this.closing && error === this.admissionAbort.signal.reason) return
-          if (!isRetryableRace(error) || retries >= this.config.maxConflictsPerDrive) throw error
+          if (!isRetryableRace(error) || retries >= this.config.maxConflictsPerDrive) { drive.requested = false; throw error }
           retries += 1
           drive.requested = true
           await new Promise<void>((resolve) => { setTimeout(resolve, 0) })
         }
       }
     } finally {
-      this.drives.delete(teamKey(drive.teamId))
+      const key = teamKey(drive.teamId)
+      this.drives.delete(key)
+      if (drive.requested && !this.closing) {
+        this.scheduledDrives.set(key, setImmediate(() => {
+          this.scheduledDrives.delete(key)
+          if (!this.closing) void this.requestTeamDrive(drive.teamId).catch(() => {
+            // The tracked Team operation already reports this failure.
+          })
+        }))
+      }
     }
   }
 
@@ -466,6 +487,7 @@ export class TeamDagScheduler {
     let expired = 0
     let assigned = 0
     let wakeDispatches = 0
+    let reviewDispatches = 0
     let conflicts = 0
     let compactions = 0
     const verifiedWakes = new Set<string>()
@@ -563,8 +585,7 @@ export class TeamDagScheduler {
       }
 
       const wake = selectWakeRecovery(state, verifiedWakes, this.wakeCursors.get(teamKey(teamId)))
-      if (wake !== undefined) {
-        if (wakeDispatches >= this.config.maxWakeDispatchesPerDrive) return
+      if (wake !== undefined && wakeDispatches < this.config.maxWakeDispatchesPerDrive) {
         try {
           const resolution = await this.ensureWakeEnvelope(wake)
           wakeDispatches += 1
@@ -583,8 +604,8 @@ export class TeamDagScheduler {
 
       if (verifiedWakes.size === 0) this.wakeCursors.delete(teamKey(teamId))
 
-      if (wakeDispatches < this.config.maxWakeDispatchesPerDrive && await this.ensureReviewDispatch(state)) {
-        wakeDispatches += 1
+      if (reviewDispatches < this.config.maxReviewDispatchesPerDrive && await this.ensureReviewDispatch(state)) {
+        reviewDispatches += 1
         continue
       }
 
@@ -1290,6 +1311,8 @@ export class TeamDagScheduler {
   /** Release listeners, await accepted work, and aggregate any completed-drive failures. */
   private async dispose(): Promise<void> {
     this.closing = true
+    for (const timer of this.scheduledDrives.values()) clearImmediate(timer)
+    this.scheduledDrives.clear()
     this.admissionAbort.abort()
     if (this.pulseTimer !== undefined) {
       clearInterval(this.pulseTimer)
@@ -1325,44 +1348,45 @@ export class TeamDagScheduler {
 }
 
 /** Install one scheduler whose state remains wholly owned by the mounted Team provider. */
-export function apply(ctx: Context, config: Config): () => Promise<void> {
+export function apply(ctx: Context, config: Config): void {
   const scheduler = new TeamDagScheduler(ctx, config)
-  const unregisterEnvelopePost = ctx.teams.registerSystemEnvelopePostProofSource(scheduler.envelopePostProofSource)
-  const unregisterTaskReview = ctx.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource)
-  const unregisterPhase = ctx.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource)
-  const unregisterMaintenance = ctx.teams.registerSystemMaintenanceProofSource(scheduler.maintenanceProofSource)
-  const unregisterTaskLease = ctx.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
-  const unregisterSchedulerChannel = ctx.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource)
-  scheduler.start()
-  return async () => {
-    try {
-      await scheduler.close()
-    } finally {
+  ctx.effect(() => {
+    const unregisterEnvelopePost = ctx.teams.registerSystemEnvelopePostProofSource(scheduler.envelopePostProofSource)
+    const unregisterTaskReview = ctx.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource)
+    const unregisterPhase = ctx.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource)
+    const unregisterMaintenance = ctx.teams.registerSystemMaintenanceProofSource(scheduler.maintenanceProofSource)
+    const unregisterTaskLease = ctx.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource)
+    const unregisterSchedulerChannel = ctx.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource)
+    scheduler.start()
+    return async () => {
       try {
-        unregisterSchedulerChannel()
+        await scheduler.close()
       } finally {
         try {
-          unregisterTaskLease()
+          unregisterSchedulerChannel()
         } finally {
           try {
-            unregisterMaintenance()
+            unregisterTaskLease()
           } finally {
             try {
-              unregisterPhase()
+              unregisterMaintenance()
             } finally {
               try {
-                unregisterTaskReview()
+                unregisterPhase()
               } finally {
-                unregisterEnvelopePost()
+                try {
+                  unregisterTaskReview()
+                } finally {
+                  unregisterEnvelopePost()
+                }
               }
             }
           }
         }
       }
     }
-  }
+  })
 }
-
 /** Create one non-serializable proof that only the scheduler's private source can resolve. */
 function createTeamSchedulerEnvelopePostProof(): TeamSystemEnvelopePostProof {
   const proof: object = {}
@@ -1814,6 +1838,8 @@ function wakeKey(task: WakeLeasedTeamTask): string {
 function isRetryableRace(error: unknown): boolean {
   return error instanceof TeamError && (
     error.code === 'TEAM_CURSOR_CONFLICT'
+    // An owned proof can become stale when an attempt advances during channel publication.
+    || error.code === 'TEAM_ACTOR_PROOF_INVALID'
     || error.code === 'TEAM_TASK_STALE_REVISION'
     || error.code === 'TEAM_CHANNEL_CURSOR_CONFLICT'
     || error.code === 'TEAM_INVALID_ARGUMENT'
@@ -1863,6 +1889,9 @@ function resolveConfig(config: Config): ResolvedConfig {
     maxWakeDispatchesPerDrive: positiveSafeInteger(
       'maxWakeDispatchesPerDrive',
       config.maxWakeDispatchesPerDrive,
+    ),
+    maxReviewDispatchesPerDrive: positiveSafeInteger(
+      'maxReviewDispatchesPerDrive', config.maxReviewDispatchesPerDrive ?? DEFAULT_REVIEW_DISPATCHES_PER_DRIVE,
     ),
     maxConflictsPerDrive: positiveSafeInteger('maxConflictsPerDrive', config.maxConflictsPerDrive),
     maxActiveAttemptsPerParticipant: positiveSafeInteger(

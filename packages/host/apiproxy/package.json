@@ -56,7 +56,6 @@
     "@clocky/clocky-brand": "workspace:^",
     "@clocky/clocky-commands": "workspace:^",
     "@clocky/clocky-credentials": "workspace:^",
-    "@clocky/clocky-goal": "workspace:^",
     "@clocky/clocky-host-directory-picker": "workspace:^",
     "@clocky/clocky-llm": "workspace:^",
     "@clocky/clocky-native-command": "workspace:^",

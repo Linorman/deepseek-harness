@@ -6,15 +6,15 @@ This family lets an agent delegate work to child agents. Multiple named provider
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`subagent/`](subagent/README.md) | Defines provider registration, delegation, and continuation | `ctx.subagents` |
-| [`subagent-inprocess/`](subagent-in-process-driver/README.md) | Provides the shared in-process run driver | — |
-| [`subagent-spawn-in-process/`](subagent-spawn-in-process/README.md) | Starts a fresh in-process child | registers on `ctx.subagents` |
-| [`subagent-fork-in-process/`](subagent-fork-in-process/README.md) | Starts an in-process child from the parent's completed history | registers on `ctx.subagents` |
-| [`subagent-acp/`](subagent-acp/README.md) | Starts an out-of-process child over ACP | registers on `ctx.subagents` |
-| [`subagent-clocky-sdk/`](subagent-clocky-sdk/README.md) | Starts an out-of-process Harness child through the TypeScript SDK | registers on `ctx.subagents` |
-| [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
-| [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes child messaging and listing to the model | registers on `ctx.tools` |
-| [`tool-subagent-report/`](tool-subagent-report/README.md) | Provides the child-to-parent report channel | registers in child scopes |
+| [`subagent/`](../compat/subagent/README.md) | Defines provider registration, delegation, and continuation | `ctx.subagents` |
+| [`subagent-inprocess/`](../compat/subagent-in-process-driver/README.md) | Provides the shared in-process run driver | — |
+| [`subagent-spawn-in-process/`](../compat/subagent-spawn-in-process/README.md) | Starts a fresh in-process child | registers on `ctx.subagents` |
+| [`subagent-fork-in-process/`](../compat/subagent-fork-in-process/README.md) | Starts an in-process child from the parent's completed history | registers on `ctx.subagents` |
+| [`subagent-acp/`](../compat/subagent-acp/README.md) | Starts an out-of-process child over ACP | registers on `ctx.subagents` |
+| [`subagent-clocky-sdk/`](../compat/subagent-clocky-sdk/README.md) | Starts an out-of-process Harness child through the TypeScript SDK | registers on `ctx.subagents` |
+| [`tool-subagent/`](../compat/tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
+| [`tool-subagent-control/`](../compat/tool-subagent-control/README.md) | Exposes child messaging and listing to the model | registers on `ctx.tools` |
+| [`tool-subagent-report/`](../compat/tool-subagent-report/README.md) | Provides the child-to-parent report channel | registers in child scopes |
 
 See the decisions for the [capability family](../../.agents/notes/implemented/feature/2026-06-21-subagent-capability-seam.md), [continuable children](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.md), and [control tools](../../.agents/notes/implemented/simplification/2026-07-26-merge-subagent-control-service.md).
 

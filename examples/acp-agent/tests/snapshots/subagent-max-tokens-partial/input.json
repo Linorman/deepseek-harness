@@ -8,7 +8,7 @@
     },
     {
       "op": "prompt",
-      "text": "Use the subagent tool exactly once to delegate this subtask: \"Write the words 'partial one', call todo_write once, then keep going until you are cut off.\" After the subagent returns, reply with the single word PARENT_DONE and stop."
+      "text": "Use the legacy_subagent tool exactly once to delegate this subtask: \"Write the words 'partial one', call todo_write once, then keep going until you are cut off.\" After the subagent returns, reply with the single word PARENT_DONE and stop."
     }
   ]
 }

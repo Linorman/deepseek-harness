@@ -11,7 +11,7 @@ import type { Wire } from './rpc.schema.ts'
 import { rpcErrorSchema, rpcIdSchema } from './rpc.schema.ts'
 import { approvalRequestIdSchema } from './approvals.schema.ts'
 import {
-  contentBlockSchema, messageIdSchema, sessionEventSchema, sessionIdSchema, toolEventViewSchema,
+  sessionTeamOwnerSchema, contentBlockSchema, messageIdSchema, sessionEventSchema, sessionIdSchema, toolEventViewSchema,
 } from './sessions.schema.ts'
 import { taskViewSchema } from './jobs.schema.ts'
 import { workspaceIdSchema, workspaceViewSchema } from './workspace.schema.ts'
@@ -74,6 +74,7 @@ export const muxFrameSchema = z.discriminatedUnion('type', [
 export const hostFrameSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('host/session-added'),
+    team: sessionTeamOwnerSchema.optional(),
     sessionId: sessionIdSchema,
     blank: z.boolean(),
     cwd: z.string().optional(),

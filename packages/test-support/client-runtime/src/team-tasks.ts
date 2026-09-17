@@ -6,7 +6,7 @@ import type {
 } from '@clocky/clocky-client-runtime/client'
 import type { Stabilizer } from './fixtures.ts'
 
-type TeamTaskStubs = Pick<ITeamTasks, 'refresh' | 'open' | 'start' | 'archive' | 'cancel' | 'resume' | 'postInput'>
+type TeamTaskStubs = Pick<ITeamTasks, 'refresh' | 'open' | 'inspect' | 'start' | 'archive' | 'cancel' | 'resume' | 'postInput'>
 
 /**
  * Team task test double. It mirrors local draft transitions and records
@@ -76,9 +76,17 @@ export class TestTeamTasks implements ITeamTasks {
   }
 
   /** Record a Team-list refresh. */
-  async refresh(): Promise<void> {
-    this.calls.push({ method: 'refresh', args: [] })
-    await this.stubs.refresh?.()
+  async refresh(firstPage?: boolean): Promise<void> {
+    this.calls.push({ method: 'refresh', args: firstPage === undefined ? [] : [firstPage] })
+    await this.stubs.refresh?.(firstPage)
+  }
+
+  /** Resolve read-only Team inspection through an explicit test stub. */
+  async inspect(teamId: Parameters<NonNullable<ITeamTasks['inspect']>>[0], signal?: AbortSignal): Promise<TeamTaskSelection> {
+    this.calls.push({ method: 'inspect', args: [teamId, signal] })
+    const stub = this.stubs.inspect
+    if (stub === undefined) throw new Error('test team tasks: inspect is not stubbed')
+    return await stub(teamId, signal)
   }
 
   /** Resolve a Team only through an explicit test stub. */
@@ -138,7 +146,11 @@ export class TestTeamTasks implements ITeamTasks {
    * Return the currently selected Team for the coordinator Session.
    * @returns the selected Team task, or `undefined` when no Team is selected.
    */
-  teamForCoordinatorSession(): TeamTaskSelection | undefined {
-    return undefined
+  resolveCoordinatorSession(
+    _sessionId: Parameters<ITeamTasks['resolveCoordinatorSession']>[0],
+    _owner?: Parameters<ITeamTasks['resolveCoordinatorSession']>[1],
+    _signal?: AbortSignal,
+  ): ReturnType<ITeamTasks['resolveCoordinatorSession']> {
+    return Promise.resolve(undefined)
   }
 }

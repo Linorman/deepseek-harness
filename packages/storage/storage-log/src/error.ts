@@ -1,7 +1,7 @@
 /** Error vocabulary of the append-only storage-log data form. @module @clocky/clocky-storage-log/src/error */
 
 /** Discriminant codes carried by every {@link StorageLogError}. */
-export type StorageLogErrorCode = 'already-open' | 'facet-unsupported' | 'closed'
+export type StorageLogErrorCode = 'already-open' | 'facet-unsupported' | 'closed' | 'scan-invalid' | 'scan-expired' | 'scan-limit'
 
 /**
  * Error thrown by the data form. Backend durability errors retain their

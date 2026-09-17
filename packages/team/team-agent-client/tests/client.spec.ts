@@ -203,7 +203,7 @@ async function setup(
   await ctx.plugin(TeamLinkLocal, {
     providerName: 'local', pageSize: 128, disposalTimeoutMs: 1_000, notificationRetryDelayMs: 1,
   })
-  if (loadClient) await ctx.plugin(TeamAgentClientPlugin, config)
+  if (loadClient) await ctx.plugin(TeamAgentClientPlugin, Object.assign({ maxTaskReportReminders: 0 }, config))
   return ctx
 }
 
@@ -820,6 +820,12 @@ async function workspaceRecoveryFixture(
   return { ctx, input, receiver, binding, seeded, delivery, calls }
 }
 
+/** The seeded assignment must finish its first real model turn before workspace settlement is tested. */
+async function waitWorkspaceTurn(mounted: Awaited<ReturnType<typeof workspaceRecoveryFixture>>): Promise<void> {
+  await vi.waitFor(() => { expect(mounted.receiver.agent.session.events.some(event => event.type === 'turn/end')).toBe(true) })
+  await mounted.receiver.agent.whenIdle()
+}
+
 /** Prepare a current local binding before its first task assignment reaches the workspace provider. */
 async function liveWorkspaceFixture(consumeWorkspace = true, fixedOwner = false) {
   const calls: string[] = []
@@ -1205,12 +1211,15 @@ describe('Team Agent Client', () => {
     await bindRecipient(ctx, input, receiver.agent.session.id)
     const sender = await activeActor(ctx, input.team.id, input.sender)
     const recipient = await activeActor(ctx, input.team.id, input.recipient)
-    const channel = await openTestChannel(ctx, { teamId: input.team.id, expectedCursor: (await ctx.teams.getTeam({ teamId: input.team.id })).team.cursor,
+    const channel = await openTestChannel(ctx, { teamId: input.team.id,
+      expectedCursor: (await ctx.teams.getTeam({ teamId: input.team.id })).team.cursor,
       adapter: { type: protocol, version: 1 }, viewPolicy: { type: 'recent-window', version: 1 },
       participants: protocol === 'consult' ? [{ id: input.recipient.id, role: 'initiator' }, { id: input.sender.id, role: 'respondent' }]
         : [{ id: input.sender.id, role: 'speaker' }, { id: input.recipient.id, role: 'speaker' }],
       limits: protocol === 'consult' ? {} : { maxTurns: 1, speakerPolicy: 'free-form' } })
-    await consentChannelEndpoints(ctx, channel, [{ participantId: input.sender.id, actor: sender }, { participantId: input.recipient.id, actor: recipient }], (manifest) => {
+    await consentChannelEndpoints(ctx, channel, [
+      { participantId: input.sender.id, actor: sender }, { participantId: input.recipient.id, actor: recipient },
+    ], (manifest) => {
       (protocol === 'consult' ? TeamChannelBasic.consultChannelAdapter : TeamChannelBasic.discussionChannelAdapter).validateCreate(manifest)
     })
     const request = protocol === 'consult' ? await ctx.teams.postChannelEnvelope({ actor: recipient,
@@ -1221,12 +1230,13 @@ describe('Team Agent Client', () => {
       draft: { channelId: channel.manifest.id, audience: [input.recipient.id], kind: protocol === 'consult' ? 'response' : 'message',
         payload: { text: 'NORMAL_CLOSED_OUTBOX' }, delivery: 'turn', ...request === undefined ? {} : { causationId: request.id } } })
     expect((await ctx.teams.getChannel({ channelId: channel.manifest.id })).phase).toBe('closed')
-    await ctx.plugin(TeamAgentClientPlugin)
+    await ctx.plugin(TeamAgentClientPlugin, { maxTaskReportReminders: 0 })
     await vi.waitFor(() => { expect(receiver.agent.session.events.some(event => event.type === 'team/channel-view'
       && JSON.stringify(event.data).includes('NORMAL_CLOSED_OUTBOX'))).toBe(true) })
     await expectReceipt(ctx, last, input.recipient.id)
     expect(receiver.agent.session.events.filter(event => event.type === 'team/channel-view' && event.data.triggeringEnvelopeId === last.id)).toHaveLength(1)
-    await expect(ctx.teams.postChannelEnvelope({ actor: sender, expectedCursor: (await ctx.teams.getChannel({ channelId: channel.manifest.id })).cursor,
+    await expect(ctx.teams.postChannelEnvelope({ actor: sender,
+      expectedCursor: (await ctx.teams.getChannel({ channelId: channel.manifest.id })).cursor,
       draft: { channelId: channel.manifest.id, audience: [input.recipient.id], kind: 'message', payload: { text: 'Too late' }, delivery: 'turn' } }))
       .rejects.toThrow()
   })
@@ -1894,8 +1904,8 @@ describe('Team Agent Client', () => {
         workspaceAllocations: [{ id: releaseRequested.id, lifecycle: 'released' }],
       })
       expect(calls).toContain('reconcile-release')
+      expect(() => resolveAgentWorkspaceRoot(receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
     })
-    expect(() => resolveAgentWorkspaceRoot(receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
     await delivery.close()
   })
 
@@ -1962,7 +1972,7 @@ describe('Team Agent Client', () => {
       agentOptions: { provider: 'mock', model: 'mock' },
     })
     await bindRecipient(ctx, input, receiver.agent.session.id)
-    const client = await ctx.plugin(TeamAgentClientPlugin)
+    const client = await ctx.plugin(TeamAgentClientPlugin, { maxTaskReportReminders: 0 })
     await client.dispose()
     const envelope = await post(ctx, input, 'context')
     await new Promise<void>(resolve => setImmediate(resolve))
@@ -1993,7 +2003,7 @@ describe('Team Agent Client', () => {
       },
     }))
     await ctx.sessions.flush(receiver.agent.session)
-    await ctx.plugin(TeamAgentClientPlugin)
+    await ctx.plugin(TeamAgentClientPlugin, { maxTaskReportReminders: 0 })
     await vi.waitFor(() => {
       expect(acceptanceCount(receiver.agent.session.events, envelope.id)).toBe(1)
     })
@@ -2017,7 +2027,7 @@ describe('Team Agent Client', () => {
       return next()
     })
 
-    await ctx.plugin(TeamAgentClientPlugin)
+    await ctx.plugin(TeamAgentClientPlugin, { maxTaskReportReminders: 0 })
     await expectReceipt(ctx, source, input.recipient.id)
     await receiver.agent.whenIdle()
     expect(acceptanceCount(receiver.agent.session.events, source.id)).toBe(0)
@@ -2134,7 +2144,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       const request = mounted.ctx.teams.requestWorkspaceAllocationRelease.bind(mounted.ctx.teams)
       const admission = vi.spyOn(mounted.ctx.teams, 'requestWorkspaceAllocationRelease')
         .mockImplementationOnce(async (input) => {
@@ -2155,7 +2165,7 @@ describe('Team Agent Client', () => {
     const mounted = await workspaceRecoveryFixture(release)
     mounted.delivery.start()
     await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-    await mounted.receiver.agent.whenIdle()
+    await waitWorkspaceTurn(mounted)
     const failure = new Error('release intent storage unavailable')
     const admission = vi.spyOn(mounted.ctx.teams, 'requestWorkspaceAllocationRelease')
     const policy = vi.fn(async () => ({ kind: 'deny' as const, code: 'KEEP_WORKSPACE', message: 'Workspace release requires approval.' }))
@@ -2194,7 +2204,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       const confirm = mounted.ctx.teams.confirmWorkspaceAllocationRelease.bind(mounted.ctx.teams)
       const confirmation = vi.spyOn(mounted.ctx.teams, 'confirmWorkspaceAllocationRelease')
         .mockImplementationOnce(async (input) => {
@@ -2213,7 +2223,7 @@ describe('Team Agent Client', () => {
     const mounted = await workspaceRecoveryFixture(release)
     mounted.delivery.start()
     await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-    await mounted.receiver.agent.whenIdle()
+    await waitWorkspaceTurn(mounted)
     let confirmations = 0
     const unregister = mounted.ctx.teams.registerPolicy('workspace-allocate', {
       name: 'deny-release-confirmation',
@@ -2245,7 +2255,7 @@ describe('Team Agent Client', () => {
     const mounted = await workspaceRecoveryFixture(release, true, 1000, 2)
     mounted.delivery.start()
     await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-    await mounted.receiver.agent.whenIdle()
+    await waitWorkspaceTurn(mounted)
     const method = phase === 'request' ? 'requestWorkspaceAllocationRelease' : 'confirmWorkspaceAllocationRelease'
     const mutate = mounted.ctx.teams[method].bind(mounted.ctx.teams)
     let conflicts = 0
@@ -2293,7 +2303,7 @@ describe('Team Agent Client', () => {
     })
     mounted.delivery.start()
     await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-    await mounted.receiver.agent.whenIdle()
+    await waitWorkspaceTurn(mounted)
     await mounted.delivery.close()
     expect(activation).toHaveBeenCalledTimes(2)
     expect(preservation).toHaveBeenCalledTimes(2)
@@ -2444,7 +2454,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       vi.spyOn(mounted.ctx.teams, 'confirmWorkspaceAllocationRelease').mockRejectedValueOnce(new Error('confirmation append failed'))
       await settleAgentWorkspaceLease(mounted.receiver.agent)
       expect(reconcile).toHaveBeenCalledTimes(1)
@@ -2460,7 +2470,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       vi.spyOn(mounted.ctx.teams, 'confirmWorkspaceAllocationRelease').mockRejectedValueOnce(new Error('confirmation append failed'))
       vi.spyOn(mounted.ctx.teamWorkspaces, 'reconcileRelease').mockRejectedValueOnce(new Error('reconciliation failed'))
       await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
@@ -2685,12 +2695,37 @@ describe('Team Agent Client', () => {
     expect(mounted.receiver.agent.inbox.hasPending).toBe(false)
   })
 
+  it('does not treat pre-start idle as completion of the seeded workspace turn', async () => {
+    const mounted = await workspaceRecoveryFixture()
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<undefined>()
+    const claim = mounted.ctx.teams.claimTaskAttemptStart.bind(mounted.ctx.teams)
+    vi.spyOn(mounted.ctx.teams, 'claimTaskAttemptStart').mockImplementation(async (request) => {
+      entered.resolve(undefined)
+      await release.promise
+      return await claim(request)
+    })
+    try {
+      mounted.delivery.start()
+      await entered.promise
+      await mounted.receiver.agent.whenIdle()
+      expect(mounted.receiver.agent.session.events.some(event => event.type === 'turn/end')).toBe(false)
+      let completed = false
+      const waiting = waitWorkspaceTurn(mounted).then(() => { completed = true })
+      await Promise.resolve()
+      expect(completed).toBe(false)
+      release.resolve(undefined)
+      await waiting
+      expect(completed).toBe(true)
+    } finally { release.resolve(undefined); await mounted.delivery.close() }
+  })
+
   it('fails workspace settlement explicitly when its durable allocation is absent from the provider snapshot', async () => {
     const mounted = await workspaceRecoveryFixture()
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       const getTeam = mounted.ctx.teams.getTeam.bind(mounted.ctx.teams)
       vi.spyOn(mounted.ctx.teams, 'getTeam').mockImplementationOnce(async request => ({ ...await getTeam(request), workspaceAllocations: [] }))
       await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
@@ -2703,7 +2738,7 @@ describe('Team Agent Client', () => {
     const mounted = await workspaceRecoveryFixture()
     mounted.delivery.start()
     await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-    await mounted.receiver.agent.whenIdle()
+    await waitWorkspaceTurn(mounted)
     await hubFibers.get(mounted.ctx)!.dispose()
     await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
       error instanceof AggregateError && error.errors.some((cause: unknown) => cause instanceof Error && cause.message.includes('requires local Team authority')),
@@ -2716,7 +2751,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       vi.spyOn(mounted.ctx.teams, 'confirmWorkspaceAllocationRelease').mockRejectedValueOnce(new Error('confirmation append failed'))
       await expect(settleAgentWorkspaceLease(mounted.receiver.agent)).rejects.toSatisfy((error: unknown) =>
         error instanceof AggregateError && error.errors[0] instanceof AggregateError
@@ -2754,7 +2789,7 @@ describe('Team Agent Client', () => {
     try {
       mounted.delivery.start()
       await vi.waitFor(() => { expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/workspace/agent-client') })
-      await mounted.receiver.agent.whenIdle()
+      await waitWorkspaceTurn(mounted)
       const getTeam = mounted.ctx.teams.getTeam.bind(mounted.ctx.teams)
       const state = await getTeam({ teamId: mounted.input.team.id })
       vi.spyOn(mounted.ctx.teams, 'getTeam').mockImplementationOnce(async () => { entered.resolve(undefined); return await read.promise })

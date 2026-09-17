@@ -89,7 +89,11 @@ A child-Team task also retains a delegation projection with `requested`, `creati
 
 The child authority grant and budget must be subsets of the parent task, remaining parent Team grant, and human authority. `maxTeamDepth`, total child count, live Activation, token, turn, wall-time, cost, retry, concurrency, and artifact limits are checked before child creation. A pending parent charge blocks new child work as it does for existing child usage accounting.
 
+`TeamResourceBudget.maxChildTeams` counts lifetime accepted descendant identities. Each accepted delegation permanently reserves one identity plus the child’s frozen `maxChildTeams`; this capacity remains after cancellation, terminal settlement, deletion, and archival. A bounded parent rejects a child without an explicit descendant ceiling. Reserving whole subtrees in the existing parent task journal establishes the ancestor bound without a cross-stream counter; unused descendant capacity is deliberately not reclaimed. TeamRun’s optional `maxChildTeams` Config freezes the root ceiling at creation; omission adds no count ceiling.
+
 The child template provisions a service Participant representing the exact parent delegation. Child completion requires a coordinator result Envelope addressed only to that service Participant and a durable service receipt; it does not fabricate a human recipient. The root Team remains the sole owner of the final human-addressed answer.
+
+`maxLiveActivations` counts durable Participant startup reservations, all unquiesced epochs (including coordinator, idle and stopping), and each unresolved child’s frozen live allowance. The controller reserves before calling a provider; a binding consumes that exact reservation once. Only unpublished-start cleanup or epoch quiescence frees local capacity. A provider failure without a handle remains reserved across restart and yields `ACTIVATION_STARTUP_UNCONFIRMED` during closure recovery. Retained raw handles retry failed cleanup. Shipped roots configure 32 lifetime descendants and 128 live slots, accommodating the existing 32-member worker pool and bounded child fan-out; deployments may override these Config values.
 
 #### Delegation saga
 

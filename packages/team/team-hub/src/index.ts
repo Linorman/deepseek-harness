@@ -1,3 +1,24 @@
+import { projectMemberInspection } from '@clocky/clocky-team/selection'
+import { teamMemberInspectRequestSchema, type TeamMemberInspectRequest, type TeamMemberInspectSpec, type TeamMemberInspection } from '@clocky/clocky-team'
+import { projectWorkflowInspection } from '@clocky/clocky-team/selection'
+import { teamWorkflowInspectRequestSchema, type TeamWorkflowInspectRequest, type TeamWorkflowInspection } from '@clocky/clocky-team'
+import { projectHumanAction } from '@clocky/clocky-team/selection'
+import { teamHumanActionReadRequestSchema, type TeamHumanActionReadRequest } from '@clocky/clocky-team'
+import { teamSelectionRequestSchema, type TeamSelectionRequest } from '@clocky/clocky-team'
+import { projectTaskInspection } from '@clocky/clocky-team/selection'
+import { teamTaskInspectRequestSchema, type TeamTaskInspectRequest, type TeamTaskInspectSpec, type TeamTaskInspection } from '@clocky/clocky-team'
+import { projectTeamBrowse } from '@clocky/clocky-team/selection'
+import { teamBrowseRequestSchema, type TeamBrowseRequest, type TeamBrowseSpec, type TeamBrowsePage } from '@clocky/clocky-team'
+import { projectMemberSession } from '@clocky/clocky-team/selection'
+import { teamMemberSessionRequestSchema, type TeamMemberSessionRequest, type TeamMemberSessionSnapshot } from '@clocky/clocky-team'
+import { teamSelection } from './selection.ts'
+import type { TeamSelectionSnapshot } from '@clocky/clocky-team'
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { StorageLogError } from '@clocky/clocky-storage-log'
+import type { LogNameScanCursor } from '@clocky/clocky-storage-log'
+import { teamDiscoveryCursorSchema } from '@clocky/clocky-team'
+import { activationReservationInputSchema, liveActivationCapacity, liveActivationLimit, taskLiveActivationReservation } from '@clocky/clocky-team'
+import type { ActivationReservationRequest, ActivationReservationSnapshot } from '@clocky/clocky-team'
 import { channelHumanEnvelopeGetInputSchema, channelHumanAdmissionSnapshotSchema, channelProtocolStatusSchema } from '@clocky/clocky-team/schema'
 import type { ChannelExpectedNext, ChannelHumanAdmissionSnapshot, ChannelProtocolStatus } from '@clocky/clocky-team'
 import type { TeamChannelListInput, TeamChannelListRequest, TeamChannelListPage } from '@clocky/clocky-team'
@@ -23,7 +44,7 @@ import type { TeamTaskPlacement } from '@clocky/clocky-team'
  * @module @clocky/clocky-team-hub
  */
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
@@ -31,7 +52,7 @@ import { teamWorkspaceAllocationLossInputSchema } from '@clocky/clocky-team'
 import type { TeamWorkspaceAllocationLossRequest } from '@clocky/clocky-team'
 import { teamTaskExecutionSchema, teamDelegationIdSchema } from '@clocky/clocky-team'
 import type { TeamTaskExecution } from '@clocky/clocky-team'
-import { taskHasActiveExecution, taskHasSharedWriteConflict, taskConcurrencyUsage } from '@clocky/clocky-team'
+import { taskHasActiveExecution, taskHasSharedWriteConflict, taskConcurrencyUsage, taskChildTeamReservation } from '@clocky/clocky-team'
 import {
   teamTaskDelegationBeginInputSchema, teamTaskDelegationBindInputSchema, teamTaskDelegationSettleInputSchema,
   teamTaskDelegationStallInputSchema, teamChildRunAuthorizeInputSchema,
@@ -129,6 +150,7 @@ import {
   teamIdSchema,
   teamListPageRequestSchema,
   teamListPageSchema,
+  teamSnapshotSchema,
   teamInterruptIdSchema,
   teamPhaseTransitionInputSchema,
   teamStateSnapshotSchema,
@@ -587,6 +609,7 @@ type TeamLimitKey =
   | 'maxRatePerParticipantPerMinute'
 
 interface LoadedTeam {
+  readers: number
   readonly id: TeamId
   readonly stream: HubLogStream
   readonly queue: SerialQueue
@@ -601,6 +624,7 @@ interface LoadedTeam {
 type TeamProjectionOwner = Pick<LoadedTeam, 'id' | 'projection'>
 
 interface LoadedChannel {
+  readers: number
   readonly id: ChannelId
   readonly stream: HubLogStream
   readonly queue: SerialQueue
@@ -963,6 +987,12 @@ function isTerminalChannelPhase(phase: ChannelPhaseRecord['phase']): boolean {
 
 /** Configurable Team-Hub durability, hierarchy, task, and shutdown limits. */
 export interface Config {
+  /** Maximum UTF-8 bytes in the complete first-selection response. */
+  readonly maxSelectionBytes?: number
+  /** Maximum bytes of atomic Team discovery metadata, including its storage header. */
+  readonly maxDiscoveryBytes?: number
+  /** Maximum UTF-8 bytes in each first-selection display field. */
+  readonly maxSelectionTextBytes?: number
   /** Milliseconds allowed for a newly invited endpoint to confirm its manifest. */
   readonly channelInvitationTimeoutMs?: number
   /** Maximum number of durable records replayed in one storage page. */
@@ -1023,6 +1053,9 @@ export interface Config {
 
 /** Schemastery validator for the Hub deployment configuration. */
 export const Config: z<Config> = z.object({
+  maxDiscoveryBytes: z.number().step(1).min(1).default(65536),
+  maxSelectionBytes: z.number().step(1).min(1).default(16384),
+  maxSelectionTextBytes: z.number().step(1).min(0).default(512),
   channelInvitationTimeoutMs: z.number().step(1).min(1).default(DEFAULT_CHANNEL_INVITATION_TIMEOUT_MS),
   recoveryPageSize: z.number().step(1).min(1).default(DEFAULT_RECOVERY_PAGE_SIZE),
   checkpointEvery: z.number().step(1).min(1).default(DEFAULT_CHECKPOINT_EVERY),
@@ -1069,6 +1102,12 @@ export class TeamHub extends TeamRuntime {
 
   private readonly config: Omit<Required<Config>, 'rankingLatencyBucketsMs' | 'rankingCostRateBuckets'> & { readonly taskRanking: TeamTaskRankingPolicy }
   private readonly teams = new Map<TeamId, LoadedTeam>()
+  private readonly projectionReadScopes = new AsyncLocalStorage<{
+    active: boolean
+    readonly teams: Set<LoadedTeam>
+    readonly channels: Set<LoadedChannel>
+  }>()
+  private readonly teamEvictions = new Map<TeamId, Promise<void>>()
   private readonly teamLoads = new Map<TeamId, Promise<LoadedTeam>>()
   /** Team streams retained while recovery is validating an in-flight open. */
   private readonly teamOpeningStreams = new Map<TeamId, HubLogStream>()
@@ -1105,6 +1144,9 @@ export class TeamHub extends TeamRuntime {
   constructor(ctx: Context, config: Config = {}) {
     super(ctx)
     this.config = {
+      maxDiscoveryBytes: positiveLimit('maxDiscoveryBytes', config.maxDiscoveryBytes ?? 65536),
+      maxSelectionBytes: positiveLimit('maxSelectionBytes', config.maxSelectionBytes ?? 16384),
+      maxSelectionTextBytes: nonNegativeLimit('maxSelectionTextBytes', config.maxSelectionTextBytes ?? 512),
       channelInvitationTimeoutMs: positiveLimit(
         'channelInvitationTimeoutMs', config.channelInvitationTimeoutMs ?? DEFAULT_CHANNEL_INVITATION_TIMEOUT_MS,
       ),
@@ -1301,13 +1343,13 @@ export class TeamHub extends TeamRuntime {
       if (projection === undefined) {
         throw new TeamHubError('Team creation did not produce a projection', 'TEAM_JOURNAL_MALFORMED')
       }
-      const appended = await stream.append(EMPTY_CURSOR, records)
+      const appended = await stream.append(EMPTY_CURSOR, records, { summary: this.discoverySummary(projection) })
       /* v8 ignore next 3 -- LogStream append returns the final cursor of its accepted batch. */
       if (appended.tailSequence !== records.length - 1) {
         throw new TeamHubError('Team journal append returned an unexpected tail', 'TEAM_JOURNAL_MALFORMED')
       }
       const loaded: LoadedTeam = {
-        id,
+        readers: 0,        id,
         stream,
         queue: new SerialQueue(),
         activity: new CursorActivity(),
@@ -1695,6 +1737,123 @@ export class TeamHub extends TeamRuntime {
       const input = teamGetRequestSchema.parse(request)
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(() => Promise.resolve(this.teamState(this.requireLiveTeam(loaded).projection)))
+    })
+  }
+
+  /** Read the selected action under its owning Team serializer and selection byte allowance. */
+  override async getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot> {
+    return await this.admit(async () => {
+      const input = teamHumanActionReadRequestSchema.parse(request)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const result = projectHumanAction(
+          this.requireLiveTeam(loaded).projection.humanActions.get(input.actionId), this.config.maxSelectionBytes,
+        )
+        if (!result.ok) throw new TeamError(`Human action '${input.actionId}' is ${result.reason}`,
+          result.reason === 'missing' ? 'TEAM_INVALID_ARGUMENT' : 'TEAM_CHANNEL_BACKPRESSURE')
+        return Promise.resolve(freeze(result.value))
+      })
+    })
+  }
+
+  /** Project first-selection data under the same cursor serializer as full-state reads. */
+  override async getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot> {
+    return await this.admit(async () => {
+      const input = teamSelectionRequestSchema.parse(request)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => Promise.resolve(freeze(teamSelection(
+        this.requireLiveTeam(loaded).projection, this.config.maxSelectionTextBytes, this.config.maxSelectionBytes, input.includeMetadata,
+      ))))
+    })
+  }
+
+  /** Resolve the provider's configured page size before reading any summary rows. */
+  private resolveBrowse(request: TeamBrowseRequest): TeamBrowseSpec {
+    return { teamId: request.teamId, kind: request.kind, afterCursor: request.afterCursor ?? -1,
+      limit: this.pageLimit(request.limit ?? this.config.recoveryPageSize) }
+  }
+
+  /** Read collection summaries directly from the authoritative maps under their serializer. */
+  override async browse(request: TeamBrowseRequest): Promise<TeamBrowsePage> {
+    return await this.admit(async () => {
+      const input = this.resolveBrowse(teamBrowseRequestSchema.parse(request))
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const result = projectTeamBrowse(this.requireLiveTeam(loaded).projection, input,
+          this.config.maxSelectionTextBytes, this.config.maxSelectionBytes)
+        if (!result.ok) throw new TeamError(`Team browse ${result.reason} cannot fit the selected response`, 'TEAM_CHANNEL_BACKPRESSURE')
+        return Promise.resolve(freeze(result.value))
+      })
+    })
+  }
+
+  /** Resolve the configured task history page before reading authoritative records. */
+  private resolveTaskInspection(request: TeamTaskInspectRequest): TeamTaskInspectSpec {
+    return request.section === 'record' ? request : { ...request,
+      afterCursor: request.afterCursor ?? -1, limit: this.pageLimit(request.limit ?? this.config.recoveryPageSize) }
+  }
+
+  /** Inspect one exact task without copying its complete settled history. */
+  override async inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection> {
+    return await this.admit(async () => {
+      const input = this.resolveTaskInspection(teamTaskInspectRequestSchema.parse(request))
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        const result = projectTaskInspection(this.requireTask(current, input.taskId), current.projection.team.cursor,
+          input, this.config.maxSelectionBytes)
+        if (result.ok) return Promise.resolve(freeze(result.value))
+        switch (result.reason) {
+          case 'owner': throw new TeamError('Task is not in the selected Team', 'TEAM_TASK_NOT_FOUND')
+          case 'revision': throw new TeamError('Task inspection revision changed; refresh the task record', 'TEAM_TASK_STALE_REVISION')
+          case 'metadata': case 'row': throw new TeamError('Task inspection exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+          default: return assertNever(result.reason)
+        }
+      })
+    })
+  }
+
+  /** Resolve capability pagination from deployment settings before storage admission. */
+  private resolveMemberInspection(request: TeamMemberInspectRequest): TeamMemberInspectSpec {
+    return { ...request, afterCursor: request.afterCursor ?? -1, limit: this.pageLimit(request.limit ?? this.config.recoveryPageSize) }
+  }
+
+  /** Inspect one exact member under the same serializer as membership changes. */
+  override async inspectMember(request: TeamMemberInspectRequest): Promise<TeamMemberInspection> {
+    return await this.admit(async () => {
+      const input = this.resolveMemberInspection(teamMemberInspectRequestSchema.parse(request))
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const state = this.requireLiveTeam(loaded).projection
+        const member = state.participants.get(input.participantId)
+        if (member === undefined) throw new TeamError('Participant is not in the selected Team', 'TEAM_PARTICIPANT_NOT_FOUND')
+        const result = projectMemberInspection(member, state.team.cursor, input, this.config.maxSelectionBytes)
+        if (result.ok) return Promise.resolve(freeze(result.value))
+        switch (result.reason) {
+          case 'owner': throw new TeamError('Member inspection ownership mismatch', 'TEAM_PARTICIPANT_NOT_FOUND')
+          case 'cursor': throw new TeamError('Team changed; refresh member inspection', 'TEAM_CURSOR_CONFLICT')
+          case 'metadata': case 'row': throw new TeamError('Member inspection exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+          default: return assertNever(result.reason)
+        }
+      })
+    })
+  }
+
+  /** Read one latest published member binding under the Team serializer. */
+  override async getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot> {
+    return await this.admit(async () => {
+      const input = teamMemberSessionRequestSchema.parse(request)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const result = projectMemberSession(this.requireLiveTeam(loaded).projection, input.participantId, this.config.maxSelectionBytes)
+        if (result.ok) return Promise.resolve(freeze(result.value))
+        switch (result.reason) {
+          case 'missing-participant': throw new TeamError('Participant is not in the selected Team', 'TEAM_PARTICIPANT_NOT_FOUND')
+          case 'missing-binding': throw new TeamError('Participant has no published Session binding', 'TEAM_ACTIVATION_NOT_FOUND')
+          case 'too-large': throw new TeamError('Member Session binding exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+          default: return assertNever(result.reason)
+        }
+      })
     })
   }
 
@@ -2086,43 +2245,43 @@ export class TeamHub extends TeamRuntime {
   override async listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage> {
     return await this.admit(async () => {
       const input = teamListPageRequestSchema.parse(request)
-      const limit = this.pageLimit(input.limit)
-      const streams = await this.ctx.storageLog.list()
-      const ids: TeamId[] = []
-      for (const stream of streams) {
-        if (!stream.name.startsWith('team/')) continue
-        if (stream.version !== TEAM_JOURNAL_FORMAT_VERSION) {
-          throw new TeamHubError(
-            `Team journal '${stream.name}' has unsupported format ${stream.version}`,
-            'TEAM_JOURNAL_MALFORMED',
-          )
+      let page
+      try {
+        page = await this.ctx.storageLog.scanNames({ prefix: 'team/', limit: this.pageLimit(input.limit),
+          ...input.afterCursor === -1 ? {} : { afterCursor: input.afterCursor as string as LogNameScanCursor } })
+      } catch (error: unknown) {
+        if (error instanceof StorageLogError && error.code === 'scan-expired') {
+          throw new TeamError('Team discovery cursor expired; restart from -1', 'TEAM_DISCOVERY_CURSOR_EXPIRED', { cause: error })
         }
-        const parsed = teamIdSchema.safeParse(stream.name.slice('team/'.length))
-        if (!parsed.success || stream.tailSequence === EMPTY_CURSOR) {
-          throw new TeamHubError(`Team journal '${stream.name}' is not materialized`, 'TEAM_JOURNAL_MALFORMED')
+        if (error instanceof StorageLogError && (error.code === 'scan-invalid' || error.code === 'scan-limit')) {
+          throw new TeamError(error.message, error.code === 'scan-limit' ? 'TEAM_CHANNEL_BACKPRESSURE' : 'TEAM_INVALID_ARGUMENT', { cause: error })
         }
-        ids.push(parsed.data)
+        throw error
       }
-      ids.sort((left, right) => String(left).localeCompare(String(right)))
-
-      const start = input.afterCursor >= ids.length ? ids.length : input.afterCursor + 1
-      const visible: Array<{ readonly index: number; readonly team: TeamSnapshot }> = []
-      for (let index = start; index < ids.length && visible.length < limit + 1; index += 1) {
-        const teamId = ids[index]
-        if (teamId === undefined) continue
-        const loaded = await this.ensureTeam(teamId)
-        const team = await loaded.queue.run(() => {
-          const projection = this.requireLiveTeam(loaded).projection
-          return Promise.resolve(projection.team.archivedAt === undefined ? this.teamSnapshot(projection) : undefined)
-        })
-        if (team !== undefined) visible.push({ index, team })
+      const items: TeamSnapshot[] = []
+      for (const name of page.names) {
+        const teamId = teamIdSchema.parse(name.slice('team/'.length))
+        let summary
+        try {
+          summary = await this.ctx.storageLog.readSummary({ name, version: TEAM_JOURNAL_FORMAT_VERSION }, this.config.maxDiscoveryBytes)
+        } catch (error: unknown) {
+          if (error instanceof Error && 'code' in error && error.code === 'version-mismatch') {
+            throw new TeamHubError(`Team journal '${name}' has an unsupported format`, 'TEAM_JOURNAL_MALFORMED', { cause: error })
+          }
+          throw error
+        }
+        if (summary === undefined) {
+          if (!await this.ctx.storageLog.hasStream(name)) continue
+          throw new TeamHubError(`Team journal '${name}' has no current discovery summary`, 'TEAM_JOURNAL_MALFORMED')
+        }
+        const parsed = teamSnapshotSchema.safeParse(summary.value)
+        if (!parsed.success || parsed.data.id !== teamId || parsed.data.cursor !== summary.sequence) {
+          throw new TeamHubError(`Team journal '${name}' has invalid discovery identity or cursor`, 'TEAM_JOURNAL_MALFORMED')
+        }
+        if (parsed.data.archivedAt === undefined) items.push(parsed.data)
       }
-      const items = visible.slice(0, limit).map(item => item.team)
-      const continuation = visible.length > limit ? visible[limit - 1] : undefined
-      return freeze(teamListPageSchema.parse({
-        items,
-        ...continuation === undefined ? {} : { nextCursor: continuation.index },
-      }))
+      return freeze(teamListPageSchema.parse({ items, scanned: page.scanned,
+        ...page.nextCursor === undefined ? {} : { nextCursor: teamDiscoveryCursorSchema.parse(page.nextCursor) } }))
     })
   }
 
@@ -2200,11 +2359,16 @@ export class TeamHub extends TeamRuntime {
         let closed = false
         const authorization: TeamHumanResumeAuthorization = Object.freeze({
           isLive: (): boolean => !closed && this.isLiveHumanResumeActor(actor, input),
-          assert: (): Promise<TeamStateSnapshot> => this.admit(() => loaded.queue.run(() => {
+          assert: (): Promise<TeamStateSnapshot> => this.admit(async () => {
             if (closed) this.rejectHumanResumeActor()
-            this.resolveHumanResumeAuthority(this.requireLiveTeam(loaded), actor, input)
-            return Promise.resolve(this.teamState(this.requireLiveTeam(loaded).projection))
-          })),
+            this.assertHumanResumeActor(actor, input)
+            const selected = await this.ensureTeam(input.teamId)
+            return await selected.queue.run(() => {
+              if (closed) this.rejectHumanResumeActor()
+              this.resolveHumanResumeAuthority(this.requireLiveTeam(selected), actor, input)
+              return Promise.resolve(this.teamState(this.requireLiveTeam(selected).projection))
+            })
+          }),
           close: (): void => { closed = true },
         }) as TeamHumanResumeAuthorization
         return authorization
@@ -2497,11 +2661,23 @@ export class TeamHub extends TeamRuntime {
     return await this.admit(async () => {
       const { signal, ...wire } = request
       const input = teamWatchRequestSchema.parse(wire)
-      const loaded = await this.ensureTeam(input.teamId, false)
-      const registered = await loaded.queue.run(() => Promise.resolve({
-        wait: loaded.activity.wait(this.requireLiveTeam(loaded).projection.team.cursor, input.afterCursor, signal),
-      }))
-      return freeze(await registered.wait)
+      if (this.closing) return freeze({ kind: 'closed' as const })
+      try {
+        const loaded = await this.ensureTeam(input.teamId, false)
+        const registered = await loaded.queue.run(() => {
+          if (this.closing) return Promise.resolve({ wait: Promise.resolve<TeamWatchResult>({ kind: 'closed' }) })
+          const team = this.requireLiveTeam(loaded).projection.team
+          const wait = team.archivedAt !== undefined
+            ? Promise.resolve<TeamWatchResult>(team.cursor > input.afterCursor ? { kind: 'changed', cursor: team.cursor } : { kind: 'closed' })
+            : loaded.activity.wait(team.cursor, input.afterCursor, signal)
+          return Promise.resolve({ wait })
+        })
+        return freeze(await registered.wait)
+      } catch (error: unknown) {
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- disposal may begin while this admitted watch awaits recovery.
+        if (this.closing && error instanceof TeamError && error.code === 'TEAM_DISPOSED') return freeze({ kind: 'closed' as const })
+        throw error
+      }
     })
   }
 
@@ -2526,6 +2702,7 @@ export class TeamHub extends TeamRuntime {
         const actorName = await this.resolvePhaseAuthority(current, resolution, input, finalChannel)
         const cancellationStall = resolution.scope.kind === 'activation-controller-cancellation-stall'
           || resolution.scope.kind === 'activation-controller-closure-stall'
+          || resolution.scope.kind === 'activation-controller-startup-stall'
         if ((current.projection.team.closure !== undefined || current.projection.team.cancellation !== undefined)
           && !cancellationStall) {
           throw new TeamError(`Team '${current.id}' has a typed lifecycle intent; use its lifecycle command`, 'TEAM_INVALID_ARGUMENT')
@@ -2650,6 +2827,23 @@ export class TeamHub extends TeamRuntime {
             ? binding.recovery?.supervisor !== undefined
             : !isDeepStrictEqual(binding.recovery?.supervisor, scope.supervisor)
               || scope.supervisor.generation !== scope.activationId)) this.rejectPhaseActor()
+        this.assertTeamCursor(team, scope.expectedCursor)
+        return TEAM_ACTIVATION_CONTROLLER_PROOF_SOURCE
+      }
+      case 'activation-controller-startup-stall': {
+        const current = team.projection.team
+        const intent = scope.closureKind === 'cancel' ? current.cancellation : current.closure
+        const reservation = team.projection.participants.get(scope.participantId)?.activationReservation
+        if (resolution.sourceName !== TEAM_ACTIVATION_CONTROLLER_PROOF_SOURCE || input.phase !== 'stalled'
+          || !isDeepStrictEqual(input.reason, scope.reason) || scope.expectedCursor !== input.expectedCursor
+          || (current.phase !== 'quiescing' && current.phase !== 'stalled') || intent === undefined
+          || (scope.closureKind !== 'cancel' && current.closure?.kind !== scope.closureKind)
+          || intent.idempotencyKey !== scope.idempotencyKey || intent.requestedAt !== scope.requestedAt
+          || reservation?.id !== scope.reservationId || reservation.releasedAt !== undefined
+          || reservation.sessionId !== scope.sessionId || reservation.provider !== scope.provider
+          || [...team.projection.activations.values()].some(binding => binding.reservationId === scope.reservationId)) {
+          this.rejectPhaseActor()
+        }
         this.assertTeamCursor(team, scope.expectedCursor)
         return TEAM_ACTIVATION_CONTROLLER_PROOF_SOURCE
       }
@@ -3416,6 +3610,91 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  /** Reserve a durable startup slot before the provider can create a process. */
+  override async reserveActivation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot> {
+    return await this.changeActivationReservation(request, false)
+  }
+
+  /** Confirm cleanup of an unpublished provider start without discarding unknown residency. */
+  override async releaseActivationReservation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot> {
+    return await this.changeActivationReservation(request, true)
+  }
+
+  private async changeActivationReservation(
+    request: ActivationReservationRequest, release: boolean,
+  ): Promise<ActivationReservationSnapshot> {
+    return await this.admit(async () => {
+      const { actor, ...wire } = request
+      const input = activationReservationInputSchema.parse(wire)
+      const checkAuthority = (): void => {
+        const { sourceName, scope } = this.requireSystemActivationProof(actor)
+        const { kind, ...selection } = scope
+        if (sourceName !== TEAM_ACTIVATION_CONTROLLER_PROOF_SOURCE
+          || kind !== (release ? 'activation-controller-release-reservation' : 'activation-controller-reserve')
+          || !isDeepStrictEqual(selection, input)) this.rejectActivationActor()
+      }
+      checkAuthority()
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(async () => {
+        const current = this.requireLiveTeam(loaded)
+        checkAuthority()
+        this.assertTeamCursor(current, input.expectedCursor)
+        const participant = current.projection.participants.get(input.participantId)
+        if (participant === undefined || !isAgentParticipant(participant)) {
+          throw new TeamError('Startup reservation requires an agent participant', 'TEAM_PARTICIPANT_NOT_FOUND')
+        }
+        const prior = participant.activationReservation
+        let reservation: ActivationReservationSnapshot
+        const createdAt = nextTeamTimestamp(current.projection)
+        if (release) {
+          if (prior?.id !== input.reservationId || prior.sessionId !== input.sessionId || prior.provider !== input.provider) {
+            this.rejectActivationActor()
+          }
+          if ([...current.projection.activations.values()].some(binding => binding.reservationId === prior.id)) {
+            throw new TeamError('A bound startup reservation must settle through its activation epoch', 'TEAM_NOT_QUIESCENT')
+          }
+          if (prior.releasedAt !== undefined) return freeze(structuredClone(prior))
+          reservation = { ...prior, releasedAt: createdAt }
+        } else {
+          if (current.projection.team.phase !== 'active' || current.projection.team.cancellation !== undefined
+            || current.projection.team.closure !== undefined || participant.phase !== 'active') {
+            throw new TeamError('Team or participant is not accepting activation startup', 'TEAM_NOT_QUIESCENT')
+          }
+          this.assertNoPendingParentCharges(current.projection)
+          const bindings = [...current.projection.activations.values()]
+          if ([...current.projection.participants.values()].some(value => value.id !== participant.id
+            && value.activationReservation?.id === input.reservationId)
+            || bindings.some(binding => binding.reservationId === input.reservationId)
+            || prior?.id === input.reservationId && prior.releasedAt !== undefined) {
+            throw new TeamError('Startup reservation identity is already consumed', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+          }
+          if (prior?.id === input.reservationId && prior.releasedAt === undefined
+            && prior.sessionId === input.sessionId && prior.provider === input.provider) {
+            return freeze(structuredClone(prior))
+          }
+          if (bindings.some(binding => binding.activation.participantId === participant.id && binding.quiescedAt === undefined)
+            || prior !== undefined && prior.releasedAt === undefined
+              && !bindings.some(binding => binding.reservationId === prior.id && binding.quiescedAt !== undefined)) {
+            throw new TeamError('Participant startup or old epoch requires confirmed termination', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+          }
+          const limit = liveActivationLimit(current.projection.budgets, current.projection.team.authorityGrant)
+          const used = liveActivationCapacity(current.projection.participants.values(), bindings, current.projection.tasks.values())
+          if (limit !== undefined && used >= limit || participant.authorityGrant?.budgets.maxLiveActivations === 0) {
+            throw new TeamError('Team live Activation capacity is exhausted', 'TEAM_BUDGET_EXCEEDED')
+          }
+          reservation = { id: input.reservationId, sessionId: input.sessionId, provider: input.provider, reservedAt: createdAt }
+        }
+        await this.authorizeOrThrow('activate', input.teamId, {
+          operation: release ? 'activation-startup-release' : 'activation-startup-reserve', ...input,
+        }, participant.id)
+        checkAuthority()
+        await this.commitTeamCommand(current, [{ type: 'participant/changed',
+          participant: { ...participant, activationReservation: reservation }, createdAt }], 'TEAM_INVALID_ARGUMENT')
+        return freeze(structuredClone(reservation))
+      })
+    })
+  }
+
   /**
    * Bind one published activation to its Team participant and Session.
    * @param request - observed Team cursor and complete published binding.
@@ -3447,6 +3726,17 @@ export class TeamHub extends TeamRuntime {
             `Activation '${binding.activation.id}' does not bind an active agent participant`,
             'TEAM_PARTICIPANT_NOT_FOUND',
           )
+        }
+        const reservation = participant.activationReservation
+        if (liveActivationLimit(current.projection.budgets, current.projection.team.authorityGrant) !== undefined
+          || participant.authorityGrant?.budgets.maxLiveActivations !== undefined || binding.reservationId !== undefined) {
+          if (reservation === undefined || binding.reservationId !== reservation.id || reservation.releasedAt !== undefined
+            || reservation.sessionId !== binding.sessionId || reservation.provider !== binding.provider) {
+            throw new TeamError('Activation binding has no matching live startup reservation', 'TEAM_ACTOR_PROOF_INVALID')
+          }
+          if ([...current.projection.activations.values()].some(value => value.reservationId === reservation.id)) {
+            throw new TeamError('Startup reservation already belongs to another binding', 'TEAM_ACTOR_PROOF_INVALID')
+          }
         }
         if (current.projection.activations.has(binding.activation.id)) {
           throw new TeamError(
@@ -3729,7 +4019,8 @@ export class TeamHub extends TeamRuntime {
   ): void {
     const resolution = this.requireSystemActivationProof(actor)
     const scope = resolution.scope
-    if (scope.kind === 'activation-controller-bind' || scope.kind === 'activation-controller-status') {
+    if (scope.kind === 'activation-controller-bind' || scope.kind === 'activation-controller-status'
+      || scope.kind === 'activation-controller-reserve' || scope.kind === 'activation-controller-release-reservation') {
       this.rejectActivationActor()
     }
     if (!this.matchesActivationQuiescenceScope(resolution, input, source)
@@ -3781,7 +4072,8 @@ export class TeamHub extends TeamRuntime {
     source: 'fenced' | 'quiesced',
   ): boolean {
     const scope = resolution.scope
-    const matchesInput = scope.kind !== 'activation-controller-bind'
+    const matchesInput = scope.kind !== 'activation-controller-reserve' && scope.kind !== 'activation-controller-release-reservation'
+      && scope.kind !== 'activation-controller-bind'
       && scope.kind !== 'activation-controller-status'
       && scope.teamId === input.teamId
       && scope.activationId === input.activationId
@@ -4969,6 +5261,25 @@ export class TeamHub extends TeamRuntime {
         }
         await this.commitTeamCommand(current, [record], 'TEAM_WORKFLOW_PLAN_INVALID')
         return this.workflowPlanSnapshot(plan)
+      })
+    })
+  }
+
+  /** Inspect one workflow under its owning Team serializer and configured response allowance. */
+  override async inspectWorkflowPlan(request: TeamWorkflowInspectRequest): Promise<TeamWorkflowInspection> {
+    return await this.admit(async () => {
+      const input = teamWorkflowInspectRequestSchema.parse(request)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded).projection
+        const plan = current.workflowPlans.get(input.planId)
+        if (plan === undefined) throw new TeamError(`workflow plan '${input.planId}' was not found`, 'TEAM_WORKFLOW_PLAN_NOT_FOUND')
+        const result = projectWorkflowInspection(plan, current.team.cursor,
+          { ...input, afterCursor: input.afterCursor ?? -1, limit: this.pageLimit(input.limit ?? this.config.recoveryPageSize) },
+          this.config.maxSelectionTextBytes, this.config.maxSelectionBytes)
+        if (!result.ok) throw new TeamError(`Workflow inspection failed: ${result.reason}`,
+          result.reason === 'metadata' || result.reason === 'row' ? 'TEAM_CHANNEL_BACKPRESSURE' : 'TEAM_WORKFLOW_PLAN_INVALID')
+        return Promise.resolve(freeze(result.value))
       })
     })
   }
@@ -8073,12 +8384,9 @@ export class TeamHub extends TeamRuntime {
     await this.repairPendingParentCharges(team)
     return await team.queue.run(async () => {
       const current = this.requireLiveTeam(team)
-      resolve(current)
+      const scope = resolve(current)
       this.assertNoPendingParentCharges(current.projection)
       this.assertTeamWallTime(current.projection)
-      if (current.projection.channelIds.size >= this.teamLimit(current.projection, 'maxChannels', this.config.maxChannelsPerTeam)) {
-        throw new TeamError(`Team '${input.teamId}' reached its channel limit`, 'TEAM_CHANNEL_BACKPRESSURE')
-      }
       this.assertTeamCursor(current, input.expectedCursor)
       if (current.projection.team.phase !== 'active') {
         throw new TeamError(`Team '${input.teamId}' is not active`, 'TEAM_INVALID_ARGUMENT')
@@ -8091,8 +8399,21 @@ export class TeamHub extends TeamRuntime {
       }
       await this.authorizeOrThrow('channel-open', input.teamId, facts)
       resolve(current)
+      // The review identity survives the gap between channel attachment and request publication.
+      const id = scope.kind === 'scheduler-review-channel-open'
+        ? channelIdSchema.parse(`channel-review-${createHash('sha256')
+          .update(JSON.stringify([input.teamId, scope.taskId, scope.attemptId, scope.reviewerId])).digest('hex')}`)
+        : mintChannelId()
+      if (current.projection.channelIds.has(id)) {
+        const channel = await this.ensureChannel(id)
+        resolve(current)
+        return this.channelSnapshot(this.requireLiveChannel(channel))
+      }
+      if (current.projection.channelIds.size >= this.teamLimit(current.projection, 'maxChannels', this.config.maxChannelsPerTeam)) {
+        throw new TeamError(`Team '${input.teamId}' reached its channel limit`, 'TEAM_CHANNEL_BACKPRESSURE')
+      }
       const manifest: ChannelManifest = {
-        id: mintChannelId(),
+        id,
         teamId: input.teamId,
         adapter: { ...input.adapter },
         ...input.viewPolicy === undefined ? {} : { viewPolicy: { ...input.viewPolicy } },
@@ -8126,7 +8447,7 @@ export class TeamHub extends TeamRuntime {
         teamId: input.teamId,
         expectedCursor: input.expectedTeamCursor,
         adapter: CONSULT_CHANNEL_ADAPTER,
-        viewPolicy: { type: 'directed', version: 1 },
+        viewPolicy: { type: 'recent-window', version: 1 },
         participants: [
           { id: input.initiatorId, role: CONSULT_INITIATOR_ROLE },
           { id: input.reviewerId, role: CONSULT_RESPONDENT_ROLE },
@@ -10170,11 +10491,19 @@ export class TeamHub extends TeamRuntime {
     return await this.admit(async () => {
       const { signal, ...wire } = request
       const input = channelWatchRequestSchema.parse(wire)
-      const channel = await this.ensureAttachedChannel(input.channelId, false)
-      const registered = await channel.queue.run(() => Promise.resolve({
-        wait: channel.activity.wait(this.requireLiveChannel(channel).projection.cursor, input.afterCursor, signal),
-      }))
-      return freeze(await registered.wait)
+      if (this.closing) return freeze({ kind: 'closed' as const })
+      try {
+        const channel = await this.ensureAttachedChannel(input.channelId, false)
+        const registered = await channel.queue.run(() => Promise.resolve({
+          wait: this.closing ? Promise.resolve<ChannelWatchResult>({ kind: 'closed' })
+            : channel.activity.wait(this.requireLiveChannel(channel).projection.cursor, input.afterCursor, signal),
+        }))
+        return freeze(await registered.wait)
+      } catch (error: unknown) {
+        // oxlint-disable-next-line typescript/no-unnecessary-condition -- disposal may begin while this admitted watch awaits recovery.
+        if (this.closing && error instanceof TeamError && error.code === 'TEAM_DISPOSED') return freeze({ kind: 'closed' as const })
+        throw error
+      }
     })
   }
 
@@ -10219,7 +10548,28 @@ export class TeamHub extends TeamRuntime {
   /** Admit one operation before disposal closes new Team-Hub work. */
   private async admit<T>(operation: () => Promise<T>): Promise<T> {
     if (this.closing) throw new TeamError('Team Hub is disposing', 'TEAM_DISPOSED')
-    const accepted = Promise.resolve().then(operation)
+    const scope = { active: true, teams: new Set<LoadedTeam>(), channels: new Set<LoadedChannel>() }
+    const accepted = Promise.resolve().then(() => this.projectionReadScopes.run(scope, async () => {
+      const [outcome] = await Promise.allSettled([Promise.resolve().then(operation)] as const)
+      scope.active = false
+      for (const team of scope.teams) team.readers -= 1
+      for (const channel of scope.channels) channel.readers -= 1
+      const cleaning = [
+        ...[...scope.teams].map(team => this.evictArchivedTeam(team)),
+        ...[...scope.channels].filter(channel => channel.readers === 0 && this.terminalChannels.has(channel))
+          .map(channel => this.discardChannel(channel)),
+      ]
+      scope.teams.clear()
+      scope.channels.clear()
+      const cleanup = await Promise.allSettled(cleaning)
+      const errors = cleanup.flatMap(result => result.status === 'rejected' ? [result.reason as unknown] : [])
+      if (errors.length > 0) {
+        if (outcome.status === 'rejected') errors.unshift(outcome.reason)
+        throw new AggregateError(errors, 'Team admission projection cleanup failed')
+      }
+      if (outcome.status === 'rejected') throw outcome.reason
+      return outcome.value
+    }))
     this.accepted.add(accepted)
     this.adjustMetric('activeAdmissions', 1)
     try {
@@ -10234,23 +10584,81 @@ export class TeamHub extends TeamRuntime {
 
   /** Load a Team once, sharing an in-flight recovery among concurrent callers. */
   private async ensureTeam(teamId: TeamId, reconcile = true): Promise<LoadedTeam> {
+    let eviction = this.teamEvictions.get(teamId)
+    while (eviction !== undefined) {
+      await eviction
+      eviction = this.teamEvictions.get(teamId)
+    }
     const existing = this.teams.get(teamId)
     if (existing !== undefined && !existing.invalid) {
+      this.retainTeam(existing)
       if (reconcile && existing.stream.tailSequence > existing.projection.team.cursor) {
         await this.refreshTeamIfAdvanced(existing)
       }
       return existing
     }
     const loading = this.teamLoads.get(teamId)
-    if (loading !== undefined) return await loading
+    if (loading !== undefined) return this.retainTeam(await loading)
     const opened = this.openTeam(teamId)
     this.teamLoads.set(teamId, opened)
     try {
-      return await opened
+      return this.retainTeam(await opened)
     } finally {
       // v8 ignore next -- a replacement loader owns this key only after a stale recovery is discarded.
       if (this.teamLoads.get(teamId) === opened) this.teamLoads.delete(teamId)
     }
+  }
+
+  /** Keep a recovered projection alive through every admitted operation that receives it. */
+  private retainTeam(team: LoadedTeam): LoadedTeam {
+    const scope = this.projectionReadScopes.getStore()
+    if (scope?.active && !scope.teams.has(team)) {
+      scope.teams.add(team)
+      team.readers += 1
+    }
+    return team
+  }
+
+  /** Pin channel projections independently so unrelated watches cannot retain terminal WALs. */
+  private retainChannel(channel: LoadedChannel): LoadedChannel {
+    const scope = this.projectionReadScopes.getStore()
+    if (scope?.active && !scope.channels.has(channel)) {
+      scope.channels.add(channel)
+      channel.readers += 1
+    }
+    return channel
+  }
+
+  /** Archived journals are immutable; release their projections after their last admitted reader. */
+  private async evictArchivedTeam(team: LoadedTeam): Promise<void> {
+    if (this.closing || team.readers !== 0 || team.projection.team.archivedAt === undefined
+      || this.teams.get(team.id) !== team || team.invalid) return
+    const existing = this.teamEvictions.get(team.id)
+    if (existing !== undefined) { await existing; return }
+    const eviction = Promise.resolve().then(async () => {
+      const auditNames = [auditStreamName(team.id), ...[...team.projection.channelIds].map(id => auditStreamName(team.id, id))]
+      const audits = auditNames.flatMap((name) => {
+        const stream = this.auditStreams.get(name)
+        return stream === undefined ? [] : [{ name, stream }]
+      })
+      try {
+        const results = await Promise.allSettled([team.stream.close(), ...audits.map(({ stream }) => stream.close())])
+        const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason as unknown] : [])
+        if (errors.length > 0) throw new AggregateError(errors, 'Archived Team stream cleanup failed')
+      } finally {
+        for (const name of auditNames) {
+          this.auditStreams.delete(name)
+          this.validatedAuditStreams.delete(name)
+          this.auditQueues.delete(name)
+        }
+        team.activity.close()
+        team.invalid = true
+        if (this.teams.get(team.id) === team) this.teams.delete(team.id)
+      }
+    })
+    this.teamEvictions.set(team.id, eviction)
+    try { await eviction }
+    finally { this.teamEvictions.delete(team.id) }
   }
 
   /** Reconcile durable Team records appended by another Hub process. */
@@ -10323,6 +10731,7 @@ export class TeamHub extends TeamRuntime {
     try {
       const recovered = await this.recoverTeam(stream, teamId)
       const loaded: LoadedTeam = {
+        readers: 0,
         id: teamId,
         stream,
         queue: new SerialQueue(),
@@ -10467,20 +10876,25 @@ export class TeamHub extends TeamRuntime {
 
   /** Load a channel once, sharing one in-flight WAL recovery among callers. */
   private async ensureChannel(channelId: ChannelId, reconcile = true): Promise<LoadedChannel> {
-    await this.channelReleases.get(channelId)
+    let release = this.channelReleases.get(channelId)
+    while (release !== undefined) {
+      await release
+      release = this.channelReleases.get(channelId)
+    }
     const existing = this.channels.get(channelId)
     if (existing !== undefined && !existing.invalid) {
+      this.retainChannel(existing)
       if (reconcile && existing.stream.tailSequence > existing.projection.cursor) {
         await this.refreshChannelIfAdvanced(existing)
       }
       return existing
     }
     const loading = this.channelLoads.get(channelId)
-    if (loading !== undefined) return await loading
+    if (loading !== undefined) return this.retainChannel(await loading)
     const opened = this.openChannelStream(channelId)
     this.channelLoads.set(channelId, opened)
     try {
-      return await opened
+      return this.retainChannel(await opened)
     } finally {
       // v8 ignore next -- a replacement loader owns this key only after a stale recovery is discarded.
       if (this.channelLoads.get(channelId) === opened) this.channelLoads.delete(channelId)
@@ -11586,6 +12000,10 @@ export class TeamHub extends TeamRuntime {
 
   /** Return whether a completion or failure driver may begin terminal channel cleanup. */
   private closureResourcesSettled(projection: TeamProjection, requireQuiescence = false): boolean {
+    if ([...projection.participants.values()].some(participant => participant.activationReservation !== undefined
+      && participant.activationReservation.releasedAt === undefined
+      && ![...projection.activations.values()].some(binding =>
+        binding.reservationId === participant.activationReservation?.id))) return false
     if ([...projection.tasks.values()].some(task => (
       task.phase === 'pending' || task.phase === 'assigned' || task.phase === 'running' || task.phase === 'review'
     ))) return false
@@ -12693,6 +13111,7 @@ export class TeamHub extends TeamRuntime {
     })
     const recovered = await this.recoverChannel(stream, channelId)
     const loaded: LoadedChannel = {
+      readers: 0,
       id: channelId,
       stream,
       queue: new SerialQueue(),
@@ -12705,6 +13124,7 @@ export class TeamHub extends TeamRuntime {
       invalid: false,
     }
     this.channels.set(channelId, loaded)
+    this.retainChannel(loaded)
     this.markChannelTerminal(loaded)
     return loaded
   }
@@ -12830,6 +13250,7 @@ export class TeamHub extends TeamRuntime {
         throw new TeamHubError(`channel '${manifest.id}' append returned an unexpected tail`, 'TEAM_CHANNEL_WAL_MALFORMED')
       }
       const loaded: LoadedChannel = {
+        readers: 0,
         id: manifest.id,
         stream,
         queue: new SerialQueue(),
@@ -12842,6 +13263,7 @@ export class TeamHub extends TeamRuntime {
         invalid: false,
       }
       this.channels.set(manifest.id, loaded)
+      this.retainChannel(loaded)
       return { channel: loaded, records }
     } catch (error: unknown) {
       return await closeChannelAfterFailure(stream, error, () => {
@@ -12960,7 +13382,9 @@ export class TeamHub extends TeamRuntime {
     }
     assertTaskCancellationSettlements(projection)
     try {
-      const appended = await current.stream.append(current.projection.team.cursor, acceptedRecords)
+      const appended = await current.stream.append(current.projection.team.cursor, acceptedRecords, {
+        summary: this.discoverySummary(projection),
+      })
       /* v8 ignore next 3 -- LogStream append returns the final cursor of its accepted batch. */
       if (appended.tailSequence !== cursor) {
         throw new TeamHubError(`Team '${loaded.id}' append returned an unexpected tail`, 'TEAM_JOURNAL_MALFORMED')
@@ -12980,6 +13404,7 @@ export class TeamHub extends TeamRuntime {
     }
     for (const event of events) this.emitTeamEvent(event)
     current.activity.notify(projection.team.cursor)
+    if (projection.team.archivedAt !== undefined) current.activity.close()
     await this.maybeCheckpointTeam(current)
     await this.maintainAuditProjection(loaded.id, 'team', current.stream)
   }
@@ -13127,8 +13552,8 @@ export class TeamHub extends TeamRuntime {
   /** Evict terminal handles only after no accepted operation can still read them. */
   private async evictTerminalChannels(): Promise<void> {
     if (this.closing || this.accepted.size !== 0) return
-    const terminal = [...this.terminalChannels]
-    this.terminalChannels.clear()
+    const terminal = [...this.terminalChannels].filter(channel => channel.readers === 0)
+    for (const channel of terminal) this.terminalChannels.delete(channel)
     await Promise.all(terminal.map(channel => this.discardChannel(channel)))
   }
 
@@ -14034,7 +14459,7 @@ export class TeamHub extends TeamRuntime {
       const limit = teamBudget[key]
       const value = requestedBudget[key]
       if (limit === undefined || value === undefined) continue
-      const remaining = limit - usage[key] - reserved[key]
+      const remaining = key === 'maxLiveActivations' ? limit : limit - usage[key] - reserved[key]
       if (value > remaining) {
         throw new TeamError(
           `task budget '${key}' requests ${String(value)} but Team '${projection.team.id}' has ${String(Math.max(0, remaining))} remaining`,
@@ -14128,19 +14553,38 @@ export class TeamHub extends TeamRuntime {
   /** Require a nested Team's typed budget to fit inside its parent's remainder. */
   private assertChildTeamBudget(projection: TeamProjection, requested: JsonObject, reservationTaskId?: TeamTaskId): void {
     const parentBudget = resourceBudget(projection.budgets, 'Team budget')
+    const liveLimit = liveActivationLimit(projection.budgets, projection.team.authorityGrant)
     const childBudget = resourceBudget(requested, 'child Team budget')
+    if (childBudget.maxChildTeams === Number.MAX_SAFE_INTEGER) {
+      throw new TeamError('Child Team count leaves no representable slot for the child itself', 'TEAM_BUDGET_INVALID')
+    }
     const usage = resourceBudgetUsage(projection)
     const reservation = reservationTaskId === undefined ? undefined : projection.tasks.get(reservationTaskId)
-    if (reservation !== undefined) usage.maxConcurrency = Math.max(0, usage.maxConcurrency - taskConcurrencyUsage(reservation))
+    if (reservation !== undefined) {
+      usage.maxConcurrency = Math.max(0, usage.maxConcurrency - taskConcurrencyUsage(reservation))
+      usage.maxChildTeams -= taskChildTeamReservation(reservation)
+      usage.maxLiveActivations -= taskLiveActivationReservation(reservation)
+    }
+    if (parentBudget.maxChildTeams !== undefined) {
+      if (childBudget.maxChildTeams === undefined) {
+        throw new TeamError('Child Team must freeze its descendant count under a bounded parent', 'TEAM_BUDGET_INVALID')
+      }
+      if (childBudget.maxChildTeams + 1 > parentBudget.maxChildTeams - usage.maxChildTeams) {
+        throw new TeamError('Child Team identity and descendant reservation exceed the parent lifetime count', 'TEAM_BUDGET_EXCEEDED')
+      }
+    }
+    if (liveLimit !== undefined && childBudget.maxLiveActivations === undefined) {
+      throw new TeamError('Child Team must freeze its live Activation capacity under a bounded parent', 'TEAM_BUDGET_INVALID')
+    }
     for (const key of RESOURCE_BUDGET_KEYS) {
-      const limit = parentBudget[key]
+      const limit = key === 'maxLiveActivations' ? liveLimit : parentBudget[key]
       const value = childBudget[key]
       if (limit === undefined || value === undefined) continue
       const remaining = limit - usage[key]
       if (value > remaining) {
         throw new TeamError(
           `child Team budget '${key}' requests ${String(value)} but Team '${projection.team.id}' has ${String(Math.max(0, remaining))} remaining`,
-          'TEAM_BUDGET_EXCEEDED',
+          key === 'maxLiveActivations' && value <= limit ? 'TEAM_DELEGATION_BUSY' : 'TEAM_BUDGET_EXCEEDED',
         )
       }
     }
@@ -14489,6 +14933,10 @@ export class TeamHub extends TeamRuntime {
 
   /** Return whether cancellation may begin channel closure without stranding live Team-owned resources. */
   private cancellationResourcesSettled(projection: TeamProjection): boolean {
+    if ([...projection.participants.values()].some(participant => participant.activationReservation !== undefined
+      && participant.activationReservation.releasedAt === undefined
+      && ![...projection.activations.values()].some(binding =>
+        binding.reservationId === participant.activationReservation?.id))) return false
     if ([...projection.workspaceAllocations.values()].some(allocation => allocation.lifecycle !== 'released')) return false
     if (projection.pendingParentCharges.size > 0) return false
     if ([...projection.tasks.values()].some(task => (
@@ -14602,9 +15050,15 @@ export class TeamHub extends TeamRuntime {
       taskOutcomes: structuredClone(taskOutcomes), updatedAt: projection.team.updatedAt } }
   }
 
-  /** Build an immutable detached Team summary response. */
-  private teamSnapshot(projection: TeamProjection): TeamSnapshot {
-    return freeze(structuredClone(projection.team))
+  /** Bound metadata before its journal batch commits; reserve the largest compaction watermark. */
+  private discoverySummary(projection: TeamProjection): TeamSnapshot {
+    const summary = projection.team
+    const header = { stream: { name: teamStreamName(summary.id), version: TEAM_JOURNAL_FORMAT_VERSION,
+      tailSequence: summary.cursor, firstSequence: Number.MAX_SAFE_INTEGER, summary } }
+    if (Buffer.byteLength(JSON.stringify(header)) + 1 > this.config.maxDiscoveryBytes) {
+      throw new TeamError('Team discovery metadata exceeds maxDiscoveryBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+    }
+    return summary
   }
 
   /** Build an immutable detached task response. */
@@ -14642,6 +15096,7 @@ export class TeamHub extends TeamRuntime {
     }
     return {
       activation: { ...binding.activation },
+      ...binding.reservationId === undefined ? {} : { reservationId: binding.reservationId },
       sessionId: binding.sessionId,
       provider: normalizedText(binding.provider, 'provider'),
       ...binding.selection === undefined ? {} : { selection: structuredClone(binding.selection) },
@@ -14797,6 +15252,7 @@ export class TeamHub extends TeamRuntime {
     this.auditStreams.clear()
     this.auditQueues.clear()
     this.validatedAuditStreams.clear()
+    this.projectionReadScopes.disable()
     // v8 ignore next -- aggregate disposal failures require a deliberately faulty log provider.
     if (failures.length > 0) throw new AggregateError(failures, 'Team Hub disposal failed')
   }
@@ -14945,6 +15401,8 @@ const RESOURCE_BUDGET_KEYS = [
   'maxCostUnits',
   'maxRetries',
   'maxConcurrency',
+  'maxChildTeams',
+  'maxLiveActivations',
   'maxArtifactBytes',
 ] as const
 
@@ -15083,6 +15541,10 @@ function resourceBudgetUsage(projection: TeamProjection): ResourceBudgetValues {
   values.maxCostUnits = usage.costUnits
   values.maxRetries = teamRetryCount(projection.tasks)
   values.maxConcurrency = [...projection.tasks.values()].reduce((sum, task) => safeBudgetNumber(sum + taskConcurrencyUsage(task)), 0)
+  values.maxLiveActivations = liveActivationCapacity(
+    projection.participants.values(), projection.activations.values(), projection.tasks.values(),
+  )
+  values.maxChildTeams = [...projection.tasks.values()].reduce((sum, task) => safeBudgetNumber(sum + taskChildTeamReservation(task)), 0)
   return values
 }
 
@@ -15093,6 +15555,7 @@ function reservedTaskBudget(tasks: ReadonlyMap<TeamTaskId, TeamTaskSnapshot>): R
     if (task.phase === 'completed' || task.phase === 'failed' || task.phase === 'cancelled' || task.phase === 'deleted') continue
     const budget = resourceBudget(task.budget, `task '${task.id}' budget`)
     for (const key of RESOURCE_BUDGET_KEYS) {
+      if (key === 'maxLiveActivations') continue
       const value = budget[key]
       if (value !== undefined) reserved[key] = safeBudgetNumber(reserved[key] + value)
     }
@@ -15154,8 +15617,8 @@ function taskBudgetExceeded(
     maxConcurrency: taskConcurrencyUsage(task),
   }
   for (const key of RESOURCE_BUDGET_KEYS) {
-    // Concurrency is an admission cap, not cumulative task consumption.
-    if (key === 'maxConcurrency') continue
+    // Execution and descendant ceilings are checked at admission, not charged by model usage.
+    if (key === 'maxConcurrency' || key === 'maxChildTeams' || key === 'maxLiveActivations') continue
     const limit = budget[key]
     if (limit !== undefined && values[key] > limit) {
       return {

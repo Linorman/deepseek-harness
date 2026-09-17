@@ -80,13 +80,15 @@ describe('client bundle purity gate', () => {
     expect(resolveId('@clocky/clocky-session/surface')).toBeNull()
     expect(resolveId('@clocky/clocky-brand')).toBeNull()
     expect(resolveId('@clocky/clocky-team/schema')).toBeNull()
+    expect(resolveId('@clocky/clocky-team/selection')).toBeNull()
+    expect(() => resolveId('@clocky/clocky-team')).toThrow(/purity/)
   })
 
   it('lets exact generated Remote contributions inline without admitting their package implementation', () => {
-    expect(resolveId('@clocky/clocky-goal/remote')).toBeNull()
-    expect(() => resolveId('@clocky/clocky-goal')).toThrow(/purity/)
-    expect(() => resolveId('@clocky/clocky-goal/client')).toThrow(/purity/)
-    expect(() => resolveId('@clocky/clocky-goal/remote/nested')).toThrow(/purity/)
+    expect(resolveId('@clocky/clocky-compat-goal/remote')).toBeNull()
+    expect(() => resolveId('@clocky/clocky-compat-goal')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-compat-goal/client')).toThrow(/purity/)
+    expect(() => resolveId('@clocky/clocky-compat-goal/remote/nested')).toThrow(/purity/)
   })
 
   it('throws on any other @clocky leak', () => {
@@ -103,7 +105,7 @@ describe('client bundle purity gate', () => {
 
   it('admits the parser-preloaded runtime for every dynamic bundle', () => {
     expect(resolveId('@clocky/clocky-client-runtime/client')).toBeNull()
-    const withoutRequest = purityResolveId('@clocky/clocky-client-ui-goal')
+    const withoutRequest = purityResolveId('@clocky/clocky-client-ui-team')
     expect(withoutRequest('@clocky/clocky-client-runtime/client')).toBeNull()
   })
 
@@ -148,16 +150,16 @@ describe('client bundle debug artifacts', () => {
   })
 
   it('maps first-party sources to their repository package paths', () => {
-    const configs = clientConfigs('@clocky/clocky-client-ui-goal')
+    const configs = clientConfigs('@clocky/clocky-client-ui-team')
     const outputOptions = configs[0]?.outputOptions
     if (typeof outputOptions !== 'object' || outputOptions === null) throw new Error('client output options missing')
     const transform = outputOptions.sourcemapPathTransform
     if (transform === undefined) throw new Error('client sourcemap path transform missing')
 
-    const source = transform('../src/client/GoalBar.tsx', clientSourceMapPath('client/ui-goal'))
-    expect(source).toBe('../../../packages/client/ui-goal/src/client/GoalBar.tsx')
-    const resolved = new URL(source, 'https://clocky.test/plugins/@clocky/clocky-client-ui-goal/client.js.map')
-    expect(resolved.pathname).toBe('/packages/client/ui-goal/src/client/GoalBar.tsx')
+    const source = transform('../src/client/TeamActivity.tsx', clientSourceMapPath('client/ui-team'))
+    expect(source).toBe('../../../packages/client/ui-team/src/client/TeamActivity.tsx')
+    const resolved = new URL(source, 'https://clocky.test/plugins/@clocky/clocky-client-ui-team/client.js.map')
+    expect(resolved.pathname).toBe('/packages/client/ui-team/src/client/TeamActivity.tsx')
   })
 
   it('maps dual-face host sources to the host package group', () => {

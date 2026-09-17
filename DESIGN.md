@@ -1,14 +1,16 @@
 ---
 version: 1
 name: "Clocky Web"
-description: "A compact, transcript-centred agent workspace with quiet chrome and durable Team navigation."
+description: "A Team-first agent workspace with an operational overview and on-demand Session inspection."
 colors:
-  primary: "#0F1115"
-  accent: "#4176E6"
-  surface: "#F9FAFB"
-  border: "#E1E5EE"
-  danger: "#EC1313"
-  success: "#22C55E"
+  primary: "#182230"
+  accent: "#315FCC"
+  surface: "#FFFFFF"
+  canvas: "#F4F6FA"
+  navigation: "#151B26"
+  border: "#DFE5EE"
+  danger: "#B42318"
+  success: "#15803D"
 typography:
   sans:
     fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Helvetica Neue, Helvetica, Arial, sans-serif"
@@ -18,17 +20,17 @@ rounded:
   sm: "6px"
   md: "8px"
   lg: "12px"
-  pill: "999px"
 spacing:
   sidebar-inline: "12px"
+  sidebar-expanded: "224px"
   sidebar-rail: "56px"
   control-height: "36px"
-  task-row-min-height: "44px"
+  task-row-min-height: "48px"
 components:
-  sidebar: { }
-  composer: { }
-  task-list: { }
-  toast: { }
+  sidebar: { surface: "graphite" }
+  team-workspace: { defaultView: "overview" }
+  task-inspector: { width: "360px" }
+  session-inspection: { maxWidth: "1120px" }
 ---
 
 # Clocky Web Design System
@@ -37,69 +39,76 @@ components:
 
 ### Creative North Star
 
-Desktop-native concentration: a quiet technical notebook where the transcript owns the screen and navigation stays compact, tactile, and low-contrast until the user needs it.
+A precise operational workspace: users can see what their Team is doing, identify work requiring attention, and inspect execution without losing their place. Graphite navigation frames a quiet, readable working surface. Technology is expressed through live state, clear execution relationships, and restrained feedback motion.
 
 ### Product context and register
 
-- **Audience and primary job:** people directing and inspecting durable agent work.
-- **Target markets:** global developer tooling; no Japan-market behavior is implied by the Chinese locale.
-- **Locales:** Simplified Chinese and English share equal product coverage. Copy, aria labels, dates, and visible state labels route through the locale service.
-- **Usage scene:** long-running desktop or browser sessions with dense technical text, a persistent sidebar, and frequent task switching.
-- **Register:** product workspace, not a marketing surface or a dashboard.
-- **Memorable signature:** the resident composer and transcript remain spatially stable while navigation or a task changes.
-- **Restraint:** Team information is concise; objective, lifecycle, and selection are visible without turning the sidebar into a project-management board.
-- **Anti-references:** glossy gradient dashboards, high-chrome kanban boards, and decorative motion that competes with the transcript.
-- **Token ownership/runtime mapping:** [`packages/client/ui-theme/src/styles/design-platform.css`](packages/client/ui-theme/src/styles/design-platform.css) is canonical. Feature CSS consumes `--clocky-alias-*` and `--clocky-specific-*` aliases; it does not introduce literal colors.
+The audience directs and inspects durable agent work. Team is the top-level work identity; execution tasks, participants, channels, artifacts, and Sessions belong to that Team. The main workspace defaults to an overview. Session transcripts open on explicit request in a wide in-page inspection view. The first-input composer remains the entry before Team creation.
+
+Simplified Chinese and English have equal coverage, including accessibility labels, statuses, and dates. This is global developer tooling; Chinese localization does not imply Japan-market business behavior. Long desktop sessions are primary, with operable single-column and rail layouts at narrow widths.
+
+The design avoids decorative dashboards, invented metrics, arbitrary status changes, nested full applications inside modals, and permanently crowded detail panes. The [Team workspace decision](.agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.md) owns the composition and navigation decisions; [visual concepts](design/team-workspace-2026-09-11/concepts.md) show the intended composition.
+
+### Token ownership
+
+[design-platform.css](packages/client/ui-theme/src/styles/design-platform.css) is canonical. Its `--clocky-workspace-*` variables define light/dark working surfaces; `--clocky-navigation-*` variables define graphite navigation. The `[data-team-workspace-page]` and `[data-clocky-navigation]` selectors map those values into existing `--clocky-alias-*` consumers. Feature styles consume aliases and do not copy literal colors. Shared Button geometry reads `--clocky-control-radius`; Team workspace controls use 8px, while transcript and other established controls retain their existing default geometry.
 
 ## Colors
 
-The visual hierarchy comes from neutral bluish surfaces, low-contrast borders, and dark primary text. `--clocky-alias-state-business-primary` is the one active accent; success, warning, and error remain semantic states rather than decoration. Theme sheets define both light and dark values, so feature CSS uses aliases only.
+Light content uses a cool gray canvas, white working surfaces, dark ink, and a blue interactive accent. Deep blue buttons support white text. Semantic success, warning, and failure colors accompany text or symbols and never carry the only explanation of state.
+
+Dark content uses canvas `#111722`, surfaces `#1A2230`, primary text `#E6EDF7`, secondary text `#A8B5C8`, borders `#334155`, and interaction color `#85ABFF`. Navigation remains graphite in both modes. Theme changes preserve hierarchy and meaning; they do not invert individual feature colors independently.
 
 ## Typography
 
-The system stack in [`base.css`](packages/client/ui-theme/src/styles/base.css) prioritizes native desktop rendering and CJK fallbacks. Body copy is compact and readable; sidebar objectives use 13px/18px, state metadata uses 11–12px, and code uses the dedicated mono stack. Labels are sentence case in English and natural Chinese in Chinese; neither locale relies on forced uppercase.
+Use the existing native system/CJK stack. Workspace body text is 14px/22px, auxiliary information is at least 12px/18px, page titles are 24px/32px, and metrics use 28px tabular numbers. Session code and technical identifiers use the existing mono stack. English labels use sentence case; Chinese labels use natural, concise wording.
+
+Names and objectives can wrap. A summary may clamp long prose only when the complete value remains available through explicit expansion. Do not shrink operational content to fit an overloaded container.
 
 ## Layout
 
-The sidebar is a 56px collapsed rail or an expanded column with 12px inline padding. Its New Task control is 38px high; task rows are at least 44px so objective and phase remain legible without a second detail panel. The center column owns the resident transcript/composer frame. Scrollable regions keep their own flex/min-height chain and stable scrollbar gutter; no feature sets viewport height on a shared shell.
+Navigation is a 224px expanded sidebar or a 56px rail, with drag resizing and automatic narrow-window collapse. The Team header sits above module navigation: Overview, Tasks, Channels, Members, Artifacts, with Workflow and Audit under More.
+
+The overview uses one shared metric band, a primary execution list, an attention area, and bounded member/activity/artifact previews. Counts derived from complete Team state stay distinct from bounded collection counts. Task completion is not a claim of goal completion; subtree usage is explicitly labeled.
+
+Task lists prioritize comparative reading. The selected task opens a 360px non-modal inspector with objective, owner, phase, dependencies, latest result, and next action. Full instructions, attempts, and management forms require deliberate expansion or navigation. Narrow views show one primary working surface at a time.
+
+Channel Hub separates channel navigation, message history, inline input, and optional details. Protocol configuration, endpoint admission metadata, and raw records belong in details and diagnostics. Reading a channel never accepts its invitation. Changing modules or channels preserves unsent text, ordered images, audience, delivery selection, and ambiguous-send retry identity.
+
+Session inspection uses a single stable conversation container, up to 1120px wide and 88dvh tall, with an explicit return action. Closing inspection does not cancel execution. The source Team, task filters, selection, and browsing position survive. Worker inspection does not grant direct prompt or model-change authority.
+
+Each table, message history, and Session transcript owns its scroll region. A table's sizing must not impose clipping on sibling forms. Scrollbars remain operable; asynchronous updates do not move active controls or force a reader away from history.
 
 ## Elevation & Depth
 
-Hierarchy uses tonal surfaces, thin borders, and hover fills. Cards and menus may float, while routine sidebar rows and transcript content stay flat. Overlay depth belongs to shared primitives, not individual Team rows.
+Use tonal surfaces and thin dividers for ordinary content. Task inspection is a neighboring region, not another floating card. Modal Session inspection and confirmations use the shared native dialog layer for depth, focus isolation, and restoration. Do not stack independent workspaces in multiple modals.
 
 ## Shapes
 
-Rows use 8px corners, primary controls use 12px, and compact lifecycle badges use pills. Borders are subtle; icon-only rail controls remain circular and always have accessible labels.
+Working panels use 10–12px corners, ordinary controls and rows use 6–8px, and status indicators remain small. Avoid nested wrappers and giant rounded cards around every row. Reuse the existing outline icon family; custom brand slots remain authoritative over fallback branding.
 
 ## Components
 
-### Foundational visual states
+### Controls and feedback
 
-Interactive rows provide hover, selected, disabled, and busy states. Team loading and empty states retain the list region's geometry. Errors appear inline beside the task list; transient notices use the shared toast surface.
+Interactive elements use semantic buttons/links and provide visible focus, hover, pressed, busy, and disabled states. Busy controls retain their geometry. Failures remain next to the responsible operation; a transient toast is not the sole copy of an actionable failure.
 
-### Buttons and actions
+Task stop, delete, and Team cancellation identify the object and consequence. Reversible navigation, copying, and filtering do not require confirmation. Mutations preserve Host authorization, current revisions, and idempotency. A rejected or ambiguous send retains its draft and retry identity.
 
-New Task is the primary sidebar action. Team rows are semantic buttons and selection is reflected with `aria-current="page"`. Busy selection disables competing rows without changing their layout.
+### Overlays and input
 
-### Navigation and data display
-
-The Team list is the product-level navigation surface. A coordinator Session remains a descendant transcript, not a second top-level task identity.
-
-### Forms and overlays
-
-The existing resident composer remains the single first-input surface. Its text area stays stable across draft-to-transcript transitions, supports IME composition, and shows retryable failures without losing the draft. Dialogs, menus, tooltips, and toasts use shared primitives. Modal forms use the native dialog layer for focus and background isolation, with long form bodies scrolling between a persistent title and action row.
-
-### Iconography
-
-Use the existing 16px outline icon set. Icons complement labels; the collapsed Team control remains labeled for assistive technology.
+Modal views have a visible title and close/return action, contain keyboard focus, and restore focus to the origin on dismissal. Non-modal task inspectors do not claim modal semantics. Keep Session input, IME state, attachment ownership, and tool details attached to the existing conversation implementation. The inline channel composer uses the existing authenticated channel command form, including basic-protocol restrictions and ordered media.
 
 ### Motion
 
-Use the existing `--ds-ease-in-out` timings: short feedback around 100–200ms and sidebar layout movement at 300ms. Motion communicates selection or layout change and respects the application reduced-motion behavior.
+Feedback motion explains navigation or a real state change. Module entry is brief; task inspection enters from its neighboring edge; Session inspection uses a short vertical reveal. High-frequency interaction remains immediate. No animation invents throughput or progress. Reduced-motion mode removes movement and ongoing status animation while retaining text feedback. Shared theme timing and easing remain the source for reusable motion values.
 
 ## Do's and Don'ts
 
-- **Do:** make Team objective and lifecycle immediately scannable in the sidebar.
-- **Do:** preserve the transcript/composer frame when a Team opens its coordinator transcript.
-- **Don't:** color-code a lifecycle state without its text label.
-- **Don't:** add a dashboard, a second composer, or screen-local color tokens for Team navigation.
+- **Do:** keep Team identity and actionable attention visible before a user opens a transcript.
+- **Do:** bound default previews and expose the complete data through its owning module.
+- **Do:** preserve selected objects, drafts, permissions, and exact execution provenance across view changes.
+- **Do:** use the existing UI plugins, slot declarations, framework hooks, and shared primitives.
+- **Don't:** return to an all-in-one Team detail popover or make a Session the implicit selected-Team home.
+- **Don't:** show Host-wide telemetry as Team metrics, partial page counts as totals, or provider cost units as currency.
+- **Don't:** create a new plugin solely for a dashboard, inspector, modal, or visual component.

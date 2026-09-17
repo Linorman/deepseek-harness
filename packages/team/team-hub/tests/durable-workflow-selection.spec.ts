@@ -1,7 +1,8 @@
+import { projectWorkflowInspection } from '@clocky/clocky-team/selection'
 /** Selected workflow result membership through journal parsing and checkpoint recovery. @module */
 
 import { describe, expect, it } from 'vitest'
-import { teamWorkflowPlanSnapshotSchema } from '@clocky/clocky-team'
+import { teamWorkflowPlanSnapshotSchema, teamWorkflowInspectionSchema, teamWorkflowPlanIdSchema } from '@clocky/clocky-team'
 import { teamProjectionFromData } from '../src/fold.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import { createdTeam, participant, participantChanged, task, taskChanged, taskCreatorActivationId,
@@ -43,6 +44,22 @@ function selectedWorkflow() {
 
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable workflow selection (${backend})`, () => {
+    it('reads current workflow tasks through bounded inspection without full plan/result bodies', async () => {
+      const f = selectedWorkflow()
+      const ctx = await recover(backend, f.records)
+      const plan = teamWorkflowPlanSnapshotSchema.parse(f.completed)
+      const inspected = await ctx.teams.inspectWorkflowPlan({ teamId, planId: plan.id, limit: 1 })
+      expect(inspected.record).toMatchObject({ id: plan.id, revision: 4, resultTaskCount: 1 })
+      expect(inspected.items[0]).toMatchObject({ templateId: 'review', taskId: 'selected-task' })
+      expect(inspected.record).not.toHaveProperty('plan')
+      expect(inspected.record).not.toHaveProperty('result')
+      expect(teamWorkflowInspectionSchema.parse(inspected)).toEqual(inspected)
+      await expect(ctx.teams.inspectWorkflowPlan({ teamId, planId: plan.id, expectedRevision: 1 }))
+        .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_INVALID' })
+      await expect(ctx.teams.inspectWorkflowPlan({ teamId, planId: teamWorkflowPlanIdSchema.parse('missing') }))
+        .rejects.toMatchObject({ code: 'TEAM_WORKFLOW_PLAN_NOT_FOUND' })
+    })
+
     it('accepts a checkpoint containing exactly the selected result', async () => {
       const f = selectedWorkflow()
       const ctx = await recover(backend, f.records, { ...f.checkpoint, rules: { ...f.checkpoint.rules, selectedResult: true } })
@@ -84,3 +101,95 @@ for (const backend of ['json', 'sqlite'] as const) {
     })
   })
 }
+
+it('does not inspect task instructions, protocol graphs or result bodies when projecting a workflow', () => {
+  const plan = teamWorkflowPlanSnapshotSchema.parse(selectedWorkflow().completed)
+  const template = plan.plan.tasks[0]!
+  Object.defineProperty(template, 'description', { enumerable: true, get: () => { throw new Error('Instructions were read') } })
+  Object.defineProperty(plan.plan, 'channel', { enumerable: true, get: () => { throw new Error('Protocol graph was read') } })
+  Object.defineProperty(plan.result!.tasks, '0', { enumerable: true, get: () => { throw new Error('Result body was read') } })
+  const input = { teamId, planId: plan.id, afterCursor: -1, limit: 1 }
+  const result = projectWorkflowInspection(plan, 22, input, 16, 2048)
+  expect(result).toMatchObject({ ok: true, value: { record: { resultTaskCount: 1 }, total: 1 } })
+  expect(projectWorkflowInspection(plan, 22, { ...input, expectedRevision: 99 }, 16, 2048)).toEqual({ ok: false, reason: 'revision' })
+  expect(projectWorkflowInspection(plan, 22, { ...input, planId: teamWorkflowPlanIdSchema.parse('foreign') }, 16, 2048)).toEqual({ ok: false, reason: 'owner' })
+  expect(projectWorkflowInspection(plan, 22, input, 16, 1)).toEqual({ ok: false, reason: 'metadata' })
+})
+
+it('pins workflow windows and rejects omitted or inconsistent continuation metadata', () => {
+  const plan = teamWorkflowPlanSnapshotSchema.parse(selectedWorkflow().completed)
+  const input = { teamId, planId: plan.id, afterCursor: -1, limit: 1 }
+  const result = projectWorkflowInspection(plan, 22, input, 16, 2048)
+  if (!result.ok) throw new Error('Workflow did not fit')
+  for (const patch of [{ total: 2 }, { nextCursor: 0 }, { scanned: 0 }, { total: 0 }]) {
+    expect(teamWorkflowInspectionSchema.safeParse({ ...result.value, ...patch }).success).toBe(false)
+  }
+  const exhausted = projectWorkflowInspection(plan, 22, { ...input, afterCursor: 10 }, 16, 2048)
+  expect(exhausted).toMatchObject({ ok: true, value: { items: [], scanned: 0 } })
+})
+
+it('pages large workflow DAGs under a total byte limit and keeps off-page dependency bindings', () => {
+  const base = teamWorkflowPlanSnapshotSchema.parse(selectedWorkflow().completed)
+  const template = base.plan.tasks[0]!
+  const tasks = Array.from({ length: 40 }, (_, index) => ({ ...template, id: `template-${index}` as typeof template.id,
+    subject: `Task ${index}`, description: 'instructions '.repeat(10000).trim(), blockedBy: index === 0 ? [] : ['template-0' as typeof template.id] }))
+  const { result: _result, ...withoutResult } = base
+  const plan = teamWorkflowPlanSnapshotSchema.parse({ ...withoutResult, phase: 'compiling',
+    plan: { ...base.plan, tasks, bounds: { maxTasks: 40, maxParallelism: 1, maxTotalAttempts: 40 },
+      result: { kind: 'task-results', taskTemplateIds: ['template-0'] } },
+    taskBindings: tasks.map((task, index) => ({ templateId: task.id, taskId: `bound-${index}` })),
+  })
+  const ids: string[] = []
+  let afterCursor = -1
+  for (;;) {
+    const result = projectWorkflowInspection(plan, 22, { teamId, planId: plan.id, afterCursor, limit: 7 }, 32, 1800)
+    if (!result.ok) throw new Error(result.reason)
+    expect(Buffer.byteLength(JSON.stringify(result.value))).toBeLessThanOrEqual(1800)
+    expect(teamWorkflowInspectionSchema.parse(result.value)).toEqual(result.value)
+    for (const item of result.value.items) {
+      ids.push(item.templateId)
+      if (item.templateId !== 'template-0') expect(item.blockedBy).toMatchObject([{ templateId: 'template-0', taskId: 'bound-0' }])
+    }
+    if (result.value.nextCursor === undefined) break
+    afterCursor = result.value.nextCursor
+  }
+  expect(ids).toEqual(tasks.map(task => task.id))
+})
+
+it('rejects oversized workflow metadata and indivisible task references', () => {
+  const base = teamWorkflowPlanSnapshotSchema.parse(selectedWorkflow().completed)
+  const input = { teamId, planId: base.id, afterCursor: -1, limit: 1 }
+  expect(projectWorkflowInspection({ ...base, plan: { ...base.plan, name: 'x'.repeat(3000) } }, 22, input, 16, 2048))
+    .toEqual({ ok: false, reason: 'metadata' })
+  const id = 'x'.repeat(3000)
+  const { result: _result, ...withoutResult } = base
+  const large = teamWorkflowPlanSnapshotSchema.parse({ ...withoutResult, phase: 'compiling', taskBindings: [],
+    plan: { ...base.plan, tasks: [{ ...base.plan.tasks[0], id }], result: { kind: 'task-results', taskTemplateIds: [id] } } })
+  expect(projectWorkflowInspection(large, 22, input, 16, 2048)).toEqual({ ok: false, reason: 'row' })
+})
+
+it('preserves lifecycle reasons and includes lookup work when a byte-limited page stops', () => {
+  const base = teamWorkflowPlanSnapshotSchema.parse(selectedWorkflow().completed)
+  const { result: _result, ...withoutResult } = base
+  const input = { teamId, planId: base.id, afterCursor: -1, limit: 1 }
+  expect(projectWorkflowInspection({ ...withoutResult, phase: 'failed', failure: { code: 'FAILED', message: 'Compilation failed' } },
+    22, input, 32, 2048)).toMatchObject({ ok: true, value: { record: { failure: { code: 'FAILED' } } } })
+  expect(projectWorkflowInspection({ ...base, cancellation: { code: 'CANCELLED', message: 'Stopped' } },
+    22, input, 32, 2048)).toMatchObject({ ok: true, value: { record: { cancellation: { code: 'CANCELLED' } } } })
+  const template = base.plan.tasks[0]!
+  const tasks = Array.from({ length: 4 }, (_, index) => ({ ...template, id: `template-${index}`,
+    subject: `Task ${index}`, blockedBy: index === 0 ? [] : [`template-${index - 1}`] }))
+  const plan = teamWorkflowPlanSnapshotSchema.parse({ ...withoutResult, phase: 'compiling',
+    plan: { ...base.plan, tasks, bounds: { maxTasks: 4, maxParallelism: 1, maxTotalAttempts: 4 },
+      result: { kind: 'task-results', taskTemplateIds: ['template-0'] } },
+    taskBindings: tasks.map((task, index) => ({ templateId: task.id, taskId: `bound-${index}` })),
+  })
+  const single = projectWorkflowInspection(plan, 22, { ...input, afterCursor: 1 }, 32, 2048)
+  if (!single.ok) throw new Error('Single workflow row did not fit')
+  const bytes = Buffer.byteLength(JSON.stringify(single.value))
+  expect(projectWorkflowInspection(plan, 22, { ...input, afterCursor: 1, limit: 2 }, 32, bytes))
+    .toEqual({ ok: false, reason: 'metadata' })
+  const bounded = projectWorkflowInspection(plan, 22, { ...input, afterCursor: 1, limit: 2 }, 32, bytes + 20)
+  expect(bounded).toMatchObject({ ok: true, value: { nextCursor: 2, items: [{ templateId: 'template-2' }] } })
+  if (bounded.ok) expect(bounded.value.items).toHaveLength(1)
+})

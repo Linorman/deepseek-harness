@@ -1,3 +1,14 @@
+export { teamMemberInspectRequestSchema, teamMemberInspectionSchema } from './schema.ts'
+export { teamWorkflowInspectRequestSchema, teamWorkflowInspectionSchema } from './schema.ts'
+export { teamHumanActionReadRequestSchema } from './schema.ts'
+export { teamSelectionRequestSchema } from './schema.ts'
+export { teamTaskInspectRequestSchema, teamTaskInspectionSchema, teamTaskRecordSchema } from './schema.ts'
+export { teamBrowseRequestSchema, teamBrowsePageSchema, teamTaskSummarySchema, teamMemberSummarySchema, teamWorkflowSummarySchema } from './schema.ts'
+export { teamMemberSessionRequestSchema, teamMemberSessionSnapshotSchema } from './schema.ts'
+export { teamSelectionSnapshotSchema } from './schema.ts'
+export { teamDiscoveryCursorSchema } from './schema.ts'
+export { activationReservationIdSchema, activationReservationInputSchema, activationReservationSnapshotSchema } from './schema.ts'
+export { liveActivationCapacity, liveActivationLimit, taskLiveActivationReservation } from './activation-capacity.ts'
 export { channelProtocolStatusSchema, channelHumanAdmissionSnapshotSchema } from './schema.ts'
 export { channelHumanEnvelopeGetInputSchema } from './schema.ts'
 /**
@@ -11,7 +22,7 @@ export { channelHumanEnvelopeGetInputSchema } from './schema.ts'
 import { TeamRuntime } from './runtime.ts'
 
 export type * from './types.ts'
-export { taskHasActiveExecution, taskHasSharedWriteConflict, taskConcurrencyUsage } from './task-execution.ts'
+export { taskHasActiveExecution, taskHasSharedWriteConflict, taskConcurrencyUsage, taskChildTeamReservation } from './task-execution.ts'
 export { teamDelegationIdSchema } from './schema.ts'
 export {
   teamTaskExecutionSchema, teamTaskDelegationSnapshotSchema, teamSystemDelegationScopeSchema,

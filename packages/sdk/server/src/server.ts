@@ -1,3 +1,15 @@
+import { teamMemberInspectParamsSchema, type TeamMemberInspectParams, type TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
+import type { TeamWorkflowInspection } from '@clocky/clocky-team'
+import { teamWorkflowInspectRequestSchema } from '@clocky/clocky-team/schema'
+import type { TeamActionReadParams } from '@clocky/clocky-sdk-protocol'
+import type { TeamHumanActionSnapshot } from '@clocky/clocky-team'
+import { teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
+import { teamSelectionParamsSchema, type TeamSelectionParams } from '@clocky/clocky-sdk-protocol'
+import { teamTaskInspectParamsSchema, type TeamTaskInspectParams, type TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
+import { teamBrowseParamsSchema, type TeamBrowseParams, type TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
+import { teamMemberSessionParamsSchema, type TeamMemberSessionParams, type TeamMemberSessionResult } from '@clocky/clocky-sdk-protocol'
+import { teamDiscoveryCursorSchema } from '@clocky/clocky-team'
 import { admitEncodedImages } from '@clocky/clocky-attachment'
 import { parseDirectChannelV4MessagePayload } from '@clocky/clocky-team-channel-direct'
 import type {} from '@clocky/clocky-team-channel-summary'
@@ -117,6 +129,7 @@ import type {
   TeamListResult,
   TeamGetParams,
   TeamGetResult,
+  TeamSelectionResult,
   TeamGoalUpdateParams,
   TeamGoalUpdateResult,
   TeamGoalTransitionParams,
@@ -672,9 +685,91 @@ export class HarnessSdkJsonRpcServer {
     const teams = this.ctx.get('teams')
     if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
     return await teams.listTeamsPage({
-      afterCursor: params.afterCursor ?? -1,
+      afterCursor: params.afterCursor === undefined || params.afterCursor === -1 ? -1 : teamDiscoveryCursorSchema.parse(params.afterCursor),
       limit: params.limit ?? 128,
     })
+  }
+
+  /** Resolve one retained member's published Session without starting an Agent.
+   * @param params - validated Team and member identities.
+   * @returns exact published binding.
+   */
+  async getTeamMemberSession(params: TeamMemberSessionParams): Promise<TeamMemberSessionResult> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return { binding: await teams.getMemberSession({ teamId: teamIdSchema.parse(params.teamId),
+      participantId: participantIdSchema.parse(params.participantId) }) }
+  }
+
+  /** Read current task fields or one revision-pinned history page without private artifact references.
+   * @param params - Exact Team/task, section, optional revision and history continuation.
+   * @returns the validated bounded task inspection.
+   */
+  async inspectTeamTask(params: TeamTaskInspectParams): Promise<TeamTaskInspectResult> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return { inspection: await teams.inspectTask({ ...params, teamId: teamIdSchema.parse(params.teamId),
+      taskId: teamTaskIdSchema.parse(params.taskId) }) }
+  }
+
+  /** Read bounded collection summaries.
+   * @param params - Collection selection.
+   * @returns the matching page.
+   */
+  async browseTeam(params: TeamBrowseParams): Promise<TeamBrowseResult> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return { page: await teams.browse({ ...params, teamId: teamIdSchema.parse(params.teamId) }) }
+  }
+
+  /** Read one bounded workflow inspection from the runtime.
+   * @param params - Workflow and page selection.
+   * @returns current metadata and task/dependency rows.
+   */
+  async inspectWorkflowPlan(params: TeamWorkflowInspectParams): Promise<TeamWorkflowInspection> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return await teams.inspectWorkflowPlan(teamWorkflowInspectRequestSchema.parse(params))
+  }
+
+  /** Read one current human action under the provider's response allowance.
+   * @param params - Team and action identity.
+   * @returns current action without any other Team history.
+   */
+  async readTeamAction(params: TeamActionReadParams): Promise<TeamHumanActionSnapshot> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return await teams.getHumanAction(teamHumanActionReadRequestSchema.parse(params))
+  }
+
+  /** Read member metadata and capabilities without starting an Agent.
+   * @param params - validated member and capability window.
+   * @returns provider-owned detail.
+   */
+  async inspectTeamMember(params: TeamMemberInspectParams): Promise<TeamMemberInspectResult> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return { detail: await teams.inspectMember({ ...params, teamId: teamIdSchema.parse(params.teamId),
+      participantId: participantIdSchema.parse(params.participantId) }) }
+  }
+
+  /** Read bounded Team selection data without activating an Agent.
+   * @param params - validated Team identity.
+   * @returns selection projection from the runtime.
+   */
+  async getTeamSelection(params: TeamSelectionParams): Promise<TeamSelectionResult> {
+    this.requireRoute()
+    const teams = this.ctx.get('teams')
+    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+    return { selection: await teams.getTeamSelection({
+      teamId: teamIdSchema.parse(params.teamId), includeMetadata: params.includeMetadata,
+    }) }
   }
 
   /**
@@ -1752,6 +1847,20 @@ export class HarnessSdkJsonRpcServer {
         return this.createTeamWithCall(parseWireParams('team/create', teamCreateParamsSchema, params), call)
       case 'team/list':
         return this.listTeams(parseWireParams('team/list', teamListParamsSchema, params ?? {}))
+      case 'team/member-session':
+        return this.getTeamMemberSession(parseWireParams('team/member-session', teamMemberSessionParamsSchema, params))
+      case 'team/task-inspect':
+        return this.inspectTeamTask(parseWireParams('team/task-inspect', teamTaskInspectParamsSchema, params))
+      case 'team/member-inspect':
+        return this.inspectTeamMember(parseWireParams('team/member-inspect', teamMemberInspectParamsSchema, params))
+      case 'team/browse':
+        return this.browseTeam(parseWireParams('team/browse', teamBrowseParamsSchema, params))
+      case 'team/workflow-plan-inspect':
+        return this.inspectWorkflowPlan(parseWireParams('team/workflow-plan-inspect', teamWorkflowInspectRequestSchema, params))
+      case 'team/action-read':
+        return this.readTeamAction(parseWireParams('team/action-read', teamHumanActionReadRequestSchema, params))
+      case 'team/selection':
+        return this.getTeamSelection(parseWireParams('team/selection', teamSelectionParamsSchema, params))
       case 'team/get':
         return this.getTeam(parseWireParams('team/get', teamGetParamsSchema, params))
       case 'team/goal-update':
@@ -1765,15 +1874,20 @@ export class HarnessSdkJsonRpcServer {
         if (inbox === undefined) throw new SdkTeamError('Durable principal inbox is not mounted')
         return await inbox.respond(call, parseWireParams('team/inbox-respond', teamHumanActionResponseInputSchema, params))
       }
-      case 'team/inbox-read': {
-        const inbox = this.ctx.get('teamHumanDelivery')
-        if (inbox === undefined) throw new SdkTeamError('Durable principal inbox is not mounted')
-        return await inbox.read(call, parseWireParams('team/inbox-read', teamHumanInboxReadInputSchema, params ?? {}))
-      }
+      case 'team/inbox-read':
       case 'team/inbox-watch': {
         const inbox = this.ctx.get('teamHumanDelivery')
         if (inbox === undefined) throw new SdkTeamError('Durable principal inbox is not mounted')
-        return await inbox.watch(call, parseWireParams('team/inbox-watch', teamHumanInboxReadInputSchema, params ?? {}))
+        const input = parseWireParams(method, teamHumanInboxReadInputSchema, params ?? {})
+        try {
+          return method === 'team/inbox-read' ? await inbox.read(call, input) : await inbox.watch(call, input)
+        } catch (error: unknown) {
+          if (!(error instanceof TeamError) || error.code !== 'TEAM_INBOX_COMPACTED') throw error
+          const firstCursor = error.details?.firstCursor
+          throw new JsonRpcRequestError(-32_002, error.message, { code: error.code,
+            ...typeof firstCursor === 'number' && Number.isSafeInteger(firstCursor) && firstCursor >= 0 ? { firstCursor } : {},
+          })
+        }
       }
       case 'team/inbox-acknowledge': {
         const inbox = this.ctx.get('teamHumanDelivery')

@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Durable invitation admission waits shared by channel dispatch Consumers. @module @clocky/clocky-team-channel-admission */
 import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
@@ -54,7 +55,7 @@ export default class TeamChannelAdmission extends Service {
   static Config = Config
   private readonly proofs = new WeakMap<TeamSystemChannelAdmissionProof, TeamSystemChannelAdmissionScope>()
   private readonly queued: { teamId: TeamId; channelId: ChannelId }[] = []
-  private teamCursor = -1
+  private teamCursor: TeamListPageRequest['afterCursor'] = -1
   private drive: Promise<void> | undefined
   private readonly closing = new AbortController()
   private readonly waits = new Set<Promise<ChannelSnapshot>>()
@@ -96,8 +97,13 @@ export default class TeamChannelAdmission extends Service {
   /** Observe durable deadlines in bounded FIFO order; restart rebuilds this non-authoritative queue. */
   private async recover(): Promise<void> {
     if (this.queued.length === 0) {
-      const page = await this.ctx.teams.listTeamsPage({ afterCursor: this.teamCursor, limit: this.config.teamPageSize })
-      if (page.nextCursor !== undefined && page.nextCursor <= this.teamCursor) {
+      let page
+      try { page = await this.ctx.teams.listTeamsPage({ afterCursor: this.teamCursor, limit: this.config.teamPageSize }) }
+      catch (error: unknown) {
+        if (error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') { this.teamCursor = -1; return }
+        throw error
+      }
+      if (page.nextCursor !== undefined && page.nextCursor === this.teamCursor) {
         throw new TeamError('Channel admission Team page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
       }
       for (const team of page.items) {

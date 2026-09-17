@@ -98,11 +98,11 @@
         "acp-agent/tests/fixtures/subagent-settlement-marker.ts",
         "acp-agent/tests/fixtures/workspace-context-compaction.ts",
         "acp-agent/tests/fixtures/team-snapshot-finalizer.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-acp/mock-delegating-llm.ts",
-        "acp-agent/tests/fixtures/subagent/subagent-acp/driver.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/driver.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/child-mock-llm.ts",
-        "jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/mock-delegating-llm.ts",
+        "acp-agent/tests/fixtures/compat/subagent-acp/mock-delegating-llm.ts",
+        "acp-agent/tests/fixtures/compat/subagent-acp/driver.ts",
+        "jsonrpc-agent/tests/fixtures/compat/subagent-clocky-sdk/driver.ts",
+        "jsonrpc-agent/tests/fixtures/compat/subagent-clocky-sdk/child-mock-llm.ts",
+        "jsonrpc-agent/tests/fixtures/compat/subagent-clocky-sdk/mock-delegating-llm.ts",
         "jsonrpc-agent/tests/fixtures/team-final-llm.ts",
         "jsonrpc-agent/tests/fixtures/resume-pending-llm.ts",
         "jsonrpc-agent/tests/fixtures/team-snapshot-finalizer.ts",
@@ -378,7 +378,7 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/goal/goal": {
+    "packages/compat/goal": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"
@@ -488,7 +488,7 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/workflow/workflow-worker-thread": {
+    "packages/compat/workflow-worker-thread": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"
@@ -545,7 +545,7 @@
         "src/**/*.ts"
       ]
     },
-    "packages/subagent/subagent-spawn-in-process": {
+    "packages/compat/subagent-spawn-in-process": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"
@@ -555,7 +555,7 @@
         "tests/**/*.ts"
       ]
     },
-    "packages/subagent/subagent-acp": {
+    "packages/compat/subagent-acp": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts",
@@ -642,7 +642,7 @@
         "@clocky/.+"
       ]
     },
-    "packages/subagent/subagent-clocky-sdk": {
+    "packages/compat/subagent-clocky-sdk": {
       "entry": [
         "tests/**/*.spec.ts",
         "tests/**/*.e2e.ts"

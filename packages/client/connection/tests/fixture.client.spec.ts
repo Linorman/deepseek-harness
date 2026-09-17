@@ -164,7 +164,6 @@ describe('createFixtureApi', () => {
           currentValue: 'workspace-write',
         },
         plan: { active: false, pending: false },
-        goal: null,
         tokenUsage: {
           uncachedInputTokens: 0,
           outputTokens: 0,
@@ -353,7 +352,7 @@ describe('createFixtureApi', () => {
       const envelopes: RpcRequest<MuxFrame>[] = []
       for await (const envelope of api.events.mux(req({}), abort.signal)) {
         envelopes.push(envelope)
-        if (envelopes.length >= 13) abort.abort()
+        if (envelopes.length >= 12) abort.abort()
       }
       return envelopes
     }
@@ -366,24 +365,23 @@ describe('createFixtureApi', () => {
     expect(first[2]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'todos' })
     expect(first[3]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'permissions' })
     expect(first[4]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'plan', value: { active: false, pending: false } })
-    expect(first[5]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'goal', value: null })
-    expect(first[6]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'tokenUsage' })
-    expect(first[7]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'contextPressure' })
-    expect(first[8]?.payload).toMatchObject({
+    expect(first[5]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'tokenUsage' })
+    expect(first[6]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'contextPressure' })
+    expect(first[7]?.payload).toMatchObject({
       type: 'session/projection', sessionId: 'fx-alpha', key: 'contextBreakdown',
       value: { systemTokens: 0, toolsTokens: 0 },
     })
-    expect((first[8]?.payload as { value: { messageTokens: number } }).value.messageTokens).toBeGreaterThan(0)
-    expect(first[9]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'sessionStats' })
-    expect((first[9]?.payload as { value: { turns: number; steps: number } }).value.steps).toBeGreaterThan(0)
-    expect(first[10]?.payload).toMatchObject({
+    expect((first[7]?.payload as { value: { messageTokens: number } }).value.messageTokens).toBeGreaterThan(0)
+    expect(first[8]?.payload).toMatchObject({ type: 'session/projection', sessionId: 'fx-alpha', key: 'sessionStats' })
+    expect((first[8]?.payload as { value: { turns: number; steps: number } }).value.steps).toBeGreaterThan(0)
+    expect(first[9]?.payload).toMatchObject({
       type: 'session/projection', sessionId: 'fx-alpha', key: 'imageLimits',
       value: { maxImagesPerMessage: 20, maxImageBytes: 5 * 1024 * 1024 },
     })
-    expect(first[11]?.payload).toMatchObject({ type: 'approval/requested', toolName: 'dangerous_tool' })
-    expect(second[11]?.rpcId).toBe(first[11]?.rpcId) // stable rpcId across replays (host replay semantics)
-    expect(first[12]?.payload).toMatchObject({ type: 'question/requested', sessionId: 'fx-alpha' })
-    expect(second[12]?.rpcId).toBe(first[12]?.rpcId)
+    expect(first[10]?.payload).toMatchObject({ type: 'approval/requested', toolName: 'dangerous_tool' })
+    expect(second[10]?.rpcId).toBe(first[10]?.rpcId) // stable rpcId across replays (host replay semantics)
+    expect(first[11]?.payload).toMatchObject({ type: 'question/requested', sessionId: 'fx-alpha' })
+    expect(second[11]?.rpcId).toBe(first[11]?.rpcId)
   })
 
   it('steer with no replay in flight falls through to a fresh queued turn; non-text blocks stringify empty', async () => {
@@ -847,6 +845,61 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
     expect(request?.rpcId).toBe(reply?.rpcId) // echo discipline holds through the fake carrier
   })
 
+  it('serves current task fields and empty history as independent fixture reads', async () => {
+    const client = new FixtureApiClient()
+    const created = await client.teams.create({ objective: 'Inspect task' })
+    if (!created.result.ok) throw new Error(created.result.error.message)
+    const state = created.result.value
+    const made = await client.teams.taskCreate({ teamId: state.team.id, expectedCursor: state.team.cursor,
+      idempotencyKey: 'fixture-inspection' as never, subject: 'Task', description: 'Inspect only this task.',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
+      workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 })
+    if (!made.result.ok) throw new Error(made.result.error.message)
+    const input = { teamId: state.team.id, taskId: made.result.value.id, section: 'record' as const }
+    const record = await client.teams.taskInspect(input)
+    expect(record.result).toMatchObject({ ok: true, value: { section: 'record', history: { attempts: 0, reviews: 0 } } })
+    expect(record.result).not.toHaveProperty('value.task.attemptHistory')
+    expect((await client.teams.taskInspect({ ...input, section: 'reviews', limit: 1 })).result)
+      .toMatchObject({ ok: true, value: { items: [], total: 0 } })
+    expect((await client.teams.taskInspect({ ...input, expectedRevision: 999 })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-task-stale-revision' } })
+    expect((await client.teams.taskInspect({ ...input, taskId: 'foreign' as never })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-task-not-found' } })
+  })
+
+  it('returns bounded selection with the same coordinator Session and without changing Team state', async () => {
+    const client = new FixtureApiClient()
+    const created = await client.teams.create({ objective: '甲😀乙'.repeat(1000) })
+    if (!created.result.ok) throw new Error('fixture Team creation failed')
+    const state = created.result.value
+    const response = await client.teams.selection({ teamId: state.team.id })
+    if (!response.result.ok) throw new Error(response.result.error.message)
+    const selected = response.result.value
+    expect(selected.team.cursor).toBe(state.team.cursor)
+    expect(selected.goal.objective.truncated).toBe(true)
+    expect(new TextEncoder().encode(selected.goal.objective.text).byteLength).toBeLessThanOrEqual(512)
+    expect(new TextEncoder().encode(JSON.stringify(selected)).byteLength).toBeLessThanOrEqual(16384)
+    const coordinator = state.participants.find(member => member.role === 'coordinator')
+    const binding = state.activations.findLast(value => value.activation.participantId === coordinator?.id)
+    expect(selected.coordinator).toMatchObject({ kind: 'bound', binding: { sessionId: binding?.sessionId } })
+    expect(selected).not.toHaveProperty('participants')
+    expect(selected).not.toHaveProperty('tasks')
+    const browsed = await client.teams.browse({ teamId: state.team.id, kind: 'members', limit: 1 })
+    expect(browsed.result).toMatchObject({ ok: true, value: { kind: 'members', teamId: state.team.id } })
+    if (!browsed.result.ok) throw new Error(browsed.result.error.message)
+    expect(browsed.result.value.items).toHaveLength(1)
+    expect(browsed.result.value.items[0]).not.toHaveProperty('capabilities')
+
+    if (coordinator === undefined) throw new Error('Fixture coordinator missing')
+    expect((await client.teams.memberInspect({ teamId: state.team.id, participantId: coordinator.id })).result)
+      .toMatchObject({ ok: true, value: { record: { id: coordinator.id, teamId: state.team.id }, startCursor: -1 } })
+
+    expect((await client.teams.memberSession({ teamId: state.team.id, participantId: coordinator.id })).result)
+      .toMatchObject({ ok: true, value: { sessionId: binding?.sessionId } })
+    expect((await client.teams.get({ teamId: state.team.id })).result).toEqual(created.result)
+    expect((await client.teams.selection({ teamId: 'fx-team-missing' as never })).result.ok).toBe(false)
+  })
+
   it('covers the whole unary dispatch table', async () => {
     const client = new FixtureApiClient()
     expect((await client.sessions.search(
@@ -944,44 +997,8 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
     const renamed = await client.workspace.rename({ workspaceId: wsid, title: 'via-client-2' })
     if (!renamed.result.ok) throw new Error('workspace rename failed')
     expect(renamed.result.value.workspace.title).toBe('via-client-2')
-    // Goal lifecycle over the fixture fold: create → edit → pause → resume → complete → clear;
-    // every mutation acknowledges with the NEW CAS ref (state rides the projection frames).
-    const goalCreated = await client.goals.create({ sessionId: id, objective: 'ship it' })
-    if (!goalCreated.result.ok) throw new Error('goal create failed')
-    let ref = goalCreated.result.value.ref
-    expect(ref.revision).toBe(1)
-    const edited = await client.goals.edit({ sessionId: id, ref, objective: 'ship it v2' })
-    if (!edited.result.ok) throw new Error('goal edit failed')
-    ref = edited.result.value.ref
-    const paused = await client.goals.pause({ sessionId: id, ref })
-    if (!paused.result.ok) throw new Error('goal pause failed')
-    ref = paused.result.value.ref
-    const resumed = await client.goals.resume({ sessionId: id, ref })
-    if (!resumed.result.ok) throw new Error('goal resume failed')
-    ref = resumed.result.value.ref
-    // A stale ref loses the CAS check.
-    expect((await client.goals.pause({ sessionId: id, ref: { ...ref, revision: 1 } })).result.ok).toBe(false)
-    const completed = await client.goals.complete({ sessionId: id, ref })
-    if (!completed.result.ok) throw new Error('goal complete failed')
-    ref = completed.result.value.ref
-    // complete → complete is an invalid transition.
-    expect((await client.goals.complete({ sessionId: id, ref })).result.ok).toBe(false)
-    expect((await client.goals.clear({ sessionId: id, ref })).result).toEqual({ ok: true, value: { cleared: true } })
+    expect(client).not.toHaveProperty('goals')
 
-    const goalHistory = await client.sessions.history({ sessionId: id })
-    if (!goalHistory.result.ok) throw new Error('goal history failed')
-    const goalEvents = goalHistory.result.value.events.map(entry => entry.event as unknown as {
-      type: string
-      data: {
-        operation?: string
-        source?: { kind?: string; round?: number }
-      }
-    })
-    const goalChanges = goalEvents.filter(event => event.type === 'goal/change')
-    expect(goalChanges.map(event => event.data.operation))
-      .toEqual(['create', 'edit', 'pause', 'resume', 'complete', 'clear'])
-    expect(goalEvents.some(event => event.type === 'user/message'
-      && event.data.source?.kind === 'goal' && event.data.source.round === 0)).toBe(false)
   })
 
   it('maps empty and prompt-reject query scenarios', async () => {

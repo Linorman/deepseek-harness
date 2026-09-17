@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Model tool calls exercise the assembled parent and child Team lifecycle. */
 import assert from 'node:assert/strict'
 import { writeSync } from 'node:fs'
@@ -92,7 +93,8 @@ class DelegationModel extends LlmAdapter {
     if (delegated === undefined) {
       this.rootCalls.push('team_task_delegate')
       yield* call('parent-delegate', 'team_task_delegate', { subject: 'Run delegated child work',
-        instructions: 'Complete the delegated child objective.', read_scopes: [], write_scopes: [], budget: {} })
+        instructions: 'Complete the delegated child objective.', read_scopes: [], write_scopes: [],
+        budget: { maxChildTeams: 0, maxLiveActivations: 1 } })
       return
     }
     assert(typeof delegated.task_id === 'string')
@@ -170,6 +172,7 @@ async function run(ctx: Context, model: DelegationModel) {
   assert.equal((await ctx.teams.inspectQuiescence(parent.team.id)).quiescent, true)
   const archived = await ctx.teamRuns.archiveTerminal({ teamId: parent.team.id, expectedCursor: parent.team.cursor })
   assert(archived.team.archivedAt !== undefined)
+  assert.deepEqual(await ctx.teams.watchTeam({ teamId: archived.team.id, afterCursor: archived.team.cursor }), { kind: 'closed' })
   assert.deepEqual(await ctx.teamRuns.archiveTerminal({ teamId: parent.team.id, expectedCursor: parent.team.cursor }), archived)
   assert.equal((await audit(ctx, parent.team.id)).filter(item => item.type === 'team/archived').length, 1)
   return { scenario: cancelled ? 'cancel' : 'complete', parent: parent.team.phase, task: task.phase, child: child.team.phase,
@@ -189,8 +192,8 @@ function installCrashWindow(ctx: Context, parentTeamId: () => string | undefined
       const stream = await open(descriptor)
       if (!descriptor.name.startsWith('channel/') && !descriptor.name.startsWith('team/')) return stream
       const append = stream.append.bind(stream)
-      stream.append = async (expectedSequence, values) => {
-        const result = await append(expectedSequence, values)
+      stream.append = async (expectedSequence, values, options) => {
+        const result = await append(expectedSequence, values, options)
         for (const value of values) {
           if (value === null || typeof value !== 'object' || Array.isArray(value)) continue
           const record = value as Record<string, unknown>
@@ -289,16 +292,22 @@ async function audit(ctx: Context, teamId: TeamId, channelId?: ChannelId): Promi
 /** Check child identity, result receipts and usage transfer against their owning journals. */
 async function crossLogEvidence(ctx: Context, parent: TeamStateSnapshot, child: TeamStateSnapshot, task: TeamTaskSnapshot) {
   const children: TeamId[] = []
-  let afterCursor = -1
+  let afterCursor: TeamListPageRequest['afterCursor'] = -1
   while (true) {
     const page = await ctx.teams.listTeamsPage({ afterCursor, limit: 1 })
     children.push(...page.items.filter(item => item.parentTeamId === parent.team.id).map(item => item.id))
     if (page.nextCursor === undefined) break
-    assert(page.nextCursor > afterCursor)
+    assert(page.nextCursor !== afterCursor)
     afterCursor = page.nextCursor
   }
   assert.deepEqual(children, [child.team.id])
   assert.equal(parent.tasks.filter(item => item.execution.kind === 'child-team').length, 1)
+  assert.equal(parent.budgets.maxChildTeams, 1)
+  assert.equal(child.budgets.maxChildTeams, 0)
+  assert.equal(parent.budgets.maxLiveActivations, 2)
+  assert.equal(child.budgets.maxLiveActivations, 1)
+  assert(child.activations.every(binding => binding.reservationId !== undefined))
+  assert.equal(task.delegation?.creation?.budgets.maxChildTeams, 0)
   assert.equal(child.team.parentTaskId, task.id)
   const childAudit = await audit(ctx, child.team.id)
   const parentAudit = await audit(ctx, parent.team.id)

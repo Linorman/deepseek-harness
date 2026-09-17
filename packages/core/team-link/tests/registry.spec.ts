@@ -135,6 +135,20 @@ async function setup(): Promise<{ ctx: Context; fiber: Context['fiber'] }> {
 }
 
 describe('TeamLinkRegistry service definition', () => {
+  it('publishes provider replacement and contains a failing configuration observer', async () => {
+    const ctx = new Context()
+    await ctx.plugin(TeamLinkRegistry)
+    const observed = vi.fn()
+    ctx.on('team-link/provider-added', () => { throw new Error('broken observer') })
+    ctx.on('team-link/provider-added', observed)
+    const dispose = ctx.teamLinks.registerProvider(provider())
+    expect(observed).toHaveBeenCalledWith({ name: 'local' })
+    dispose()
+    ctx.teamLinks.registerProvider(provider())
+    expect(observed).toHaveBeenCalledTimes(2)
+    await ctx.fiber.dispose()
+  })
+
   it('registers effect-scoped providers and exposes only live provider identities', async () => {
     const { ctx, fiber } = await setup()
     const registered = provider()

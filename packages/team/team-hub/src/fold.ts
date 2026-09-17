@@ -1,3 +1,4 @@
+import { liveActivationCapacity, liveActivationLimit } from '@clocky/clocky-team'
 import { projectWorkspaceObservation, assertWorkspaceObservationSnapshot } from './workspace-observation.ts'
 /** Pure replay folds for Team journals and channel WALs. @module @clocky/clocky-team-hub/fold */
 
@@ -5,6 +6,7 @@ import { isDeepStrictEqual } from 'node:util'
 import {
   fingerprintChannelManifest,
   matchesTaskPlacement,
+  taskChildTeamReservation,
   teamTaskRankingPolicySchema,
   assertActivationStatusTransition,
   assertChannelPhaseTransition,
@@ -472,6 +474,8 @@ export function teamProjectionFromData(data: TeamProjectionData): TeamProjection
     assertCheckpointTaskAttempts(projection, task)
   }
   assertTaskCancellationSettlements(projection)
+  assertChildTeamReservations(projection)
+  assertActivationCapacity(projection)
   assertDistinctCurrentWakeChannels(projection)
   for (const binding of activations.values()) assertQuiescenceProof(projection, binding)
   assertTerminalTeamResources(projection)
@@ -570,6 +574,7 @@ function foldTeamRecordValue(
       && record.type !== 'team/phase'
       && record.type !== 'team/archived'
       && record.type !== 'goal/changed'
+      && record.type !== 'participant/changed'
       && record.type !== 'task/changed'
       && record.type !== 'workspace-allocation/changed'
       && record.type !== 'workspace/observed'
@@ -589,7 +594,8 @@ function foldTeamRecordValue(
     && record.type !== 'team/closure'
     && record.type !== 'team/phase'
     && record.type !== 'team/archived'
-    && record.type !== 'task/changed'
+    && record.type !== 'participant/changed'
+      && record.type !== 'task/changed'
     && record.type !== 'workspace-allocation/changed'
     && record.type !== 'workspace/observed'
     && record.type !== 'activation/changed'
@@ -781,7 +787,6 @@ function foldTeamRecordValue(
 type ClosureCleanupRecord = Exclude<TeamJournalRecord, { readonly type:
   | 'team/created'
   | 'team/cancellation'
-  | 'participant/changed'
   | 'participant-interrupt/requested'
   | 'channel/attached'
   | 'usage/changed'
@@ -797,6 +802,9 @@ function assertClosureCleanupRecord(
   streamTeamId: TeamId,
 ): void {
   switch (record.type) {
+    case 'participant/changed':
+      assertReservationRelease(previous.participants.get(record.participant.id), record.participant)
+      return
     case 'task/changed': {
       if (!previous.tasks.has(record.task.id)
         || (record.task.phase !== 'completed'
@@ -931,7 +939,7 @@ function assertFoldAuthorityGrantSubset(
   assertFoldPlacementGrantSubset(parent.placement, child.placement, subject)
   const budgetKeys = [
     'maxInputTokens', 'maxOutputTokens', 'maxTotalTokens', 'maxTurns', 'maxWallTimeMs',
-    'maxCostUnits', 'maxRetries', 'maxConcurrency', 'maxArtifactBytes',
+    'maxCostUnits', 'maxRetries', 'maxConcurrency', 'maxChildTeams', 'maxLiveActivations', 'maxArtifactBytes',
   ] as const
   for (const key of budgetKeys) {
     const parentLimit = parent.budgets[key]
@@ -983,7 +991,10 @@ function foldParticipant(
     assertFoldAuthorityGrantSubset(previous.team.authorityGrant, participant.authorityGrant, `participant '${participant.id}'`)
   }
   const current = previous.participants.get(participant.id)
-  assertTeamTransition(() => { assertParticipantPhaseTransition(current?.phase, participant.phase) })
+  const reservationChanged = !isDeepStrictEqual(current?.activationReservation, participant.activationReservation)
+  if (current === undefined || current.phase !== participant.phase || !reservationChanged) {
+    assertTeamTransition(() => { assertParticipantPhaseTransition(current?.phase, participant.phase) })
+  }
   if (current !== undefined && (
     current.teamId !== participant.teamId
     || current.kind !== participant.kind
@@ -999,10 +1010,98 @@ function foldParticipant(
   )) {
     throw malformedTeam(`participant '${participant.id}' changed immutable fields`)
   }
+  const prior = current?.activationReservation
+  const reservation = participant.activationReservation
+  if (reservationChanged) {
+    assertTeamCondition(current !== undefined && isDeepStrictEqual({ ...current, activationReservation: reservation }, participant),
+      'Startup mutation changes unrelated participant fields')
+    if (prior !== undefined && reservation?.id === prior.id) {
+      assertReservationRelease(current, participant)
+      assertTeamCondition(reservation.releasedAt === record.createdAt, 'Startup release time differs from its journal record')
+      assertTeamCondition(![...previous.activations.values()].some(binding => binding.reservationId === reservation.id),
+        'Bound startup cannot release through a participant record')
+    } else {
+      assertTeamCondition(reservation !== undefined && reservation.releasedAt === undefined
+        && reservation.reservedAt === record.createdAt && current.phase === 'active' && participant.phase === 'active'
+        && previous.team.phase === 'active' && previous.team.closure === undefined && previous.team.cancellation === undefined,
+      'Startup reservation requires active membership before provider start')
+      assertTeamCondition(![...previous.activations.values()].some(binding =>
+        binding.activation.participantId === participant.id && binding.quiescedAt === undefined), 'Startup replaces an unquiesced epoch')
+      if (prior !== undefined) assertTeamCondition(prior.releasedAt !== undefined
+        || [...previous.activations.values()].some(binding => binding.reservationId === prior.id && binding.quiescedAt !== undefined),
+      'Startup replaces an unconfirmed reservation')
+    }
+  } else if (previous.team.cancellation !== undefined || previous.team.closure !== undefined) {
+    throw malformedTeam('Closure participant mutation is not an unpublished-start release')
+  }
   const participants = new Map(previous.participants)
   participants.set(participant.id, structuredClone(participant))
   assertDistinctActiveHumanOwners(participants.values())
-  return { ...previous, team, participants }
+  const projection = { ...previous, team, participants }
+  assertActivationCapacity(projection)
+  return projection
+}
+
+/** Only a previously reserved unpublished start can gain a release timestamp during closure. */
+function assertReservationRelease(current: ParticipantSnapshot | undefined, next: ParticipantSnapshot): void {
+  const previous = current?.activationReservation
+  const reservation = next.activationReservation
+  assertTeamCondition(previous !== undefined && reservation !== undefined && previous.releasedAt === undefined
+    && reservation.releasedAt !== undefined && isDeepStrictEqual({ ...current, activationReservation: {
+    ...previous, releasedAt: reservation.releasedAt,
+  } }, next), 'Participant release changed its startup identity or membership')
+}
+
+/** Reconstruct capacity from durable admissions, epoch settlement and frozen child allowances. */
+function assertActivationCapacity(projection: TeamProjection): void {
+  let limit: number | undefined
+  assertTeamTransition(() => { limit = liveActivationLimit(projection.budgets, projection.team.authorityGrant) })
+  if (limit !== undefined) assertTeamCondition(typeof limit === 'number' && Number.isSafeInteger(limit) && limit >= 0,
+    'Team live Activation ceiling is invalid')
+  const bound = new Set<string>()
+  for (const binding of projection.activations.values()) {
+    if (binding.reservationId === undefined) {
+      assertTeamCondition(limit === undefined
+        && projection.participants.get(binding.activation.participantId)?.authorityGrant?.budgets.maxLiveActivations === undefined,
+      'Bounded Team activation omits its startup reservation')
+      continue
+    }
+    assertTeamCondition(!bound.has(binding.reservationId), 'Startup reservation is bound more than once')
+    bound.add(binding.reservationId)
+    const reservation = projection.participants.get(binding.activation.participantId)?.activationReservation
+    if (binding.quiescedAt === undefined || reservation?.id === binding.reservationId) {
+      assertTeamCondition(reservation?.id === binding.reservationId && reservation.releasedAt === undefined
+        && reservation.provider === binding.provider && reservation.sessionId === binding.sessionId,
+      'Activation startup identity differs from its participant reservation')
+    }
+  }
+  const reservationIds = new Set<string>()
+  for (const participant of projection.participants.values()) {
+    const reservation = participant.activationReservation
+    if (reservation === undefined) continue
+    assertTeamCondition(!reservationIds.has(reservation.id), 'Participants share one startup reservation identity')
+    reservationIds.add(reservation.id)
+    if (participant.authorityGrant?.budgets.maxLiveActivations === 0) {
+      assertTeamCondition(reservation.releasedAt !== undefined
+        || [...projection.activations.values()].some(binding =>
+          binding.reservationId === reservation.id && binding.quiescedAt !== undefined),
+      'Participant with zero live authority retains startup capacity')
+    }
+    assertTeamCondition(isAgentParticipant(participant) && reservation.reservedAt >= projection.team.createdAt
+      && reservation.reservedAt <= projection.team.updatedAt && (reservation.releasedAt === undefined
+        || reservation.releasedAt >= reservation.reservedAt && reservation.releasedAt <= projection.team.updatedAt),
+    'Startup reservation has an invalid participant or timestamp')
+  }
+  if (limit === undefined) return
+  for (const task of projection.tasks.values()) {
+    if (task.delegation?.childTeamId !== undefined) assertTeamCondition(task.delegation.creation?.budgets.maxLiveActivations !== undefined,
+      'Bounded parent child omits its live Activation allowance')
+  }
+  let used = 0
+  assertTeamTransition(() => {
+    used = liveActivationCapacity(projection.participants.values(), projection.activations.values(), projection.tasks.values())
+  })
+  assertTeamCondition(used <= limit, 'Live Activation reservations exceed the Team ceiling')
 }
 
 /** Reject two active human participants that bind the same durable product principal. */
@@ -1022,6 +1121,7 @@ function assertDistinctActiveHumanOwners(participants: Iterable<ParticipantSnaps
 function assertTerminalTeamResources(projection: TeamProjection): void {
   const phase = projection.team.phase
   if (phase !== 'completed' && phase !== 'failed' && phase !== 'cancelled') return
+
   if (phase === 'completed' && projection.team.parentTeamId !== undefined && projection.team.childResultAdmission === undefined) {
     throw malformedTeam('completed child Team has no parent-service result admission')
   }
@@ -1042,6 +1142,10 @@ function assertTerminalTeamResources(projection: TeamProjection): void {
       throw malformedTeam(`terminal Team retains activation '${binding.activation.id}' without complete quiescence`)
     }
   }
+  assertTeamCondition(liveActivationCapacity(
+    projection.participants.values(), projection.activations.values(), projection.tasks.values(),
+  ) === 0,
+  'Terminal Team retains live Activation startup or subtree capacity')
   for (const action of projection.humanActions.values()) {
     if (action.phase === 'pending') throw malformedTeam(`terminal Team retains pending human action '${action.id}'`)
   }
@@ -1090,7 +1194,7 @@ function foldHumanAction(
       action.updatedAt >= current.updatedAt,
       current.phase === 'pending',
       action.phase === 'resolved' || action.phase === 'cancelled'
-        || action.phase === 'pending' && current.response === undefined && action.response !== undefined
+        || current.response === undefined && action.response !== undefined
           && action.response.expectedUpdatedAt === current.updatedAt && action.response.acceptedAt === record.createdAt,
       current.response === undefined
         ? action.response === undefined || action.phase === 'pending'
@@ -1263,7 +1367,10 @@ function foldChildCharge(
   }
   const pendingParentCharges = new Map(previous.pendingParentCharges)
   if (team.parentTeamId !== undefined) {
-    pendingParentCharges.set(charge.id, structuredClone({ ...acceptedCharge, sourceTeamId: streamTeamId, parentTaskId: team.parentTaskId! }))
+    // Team lineage validation requires the parent task whenever a parent Team is present.
+    pendingParentCharges.set(charge.id, structuredClone({
+      ...acceptedCharge, sourceTeamId: streamTeamId, parentTaskId: team.parentTaskId as TeamTaskId,
+    }))
   }
   return { ...previous, team, usage, usageCharges, pendingParentCharges }
 }
@@ -1557,7 +1664,26 @@ function foldTask(
   const projection = { ...previous, team, tasks, taskExecutionStats }
   assertTaskReviewHistory(projection, task)
   assertTaskDependencyOutcome(projection, task)
+  assertChildTeamReservations(projection)
+  assertActivationCapacity(projection)
   return projection
+}
+
+/** A bounded subtree retains its lifetime child reservations across cancellation and replay. */
+function assertChildTeamReservations(projection: TeamProjection): void {
+  const limit = projection.budgets.maxChildTeams
+  if (limit === undefined) return
+  assertTeamCondition(typeof limit === 'number' && Number.isSafeInteger(limit) && limit >= 0,
+    'Team descendant count ceiling is invalid')
+  let count = 0
+  for (const task of projection.tasks.values()) {
+    if (task.delegation?.childTeamId === undefined) continue
+    assertTeamCondition(task.delegation.creation?.budgets.maxChildTeams !== undefined,
+      'Bounded parent delegation omits its descendant ceiling')
+    assertTeamTransition(() => { count += taskChildTeamReservation(task) })
+  }
+  assertTeamCondition(Number.isSafeInteger(count) && count <= limit,
+    'Team descendant reservations exceed its lifetime ceiling')
 }
 
 /** Fold one provider-owned workspace allocation lifecycle snapshot. */
@@ -1836,7 +1962,8 @@ function assertTaskAttemptTransition(
     assertChildDelegationTransition(current, next, createdAt)
     if (current.delegation?.result === undefined && next.delegation?.result !== undefined) {
       const result = next.delegation.result
-      if (result.parentCursor !== projection.team.cursor + 1 || result.parentTaskRevision !== next.revision || result.admittedAt !== createdAt
+      if (result.parentCursor !== projection.team.cursor + 1 || result.parentTaskRevision !== next.revision
+        || result.admittedAt !== createdAt
         || result.binding.parentTeamId !== next.teamId || result.binding.parentTaskId !== next.id
         || result.binding.delegationId !== next.delegation.id || result.binding.childTeamId !== next.delegation.childTeamId
         || (current.delegation?.phase !== 'creating' && current.delegation?.phase !== 'active') || next.delegation.phase !== 'settling') {
@@ -1986,7 +2113,8 @@ function assertTaskAttemptOwner(
   }
   assertTeamCondition(task.requiredCapabilities.every(capability => participant.capabilities.includes(capability)),
     `task '${task.id}' attempt owner '${participant.id}' lacks a required capability`)
-  const executionProvider = attempt.activationId === undefined ? participant.provider : projection.activations.get(attempt.activationId)?.provider
+  const executionProvider = attempt.activationId === undefined
+    ? participant.provider : projection.activations.get(attempt.activationId)?.provider
   const selection = attempt.activationId === undefined ? {} : projection.activations.get(attempt.activationId)?.selection ?? {}
   assertTeamCondition(matchesTaskPlacement(task.placement, participant, executionProvider, selection),
     `task '${task.id}' attempt owner '${participant.id}' violates placement restrictions`)
@@ -2310,6 +2438,15 @@ function foldActivation(
     throw malformedTeam(`activation '${activation.id}' has an invalid Team participant relation`)
   }
   if (current === undefined) {
+    if (liveActivationLimit(previous.budgets, previous.team.authorityGrant) !== undefined
+      || participant.authorityGrant?.budgets.maxLiveActivations !== undefined || binding.reservationId !== undefined) {
+      const reservation = participant.activationReservation
+      assertTeamCondition(reservation !== undefined && reservation.id === binding.reservationId
+        && reservation.releasedAt === undefined && reservation.sessionId === binding.sessionId && reservation.provider === binding.provider,
+      'Activation has no exact startup reservation')
+      assertTeamCondition(![...previous.activations.values()].some(value => value.reservationId === binding.reservationId),
+        'Startup reservation publishes more than one epoch')
+    }
     if (binding.fencedAt !== undefined || binding.quiescedAt !== undefined || binding.quiescenceSource !== undefined) {
       throw malformedTeam(`activation '${activation.id}' cannot publish a quiescence proof`)
     }
@@ -2324,7 +2461,8 @@ function foldActivation(
     }
     assertTeamTransition(() => { assertActivationStatusTransition(undefined, activation.status) })
   } else {
-    if (current.activation.id !== activation.id
+    if (current.reservationId !== binding.reservationId
+      || current.activation.id !== activation.id
       || current.activation.teamId !== activation.teamId
       || current.activation.participantId !== activation.participantId
       || current.sessionId !== binding.sessionId
@@ -2358,7 +2496,9 @@ function foldActivation(
   }
   const activations = new Map(previous.activations)
   activations.set(activation.id, structuredClone(binding))
-  return { ...previous, team, activations }
+  const projection = { ...previous, team, activations }
+  assertActivationCapacity(projection)
+  return projection
 }
 
 /** Derive the exact wake channels retained by task attempts settled in one activation quiescence. */

@@ -8,7 +8,7 @@ Status: implemented
 
 GUI 拆分引入了第二个聚合 program（`tsconfig.client.json`，见[分层 RFC](../architecture/2026-07-19-gui-layering-and-rpc-protocol.zh.md)），根 `tsconfig.json` 则继续兼任宿主侧聚合，`tsconfig.build.json` 还是第三份手工维护的全量 emit 图。三处账本并行，造成四个具体的不对称：
 
-- 类型检查与构建的 references 列表逐渐脱节（`packages/goal/command-goal` 在类型检查图里，构建图里却没有）。
+- 类型检查与构建的 references 列表逐渐脱节（`packages/compat/command-goal` 在类型检查图里，构建图里却没有）。
 - lefthook 的 pre-push 钩子只运行 `tsc -b tsconfig.json`，客户端侧的类型破坏因此通过本地检查点，直到 CI 才暴露。
 - tsserver 只发现名为 `tsconfig.json` 的配置，客户端测试文件不在任何可发现的配置链上，回落到推断项目（inferred project），既没有 paths，lib/jsx 也不对。
 - 各 vitest 配置指向三个不同的解析来源（`tsconfig.vitest.json`、根配置，外加一处手写别名）。
@@ -30,6 +30,8 @@ GUI 拆分引入了第二个聚合 program（`tsconfig.client.json`，见[分层
 根 `tsconfig.json` 仍是显式执行完整 Project Reference 图的 solution 入口，lefthook pre-push 通过 `tsc -b tsconfig.json --pretty false` 增量覆盖两侧。仓库的 `build` 与 `typecheck` 命令因 Client 依赖 Host tsdown 生成的 Remote 约定而按 Host、Client 顺序运行，具体编排由 [API Remotes 构建 Note](2026-08-08-api-remotes-generated-contract-build.zh.md)负责。`tsconfig.build.json` 与 `tsconfig.vitest.json` 已删除；所有 vitest 配置都把 vite-tsconfig-paths 指向 `tsconfig.base.json`。
 
 solution 根文件刻意 `extends` base：`examples/` 与 `scripts/` 没有更近的 tsconfig，tsx（get-tsconfig）通过根文件解析它们的 workspace 导入。`extends` 把 `paths` 映射带回根文件，`files: []` 则让它始终不构成 program。这不影响两者的*类型检查*：examples、scripts 与 website 的文件由宿主聚合纳入。
+
+Client 项目为类型感知 lint 禁用项目引用的源码跳转。被引用项目的声明会省略仅供实现使用的导入，避免这些导入将 Host `Context` 扩展带入 Client program。公共 lint 复用先 Host 后 Client 的类型检查准备，CI lint 依赖 Client 检查。隔离的四项目回归同时检查有效的 Client 调用和应拒绝的 Host 专有调用，不依赖工作区残留构建产物。
 
 ## 考虑过的替代方案
 

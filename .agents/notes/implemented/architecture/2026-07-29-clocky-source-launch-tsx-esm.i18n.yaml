@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-29-clocky-source-launch-tsx-esm.md
-2026-07-29-clocky-source-launch-tsx-esm.md: fb75c807c93507dda5f26ce8f31370fe237f758e
-2026-07-29-clocky-source-launch-tsx-esm.zh.md: 11e9a53e80af147cd6bd733dba2163ef0d2e4e87
+2026-07-29-clocky-source-launch-tsx-esm.md: 5d3ae10a53dbed72a2d73b39faa06bf79e982f59
+2026-07-29-clocky-source-launch-tsx-esm.zh.md: 06a39699cd19a77aa305daf06a16e1cb8a9b4011

@@ -51,7 +51,7 @@ describe('sessions.list cold merge', () => {
     const metas = [
       header('small-blank', 100),
       header('small-conversation', 200),
-      header('large-unknown', 300),
+      header('large-unknown', 300, { teamId: 'cold-team', participantId: 'cold-member' }),
       header('cached-nonblank', 400),
       header('locationless', 500, { parentSession: sid('session-parent') }),
       header('vanished', 600),
@@ -113,7 +113,8 @@ describe('sessions.list cold merge', () => {
     expect(byId['small-blank']).toMatchObject({ blank: true, updatedAt: 100, running: false })
     // A stale true hint cannot hide the turn found in the bounded read.
     expect(byId['small-conversation']).toMatchObject({ blank: false, updatedAt: 1200 })
-    expect(byId['large-unknown']).toMatchObject({ blank: false, updatedAt: 300 })
+    expect(byId['large-unknown']).toMatchObject({ blank: false, updatedAt: 300,
+      team: { teamId: 'cold-team', participantId: 'cold-member' } })
     // false is monotonic, so this row skips stat/read and keeps cached recency.
     expect(byId['cached-nonblank']).toMatchObject({ blank: false, updatedAt: 1000 })
     expect(byId['locationless']).toMatchObject({ blank: false, updatedAt: 500 })

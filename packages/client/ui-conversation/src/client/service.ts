@@ -12,7 +12,7 @@ import type { Context } from '@clocky/cordis'
 // Type-only imports: a plugin-to-plugin value import is a bundle purity
 // error, so scope resolution goes through the sessions service (scopeOf
 // method) instead of the standalone helper.
-import type { ISessions, SessionFace, SessionId } from '@clocky/clocky-client-runtime/client'
+import type { ISessions, ITeamTasks, SessionFace, SessionId } from '@clocky/clocky-client-runtime/client'
 import type { SubmitImageAttachment, SubmitOutcome } from '@clocky/clocky-client-ui-input-trigger/client'
 import type { ImageAttachmentRef, ImageMediaType } from '@clocky/clocky-attachment'
 import type { ComposerAttachment } from './contract/slots.ts'
@@ -60,11 +60,8 @@ export interface IConversation {
 }
 
 /** Minimal Team-task face used to route coordinator input through the Hub. */
-interface TeamInputSelection { readonly teamId: string }
-interface TeamInputRuntime {
-  postInput(teamId: string, content: readonly Record<string, unknown>[], delivery: 'context' | 'turn' | 'steer', signal?: AbortSignal): Promise<void>
-  teamForCoordinatorSession(sessionId: SessionId): TeamInputSelection | undefined
-}
+type TeamInputSelection = NonNullable<Awaited<ReturnType<ITeamTasks['resolveCoordinatorSession']>>>
+type TeamInputRuntime = Pick<ITeamTasks, 'resolveCoordinatorSession' | 'postInput'>
 
 /** Create one browser-only draft descriptor; only its id enters input state. */
 function browserDraftAttachment(file: File): ComposerAttachment {
@@ -136,7 +133,7 @@ export class ConversationController extends Service implements IConversation {
    */
   async send(text: string): Promise<void> {
     const session = this.scopedSession('send')
-    const team = this.teamForSession(session)
+    const team = await this.teamForSession(session)
     if (team !== undefined) {
       await team.runtime.postInput(team.selection.teamId, [{ type: 'text', text }], 'turn')
       return
@@ -167,7 +164,7 @@ export class ConversationController extends Service implements IConversation {
     }
     const uploaded = await this.serializeImages(attachments.map(attachment => attachment.file))
     const content = [...uploaded, ...(text === '' ? [] : [{ type: 'text' as const, text }])]
-    const team = this.teamForSession(session)
+    const team = await this.teamForSession(session, signal)
     if (team !== undefined) {
       await team.runtime.postInput(team.selection.teamId, content, mode === 'steer' ? 'steer' : 'turn', signal)
       this.releaseDraftImages(attachments)
@@ -350,12 +347,21 @@ export class ConversationController extends Service implements IConversation {
     return sessions
   }
 
-  /** Resolve the selected Team that owns a coordinator Session, if any. */
-  private teamForSession(session: SessionFace): { runtime: TeamInputRuntime; selection: TeamInputSelection } | undefined {
-    const runtime = this.ctx.get('teamTasks') as unknown as TeamInputRuntime | undefined
-    if (runtime === undefined) return undefined
-    const selection = runtime.teamForCoordinatorSession(session.sessionId)
-    return selection === undefined ? undefined : { runtime, selection }
+  /** Resolve Team input from the Session metadata and the authoritative coordinator binding. */
+  private async teamForSession(session: SessionFace, signal?: AbortSignal):
+  Promise<{ runtime: TeamInputRuntime; selection: TeamInputSelection } | undefined> {
+    const owner = this.requireSessions().list.getSnapshot().byId[session.sessionId]?.team
+    const runtime = this.ctx.get('teamTasks')
+    if (runtime === undefined) {
+      if (owner !== undefined) throw new Error('Team input routing is unavailable')
+      return undefined
+    }
+    const selection = await runtime.resolveCoordinatorSession(session.sessionId, owner, signal)
+    if (selection === undefined) {
+      if (owner !== undefined) throw new Error('This Session is not the current Team coordinator')
+      return undefined
+    }
+    return { runtime, selection }
   }
 
   /** Convert browser files to canonical base64 prompt parts. */

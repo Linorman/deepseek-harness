@@ -1,3 +1,12 @@
+import { teamMemberInspectRequestSchema as coreMemberInspectRequestSchema, teamMemberInspectionSchema } from '@clocky/clocky-team/schema'
+import { teamWorkflowInspectionSchema as coreWorkflowInspectionSchema } from '@clocky/clocky-team/schema'
+import { teamHumanActionSnapshotSchema as coreHumanActionSnapshotSchema } from '@clocky/clocky-team/schema'
+import { teamTaskInspectionSchema as coreTaskInspectionSchema } from '@clocky/clocky-team/schema'
+export { teamTaskInspectRequestSchema, teamTaskInspectionSchema } from '@clocky/clocky-team/schema'
+import { teamBrowsePageSchema } from '@clocky/clocky-team/schema'
+import { teamMemberSessionRequestSchema as coreMemberSessionRequestSchema, teamMemberSessionSnapshotSchema } from '@clocky/clocky-team/schema'
+import { teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
+import { teamDiscoveryCursorSchema } from '@clocky/clocky-team/schema'
 import { teamHumanInboxPageSchema as coreHumanInboxPageSchema, teamHumanActionResponseResultSchema as coreHumanActionResponseResultSchema } from '@clocky/clocky-team/schema'
 export { teamHumanActionResponseInputSchema } from '@clocky/clocky-team/schema'
 export { teamHumanInboxReadInputSchema, teamHumanInboxAcknowledgeInputSchema, teamHumanInboxAcknowledgementSchema } from '@clocky/clocky-team/schema'
@@ -64,17 +73,35 @@ import type { TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal
 
 /** team.list request payload. */
 export const teamListRequestSchema = z.object({
-  afterCursor: z.number().int().min(-1).optional(),
+  afterCursor: z.union([z.literal(-1), teamDiscoveryCursorSchema]).optional(),
   limit: z.number().int().positive().optional(),
 }).strict() satisfies z.ZodType<Wire<RequestPayload<'team.list'>>>
 
 /** team.list response value. */
 export const teamListValueSchema = coreTeamListPageSchema as unknown as z.ZodType<Wire<ResponseValue<'team.list'>>>
 
+/** Exact Team/member lookup, without caller-selected Session authority. */
+export const teamMemberSessionRequestSchema = coreMemberSessionRequestSchema
+/** Latest published binding, excluding provider supervision and history. */
+export const teamMemberSessionValueSchema = teamMemberSessionSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.member.session'>>>
+
+/** Explicit collection selection and optional provider-order continuation. */
+export const teamBrowseInputSchema = z.object({ teamId: teamIdSchema, kind: z.enum(['tasks', 'members', 'workflowPlans']),
+  afterCursor: z.number().int().min(-1).optional(), limit: z.number().int().positive().optional(),
+}).strict() satisfies z.ZodType<Wire<RequestPayload<'team.browse'>>>
+/** Bounded task inspection in the carrier's JSON-only type view. */
+export const teamTaskInspectionValueSchema = coreTaskInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.inspect'>>>
+
+/** Display summary response, separate from complete task/participant/plan records. */
+export const teamBrowseValueSchema = teamBrowsePageSchema as unknown as z.ZodType<Wire<ResponseValue<'team.browse'>>>
+
 /** team.get request payload. */
 export const teamGetRequestSchema = z.object({
   teamId: teamIdSchema,
 }).strict() satisfies z.ZodType<Wire<RequestPayload<'team.get'>>>
+
+/** team.selection response value. */
+export const teamSelectionValueSchema = teamSelectionSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.selection'>>>
 
 /** team.get and team.create response value. */
 export const teamStateValueSchema = teamStateSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.get'>>>
@@ -485,3 +512,14 @@ export const teamTaskWatchValueSchema = teamWatchResultSchema as unknown as z.Zo
 export const teamHumanInboxPageSchema = coreHumanInboxPageSchema as unknown as z.ZodType<Wire<ResponseValue<'team.inbox.read'>>>
 /** Typed response outcome projected through the Host's JSON wire mapping. */
 export const teamHumanActionResponseResultSchema = coreHumanActionResponseResultSchema as unknown as z.ZodType<Wire<ResponseValue<'team.inbox.respond'>>>
+
+/** Current exact action returned without the owning Team history. */
+export const teamHumanActionValueSchema = coreHumanActionSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.action.read'>>>
+
+/** Bounded workflow metadata and task references. */
+export const teamWorkflowInspectionValueSchema = coreWorkflowInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.workflow.plan.inspect'>>>
+
+/** Exact member capability window with optional Team cursor fence. */
+export const teamMemberInspectInputSchema = coreMemberInspectRequestSchema
+/** Bounded metadata and capability page for one retained member. */
+export const teamMemberInspectValueSchema = teamMemberInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.member.inspect'>>>

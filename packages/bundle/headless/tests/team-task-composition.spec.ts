@@ -55,14 +55,14 @@ const legacyGoalRowIds = [
 ]
 
 const legacyPackageNames = [
-  '@clocky/clocky-subagent',
-  '@clocky/clocky-subagent-spawn-in-process',
-  '@clocky/clocky-tool-ralph',
-  '@clocky/clocky-tool-subagent',
-  '@clocky/clocky-tool-subagent-control',
-  '@clocky/clocky-tool-subagent-report',
-  '@clocky/clocky-tool-workflow',
-  '@clocky/clocky-workflow-worker-thread',
+  '@clocky/clocky-compat-subagent',
+  '@clocky/clocky-compat-subagent-spawn-in-process',
+  '@clocky/clocky-compat-tool-ralph',
+  '@clocky/clocky-compat-tool-subagent',
+  '@clocky/clocky-compat-tool-subagent-control',
+  '@clocky/clocky-compat-tool-subagent-report',
+  '@clocky/clocky-compat-tool-workflow',
+  '@clocky/clocky-compat-workflow-worker-thread',
 ]
 
 function row(source: string, id: string): string {
@@ -70,10 +70,6 @@ function row(source: string, id: string): string {
   if (start < 0) throw new Error(`missing composition row '${id}'`)
   const next = source.indexOf('\n    - id: ', start + 1)
   return source.slice(start, next < 0 ? source.length : next)
-}
-
-function isDisabled(source: string, id: string): boolean {
-  return new RegExp(`^- id: ${id}\\n  disabled: true(?:\\n|$)`, 'm').test(source)
 }
 
 describe('shipped Team task composition', () => {
@@ -150,7 +146,7 @@ describe('shipped Team task composition', () => {
       expect(manifest.dependencies).toHaveProperty('@clocky/clocky-storage-json', 'workspace:^')
       expect(manifest.dependencies).not.toHaveProperty('@clocky/clocky-client-ui-goal')
     }
-    for (const id of legacyGoalRowIds) expect(isDisabled(patch, id), `${id} must be disabled`).toBe(true)
+    for (const id of legacyGoalRowIds) expect(patch).not.toMatch(new RegExp(`^\\s*- id: ${id}$`, 'm'))
   })
 
   it('resolves the shipped minimal worker preset from the profile-owned root', async () => {

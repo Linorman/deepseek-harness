@@ -42,10 +42,10 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@clocky/cordis-plugin-loader": "workspace:^",
     "@clocky/clocky-host-webserver": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/cordis-plugin-loader": "workspace:^"
   },
   "files": [
     "lib/index.js",
@@ -54,9 +54,12 @@
     "lib/types/**/*.d.ts"
   ],
   "peerDependencies": {
+    "@clocky/clocky-host-webserver": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/cordis": "workspace:^",
-    "@clocky/cordis-plugin-loader": "workspace:^",
-    "@clocky/clocky-host-webserver": "workspace:^"
+    "@clocky/cordis-plugin-loader": "workspace:^"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
   }
 }

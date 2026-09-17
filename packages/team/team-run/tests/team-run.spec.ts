@@ -17,6 +17,7 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import TeamHub from '@clocky/clocky-team-hub'
 import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
+import * as TeamPlacement from '@clocky/clocky-team-placement-default'
 import * as ToolTeam from '@clocky/clocky-tool-team'
 import { fingerprintTeamChildResultContent, teamChildRunBindingSchema, teamDelegationResultAdmissionSchema, teamTaskSnapshotSchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema, TeamError } from '@clocky/clocky-team'
 import type {
@@ -259,7 +260,7 @@ async function setup(
   await ctx.plugin(TeamLinkLocal, {
     providerName: 'local', pageSize: 32, disposalTimeoutMs: 100, notificationRetryDelayMs: 1,
   })
-  await ctx.plugin(TeamAgentClient, { reconnectDelayMs: 1, disposalTimeoutMs: 100 })
+  await ctx.plugin(TeamAgentClient, { reconnectDelayMs: 1, disposalTimeoutMs: 100, maxTaskReportReminders: 0 })
   if (withTeamTools) await ctx.plugin(ToolTeam, { linkProvider: 'local' })
   await ctx.plugin(TeamRun, teamRunConfig)
   return ctx
@@ -622,6 +623,45 @@ describe('local Team run', () => {
     }
   })
 
+  it('reactivates a dormant custom workflow role through placement before publishing its tasks', async () => {
+    const adapter = new CoordinatorGateWorkerReplyAdapter()
+    const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0, members: [{
+      role: 'builder', displayName: 'Builder', kind: 'local-agent', capabilities: ['team-default-worker'],
+      provider: 'in-process', modelProvider: 'mock', model: 'mock', maxTokens: 128,
+    }] }, adapter)
+    const run = await ctx.teamRuns.create({ objective: 'Resume a workflow role.', cwd: process.cwd() })
+    const before = await ctx.teams.getTeam({ teamId: run.teamId })
+    const old = before.activations.find(value => value.activation.participantId === run.members[0]!.id)!
+    const lease = await ctx.teamActivations.activate({ teamId: run.teamId, participantId: old.activation.participantId,
+      expectedCursor: before.team.cursor, provider: old.provider, sessionId: old.sessionId,
+      seed: { kind: 'resume' }, agent: { cwd: process.cwd(), options: {} }, signal: new AbortController().signal })
+    await lease.dispose()
+    await ctx.plugin(TeamPlacement, { routes: [{ provider: 'in-process', roles: ['builder'], model: 'mock/mock',
+      modelProvider: 'mock', modelId: 'mock', cwd: process.cwd(), maxTokens: 128 }],
+    maxActivationsPerDrive: 2, maxCursorRetries: 3 })
+    const coordinator = run.coordinatorLease.localAgent!
+    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    coordinator.followup(createUserMessage({ content: [{ type: 'text', text: 'Start the workflow.' }], source: { kind: 'user' } }))
+    await adapter.coordinatorStarted.promise
+    try {
+      const compiled = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, {
+        idempotencyKey: teamWorkflowPlanIdempotencyKeySchema.parse('dormant-role-workflow'), plan: workflowPlan(2, ['builder']),
+      }))
+      expect(compiled.phase).toBe('ready')
+      expect(await ctx.teamPlacement.prepare(run.teamId)).toBe(0)
+      const after = await ctx.teams.getTeam({ teamId: run.teamId })
+      const epochs = after.activations.filter(value => value.activation.participantId === old.activation.participantId)
+      expect(epochs).toHaveLength(2)
+      expect(epochs[0]?.quiescedAt).toBeDefined()
+      expect(epochs[1]?.sessionId).toBe(old.sessionId)
+      expect(epochs[1]?.activation.status).toBe('idle')
+      expect(after.tasks.map(task => task.phase)).toEqual(['pending', 'pending'])
+    } finally {
+      adapter.releaseCoordinator.resolve(undefined)
+      await ctx.teamRuns.cancel(run.teamId)
+    }
+  })
+
   it('compiles a non-shared workflow task when its workspace provider is explicitly mounted', async () => {
     const adapter = new CoordinatorGateWorkerReplyAdapter()
     const ctx = await setup(true, { workerPreset: 'worker' }, adapter)
@@ -688,7 +728,8 @@ describe('local Team run', () => {
         const { preset: _preset, ...agent } = request.agent
         return await activate({ ...request, agent })
       })
-      const corrected = await ctx.agents.withInitiator(coordinator, async () => await ctx.teamRuns.startWorkflowPlan(authority, { idempotencyKey, plan }))
+      const corrected = await ctx.agents.withInitiator(coordinator,
+        async () => await ctx.teamRuns.startWorkflowPlan(authority, { idempotencyKey, plan }))
       expect(corrected.phase).toBe('ready')
       expect((await ctx.teams.getTeam({ teamId: run.teamId })).workflowPlans).toHaveLength(1)
     } finally { adapter.releaseCoordinator.resolve(undefined) }
@@ -1348,12 +1389,14 @@ describe('local Team run', () => {
       expect(task).toMatchObject({ execution: { kind: 'child-team', templateId: 'default-v1', templateVersion: 1,
         budget: request.budget, authorityGrant: { readScopes: [], writeScopes: [], workspaceModes: ['shared'], budgets: request.budget } },
       requiredCapabilities: [], reviewPolicy: { kind: 'none' }, maxAttempts: 1, delegation: { phase: 'requested' } })
-      expect(await initiate(() => ctx.teamRuns.setWorkerPoolSize(authority, { targetCount: 0 }))).toMatchObject({ queuedTaskCount: 0, workerCount: 0 })
+      expect(await initiate(() => ctx.teamRuns.setWorkerPoolSize(authority, { targetCount: 0 })))
+        .toMatchObject({ queuedTaskCount: 0, workerCount: 0 })
       const execution = task.execution
       const delegation = task.delegation
       if (execution.kind !== 'child-team' || delegation === undefined) throw new Error('Expected the admitted child task')
       const binding = teamChildRunBindingSchema.parse({ parentTeamId: run.teamId, parentTaskId: task.id, childTeamId: 'projected-child',
-        delegationId: delegation.id, parentServiceId: run.recipient.id, coordinatorId: run.coordinator.id, channelId: run.channel.manifest.id })
+        delegationId: delegation.id, parentServiceId: run.recipient.id,
+        coordinatorId: run.coordinator.id, channelId: run.channel.manifest.id })
       const text = 'Explicit child summary'
       const result = teamDelegationResultAdmissionSchema.parse({ binding, text, artifacts: [],
         requestEnvelopeId: 'projected-request', requestSequence: 1, responseEnvelopeId: 'projected-response', responseSequence: 2,
@@ -1367,7 +1410,8 @@ describe('local Team run', () => {
             budgets: { ...request.budget }, authorityGrant: execution.authorityGrant } } })
       const getTeam = ctx.teams.getTeam.bind(ctx.teams)
       const projection = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async input => input.teamId !== run.teamId ? await getTeam(input)
-        : { ...current, team: { ...current.team, cursor: current.team.cursor + 4, updatedAt: current.team.updatedAt + 4 }, tasks: [completed] })
+        : { ...current,
+          team: { ...current.team, cursor: current.team.cursor + 4, updatedAt: current.team.updatedAt + 4 }, tasks: [completed] })
       try {
         expect(await initiate(() => ctx.teamRuns.listDefaultWorkerTasks(authority))).toMatchObject({ tasks: [{ id: task.id,
           childTeamId: binding.childTeamId, delegationResult: { text: result.text, artifacts: [] } }] })
@@ -2440,7 +2484,7 @@ describe('local Team run', () => {
 
     expect(retry).toBe(first)
     expect(first.input.payload).toEqual({ content: request.content })
-    await expect(ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).resolves.toMatchObject({ items: expect.any(Array) })
+    expect(Array.isArray((await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).items)).toBe(true)
     const records = await ctx.teams.readChannel({ channelId: first.handle.channel.manifest.id, afterCursor: -1 })
     expect(records.records.filter(record => record.type === 'channel/envelope')).toHaveLength(1)
 
@@ -2491,7 +2535,7 @@ describe('local Team run', () => {
     })
     try {
       await expect(ctx.teamRuns.create({ objective: 'Exercise topology cleanup.', cwd: process.cwd() }))
-        .rejects.toMatchObject({ errors: expect.arrayContaining([primary, cleanup]) })
+        .rejects.toHaveProperty('errors', expect.arrayContaining([primary, cleanup]))
     } finally {
       prompt.mockRestore(); activation.mockRestore()
       await owned?.dispose()
@@ -2763,6 +2807,7 @@ describe('local Team run', () => {
         activationProvider: 'local',
         templateId: 'product-v2',
         templateVersion: 2,
+        maxChildTeams: 0,
         humanName: 'Human',
         coordinatorName: 'Coordinator',
         workerName: 'Worker',
@@ -2775,6 +2820,8 @@ describe('local Team run', () => {
       await ctx.fiber.dispose()
     }
     for (const [config, message] of [
+      [{ maxChildTeams: -1 }, 'maxChildTeams must be a non-negative safe integer'],
+      [{ maxChildTeams: 1.5 }, 'maxChildTeams must be a non-negative safe integer'],
       [{ activationProvider: ' ' }, 'activationProvider must be non-empty'],
       [{ templateVersion: 1.5 }, 'templateVersion must be a positive safe integer'],
       [{ templateVersion: 0 }, 'templateVersion must be a positive safe integer'],

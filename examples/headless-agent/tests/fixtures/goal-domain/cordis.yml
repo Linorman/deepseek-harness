@@ -10,7 +10,7 @@
   name: '@clocky/clocky-bash-local'
 
 - id: goal
-  name: '@clocky/clocky-goal'
+  name: '@clocky/clocky-compat-goal'
   config:
     defaultMaxGoalRounds: 11
 

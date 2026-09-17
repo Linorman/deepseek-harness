@@ -27,7 +27,7 @@ flowchart LR
   pkg_session_persistence["session-persistence"]
   pkg_session_query["session-query"]
   pkg_session_query_sqlite["session-query-sqlite"]
-  pkg_subagent_inprocess["subagent-inprocess"]
+  pkg_compat_subagent_in_process_driver["compat-subagent-in-process-driver"]
   pkg_invariants["invariants"]
   pkg_message_feedback["message-feedback"]
   svc_invariants["ctx.invariants<br/>Package-owned invariant registry"]
@@ -94,7 +94,7 @@ flowchart LR
   pkg_tool_ask_user["tool-ask-user"]
   pkg_tool_cordis["tool-cordis"]
   pkg_tool_skill["tool-skill"]
-  pkg_tool_subagent["tool-subagent"]
+  pkg_compat_tool_subagent["compat-tool-subagent"]
   pkg_tool_todo["tool-todo"]
   pkg_user_questions["user-questions"]
   svc_userQuestions["ctx.userQuestions<br/>Human question/answer seam"]
@@ -113,6 +113,7 @@ flowchart LR
   pkg_skill_filesystem["skill-filesystem"]
   svc_agents["ctx.agents<br/>Agent service"]
   pkg_acp["acp"]
+  pkg_team_delegation["team-delegation"]
   pkg_agent_runtime["agent-runtime"]
   svc_agentRuntimes["ctx.agentRuntimes<br/>Participant activation provider registry"]
   pkg_agent_runtime_in_process["agent-runtime-in-process"]
@@ -122,7 +123,7 @@ flowchart LR
   pkg_headless["headless"]
   svc_agentLoop["ctx.agentLoop<br/>Concrete loop driver"]
   pkg_agent_spine_demo["agent-spine-demo"]
-  pkg_goal["goal"]
+  pkg_compat_goal["compat-goal"]
   svc_goals["ctx.goals<br/>Same-session goal domain"]
   pkg_e2b["e2b"]
   svc_e2b["ctx.e2b<br/>E2B sandbox lifecycle owner"]
@@ -135,7 +136,7 @@ flowchart LR
   pkg_bash_sandbox["bash-sandbox"]
   pkg_terminal_bash["terminal-bash"]
   pkg_lsp_stdio["lsp-stdio"]
-  pkg_subagent_acp["subagent-acp"]
+  pkg_compat_subagent_acp["compat-subagent-acp"]
   pkg_shell["shell"]
   svc_shell["ctx.shell<br/>Bash executor seam"]
   pkg_pwsh_local["pwsh-local"]
@@ -163,13 +164,13 @@ flowchart LR
   pkg_fs_observation_policy["fs-observation-policy"]
   pkg_compaction["compaction"]
   svc_compaction["ctx.compaction<br/>Compaction seam"]
-  pkg_subagent["subagent"]
+  pkg_compat_subagent["compat-subagent"]
   svc_subagents["ctx.subagents<br/>Subagent provider and continuation service"]
-  pkg_subagent_spawn_in_process["subagent-spawn-in-process"]
-  pkg_subagent_fork_in_process["subagent-fork-in-process"]
-  pkg_subagent_clocky_sdk["subagent-clocky-sdk"]
-  pkg_tool_subagent_control["tool-subagent-control"]
-  pkg_tool_ralph["tool-ralph"]
+  pkg_compat_subagent_spawn_in_process["compat-subagent-spawn-in-process"]
+  pkg_compat_subagent_fork_in_process["compat-subagent-fork-in-process"]
+  pkg_compat_subagent_clocky_sdk["compat-subagent-clocky-sdk"]
+  pkg_compat_tool_subagent_control["compat-tool-subagent-control"]
+  pkg_compat_tool_ralph["compat-tool-ralph"]
   pkg_team["team"]
   svc_teams["ctx.teams<br/>Team work-system Service Definition"]
   pkg_team_hub["team-hub"]
@@ -185,6 +186,8 @@ flowchart LR
   pkg_tool_team_goal["tool-team-goal"]
   pkg_team_run["team-run"]
   pkg_team_scheduler_dag["team-scheduler-dag"]
+  pkg_team_channel_admission["team-channel-admission"]
+  pkg_team_channel_summary["team-channel-summary"]
   svc_teamHumanActors["ctx.teamHumanActors<br/>Authenticated human Team actor binder"]
   svc_teamTelemetry["ctx.teamTelemetry<br/>Team telemetry backend seam"]
   pkg_team_telemetry_otel["team-telemetry-otel"]
@@ -193,9 +196,7 @@ flowchart LR
   pkg_activation_supervisor["activation-supervisor"]
   svc_activationSupervisors["ctx.activationSupervisors<br/>Activation supervisor provider registry"]
   pkg_activation_supervisor_http["activation-supervisor-http"]
-  pkg_team_channel_admission["team-channel-admission"]
   svc_teamChannelAdmission["ctx.teamChannelAdmission<br/>Durable channel admission Consumer"]
-  pkg_team_channel_summary["team-channel-summary"]
   svc_teamChannelSummaries["ctx.teamChannelSummaries<br/>Explicit channel-summary Consumer"]
   pkg_team_human_client["team-human-client"]
   svc_teamHumanDelivery["ctx.teamHumanDelivery<br/>Principal-bound human delivery sink"]
@@ -243,10 +244,10 @@ flowchart LR
   pkg_modules["modules"]
   pkg_hmr["hmr"]
   svc_clientModules["ctx.clientModules<br/>Client plugin graph host"]
-  pkg_workflow["workflow"]
+  pkg_compat_workflow["compat-workflow"]
   svc_workflowEngine["ctx.workflowEngine<br/>Workflow script engine"]
-  pkg_workflow_worker_thread["workflow-worker-thread"]
-  pkg_tool_workflow["tool-workflow"]
+  pkg_compat_workflow_worker_thread["compat-workflow-worker-thread"]
+  pkg_compat_tool_workflow["compat-tool-workflow"]
   pkg_lsp["lsp"]
   svc_lsp["ctx.lsp<br/>Language-server navigation seam"]
   pkg_lsp_local["lsp-local"]
@@ -279,6 +280,14 @@ flowchart LR
   pkg_compaction --> svc_compaction
   pkg_compaction_basic --> svc_compaction
   pkg_compaction_tool_result_pruner --> svc_toolResultPruner
+  pkg_compat_goal --> svc_goals
+  pkg_compat_subagent --> svc_subagents
+  pkg_compat_subagent_acp --> svc_subagents
+  pkg_compat_subagent_clocky_sdk --> svc_subagents
+  pkg_compat_subagent_fork_in_process --> svc_subagents
+  pkg_compat_subagent_spawn_in_process --> svc_subagents
+  pkg_compat_workflow --> svc_workflowEngine
+  pkg_compat_workflow_worker_thread --> svc_workflowEngine
   pkg_cordis_host_runner --> svc_cordisInspect
   pkg_cordis_host_runner --> svc_dynamicCordisRunner
   pkg_credentials --> svc_credentials
@@ -293,7 +302,6 @@ flowchart LR
   pkg_fs_e2b --> svc_fs
   pkg_fs_local --> svc_fs
   pkg_fs_sandbox --> svc_fs
-  pkg_goal --> svc_goals
   pkg_host_product_principal_digest --> svc_productPrincipals
   pkg_host_product_principal_local --> svc_productPrincipals
   pkg_invariants --> svc_invariants
@@ -340,11 +348,6 @@ flowchart LR
   pkg_storage_json --> svc_storage
   pkg_storage_log --> svc_storageLog
   pkg_storage_sqlite --> svc_storage
-  pkg_subagent --> svc_subagents
-  pkg_subagent_acp --> svc_subagents
-  pkg_subagent_clocky_sdk --> svc_subagents
-  pkg_subagent_fork_in_process --> svc_subagents
-  pkg_subagent_spawn_in_process --> svc_subagents
   pkg_subprocess --> svc_subprocess
   pkg_subprocess_e2b --> svc_subprocess
   pkg_subprocess_local --> svc_subprocess
@@ -384,8 +387,6 @@ flowchart LR
   pkg_web_search_exa --> svc_web
   pkg_web_search_perplexity --> svc_web
   pkg_webserver --> svc_webServer
-  pkg_workflow --> svc_workflowEngine
-  pkg_workflow_worker_thread --> svc_workflowEngine
   pkg_workspace --> svc_workspaceRegistry
   svc_activationSupervisors --> pkg_agent_runtime_sdk
   svc_activationSupervisors --> pkg_team_activation_controller
@@ -395,7 +396,8 @@ flowchart LR
   svc_agentLoop --> pkg_agent_spine_demo
   svc_agents --> pkg_acp
   svc_agents --> pkg_agent_loop
-  svc_agents --> pkg_subagent_inprocess
+  svc_agents --> pkg_compat_subagent_in_process_driver
+  svc_agents --> pkg_team_delegation
   svc_apiProxy --> pkg_connection
   svc_approval --> pkg_tool_bash
   svc_approval --> pkg_tools
@@ -417,9 +419,9 @@ flowchart LR
   svc_invariants --> pkg_agent_loop
   svc_invariants --> pkg_scope
   svc_invariants --> pkg_session
+  svc_jobs --> pkg_compat_tool_subagent
   svc_jobs --> pkg_tool_bash
   svc_jobs --> pkg_tool_jobs
-  svc_jobs --> pkg_tool_subagent
   svc_jobs --> pkg_tool_terminal
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
@@ -447,12 +449,12 @@ flowchart LR
   svc_sessionQuery --> pkg_tool_session_query
   svc_sessions --> pkg_agent
   svc_sessions --> pkg_agent_loop
+  svc_sessions --> pkg_compat_subagent_in_process_driver
   svc_sessions --> pkg_invariants
   svc_sessions --> pkg_message_feedback
   svc_sessions --> pkg_session_persistence
   svc_sessions --> pkg_session_query
   svc_sessions --> pkg_session_query_sqlite
-  svc_sessions --> pkg_subagent_inprocess
   svc_settings --> pkg_apiproxy
   svc_settings --> pkg_llm_pi_ai
   svc_shell --> pkg_tool_bash
@@ -465,13 +467,13 @@ flowchart LR
   svc_storage --> pkg_storage_log
   svc_storageDomain --> pkg_message_feedback
   svc_storageDomain --> pkg_workspace
-  svc_subagents --> pkg_tool_ralph
-  svc_subagents --> pkg_tool_subagent
-  svc_subagents --> pkg_tool_subagent_control
+  svc_subagents --> pkg_compat_tool_ralph
+  svc_subagents --> pkg_compat_tool_subagent
+  svc_subagents --> pkg_compat_tool_subagent_control
   svc_subprocess --> pkg_bash_local
   svc_subprocess --> pkg_bash_sandbox
+  svc_subprocess --> pkg_compat_subagent_acp
   svc_subprocess --> pkg_lsp_stdio
-  svc_subprocess --> pkg_subagent_acp
   svc_subprocess --> pkg_terminal_bash
   svc_systemPrompt --> pkg_agent_loop
   svc_systemPrompt --> pkg_tool_fs
@@ -501,15 +503,20 @@ flowchart LR
   svc_teamLinks --> pkg_tool_team
   svc_teamPlacement --> pkg_team_scheduler_dag
   svc_teamRuns --> pkg_headless
+  svc_teamRuns --> pkg_team_delegation
   svc_teamRuns --> pkg_tool_team_goal
   svc_teamRuns --> pkg_tool_team_task
   svc_teamRuns --> pkg_web_app
+  svc_teamWorkspaces --> pkg_team_delegation
   svc_teamWorkspaces --> pkg_team_scheduler_dag
   svc_teams --> pkg_command_team_goal
   svc_teams --> pkg_team_activation_recovery
   svc_teams --> pkg_team_agent_client
+  svc_teams --> pkg_team_channel_admission
   svc_teams --> pkg_team_channel_direct
+  svc_teams --> pkg_team_channel_summary
   svc_teams --> pkg_team_channel_task_assignment
+  svc_teams --> pkg_team_delegation
   svc_teams --> pkg_team_link_local
   svc_teams --> pkg_team_link_websocket_hub
   svc_teams --> pkg_team_run
@@ -521,12 +528,12 @@ flowchart LR
   svc_tokenMeter --> pkg_compaction_basic
   svc_toolResultPruner --> pkg_compaction_basic
   svc_tools --> pkg_agent_loop
+  svc_tools --> pkg_compat_tool_subagent
   svc_tools --> pkg_tool_ask_user
   svc_tools --> pkg_tool_bash
   svc_tools --> pkg_tool_cordis
   svc_tools --> pkg_tool_fs
   svc_tools --> pkg_tool_skill
-  svc_tools --> pkg_tool_subagent
   svc_tools --> pkg_tool_terminal
   svc_tools --> pkg_tool_todo
   svc_tools --> pkg_tool_web
@@ -538,8 +545,8 @@ flowchart LR
   svc_webServer --> pkg_hmr
   svc_webServer --> pkg_modules
   svc_webServer --> pkg_team_link_websocket_hub
-  svc_workflowEngine --> pkg_tool_ralph
-  svc_workflowEngine --> pkg_tool_workflow
+  svc_workflowEngine --> pkg_compat_tool_ralph
+  svc_workflowEngine --> pkg_compat_tool_workflow
   svc_workflowExtensions --> pkg_team_channel_workflow
   svc_workspaceRegistry --> pkg_apiproxy
   svc_fs -. event gate .-> pkg_fs_observation_policy
@@ -551,7 +558,7 @@ flowchart LR
 | `ctx.llm` | `seam` | [`llm`](../packages/llm/llm) | [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`llm-replay`](../packages/test-support/llm-replay) | [`agent-loop`](../packages/core/agent-loop), [`compaction-basic`](../packages/compaction/compaction-basic) | - | Adapters register provider implementations; the loop and compaction call the provider-neutral stream service. |
 | `ctx.tokenMeter` | `core` | [`token-meter`](../packages/llm/token-meter) | - | [`compaction-basic`](../packages/compaction/compaction-basic) | - | Owns isolated per-session replay folds; pressure consumers share immutable revisioned measurements. |
 | `ctx.toolResultPruner` | `core` | [`compaction-tool-result-pruner`](../packages/compaction/compaction-tool-result-pruner) | - | [`compaction-basic`](../packages/compaction/compaction-basic) | - | Rewrites oversized current tool results through replayable single-node surface replacements before summary compaction. |
-| `ctx.sessions` | `core` | [`session`](../packages/core/session) | - | [`agent-loop`](../packages/core/agent-loop), [`agent`](../packages/core/agent), [`session-persistence`](../packages/session/session-persistence), [`session-query`](../packages/session-query/session-query), [`session-query-sqlite`](../packages/session-query/session-query-sqlite), `subagent-inprocess`, [`invariants`](../packages/runtime-diagnostics/invariants), [`message-feedback`](../packages/feedback/message-feedback) | - | Owns append-only Session instances and emits the durable session event feed. |
+| `ctx.sessions` | `core` | [`session`](../packages/core/session) | - | [`agent-loop`](../packages/core/agent-loop), [`agent`](../packages/core/agent), [`session-persistence`](../packages/session/session-persistence), [`session-query`](../packages/session-query/session-query), [`session-query-sqlite`](../packages/session-query/session-query-sqlite), [`compat-subagent-in-process-driver`](../packages/compat/subagent-in-process-driver), [`invariants`](../packages/runtime-diagnostics/invariants), [`message-feedback`](../packages/feedback/message-feedback) | - | Owns append-only Session instances and emits the durable session event feed. |
 | `ctx.invariants` | `core` | [`invariants`](../packages/runtime-diagnostics/invariants) | - | [`session`](../packages/core/session), [`agent`](../packages/core/agent), [`scope`](../packages/core/scope), [`agent-loop`](../packages/core/agent-loop) | - | Companion subpaths register owner-local checks; the service owns selection, uniqueness, child fibers, and package-attributed failures. |
 | `ctx.typert` | `core` | [`typert-registry`](../packages/typert/registry) | - | [`typert-loader`](../packages/typert/loader), [`api-gateway`](../packages/api/gateway) | - | Plugins register live zod contributions directly or through clocky-typert-loader; the API gateway consumes invocation descriptors and providers, while other runtime consumers query schemas and reflection metadata at their own edges. |
 | `ctx.typertGateway` | `core` | [`api-gateway`](../packages/api/gateway) | - | - | - | Associates generated Remote descriptors with live Cordis services, resolves registered identities, and exposes unary calls through the shared Connection RPC carrier. |
@@ -571,7 +578,7 @@ flowchart LR
 | `ctx.sessionReferenceResolver` | `core` | [`session-reference`](../packages/context/session-reference) | - | - | - | Projects bounded current-surface conversation snapshots into durable untrusted message context; host adapters own mention syntax. |
 | `ctx.sessionTitle` | `seam` | [`session-title`](../packages/session/session-title) | [`session-title-first-prompt-llm`](../packages/session/session-title-first-prompt-llm), [`session-title-all-prompts-llm`](../packages/session/session-title-all-prompts-llm) | - | - | Owns the deterministic fallback, latest-title fold, and sole optional asynchronous provider registration. |
 | `ctx.systemPrompt` | `core` | [`system-prompt`](../packages/core/system-prompt) | - | [`agent-loop`](../packages/core/agent-loop), [`tools`](../packages/core/tools), [`tool-fs`](../packages/fs/tool-fs), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-web`](../packages/web/tool-web) | - | Collects prompt sections and model-facing tool schemas for each step. |
-| `ctx.tools` | `core` | [`tools`](../packages/core/tools) | - | [`agent-loop`](../packages/core/agent-loop), [`tool-ask-user`](../packages/interaction/tool-ask-user), [`tool-bash`](../packages/shell/tool-bash), [`tool-cordis`](../packages/extensions/tool-cordis), [`tool-fs`](../packages/fs/tool-fs), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-skill`](../packages/skill/tool-skill), [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-todo`](../packages/todo/tool-todo), [`tool-web`](../packages/web/tool-web) | - | Registers capabilities, owns Code Mode transport, and routes calls through pre-policy, monotonic guards, around dispatch, post-policy, and final-result observation. |
+| `ctx.tools` | `core` | [`tools`](../packages/core/tools) | - | [`agent-loop`](../packages/core/agent-loop), [`tool-ask-user`](../packages/interaction/tool-ask-user), [`tool-bash`](../packages/shell/tool-bash), [`tool-cordis`](../packages/extensions/tool-cordis), [`tool-fs`](../packages/fs/tool-fs), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-skill`](../packages/skill/tool-skill), [`compat-tool-subagent`](../packages/compat/tool-subagent), [`tool-todo`](../packages/todo/tool-todo), [`tool-web`](../packages/web/tool-web) | - | Registers capabilities, owns Code Mode transport, and routes calls through pre-policy, monotonic guards, around dispatch, post-policy, and final-result observation. |
 | `ctx.userQuestions` | `seam` | [`user-questions`](../packages/interaction/user-questions) | - | [`tool-ask-user`](../packages/interaction/tool-ask-user) | - | UI front ends provide the active human-answer provider; tool-ask-user pauses a tool call on the provider-neutral ask() promise. |
 | `ctx.planMode` | `core` | [`plan-mode`](../packages/plan/plan-mode) | - | - | - | Folds logged plan/mode state, flushes user selections at turn boundaries, renders deployment-owned guidance, registers /plan, and keeps the plan-exit schema stable across transitions. |
 | `ctx.agentPresets` | `core` | [`agent-presets`](../packages/preset/agent-presets) | - | - | - | Discovers preset directories over trusted and user-authored roots and mounts one preset cordis.yml under an agent scope during creation, rejecting a row that never activates or that publishes into the root service realm. |
@@ -579,13 +586,13 @@ flowchart LR
 | `ctx.sessionProjections` | `core` | [`session-projection`](../packages/session/session-projection) | - | [`tool-todo`](../packages/todo/tool-todo), [`session-title`](../packages/session/session-title), [`host-apiproxy`](../packages/host/apiproxy) | - | Domains register state-driven fold units; the eager drive keeps per-session watermark states and api-proxy serves baselines and pushes changed values. |
 | `ctx.sessionProjectionCache` | `core` | [`session-projection-cache`](../packages/session/session-projection-cache) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | Durably checkpoints projection unit states per session (throttled + turn/end/detach mandatory points) and serves the cold-read ladder: cache row + persistence tail replay, so listings never load full logs. |
 | `ctx.skills` | `seam` | [`skill`](../packages/skill/skill) | [`skill-filesystem`](../packages/skill/skill-filesystem) | [`tool-skill`](../packages/skill/tool-skill) | - | Merges provider skill catalogs; tool-skill renders the session-prefix catalog and loads complete skill bodies. |
-| `ctx.agents` | `core` | [`agent`](../packages/core/agent) | - | [`agent-loop`](../packages/core/agent-loop), [`acp`](../packages/acp/acp), `subagent-inprocess` | - | Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation. |
+| `ctx.agents` | `core` | [`agent`](../packages/core/agent) | - | [`agent-loop`](../packages/core/agent-loop), [`acp`](../packages/acp/acp), [`compat-subagent-in-process-driver`](../packages/compat/subagent-in-process-driver), [`team-delegation`](../packages/team/team-delegation) | - | Owns live Agent handles, the create/resume factory seam, and process-local initiator propagation. |
 | `ctx.agentRuntimes` | `seam` | [`agent-runtime`](../packages/core/agent-runtime) | [`agent-runtime-in-process`](../packages/agent-runtime/agent-runtime-in-process), [`agent-runtime-sdk`](../packages/agent-runtime/agent-runtime-sdk) | - | - | Resolves named providers for a Team-resolved Participant activation, verifies returned Team, Participant, and Session identities, and leaves Team journal bindings, remote Links, and delivery separate; the SDK provider uses its status protocol for active remote-agent fresh/resume placement without a local Agent. |
 | `ctx.agentDefaultModel` | `core` | [`agent-default-model`](../packages/core/agent-default-model) | - | [`headless`](../packages/bundle/headless), [`host-apiproxy`](../packages/host/apiproxy) | - | Layers the default ModelSelection through settings so direct and Host-backed Agent entry points share one state owner. |
 | `ctx.agentLoop` | `bundle` | [`agent-loop`](../packages/core/agent-loop) | - | [`agent-spine-demo`](../packages/examples/agent-spine-demo) | - | The one concrete loop plugin; extension packages depend on clocky-agent events and services, not on this package. |
-| `ctx.goals` | `core` | [`goal`](../packages/goal/goal) | - | - | - | Folds revisioned objective state from the session log and keeps live continuation activation process-local. |
+| `ctx.goals` | `core` | [`compat-goal`](../packages/compat/goal) | - | - | - | Folds revisioned objective state from the session log and keeps live continuation activation process-local. |
 | `ctx.e2b` | `core` | [`e2b`](../packages/e2b/e2b) | - | [`fs-e2b`](../packages/e2b/fs-e2b), [`subprocess-e2b`](../packages/e2b/subprocess-e2b) | - | Owns one shared E2B SDK handle, remote working directory, and final sandbox disposition so both fundamental E2B providers inhabit the same Linux runtime. |
-| `ctx.subprocess` | `seam` | [`subprocess`](../packages/subprocess/subprocess) | [`subprocess-local`](../packages/subprocess/subprocess-local), [`subprocess-e2b`](../packages/e2b/subprocess-e2b) | [`bash-local`](../packages/shell/bash-local), [`bash-sandbox`](../packages/shell/bash-sandbox), [`terminal-bash`](../packages/terminal/terminal-bash), [`lsp-stdio`](../packages/lsp/lsp-stdio), [`subagent-acp`](../packages/subagent/subagent-acp) | - | The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP subagent backend spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation. |
+| `ctx.subprocess` | `seam` | [`subprocess`](../packages/subprocess/subprocess) | [`subprocess-local`](../packages/subprocess/subprocess-local), [`subprocess-e2b`](../packages/e2b/subprocess-e2b) | [`bash-local`](../packages/shell/bash-local), [`bash-sandbox`](../packages/shell/bash-sandbox), [`terminal-bash`](../packages/terminal/terminal-bash), [`lsp-stdio`](../packages/lsp/lsp-stdio), [`compat-subagent-acp`](../packages/compat/subagent-acp) | - | The bash executors, the PTY shell backend, the LSP host, and the out-of-process ACP subagent backend spawn through ctx.subprocess; the service owns process coordinates, tree/session lifetime, stdio dispositions, terminal mechanics, and kill escalation. |
 | `ctx.shell` | `seam` | [`shell`](../packages/shell/shell) | [`bash-local`](../packages/shell/bash-local), [`bash-sandbox`](../packages/shell/bash-sandbox), [`pwsh-local`](../packages/shell/pwsh-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-pwsh`](../packages/shell/tool-pwsh) | - | The model-facing shell tools consume this seam; sandboxed, remote, or PowerShell executors replace bash-local without touching them. |
 | `ctx.shellEnv` | `core` | [`shell-env`](../packages/shell/shell-env) | - | [`tool-bash`](../packages/shell/tool-bash), [`tool-pwsh`](../packages/shell/tool-pwsh) | - | Plugins declare effect-scoped CLOCKY_* facts; each shell tool collects one trusted snapshot per execution and its executor rebuilds the namespace. |
 | `ctx.terminals` | `seam` | [`terminal`](../packages/terminal/terminal) | [`terminal-bash`](../packages/terminal/terminal-bash) | [`tool-terminal`](../packages/terminal/tool-terminal) | - | The registry owns exact-Agent session identity and cleanup; backends own terminal mechanics, while tool-terminal exposes the owner-scoped model tools. |
@@ -596,8 +603,8 @@ flowchart LR
 | `ctx.codeRuntime` | `seam` | [`code-runtime`](../packages/code-runtime/code-runtime) | `code-runtime-worker` | [`tools`](../packages/core/tools) | - | Runs one model-written program against host-provided async bindings; backends differ by substrate and language (the tool registry consumes it for Code Mode). |
 | `ctx.fs` | `seam` | [`fs`](../packages/fs/fs) | [`fs-local`](../packages/fs/fs-local), [`fs-sandbox`](../packages/fs/fs-sandbox), [`fs-e2b`](../packages/e2b/fs-e2b) | [`tool-fs`](../packages/fs/tool-fs) | [`fs-observation-policy`](../packages/fs/fs-observation-policy) | tool-fs executes read/write/edit through ctx.fs; fs-sandbox fences mutations by the shared sandbox mode; fs-observation-policy contributes observed-state checks through the fs/* event gate. |
 | `ctx.compaction` | `seam` | [`compaction`](../packages/compaction/compaction) | [`compaction-basic`](../packages/compaction/compaction-basic) | [`compaction-basic`](../packages/compaction/compaction-basic) | - | The basic backend consumes post-step pressure and request-error recovery events; there is no model-facing compact tool. |
-| `ctx.subagents` | `seam` | [`subagent`](../packages/subagent/subagent) | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process), [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process), [`subagent-acp`](../packages/subagent/subagent-acp), [`subagent-clocky-sdk`](../packages/subagent/subagent-clocky-sdk) | [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-subagent-control`](../packages/subagent/tool-subagent-control), [`tool-ralph`](../packages/workflow/tool-ralph) | - | Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route. |
-| `ctx.teams` | `seam` | [`team`](../packages/core/team) | [`team-hub`](../packages/team/team-hub) | [`team-channel-direct`](../packages/team/team-channel-direct), [`team-channel-task-assignment`](../packages/team/team-channel-task-assignment), [`team-link-local`](../packages/team/team-link-local), [`team-link-websocket-hub`](../packages/team/team-link-websocket-hub), [`team-workspace-shared`](../packages/team/team-workspace-shared), [`team-agent-client`](../packages/team/team-agent-client), [`team-activation-recovery`](../packages/team/team-activation-recovery), [`command-team-goal`](../packages/team/command-team-goal), [`tool-team`](../packages/team/tool-team), [`tool-team-goal`](../packages/team/tool-team-goal), [`team-run`](../packages/team/team-run), [`team-scheduler-dag`](../packages/team/team-scheduler-dag) | - | Defines independent Team identities, durable provider operations, adapter and policy registration, and post-commit observers; team-hub owns local journals, WALs, fenced task attempts, goal state, admission, receipts, and ephemeral delivery claims, while adapters, workspace providers, local clients, scoped human commands, and scoped report tools consume the public runtime. |
+| `ctx.subagents` | `seam` | [`compat-subagent`](../packages/compat/subagent) | [`compat-subagent-spawn-in-process`](../packages/compat/subagent-spawn-in-process), [`compat-subagent-fork-in-process`](../packages/compat/subagent-fork-in-process), [`compat-subagent-acp`](../packages/compat/subagent-acp), [`compat-subagent-clocky-sdk`](../packages/compat/subagent-clocky-sdk) | [`compat-tool-subagent`](../packages/compat/tool-subagent), [`compat-tool-subagent-control`](../packages/compat/tool-subagent-control), [`compat-tool-ralph`](../packages/compat/tool-ralph) | - | Providers implement transports; the service also owns optional Activation-based continuation orchestration, tool-subagent selects one-shot or continuable delegation, tool-subagent-control delivers follow-ups, and tool-ralph requires one fresh structured-output route. |
+| `ctx.teams` | `seam` | [`team`](../packages/core/team) | [`team-hub`](../packages/team/team-hub) | [`team-channel-direct`](../packages/team/team-channel-direct), [`team-channel-task-assignment`](../packages/team/team-channel-task-assignment), [`team-link-local`](../packages/team/team-link-local), [`team-link-websocket-hub`](../packages/team/team-link-websocket-hub), [`team-workspace-shared`](../packages/team/team-workspace-shared), [`team-agent-client`](../packages/team/team-agent-client), [`team-activation-recovery`](../packages/team/team-activation-recovery), [`command-team-goal`](../packages/team/command-team-goal), [`tool-team`](../packages/team/tool-team), [`tool-team-goal`](../packages/team/tool-team-goal), [`team-run`](../packages/team/team-run), [`team-scheduler-dag`](../packages/team/team-scheduler-dag), [`team-channel-admission`](../packages/team/team-channel-admission), [`team-channel-summary`](../packages/team/team-channel-summary), [`team-delegation`](../packages/team/team-delegation) | - | Defines independent Team identities, durable provider operations, adapter and policy registration, and post-commit observers; team-hub owns local journals, WALs, fenced task attempts, goal state, admission, receipts, and ephemeral delivery claims, while adapters, workspace providers, local clients, scoped human commands, and scoped report tools consume the public runtime. |
 | `ctx.teamHumanActors` | `core` | [`team-human-actor`](../packages/team/team-human-actor) | - | [`host-apiproxy`](../packages/host/apiproxy), `sdk-server` | - | Maps one authenticated product principal to one active human Participant and exposes only short-lived payload-bound proofs to Host and SDK mutation consumers. |
 | `ctx.teamTelemetry` | `seam` | [`team`](../packages/core/team) | [`team-telemetry-otel`](../packages/team/team-telemetry-otel) | - | - | The core Team package owns correlation and redaction extension points; a deployment-owned provider supplies batching, retry, loss policy, export, and alert thresholds through the backend seam. |
 | `ctx.teamActivations` | `core` | [`team-activation-controller`](../packages/team/team-activation-controller) | - | [`team-activation-recovery`](../packages/team/team-activation-recovery), [`team-run`](../packages/team/team-run) | - | Binds one published AgentRuntime handle to the Team journal, mirrors residency, and owns lease disposal; Team-run uses that service instead of recreating placement lifecycle logic. |
@@ -607,20 +614,20 @@ flowchart LR
 | `ctx.teamHumanDelivery` | `core` | [`team-human-client`](../packages/team/team-human-client) | - | [`team-hub`](../packages/team/team-hub), [`host-apiproxy`](../packages/host/apiproxy), `sdk-server` | - | Persists exact human inbox deliveries and display/action records behind Hub-issued proofs; Host and SDK bind actions while the sink owns bounded storage scans and retry identity. |
 | `ctx.teamPlacement` | `core` | [`team-placement-default`](../packages/team/team-placement-default) | - | [`team-scheduler-dag`](../packages/team/team-scheduler-dag) | - | Prepares only explicitly routed eligible participants before scheduler assignment; activation uniqueness and workspace eligibility remain owned by their respective services. |
 | `ctx.teamLinks` | `seam` | [`team-link`](../packages/core/team-link) | [`team-link-local`](../packages/team/team-link-local), [`team-link-websocket`](../packages/team/team-link-websocket) | [`team-agent-client`](../packages/team/team-agent-client), [`tool-team`](../packages/team/tool-team) | - | Registers local or remote activation-bound Links; providers own connection/replay lifecycle while the Team Hub retains journals, claims, and receipts, Agent clients retain inbox admission, and scoped tools retain worker result reporting. |
-| `ctx.teamRuns` | `core` | [`team-run`](../packages/team/team-run) | - | [`headless`](../packages/bundle/headless), [`web-app`](../packages/bundle/web-app), [`tool-team-goal`](../packages/team/tool-team-goal), [`tool-team-task`](../packages/team/tool-team-task) | - | Creates the local default human/coordinator/worker topology, accepts trusted human input, receipts explicit final output, and settles its narrow completed lifecycle without driving an Agent loop. |
+| `ctx.teamRuns` | `core` | [`team-run`](../packages/team/team-run) | - | [`headless`](../packages/bundle/headless), [`web-app`](../packages/bundle/web-app), [`tool-team-goal`](../packages/team/tool-team-goal), [`tool-team-task`](../packages/team/tool-team-task), [`team-delegation`](../packages/team/team-delegation) | - | Creates the local default human/coordinator/worker topology, accepts trusted human input, receipts explicit final output, and settles its narrow completed lifecycle without driving an Agent loop. |
 | `ctx.teamClosureDrives` | `seam` | [`team-closure-driver`](../packages/team/team-closure-driver) | `team-closure-driver-hub` | [`team-closure-driver`](../packages/team/team-closure-driver), `team-closure-driver-hub` | - | Registers the selected restart-safe closure continuation backend; the Driver owns bounded discovery while the Hub bridge forwards only source-scoped recovery proofs. |
 | `ctx.teamClosureDriverHub` | `core` | [`team-closure-driver`](../packages/team/team-closure-driver) | - | [`team-closure-driver`](../packages/team/team-closure-driver) | - | Binds the selected closure-drive backend to the mounted Team provider and forwards durable recovery passes without adding independent mutation authority. |
 | `ctx.teamClosureDriver` | `core` | [`team-closure-driver`](../packages/team/team-closure-driver) | - | [`team-run`](../packages/team/team-run) | - | Discovers and serializes durable closure work, then delegates each bounded recovery pass through the source-scoped Hub bridge. |
-| `ctx.teamWorkspaces` | `seam` | [`team-workspace`](../packages/core/team-workspace) | [`team-workspace-shared`](../packages/team/team-workspace-shared), [`team-workspace-worktree`](../packages/team/team-workspace-worktree) | [`team-scheduler-dag`](../packages/team/team-scheduler-dag) | - | Resolves immutable task workspace modes to providers; the shared provider verifies exact local Session roots, the worktree provider verifies exact current lease ownership before Git allocation, and schedulers query eligibility without allocating roots or waking Agents. |
+| `ctx.teamWorkspaces` | `seam` | [`team-workspace`](../packages/core/team-workspace) | [`team-workspace-shared`](../packages/team/team-workspace-shared), [`team-workspace-worktree`](../packages/team/team-workspace-worktree) | [`team-scheduler-dag`](../packages/team/team-scheduler-dag), [`team-delegation`](../packages/team/team-delegation) | - | Resolves immutable task workspace modes to providers; the shared provider verifies exact local Session roots, the worktree provider verifies exact current lease ownership before Git allocation, and schedulers query eligibility without allocating roots or waking Agents. |
 | `ctx.teamArtifacts` | `seam` | [`team-artifact`](../packages/core/team-artifact) | [`team-artifact-local`](../packages/team/team-artifact-local) | [`team-workspace-worktree`](../packages/team/team-workspace-worktree), [`tool-team`](../packages/team/tool-team), [`client-ui-team`](../packages/client/ui-team) | - | Stores provider-owned file, patch, log, screenshot, and report bytes behind content-addressed references; task results retain provenance while Consumers enforce Team visibility before reads. |
 | `ctx.workflowExtensions` | `core` | [`team-channel-workflow`](../packages/team/team-channel-workflow) | - | [`team-channel-workflow`](../packages/team/team-channel-workflow) | - | Registers deployment-defined workflow condition and target implementations with effect-scoped lifecycle; channel manifests retain their versioned identity for replay. |
-| `ctx.jobs` | `seam` | [`jobs`](../packages/jobs/jobs) | [`jobs-local`](../packages/jobs/jobs-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-terminal`](../packages/terminal/tool-terminal), [`tool-subagent`](../packages/subagent/tool-subagent), [`tool-jobs`](../packages/jobs/tool-jobs) | - | Producers (background bash, PTY sends, and subagent delegations) register running work; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry. |
+| `ctx.jobs` | `seam` | [`jobs`](../packages/jobs/jobs) | [`jobs-local`](../packages/jobs/jobs-local) | [`tool-bash`](../packages/shell/tool-bash), [`tool-terminal`](../packages/terminal/tool-terminal), [`compat-tool-subagent`](../packages/compat/tool-subagent), [`tool-jobs`](../packages/jobs/tool-jobs) | - | Producers (background bash, PTY sends, and subagent delegations) register running work; tool-jobs is the model-facing controller that reads, lists, and kills it; jobs-local is the process-local registry. |
 | `ctx.web` | `seam` | [`web`](../packages/web/web) | [`web-search-exa`](../packages/web/web-search-exa), [`web-search-perplexity`](../packages/web/web-search-perplexity), [`web-fetch-http`](../packages/web/web-fetch-http) | [`tool-web`](../packages/web/tool-web) | - | Search and fetch providers register into one ctx.web seam; tool-web owns the stable model-facing names. |
 | `ctx.spillStore` | `seam` | [`spill`](../packages/spill/spill) | [`spill-local`](../packages/spill/spill-local) | [`spill-policy`](../packages/spill/spill-policy) | - | The backend saves oversized tool text and returns a model-facing locator plus retrieval hint; spill-policy is the tools/post-execute consumer that decides when to spill. |
 | `ctx.directoryPicker` | `seam` | `directory-picker` | `directory-picker-native`, `directory-picker-browse` | `apiproxy` | - | Discriminated interaction capability: the native backend opens one OS chooser on the host display, the browse backend serves listing/creation primitives for the in-app browser; dual-face backends fill ui-workspace directory-flow slots from their browser halves (no wire advertisement). |
 | `ctx.webServer` | `core` | `webserver` | - | `connection`, `modules`, `hmr`, [`team-link-websocket-hub`](../packages/team/team-link-websocket-hub) | - | Plain node:http carrier: named-route registry, index transform taps, and the static dist fallback; Web transport plugins register their own routes or upgrades. |
 | `ctx.clientModules` | `core` | `modules` | - | `hmr` | - | Composes the __CLOCKY_BOOT__ entry graph from an incremental clocky.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers. |
-| `ctx.workflowEngine` | `seam` | [`workflow`](../packages/workflow/workflow) | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | [`tool-workflow`](../packages/workflow/tool-workflow), [`tool-ralph`](../packages/workflow/tool-ralph) | - | One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents. |
+| `ctx.workflowEngine` | `seam` | [`compat-workflow`](../packages/compat/workflow) | [`compat-workflow-worker-thread`](../packages/compat/workflow-worker-thread) | [`compat-tool-workflow`](../packages/compat/tool-workflow), [`compat-tool-ralph`](../packages/compat/tool-ralph) | - | One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents. |
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | `lsp-local` | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.apiProxy` | `core` | `apiproxy` | - | `connection` | - | The transport-agnostic host gateway face: it dispatches browser API calls, and each open host stream subscribes to the events it forwards rather than being pushed to through a broadcast verb. |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Owns the in-memory definition registry, the vm sandbox for host halves, and the request-run round trip; browser pages reach the same service over the wire through its remote namespace. |

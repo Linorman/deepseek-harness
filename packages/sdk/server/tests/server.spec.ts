@@ -9,7 +9,7 @@ import SessionStore, { SessionId } from '@clocky/clocky-session'
 import * as agentCore from '@clocky/clocky-agent-spine-demo'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 import * as LlmPiAi from '@clocky/clocky-llm-pi-ai'
-import SubagentRuntime, { type SubagentResult, type SubagentRunEndInfo } from '@clocky/clocky-subagent'
+import SubagentRuntime, { type SubagentResult, type SubagentRunEndInfo } from '@clocky/clocky-compat-subagent'
 import { channelSummaryHumanProofInput, emptyTeamLatencyHistogram, TeamError } from '@clocky/clocky-team'
 import { TeamArtifactError } from '@clocky/clocky-team-artifact'
 import { ProductPrincipalError, productPrincipalId } from '@clocky/clocky-product-principal'
@@ -173,9 +173,17 @@ describe('HarnessSdkJsonRpcServer', () => {
     await expect(server.handleRequest('team/inbox-read', {})).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-watch', { afterCursor: -1, limit: 1 })).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-acknowledge', { throughCursor: 2 })).resolves.toEqual({ displayCursor: 2 })
-    expect(inbox.read).toHaveBeenCalledWith(expect.objectContaining({ principal: expect.objectContaining({ id: 'sdk-dispatch-principal' }) }), {})
+    expect(inbox.read.mock.calls).toMatchObject([[{ principal: { id: 'sdk-dispatch-principal' } }, {}]])
     await expect(server.handleRequest('team/inbox-read', { principalId: 'forged' })).rejects.toMatchObject({ code: -32602 })
     expect(inbox.read).toHaveBeenCalledOnce()
+    for (const method of ['team/inbox-read', 'team/inbox-watch'] as const) {
+      const handler = method === 'team/inbox-read' ? inbox.read : inbox.watch
+      handler.mockRejectedValueOnce(new TeamError('Inbox history compacted', 'TEAM_INBOX_COMPACTED', { details: { firstCursor: 9 } }))
+      await expect(server.handleRequest(method, { afterCursor: -1 })).rejects.toMatchObject({
+        code: -32002, data: { code: 'TEAM_INBOX_COMPACTED', firstCursor: 9 },
+      })
+    }
+
 
     invalid = true
     await expect(server.handleRequest('team/metrics', {})).rejects.toMatchObject({
@@ -1032,7 +1040,7 @@ describe('HarnessSdkJsonRpcServer', () => {
 
   it('forwards every bounded Team page cursor and limit to the provider', async () => {
     const teams = {
-      listTeamsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 4, request })),
+      listTeamsPage: vi.fn(async (request: unknown) => ({ items: [], scanned: 1, nextCursor: 'next', request })),
       listParticipantsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 5, request })),
       readChannelPage: vi.fn(async (request: unknown) => ({ channel: {}, records: [], nextCursor: 6, request })),
       listTasksPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 7, request })),
@@ -1053,7 +1061,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
     await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
 
-    await expect(server.handleRequest('team/list', { afterCursor: 2, limit: 3 })).resolves.toMatchObject({ items: [], nextCursor: 4 })
+    await expect(server.handleRequest('team/list', { afterCursor: 'previous', limit: 3 })).resolves.toMatchObject({ items: [], scanned: 1, nextCursor: 'next' })
     await expect(server.handleRequest('team/member-list', { teamId: 'team', afterCursor: 3, limit: 4 })).resolves.toMatchObject({ items: [], nextCursor: 5 })
     await expect(server.handleRequest('team/channel-read', { channelId: 'channel', afterCursor: 4, limit: 5 })).resolves.toMatchObject({ value: { records: [], nextCursor: 6 } })
     await expect(server.handleRequest('team/task-list', { teamId: 'team', afterCursor: 5, limit: 6 })).resolves.toMatchObject({ items: [], nextCursor: 7 })
@@ -1061,7 +1069,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     await expect(server.handleRequest('team/artifact-list', { teamId: 'team', afterCursor: 7, limit: 8 })).resolves.toMatchObject({ items: [] })
     await expect(server.handleRequest('team/audit-read', { teamId: 'team', afterCursor: 6, limit: 7 }))
       .resolves.toMatchObject({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9 })
-    expect(teams.listTeamsPage).toHaveBeenCalledWith({ afterCursor: 2, limit: 3 })
+    expect(teams.listTeamsPage).toHaveBeenCalledWith({ afterCursor: 'previous', limit: 3 })
     expect(teams.listParticipantsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 3, limit: 4 })
     expect(teams.readChannelPage).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 4, limit: 5 })
     expect(teams.listTasksPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 5, limit: 6 })
@@ -1284,7 +1292,8 @@ describe('HarnessSdkJsonRpcServer', () => {
     const scopes: TeamHumanActorProofInput[] = []
     const value = { channel: { phase: 'pending' }, invitations: [{ status: 'pending' }], expectedNext: { kind: 'none' }, protocolStatus: { kind: 'other' } }
     const humanActors = {
-      async withProof<T>(call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof) => Promise<T>): Promise<T> {
+      async withProof<T>(call: AuthenticatedProductCall, input: TeamHumanActorProofInput,
+        operation: (proof: TeamHumanActorProof) => Promise<T>): Promise<T> {
         expect(call.principal.id).toBe(productPrincipalId('sdk-test-principal'))
         scopes.push(input)
         if (mode === 'foreign') throw foreign

@@ -1,3 +1,7 @@
+import type { ActivationControllerStartupStallPhaseScope, ActivationReservationSnapshot } from '@clocky/clocky-team'
+import { randomUUID } from 'node:crypto'
+import { activationReservationIdSchema, liveActivationLimit } from '@clocky/clocky-team'
+import type { ActivationReservationInput, ActivationReservationId } from '@clocky/clocky-team'
 /**
  * Local AgentRuntime-to-Team activation binder. It makes a published local
  * Agent usable by Team consumers only after its durable Hub binding commits.
@@ -158,6 +162,7 @@ export interface TeamActivationLease {
 interface ActivationEntry {
   readonly key: string
   readonly raw: ActivationHandle
+  rawTerminated: boolean
   readonly localAgent: Agent | undefined
   binding: ActivationBindingSnapshot
   statusTail: Promise<void>
@@ -171,6 +176,19 @@ interface ActivationEntry {
 interface PendingActivation {
   readonly sessionId: SessionId
   readonly operation: Promise<TeamActivationLease>
+}
+
+/** Startup cleanup remains owned until provider termination and durable settlement complete. */
+interface UnpublishedActivationStart {
+  readonly key: string
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly reservation: ActivationReservationInput | undefined
+  readonly raw: ActivationHandle | undefined
+  readonly bindingAttempt?: ActivationBindingSnapshot
+  boundEntry?: ActivationEntry
+  terminated: boolean
+  cleanup: Promise<void> | undefined
 }
 
 /** One transient activation lifecycle proof retained until its canonical Hub call settles. */
@@ -233,11 +251,17 @@ export class TeamActivationController extends Service {
   private readonly entries = new Map<string, ActivationEntry>()
   private readonly pending = new Map<string, PendingActivation>()
   private readonly recoveries = new Map<string, Promise<TeamActivationLease>>()
+  private readonly staleFences = new Map<string, {
+    readonly request: TeamActivationStaleFenceRequest
+    readonly operation: Promise<void>
+  }>()
   private readonly accepted = new Set<Promise<unknown>>()
+  private readonly unpublishedStarts = new Map<string, UnpublishedActivationStart>()
+  private readonly startupReservations = new Map<ActivationReservationId, ActivationReservationInput>()
   private readonly activationProofs = new Map<TeamSystemActivationProof, ActivationProofRecord>()
   private readonly closureRecoveries = new Map<TeamId, Promise<void>>()
   private readonly closureStallProofs = new Map<TeamSystemPhaseProof, {
-    readonly scope: ActivationControllerClosureStallPhaseScope
+    readonly scope: ActivationControllerClosureStallPhaseScope | ActivationControllerStartupStallPhaseScope
     readonly request: TeamClosureContinuationRequest
   }>()
   private readonly cancellationStallProofs = new Map<TeamSystemPhaseProof, CancellationStallProofRecord>()
@@ -281,6 +305,10 @@ export class TeamActivationController extends Service {
     this.listeners.push(this.ctx.on('team/changed', (event) => {
       if (event.type !== 'team/changed'
         || event.team.cancellation === undefined && event.team.closure === undefined) return
+      for (const start of this.unpublishedStarts.values()) {
+        if (start.teamId === event.team.id) this.track(this.disposeUnpublishedStart(start),
+          `Participant '${start.participantId}' unpublished activation disposal`)
+      }
       for (const entry of this.entries.values()) {
         if (entry.binding.activation.teamId !== event.team.id) continue
         this.track(this.disposeEntry(entry), `Activation '${entry.binding.activation.id}' terminal-intent disposal`)
@@ -352,7 +380,24 @@ export class TeamActivationController extends Service {
         === candidate.activation.id)
       ?? candidates.find(candidate => candidate.fencedAt !== undefined || candidate.recovery !== undefined)
       ?? candidates[0]
-    if (binding === undefined) return
+    if (binding === undefined) {
+      const participant = state.participants.find(value => value.activationReservation !== undefined
+        && value.activationReservation.releasedAt === undefined
+        && !state.activations.some(epoch => epoch.reservationId === value.activationReservation?.id))
+      const reservation = participant?.activationReservation
+      if (participant === undefined || reservation === undefined
+        || this.pending.has(activationKey(request.teamId, participant.id))) return
+      let detail = 'No published epoch or termination receipt is available.'
+      const owned = this.unpublishedStarts.get(activationKey(request.teamId, participant.id))
+      if (owned?.reservation?.reservationId === reservation.id) {
+        try { await this.disposeUnpublishedStart(owned); return }
+        catch (error: unknown) { detail = renderError(error) }
+      }
+      await this.recordClosureResourceStall(request, { reservation, participantId: participant.id }, {
+        code: 'ACTIVATION_STARTUP_UNCONFIRMED', message: `Startup '${reservation.id}' remains reserved. ${detail}`,
+      })
+      return
+    }
     const key = activationKey(request.teamId, binding.activation.participantId)
     const live = this.entries.get(key)
     if (live !== undefined && live.binding.activation.id === binding.activation.id) {
@@ -367,7 +412,7 @@ export class TeamActivationController extends Service {
       }
       return
     }
-    if (this.pending.has(key) || this.recoveries.has(key)) return
+    if (this.pending.has(key) || this.recoveries.has(key) || this.staleFences.has(key)) return
     const preserved = state.workspaceAllocations.find((allocation): allocation is TeamWorkspaceAllocationSnapshot & {
       readonly preservationReason: TeamStallReason
     } => allocation.activationId === binding.activation.id && allocation.lifecycle === 'preserved')
@@ -418,7 +463,7 @@ export class TeamActivationController extends Service {
   /** Record one exact intent/epoch diagnostic while the driver authority remains admitted. */
   private async recordClosureResourceStall(
     request: TeamClosureContinuationRequest,
-    binding: ActivationBindingSnapshot,
+    binding: ActivationBindingSnapshot | { readonly reservation: ActivationReservationSnapshot; readonly participantId: ParticipantId },
     reason: ActivationControllerClosureStallPhaseScope['reason'],
   ): Promise<void> {
     for (let attempt = 0; attempt < this.statusSyncAttempts; attempt += 1) {
@@ -427,13 +472,16 @@ export class TeamActivationController extends Service {
       const scope = this.closureRecoveryScope(request)
       const input = { teamId: request.teamId, expectedCursor: state.team.cursor, phase: 'stalled' as const, reason }
       const proof = createTeamActivationControllerPhaseProof()
-      const stall: ActivationControllerClosureStallPhaseScope = {
-        kind: 'activation-controller-closure-stall', ...input,
+      const stall: ActivationControllerClosureStallPhaseScope | ActivationControllerStartupStallPhaseScope = {
+        ...input,
         closureKind: scope.kind === 'closure-recover-cancel' ? 'cancel' : scope.kind === 'closure-recover-fail' ? 'fail' : 'complete',
         idempotencyKey: scope.kind === 'closure-recover-cancel' ? scope.cancellationIdempotencyKey : scope.closureIdempotencyKey,
         requestedAt: scope.kind === 'closure-recover-cancel' ? scope.cancellationRequestedAt : scope.closureRequestedAt,
-        activationId: binding.activation.id, participantId: binding.activation.participantId,
-        sessionId: binding.sessionId, provider: binding.provider,
+        ...'reservation' in binding
+          ? { kind: 'activation-controller-startup-stall' as const, reservationId: binding.reservation.id,
+            participantId: binding.participantId, sessionId: binding.reservation.sessionId, provider: binding.reservation.provider }
+          : { kind: 'activation-controller-closure-stall' as const, activationId: binding.activation.id,
+            participantId: binding.activation.participantId, sessionId: binding.sessionId, provider: binding.provider },
       }
       this.closureStallProofs.set(proof, { scope: freeze(stall), request })
       try {
@@ -467,9 +515,11 @@ export class TeamActivationController extends Service {
     const request = Object.freeze({ ...input })
     if (this.closing) throw new TeamError('Team activation controller is closed', 'TEAM_DISPOSED')
     const key = activationKey(request.teamId, request.participantId)
-    if (this.recoveries.has(key)) {
+    const unpublished = this.unpublishedStarts.get(key)
+    if (unpublished !== undefined) await this.disposeUnpublishedStart(unpublished)
+    if (this.recoveries.has(key) || this.staleFences.has(key)) {
       throw new TeamError(
-        `Participant '${request.participantId}' is being cold-replaced`,
+        `Participant '${request.participantId}' has recovery or fencing in progress`,
         'TEAM_ACTIVATION_RECOVERY_CONFLICT',
       )
     }
@@ -505,7 +555,7 @@ export class TeamActivationController extends Service {
     const request = Object.freeze({ ...input })
     if (this.closing) throw new TeamError('Team activation controller is closed', 'TEAM_DISPOSED')
     const key = activationKey(request.teamId, request.participantId)
-    if (this.entries.has(key) || this.pending.has(key) || this.recoveries.has(key)) {
+    if (this.entries.has(key) || this.pending.has(key) || this.recoveries.has(key) || this.staleFences.has(key)) {
       throw new TeamError(
         `Participant '${request.participantId}' remains owned by this activation controller`,
         'TEAM_ACTIVATION_RECOVERY_CONFLICT',
@@ -527,29 +577,51 @@ export class TeamActivationController extends Service {
   async fenceStale(input: TeamActivationStaleFenceRequest): Promise<void> {
     const request = Object.freeze({ ...input })
     if (this.closing) throw new TeamError('Team activation controller is closed', 'TEAM_DISPOSED')
+    const key = activationKey(request.teamId, request.participantId)
+    if (this.pending.has(key) || this.recoveries.has(key) || this.staleFences.has(key)) {
+      throw new TeamError('Participant already has an activation or recovery in progress', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+    }
+    const operation = this.fenceStaleOwned(request)
+    this.staleFences.set(key, { request, operation })
+    try { await operation }
+    finally { this.staleFences.delete(key) }
+  }
+
+  /** Keep one admitted provider fence and its exact durable writeback under controller ownership. */
+  private async fenceStaleOwned(request: TeamActivationStaleFenceRequest): Promise<void> {
     await assertRecoveryAuthorization(request.authorization, request.teamId)
     const key = activationKey(request.teamId, request.participantId)
+    const selection = { teamId: request.teamId, activationId: request.activationId,
+      participantId: request.participantId, sessionId: request.sessionId, provider: request.provider }
     const existing = this.entries.get(key)
     if (existing !== undefined) {
+      if (!matchesBinding(existing.binding, selection)) {
+        throw new TeamError('Stale fence does not select the owned activation', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+      }
       await this.disposeEntry(existing)
       return
     }
-    if (this.pending.has(key) || this.recoveries.has(key)) {
-      throw new TeamError(
-        `Participant '${request.participantId}' remains owned by this activation controller`,
-        'TEAM_ACTIVATION_RECOVERY_CONFLICT',
-      )
-    }
     const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
-    const binding = requireMatchingBinding(state, {
-      teamId: request.teamId,
-      activationId: request.activationId,
-      participantId: request.participantId,
-      sessionId: request.sessionId,
-      provider: request.provider,
-    })
-    if (binding.activation.status === 'offline') return
+    const binding = requireMatchingBinding(state, selection)
+    if (hasQuiescence(binding) && binding.quiescedWakeChannelIds.length === 0) return
+    if (binding.fencedAt === undefined) {
+      const fencer = binding.recovery === undefined ? undefined : this.recoveryFencer(binding)
+      if (fencer === undefined) {
+        throw new TeamError('Stale activation has no provider termination proof', 'TEAM_ACTIVATION_FENCE_UNAVAILABLE')
+      }
+      fencer.validate(binding)
+      await assertRecoveryAuthorization(request.authorization, request.teamId)
+      await fencer.fence(binding)
+    }
     await this.fenceDurableActivation(binding, request.authorization)
+  }
+
+  /** Only the exact fence accepted before close may finish its durable termination writeback. */
+  private ownsStaleFence(scope: TeamSystemActivationScope): boolean {
+    if (scope.kind !== 'activation-controller-fence') return false
+    const request = this.staleFences.get(activationKey(scope.teamId, scope.participantId))?.request
+    return request !== undefined && request.activationId === scope.activationId
+      && request.sessionId === scope.sessionId && request.provider === scope.provider
   }
 
   /**
@@ -695,8 +767,11 @@ export class TeamActivationController extends Service {
 
   /** Stop admission, release every accepted handle, and await bounded settlement. */
   close(): Promise<void> {
-    this.disposal ??= this.dispose()
-    return this.disposal
+    if (this.disposal !== undefined) return this.disposal
+    const disposal = this.dispose()
+    this.disposal = disposal
+    void disposal.catch(() => { if (this.disposal === disposal) this.disposal = undefined })
+    return disposal
   }
 
   /** Reject an operation after controller admission has closed. */
@@ -743,16 +818,51 @@ export class TeamActivationController extends Service {
         )
       }
     }
-    const raw = await this.ctx.agentRuntimes.activate({
-      provider: request.provider,
-      teamId: request.teamId,
-      participant,
-      sessionId: request.sessionId,
-      seed: request.seed,
-      agent: request.agent,
-      signal: request.signal,
-    } satisfies AgentRuntimeActivationRequest)
+    request.signal.throwIfAborted()
+    let reservation: ActivationReservationInput | undefined
+    if (liveActivationLimit(state.budgets, state.team.authorityGrant) !== undefined
+      || participant.authorityGrant?.budgets.maxLiveActivations !== undefined) {
+      reservation = { teamId: request.teamId, participantId: request.participantId, provider: request.provider,
+        sessionId: request.sessionId, expectedCursor: state.team.cursor,
+        reservationId: activationReservationIdSchema.parse(`activation-reservation-${randomUUID()}`) }
+      this.startupReservations.set(reservation.reservationId, reservation)
+      try {
+        const input = reservation
+        await this.withActivationProof({ kind: 'activation-controller-reserve', ...input },
+          async actor => await this.ctx.teams.reserveActivation({ ...input, actor }), undefined, request.authorization)
+      } catch (error: unknown) {
+        try { await this.cleanupUnstartedReservation(reservation, key) }
+        catch (cleanupError: unknown) { throw new AggregateError([error, cleanupError], 'Activation startup reservation cleanup failed') }
+        throw error
+      }
+    }
+    let raw: ActivationHandle
+    try {
+      this.assertOpen()
+      request.signal.throwIfAborted()
+      // Resolving the provider first separates pre-start rejection from unknown provider-side startup failures.
+      if (this.ctx.agentRuntimes.getProvider(request.provider) === undefined) {
+        throw new AgentRuntimeError(`AgentRuntime provider '${request.provider}' is unavailable`, 'AGENT_RUNTIME_PROVIDER_NOT_FOUND')
+      }
+    } catch (error: unknown) {
+      if (reservation !== undefined) {
+        try { await this.cleanupUnstartedReservation(reservation, key) }
+        catch (cleanupError: unknown) { throw new AggregateError([error, cleanupError], 'Activation startup reservation cleanup failed') }
+      }
+      throw error
+    }
+    try {
+      raw = await this.ctx.agentRuntimes.activate({
+        provider: request.provider, teamId: request.teamId, participant, sessionId: request.sessionId,
+        seed: request.seed, agent: request.agent, signal: request.signal,
+      } satisfies AgentRuntimeActivationRequest)
+    } catch (error: unknown) {
+      // A provider that publishes no handle supplies no epoch termination evidence.
+      if (reservation !== undefined) this.startupReservations.delete(reservation.reservationId)
+      throw error
+    }
     let boundEntry: ActivationEntry | undefined
+    let bindingAttempt: ActivationBindingSnapshot | undefined
     try {
       this.assertOpen()
       await assertRecoveryAuthorization(request.authorization, request.teamId)
@@ -770,6 +880,7 @@ export class TeamActivationController extends Service {
       const bindInput = {
         expectedCursor: bindingState.team.cursor,
         binding: {
+          ...reservation === undefined ? {} : { reservationId: reservation.reservationId },
           activation: health,
           sessionId: raw.sessionId,
           provider: request.provider,
@@ -782,35 +893,21 @@ export class TeamActivationController extends Service {
         },
       }
       await assertRecoveryAuthorization(request.authorization, request.teamId)
+      bindingAttempt = bindInput.binding
       const binding = await this.withActivationProof({
         kind: 'activation-controller-bind',
         ...bindInput,
       }, async actor => await this.ctx.teams.bindActivation({ actor, ...bindInput }), undefined, request.authorization)
-      const entry: ActivationEntry = {
-        key,
-        raw,
-        localAgent,
-        binding,
-        statusTail: Promise.resolve(),
-        statusUnsubscribe: () => {},
-        stopping: false,
-        terminationUnconfirmed: false,
-        disposal: undefined,
-        lease: undefined,
-      }
-      const lease = new ManagedTeamActivationLease(entry, {
-        health: () => this.health(entry),
-        interrupt: (cause) => { this.interrupt(entry, cause) },
-        dispose: () => this.disposeEntry(entry),
-      })
-      entry.lease = lease
-      this.entries.set(key, entry)
+      const { entry, lease } = this.retainBoundEntry(key, raw, binding, false)
       boundEntry = entry
+      this.unpublishedStarts.delete(key)
       entry.statusUnsubscribe = raw.onStatus((status) => { this.observeHandleStatus(entry, status) })
       this.track(this.syncRawHealth(entry), `Activation '${binding.activation.id}' initial status sync`)
+      if (reservation !== undefined) this.startupReservations.delete(reservation.reservationId)
       return lease
     } catch (error: unknown) {
       if (boundEntry !== undefined) {
+        if (reservation !== undefined) this.startupReservations.delete(reservation.reservationId)
         try {
           await this.disposeEntry(boundEntry)
         } catch (cleanupError: unknown) {
@@ -818,10 +915,89 @@ export class TeamActivationController extends Service {
         }
         throw error
       }
-      const cleanup = await disposeRaw(raw)
-      if (cleanup.kind === 'released') throw error
-      throw new AggregateError([error, cleanup.error], 'Team activation binding failed and raw handle cleanup also failed')
+      const start: UnpublishedActivationStart = { key, teamId: request.teamId, participantId: request.participantId,
+        reservation, raw, ...bindingAttempt === undefined ? {} : { bindingAttempt }, terminated: false, cleanup: undefined }
+      this.unpublishedStarts.set(key, start)
+      try {
+        await this.disposeUnpublishedStart(start)
+      } catch (cleanupError: unknown) {
+        throw new AggregateError([error, cleanupError], 'Team activation binding failed and raw handle cleanup also failed')
+      }
+      throw error
     }
+  }
+
+  /** Retain exact handle ownership for a confirmed durable bind, including a lost bind response. */
+  private retainBoundEntry(key: string, raw: ActivationHandle, binding: ActivationBindingSnapshot, rawTerminated: boolean): {
+    entry: ActivationEntry
+    lease: TeamActivationLease
+  } {
+    const entry: ActivationEntry = { key, raw, rawTerminated, localAgent: raw.localAgent, binding,
+      statusTail: Promise.resolve(), statusUnsubscribe: () => {}, stopping: false,
+      terminationUnconfirmed: false, disposal: undefined, lease: undefined }
+    const lease = new ManagedTeamActivationLease(entry, {
+      health: () => this.health(entry), interrupt: (cause) => { this.interrupt(entry, cause) }, dispose: () => this.disposeEntry(entry),
+    })
+    entry.lease = lease
+    this.entries.set(key, entry)
+    return { entry, lease }
+  }
+
+  /** Retain release ownership for an admitted reservation whose provider was never invoked. */
+  private async cleanupUnstartedReservation(reservation: ActivationReservationInput, key: string): Promise<void> {
+    const start: UnpublishedActivationStart = { key, teamId: reservation.teamId, participantId: reservation.participantId,
+      reservation, raw: undefined, terminated: true, cleanup: undefined }
+    this.unpublishedStarts.set(key, start)
+    await this.disposeUnpublishedStart(start)
+  }
+
+  /** Retain a rejected raw handle through cleanup failures so disposal can be retried. */
+  private async disposeUnpublishedStart(start: UnpublishedActivationStart): Promise<void> {
+    if (this.unpublishedStarts.get(start.key) !== start) return
+    start.cleanup ??= (async () => {
+      if (start.reservation !== undefined) this.startupReservations.set(start.reservation.reservationId, start.reservation)
+      if (start.raw !== undefined && !start.terminated) {
+        await start.raw.dispose()
+        start.terminated = true
+      }
+      if (start.bindingAttempt !== undefined && start.raw !== undefined) {
+        const state = await this.ctx.teams.getTeam({ teamId: start.teamId })
+        const binding = state.activations.find(value => value.activation.id === start.bindingAttempt?.activation.id)
+        if (binding !== undefined) {
+          if (!matchesBinding(binding, bindingIdentity(start.bindingAttempt))
+            || binding.reservationId !== start.bindingAttempt.reservationId) {
+            throw new TeamError('Committed activation differs from the attempted binding', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+          }
+          start.boundEntry ??= this.retainBoundEntry(start.key, start.raw, binding, true).entry
+          await this.disposeEntry(start.boundEntry)
+          if (start.reservation !== undefined) this.startupReservations.delete(start.reservation.reservationId)
+          this.unpublishedStarts.delete(start.key)
+          return
+        }
+      }
+      if (start.reservation !== undefined) await this.releaseStartupReservation(start.reservation)
+      this.unpublishedStarts.delete(start.key)
+    })().finally(() => { start.cleanup = undefined })
+    await start.cleanup
+  }
+
+  /** Release only a start this controller knows never ran or whose raw handle completed disposal. */
+  private async releaseStartupReservation(reservation: ActivationReservationInput): Promise<void> {
+    try {
+      for (let attempt = 0; attempt < this.statusSyncAttempts; attempt += 1) {
+        const state = await this.ctx.teams.getTeam({ teamId: reservation.teamId })
+        const current = state.participants.find(value => value.id === reservation.participantId)?.activationReservation
+        if (current?.id !== reservation.reservationId || current.releasedAt !== undefined) return
+        const input = { ...reservation, expectedCursor: state.team.cursor }
+        try {
+          await this.withActivationProof({ kind: 'activation-controller-release-reservation', ...input },
+            async actor => await this.ctx.teams.releaseActivationReservation({ ...input, actor }))
+          return
+        } catch (error: unknown) {
+          if (!isTeamCursorConflict(error) || attempt + 1 === this.statusSyncAttempts) throw error
+        }
+      }
+    } finally { this.startupReservations.delete(reservation.reservationId) }
   }
 
   /** Resolve one exact stale binding and reject a changed durable relation. */
@@ -962,7 +1138,10 @@ export class TeamActivationController extends Service {
     await this.stopLocalAgent(entry)
     await this.settleWorkspaceAllocations(entry)
     try {
-      await entry.raw.dispose()
+      if (!entry.rawTerminated) {
+        await entry.raw.dispose()
+        entry.rawTerminated = true
+      }
     } catch (error: unknown) {
       if (isAgentRuntimeTerminationUnconfirmed(error)) {
         entry.terminationUnconfirmed = true
@@ -1125,7 +1304,8 @@ export class TeamActivationController extends Service {
     authorization?: TeamHumanResumeAuthorization,
     closureRecovery?: TeamClosureContinuationRequest,
   ): Promise<T> {
-    if (this.closing && closureRecovery === undefined && (entry === undefined || !entry.stopping)) {
+    if (this.closing && closureRecovery === undefined && (entry === undefined || !entry.stopping) && !this.ownsStaleFence(scope)
+      && !(scope.kind === 'activation-controller-release-reservation' && this.startupReservations.has(scope.reservationId))) {
       throw new TeamError('Team activation controller is closed', 'TEAM_DISPOSED')
     }
     const proof = createTeamActivationControllerProof()
@@ -1244,15 +1424,19 @@ export class TeamActivationController extends Service {
     this.closing = true
     for (const dispose of this.listeners.splice(0)) dispose()
     for (const [proof, record] of this.activationProofs) {
-      if (record.closureRecovery === undefined && record.entry?.stopping !== true) this.activationProofs.delete(proof)
+      if (record.closureRecovery === undefined && record.entry?.stopping !== true && !this.ownsStaleFence(record.scope)
+        && !(record.scope.kind === 'activation-controller-release-reservation'
+          && this.startupReservations.has(record.scope.reservationId))) this.activationProofs.delete(proof)
     }
     const settle = async (): Promise<void> => {
       const pending = [...this.pending.values()].map(item => item.operation)
-      const recoveries = [...this.recoveries.values(), ...this.closureRecoveries.values()]
+      const recoveries = [...this.recoveries.values(), ...this.closureRecoveries.values(),
+        ...[...this.staleFences.values()].map(item => item.operation)]
       const pendingResults = await Promise.allSettled(pending)
       const recoveryResults = await Promise.allSettled(recoveries)
+      const unpublished = [...this.unpublishedStarts.values()].map(start => this.disposeUnpublishedStart(start))
       const entries = [...this.entries.values()].map(entry => this.disposeEntry(entry))
-      const results = await Promise.allSettled([...entries, ...this.accepted])
+      const results = await Promise.allSettled([...unpublished, ...entries, ...this.accepted])
       const rejected = (settled: readonly PromiseSettledResult<unknown>[]): unknown[] => settled
         .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
         .map(result => result.reason as unknown)
@@ -1349,25 +1533,21 @@ function isLatestParticipantBinding(state: TeamStateSnapshot, binding: Activatio
 }
 
 /** Install one Team activation controller in the containing Cordis fiber. */
-export function apply(ctx: Context, config: Config = {}): () => Promise<void> {
+export function apply(ctx: Context, config: Config = {}): void {
   const controller = new TeamActivationController(ctx, config)
-  // The constructor initializes both private issuers synchronously before returning.
-  const proofSource = teamActivationControllerProofSources.get(controller) as TeamSystemActivationProofSource
-  const unregisterProofSource = ctx.teams.registerSystemActivationProofSource(proofSource)
-  const phaseProofSource = teamActivationControllerPhaseProofSources.get(controller) as TeamSystemPhaseProofSource
-  const unregisterPhaseProofSource = ctx.teams.registerSystemPhaseProofSource(phaseProofSource)
-  controller.start()
-  return async () => {
-    try {
-      await controller.close()
-    } finally {
-      try {
-        unregisterPhaseProofSource()
-      } finally {
-        unregisterProofSource()
-      }
+  ctx.effect(function* () {
+    const proofSource = teamActivationControllerProofSources.get(controller) as TeamSystemActivationProofSource
+    const unregisterProofSource = ctx.teams.registerSystemActivationProofSource(proofSource)
+    yield unregisterProofSource
+    const phaseProofSource = teamActivationControllerPhaseProofSources.get(controller) as TeamSystemPhaseProofSource
+    const unregisterPhaseProofSource = ctx.teams.registerSystemPhaseProofSource(phaseProofSource)
+    yield unregisterPhaseProofSource
+    controller.start()
+    yield async () => {
+      try { await controller.close() }
+      finally { unregisterPhaseProofSource(); unregisterProofSource() }
     }
-  }
+  })
 }
 
 /** Keep each opaque controller activation-proof source private to its service instance. */
@@ -1443,19 +1623,6 @@ function isTeamCursorConflict(error: unknown): boolean {
 /** A fenced recovery that stops before new placement is expected during controller teardown. */
 function isExpectedClosingRecoveryFailure(error: unknown): boolean {
   return error instanceof TeamError && error.code === 'TEAM_DISPOSED'
-}
-
-/** Result of releasing a raw activation handle after a failed durable bind. */
-type RawDisposal = { readonly kind: 'released' } | { readonly kind: 'failed'; readonly error: unknown }
-
-/** Dispose one raw handle without allowing cleanup failure to hide its original cause. */
-async function disposeRaw(handle: ActivationHandle): Promise<RawDisposal> {
-  try {
-    await handle.dispose()
-    return { kind: 'released' }
-  } catch (error: unknown) {
-    return { kind: 'failed', error }
-  }
 }
 
 /** Freeze one detached public value recursively. */

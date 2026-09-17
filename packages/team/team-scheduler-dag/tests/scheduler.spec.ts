@@ -1,3 +1,4 @@
+import type { TeamListPage, TeamListPageRequest } from '@clocky/clocky-team'
 import { recordEnvelope } from '../../../core/team/tests/channel-envelope-record.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -56,7 +57,6 @@ import type {
   TeamPhaseTransitionRequest,
   ParticipantSnapshot,
   TeamEvent,
-  TeamSnapshot,
   TeamStateSnapshot,
   TeamTaskAssignRequest,
   TeamTaskAttemptExpireRequest,
@@ -244,11 +244,8 @@ interface FakeTeams {
   readonly registerSystemChannelLifecycleProofSource: Mock<(source: TeamSystemChannelLifecycleProofSource) => () => void>
   readonly registerSystemSchedulerChannelProofSource: Mock<(source: TeamSystemSchedulerChannelProofSource) => () => void>
   readonly listTeamsPage: Mock<(
-    request: { readonly afterCursor: number; readonly limit: number },
-  ) => Promise<{
-    readonly items: readonly TeamSnapshot[]
-    readonly nextCursor?: number
-  }>>
+    request: TeamListPageRequest,
+  ) => Promise<TeamListPage>>
   readonly getTeam: Mock<(request: { readonly teamId: TeamStateSnapshot['team']['id'] }) => Promise<TeamStateSnapshot>>
   readonly transitionTeamPhase: Mock<(request: TeamPhaseTransitionRequest) => Promise<TeamStateSnapshot>>
   readonly compactTeam: Mock<(request: TeamJournalCompactRequest) => Promise<TeamJournalCompactResult>>
@@ -372,7 +369,7 @@ function setup(initial: TeamStateSnapshot): FakeHarness {
         if (schedulerChannelSource === source) schedulerChannelSource = undefined
       }
     }),
-    listTeamsPage: vi.fn(async ({ afterCursor }) => afterCursor === -1 ? { items: [current.team] } : { items: [] }),
+    listTeamsPage: vi.fn(async ({ afterCursor }) => afterCursor === -1 ? { items: [current.team], scanned: 1 } : { items: [], scanned: 0 }),
     getTeam: vi.fn(async () => current),
     transitionTeamPhase: vi.fn(async (input) => {
       const scope = phaseSource?.resolvePhaseProof(input.actor)
@@ -943,6 +940,14 @@ async function recoveryHarness(label: string) {
   return { worker, binding, pending, harness, channel, assigned }
 }
 
+/** Model Cordis effect ownership while exercising the entry against fake services. */
+function mountScheduler(harness: ReturnType<typeof setup>, options: Config): () => Promise<void> {
+  let dispose!: () => Promise<void>
+  Object.assign(harness.ctx, { effect: (effect: () => () => Promise<void>) => { dispose = effect() } })
+  apply(harness.ctx, options)
+  return dispose
+}
+
 describe('TeamDagScheduler', () => {
   it('discovers Teams on the configured pulse and stops discovery after disposal', async () => {
     vi.useFakeTimers()
@@ -1396,7 +1401,7 @@ describe('TeamDagScheduler', () => {
       channelIds: [channelId],
     }))
     harness.channels.set(channelId, { snapshot: channel, records: [] })
-    const dispose = apply(harness.ctx, config({
+    const dispose = mountScheduler(harness, config({
       terminalChannelRetentionTail: 2,
       maxCompactionsPerDrive: 2,
     }))
@@ -1569,6 +1574,32 @@ describe('TeamDagScheduler', () => {
     await staleScheduler.close()
   })
 
+  it.each([1, 2])('assigns independent work while existing wakes exceed scan budget %i', async (wakeBudget) => {
+    const first = await recoveryHarness('wake-existing')
+    const secondWorker = participant('participant-existing-second')
+    const secondBinding = activation(secondWorker)
+    const secondPending = task('task-existing-second')
+    const thirdWorker = participant('participant-idle-third')
+    const thirdBinding = activation(thirdWorker)
+    const thirdPending = task('task-ready-third')
+    const members = [first.worker, secondWorker, thirdWorker]
+    const bindings = [first.binding, secondBinding, thirdBinding]
+    first.harness.setState(state([first.assigned, secondPending, thirdPending], members, bindings, {
+      team: first.harness.getState().team, channelIds: first.harness.getState().channelIds,
+    }))
+    const secondChannel = await openWakeChannel(first.harness, secondPending, secondWorker, secondBinding)
+    const secondAssigned = assignedWakeTask(secondPending, secondWorker, secondBinding, secondChannel)
+    first.harness.setState(state([first.assigned, secondAssigned, thirdPending], members, bindings, {
+      team: first.harness.getState().team, channelIds: first.harness.getState().channelIds,
+    }))
+    const scheduler = new TeamDagScheduler(first.harness.ctx, config({ maxWakeDispatchesPerDrive: wakeBudget }))
+    try {
+      for (let index = 0; index < 5; index += 1) await scheduler.drive({ teamId })
+      expect(first.harness.teams.postChannelEnvelope.mock.calls.length).toBeGreaterThanOrEqual(2)
+      expect(first.harness.getState().tasks.find(candidate => candidate.id === thirdPending.id)?.phase).toBe('assigned')
+    } finally { await scheduler.close() }
+  })
+
   it('bounds and rotates wake-channel repair, retries a channel cursor race, and stops a denied repair', async () => {
     const first = await recoveryHarness('wake-first')
     const secondWorker = participant('participant-wake-second')
@@ -1601,10 +1632,12 @@ describe('TeamDagScheduler', () => {
     if (originalPost === undefined) throw new Error('fake postChannelEnvelope lost its implementation')
     raced.harness.teams.postChannelEnvelope.mockImplementationOnce(async () => {
       throw new TeamError('stale channel', 'TEAM_CHANNEL_CURSOR_CONFLICT')
+    }).mockImplementationOnce(async () => {
+      throw new TeamError('attempt advanced during publication', 'TEAM_ACTOR_PROOF_INVALID')
     }).mockImplementation(originalPost)
     const racedScheduler = new TeamDagScheduler(raced.harness.ctx, config())
     await racedScheduler.drive({ teamId })
-    expect(raced.harness.teams.postChannelEnvelope).toHaveBeenCalledTimes(2)
+    expect(raced.harness.teams.postChannelEnvelope).toHaveBeenCalledTimes(3)
     await racedScheduler.close()
 
     const denied = await recoveryHarness('wake-denied')
@@ -1613,6 +1646,15 @@ describe('TeamDagScheduler', () => {
     await expect(deniedScheduler.drive({ teamId })).resolves.toBeUndefined()
     expect(denied.harness.teams.postChannelEnvelope).toHaveBeenCalledTimes(1)
     await deniedScheduler.close()
+  })
+
+  it('bounds retries when its generated channel proof remains invalid', async () => {
+    const mounted = await recoveryHarness('persistent-proof-failure')
+    mounted.harness.teams.postChannelEnvelope.mockRejectedValue(new TeamError('invalid proof', 'TEAM_ACTOR_PROOF_INVALID'))
+    const scheduler = new TeamDagScheduler(mounted.harness.ctx, config({ maxConflictsPerDrive: 1 }))
+    await expect(scheduler.drive({ teamId })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect(mounted.harness.teams.postChannelEnvelope).toHaveBeenCalledTimes(4)
+    await scheduler.close()
   })
 
   it('rejects a missing wake lease response plus inactive or misbound assignment channel manifests', async () => {
@@ -1867,23 +1909,23 @@ describe('TeamDagScheduler', () => {
     await inactiveScheduler.close()
   })
 
-  it('closes a newly opened wake channel when assignment authority does not commit', async () => {
+  it('closes every unassigned wake channel when authority remains unavailable', async () => {
     const worker = participant('participant-unassigned-wake')
     const workerActivation = activation(worker)
     const ready = task('task-unassigned-wake')
     const harness = setup(state([ready], [worker], [workerActivation]))
-    harness.teams.assignTask.mockRejectedValueOnce(new TeamError('scheduler proof was revoked', 'TEAM_ACTOR_PROOF_INVALID'))
-    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxAssignmentsPerDrive: 1 }))
+    harness.teams.assignTask.mockRejectedValue(new TeamError('scheduler proof was revoked', 'TEAM_ACTOR_PROOF_INVALID'))
+    const scheduler = new TeamDagScheduler(harness.ctx, config({ maxAssignmentsPerDrive: 1, maxConflictsPerDrive: 1 }))
 
     await expect(scheduler.drive({ teamId })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
 
-    expect(harness.teams.openSchedulerWakeChannel).toHaveBeenCalledOnce()
+    expect(harness.teams.openSchedulerWakeChannel).toHaveBeenCalledTimes(4)
+    expect(harness.teams.closeSchedulerFailedWakeChannel).toHaveBeenCalledTimes(4)
     expect(harness.teams.closeSchedulerFailedWakeChannel).toHaveBeenCalledWith(expect.objectContaining({
       taskId: ready.id,
       activationId: workerActivation.activation.id,
     }))
-    const wake = [...harness.channels.values()][0]
-    expect(wake?.snapshot.phase).toBe('closed')
+    expect([...harness.channels.values()].every(channel => channel.snapshot.phase === 'closed')).toBe(true)
     await scheduler.close()
   })
 
@@ -1948,7 +1990,7 @@ describe('TeamDagScheduler', () => {
     expect(second).toBe(first)
     gate.resolve(harness.getState())
     await first
-    expect(harness.teams.getTeam.mock.calls.length).toBeGreaterThanOrEqual(3)
+    await vi.waitFor(() => { expect(harness.teams.getTeam.mock.calls.length).toBeGreaterThanOrEqual(3) })
 
     const closingGate = Promise.withResolvers<TeamStateSnapshot>()
     harness.teams.getTeam.mockImplementationOnce(async () => await closingGate.promise)
@@ -1959,15 +2001,36 @@ describe('TeamDagScheduler', () => {
     expect(harness.teams.assignTask).toHaveBeenCalledTimes(1)
   })
 
+  it('returns a bounded round while a continuous change signal queues later work', async () => {
+    const worker = participant('participant-event-storm')
+    const harness = setup(state([], [worker], [activation(worker)]))
+    harness.teams.listTeamsPage.mockResolvedValue({ items: [], scanned: 0 })
+    const scheduler = new TeamDagScheduler(harness.ctx, config())
+    scheduler.start()
+    let emitting = true
+    const original = harness.teams.getTeam.getMockImplementation()!
+    harness.teams.getTeam.mockImplementation(async (request) => {
+      if (emitting) harness.emit(teamEventSchema.parse({ type: 'team/changed', team: harness.getState().team }))
+      return await original(request)
+    })
+    await scheduler.drive({ teamId })
+    expect(harness.teams.getTeam.mock.calls.length).toBeLessThanOrEqual(2)
+    emitting = false
+    await scheduler.close()
+    const reads = harness.teams.getTeam.mock.calls.length
+    await new Promise(resolve => setImmediate(resolve))
+    expect(harness.teams.getTeam).toHaveBeenCalledTimes(reads)
+  })
+
   it('abandons an initial discovery scan that completes after close', async () => {
     const worker = participant('participant-discovery-close')
     const harness = setup(state([], [worker], [activation(worker)]))
-    const listed = Promise.withResolvers<{ readonly items: readonly TeamStateSnapshot['team'][] }>()
+    const listed = Promise.withResolvers<TeamListPage>()
     harness.teams.listTeamsPage.mockImplementationOnce(async () => await listed.promise)
     const scheduler = new TeamDagScheduler(harness.ctx, config())
     const initial = scheduler.drive()
     const closing = scheduler.close()
-    listed.resolve({ items: [harness.getState().team] })
+    listed.resolve({ items: [harness.getState().team], scanned: 1 })
     await Promise.all([initial, closing])
     expect(harness.teams.getTeam).not.toHaveBeenCalled()
   })
@@ -2087,7 +2150,7 @@ describe('TeamDagScheduler', () => {
     const harness = setup(state([ready], [worker], [workerActivation]))
     const unrenderable = { toString() { throw new Error('cannot render') } }
     harness.assignmentListeners.push(() => { throw unrenderable })
-    const dispose = apply(harness.ctx, config({ maxAssignmentsPerDrive: 1 }))
+    const dispose = mountScheduler(harness, config({ maxAssignmentsPerDrive: 1 }))
     await vi.waitFor(() => { expect(harness.teams.assignTask).toHaveBeenCalledTimes(1) })
     expect(harness.teams.registerSystemTaskLeaseProofSource).toHaveBeenCalledWith(expect.objectContaining({
       name: 'team-scheduler-dag',
@@ -2119,7 +2182,7 @@ describe('TeamDagScheduler', () => {
   it('registers a private scheduler phase source and stalls unassignable work through its exact proof', async () => {
     const unassignable = task('task-stall-proof')
     const harness = setup(state([unassignable], [], []))
-    const dispose = apply(harness.ctx, config({ stallAfterUnassignableDrives: 1 }))
+    const dispose = mountScheduler(harness, config({ stallAfterUnassignableDrives: 1 }))
     await vi.waitFor(() => { expect(harness.teams.transitionTeamPhase).toHaveBeenCalledTimes(1) })
     expect(harness.teams.registerSystemPhaseProofSource).toHaveBeenCalledWith(expect.objectContaining({
       name: 'team-scheduler-dag',
@@ -2280,6 +2343,7 @@ describe('TeamDagScheduler', () => {
       { maxAssignmentsPerDrive: 0 },
       { maxExpirationsPerDrive: 0 },
       { maxWakeDispatchesPerDrive: 0 },
+      { maxReviewDispatchesPerDrive: 0 },
       { maxConflictsPerDrive: 0 },
       { maxActiveAttemptsPerParticipant: 0 },
       { disposalTimeoutMs: 0 },

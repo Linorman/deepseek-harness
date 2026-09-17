@@ -6,10 +6,10 @@ This family runs model-authored orchestration workflows over subagents and expos
 
 | Package | Role | ctx key |
 |---|---|---|
-| [`workflow/`](workflow/README.md) | Defines workflow execution and lifecycle events | `ctx.workflowEngine` |
-| [`workflow-worker-thread/`](workflow-worker-thread/README.md) | Runs workflow scripts in worker threads | registers on `ctx.workflowEngine` |
-| [`tool-workflow/`](tool-workflow/README.md) | Exposes general workflow execution to the model | registers on `ctx.tools` |
-| [`tool-ralph/`](tool-ralph/README.md) | Exposes the fixed fresh-agent Ralph workflow | registers on `ctx.tools` |
+| [`workflow/`](../compat/workflow/README.md) | Defines workflow execution and lifecycle events | `ctx.workflowEngine` |
+| [`workflow-worker-thread/`](../compat/workflow-worker-thread/README.md) | Runs workflow scripts in worker threads | registers on `ctx.workflowEngine` |
+| [`tool-workflow/`](../compat/tool-workflow/README.md) | Exposes general workflow execution to the model | registers on `ctx.tools` |
+| [`tool-ralph/`](../compat/tool-ralph/README.md) | Exposes the fixed fresh-agent Ralph workflow | registers on `ctx.tools` |
 
 Worker threads isolate workflow execution from the host event loop but are not a security boundary. See the [dynamic-workflow](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.md) and [Ralph tool](../../.agents/notes/implemented/feature/2026-07-19-fresh-agent-ralph-workflow-tool.md) decisions.
 

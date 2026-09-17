@@ -10,7 +10,7 @@ import { Context } from '@clocky/cordis'
 import { afterEach, describe, expect, it } from 'vitest'
 import { renderIndexInjections, type WebServer, type WebRoute } from '@clocky/clocky-host-webserver'
 import * as modulesClient from '../src/client/index.ts'
-import { ClientModuleRegistry, bootInjections, orderByModuleGraph } from '../src/index.ts'
+import { ClientModuleRegistry, bootInjections, orderByModuleGraph, type Config } from '../src/index.ts'
 import type { ClientModuleLoaderTarget, WebBootEntry, WebBootGraph } from '../src/client/index.ts'
 
 const MODULES_ID = '@clocky/clocky-client-modules'
@@ -51,13 +51,13 @@ function writeBuiltPackage(packageName: string, client: Record<string, unknown>)
 }
 
 /** Construct the node-half service and capture its plugin-bundle route. */
-function constructWithRoute(packageNames: string[]): { service: ClientModuleRegistry; route: WebRoute } {
+function constructWithRoute(packageNames: string[], config: Config = {}): { service: ClientModuleRegistry; route: WebRoute } {
   const ctx = new Context()
   ctx.baseUrl = pathToFileURL(root!).href + '/'
   ctx.provide('loader', {
     *entries() {
       for (const packageName of packageNames) {
-        yield { options: { name: packageName }, fiber: {}, disabled: false }
+        yield { options: { name: packageName, config: { hostOnly: 'never-forwarded-marker' } }, fiber: {}, disabled: false }
       }
     },
   })
@@ -71,7 +71,7 @@ function constructWithRoute(packageNames: string[]): { service: ClientModuleRegi
     tapIndex: () => () => {},
   }
   ctx.provide('webServer', webServer as WebServer)
-  const service = new ClientModuleRegistry(ctx)
+  const service = new ClientModuleRegistry(ctx, config)
   if (route === undefined) throw new Error('client bundle route was not registered')
   return { service, route }
 }
@@ -94,6 +94,25 @@ function injectedFacade(graph: WebBootGraph): { html: string; target: ClientModu
   if (window.__ModuleLoader__ === undefined) throw new Error('facade script did not install __ModuleLoader__')
   return { html, target: window.__ModuleLoader__ }
 }
+
+it('publishes only explicitly configured browser options and includes them in the graph revision', () => {
+  writeBuiltPackage('configured-client', {})
+  const empty = constructWithRoute(['configured-client']).service.graph()
+  const config = { browserConfig: { 'configured-client': { maxDrafts: 4, nested: { enabled: true } } } }
+  const configured = constructWithRoute(['configured-client'], config).service.graph()
+  expect(configured.entries[0]?.config).toEqual(config.browserConfig['configured-client'])
+  expect(configured.rev).not.toBe(empty.rev)
+  expect(JSON.stringify(configured)).not.toContain('never-forwarded-marker')
+  config.browserConfig['configured-client'].nested.enabled = false
+  expect(configured.entries[0]?.config).toMatchObject({ nested: { enabled: true } })
+  expect(empty.entries[0]).not.toHaveProperty('config')
+})
+
+it('refuses non-JSON options and unknown browser config targets', () => {
+  writeBuiltPackage('configured-client', {})
+  expect(() => constructWithRoute(['configured-client'], { browserConfig: { missing: {} } })).toThrow(/not a declared browser plugin/)
+  expect(() => constructWithRoute(['configured-client'], { browserConfig: { 'configured-client': { invalid: Infinity } } })).toThrow()
+})
 
 const bootGraph = (): WebBootGraph => ({
   rev: 'graph',

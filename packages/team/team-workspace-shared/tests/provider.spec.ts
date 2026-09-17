@@ -931,6 +931,10 @@ describe('shared Team workspace provider', () => {
     await writeFile(file, 'not a directory')
     const missing = join(root, 'missing')
 
+    await expect(SharedWorkspace.apply(new Context(), { root, observationExcludedRoots: [root] }))
+      .rejects.toThrow('observationExcludedRoots must not contain the shared root')
+    await expect(SharedWorkspace.apply(new Context(), { root, observationExcludedRoots: [missing] }))
+      .rejects.toThrow('observationExcludedRoots')
     await expect(SharedWorkspace.apply(new Context(), { root: 'relative' }))
       .rejects.toThrow('root must be an absolute path')
     await expect(SharedWorkspace.apply(new Context(), { root: missing }))

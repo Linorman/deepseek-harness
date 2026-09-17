@@ -20,6 +20,8 @@ The `clocky` TUI, Web, and headless source launches run `node --import tsx/esm`:
 
 The node-compat CI matrix (Node 22.19 and 26) gains `clocky-source-launch-smoke` (`apps/cli/tests/source-launch.compat.spec.ts`): a keyless piped-stdio launch of the exact production runtime vector asserting the non-zero-exit TTY refusal. Any future Node change to module hooks or TypeScript handling turns this gate red instead of breaking developers' `pnpm clocky`.
 
+The shared TypeScript bases direct otherwise-unscoped emission into `.tmp/tsc-unscoped`; package compiler projects declare their own output directories. [The source-output gate](../../../../scripts/verify-source-outputs.ts) rejects generated JavaScript, declarations and maps in source trees, with named exceptions for hand-authored declarations, and checks production output paths. It diagnoses current owning configuration without attributing historical files to an unobserved command. Existing pollution is preserved for recovery or isolated verification.
+
 ## Alternatives considered
 
 **Keep the native chain on Node ≤25 and branch by version.** Rejected: two transformation semantics (amaro versus esbuild) diverge on edge syntax, the launcher grows version probing, and the node-compat matrix must cover both paths — heavy maintenance for an experimental flag that already changed under us. amaro also rejects the `@Inject` decorators `vendor/hmr` uses, so the native path could not boot the shipped default TUI config anyway.

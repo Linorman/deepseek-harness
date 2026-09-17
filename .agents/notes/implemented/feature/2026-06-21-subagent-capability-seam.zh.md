@@ -31,11 +31,11 @@ bash seam（[能力 seam](../architecture/2026-06-13-capability-seams.zh.md)）�
 
 | 包 | 角色 |
 |---|---|
-| `@clocky/clocky-subagent` | 接口：`SubagentRuntime`（`ctx.subagents`）、`SubagentProvider`、`SubagentRun`、请求、结果、能力词汇、`subagent/*` 事件 |
-| `@clocky/clocky-subagent-spawn-in-process` | 实现：通过 `ctx.agents.create` 创建全新的进程内子 agent |
-| `@clocky/clocky-subagent-fork-in-process` | 实现：用父 agent 日志快照初始化的进程内子 agent |
-| `@clocky/clocky-subagent-acp` | 实现：作为 ACP 客户端驱动已配置的子进程 |
-| `@clocky/clocky-tool-subagent` | 消费方：基于 `ctx.subagents` 的面向模型的 `subagent` 工具 |
+| `@clocky/clocky-compat-subagent` | 接口：`SubagentRuntime`（`ctx.subagents`）、`SubagentProvider`、`SubagentRun`、请求、结果、能力词汇、`subagent/*` 事件 |
+| `@clocky/clocky-compat-subagent-spawn-in-process` | 实现：通过 `ctx.agents.create` 创建全新的进程内子 agent |
+| `@clocky/clocky-compat-subagent-fork-in-process` | 实现：用父 agent 日志快照初始化的进程内子 agent |
+| `@clocky/clocky-compat-subagent-acp` | 实现：作为 ACP 客户端驱动已配置的子进程 |
+| `@clocky/clocky-compat-tool-subagent` | 消费方：基于 `ctx.subagents` 的面向模型的 `subagent` 工具 |
 
 ### 原语：异步 `start → SubagentRun`
 

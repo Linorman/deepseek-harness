@@ -4,6 +4,10 @@ English | [中文](README.zh.md)
 
 SQLite backend for the [storage hub](../storage/README.md): registers as backend `sqlite`, serving `kv` and append-log facets over one `node:sqlite` database file (or `:memory:`). Design and trade-offs: [domain KV storage Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
 
+Log-name discovery seeks one row at a time through the stream-name index, with a UTF-8 prefix range and exclusive last-name key. It does not read log entries or checkpoints. New names after the current key can join a scan; a fresh scan discovers insertions before that key.
+
+The log summary column is updated in the same transaction as entries and the tail. Bounded summary reads query only the stream metadata row, reject oversized UTF-8 values before returning them, and do not read entries or checkpoints. The physical schema version is 3; older stamped databases reject.
+
 ## Storage model
 
 Document-per-row: each unit table becomes a physical `"u_<unit>_<table>" (key TEXT PRIMARY KEY, value TEXT)` STRICT table whose `value` is the record's JSON text, so one key updates one row (the reason to route a high-churn domain here instead of the JSON backend). Unit identity lives in two metadata tables — `units` stamps each unit's format version at first open and rejects a differing descriptor with `version-mismatch`; `unit_globals` holds each unit's global singleton row. The physical layout version lives in `PRAGMA user_version`; any other stamped value rejects (unreleased format, no migrations). Unit and table names are validated against the hub's `UNIT_NAME_RE` before they reach DDL, so no external input is ever interpolated into SQL identifiers.

@@ -131,6 +131,7 @@ export type MuxFrame =
 export type HostFrame =
   | {
     type: 'host/session-added'
+    team?: import('./sessions.ts').SessionSummary['team']
     sessionId: SessionId
     blank: boolean
     cwd?: string

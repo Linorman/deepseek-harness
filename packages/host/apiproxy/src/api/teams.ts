@@ -1,3 +1,12 @@
+import type { TeamMemberInspectRequest, TeamMemberInspection } from '@clocky/clocky-team'
+import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from '@clocky/clocky-team'
+import type { TeamHumanActionReadRequest, TeamHumanActionSnapshot } from '@clocky/clocky-team'
+import type { TeamSelectionRequest } from '@clocky/clocky-team'
+import type { TeamTaskInspectRequest, TeamTaskInspection } from '@clocky/clocky-team'
+import type { TeamBrowsePage, TeamBrowseKind } from '@clocky/clocky-team'
+import type { TeamMemberSessionRequest, TeamMemberSessionSnapshot } from '@clocky/clocky-team'
+import type { TeamSelectionSnapshot } from '@clocky/clocky-team/types'
+import type { TeamDiscoveryCursor } from '@clocky/clocky-team/types'
 import type { AttachmentIdType, ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { TeamHumanActionResponseInput, TeamHumanActionResponseResult } from '@clocky/clocky-team/types'
 import type { TeamHumanInboxReadInput, TeamHumanInboxPage, TeamHumanInboxAcknowledgeInput, TeamHumanInboxAcknowledgement } from '@clocky/clocky-team/types'
@@ -171,6 +180,22 @@ export interface TeamArtifactReadResult {
 
 /** Team-oriented unary methods exposed by the Host. */
 export interface TeamsApi {
+  /** Read non-secret member metadata and one capability page without activation. */
+  memberInspect(request: RpcRequest<TeamMemberInspectRequest>): Promise<RpcResponse<TeamMemberInspection>>
+
+  /** Read one bounded current human action without the complete Team state. */
+  actionRead(request: RpcRequest<TeamHumanActionReadRequest>): Promise<RpcResponse<TeamHumanActionSnapshot>>
+  /** Read bounded current task fields or one attempt/review history page. */
+  taskInspect(request: RpcRequest<TeamTaskInspectRequest>): Promise<RpcResponse<TeamTaskInspection>>
+
+  /** List display summaries without task, grant or workflow history bodies. */
+  browse(
+    request: RpcRequest<{ teamId: TeamId; kind: TeamBrowseKind; afterCursor?: number; limit?: number }>,
+  ): Promise<RpcResponse<TeamBrowsePage>>
+
+  /** Read the exact member's latest published Session binding without activating it. */
+  memberSession(request: RpcRequest<TeamMemberSessionRequest>): Promise<RpcResponse<TeamMemberSessionSnapshot>>
+
   /** Answer an exact principal-owned request through its retained continuation. */
   inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>
   /** Authenticated principal inbox read. */
@@ -181,7 +206,10 @@ export interface TeamsApi {
   inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>
 
   /** Lists durable Team summaries without requiring a local TeamRun owner. */
-  list(request: RpcRequest<{ afterCursor?: number; limit?: number }>): Promise<RpcResponse<TeamList>>
+  list(request: RpcRequest<{ afterCursor?: TeamDiscoveryCursor | -1; limit?: number }>): Promise<RpcResponse<TeamList>>
+
+  /** Reads bounded initial Team metadata and exact coordinator identity without activating an Agent. */
+  selection(request: RpcRequest<TeamSelectionRequest>): Promise<RpcResponse<TeamSelectionSnapshot>>
 
   /** Reads one complete durable Team state without activating an Agent. */
   get(request: RpcRequest<{ teamId: TeamId }>): Promise<RpcResponse<TeamStateSnapshot>>
@@ -375,8 +403,12 @@ export interface TeamsApi {
   /** Lists one Team's durable task projections. */
   taskList(request: RpcRequest<{ teamId: TeamId; afterCursor?: number; limit?: number }>): Promise<RpcResponse<TeamTaskList>>
 
+  /** Read one bounded workflow task/dependency window. */
+  workflowPlanInspect(request: RpcRequest<TeamWorkflowInspectRequest>): Promise<RpcResponse<TeamWorkflowInspection>>
   /** Lists durable workflow plans in admission order through a bounded page. */
-  workflowPlanList(request: RpcRequest<{ teamId: TeamId; afterCursor?: number; limit?: number }>): Promise<RpcResponse<TeamWorkflowPlanList>>
+  workflowPlanList(
+    request: RpcRequest<{ teamId: TeamId; afterCursor?: number; limit?: number }>,
+  ): Promise<RpcResponse<TeamWorkflowPlanList>>
 
   /** Edits one lease-free task's subject, description, or dependencies. */
   taskUpdate(

@@ -28,7 +28,7 @@ Importing a Client package — a value or a type — pulls its whole TypeScript
 project, and every project it references, into the **Host build graph**. That has
 bitten this lane once already: four Client consumer packages reference
 `api/remotes`' Client face, which cannot compile until Host tsdown has generated
-`@clocky/clocky-goal/remote`, so the Host build phase ended up waiting on an
+`@clocky/clocky-compat-goal/remote`, so the Host build phase ended up waiting on an
 artifact it produces itself.
 
 When a scenario needs a Client-owned constant or pure function, mirror it here

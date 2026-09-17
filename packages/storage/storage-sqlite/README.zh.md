@@ -4,6 +4,10 @@
 
 [存储中心](../storage/README.zh.md)的 SQLite 后端：注册为后端 `sqlite`，通过一个数据库提供 `kv` 和追加日志分面；该数据库由 `node:sqlite` 操作，可以是单个文件，也可以是 `:memory:`。设计与取舍见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
+Log-name discovery 使用 UTF-8 prefix 范围和排他的 last-name key，每次从 stream-name 索引定位一行，不读取 log entry 或 checkpoint。当前 key 之后插入的名称可以进入本次扫描；key 之前的插入由新的扫描发现。
+
+Log summary 列与 entry 和 tail 在同一事务更新。有界摘要读取只查询 stream 元数据行，在返回前拒绝超限 UTF-8 value，不读取 entry 或 checkpoint。物理 schema 版本为 3，旧版本数据库会被拒绝。
+
 ## 存储模型
 
 每行一个文档：每个单元表都会成为一个物理 STRICT 表 `"u_<unit>_<table>" (key TEXT PRIMARY KEY, value TEXT)`，其中 `value` 是记录的 JSON 文本，因此一个 key 只更新一行（高频变更领域路由到这里而非 JSON 后端的原因）。单元标识位于两个元数据表中：`units` 在单元首次打开时标记其格式版本，描述符不同时以 `version-mismatch` 拒绝；`unit_globals` 保存每个单元的全局单例行。物理布局版本位于 `PRAGMA user_version`；其他任何标记值都会被拒绝（未发布格式，不迁移）。单元名和表名在进入 DDL 之前依据中心的 `UNIT_NAME_RE` 进行验证，因此不会把外部输入插值到 SQL 标识符中。

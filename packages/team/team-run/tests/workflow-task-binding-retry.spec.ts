@@ -163,8 +163,8 @@ describe('workflow task binding retries through TeamRun', () => {
     const failure = Object.assign(new Error('binding append reply lost after durable commit'), { code: 'EIO' })
     const append = harness.journal.append.bind(harness.journal)
     let failed = false
-    vi.spyOn(harness.journal, 'append').mockImplementation(async (cursor, values) => {
-      const result = await append(cursor, values)
+    vi.spyOn(harness.journal, 'append').mockImplementation(async (cursor, values, options) => {
+      const result = await append(cursor, values, options)
       if (!failed && values.some(isTaskBinding)) { failed = true; throw failure }
       return result
     })

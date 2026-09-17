@@ -1,3 +1,4 @@
+import type { ChannelId } from '@clocky/clocky-client-connection/client'
 import { Context } from '@clocky/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TeamChannelAttachmentInput } from '../src/client/contract/team-tasks.ts'
@@ -16,7 +17,7 @@ describe('channel media API ownership', () => {
   it('sends ordered encoded content through Host admission instead of constructing durable references', async () => {
     const { api, tasks } = setup()
     const selection = await tasks.open('media-owner' as never)
-    const channelId = selection.state.channelIds[0]!
+    const channelId = `runtime-fk-team-channel-${selection.teamId}` as ChannelId
     const post = vi.spyOn(api.teams, 'channelInput').mockResolvedValue(err({ code: 'internal', message: 'Host rejected image bytes', details: {} }))
     const content = [{ type: 'text' as const, text: 'Before' }, { type: 'image' as const, mediaType: 'image/png' as const, data: 'encoded', name: 'tiny.png' },
       { type: 'text' as const, text: 'After' }]

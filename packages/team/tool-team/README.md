@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 `@clocky/clocky-tool-team` installs Team tools only in a live Agent scope whose Session header names a valid Team and Participant. `team_task_report` and `team_task_integrate` consume the durable task-assignment source admitted by [`@clocky/clocky-team-agent-client`](../team-agent-client/README.md). All tools use an activation-bound `TeamLink` and never accept model-supplied Team, Participant, activation, Session, revision, recipient, or next-phase authority.
 
+Repeated original and continuation inputs may carry the same durable assignment. Reporting, heartbeat, and integration require all sources for the selected task/attempt to agree on Team, channel, Envelope, activation, and revision; a conflicting source still rejects.
+
 ## Task reporting
 
 `team_task_report(task_id, attempt_id, outcome, summary?, failure_code?, failure_message?, evidence?, artifacts?, changed_paths?, verification?)` accepts `completed`, `failed`, or `released`. `completed` requires `summary` and may carry evidence statements, changed paths, verification text, and workspace-owned artifact references; `failed` requires `failure_code` and `failure_message`; `released` accepts no outcome-specific text. The tool requires exactly one persisted `team-task-assignment` `user/message` source for the requested task/attempt, requires that source to match the calling Agent's current Team/Participant header and active activation binding, and requires its task to retain the exact running lease. With local Team authority it opens a short-lived configured Link; a remote child instead borrows its current fixed Link. Both paths derive actor facts before the Team provider applies its owner fence and `task-mutate` policy.

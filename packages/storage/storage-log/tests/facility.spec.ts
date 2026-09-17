@@ -159,6 +159,18 @@ function setup(log: LogFacet = new MemoryLogFacet()) {
 }
 
 describe('StorageLogFacility', () => {
+  it('rejects summary writes and reads when the routed backend lacks atomic summaries', async () => {
+    const { facility } = await setup()
+    const descriptor = { name: 'team/no-summary', version: 1 }
+    const stream = await facility.open(descriptor)
+    await expect(stream.append(-1, [{}], { summary: {} })).rejects.toMatchObject({ code: 'facet-unsupported' })
+    expect(stream.tailSequence).toBe(-1)
+    await expect(facility.readSummary(descriptor, 1024)).rejects.toMatchObject({ code: 'facet-unsupported' })
+    await expect(facility.readSummary(descriptor, 0)).rejects.toMatchObject({ code: 'scan-invalid' })
+    await facility.closeAll()
+    await expect(facility.readSummary(descriptor, 1024)).rejects.toMatchObject({ code: 'closed' })
+  })
+
   it('routes a declared stream, exposes the mounted form, and frees its name after close', async () => {
     const { ctx, facility } = await setup()
     const descriptor = defineLogStream({ name: 'team_alpha', version: 1 })

@@ -4,6 +4,10 @@
 
 [存储中心](../storage/README.zh.md)的 JSON 后端：配置根目录下保存人类可读的 KV 单元和追加日志文件，注册为后端 `json`。设计见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
+Log facet 每次 yield 扫描一个目录条目，解码规范 stream name，不读取 journal body。请求 prefix 之外的条目也计入扫描工作量。打开 stream 仍执行完整格式验证；discovery 不证明 body 完整性，也不承诺稳定的目录快照。
+
+Log 摘要位于同一份原子替换 journal 文档的 UTF-8 首行。有界摘要读取至多消耗请求的字节预算，关闭文件句柄并验证 header 身份和版本，不解析 entry 或 checkpoint。完整 stream 打开还会验证 header tail 与 entry 一致。
+
 ## 模型
 
 - 内存中的单元状态具有最终决定权；每个写入原语都会通过临时文件写入 + fsync + 原子 `rename()` 替换重新发布整个文件。单元文件始终是完整的当前状态：可读性是该后端存在的理由，规模问题则属于 SQLite 后端。

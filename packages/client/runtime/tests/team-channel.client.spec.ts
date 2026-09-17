@@ -65,11 +65,11 @@ describe('runtime channel inspection', () => {
     const opening = f.tasks.open(nextTeam)
     const channelResponse = deferred<Awaited<ReturnType<IApiClient['teams']['channelRead']>>>()
     f.api.onTeamChannelRead = async () => await channelResponse.promise
-    const reading = f.tasks.readChannel(firstTeam.state.channelIds[0]!).catch(error => error)
+    const reading = f.tasks.readChannel(`runtime-fk-team-channel-${firstTeam.teamId}` as ChannelId).catch((error: unknown) => error)
     selection.resolve(nextResponse)
     await opening
     channelResponse.resolve(ok({ ...page(), channel: { ...page().channel, manifest: { ...page().channel.manifest,
-      id: firstTeam.state.channelIds[0]!, teamId: firstTeam.teamId } } }))
+      id: `runtime-fk-team-channel-${firstTeam.teamId}` as ChannelId, teamId: firstTeam.teamId } } }))
     await reading
     expect(f.tasks.list.getSnapshot().current).toBe(nextTeam)
     expect(f.tasks.list.getSnapshot().channel).toBeUndefined()
@@ -114,6 +114,27 @@ describe('runtime channel inspection', () => {
     await vi.waitFor(() => { expect(f.watches).toHaveLength(2) })
     expect(f.tasks.list.getSnapshot().channel?.invitation?.invitation.status).toBe('acknowledged')
     expect(f.tasks.list.getSnapshot().channel?.invitationError).toBeUndefined()
+  })
+
+  it('keeps one record window when repeatedly reading the next channel page', async () => {
+    const f = setup()
+    f.api.onTeamChannelRead = async input => ok(page((input.afterCursor ?? -1) + 1, 'closed'))
+    for (let cursor = -1; cursor < 32; cursor++) {
+      await f.tasks.readChannel(channelId, cursor)
+      expect(f.tasks.list.getSnapshot().channel?.page?.records.map(record => record.type === 'channel/envelope' ? record.envelope.sequence : record.sequence)).toEqual([cursor + 1])
+      expect(f.tasks.list.getSnapshot().channel?.startCursor).toBe(cursor)
+    }
+  })
+
+  it('reconstructs the same consent intent after the browser runtime is recreated', async () => {
+    const first = setup()
+    const second = setup()
+    await first.tasks.readChannel(channelId)
+    await second.tasks.readChannel(channelId)
+    first.acknowledge.mockResolvedValueOnce(err({ code: 'internal', message: 'response lost', details: {} }))
+    await first.tasks.acknowledgeChannel(channelId)
+    await second.tasks.acknowledgeChannel(channelId)
+    expect(first.acknowledge.mock.calls[0]?.[0]).toEqual(second.acknowledge.mock.calls[0]?.[0])
   })
 
   it('reads consent without accepting it and retries ambiguous consent with the same exact manifest key', async () => {
@@ -173,7 +194,7 @@ describe('runtime channel inspection', () => {
     const f = setup()
     const first = deferred<Awaited<ReturnType<IApiClient['teams']['channelRead']>>>()
     f.api.onTeamChannelRead = async input => input.channelId === channelId ? await first.promise : ok(page(2, 'closed', input.channelId))
-    const old = f.tasks.readChannel(channelId).catch(error => error)
+    const old = f.tasks.readChannel(channelId).catch((error: unknown) => error)
     const next = 'next-channel' as ChannelId
     await f.tasks.readChannel(next)
     first.resolve(ok(page(100)))

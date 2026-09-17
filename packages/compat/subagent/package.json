@@ -1,0 +1,104 @@
+{
+  "name": "@clocky/clocky-compat-subagent",
+  "description": "Abstract subagent seam (ctx.subagents): named-provider registry for delegating to child agents",
+  "version": "0.1.1-rc.2",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/compat/subagent"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./client": {
+      "types": "./lib/types/client.d.ts",
+      "default": "./lib/types/client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-sandbox": "workspace:^",
+    "@clocky/clocky-sandbox-policy": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-session-projection": "workspace:^",
+    "@clocky/clocky-session-projection-cache": "workspace:^",
+    "@clocky/clocky-jobs": "workspace:^",
+    "@clocky/clocky-tools": "workspace:^",
+    "@clocky/clocky-user-approval": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@clocky/clocky-agent-presets": {
+      "optional": true
+    },
+    "@clocky/clocky-sandbox": {
+      "optional": true
+    },
+    "@clocky/clocky-sandbox-policy": {
+      "optional": true
+    },
+    "@clocky/clocky-session-persistence": {
+      "optional": true
+    },
+    "@clocky/clocky-session-projection": {
+      "optional": true
+    },
+    "@clocky/clocky-session-projection-cache": {
+      "optional": true
+    },
+    "@clocky/clocky-jobs": {
+      "optional": true
+    },
+    "@clocky/clocky-user-approval": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@clocky/clocky-agent": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/clocky-llm": "workspace:^",
+    "@clocky/clocky-sandbox": "workspace:^",
+    "@clocky/clocky-sandbox-policy": "workspace:^",
+    "@clocky/clocky-scope": "workspace:^",
+    "@clocky/clocky-session": "workspace:^",
+    "@clocky/clocky-session-persistence": "workspace:^",
+    "@clocky/clocky-session-projection": "workspace:^",
+    "@clocky/clocky-session-projection-cache": "workspace:^",
+    "@clocky/clocky-storage": "workspace:^",
+    "@clocky/clocky-storage-domain": "workspace:^",
+    "@clocky/clocky-jobs": "workspace:^",
+    "@clocky/clocky-tools": "workspace:^",
+    "@clocky/clocky-user-approval": "workspace:^",
+    "@clocky/cordis": "workspace:^"
+  }
+}

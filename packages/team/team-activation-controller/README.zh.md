@@ -4,6 +4,8 @@
 
 `@clocky/clocky-team-activation-controller`是 Team Consumer，用于把已发布的 `AgentRuntime` handle 接入其权威的持久 Team binding，并在 `ctx.teamActivations`公开该 owner。它依赖 `clocky-team`和 `clocky-agent-runtime`；不导入 `team-hub` 或任何 AgentLoop 实现。
 
+Team 设置 `maxLiveActivations` 时，`activate()` 首先提交 Participant 启动预留，raw binding 保留 `reservationId`，第二个 epoch 不能复用。未发布启动只在确认清理后释放额度，已绑定 epoch 通过 quiescence 释放。未知启动跨重启保留额度，关闭恢复记录 `ACTIVATION_STARTUP_UNCONFIRMED`；即使没有容量上限，清理失败的 raw handle 仍归 controller 拥有并重试。reservation release 重试时保留已确认的 raw termination，不重复释放 handle。关闭失败可以重试，但 activation 接纳仍保持关闭。已知 provider 未启动的拒绝在存储失败后仍保留 reservation-release 责任。Bind 响应丢失时按准确的持久 epoch 核对，通过 quiescence 结算；readback 或 quiescence 重试不重复已确认的 raw termination。插件通过 `ctx.effect()` 注册 disposal，等待已接纳的启动和清理完成后再撤销 proof source。
+
 ## 持久 activation
 
 `TeamActivationController.activate()`读取请求的 Team cursor 和 active agent Participant，在 placement 前拒绝 resident epoch 或另一 Session，调用具名 AgentRuntime provider，验证返回 handle 拥有请求的 Session，且任何 local Agent 都属于该 Session，然后调用 `ctx.teams.bindActivation()`。只有 binding 提交后才返回 `TeamActivationLease`。binding 被拒绝时 controller 会释放 raw handle；清理失败会与 binding 失败一起报告。
@@ -14,7 +16,7 @@ controller 将 `team-activation-controller`注册为 system proof source。它�
 
 controller 会合并相同 Team、Participant 和 Session 的并发请求。替换 epoch 要求前一 epoch 已持久化为 `offline`；Hub 会保留两个 epoch，并要求该 Participant 的每个 epoch 使用相同 Session。返回的 lease 公开持久 binding、可选的 local Agent、health 同步、中断和静默释放，而不公开 raw provider handle。
 
-带 recovery plan 的 offline epoch 在获得持久 quiescence proof 前不能重新 bind。raw handle 成功释放后，controller 会调用 `quiesceActivation()`释放 lease 并终结记录的 wake channel；该本地结算证明不能 cold-replace。`coldReplace()`只接受外部已围栏的证明、重试其 wake cleanup，并以新 activation 恢复同一 Session。controller 自身不扫描部署。
+带 recovery plan 的 offline epoch 在获得持久 quiescence proof 前不能重新 bind。raw handle 成功释放后，controller 会调用 `quiesceActivation()`释放 lease 并终结记录的 wake channel；该本地结算证明不能 cold-replace。`coldReplace()`只接受外部已围栏的证明、重试其 wake cleanup，并以新 activation 恢复同一 Session。controller 自身不扫描部署。`fenceStale()` 在释放 owned handle 前核对准确的 activation、Session 和 provider；无 owner 的 epoch 必须有经过验证的 provider fencer 或保留的 quiescence/fence proof，offline status 本身不证明终止。已接纳的 stale fence 阻止该 Participant 的并发 activation、replacement 和重复 fencing。Close 等待 provider 调用及持久写回；插件卸载在结算完成前保留已收集的 proof-source effect。
 
 `recoverClosure()` 只接受与当前持久 intent 和 observed cursor 匹配的有效 closure-driver proof。每轮最多选择一个未结算 epoch：释放准确持有的 handle，或调用经过验证的 provider stale-epoch fencer，不创建替代 activation。缺少所有权证据时记录 `ACTIVATION_TERMINATION_UNCONFIRMED` 或 `REMOTE_CANCELLATION_UNCONFIRMED`；handle 不存在不代表 epoch 已 offline。本地 recovery owner 被卸载或无法 fence 时，cold replacement 会记录 `AGENT_RUNTIME_PROVIDER_UNAVAILABLE`、`AGENT_RUNTIME_FENCER_UNAVAILABLE` 或 `AGENT_RUNTIME_FENCE_FAILED`；supervisor failure 保留其 typed supervisor code。终止已获确认但 allocation 尚未释放时，先持久化 `fencedAt` 并请求释放，再完成 quiescence。该事实跨重启保留，已终止的进程树无需再次提供终止证明。被保留的 allocation 记录 `WORKSPACE_RELEASE_RECOVERY_FAILED` 并保留 metadata。卸载期间，已接纳的恢复操作在结算前保留其 proof authority。
 

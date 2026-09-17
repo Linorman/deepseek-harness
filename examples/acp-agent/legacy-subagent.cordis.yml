@@ -9,41 +9,41 @@
           - id: session-projection
             name: '@clocky/clocky-session-projection'
           - id: subagent
-            name: '@clocky/clocky-subagent'
+            name: '@clocky/clocky-compat-subagent'
           - id: subagent-spawn-in-process
-            name: '@clocky/clocky-subagent-spawn-in-process'
+            name: '@clocky/clocky-compat-subagent-spawn-in-process'
             config:
               providerName: spawn
           - id: subagent-fork-in-process
-            name: '@clocky/clocky-subagent-fork-in-process'
+            name: '@clocky/clocky-compat-subagent-fork-in-process'
             config:
               providerName: fork
           - id: tool-subagent-control
-            name: '@clocky/clocky-tool-subagent-control'
+            name: '@clocky/clocky-compat-tool-subagent-control'
           - id: tool-subagent-list-agents
-            name: '@clocky/clocky-tool-subagent-control/list-agents'
+            name: '@clocky/clocky-compat-tool-subagent-control/list-agents'
           - id: tool-subagent-report
-            name: '@clocky/clocky-tool-subagent-report'
+            name: '@clocky/clocky-compat-tool-subagent-report'
           - id: tool-subagent
-            name: '@clocky/clocky-tool-subagent'
+            name: '@clocky/clocky-compat-tool-subagent'
             config:
               provider: spawn
-              toolName: subagent
+              toolName: legacy_subagent
               backgroundMode: continuable
               maxDepth: 1
           - id: tool-subagent-fork
-            name: '@clocky/clocky-tool-subagent'
+            name: '@clocky/clocky-compat-tool-subagent'
             config:
               provider: fork
-              toolName: subagent_fork
+              toolName: legacy_subagent_fork
               backgroundMode: one-shot
               enableRunInBackground: false
               maxDepth: 1
           - id: workflow-worker-thread
-            name: '@clocky/clocky-workflow-worker-thread'
+            name: '@clocky/clocky-compat-workflow-worker-thread'
             config:
               provider: spawn
           - id: tool-workflow
-            name: '@clocky/clocky-tool-workflow'
+            name: '@clocky/clocky-compat-tool-workflow'
           - id: tool-ralph
-            name: '@clocky/clocky-tool-ralph'
+            name: '@clocky/clocky-compat-tool-ralph'

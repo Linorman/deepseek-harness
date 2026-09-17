@@ -1,5 +1,6 @@
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import fc from 'fast-check'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
@@ -83,8 +84,8 @@ function config(overrides: Partial<Config> = {}): Config {
 }
 
 /** Compose the real JSON Team Hub without an Agent, Link, or channel Consumer. */
-async function setup(): Promise<Context> {
-  const root = await freshRoot()
+async function setup(storageRoot?: string, workspaceAvailable = true): Promise<Context> {
+  const root = storageRoot ?? await freshRoot()
   const ctx = new Context()
   contexts.add(ctx)
   await ctx.plugin(Storage)
@@ -99,7 +100,7 @@ async function setup(): Promise<Context> {
     await acknowledgeTestChannelActivations(ctx, input.channelId)
     return await waitUntilActive(input)
   })
-  ctx.teamWorkspaces.registerProvider(workspaceProvider)
+  if (workspaceAvailable) ctx.teamWorkspaces.registerProvider(workspaceProvider)
   return ctx
 }
 
@@ -285,6 +286,63 @@ async function createTask(
 }
 
 describe('Team DAG scheduler composition', () => {
+  it('preserves pending work across absent-provider retries and assigns once after provider registration', async () => {
+    await fc.assert(fc.asyncProperty(
+      fc.integer({ min: 1, max: 5 }),
+      fc.integer({ min: 1, max: 3 }),
+      async (absentDrives, readyDrives) => {
+        const root = await freshRoot()
+        const ctx = await setup(root, false)
+        const created = await createTestRootTeam(ctx, { goal: { objective: 'Recover workspace admission.', budgets: {} }, rules: {}, budgets: {} })
+        const worker = await activeParticipant(ctx, created.team.id, 'Worker', ['implement'])
+        await bindIdle(ctx, created.team.id, worker)
+        const task = await createTask(ctx, created.team.id, 'Recoverable work', { requiredCapabilities: ['implement'] })
+        const baseline = await ctx.teams.getTeam({ teamId: created.team.id })
+        const scheduler = new TeamSchedulerDag.TeamDagScheduler(ctx, config())
+        const disposers = [
+          ctx.teams.registerSystemEnvelopePostProofSource(scheduler.envelopePostProofSource),
+          ctx.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource),
+          ctx.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource),
+          ctx.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource),
+          ctx.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource),
+        ]
+        try {
+          for (let count = 0; count < absentDrives; count++) {
+            await expect(scheduler.drive({ teamId: created.team.id })).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_MODE_UNAVAILABLE' })
+            expect(await ctx.teams.getTeam({ teamId: created.team.id })).toEqual(baseline)
+          }
+          disposers.push(ctx.teamWorkspaces.registerProvider(workspaceProvider))
+          for (let count = 0; count < readyDrives; count++) await scheduler.drive({ teamId: created.team.id })
+          const assigned = await ctx.teams.getTask({ teamId: created.team.id, taskId: task.id })
+          expect(assigned).toMatchObject({ phase: 'assigned', attemptCount: 1, lease: { participantId: worker.id } })
+          const current = await ctx.teams.getTeam({ teamId: created.team.id })
+          expect(current.channelIds).toHaveLength(1)
+          const rows = await ctx.teams.readChannel({ channelId: current.channelIds[0]!, afterCursor: -1 })
+          const envelopes = rows.records.filter(row => row.type === 'channel/envelope')
+          expect(envelopes).toHaveLength(1)
+          expect(envelopes[0]?.envelope).toMatchObject({ taskId: task.id,
+            payload: { taskId: task.id, attemptId: assigned.lease!.attemptId } })
+          await scheduler.close()
+          await ctx.fiber.dispose()
+          contexts.delete(ctx)
+          const restored = await setup(root, false)
+          try {
+            expect(await restored.teams.getTask({ teamId: created.team.id, taskId: task.id })).toEqual(assigned)
+            expect(await restored.teams.readChannel({ channelId: current.channelIds[0]!, afterCursor: -1 })).toEqual(rows)
+          } finally {
+            await restored.fiber.dispose()
+            contexts.delete(restored)
+          }
+        } finally {
+          await scheduler.close()
+          for (const dispose of disposers.reverse()) dispose()
+          await ctx.fiber.dispose()
+          contexts.delete(ctx)
+        }
+      },
+    ), { seed: 20260916, numRuns: 20 })
+  })
+
   it.each(['capable', 'wrong-capability', 'unavailable-workspace', 'closing'] as const)('distinguishes a temporarily busy owner from unavailable work (%s)', async (kind) => {
     const ctx = await setup()
     const created = await createTestRootTeam(ctx, { goal: { objective: 'Wait for a usable busy owner.', budgets: {} }, rules: {}, budgets: {} })
@@ -551,6 +609,70 @@ describe('Team DAG scheduler composition', () => {
     }
   })
 
+  it('reuses a persisted empty review channel after publication failure and Hub restart', async () => {
+    const ctx = await setup()
+    await ctx.plugin(TeamChannelBasic)
+    await ctx.plugin(TeamChannelDirect)
+    const created = await createTestRootTeam(ctx, { goal: { objective: 'Review durable worker evidence.', budgets: {} }, rules: {}, budgets: {} })
+    const worker = await activeParticipant(ctx, created.team.id, 'Worker', ['implement'])
+    const reviewer = await activeParticipant(ctx, created.team.id, 'Reviewer', ['review'], 'reviewer')
+    const workerBinding = await bindIdle(ctx, created.team.id, worker)
+    await bindIdle(ctx, created.team.id, reviewer)
+    const task = await createTask(ctx, created.team.id, 'Review implementation', {
+      requiredCapabilities: ['implement'], reviewPolicy: { kind: 'participant', reviewerId: reviewer.id },
+    })
+    const assigned = await assignSchedulerTask(ctx, {
+      teamId: created.team.id, taskId: task.id, expectedRevision: task.revision,
+      participantId: worker.id, activationId: workerBinding.activation.id, leaseDurationMs: 100_000,
+    })
+    if (assigned.lease === undefined) throw new Error('worker task has no assigned attempt')
+    const issuer = ctx.teams.openActivationActorProofIssuer()
+    const workerActor = issuer.issue(workerBinding)
+    const running = await ctx.teams.startTaskAttempt({ actor: workerActor.proof, taskId: task.id,
+      expectedRevision: assigned.revision, attemptId: assigned.lease.attemptId })
+    await ctx.teams.settleTaskAttempt({ actor: workerActor.proof, taskId: task.id,
+      expectedRevision: running.revision, attemptId: assigned.lease.attemptId,
+      outcome: { kind: 'completed', result: { summary: 'Review this result.' } } })
+    workerActor.revoke()
+    issuer.close()
+    const drive = async (owner: Context, fail: boolean) => {
+      const scheduler = new TeamSchedulerDag.TeamDagScheduler(owner, config())
+      const disposers = [
+        owner.teams.registerSystemEnvelopePostProofSource(scheduler.envelopePostProofSource),
+        owner.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource),
+        owner.teams.registerSystemPhaseProofSource(scheduler.phaseProofSource),
+        owner.teams.registerSystemTaskLeaseProofSource(scheduler.taskLeaseProofSource),
+        owner.teams.registerSystemSchedulerChannelProofSource(scheduler.schedulerChannelProofSource),
+      ]
+      try {
+        if (fail) {
+          const post = vi.spyOn(owner.teams, 'postChannelEnvelope').mockRejectedValueOnce(new Error('temporary review write failure'))
+          await expect(scheduler.drive({ teamId: created.team.id })).rejects.toThrow('temporary review write failure')
+          post.mockRestore()
+        } else await scheduler.drive({ teamId: created.team.id })
+      } finally {
+        await scheduler.close()
+        for (const dispose of disposers.reverse()) dispose()
+      }
+    }
+    await drive(ctx, true)
+    const ids = (await ctx.teams.getTeam({ teamId: created.team.id })).channelIds
+    expect(ids).toHaveLength(1)
+    const channelId = ids[0]!
+    expect((await ctx.teams.readChannel({ channelId, afterCursor: -1 })).records
+      .filter(record => record.type === 'channel/envelope')).toHaveLength(0)
+    const root = roots.at(-1)!
+    await ctx.fiber.dispose()
+    contexts.delete(ctx)
+    const restored = await setup(root)
+    await restored.plugin(TeamChannelBasic)
+    await restored.plugin(TeamChannelDirect)
+    await drive(restored, false)
+    expect((await restored.teams.getTeam({ teamId: created.team.id })).channelIds).toEqual(ids)
+    expect((await restored.teams.readChannel({ channelId, afterCursor: -1 })).records
+      .filter(record => record.type === 'channel/envelope')).toHaveLength(1)
+  })
+
   it.each(['accepted', 'rework'] as const)('opens a real review consult and settles the completed attempt from a %s response', async (decision) => {
     const ctx = await setup()
     await ctx.plugin(TeamChannelBasic)
@@ -580,7 +702,7 @@ describe('Team DAG scheduler composition', () => {
         outcome: { kind: 'completed', result: { summary: 'Implementation and its checks are ready.' } },
       })
       expect(reviewing.phase).toBe('review')
-      await ctx.plugin(TeamSchedulerDag, config())
+      await ctx.plugin(TeamSchedulerDag, config({ leaseDurationMs: 100_000 }))
       await vi.waitFor(async () => {
         expect((await ctx.teams.getTeam({ teamId: created.team.id })).channelIds).toHaveLength(1)
       })
@@ -633,9 +755,11 @@ describe('Team DAG scheduler composition', () => {
           expectedRevision: nextRunning.revision, attemptId: nextLease.attemptId,
           outcome: { kind: 'completed', result: { summary: 'Error-case evidence is now included.' } } })
         await vi.waitFor(async () => {
-          const ids = (await ctx.teams.getTeam({ teamId: created.team.id })).channelIds
-          const current = await Promise.all(ids.map(id => ctx.teams.getChannel({ channelId: id })))
-          expect(current.filter(channel => channel.manifest.adapter.type === TeamChannelBasic.CONSULT_CHANNEL_TYPE)).toHaveLength(2)
+          const snapshot = await ctx.teams.getTeam({ teamId: created.team.id })
+          const current = await Promise.all(snapshot.channelIds.map(id => ctx.teams.getChannel({ channelId: id })))
+          expect(current.filter(channel => channel.manifest.adapter.type === TeamChannelBasic.CONSULT_CHANNEL_TYPE),
+            JSON.stringify({ task: snapshot.tasks.find(candidate => candidate.id === task.id), activations: snapshot.activations }),
+          ).toHaveLength(2)
         })
         const ids = (await ctx.teams.getTeam({ teamId: created.team.id })).channelIds
         const current = await Promise.all(ids.map(id => ctx.teams.getChannel({ channelId: id })))

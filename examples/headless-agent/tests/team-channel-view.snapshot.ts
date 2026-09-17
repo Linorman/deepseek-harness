@@ -110,12 +110,13 @@ describe('headless Team channel-view snapshot', () => {
         type: 'team/channel-view',
         data: {
           adapter: { type: 'consult', version: 1 },
-          viewPolicy: { type: 'directed', version: 1 },
+          viewPolicy: { type: 'recent-window', version: 1 },
           delivery: 'turn',
           content: [{ type: 'text' }],
         },
       })
       const data = objectValue(viewEvent?.['data'], 'Team channel-view data')
+      expect(JSON.stringify(data['content'])).toContain('Review Team task')
       const sourceEnvelopeIds = data['sourceEnvelopeIds']
       if (!Array.isArray(sourceEnvelopeIds) || sourceEnvelopeIds.length !== 1) {
         throw new Error('Team channel-view must retain exactly one source Envelope')

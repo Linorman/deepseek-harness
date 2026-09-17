@@ -12,6 +12,8 @@ Status: implemented
 
 ## 决策
 
+持久化等待在首次异步日志读取超过预算时仍保留具体场景诊断，并把底层轮询错误保留为 cause。工作区结算测试先观察已分配任务真实的关闭 turn，再使用`whenIdle()`；工作区挂载可能早于 inbox 接纳。
+
 快照测试会启动真实 ACP 示例，通过确定性脚本驱动其 stdio 协议，并将规范化输出与已提交的预期输出比较。从真实 API 一次记录的会话日志为后续所有模型流提供数据。fixture 是[产品持久化 JSONL 的投影](2026-08-18-session-snapshot-envelope-projection.zh.md)：保留 header 与 payload，省略正文序号／时间 envelope。
 
 ### fixture 投影持久化会话 JSONL

@@ -16,6 +16,8 @@ export type FileFingerprint =
 export interface ScanLimits {
   /** Provider-owned sidecars are excluded from the observed user tree. */
   readonly observationStateRoot?: string
+  /** Canonical deployment-owned directories excluded from task change observations. */
+  readonly observationExcludedRoots?: readonly string[]
   readonly observationMaxEntries: number
   readonly observationMaxHashBytes: number
   readonly observationMaxFileBytes: number
@@ -36,6 +38,7 @@ export interface DirectorySnapshot {
  * @returns Captured fingerprints with explicit incomplete facts for limits, races and filesystem failures.
  */
 export async function snapshotDirectory(root: string, limits: ScanLimits, signal?: AbortSignal): Promise<DirectorySnapshot> {
+  const excluded = new Set([limits.observationStateRoot, ...limits.observationExcludedRoots ?? []])
   const files = Object.create(null) as Record<string, FileFingerprint>
   const reasons = new Set<string>()
   let scannedEntries = 0
@@ -89,7 +92,7 @@ export async function snapshotDirectory(root: string, limits: ScanLimits, signal
       const path = prefix.length === 0 ? entry.name : `${prefix}/${entry.name}`
       if (path.includes('\\') || path.includes('\0')) { reasons.add('non-portable-path'); knownOmittedEntries += 1; continue }
       const absolute = join(directory, entry.name)
-      if (absolute === limits.observationStateRoot) continue
+      if (excluded.has(absolute)) continue
       try {
         if (await realpath(directory) !== directory) { reasons.add('directory-identity-changed'); continue }
         const info = await lstat(absolute)

@@ -2,11 +2,11 @@
 
 [English](README.md) | 中文
 
-外壳插件：三栏 AppFrame（拖动手柄与让步链）加 `ctx.layout` 面板几何服务；它注册到运行时拥有的 `root` slot，并声明 `sidebar`、`conversation`、`details` 和 `conversation.empty`。侧边栏的缩放边界是不可见命中条带，详情栏边界则保留其浮动胶囊；让步期间只有详情栏会收缩并随后自动关闭。关闭的侧边栏仍保留 56px 控制栏，详情栏则关闭到零宽度。该包还提供主题呈现器：它消费解析后的 `ctx.theme` 快照，并将其投影到 document（用 `html { color-scheme }` 驱动原生 UA 控件，依据当前配色方案设置 `body[data-ds-dark-theme]`，并将主题的别名 token 设为 body 上的内联变量，同时拥有一个 `<meta name="theme-color">`，其内容随计算后的 body 背景色更新）。在应用调色板和 token 后进行测量，可确保渲染后的背景成为唯一的颜色依据；呈现器在 dispose（资源释放）时会移除其自有的元数据节点，并一并清除其写入的其他全局状态。
+工作台外壳插件：`AppFrame` 注册到 `root`，并声明 `sidebar`、`team.workspace`、`conversation`、`details` 和 `shell.overlay`。Team 内容与 Session 选择相互独立。稳定的原生 dialog 容器在 Team 创建前内联呈现会话，在 Team 检查期间作为页内模态子页面呈现；返回操作只清除查看选择，不取消执行。Session 来源、展开、键盘关闭和焦点恢复由外壳负责。
 
-AppFrame 始终挂载会话栏和详情栏；已连接 Session 通过 `SessionProvider` 渲染。布局 store 是瞬时状态，侧边栏以默认宽度启动，详情栏则保持关闭，且该 store 从不读写 `localStorage`。hero 和其他未选中状态也会将详情栏的渲染宽度派生为零，但不会改变存储的宽度偏好。AppFrame 会跨越这些状态保留最后一个非 blank 会话 id：首个会话保持关闭；显式打开详情栏的操作会使用约定默认宽度；返回同一会话时恢复其未改变的宽度；选择不同会话时，详情栏会在绘制前关闭。会话 owner share 为空，侧边栏 owner share 只包含 `collapsed` 和 `width`；注册方通过标准钩子获取业务数据，并从各自的 inject 接口获取操作。
+瞬时布局 store 以 224px 侧边栏和关闭的详情栏启动。侧边栏可在 208px 至 420px 之间拖拽调整，并收起为 56px 轨道。会话与工具详情占用者在 Session 容器中保持固定组件位置。详情栏宽度仍是偏好值：没有 Session 或 Session 为空时渲染宽度为零，切换到另一个非空 Session 时在绘制前关闭详情。让步求解器先收缩详情栏，再减少会话可用宽度。
 
-`/client` 导出表层包含插件主体（`apply`／`inject`）、`LayoutController` 和四个 owner-share 接口。AppFrame、面板 store 与让步求解器仍属于包内部。
+主题呈现器消费解析后的 `ctx.theme` 快照，更新原生配色方案、body 主题属性、别名及其拥有的 theme-color 元数据，并在释放时移除这些写入。业务值通过标准框架 hook 和占用者自己的注入回调传递。AppFrame、SessionStage、布局 store 和列求解器保持包内私有；公开客户端接口包含加载入口、布局服务和 owner-share 类型。
 
 ## 模型体验
 

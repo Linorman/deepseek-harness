@@ -11,186 +11,7 @@
   --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
 }
 
-/* Frame-wide Environment-style trigger and detail surface. The parent shell
-   overlay is click-through; this root opts back into pointer events. */
-.floatingRoot {
-  position: fixed;
-  top: 12px;
-  right: 16px;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  width: min(360px, calc(100vw - 24px));
-  max-width: calc(100vw - 16px);
-  pointer-events: auto;
-}
-
-.floatingTrigger {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  min-height: 34px;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 999px;
-  padding: 6px 11px;
-  background: var(--clocky-alias-button-floating-fill);
-  box-shadow: var(--clocky-shadow-lv2);
-  color: var(--clocky-alias-label-primary);
-  cursor: pointer;
-  font-size: 11px;
-  line-height: 16px;
-}
-
-.floatingTrigger:hover {
-  background: var(--clocky-alias-button-floating-hover);
-}
-
-.floatingTrigger:focus-visible,
-.floatingClose:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
-  outline-offset: 2px;
-}
-
-.floatingTriggerTitle {
-  flex: none;
-  font-weight: 600;
-}
-
-.floatingTriggerMeta {
-  min-width: 0;
-  margin-left: 7px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--clocky-alias-label-tertiary);
-}
-
-.floatingPanel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-height: min(68vh, 600px);
-  overflow: auto;
-  border: 1px solid var(--clocky-alias-border-l2);
-  border-radius: 14px;
-  background: var(--clocky-alias-bg-layer-1);
-  box-shadow: var(--clocky-shadow-lv3);
-  scrollbar-gutter: stable;
-}
-
-.floatingPanelHeader {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 34px;
-  padding: 7px 10px 6px 12px;
-  border-bottom: 1px solid var(--clocky-alias-border-l1);
-  background: var(--clocky-alias-bg-layer-1);
-  color: var(--clocky-alias-label-primary);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 16px;
-}
-
-.floatingHeaderActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.floatingReset,
-.floatingClose {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0;
-  background: transparent;
-  color: var(--clocky-alias-label-tertiary);
-  cursor: pointer;
-}
-
-.floatingReset:hover,
-.floatingClose:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
-}
-
-.floatingReset:focus-visible,
-.floatingClose:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
-  outline-offset: 2px;
-}
-
-.floatingResize {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  display: inline-flex;
-  align-items: end;
-  justify-content: start;
-  box-sizing: border-box;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 0 7px 7px;
-  background: transparent;
-  color: var(--clocky-alias-label-tertiary);
-  cursor: nesw-resize;
-  touch-action: none;
-}
-
-.floatingResize span,
-.floatingResize span::after {
-  display: block;
-  width: 8px;
-  height: 1px;
-  background: currentColor;
-  content: '';
-  transform: rotate(-45deg);
-  transform-origin: left center;
-}
-
-.floatingResize span::after {
-  width: 5px;
-  margin: 3px 0 0 3px;
-}
-
-.floatingResize:hover {
-  background: var(--clocky-alias-interactive-bg-hover);
-  color: var(--clocky-alias-label-primary);
-}
-
-.floatingResize:focus-visible {
-  outline: 2px solid var(--clocky-alias-state-business-primary);
-  outline-offset: 2px;
-}
-
-.floatingResizing,
-.floatingResizing * {
-  user-select: none;
-}
-
-.floatingError {
-  margin: 8px 12px 0;
-  color: var(--clocky-alias-state-error-primary);
-  font-size: 11px;
-  line-height: 16px;
-  overflow-wrap: anywhere;
-}
-
-.floatingPanel > .page {
+.page {
   border-top: 0;
   padding: 10px 12px 14px;
 }
@@ -215,11 +36,13 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 24px;
   min-width: 0;
-  padding: 8px;
-  border-top: 1px solid var(--clocky-alias-border-l1);
+  padding: 0;
 }
+
+.channelMessageHeader { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; font-size: 13px; }
+.channelMessageHeader time { font-size: 12px; color: var(--clocky-alias-label-secondary); }
 
 .pageHeader {
   display: grid;
@@ -248,10 +71,13 @@
 .actions,
 .sectionHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
+
+.sectionHeader h2 { margin-right: auto; font-size: 16px; line-height: 24px; }
 
 .actions {
   align-items: start;
@@ -917,3 +743,6 @@
   display: block;
   color: var(--clocky-alias-label-secondary);
 }
+
+.memberDetail { overflow-wrap: anywhere; max-height: 60dvh; overflow-y: auto; }
+.memberPages { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }

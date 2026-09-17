@@ -21,7 +21,7 @@ it('loads ACP recovery from configuration and fences its old process before resu
       configArgs: ['--profile', 'headless', '--patch', join(fixtures, 'headless-channel-admission.cordis.yml'),
         '--patch', join(fixtures, 'agent-runtime-acp-recovery.cordis.yml')], tsconfigPath: join(repository, 'tsconfig.json'),
       env: { CLOCKY_HOME: join(root, '.clocky'), CLOCKY_AGENTS_HOME: join(root, '.agents'),
-        CLOCKY_DIRECT_V4_BACKEND: 'json', CLOCKY_TEST_MOCK_ACP_SERVER: join(repository, 'packages/subagent/subagent-acp/tests/mock-acp-server.ts'),
+        CLOCKY_DIRECT_V4_BACKEND: 'json', CLOCKY_TEST_MOCK_ACP_SERVER: join(repository, 'packages/compat/subagent-acp/tests/mock-acp-server.ts'),
         CLOCKY_TELEMETRY_DISABLED: '1', CLOCKY_SNAPSHOT: 'replay', TSX_DISABLE_CACHE: '1',
         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' ') } })
     const result = await execa(launch.command, launch.args, { cwd: root, env: launch.env, input: '',

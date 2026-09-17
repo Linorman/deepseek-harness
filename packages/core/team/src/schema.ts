@@ -1,3 +1,13 @@
+import type { TeamMemberInspectRequest, TeamMemberInspection } from './types.ts'
+import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from './types.ts'
+import type { TeamHumanActionReadRequest } from './types.ts'
+import type { TeamSelectionRequest } from './types.ts'
+import type { TeamTaskInspectRequest, TeamTaskInspection, TeamTaskRecord } from './types.ts'
+import type { TeamBrowseRequest, TeamBrowsePage, TeamTaskSummary, TeamMemberSummary, TeamWorkflowSummary } from './types.ts'
+import type { TeamMemberSessionRequest, TeamMemberSessionSnapshot } from './types.ts'
+import type { TeamSelectionSnapshot } from './types.ts'
+import type { TeamDiscoveryCursor } from './types.ts'
+import type { ActivationReservationId, ActivationReservationSnapshot, ActivationReservationInput } from './types.ts'
 import type { ChannelProtocolStatus, ChannelHumanAdmissionSnapshot } from './types.ts'
 import type { ChannelHumanEnvelopeGetInput } from './types.ts'
 import type { TeamChannelListInput, TeamChannelListPage } from './types.ts'
@@ -327,6 +337,9 @@ export const teamDelegationIdSchema = nonEmptyStringSchema.transform(value => va
 export const participantIdSchema = nonEmptyStringSchema.transform(value => value as ParticipantId)
 /** Parse one independently stored activation identifier. */
 export const activationIdSchema = nonEmptyStringSchema.transform(value => value as ActivationId)
+/** Parse a provider-start admission identity. */
+export const activationReservationIdSchema = nonEmptyStringSchema.transform(value => value as ActivationReservationId)
+
 /** Parse one independently stored Team participant-interrupt identifier. */
 export const teamInterruptIdSchema = nonEmptyStringSchema.transform(value => value as TeamInterruptId)
 /** Parse one opaque retry key for a Team closure command. */
@@ -744,6 +757,10 @@ const activationControllerClosureStallPhaseScopeSchema = z.object({
 
 /** Parse the closed durable scope a system Team-phase proof may select. */
 export const teamSystemPhaseScopeSchema = z.discriminatedUnion('kind', [
+  activationControllerClosureStallPhaseScopeSchema.omit({ activationId: true }).extend({
+    kind: z.literal('activation-controller-startup-stall'), reservationId: activationReservationIdSchema,
+    reason: z.object({ code: z.literal('ACTIVATION_STARTUP_UNCONFIRMED'), message: nonEmptyStringSchema }).strict(),
+  }),
   teamRunResumePhaseScopeSchema,
   teamRunFinalizationQuiescePhaseScopeSchema,
   schedulerStallPhaseScopeSchema,
@@ -1236,6 +1253,8 @@ const teamResourceBudgetFields = {
   maxCostUnits: nonNegativeNumberSchema.optional(),
   maxRetries: nonNegativeSafeIntegerSchema.optional(),
   maxConcurrency: nonNegativeSafeIntegerSchema.optional(),
+  maxChildTeams: nonNegativeSafeIntegerSchema.optional(),
+  maxLiveActivations: nonNegativeSafeIntegerSchema.optional(),
   maxArtifactBytes: nonNegativeSafeIntegerSchema.optional(),
   extensions: jsonObjectSchema.optional(),
 }
@@ -1866,20 +1885,42 @@ export const teamSnapshotSchema = z.union([
   }
 }) as z.ZodType<TeamSnapshot>
 
+/** Parse an opaque Team-provider discovery position. */
+export const teamDiscoveryCursorSchema = nonEmptyStringSchema.transform(value => value as TeamDiscoveryCursor)
+
 /** Parse a bounded Team-summary page request. */
 export const teamListPageRequestSchema = z.object({
-  afterCursor: observedCursorSchema,
+  afterCursor: z.union([z.literal(-1), teamDiscoveryCursorSchema]),
   limit: positiveSafeIntegerSchema,
 }).strict() satisfies z.ZodType<TeamListPageRequest>
 
 /** Parse a bounded Team-summary page. */
 export const teamListPageSchema = z.object({
+  scanned: nonNegativeSafeIntegerSchema,
   items: z.array(teamSnapshotSchema),
-  nextCursor: nonNegativeSafeIntegerSchema.optional(),
-}).strict() satisfies z.ZodType<TeamListPage>
+  nextCursor: teamDiscoveryCursorSchema.optional(),
+}).strict().superRefine((page, context) => {
+  if (page.items.length > page.scanned || page.nextCursor !== undefined && page.scanned === 0) {
+    context.addIssue({ code: 'custom', message: 'Team discovery page does not account for its scan work' })
+  }
+}) satisfies z.ZodType<TeamListPage>
+
+
+/** Parse a persisted startup reservation independently of a provider binding. */
+export const activationReservationSnapshotSchema = z.object({
+  id: activationReservationIdSchema, sessionId: sessionIdSchema, provider: nonEmptyStringSchema,
+  reservedAt: nonNegativeSafeIntegerSchema, releasedAt: nonNegativeSafeIntegerSchema.optional(),
+}).strict() satisfies z.ZodType<ActivationReservationSnapshot>
+
+/** Parse exact startup selection and its Team cursor fence. */
+export const activationReservationInputSchema = z.object({
+  teamId: teamIdSchema, participantId: participantIdSchema, reservationId: activationReservationIdSchema,
+  sessionId: sessionIdSchema, provider: nonEmptyStringSchema, expectedCursor: nonNegativeSafeIntegerSchema,
+}).strict() satisfies z.ZodType<ActivationReservationInput>
 
 /** Parse one participant read model. */
 export const participantSnapshotSchema = z.object({
+  activationReservation: activationReservationSnapshotSchema.optional(),
   id: participantIdSchema,
   teamId: teamIdSchema,
   kind: participantKindSchema,
@@ -1959,6 +2000,7 @@ export const activationQuiescenceSourceSchema = z.union([
 
 /** Parse one durable activation-to-Session placement binding. */
 export const activationBindingSnapshotSchema = z.object({
+  reservationId: activationReservationIdSchema.optional(),
   activation: activationSnapshotSchema,
   sessionId: sessionIdSchema,
   provider: nonEmptyStringSchema,
@@ -2091,6 +2133,8 @@ const activationRecoveryQuiesceScopeSchema = z.object({
 
 /** Parse the closed activation lifecycle operation a system proof may select. */
 export const teamSystemActivationScopeSchema = z.discriminatedUnion('kind', [
+  activationReservationInputSchema.extend({ kind: z.literal('activation-controller-reserve') }),
+  activationReservationInputSchema.extend({ kind: z.literal('activation-controller-release-reservation') }),
   activationControllerBindScopeSchema,
   activationControllerStatusScopeSchema,
   activationControllerFenceScopeSchema,
@@ -2312,7 +2356,7 @@ export const teamTaskDelegationSnapshotSchema = z.object({
 }).strict() satisfies z.ZodType<TeamTaskDelegationSnapshot>
 
 /** Parse one Team task read model and its current lease or bounded settled-attempt history. */
-export const teamTaskSnapshotSchema = z.object({
+const teamTaskSnapshotObjectSchema = z.object({
   id: teamTaskIdSchema,
   teamId: teamIdSchema,
   revision: positiveSafeIntegerSchema,
@@ -2343,7 +2387,10 @@ export const teamTaskSnapshotSchema = z.object({
   lease: taskLeaseSnapshotSchema.optional(),
   cancellation: teamTaskCancellationSnapshotSchema.optional(),
   blockedByOutcome: teamTaskDependencyOutcomeSchema.optional(),
-}).strict().superRefine((task, context) => {
+}).strict()
+
+/** Parse the complete task and validate relationships that require its retained histories. */
+export const teamTaskSnapshotSchema = teamTaskSnapshotObjectSchema.superRefine((task, context) => {
   if (task.blockedByOutcome !== undefined && (task.phase !== 'cancelled'
     || task.attemptCount !== 0 || task.lease !== undefined || task.cancellation !== undefined
     || !task.blockedBy.includes(task.blockedByOutcome.taskId))) {
@@ -2602,6 +2649,226 @@ export const teamTaskSnapshotSchema = z.object({
     }
   }
 }) as z.ZodType<TeamTaskSnapshot>
+
+/** Exact member selection and optional cursor-pinned continuation. */
+export const teamMemberInspectRequestSchema = z.object({ teamId: teamIdSchema, participantId: participantIdSchema,
+  afterCursor: z.number().int().min(-1).optional(), limit: positiveSafeIntegerSchema.optional(),
+  expectedTeamCursor: nonNegativeSafeIntegerSchema.optional(),
+}).strict() satisfies z.ZodType<TeamMemberInspectRequest>
+
+/** Non-secret scalar metadata and one capability window. */
+export const teamMemberInspectionSchema = z.object({
+  record: z.object({ id: participantIdSchema, teamId: teamIdSchema, kind: participantKindSchema,
+    displayName: nonEmptyStringSchema, role: nonEmptyStringSchema, phase: participantPhaseSchema,
+    provider: nonEmptyStringSchema.optional(), preset: nonEmptyStringSchema.optional(),
+    model: nonEmptyStringSchema.optional(), authScheme: nonEmptyStringSchema.optional(),
+  }).strict(), teamCursor: nonNegativeSafeIntegerSchema, startCursor: z.number().int().min(-1),
+  total: nonNegativeSafeIntegerSchema, scanned: nonNegativeSafeIntegerSchema,
+  items: z.array(nonEmptyStringSchema), nextCursor: nonNegativeSafeIntegerSchema.optional(),
+}).strict().superRefine((page, context) => {
+  if (page.scanned < page.items.length || page.scanned > page.items.length + 1
+    || page.items.length > Math.max(0, page.total - page.startCursor - 1)) {
+    context.addIssue({ code: 'custom', path: ['scanned'], message: 'Member inspection page accounting is inconsistent' })
+  }
+  if (page.nextCursor !== undefined && (page.items.length === 0 || page.nextCursor !== page.startCursor + page.items.length
+    || page.nextCursor >= page.total - 1)) {
+    context.addIssue({ code: 'custom', path: ['nextCursor'], message: 'Member inspection continuation is inconsistent' })
+  }
+}) as z.ZodType<TeamMemberInspection>
+
+/** Exact Team/member identity for read-only Session inspection. */
+export const teamMemberSessionRequestSchema = z.object({ teamId: teamIdSchema, participantId: participantIdSchema })
+  .strict() satisfies z.ZodType<TeamMemberSessionRequest>
+
+/** Published epoch only; supervisor configuration and activation history stay with the provider. */
+export const teamMemberSessionSnapshotSchema = z.object({ activation: activationSnapshotSchema,
+  sessionId: sessionIdSchema, provider: nonEmptyStringSchema }).strict() satisfies z.ZodType<TeamMemberSessionSnapshot>
+
+/** Parse bounded display text without presenting a truncated prefix as a complete durable value. */
+const teamSelectionTextSchema = z.object({ text: z.string(), truncated: z.boolean() }).strict()
+
+/** Select one workflow and a revision-pinned task window. */
+export const teamWorkflowInspectRequestSchema = z.object({ teamId: teamIdSchema, planId: teamWorkflowPlanIdSchema,
+  expectedRevision: positiveSafeIntegerSchema.optional(), afterCursor: z.number().int().min(-1).optional(),
+  limit: positiveSafeIntegerSchema.optional(),
+}).strict() satisfies z.ZodType<TeamWorkflowInspectRequest>
+
+const workflowInspectionTaskRefSchema = z.object({ templateId: teamWorkflowTaskTemplateIdSchema,
+  subject: teamSelectionTextSchema, taskId: teamTaskIdSchema.optional() }).strict()
+
+/** Parse one workflow window without accepting hidden plan or result bodies. */
+export const teamWorkflowInspectionSchema = z.object({
+  record: z.object({ id: teamWorkflowPlanIdSchema, teamId: teamIdSchema, revision: positiveSafeIntegerSchema,
+    phase: z.enum(['compiling', 'ready', 'completed', 'failed', 'cancelled']), name: nonEmptyStringSchema,
+    bounds: teamWorkflowPlanBoundsSchema, failure: teamStallReasonSchema.optional(), cancellation: teamStallReasonSchema.optional(),
+    resultTaskCount: nonNegativeSafeIntegerSchema.optional(),
+  }).strict(),
+  teamCursor: nonNegativeSafeIntegerSchema, startCursor: z.number().int().min(-1), total: nonNegativeSafeIntegerSchema,
+  scanned: nonNegativeSafeIntegerSchema, nextCursor: nonNegativeSafeIntegerSchema.optional(),
+  items: z.array(workflowInspectionTaskRefSchema.extend({ blockedBy: z.array(workflowInspectionTaskRefSchema) }).strict()),
+}).strict().superRefine((value, context) => {
+  const end = value.startCursor + value.items.length
+  const fail = (message: string) => { context.addIssue({ code: 'custom', message }) }
+  if (value.items.length > Math.max(0, value.total - value.startCursor - 1) || value.scanned < value.items.length) fail('Invalid workflow window accounting')
+  if (value.nextCursor !== undefined && (value.items.length === 0 || value.nextCursor !== end || end >= value.total - 1)) fail('Invalid workflow continuation')
+  if (value.nextCursor === undefined && end < value.total - 1) fail('Workflow window omits continuation')
+  if (new Set(value.items.map(item => item.templateId)).size !== value.items.length) fail('Workflow window repeats a task template')
+  for (const item of value.items) {
+    if (new Set(item.blockedBy.map(ref => ref.templateId)).size !== item.blockedBy.length
+      || item.blockedBy.some(ref => ref.templateId === item.templateId)) fail('Invalid workflow dependency references')
+  }
+
+  if (value.total > value.record.bounds.maxTasks || (value.record.resultTaskCount ?? 0) > value.total) fail('Workflow counts exceed their bounds')
+  if ((value.record.phase === 'failed') !== (value.record.failure !== undefined)) fail('Workflow failure does not match its phase')
+  if (value.record.cancellation !== undefined && value.record.phase !== 'cancelled') fail('Workflow cancellation does not match its phase')
+  if (value.record.phase === 'completed' && value.record.resultTaskCount === undefined
+    || (value.record.phase === 'compiling' || value.record.phase === 'ready') && value.record.resultTaskCount !== undefined) {
+    fail('Workflow result count does not match its phase')
+  }
+
+}) satisfies z.ZodType<TeamWorkflowInspection>
+
+/** Summary collection request; the provider resolves its own row and byte ceilings. */
+export const teamBrowseRequestSchema = z.object({ teamId: teamIdSchema, kind: z.enum(['tasks', 'members', 'workflowPlans']),
+  afterCursor: z.number().int().min(-1).optional(), limit: positiveSafeIntegerSchema.optional(),
+}).strict() satisfies z.ZodType<TeamBrowseRequest>
+
+/** Task list fields never contain instructions or execution history. */
+export const teamTaskSummarySchema = z.object({ id: teamTaskIdSchema, teamId: teamIdSchema, revision: positiveSafeIntegerSchema,
+  phase: teamTaskPhaseSchema, subject: teamSelectionTextSchema, executionKind: z.enum(['participant', 'child-team']),
+  reviewerId: participantIdSchema.optional(), ownerId: participantIdSchema.optional(),
+  childTeamId: teamIdSchema.optional(), workflowPlanId: teamWorkflowPlanIdSchema.optional(),
+  priority: z.number().int(), attemptCount: nonNegativeSafeIntegerSchema, maxAttempts: positiveSafeIntegerSchema,
+  dependencyCount: nonNegativeSafeIntegerSchema, reviewCount: nonNegativeSafeIntegerSchema,
+  hasLease: z.boolean(), cancellationRequested: z.boolean(),
+}).strict() satisfies z.ZodType<TeamTaskSummary>
+
+/** Member display fields without grants or provider configuration. */
+export const teamMemberSummarySchema = z.object({ id: participantIdSchema, teamId: teamIdSchema,
+  kind: participantKindSchema, phase: participantPhaseSchema, displayName: teamSelectionTextSchema,
+  role: nonEmptyStringSchema, capabilityCount: nonNegativeSafeIntegerSchema,
+}).strict() satisfies z.ZodType<TeamMemberSummary>
+
+/** Workflow metadata without the stored plan and result bodies. */
+export const teamWorkflowSummarySchema = z.object({ id: teamWorkflowPlanIdSchema, teamId: teamIdSchema,
+  revision: positiveSafeIntegerSchema, phase: z.enum(['compiling', 'ready', 'completed', 'failed', 'cancelled']),
+  name: teamSelectionTextSchema, taskCount: nonNegativeSafeIntegerSchema, boundTaskCount: nonNegativeSafeIntegerSchema,
+  channelId: channelIdSchema.optional(),
+}).strict() satisfies z.ZodType<TeamWorkflowSummary>
+
+const teamBrowseHeader = { teamId: teamIdSchema, teamCursor: nonNegativeSafeIntegerSchema, total: nonNegativeSafeIntegerSchema,
+  scanned: nonNegativeSafeIntegerSchema, nextCursor: nonNegativeSafeIntegerSchema.optional() }
+
+/** A collection tag binds the row schema, and every row retains the selected Team identity. */
+export const teamBrowsePageSchema = z.discriminatedUnion('kind', [
+  z.object({ ...teamBrowseHeader, kind: z.literal('tasks'), items: z.array(teamTaskSummarySchema) }).strict(),
+  z.object({ ...teamBrowseHeader, kind: z.literal('members'), items: z.array(teamMemberSummarySchema) }).strict(),
+  z.object({ ...teamBrowseHeader, kind: z.literal('workflowPlans'), items: z.array(teamWorkflowSummarySchema) }).strict(),
+]).superRefine((page, context) => {
+  if (page.items.some(item => item.teamId !== page.teamId)) context.addIssue({ code: 'custom', path: ['items'], message: 'Browse rows must belong to the selected Team' })
+  if (new Set(page.items.map(item => item.id)).size !== page.items.length) context.addIssue({ code: 'custom', path: ['items'], message: 'Browse page repeats an identity' })
+  if (page.items.length > page.scanned || page.scanned > page.total) context.addIssue({ code: 'custom', path: ['scanned'], message: 'Browse scan accounting is inconsistent' })
+  if (page.nextCursor !== undefined && page.nextCursor >= page.total - 1) context.addIssue({ code: 'custom', path: ['nextCursor'], message: 'Browse continuation must leave an unread row' })
+}) as z.ZodType<TeamBrowsePage>
+
+const taskInspectionIdentity = { teamId: teamIdSchema, taskId: teamTaskIdSchema,
+  expectedRevision: positiveSafeIntegerSchema.optional() }
+
+/** Actor-free task inspection; record reads cannot smuggle history pagination fields. */
+export const teamTaskInspectRequestSchema = z.discriminatedUnion('section', [
+  z.object({ ...taskInspectionIdentity, section: z.literal('record') }).strict(),
+  z.object({ ...taskInspectionIdentity, section: z.enum(['attempts', 'reviews']),
+    afterCursor: observedCursorSchema.optional(), limit: positiveSafeIntegerSchema.optional() }).strict(),
+]) satisfies z.ZodType<TeamTaskInspectRequest>
+
+/** Field validation for a partial read; complete history relationships belong to the authoritative task parser. */
+export const teamTaskRecordSchema = teamTaskSnapshotObjectSchema.omit({ attemptHistory: true, reviewHistory: true })
+  .strict() as z.ZodType<TeamTaskRecord>
+
+const taskInspectionHeader = { teamId: teamIdSchema, taskId: teamTaskIdSchema,
+  teamCursor: nonNegativeSafeIntegerSchema, revision: positiveSafeIntegerSchema }
+const taskInspectionPage = { startCursor: observedCursorSchema, total: nonNegativeSafeIntegerSchema,
+  scanned: nonNegativeSafeIntegerSchema, nextCursor: nonNegativeSafeIntegerSchema.optional() }
+
+/** Bind every result to its task/revision and validate contiguous, non-phantom history continuation. */
+export const teamTaskInspectionSchema = z.discriminatedUnion('section', [
+  z.object({ ...taskInspectionHeader, section: z.literal('record'), task: teamTaskRecordSchema,
+    history: z.object({ attempts: nonNegativeSafeIntegerSchema, reviews: nonNegativeSafeIntegerSchema }).strict() }).strict(),
+  z.object({ ...taskInspectionHeader, ...taskInspectionPage, section: z.literal('attempts'), items: z.array(taskAttemptSnapshotSchema) }).strict(),
+  z.object({ ...taskInspectionHeader, ...taskInspectionPage, section: z.literal('reviews'), items: z.array(teamTaskReviewDecisionSchema) }).strict(),
+]).superRefine((value, context) => {
+  const fail = (message: string) => { context.addIssue({ code: 'custom', message }) }
+  if (value.section === 'record') {
+    if (value.task.id !== value.taskId || value.task.teamId !== value.teamId || value.task.revision !== value.revision) {
+      fail('Task record must match its inspection identity and revision')
+    }
+    if (value.task.execution.kind === 'participant'
+      ? value.history.attempts + (value.task.lease === undefined ? 0 : 1) !== value.task.attemptCount
+        || value.history.reviews > value.history.attempts
+      : value.history.attempts !== 0 || value.history.reviews !== 0) fail('Task inspection history counts are inconsistent')
+    return
+  }
+  if (value.items.length > Math.max(0, value.total - value.startCursor - 1)
+    || value.scanned < value.items.length || value.scanned > value.items.length + 1) fail('Task history accounting is inconsistent')
+  if (value.nextCursor !== undefined && (value.items.length === 0
+    || value.nextCursor !== value.startCursor + value.items.length || value.nextCursor >= value.total - 1)) fail('Task history continuation is inconsistent')
+  if (value.nextCursor === undefined && value.startCursor + value.items.length < value.total - 1) fail('Task history omits unread rows without continuation')
+  const ids = value.section === 'attempts' ? value.items.map(item => item.id) : value.items.map(item => item.attemptId)
+  if (new Set(ids).size !== ids.length) fail('Task history repeats an attempt identity')
+  if (value.section === 'attempts' && value.items.some((item, index) => item.teamId !== value.teamId || item.taskId !== value.taskId
+    || item.ordinal !== value.startCursor + index + 2)) {
+    fail('Attempt history belongs to a different task')
+  }
+}) as z.ZodType<TeamTaskInspection>
+
+/** Select one durable human action without admitting a response. */
+export const teamHumanActionReadRequestSchema = z.object({ teamId: teamIdSchema, actionId: teamHumanActionIdSchema })
+  .strict() satisfies z.ZodType<TeamHumanActionReadRequest>
+
+/** Read-only selection with an optional bounded scalar-metadata view. */
+export const teamSelectionRequestSchema = z.object({ teamId: teamIdSchema, includeMetadata: z.boolean().optional() })
+  .strict() satisfies z.ZodType<TeamSelectionRequest>
+
+/** Parse first-selection data without any history collections. */
+export const teamSelectionSnapshotSchema = z.object({
+  metadata: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('available'), goal: teamGoalSnapshotSchema, budgets: jsonObjectSchema, usage: teamUsageSnapshotSchema.optional() }).strict(),
+    z.object({ kind: z.literal('unavailable'), reason: z.enum(['too-large', 'not-provided']) }).strict(),
+  ]).optional(),
+  cancellation: z.object({ reason: teamSelectionTextSchema }).strict().optional(),
+  pendingHumanActionCount: nonNegativeSafeIntegerSchema.optional(),
+  team: z.object({ id: teamIdSchema, parentTeamId: teamIdSchema.optional(), parentTaskId: teamTaskIdSchema.optional(),
+    depth: nonNegativeSafeIntegerSchema, maxTeamDepth: nonNegativeSafeIntegerSchema,
+    workspacePath: nonEmptyStringSchema.optional(), phase: teamPhaseSchema, cursor: nonNegativeSafeIntegerSchema,
+    createdAt: nonNegativeSafeIntegerSchema, updatedAt: nonNegativeSafeIntegerSchema, archivedAt: nonNegativeSafeIntegerSchema.optional(),
+  }).strict(),
+  goal: z.object({ revision: positiveSafeIntegerSchema, phase: teamGoalPhaseSchema, objective: teamSelectionTextSchema }).strict(),
+  stallReason: z.object({ code: nonEmptyStringSchema, message: teamSelectionTextSchema }).strict().optional(),
+  closureKind: z.enum(['complete', 'fail', 'cancel']).optional(),
+  coordinator: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('bound'), name: teamSelectionTextSchema, participantKind: z.enum(['local-agent', 'remote-agent']), participantPhase: participantPhaseSchema,
+      binding: z.object({ activation: activationSnapshotSchema, sessionId: sessionIdSchema, provider: nonEmptyStringSchema }).strict(),
+    }).strict(),
+    z.object({ kind: z.literal('unavailable'),
+      reason: z.enum(['missing-participant', 'ambiguous-participant', 'not-agent', 'starting', 'missing-binding']),
+    }).strict(),
+  ]),
+  counts: z.object({ participants: nonNegativeSafeIntegerSchema, activations: nonNegativeSafeIntegerSchema,
+    tasks: z.record(teamTaskPhaseSchema, nonNegativeSafeIntegerSchema), channels: nonNegativeSafeIntegerSchema,
+    workflowPlans: nonNegativeSafeIntegerSchema,
+  }).strict(),
+}).strict().superRefine((value, context) => {
+  if (value.metadata?.kind === 'available' && (value.metadata.goal.teamId !== value.team.id
+    || value.metadata.goal.revision !== value.goal.revision || value.metadata.goal.phase !== value.goal.phase
+    || (value.goal.objective.truncated ? !value.metadata.goal.objective.startsWith(value.goal.objective.text)
+      : value.metadata.goal.objective !== value.goal.objective.text))) {
+    context.addIssue({ code: 'custom', path: ['metadata', 'goal'], message: 'Selection metadata must match its Team and goal summary' })
+  }
+  if (value.coordinator.kind === 'bound' && value.coordinator.binding.activation.teamId !== value.team.id) {
+    context.addIssue({ code: 'custom', path: ['coordinator', 'binding', 'activation', 'teamId'],
+      message: 'Selection coordinator activation must belong to the selected Team' })
+  }
+}) as unknown as z.ZodType<TeamSelectionSnapshot>
 
 /** Parse one complete detached Team state projection. */
 export const teamStateSnapshotSchema = z.object({

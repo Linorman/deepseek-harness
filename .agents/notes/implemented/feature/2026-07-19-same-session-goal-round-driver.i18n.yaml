@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-07-19-same-session-goal-round-driver.md
-2026-07-19-same-session-goal-round-driver.md: 10f181bbc373fc22ecd40fd542c4728578c89b08
-2026-07-19-same-session-goal-round-driver.zh.md: 6c0f1a634b6e327638291ad03451a6b182bbea37
+2026-07-19-same-session-goal-round-driver.md: cf9ef0ef9afade3c75cf01bf1bece4dbcf1905e6
+2026-07-19-same-session-goal-round-driver.zh.md: 5f4cec6ce8ef3b321da484b9e04bcd38b88d45ac

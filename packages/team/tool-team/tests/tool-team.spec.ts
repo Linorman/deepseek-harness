@@ -1058,6 +1058,17 @@ describe('team_task_report', () => {
     }, discovered.agent))).rejects.toMatchObject({ code: 'TEAM_TASK_REPORT_ASSIGNMENT_REQUIRED' })
   })
 
+  it('reports after continuation messages repeat the same durable assignment', async () => {
+    const mounted = await harness()
+    mounted.appendAssignment()
+    mounted.appendAssignment()
+    const reported = await mounted.execute({
+      task_id: 'task-tool-team', attempt_id: 'attempt-tool-team', outcome: 'completed', summary: 'Recovered work.',
+    })
+    expect(reported.isError).toBe(false)
+    expect(value(reported)).toMatchObject({ status: 'settled', task: { phase: 'completed' } })
+  })
+
   it('rejects malformed, ambiguous, cross-Team, stale-binding, and non-running assignment sources', async () => {
     const malformed = await harness({ source: false })
     malformed.agent.session.append('turn/start', { turn: 1 })
@@ -1209,8 +1220,8 @@ describe('team_message', () => {
       kind: 'response', causationId: 'ordinary-request' })
     const result = await mounted.execute({ channel_id: channel.manifest.id, text: 'Answer.', delivery: 'turn' }, mounted.agent, 'team_message')
     expect(value(result)).toHaveProperty('envelope_id')
-    expect(post).toHaveBeenCalledWith(expect.objectContaining({ draft: expect.objectContaining({ kind: 'response', causationId: 'ordinary-request',
-      audience: ['participant-team-final-recipient'], payload: { text: 'Answer.' } }) }))
+    expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ draft: { kind: 'response', causationId: 'ordinary-request',
+      audience: ['participant-team-final-recipient'], payload: { text: 'Answer.' } } })
     mounted.agent.session.append('team/channel-view', { teamId: 'team-tool-team', channelId: channel.manifest.id,
       adapter: { type: 'consult', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
       triggeringEnvelopeId: 'review-request', sourceEnvelopeIds: ['review-request'], delivery: 'turn', taskId: 'task-tool-team',

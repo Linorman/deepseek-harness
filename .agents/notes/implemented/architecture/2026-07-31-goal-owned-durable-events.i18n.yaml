@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-31-goal-owned-durable-events.md
-2026-07-31-goal-owned-durable-events.md: 5568318a8c2c5adc87311da295c79c23af1dcf3d
-2026-07-31-goal-owned-durable-events.zh.md: 4cf05b0ede8bcff600cf91781cdbd17a0043d686
+2026-07-31-goal-owned-durable-events.md: dcbadb26cae47c1f6acc1255fe6e4cfccb323859
+2026-07-31-goal-owned-durable-events.zh.md: 96d8d23f0d03ddb2682f3761855e3eba81e29457

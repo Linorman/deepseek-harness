@@ -32,6 +32,7 @@ External packages that a workspace package resolves at runtime. The tier covers 
 | Package | License |
 | --- | --- |
 | [`@agentclientprotocol/sdk`](https://github.com/agentclientprotocol/typescript-sdk) | Apache-2.0 |
+| [`@aws-crypto/sha256-js`](https://github.com/git@github.com:aws/aws-sdk-js-crypto-helpers) | Apache-2.0 |
 | [`@babel/code-frame`](https://github.com/babel/babel) | MIT |
 | [`@earendil-works/pi-ai`](https://github.com/earendil-works/pi) | MIT |
 | [`@joplin/turndown-plugin-gfm`](https://github.com/laurent22/joplin-turndown-plugin-gfm) | MIT |

@@ -16,7 +16,7 @@ A custom composition can retain workflow history only when it has a producer tha
 
 Recording is observational. The first failed Session append disables all later writes for that run, logs one warning, and never changes cancellation, result mapping, or disposal. Each possible failure leaves either no record or a legal continuous prefix: a started run may lack later members or its ending, and a started member may lack its ending. The package invariant rejects duplicate run starts, invalid or reused positive member sequences, unpaired or repeated member endings, a run ending while members remain open, and every update after a run ending on both cold load and live append.
 
-The workflow package exposes browser-safe run and observation vocabulary through `@clocky/clocky-workflow/types`; live `Agent` requests and control handles remain Host-only. `@clocky/clocky-tool-workflow/types` owns the four Session events. Client code imports only these type faces, so the Host and Client TypeScript programs share the durable contract without merging Host Cordis context.
+The workflow package exposes browser-safe run and observation vocabulary through `@clocky/clocky-compat-workflow/types`; live `Agent` requests and control handles remain Host-only. `@clocky/clocky-compat-tool-workflow/types` owns the four Session events. Client code imports only these type faces, so the Host and Client TypeScript programs share the durable contract without merging Host Cordis context.
 
 The shipped Web composition does not include `clocky-tool-workflow` or a workflow-specific Conversation renderer. A custom consumer may reconstruct these events, but it remains an observer and cannot take ownership of the tool call, execution, or disposal lifecycle.
 

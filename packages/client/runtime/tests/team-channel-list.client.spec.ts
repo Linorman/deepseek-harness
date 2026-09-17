@@ -24,11 +24,11 @@ describe('authorized channel pages and metadata', () => {
     const closed = deferred<Awaited<ReturnType<IApiClient['teams']['channelClose']>>>()
     vi.spyOn(api.teams, 'channelClose').mockImplementation(async () => await closed.promise)
     const mutation = tasks.manage(teamId, { operation: 'channelClose', input: {
-      channelId: oldTeam.state.channelIds[0]!, expectedCursor: 0 } })
+      channelId: `runtime-fk-team-channel-${oldTeam.teamId}` as ChannelId, expectedCursor: 0 } })
     const next = 'next-selected-team' as TeamId
     await tasks.open(next)
     await tasks.readChannels(next)
-    closed.resolve(ok(channel(oldTeam.state.channelIds[0]!)))
+    closed.resolve(ok(channel(`runtime-fk-team-channel-${oldTeam.teamId}`)))
     await mutation
     expect(tasks.list.getSnapshot().channels?.teamId).toBe(next)
     expect(api.callsOf('team.channel.list')).toEqual([{ teamId: next }])
@@ -49,6 +49,23 @@ describe('authorized channel pages and metadata', () => {
     expect(api.callsOf('team.channel.list')).toHaveLength(1)
   })
 
+  it('keeps one channel window across repeated paging and can return to the beginning', async () => {
+    const { api, tasks } = setup()
+    api.onTeamChannelList = async (input) => {
+      const index = (input.afterCursor ?? -1) + 1
+      return ok({ items: [channel(`page-${index}`)], nextCursor: index })
+    }
+    await tasks.readChannels(teamId)
+    for (let index = 1; index <= 32; index++) {
+      await tasks.readChannels(teamId, 'next')
+      expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual([`page-${index}`])
+    }
+    await tasks.readChannels(teamId)
+    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['page-32'])
+    await tasks.readChannels(teamId, 'first')
+    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['page-0'])
+  })
+
   it('loads one page per explicit continuation and refreshes only the requested window', async () => {
     const { api, tasks } = setup()
     api.onTeamChannelList = async input => ok(input.afterCursor === undefined
@@ -56,11 +73,11 @@ describe('authorized channel pages and metadata', () => {
     await tasks.readChannels(teamId)
     expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['a', 'b'])
     expect(api.callsOf('team.channel.list')).toEqual([{ teamId }])
-    await tasks.readChannels(teamId, true)
-    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['a', 'b', 'c'])
+    await tasks.readChannels(teamId, 'next')
+    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['c'])
     await tasks.readChannels(teamId)
-    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['a', 'b', 'c'])
-    expect(api.callsOf('team.channel.list')).toEqual([{ teamId }, { teamId, afterCursor: 1 }, { teamId }, { teamId, afterCursor: 1 }])
+    expect(tasks.list.getSnapshot().channels?.items.map(item => item.manifest.id)).toEqual(['c'])
+    expect(api.callsOf('team.channel.list')).toEqual([{ teamId }, { teamId, afterCursor: 1 }, { teamId, afterCursor: 1 }])
   })
 
   it('preserves loaded channels and the retry cursor after a continuation failure', async () => {
@@ -68,11 +85,11 @@ describe('authorized channel pages and metadata', () => {
     api.onTeamChannelList = async () => ok({ items: [channel('a')], nextCursor: 0 })
     await tasks.readChannels(teamId)
     api.onTeamChannelList = async () => err({ code: 'internal', message: 'Page interrupted', details: {} })
-    await tasks.readChannels(teamId, true)
+    await tasks.readChannels(teamId, 'next')
     expect(tasks.list.getSnapshot().channels).toMatchObject({ items: [channel('a')], nextCursor: 0, error: 'Page interrupted' })
     api.onTeamChannelList = async () => ok({ items: [channel('b')] })
-    await tasks.readChannels(teamId, true)
-    expect(tasks.list.getSnapshot().channels?.items).toEqual([channel('a'), channel('b')])
+    await tasks.readChannels(teamId, 'next')
+    expect(tasks.list.getSnapshot().channels?.items).toEqual([channel('b')])
     expect(api.callsOf('team.channel.list').slice(1)).toEqual([{ teamId, afterCursor: 0 }, { teamId, afterCursor: 0 }])
   })
 
@@ -104,7 +121,7 @@ describe('authorized channel pages and metadata', () => {
     await tasks.readChannels(teamId)
     const stale = deferred<Awaited<ReturnType<IApiClient['teams']['channelList']>>>()
     api.onTeamChannelList = async () => await stale.promise
-    const pending = tasks.readChannels(teamId, true)
+    const pending = tasks.readChannels(teamId, 'next')
     tasks.handleDisconnected()
     api.onTeamChannelList = async () => ok({ items: [channel('current')], nextCursor: 0 })
     tasks.handleConnected()

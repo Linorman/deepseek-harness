@@ -3,7 +3,7 @@
 
 # Plugin Config Catalog
 
-Every `config:` block a `cordis.yml` entry can set: for each loadable harness package, the verbatim config declaration (JSDoc included) its `apply` function or service constructor receives, with every referenced type pasted alongside (package-local types) or linked (everything else). The paste is the plugin's full declared config type — a field the runtime schema deliberately excludes is a runtime-only seam (its own JSDoc says so) and is not settable from `cordis.yml`. This is the **deployment**-axis reference — the wiring a plugin author works against is the generated Cordis API region on each [subsystem page](subsystems/core.md), the model-facing tool schemas are the [tool catalog](tool-catalog.md), and [subsystems/](subsystems/core.md) documents the types these declarations reference.
+Private compatibility packages are excluded. Every `config:` block a `cordis.yml` entry can set: for each public loadable harness package, the verbatim config declaration (JSDoc included) its `apply` function or service constructor receives, with every referenced type pasted alongside (package-local types) or linked (everything else). The paste is the plugin's full declared config type — a field the runtime schema deliberately excludes is a runtime-only seam (its own JSDoc says so) and is not settable from `cordis.yml`. This is the **deployment**-axis reference — the wiring a plugin author works against is the generated Cordis API region on each [subsystem page](subsystems/core.md), the model-facing tool schemas are the [tool catalog](tool-catalog.md), and [subsystems/](subsystems/core.md) documents the types these declarations reference.
 
 This file is GENERATED from source (`scripts/gen-config-catalog.ts`) and verified fresh by `pnpm run verify-config-catalog` (part of `doc-sync`) — do not edit it by hand. Declaration blocks use a `ts config-catalog` fence (skipped by doc-typecheck, since a lone declaration referencing imports is not standalone-compilable). The generator also cross-checks the runtime schemastery schema against the pasted declaration — every schema-validated key, nested keys included, must be locatable on the declared config type — so the paste cannot hide a loader-accepted field.
 
@@ -246,7 +246,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:103`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
+Source: [`packages/agent-runtime/agent-runtime-acp/src/index.ts:104`](../packages/agent-runtime/agent-runtime-acp/src/index.ts)
 
 <a id="clockyclocky-agent-runtime-in-process"></a>
 
@@ -334,8 +334,7 @@ Source: [`packages/agent-runtime/agent-runtime-sdk/src/index.ts:66`](../packages
  * `toolBash`/`toolJobs` to the model-facing tool plugins this bundle owns.
  * Provider adapters own their `retryPolicy`; this bundle always mounts its
  * executor.
- * `goals` opts into and configures the persisted goal domain plus its model tool
- * and same-session driver; `invariants` configures global and package-filtered
+ * `invariants` configures global and package-filtered
  * relational checks. Owner schemas supply defaults for optional input;
  * workspace context instead requires an explicit byte budget or `false` because
  * it changes model-visible input. Producer opt-in stays producer-local:
@@ -378,8 +377,6 @@ export interface Config {
   toolJobs?: toolJobs.Config | false
   /** Global enablement and package-name filters for invariant companions. */
   invariants?: InvariantConfig
-  /** Opt-in persisted same-session goal stack; set false or omit to leave it unmounted. */
-  goals?: GoalConfig | false
 }
 
 /** Skill bundle config forwarded to the registry, local provider, and model-facing consumer. */
@@ -393,19 +390,11 @@ export interface SkillConfig {
   /** Model-facing skill catalog and tool settings. */
   tool?: toolSkill.Config
 }
-
-/** Persisted goal domain, model-tool policy, and same-session driver config. */
-export interface GoalConfig {
-  /** Goal-domain creation defaults. */
-  domain?: GoalDomainConfig
-  /** Model-facing goal-tool authority policy. */
-  tool?: toolGoal.Config
-}
 ```
 
-Depends on: [`AgentLoopConfig`](#clockyclocky-agent-loop) · [`GoalDomainConfig`](#clockyclocky-goal) · [`InvariantConfig`](#clockyclocky-invariants) · [`JobsConfig`](#clockyclocky-jobs-local) · [`SessionTitleConfig`](#clockyclocky-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#clockyclocky-skill) · [`SystemPromptConfig`](#clockyclocky-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#clockyclocky-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
+Depends on: [`AgentLoopConfig`](#clockyclocky-agent-loop) · [`InvariantConfig`](#clockyclocky-invariants) · [`JobsConfig`](#clockyclocky-jobs-local) · [`SessionTitleConfig`](#clockyclocky-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#clockyclocky-skill) · [`SystemPromptConfig`](#clockyclocky-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#clockyclocky-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
 
-Source: [`packages/examples/agent-spine-demo/src/index.ts:92`](../packages/examples/agent-spine-demo/src/index.ts)
+Source: [`packages/examples/agent-spine-demo/src/index.ts:80`](../packages/examples/agent-spine-demo/src/index.ts)
 
 <a id="clockyclocky-agent-tool-presentation"></a>
 
@@ -550,6 +539,28 @@ export interface Config {
 ```
 
 Source: [`packages/client/hmr/src/index.ts:31`](../packages/client/hmr/src/index.ts)
+
+<a id="clockyclocky-client-modules"></a>
+
+## `@clocky/clocky-client-modules`
+
+Requires: `webServer` · `loader`
+
+```ts config-catalog
+/** Public browser options keyed by exact client package name. These values are served to every browser. */
+export interface Config {
+  /** Explicit public JSON options keyed by exact declared browser package; applied on the next page boot. */
+  readonly browserConfig?: Record<string, BrowserPluginConfig> | undefined
+}
+
+/** Named browser-visible plugin options. */
+export interface BrowserPluginConfig { [key: string]: BrowserConfigValue }
+
+/** JSON data explicitly published to a browser plugin; never inferred from Host configuration. */
+export type BrowserConfigValue = null | boolean | number | string | BrowserConfigValue[] | BrowserPluginConfig
+```
+
+Source: [`packages/client/modules/src/index.ts:44`](../packages/client/modules/src/index.ts)
 
 <a id="clockyclocky-code-runtime-worker-thread"></a>
 
@@ -766,22 +777,6 @@ export type Config = LocalConfig
 Depends on: [`LocalConfig`](#clockyclocky-fs-local)
 
 Source: [`packages/fs/fs-sandbox/src/index.ts:49`](../packages/fs/fs-sandbox/src/index.ts)
-
-<a id="clockyclocky-goal"></a>
-
-## `@clocky/clocky-goal`
-
-Requires: `agents`
-
-```ts config-catalog
-/** Deployment defaults for goal creation. */
-export interface Config {
-  /** Total rounds used when a create request omits its own cap. */
-  defaultMaxGoalRounds?: number
-}
-```
-
-Source: [`packages/goal/goal/src/index.ts:116`](../packages/goal/goal/src/index.ts)
 
 <a id="clockyclocky-headless"></a>
 
@@ -2103,15 +2098,27 @@ Requires: `storage`
 
 ```ts config-catalog
 /** Route configuration for append-only streams. */
-export interface Config {
+export interface Config extends NameScanConfig {
   /** Default backend name for streams without a more specific route. */
   readonly backend: string
   /** Per-stream backend route. */
   readonly routes: Record<string, string>
 }
+
+/** Deployment bounds for retained discovery state and one page's actual work. */
+export interface NameScanConfig {
+  /** Maximum retained discovery iterators or retry pages. */
+  readonly maxOpenScans?: number
+  /** Maximum directory entries or indexed rows examined per page. */
+  readonly maxScanEntries?: number
+  /** Cursor idle validity; expired resources are reclaimed on the next scan or disposal. */
+  readonly scanIdleMs?: number
+  /** Maximum UTF-8 bytes in a discovered stream name or query prefix. */
+  readonly maxScanNameBytes?: number
+}
 ```
 
-Source: [`packages/storage/storage-log/src/index.ts:41`](../packages/storage/storage-log/src/index.ts)
+Source: [`packages/storage/storage-log/src/index.ts:46`](../packages/storage/storage-log/src/index.ts)
 
 <a id="clockyclocky-storage-sqlite"></a>
 
@@ -2152,145 +2159,6 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 
 Source: [`packages/storage/storage-sqlite/src/index.ts:28`](../packages/storage/storage-sqlite/src/index.ts)
-
-<a id="clockyclocky-subagent-acp"></a>
-
-## `@clocky/clocky-subagent-acp`
-
-Requires: `subagents` · `subprocess`
-
-```ts config-catalog
-/** Config: how to spawn and drive the child ACP agent process. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `acp`). */
-  providerName: string
-  /** The executable to spawn for each run (the child ACP agent). */
-  command: string
-  /** Arguments passed to {@link command}. */
-  args: string[]
-  /**
-   * Working directory override for the child process and its ACP session.
-   * Must be non-empty; a relative path resolves against the harness launch
-   * directory at load, and the result must be an existing directory. When
-   * omitted, each child inherits its delegating parent's resolved workspace
-   * root — and starting one without a usable root fails.
-   */
-  cwd?: string
-  /**
-   * How to auto-answer the child's `session/request_permission` prompts:
-   * `reject` (default — decline every prompt) or `allow` (approve via the first
-   * `allow_once` or `allow_always` option). No prompt is surfaced to a human.
-   */
-  permission: PermissionPolicy
-  /**
-   * Extra environment variables for the child process — e.g. the child
-   * harness's own `DEEPSEEK_API_KEY`. Forwarded on top of a credential-scrubbed
-   * copy of the parent env, so an explicit key here reaches the child while
-   * ambient secrets do not leak implicitly.
-   */
-  env: Record<string, string>
-  /**
-   * Grace period (ms) for the child's EOF-driven quiesce on dispose — its
-   * window to flush persistence and tear down its own nested subprocesses
-   * before the parent escalates to a signal. Must not exceed
-   * `MAX_TIMER_DELAY_MS`.
-   */
-  disposeEofGraceMs?: number
-  /** Termination-escalation grace (ms); must not exceed `MAX_TIMER_DELAY_MS`. */
-  disposeGraceMs?: number
-}
-
-/** Fixed response to child permission requests: reject by default, or select the first allow option. */
-export type PermissionPolicy = 'allow' | 'reject'
-```
-
-Source: [`packages/subagent/subagent-acp/src/index.ts:28`](../packages/subagent/subagent-acp/src/index.ts)
-
-<a id="clockyclocky-subagent-clocky-sdk"></a>
-
-## `@clocky/clocky-subagent-clocky-sdk`
-
-Requires: `subagents`
-
-```ts config-catalog
-/** Config: how to spawn and drive the child SDK runtime process. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `clocky-sdk`). */
-  providerName: string
-  /** The executable to spawn for each run (the child runtime bin or packaged exe). */
-  command: string
-  /** Arguments passed to {@link command} (typically the child's `cordis.yml` path). */
-  args: string[]
-  /**
-   * Working directory override for the child process and its SDK session
-   * workspace. Must be non-empty; a relative path resolves against the
-   * harness launch directory at load, and the result must be an existing
-   * directory. When omitted, each child inherits its delegating parent's
-   * resolved workspace root — and starting one without a usable root fails.
-   */
-  cwd?: string
-  /** Provider route the child runtime initializes with. */
-  provider: string
-  /** Model the child runtime initializes with. */
-  model: string
-  /** Opaque product credential sent only in the child SDK initialization handshake. */
-  credential?: string
-  /** Optional per-request output-token cap for the child runtime. */
-  maxTokens?: number
-  /**
-   * Extra environment variables for the child process — e.g. the child
-   * runtime's own `DEEPSEEK_API_KEY`, or `CLOCKY_CORDIS_CONFIG` naming its
-   * config. Forwarded on top of a credential-scrubbed copy of the parent
-   * env, so an explicit key here reaches the child while ambient secrets do
-   * not leak implicitly.
-   */
-  env: Record<string, string>
-  /** Bound (ms) on the protocol `shutdown` exchange during dispose. */
-  shutdownTimeoutMs?: number
-  /**
-   * Grace period (ms) for the child's EOF-driven quiesce on dispose — its
-   * window to flush persistence and tear down its own nested subprocesses
-   * before the parent escalates to a signal.
-   */
-  disposeEofGraceMs?: number
-  /** Termination confirmation window (ms), including forced exit on every platform. */
-  disposeGraceMs?: number
-}
-```
-
-Source: [`packages/subagent/subagent-clocky-sdk/src/index.ts:30`](../packages/subagent/subagent-clocky-sdk/src/index.ts)
-
-<a id="clockyclocky-subagent-fork-in-process"></a>
-
-## `@clocky/clocky-subagent-fork-in-process`
-
-Requires: `subagents`
-
-```ts config-catalog
-/** Config: the registry name to register the provider under. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `fork`). */
-  providerName: string
-}
-```
-
-Source: [`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
-
-<a id="clockyclocky-subagent-spawn-in-process"></a>
-
-## `@clocky/clocky-subagent-spawn-in-process`
-
-Requires: `subagents`
-
-```ts config-catalog
-/** Config: the registry name to register the provider under. */
-export interface Config {
-  /** Provider name on `ctx.subagents` (default `spawn`). */
-  providerName: string
-}
-```
-
-Source: [`packages/subagent/subagent-spawn-in-process/src/index.ts:25`](../packages/subagent/subagent-spawn-in-process/src/index.ts)
 
 <a id="clockyclocky-subprocess-e2b"></a>
 
@@ -2351,7 +2219,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-controller/src/index.ts:63`](../packages/team/team-activation-controller/src/index.ts)
+Source: [`packages/team/team-activation-controller/src/index.ts:67`](../packages/team/team-activation-controller/src/index.ts)
 
 <a id="clockyclocky-team-activation-recovery"></a>
 
@@ -2379,7 +2247,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-recovery/src/index.ts:26`](../packages/team/team-activation-recovery/src/index.ts)
+Source: [`packages/team/team-activation-recovery/src/index.ts:27`](../packages/team/team-activation-recovery/src/index.ts)
 
 <a id="clockyclocky-team-agent-client"></a>
 
@@ -2402,10 +2270,14 @@ export interface Config {
   readonly consumeWorkspace?: boolean
   /** Maximum automatic continuation turns after a worker reaches the model output limit. */
   readonly maxTaskOutputContinuations?: number
+  /** Maximum reminders after a worker ends normally without reporting its running attempt; zero disables this recovery. */
+  readonly maxTaskReportReminders?: number
+  /** Maximum UTF-8 bytes of prior-attempt evidence appended to a new assignment, including truncation notice. */
+  readonly maxTaskHandoffBytes?: number
 }
 ```
 
-Source: [`packages/team/team-agent-client/src/index.ts:112`](../packages/team/team-agent-client/src/index.ts)
+Source: [`packages/team/team-agent-client/src/index.ts:115`](../packages/team/team-agent-client/src/index.ts)
 
 <a id="clockyclocky-team-artifact-local"></a>
 
@@ -2441,7 +2313,7 @@ export interface RetentionConfig {
 }
 ```
 
-Source: [`packages/team/team-artifact-local/src/index.ts:40`](../packages/team/team-artifact-local/src/index.ts)
+Source: [`packages/team/team-artifact-local/src/index.ts:41`](../packages/team/team-artifact-local/src/index.ts)
 
 <a id="clockyclocky-team-channel-admission"></a>
 
@@ -2461,7 +2333,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-channel-admission/src/index.ts:35`](../packages/team/team-channel-admission/src/index.ts)
+Source: [`packages/team/team-channel-admission/src/index.ts:36`](../packages/team/team-channel-admission/src/index.ts)
 
 <a id="clockyclocky-team-channel-summary"></a>
 
@@ -2513,7 +2385,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-closure-driver/src/index.ts:39`](../packages/team/team-closure-driver/src/index.ts)
+Source: [`packages/team/team-closure-driver/src/index.ts:40`](../packages/team/team-closure-driver/src/index.ts)
 
 <a id="clockyclocky-team-delegation"></a>
 
@@ -2535,7 +2407,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-delegation/src/index.ts:19`](../packages/team/team-delegation/src/index.ts)
+Source: [`packages/team/team-delegation/src/index.ts:21`](../packages/team/team-delegation/src/index.ts)
 
 <a id="clockyclocky-team-hub"></a>
 
@@ -2546,6 +2418,12 @@ Requires: `storageLog`
 ```ts config-catalog
 /** Configurable Team-Hub durability, hierarchy, task, and shutdown limits. */
 export interface Config {
+  /** Maximum UTF-8 bytes in the complete first-selection response. */
+  readonly maxSelectionBytes?: number
+  /** Maximum bytes of atomic Team discovery metadata, including its storage header. */
+  readonly maxDiscoveryBytes?: number
+  /** Maximum UTF-8 bytes in each first-selection display field. */
+  readonly maxSelectionTextBytes?: number
   /** Milliseconds allowed for a newly invited endpoint to confirm its manifest. */
   readonly channelInvitationTimeoutMs?: number
   /** Maximum number of durable records replayed in one storage page. */
@@ -2607,7 +2485,7 @@ export interface Config {
 
 Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
 
-Source: [`packages/team/team-hub/src/index.ts:965`](../packages/team/team-hub/src/index.ts)
+Source: [`packages/team/team-hub/src/index.ts:989`](../packages/team/team-hub/src/index.ts)
 
 <a id="clockyclocky-team-human-client"></a>
 
@@ -2618,6 +2496,8 @@ Requires: `teams` · `storageLog` · `productPrincipals`
 ```ts config-catalog
 /** Deployment bounds for storage, API pages and long polling. */
 export interface Config {
+  /** Omission disables automatic display-history retention; admission anchors remain durable. */
+  readonly retention?: InboxRetentionConfig
   /** Maximum records read from the log backend at once. */
   readonly storagePageSize: number
   /** Maximum deliveries in one product response. */
@@ -2631,9 +2511,21 @@ export interface Config {
   /** Delay between restart-safe storage observations in milliseconds. */
   readonly pollIntervalMs: number
 }
+
+/** Optional bounded migration of displayed history into immutable admission anchors. */
+export interface InboxRetentionConfig {
+  /** Minimum physical inbox records retained after a compaction. */
+  readonly tailRecords: number
+  /** Maximum physical stream names examined per discovery page. */
+  readonly maxStreamsPerDrive: number
+  /** Maximum inbox records examined across one retention drive. */
+  readonly maxRecordsPerDrive: number
+  /** Maximum selected bytes per drive, counting the larger source or admission-anchor record for each item. */
+  readonly maxBytesPerDrive: number
+}
 ```
 
-Source: [`packages/team/team-human-client/src/index.ts:19`](../packages/team/team-human-client/src/index.ts)
+Source: [`packages/team/team-human-client/src/index.ts:35`](../packages/team/team-human-client/src/index.ts)
 
 <a id="clockyclocky-team-link-local"></a>
 
@@ -2725,7 +2617,7 @@ export interface PlacementRoute {
 }
 ```
 
-Source: [`packages/team/team-placement-default/src/index.ts:41`](../packages/team/team-placement-default/src/index.ts)
+Source: [`packages/team/team-placement-default/src/index.ts:40`](../packages/team/team-placement-default/src/index.ts)
 
 <a id="clockyclocky-team-run"></a>
 
@@ -2736,6 +2628,10 @@ Requires: `teamChannelAdmission` · `teams` · `teamActivations` · `agentDefaul
 ```ts config-catalog
 /** Deployment-selected default Team topology and bounded receipt retry policy. */
 export interface Config {
+  /** Optional live startup/epoch ceiling frozen into each new root Team and delegated subtree. */
+  readonly maxLiveActivations?: number
+  /** Optional lifetime descendant-Team ceiling frozen into each new root Team. */
+  readonly maxChildTeams?: number
   /** Additional eager model participants with complete execution routes. */
   readonly members?: TeamRunMember[]
   /** Registered AgentRuntime provider that owns coordinator residency. */
@@ -2821,7 +2717,7 @@ export interface TeamRunPlacementDefaults {
 }
 ```
 
-Source: [`packages/team/team-run/src/index.ts:315`](../packages/team/team-run/src/index.ts)
+Source: [`packages/team/team-run/src/index.ts:352`](../packages/team/team-run/src/index.ts)
 
 <a id="clockyclocky-team-scheduler-dag"></a>
 
@@ -2840,6 +2736,8 @@ export interface Config {
   readonly maxExpirationsPerDrive: number
   /** Maximum existing assignment channels validated or repaired during one Team drive. */
   readonly maxWakeDispatchesPerDrive: number
+  /** Maximum review requests dispatched or responses recovered during one Team drive. */
+  readonly maxReviewDispatchesPerDrive?: number
   /** Maximum state-race rereads after assignment or expiry CAS conflicts. */
   readonly maxConflictsPerDrive: number
   /** Maximum assigned or running attempts one participant may hold. */
@@ -2867,7 +2765,7 @@ export interface Config {
 
 Depends on: [`TeamTaskWorkspaceMode`](subsystems/team.md)
 
-Source: [`packages/team/team-scheduler-dag/src/index.ts:100`](../packages/team/team-scheduler-dag/src/index.ts)
+Source: [`packages/team/team-scheduler-dag/src/index.ts:102`](../packages/team/team-scheduler-dag/src/index.ts)
 
 <a id="clockyclocky-team-telemetry-otel"></a>
 
@@ -2987,7 +2885,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-workspace-recovery/src/index.ts:25`](../packages/team/team-workspace-recovery/src/index.ts)
+Source: [`packages/team/team-workspace-recovery/src/index.ts:26`](../packages/team/team-workspace-recovery/src/index.ts)
 
 <a id="clockyclocky-team-workspace-sandbox"></a>
 
@@ -3030,6 +2928,8 @@ Requires: `teamWorkspaces` · `teams` · `agents`
 export interface Config {
   /** Existing sidecar directory; defaults to integration state or a provider-owned child of the shared root. */
   readonly observationStateRoot?: string
+  /** Existing absolute runtime directories omitted from workspace observations; defaults to none. */
+  readonly observationExcludedRoots?: string[]
   /** Maximum directory entries inspected by one observation, including directories. */
   readonly observationMaxEntries?: number
   /** Maximum aggregate file bytes hashed by one observation. */
@@ -3295,22 +3195,6 @@ export interface Config {
 
 Source: [`packages/fs/tool-fs-search/src/index.ts:73`](../packages/fs/tool-fs-search/src/index.ts)
 
-<a id="clockyclocky-tool-goal"></a>
-
-## `@clocky/clocky-tool-goal`
-
-Requires: `agents` · `goals` · `tools` · `systemPrompt`
-
-```ts config-catalog
-/** Model policy and hard lower bounds for goal-state updates. */
-export interface Config {
-  /** Minimum admitted goal rounds before the model may self-report `blocked`. */
-  blockedAfterConsecutiveRounds?: number
-}
-```
-
-Source: [`packages/goal/tool-goal/src/index.ts:26`](../packages/goal/tool-goal/src/index.ts)
-
 <a id="clockyclocky-tool-jobs"></a>
 
 ## `@clocky/clocky-tool-jobs`
@@ -3403,28 +3287,6 @@ export interface Config {
 
 Source: [`packages/shell/tool-pwsh-persistent/src/index.ts:483`](../packages/shell/tool-pwsh-persistent/src/index.ts)
 
-<a id="clockyclocky-tool-ralph"></a>
-
-## `@clocky/clocky-tool-ralph`
-
-Requires: `tools` · `workflowEngine` · `subagents` · `systemPrompt`
-
-```ts config-catalog
-/** Deployment policy for the fixed Ralph workflow. */
-export interface Config {
-  /** Fresh structured-output provider used for every round (default `spawn`). */
-  subagentProvider?: string
-  /** Default and deployment ceiling for one call's round count (default 256). */
-  maxRounds?: number
-  /** Maximum serialized characters in one structured handoff (default 16384). */
-  maxHandoffChars?: number
-  /** Maximum characters in a successful parent-facing terminal text (default 16384). */
-  maxResultChars?: number
-}
-```
-
-Source: [`packages/workflow/tool-ralph/src/index.ts:23`](../packages/workflow/tool-ralph/src/index.ts)
-
 <a id="clockyclocky-tool-session-query"></a>
 
 ## `@clocky/clocky-tool-session-query`
@@ -3477,93 +3339,6 @@ export interface Config {
 
 Source: [`packages/fs/tool-str-replace-editor/src/index.ts:497`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
-<a id="clockyclocky-tool-subagent"></a>
-
-## `@clocky/clocky-tool-subagent`
-
-Requires: `tools` · `subagents` · `systemPrompt`
-
-```ts config-catalog
-/** Config: which registered provider this tool delegates to, plus child defaults. */
-export interface Config {
-  /** The `ctx.subagents` provider name to start runs on (e.g. `spawn`, `acp`). */
-  provider: string
-  /**
-   * Model-facing tool name (default `subagent`). Each loaded instance must use
-   * a distinct name.
-   */
-  toolName?: string
-  /**
-   * Expose `run_in_background` (default true). Disabled instances omit the
-   * parameter and reject forced background calls.
-   */
-  enableRunInBackground?: boolean
-  /**
-   * Background execution policy (default `one-shot`). `one-shot` defaults calls
-   * to foreground; `continuable` defaults them to background, requires a provider
-   * with the `prepareContinuable` capability, and returns the durable child id.
-   * Follow-up adapters remain independently optional.
-   */
-  backgroundMode?: 'one-shot' | 'continuable'
-  /**
-   * Agent options applied to every child; omitted fields use child-loop defaults.
-   */
-  agentOptions?: AgentOptions
-  /**
-   * Per-child persona that shadows `deployment:persona`. Requires the
-   * provider's `persona` capability; omission preserves the deployment persona.
-   */
-  persona?: string
-  /**
-   * Tool filter applied to every child. Filtered tools disappear from its
-   * prompt and reject execution. Requires the provider's `toolFilter`
-   * capability; unknown names fail startup.
-   */
-  toolFilter?: {
-    /** Global tool names the child keeps; everything else is removed. */
-    allow?: string[]
-    /** Global tool names removed from the child. */
-    deny?: string[]
-  }
-  /**
-   * Maximum child depth: a non-negative safe integer (default `3`; `0` forbids
-   * delegation entirely), or `'provider-managed'` to send no cap. A numeric cap
-   * requires the provider's `depthLimit` capability (mount fails loud
-   * otherwise). The provider checks the calling agent's current depth at every
-   * start; the tool remains model-visible so runtime policy owns rejection.
-   * `'provider-managed'` is for an out-of-process provider whose recursion
-   * budget belongs to the child runtime or its own deployment.
-   */
-  maxDepth?: number | 'provider-managed'
-}
-```
-
-Depends on: [`AgentOptions`](subsystems/core.md)
-
-Source: [`packages/subagent/tool-subagent/src/index.ts:29`](../packages/subagent/tool-subagent/src/index.ts)
-
-<a id="clockyclocky-tool-subagent-report"></a>
-
-## `@clocky/clocky-tool-subagent-report`
-
-Requires: `subagents` · `tools` · `systemPrompt`
-
-```ts config-catalog
-/** Config: how accepted reports are scheduled on the parent. */
-export interface Config {
-  /**
-   * Parent scheduling (default `next-step`). `next-step` wakes the parent and
-   * enters at its nearest step boundary; `quiet` adds the same context without
-   * waking, so a parked parent waits for another waking input.
-   */
-  reportDelivery?: SubagentReportDelivery
-}
-```
-
-Depends on: [`SubagentReportDelivery`](subsystems/subagent.md)
-
-Source: [`packages/subagent/tool-subagent-report/src/index.ts:27`](../packages/subagent/tool-subagent-report/src/index.ts)
-
 <a id="clockyclocky-tool-team"></a>
 
 ## `@clocky/clocky-tool-team`
@@ -3578,7 +3353,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/tool-team/src/index.ts:59`](../packages/team/tool-team/src/index.ts)
+Source: [`packages/team/tool-team/src/index.ts:60`](../packages/team/tool-team/src/index.ts)
 
 <a id="clockyclocky-tool-terminal"></a>
 
@@ -3647,24 +3422,6 @@ export interface Config {
 ```
 
 Source: [`packages/web/tool-web/src/index.ts:37`](../packages/web/tool-web/src/index.ts)
-
-<a id="clockyclocky-tool-workflow"></a>
-
-## `@clocky/clocky-tool-workflow`
-
-Requires: `tools` · `workflowEngine` · `systemPrompt`
-
-```ts config-catalog
-/** Config: the model-facing tool name plus result rendering caps. */
-export interface Config {
-  /** The model-facing tool name to register (default `workflow`). */
-  toolName?: string
-  /** Rendered-result ceiling, in characters: a longer JSON value is truncated with a notice (default 50000). */
-  maxResultChars?: number
-}
-```
-
-Source: [`packages/workflow/tool-workflow/src/index.ts:33`](../packages/workflow/tool-workflow/src/index.ts)
 
 <a id="clockyclocky-tools"></a>
 
@@ -3877,36 +3634,6 @@ export interface Config {
 
 Source: [`packages/web/web-search-perplexity/src/index.ts:32`](../packages/web/web-search-perplexity/src/index.ts)
 
-<a id="clockyclocky-workflow-worker-thread"></a>
-
-## `@clocky/clocky-workflow-worker-thread`
-
-Requires: `subagents`
-
-```ts config-catalog
-/** Plugin config (all optional — `static Config` supplies the defaults). */
-export interface Config {
-  /** The `ctx.subagents` provider children run on (default `spawn`). */
-  provider?: string
-  /** Concurrent `agent()` ceiling; `0` (the default) auto-resolves to `min(16, max(1, cores - 2))`. */
-  maxConcurrentAgents?: number
-  /** Total `agent()` calls one run may start — the runaway-loop backstop (default 1000). */
-  maxTotalAgents?: number
-  /** Items accepted by a single `parallel()`/`pipeline()` call (default 4096). */
-  maxItemsPerCall?: number
-  /** vm timeout for the script's initial synchronous slice, inside the worker (default 5000 ms). */
-  syncTimeoutMs?: number
-  /**
-   * How long after a cancellation an unsettled script may keep running before
-   * the run force-settles `cancelled` and its worker is TERMINATED (default
-   * 5000 ms); also bounds `dispose()`.
-   */
-  disposeGraceMs?: number
-}
-```
-
-Source: [`packages/workflow/workflow-worker-thread/src/index.ts:32`](../packages/workflow/workflow-worker-thread/src/index.ts)
-
 ## Loadable plugins with no config
 
 These load from a `cordis.yml` entry with no `config:` block; they declare no configuration API.
@@ -3918,7 +3645,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-api-remotes` ([`packages/api/remotes/src/index.ts`](../packages/api/remotes/src/index.ts))
 - `@clocky/clocky-authorization` — requires `credentials` ([`packages/credentials/authorization/src/index.ts`](../packages/credentials/authorization/src/index.ts))
 - `@clocky/clocky-client-locale` ([`packages/client/locale/src/index.ts`](../packages/client/locale/src/index.ts))
-- `@clocky/clocky-client-modules` — requires `webServer` · `loader` ([`packages/client/modules/src/index.ts`](../packages/client/modules/src/index.ts))
 - `@clocky/clocky-client-runtime` ([`packages/client/runtime/src/index.ts`](../packages/client/runtime/src/index.ts))
 - `@clocky/clocky-client-ui-agent-preset` ([`packages/client/ui-agent-preset/src/index.ts`](../packages/client/ui-agent-preset/src/index.ts))
 - `@clocky/clocky-client-ui-attachment` ([`packages/client/ui-attachment/src/index.ts`](../packages/client/ui-attachment/src/index.ts))
@@ -3928,7 +3654,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-client-ui-deliverables` — requires `systemPrompt` ([`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts))
 - `@clocky/clocky-client-ui-directory-picker-browse` ([`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts))
 - `@clocky/clocky-client-ui-directory-picker-native` ([`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts))
-- `@clocky/clocky-client-ui-goal` ([`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts))
 - `@clocky/clocky-client-ui-input-trigger` ([`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts))
 - `@clocky/clocky-client-ui-jobs` ([`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts))
 - `@clocky/clocky-client-ui-layout` ([`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts))
@@ -3953,13 +3678,11 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-client-ui-workspace` ([`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts))
 - `@clocky/clocky-command-compact` — requires `commands` · `compaction` ([`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts))
 - `@clocky/clocky-command-feedback` — requires `commands` ([`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts))
-- `@clocky/clocky-command-goal` — requires `commands` · `goals` ([`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts))
 - `@clocky/clocky-command-team-goal` — requires `agents` · `commands` · `teams` ([`packages/team/command-team-goal/src/index.ts`](../packages/team/command-team-goal/src/index.ts))
 - `@clocky/clocky-commands` ([`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts))
 - `@clocky/clocky-cordis-client-runner` ([`packages/extensions/cordis-client-runner/src/index.ts`](../packages/extensions/cordis-client-runner/src/index.ts))
 - `@clocky/clocky-fs-e2b` — requires `e2b` ([`packages/e2b/fs-e2b/src/index.ts`](../packages/e2b/fs-e2b/src/index.ts))
 - `@clocky/clocky-fs-observation-policy` ([`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts))
-- `@clocky/clocky-goal-round-driver` — requires `agents` · `goals` · `sessions` ([`packages/goal/goal-round-driver/src/index.ts`](../packages/goal/goal-round-driver/src/index.ts))
 - `@clocky/clocky-host-directory-picker-auto` — requires `webServer` · `loader` ([`packages/host/directory-picker-auto/src/index.ts`](../packages/host/directory-picker-auto/src/index.ts))
 - `@clocky/clocky-host-directory-picker-native` ([`packages/host/directory-picker-native/src/index.ts`](../packages/host/directory-picker-native/src/index.ts))
 - `@clocky/clocky-host-plugin-inventory` — requires `loader` ([`packages/host/plugin-inventory/src/index.ts`](../packages/host/plugin-inventory/src/index.ts))
@@ -3973,7 +3696,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-session-projection` ([`packages/session/session-projection/src/index.ts`](../packages/session/session-projection/src/index.ts))
 - `@clocky/clocky-session-stats` — requires `sessionProjections` ([`packages/session/session-stats/src/index.ts`](../packages/session/session-stats/src/index.ts))
 - `@clocky/clocky-storage` ([`packages/storage/storage/src/index.ts`](../packages/storage/storage/src/index.ts))
-- `@clocky/clocky-subagent` ([`packages/subagent/subagent/src/index.ts`](../packages/subagent/subagent/src/index.ts))
 - `@clocky/clocky-subprocess-local` ([`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts))
 - `@clocky/clocky-team-artifact` ([`packages/core/team-artifact/src/index.ts`](../packages/core/team-artifact/src/index.ts))
 - `@clocky/clocky-team-channel-basic` — requires `teams` ([`packages/team/team-channel-basic/src/index.ts`](../packages/team/team-channel-basic/src/index.ts))
@@ -3986,7 +3708,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-tool-ask-user` — requires `tools` · `userQuestions` ([`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts))
 - `@clocky/clocky-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))
 - `@clocky/clocky-tool-cordis` — requires `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect` ([`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts))
-- `@clocky/clocky-tool-subagent-control` — requires `tools` · `subagents` ([`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts))
 - `@clocky/clocky-tool-team-goal` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts))
 - `@clocky/clocky-tool-team-task` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts))
 - `@clocky/clocky-user-questions` ([`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts))
@@ -4011,7 +3732,6 @@ Abstract service classes — a deployment loads a concrete implementation packag
 - `@clocky/clocky-shell` — abstract `ShellExecutor` ([`packages/shell/shell/src/index.ts`](../packages/shell/shell/src/index.ts))
 - `@clocky/clocky-spill` — abstract `SpillStore` ([`packages/spill/spill/src/index.ts`](../packages/spill/spill/src/index.ts))
 - `@clocky/clocky-subprocess` — abstract `SubprocessRuntime` ([`packages/subprocess/subprocess/src/index.ts`](../packages/subprocess/subprocess/src/index.ts))
-- `@clocky/clocky-workflow` — abstract `WorkflowEngine` ([`packages/workflow/workflow/src/index.ts`](../packages/workflow/workflow/src/index.ts))
 
 ## Library packages (no plugin entry)
 
@@ -4044,7 +3764,6 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 - `@clocky/clocky-sdk-protocol` ([`packages/sdk/protocol/src/index.ts`](../packages/sdk/protocol/src/index.ts))
 - `@clocky/clocky-session-telemetry` ([`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts))
 - `@clocky/clocky-session-title-llm` ([`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts))
-- `@clocky/clocky-subagent-in-process-driver` ([`packages/subagent/subagent-in-process-driver/src/index.ts`](../packages/subagent/subagent-in-process-driver/src/index.ts))
 - `@clocky/clocky-team` ([`packages/core/team/src/index.ts`](../packages/core/team/src/index.ts))
 - `@clocky/clocky-team-human-actor` ([`packages/team/team-human-actor/src/index.ts`](../packages/team/team-human-actor/src/index.ts))
 - `@clocky/clocky-team-link-websocket-hub` ([`packages/team/team-link-websocket-hub/src/index.ts`](../packages/team/team-link-websocket-hub/src/index.ts))

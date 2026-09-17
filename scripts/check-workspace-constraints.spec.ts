@@ -78,8 +78,8 @@ describe('experimental workspace constraints', () => {
 
 describe('private compatibility workspace constraints', () => {
   const compatibility: WorkspaceManifest = {
-    dir: 'packages/subagent/subagent',
-    manifest: { name: '@clocky/clocky-subagent', private: true },
+    dir: 'packages/compat/subagent',
+    manifest: { name: '@clocky/clocky-compat-subagent', private: true },
   }
 
   it('requires private compatibility manifests without publication metadata', () => {
@@ -91,17 +91,17 @@ describe('private compatibility workspace constraints', () => {
       compatibility,
       {
         dir: 'packages/core/consumer',
-        manifest: { name: '@clocky/clocky-consumer', dependencies: { '@clocky/clocky-subagent': 'workspace:^' } },
+        manifest: { name: '@clocky/clocky-consumer', dependencies: { '@clocky/clocky-compat-subagent': 'workspace:^' } },
       },
       {
         dir: 'python/sdk-runtime',
-        manifest: { name: 'clocky-jsonrpc-agent-pkg', dependencies: { '@clocky/clocky-subagent': 'workspace:^' } },
+        manifest: { name: 'clocky-jsonrpc-agent-pkg', dependencies: { '@clocky/clocky-compat-subagent': 'workspace:^' } },
       },
     ]
 
     expect(checkPrivateCompatibilityDependencyIsolation(consumers)).toEqual([
-      '@clocky/clocky-consumer: dependencies.@clocky/clocky-subagent must not reference a private compatibility package',
-      'clocky-jsonrpc-agent-pkg: dependencies.@clocky/clocky-subagent must not reference a private compatibility package',
+      '@clocky/clocky-consumer: dependencies.@clocky/clocky-compat-subagent must not reference a private compatibility package',
+      'clocky-jsonrpc-agent-pkg: dependencies.@clocky/clocky-compat-subagent must not reference a private compatibility package',
     ])
   })
 })

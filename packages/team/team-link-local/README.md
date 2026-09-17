@@ -22,8 +22,7 @@ The first `onNotify()` subscriber starts local Team and channel cursor watches b
 
 `providerName` defaults to `local`; `pageSize` defaults to `128`; `notificationRetryDelayMs` defaults to `100`; and `disposalTimeoutMs` defaults to `5000`. `pageSize` must not exceed the mounted Team provider's pending-delivery page limit. Link close cancels its local waits and delayed retries, stops notification admission, and awaits already accepted replay and notification work up to `disposalTimeoutMs`.
 
-The first pending-delivery scan uses the channel's durable `replayWatermark` when the provider exposes it. This avoids replaying an acknowledged prefix while retaining every still-pending Envelope for claim and receipt recovery.
-A repeated or rewound Team or channel watch cursor fails the Link closed instead of retrying the same continuation.
+The first pending-delivery scan uses the channel's durable `replayWatermark` when the provider exposes it. This avoids replaying an acknowledged prefix while retaining every still-pending Envelope for claim and receipt recovery. A repeated or rewound Team or channel watch cursor fails the Link closed instead of retrying the same continuation.
 
 `heartbeatTaskAttempt()` passes its private lease proof with only `taskId`, `attemptId`, and `expectedRevision`; `settleTaskAttempt()` adds the Link-permitted `released`, `failed`, or `completed` outcome; `integrateTask()` passes the same task/attempt fence to the Team workspace registry, which derives source artifacts and target facts from the durable integration task. The Hub resolves the proof to select the Team queue, revalidates the binding while that lock is held, and derives the Team, Participant, activation, Session, and exact lease owner before renewal, integration, or settlement. Ordinary `post()` retains its separate binding-derived contract; `resolveTaskReview()` uses the same proof-only path and none of these operations grants Team-closure authority.
 

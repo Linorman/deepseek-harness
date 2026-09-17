@@ -1,4 +1,6 @@
 import type { Context } from '@clocky/cordis'
+import type {} from '@clocky/clocky-team-activation-controller'
+import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team'
 import {
   CallId,
   LlmAdapter,
@@ -207,13 +209,13 @@ function goalRevision(messages: GenerateOptions['messages'], callId: string): nu
   return revision
 }
 
-function assignment(messages: GenerateOptions['messages']): { readonly taskId: string; readonly attemptId: string } {
-  for (const message of messages) {
+function assignment(messages: GenerateOptions['messages']): { readonly taskId: string; readonly attemptId: string; readonly text: string } {
+  for (const message of [...messages].reverse()) {
     if (message.role !== 'user') continue
     const text = message.content.find(block => block.type === 'text')
     if (text === undefined || text.type !== 'text' || !text.text.startsWith('Team task assignment:')) continue
     const task = /\nTask: (\S+)\nAttempt: (\S+)/u.exec(text.text)
-    if (task?.[1] !== undefined && task[2] !== undefined) return { taskId: task[1], attemptId: task[2] }
+    if (task?.[1] !== undefined && task[2] !== undefined) return { taskId: task[1], attemptId: task[2], text: text.text }
   }
   throw new Error('headless-team-run-llm: worker did not receive a Team task assignment')
 }
@@ -226,6 +228,20 @@ function hasAssignment(messages: GenerateOptions['messages']): boolean {
 function isWorkflowAssignment(messages: GenerateOptions['messages']): boolean {
   return messages.some(message => message.role === 'user'
     && message.content.some(block => block.type === 'text' && block.text.includes('Compile the workflow task')))
+}
+
+function publishedWorkflowExample(options: GenerateOptions): Record<string, unknown> {
+  const tool = options.tools?.find(candidate => candidate.name === 'team_workflow_start')
+  const schema = tool?.parameters as { properties?: { plan?: { examples?: unknown[] } } } | undefined
+  const example = schema?.properties?.plan?.examples?.[0]
+  if (example === undefined) throw new Error('workflow schema did not publish its example')
+  const plan = structuredClone(example) as { tasks: { requiredCapabilities: string[] }[] } & Record<string, unknown>
+  const encoded = /Workflow worker capability: ("[^"\n]+")/u.exec(options.system ?? '')?.[1]
+  if (encoded === undefined) throw new Error('coordinator instructions lack the configured worker capability')
+  const capability: unknown = JSON.parse(encoded)
+  if (typeof capability !== 'string') throw new Error('worker capability is not a string')
+  for (const task of plan.tasks) task.requiredCapabilities = [capability]
+  return plan
 }
 
 class HeadlessTeamRunAdapter extends LlmAdapter {
@@ -254,6 +270,8 @@ class HeadlessTeamRunAdapter extends LlmAdapter {
 }
 
 class HeadlessTeamTaskAdapter extends LlmAdapter {
+  constructor(private readonly ctx: Context) { super() }
+
   override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return { provider, id: model, name: model }
   }
@@ -263,13 +281,39 @@ class HeadlessTeamTaskAdapter extends LlmAdapter {
     if (options.purpose === 'session-title') {
       chunks = textChunks('Headless Team Task')
     } else if (hasAssignment(options.messages)) {
-      const report = toolCall(options.messages, 'team_task_report')
-      if (report === undefined) {
+      const assigned = assignment(options.messages)
+      const reportId = `headless-team-task-report-${assigned.attemptId}`
+      const priorReport = toolCall(options.messages, 'team_task_report')
+      const report = priorReport?.id === reportId ? priorReport : undefined
+      const example = process.env.CLOCKY_TEAM_WORKFLOW_EXAMPLE === '1'
+      const recovery = process.env.CLOCKY_TEAM_WORKER_RECOVERY
+      const continuations = options.messages.filter(message => message.role === 'assistant'
+        && message.content.some(block => block.type === 'text'
+          && (block.text.startsWith('WORKER_PARTIAL_') || block.text === 'Worker has not reported yet.'))).length
+      if (report === undefined && example && assigned.text.includes('Gather evidence')
+        && toolResultText(options.messages, `example-write-${assigned.attemptId}`) === undefined) {
+        chunks = toolChunks(`example-write-${assigned.attemptId}`, 'write', {
+          file_path: 'findings.txt', content: 'SCHEMA_EXAMPLE_EVIDENCE\n',
+        })
+      } else if (report === undefined && example && assigned.text.includes('Write the report')
+        && toolResultText(options.messages, `example-read-${assigned.attemptId}`) === undefined) {
+        chunks = toolChunks(`example-read-${assigned.attemptId}`, 'read', { file_path: 'findings.txt' })
+      } else if (report === undefined && recovery === 'output-limit' && continuations < 2) {
+        chunks = [...textChunks(`WORKER_PARTIAL_${String(continuations)}`).slice(0, -1),
+          { type: 'finish', reason: { kind: 'max-tokens' } }]
+      } else if (report === undefined && recovery === 'missing-report' && continuations === 0) {
+        chunks = textChunks('Worker has not reported yet.')
+      } else if (report === undefined) {
         const task = assignment(options.messages)
-        chunks = toolChunks('headless-team-task-report', 'team_task_report', {
+        if (example && assigned.text.includes('Write the report')
+          && !toolResultText(options.messages, `example-read-${assigned.attemptId}`)?.includes('SCHEMA_EXAMPLE_EVIDENCE')) {
+          throw new Error('The second task did not receive its predecessor evidence file')
+        }
+        chunks = toolChunks(reportId, 'team_task_report', {
           task_id: task.taskId,
           attempt_id: task.attemptId,
           outcome: 'completed',
+          evidence: ['WORKER_EVIDENCE'], verification: 'WORKER_VERIFICATION',
           summary: isWorkflowAssignment(options.messages)
             ? isMultiWorkflowAssignment(options.messages) ? MULTI_WORKFLOW_TASK_SUMMARY : WORKFLOW_TASK_SUMMARY
             : TASK_SUMMARY,
@@ -280,8 +324,20 @@ class HeadlessTeamTaskAdapter extends LlmAdapter {
     } else if (isWorkflowRequest(options.messages)) {
       const start = toolCall(options.messages, 'team_workflow_start')
       if (start === undefined) {
+        if (process.env.CLOCKY_WORKFLOW_DORMANT_ROLE === '1') {
+          const teamId = teamIdSchema.parse(this.ctx.agents.requireInitiator().session.header.teamId)
+          const state = await this.ctx.teams.getTeam({ teamId })
+          const member = state.participants.find(value => value.role === 'researcher')
+          const binding = state.activations.find(value => value.activation.participantId === member?.id)
+          if (binding === undefined) throw new Error('workflow fixture has no researcher activation')
+          const lease = await this.ctx.teamActivations.activate({ teamId, participantId: binding.activation.participantId,
+            expectedCursor: state.team.cursor, provider: binding.provider, sessionId: binding.sessionId,
+            seed: { kind: 'resume' }, agent: { options: {} }, signal: new AbortController().signal })
+          await lease.dispose()
+        }
         chunks = toolChunks('headless-team-workflow-start', 'team_workflow_start', {
-          plan: isMultiWorkflowRequest(options.messages) ? MULTI_WORKFLOW_PLAN : WORKFLOW_PLAN,
+          plan: process.env.CLOCKY_TEAM_WORKFLOW_EXAMPLE === '1' ? publishedWorkflowExample(options)
+            : isMultiWorkflowRequest(options.messages) ? MULTI_WORKFLOW_PLAN : WORKFLOW_PLAN,
         })
       } else {
         const wait = toolCall(options.messages, 'team_workflow_wait')
@@ -351,6 +407,20 @@ class HeadlessTeamTaskAdapter extends LlmAdapter {
           if (toolResultText(options.messages, wait.id) === undefined) {
             throw new Error('headless-team-run-llm: coordinator task wait has no result')
           }
+          const result = JSON.parse(toolResultText(options.messages, wait.id)!) as { evidence?: string[]; verification?: string }
+          if (result.evidence?.[0] !== 'WORKER_EVIDENCE' || result.verification !== 'WORKER_VERIFICATION') {
+            throw new Error(`coordinator request lost worker evidence or verification: ${JSON.stringify(result)}`)
+          }
+          const selectedTeamId = teamIdSchema.parse(this.ctx.agents.requireInitiator().session.header.teamId)
+          const selectedTaskId = teamTaskIdSchema.parse(taskId(options.messages, start.id))
+          const record = await this.ctx.teams.inspectTask({ teamId: selectedTeamId, taskId: selectedTaskId, section: 'record' })
+          const attempts = await this.ctx.teams.inspectTask({ teamId: selectedTeamId, taskId: selectedTaskId,
+            section: 'attempts', expectedRevision: record.revision, limit: 1 })
+          if (record.section !== 'record' || record.task.phase !== 'completed' || record.history.attempts !== 1
+            || attempts.section !== 'attempts' || attempts.items[0]?.outcome.kind !== 'completed'
+            || attempts.items[0].outcome.result.verification !== 'WORKER_VERIFICATION') {
+            throw new Error('Task inspection lost the completed worker evidence')
+          }
           chunks = toolChunks('headless-team-task-final', 'team_final', {
             channel_id: finalChannelId(options.system), text: TASK_FINAL_TEXT,
           })
@@ -367,10 +437,10 @@ class HeadlessTeamTaskAdapter extends LlmAdapter {
 }
 
 export const name = 'headless-team-run-llm'
-export const inject = ['llm']
+export const inject = ['llm', 'agents', 'teams', 'teamActivations']
 
 /** Register the isolated snapshot model route. */
 export function apply(ctx: Context): void {
   ctx.llm.registerAdapter(['headless-team-run-mock'], new HeadlessTeamRunAdapter())
-  ctx.llm.registerAdapter(['headless-team-task-mock'], new HeadlessTeamTaskAdapter())
+  ctx.llm.registerAdapter(['headless-team-task-mock'], new HeadlessTeamTaskAdapter(ctx))
 }

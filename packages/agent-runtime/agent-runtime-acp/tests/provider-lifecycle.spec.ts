@@ -26,7 +26,7 @@ import type { ActivationBindingSnapshot, ChannelDeliveryClaim, TeamChannelViewEv
 import type { TeamLink, TeamLinkConnectRequest } from '@clocky/clocky-team-link'
 import * as AcpRuntime from '../src/index.ts'
 
-const mockServer = fileURLToPath(new URL('../../../subagent/subagent-acp/tests/mock-acp-server.ts', import.meta.url))
+const mockServer = fileURLToPath(new URL('../../../compat/subagent-acp/tests/mock-acp-server.ts', import.meta.url))
 const teamId = teamIdSchema.parse('acp-runtime-lifecycle-team')
 const participant = participantSnapshotSchema.parse({
   id: 'acp-runtime-lifecycle-participant',

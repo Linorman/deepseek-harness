@@ -9,6 +9,8 @@ Frame v7 携带 `invitation` notification 与 `invitation-ack` operation。`onIn
 
 `getChannel(channelId)` 使用当前 activation proof，只读取成员频道的 manifest、phase 与 cursor，包括 admission 尚为 pending 时。Frame v7 将其映射为 `channel-get`，不返回 message、summary 或 adapter state。
 
+Provider 可通过 `TeamLinkConnectionError.retryable` 分类连接失败。false 表示需要重新配置 provider 或更换 binding，不能重复相同连接。Registry 的 `team-link/provider-added` 通知使暂停的 consumer 在 provider 替换后重试；观察者异常不能否决注册。未知失败仍按 consumer 的正常重连策略处理。
+
 ## 提供方约定
 
 `TeamLinkProvider`以一个非空名称注册，并接收该名称、一个 activation／Session／AgentRuntime-provider snapshot，以及可选的连接取消信号。activation id、Team、Participant、Session 和 placement provider 标识该连接；residency status 可变，provider 会在发布前重新校验。只有在发布 provider-owned connection 后，其 `connect()` 调用才返回 `TeamLink`。返回的 Link 保留请求的 provider 名称和 binding identity；`TeamLinkRegistry.connect()`验证两者，并在拒绝前关闭不匹配的 Link。移除注册会阻止后续连接，但不会撤销已经返回给调用方的 Link。

@@ -10,6 +10,8 @@ Web 启动内核：`new AppWebEntry(el, seams?).run()` 分两个阶段挂载客�
 
 可选的覆盖参数 `seams` 会为外部 `<script>` 执行无法到达页面上下文的环境转发模块系统的 `loadBundle` 传输覆盖（`BootSeams`）；普通浏览器调用方省略此参数。预注入的页面传输是位于其前的默认值：当 `globalThis.__CLOCKY_TRANSPORT__`（connection 包的 `ClientTransportHooks`）携带 `loadBundle` 时，模块阶段将其采纳为 bundle 传输并跳过 immediately 层级的 HTTP 预取——显式 `seams` 仍然优先。
 
+浏览器插件 entry 接收解析后启动 manifest 中独立复制的公开`config`。Cordis 在激活前使用各插件自己的 schema 验证；未指定配置时使用插件正常的默认配置行为。
+
 ## 模型体验
 
 无。入口外壳负责启动浏览器插件树；这里没有任何内容进入模型请求。

@@ -20,9 +20,6 @@ Read this package for the whole plugin tree and its composition order.
 @clocky/clocky-skill            skill provider registry
 @clocky/clocky-skill-filesystem      local filesystem skill provider
 @clocky/clocky-agent            agent registry + initiator scope + agent/* events
-@clocky/clocky-goal             optional persisted same-session goal domain
-@clocky/clocky-tool-goal        optional model-facing goal controls
-@clocky/clocky-goal-round-driver     optional same-session goal-round driver
 @clocky/clocky-llm-retry        provider-routed request retry policy
 @clocky/clocky-jobs-local      generic background-job registry
 @clocky/clocky-invariants       configurable invariant registry service
@@ -55,11 +52,11 @@ This applies the [Service Definition / Service Provider / Consumer separation](.
 
 ```ts
 import type { Config } from '@clocky/clocky-agent-spine-demo'
-// { agents?, maxParallelToolCalls?, includeHarnessIdentity?, includeRuntimeContext?, persona?, toolOrder?, tools?, clockyHome?, sessionTitle?, skills?, workspaceContext, toolBash?, jobs?, toolJobs?, goals?, invariants? }
+// { agents?, maxParallelToolCalls?, includeHarnessIdentity?, includeRuntimeContext?, persona?, toolOrder?, tools?, clockyHome?, sessionTitle?, skills?, workspaceContext, toolBash?, jobs?, toolJobs?, invariants? }
 // workspaceContext requires { maxBytes } or false; the other owner schemas supply defaults.
 ```
 
-The bundle forwards each field to the child that owns it. App packages supply any pre-created agents: headless and JSON-RPC compositions create `main`, while the ACP app creates agents on demand at `session/new`. `includeRuntimeContext: false` is forwarded to `clocky-system-prompt` and suppresses all dynamic context snapshots for fresh sessions without disabling their policy services. Prompt, tool, title, skill, agent-instructions, invariant, goal, and task settings retain the schemas and defaults documented by their owning packages; `jobs.maxConcurrentJobsPerOwner` configures the local provider independently of the model-facing `toolJobs` controls. `pickSpineConfig()` copies only fields owned by this bundle, and conflicting `clockyHome` values fail during composition.
+The bundle forwards each field to the child that owns it. App packages supply any pre-created agents: headless and JSON-RPC compositions create `main`, while the ACP app creates agents on demand at `session/new`. `includeRuntimeContext: false` is forwarded to `clocky-system-prompt` and suppresses all dynamic context snapshots for fresh sessions without disabling their policy services. Prompt, tool, title, skill, agent-instructions, invariant, and task settings retain the schemas and defaults documented by their owning packages; `jobs.maxConcurrentJobsPerOwner` configures the local provider independently of the model-facing `toolJobs` controls. `pickSpineConfig()` copies only fields owned by this bundle, and conflicting `clockyHome` values fail during composition.
 
 For example, `{ invariants: { enabled: true, package_allowlist: ['^@clocky/clocky-'], package_blocklist: ['agent-loop$'] } }` keeps the package-owned companions mounted but suppresses the blocked owner. Blocklist matches override allowlist matches; see [`clocky-invariants`](../../runtime-diagnostics/invariants/README.md) for regex and lifecycle rules.
 
@@ -71,7 +68,7 @@ The retry policy may repeat a failed request in a new numbered step. Retry statu
 
 ## Model Experience
 
-Indirectly, through `clocky-system-prompt`, `clocky-tool-skill`, `clocky-tool-bash`, `clocky-tools`, and `clocky-llm-retry`, plus `clocky-tool-goal` and goal-round prompts when `goals` is enabled. The bundle adds no model-bound wrapper content of its own.
+Indirectly, through `clocky-system-prompt`, `clocky-tool-skill`, `clocky-tool-bash`, `clocky-tools`, and `clocky-llm-retry`. The bundle adds no model-bound wrapper content of its own.
 
 #### KV Cache effect
 
@@ -79,5 +76,5 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 
 ## Known Limitations and Deferred Work
 
-- **Most of the spine set is fixed in code** — `apply()` always mounts the core services; config can omit bundled goals, skills, bash, and task-control tools, but swapping the loop or dropping another spine member means composing a different bundle.
+- **Most of the spine set is fixed in code** — `apply()` always mounts the core services; config can omit bundled skills, bash, and task-control tools, but swapping the loop or dropping another spine member means composing a different bundle.
 - **The invariant service and companions remain fixed members** — `invariants.enabled: false` or package filters suppress checks but do not remove the service or companion registrations; Session's always-on validation and freezing are separate.

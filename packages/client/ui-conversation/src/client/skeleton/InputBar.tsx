@@ -15,8 +15,6 @@ import {
 // Type-only: the `plan` projection key merge (the TodoDock posture — the
 // composer reads a host-computed value; the domain owns the key).
 import type {} from '@clocky/clocky-plan-mode/client'
-// Type-only: the `goal` projection key merge (hint disambiguation).
-import type {} from '@clocky/clocky-goal/client'
 // The `imageLimits` projection key merge (intake pre-check) arrives with the
 // wire types: apiproxy's sessions contract declares it, and client-runtime's
 // api-remotes import already places it in every client program.
@@ -98,8 +96,6 @@ export function InputBar({
   // Plan mode swaps the textarea placeholder (the projection is the folded
   // host value; owner-prop placeholders — hero, session-unavailable — win).
   const planActive = useProjection('plan', plan => plan !== undefined && (plan.pending ? !plan.active : plan.active))
-  // Absent (undefined: no frame yet) and cleared (null) both mean no goal.
-  const hasGoal = useProjection('goal', goal => goal != null)
   // Session-maybe: the machine faces are absent together while no session is
   // current; the bar renders the same DOM inert instead of a parallel tree.
   const live = input !== undefined && keyboard !== undefined && actions !== undefined
@@ -649,7 +645,7 @@ export function InputBar({
     if (deco.hint !== null) {
       // Claim tokens have the `/name ` format (trailing space); trim to the bare name.
       const commandName = input?.claim?.token.slice(1).trim() ?? ''
-      const hintKey = `hint.${commandName === 'goal' && hasGoal ? 'goal.active' : commandName}`
+      const hintKey = `hint.${commandName}`
       // Dynamic lookup by claimed command name: unknown commands miss the
       // dictionary and keep the machine's own hint, so the call is wide.
       const translated = (t as Translate)(hintKey)

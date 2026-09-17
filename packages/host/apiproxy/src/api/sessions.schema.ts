@@ -1,3 +1,4 @@
+import { teamIdSchema, participantIdSchema } from '@clocky/clocky-team/schema'
 /**
  * sessions domain zod schemas (names derived from map keys: sessionListRequestSchema /
  * sessionListValueSchema). SessionEvent passthrough = strict envelope (type/seq/time) + wide
@@ -46,8 +47,12 @@ export const sessionEventSchema = z.object({
   ignorable: z.literal(true).optional(),
 }) as unknown as z.ZodType<SessionEvent>
 
+/** Exact paired Team ownership stored in a Session header. */
+export const sessionTeamOwnerSchema = z.object({ teamId: teamIdSchema, participantId: participantIdSchema }).strict()
+
 /** SessionSummary row of session.list (`projections` reuses the history block's shape and schema). */
 export const sessionSummarySchema = z.object({
+  team: sessionTeamOwnerSchema.optional(),
   sessionId: sessionIdSchema,
   updatedAt: z.number(),
   running: z.boolean(),

@@ -141,18 +141,10 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
               data-slot="sidebar.brand.name"
               style="display: contents;"
             >
-              <svg
-                aria-hidden="true"
-                data-content="883ec90c"
-                fill="none"
-                height="24"
-                viewBox="0 0 156 24"
-                width="156"
-              />
               <span
-                class="buildRevision"
+                title="abc1234"
               >
-                abc1234
+                Clocky
               </span>
             </div>
           </span>
@@ -274,18 +266,10 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
               data-slot="sidebar.brand.name"
               style="display: contents;"
             >
-              <svg
-                aria-hidden="true"
-                data-content="883ec90c"
-                fill="none"
-                height="24"
-                viewBox="0 0 156 24"
-                width="156"
-              />
               <span
-                class="buildRevision"
+                title="abc1234"
               >
-                abc1234
+                Clocky
               </span>
             </div>
           </span>

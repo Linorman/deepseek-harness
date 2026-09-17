@@ -34,6 +34,7 @@ type FeedRow = {
   running?: boolean
   blank?: boolean
   agentPreset?: string
+  team?: import('../src/client/sessions/service.ts').SessionSummary['team']
 }
 
 async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
@@ -41,6 +42,7 @@ async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
     items: rows.map(r => ({
       sessionId: sid(r.id), updatedAt: 1, running: r.running ?? false, blank: r.blank ?? false,
       ...(r.cwd !== undefined ? { cwd: r.cwd } : {}),
+      ...r.team === undefined ? {} : { team: r.team },
       ...(r.agentPreset !== undefined ? { agentPreset: r.agentPreset } : {}),
     })),
   }) as never)
@@ -49,6 +51,17 @@ async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
 }
 
 describe('list store projection', () => {
+  it('retains exact Team ownership through both list refresh and live metadata updates', async () => {
+    const b = bench()
+    const team = { teamId: 'team' as never, participantId: 'member' as never }
+    await feedList(b, [{ id: 's1', team }])
+    expect(b.svc.list.getSnapshot().byId[sid('s1')]?.team).toEqual(team)
+    b.svc.handleHostEnvelope({ rpcId: 'owner' as never, payload: { type: 'host/session-added', sessionId: sid('s2'), blank: false, team } })
+    await Promise.resolve()
+    expect(b.svc.list.getSnapshot().byId[sid('s2')]?.team).toEqual(team)
+    await b.ctx.fiber.dispose()
+  })
+
   it('projects durable titles separately from cwd/id display fallbacks', async () => {
     const b = bench()
     b.svc.handleMuxEnvelope({

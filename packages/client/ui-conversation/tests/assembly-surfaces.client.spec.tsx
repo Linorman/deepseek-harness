@@ -66,7 +66,7 @@ async function bench(opts?: { blank?: boolean }) {
 }
 
 describe('resident composer', () => {
-  it('starts a Team from the local task draft and opens its coordinator transcript', async () => {
+  it('starts a Team from the local task draft without opening its coordinator transcript', async () => {
     const coordinator = 'team-coordinator' as SessionId
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
@@ -107,7 +107,8 @@ describe('resident composer', () => {
     })
     await waitFor(() => {
       expect(runtime.sessions.calls).toContainEqual({ method: 'refresh', args: [] })
-      expect(runtime.sessions.calls).toContainEqual({ method: 'open', args: [coordinator] })
+      expect(runtime.sessions.calls).toContainEqual({ method: 'clear', args: [] })
+      expect(runtime.sessions.calls).not.toContainEqual({ method: 'open', args: [coordinator] })
     })
     expect(runtime.workspaces.calls).toEqual([])
     await runtime.dispose()

@@ -102,6 +102,10 @@ export interface TeamResourceBudget {
   readonly maxRetries?: number
   /** Maximum concurrent task attempts. */
   readonly maxConcurrency?: number
+  /** Maximum lifetime descendant Team identities, including reserved subtree capacity. */
+  readonly maxChildTeams?: number
+  /** Maximum simultaneously reserved or unquiesced Activation epochs across the subtree. */
+  readonly maxLiveActivations?: number
   /** Maximum bytes of published artifacts. */
   readonly maxArtifactBytes?: number
   /** Namespaced provider-specific budget ceilings. */
@@ -2057,29 +2061,30 @@ export interface TeamSnapshot {
   readonly archivedAt?: number
 }
 
-/** Request one bounded page of visible Team summaries.
- *
- * `afterCursor` is an exclusive materialized-journal descriptor ordinal, not a
- * Team-journal cursor. Archived descriptors remain part of the ordinal space,
- * while providers omit them from `items`.
- */
+/** Opaque discovery position owned by the current Team provider. */
+export type TeamDiscoveryCursor = Branded<'TeamDiscoveryCursor'>
+
+/** Request bounded discovery work; an empty page can still have a continuation. */
 export interface TeamListPageRequest {
-  /** Exclusive provider-order ordinal from a prior page, or `-1` initially. */
-  readonly afterCursor: number
-  /** Maximum number of Team summaries to return. */
+  /** Provider-issued position, or -1 to begin a fresh scan. Expiration requires restarting at -1. */
+  readonly afterCursor: TeamDiscoveryCursor | -1
+  /** Maximum Team names examined, including archived or concurrently removed Teams. */
   readonly limit: number
 }
 
-/** One bounded page of visible Team summaries. */
+/** Visible summaries from bounded provider work, without promising a stable directory snapshot. */
 export interface TeamListPage {
-  /** Visible Team summaries in provider order. */
+  /** Physical discovery work, including skipped names and backend completion. */
+  readonly scanned: number
   readonly items: readonly TeamSnapshot[]
-  /** Provider-order ordinal for the next page when more summaries remain. */
-  readonly nextCursor?: number | undefined
+  /** Continue only with this opaque token; it is neither an ordinal nor Team-journal authority. */
+  readonly nextCursor?: TeamDiscoveryCursor | undefined
 }
 
 /** Immutable participant read model returned by a Team provider. */
 export interface ParticipantSnapshot {
+  /** Latest provider-start reservation; a missing binding does not prove its process stopped. */
+  readonly activationReservation?: ActivationReservationSnapshot | undefined
   /** Stable Team participant identity. */
   readonly id: ParticipantId
   /** Team that owns this participant. */
@@ -2107,6 +2112,36 @@ export interface ParticipantSnapshot {
   readonly authorityGrant?: TeamAuthorityGrant | undefined
   /** Hub-derived counters and timing observations, never caller-claimed. */
   readonly stats?: ParticipantStats | undefined
+}
+
+/** Exact member inspection selection; continuation is pinned to the observed Team journal cursor. */
+export interface TeamMemberInspectRequest {
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly afterCursor?: number | undefined
+  readonly limit?: number | undefined
+  readonly expectedTeamCursor?: number | undefined
+}
+
+/** Provider-resolved member capability window. */
+export type TeamMemberInspectSpec = Omit<TeamMemberInspectRequest, 'afterCursor' | 'limit'> & {
+  readonly afterCursor: number
+  readonly limit: number
+}
+
+/** Member identity and non-secret placement fields, without grants, startup reservations or history statistics. */
+export type TeamMemberInspectionRecord = Pick<ParticipantSnapshot,
+  'id' | 'teamId' | 'kind' | 'displayName' | 'role' | 'phase' | 'provider' | 'preset' | 'model' | 'authScheme'>
+
+/** One byte-bounded capability page and exact current member metadata. */
+export interface TeamMemberInspection {
+  readonly record: TeamMemberInspectionRecord
+  readonly teamCursor: number
+  readonly startCursor: number
+  readonly total: number
+  readonly scanned: number
+  readonly items: readonly string[]
+  readonly nextCursor?: number | undefined
 }
 
 /** Request one bounded page of a Team's participant projections. */
@@ -2274,6 +2309,8 @@ export type ActivationRecoverySnapshot = SdkActivationRecoverySnapshot | AcpActi
 
 /** Immutable durable binding of one activation epoch to its Session and placement provider. */
 export interface ActivationBindingSnapshot {
+  /** Startup reservation consumed by this exact provider epoch. */
+  readonly reservationId?: ActivationReservationId | undefined
   /** Provider-owned activation epoch and its current durable residency status. */
   readonly activation: ActivationSnapshot
   /** Session that the activated participant uses. */
@@ -2418,6 +2455,40 @@ export interface TeamSystemActivationProof {
   readonly [teamSystemActivationProofBrand]: never
 }
 
+/** Durable identity of one provider-start admission. */
+export type ActivationReservationId = Branded<'ActivationReservationId'>
+
+/** One startup slot retained until a matching binding quiesces or startup cleanup is confirmed. */
+export interface ActivationReservationSnapshot {
+  readonly id: ActivationReservationId
+  readonly sessionId: SessionId
+  readonly provider: string
+  readonly reservedAt: number
+  /** Present only after confirmed cleanup without a published binding. */
+  readonly releasedAt?: number | undefined
+}
+
+/** Exact provider-start reservation selected by the activation controller. */
+export interface ActivationReservationInput {
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly reservationId: ActivationReservationId
+  readonly sessionId: SessionId
+  readonly provider: string
+  readonly expectedCursor: number
+}
+
+/** Runtime-only authority for reserving startup capacity or confirming unpublished-start cleanup. */
+export interface ActivationReservationRequest extends ActivationReservationInput {
+  readonly actor: TeamSystemActivationProof
+}
+
+/** The controller retains startup authority independently of a not-yet-published binding. */
+export type ActivationControllerReservationScope = ActivationReservationInput & (
+  | { readonly kind: 'activation-controller-reserve' }
+  | { readonly kind: 'activation-controller-release-reservation' }
+)
+
 /** Exact controller-owned publication of one newly created activation binding. */
 export interface ActivationControllerBindScope {
   /** Closed source operation selected by this proof. */
@@ -2504,6 +2575,7 @@ export interface ActivationRecoveryQuiesceScope {
 
 /** Closed activation-lifecycle mutations a system source may select. */
 export type TeamSystemActivationScope =
+  | ActivationControllerReservationScope
   | ActivationControllerBindScope
   | ActivationControllerStatusScope
   | ActivationControllerFenceScope
@@ -3171,6 +3243,12 @@ export interface ActivationControllerClosureStallPhaseScope {
   readonly reason: TeamStallReason
 }
 
+/** Exact closure stall for a reserved provider start that has no published epoch or termination proof. */
+export interface ActivationControllerStartupStallPhaseScope extends Omit<ActivationControllerClosureStallPhaseScope, 'kind' | 'activationId'> {
+  readonly kind: 'activation-controller-startup-stall'
+  readonly reservationId: ActivationReservationId
+}
+
 /** Closed durable scopes a system phase source may select. */
 export interface ActivationControllerRecoveryStallPhaseScope {
   /** Exact recovery operation selected by the controller. */
@@ -3194,6 +3272,7 @@ export type TeamSystemPhaseScope =
   | SchedulerStallPhaseScope
   | ActivationControllerCancellationStallPhaseScope
   | ActivationControllerClosureStallPhaseScope
+  | ActivationControllerStartupStallPhaseScope
   | ActivationControllerRecoveryStallPhaseScope
 
 /** Immutable system-source attribution resolved for one Team phase proof. */
@@ -3854,6 +3933,170 @@ export interface TeamStateSnapshot {
   /** Durable declarative workflow plans owned by this Team, in admission order. */
   readonly workflowPlans?: readonly TeamWorkflowPlanSnapshot[]
 }
+
+/** Display text with an explicit indication that the complete durable value is longer. */
+export interface TeamSelectionText {
+  readonly text: string
+  readonly truncated: boolean
+}
+
+/** Optional scalar metadata for product selection, never execution histories. */
+export type TeamSelectionMetadata =
+  | { readonly kind: 'available'; readonly goal: TeamGoalSnapshot; readonly budgets: JsonObject; readonly usage?: TeamUsageSnapshot | undefined }
+  | { readonly kind: 'unavailable'; readonly reason: 'too-large' | 'not-provided' }
+
+/** Exact durable human action selected independently from the Team history. */
+export interface TeamHumanActionReadRequest {
+  readonly teamId: TeamId
+  readonly actionId: TeamHumanActionId
+}
+
+/** Select bounded product data; scalar metadata may independently exceed the response allowance. */
+export interface TeamSelectionRequest extends TeamGetRequest {
+  readonly includeMetadata?: boolean | undefined
+}
+
+/** Initial Team selection without task, roster, channel or activation history arrays. */
+export interface TeamSelectionSnapshot {
+  readonly metadata?: TeamSelectionMetadata | undefined
+  readonly cancellation?: { readonly reason: TeamSelectionText } | undefined
+  readonly pendingHumanActionCount?: number | undefined
+  readonly team: Pick<TeamSnapshot, 'id' | 'parentTeamId' | 'parentTaskId' | 'depth' | 'maxTeamDepth'
+    | 'workspacePath' | 'phase' | 'cursor' | 'createdAt' | 'updatedAt' | 'archivedAt'>
+  readonly goal: {
+    readonly revision: number
+    readonly phase: TeamGoalPhase
+    readonly objective: TeamSelectionText
+  }
+  readonly stallReason?: { readonly code: string; readonly message: TeamSelectionText } | undefined
+  readonly closureKind?: 'complete' | 'fail' | 'cancel' | undefined
+  readonly coordinator:
+    | { readonly kind: 'bound'
+      readonly name: TeamSelectionText
+      readonly participantKind: 'local-agent' | 'remote-agent'
+      readonly participantPhase: ParticipantPhase
+      readonly binding: Pick<ActivationBindingSnapshot, 'activation' | 'sessionId' | 'provider'> }
+    | { readonly kind: 'unavailable'; readonly reason: 'missing-participant' | 'ambiguous-participant' | 'not-agent' | 'starting' | 'missing-binding' }
+  readonly counts: {
+    readonly participants: number
+    readonly activations: number
+    readonly tasks: Readonly<Record<TeamTaskPhase, number>>
+    readonly channels: number
+    readonly workflowPlans: number
+  }
+}
+
+/** Collection whose listing can omit execution bodies and history. */
+export type TeamBrowseKind = 'tasks' | 'members' | 'workflowPlans'
+
+/** A provider-order summary page request; ids and revisions remain exact. */
+export interface TeamBrowseRequest {
+  readonly teamId: TeamId
+  readonly kind: TeamBrowseKind
+  readonly afterCursor?: number | undefined
+  readonly limit?: number | undefined
+}
+
+/** Provider-resolved cursor and row allowance after request/config validation. */
+export type TeamBrowseSpec = Omit<TeamBrowseRequest, 'afterCursor' | 'limit'> & {
+  readonly afterCursor: number
+  readonly limit: number
+}
+
+/** Task list data without instructions, review records, attempts or result payloads. */
+export interface TeamTaskSummary {
+  readonly id: TeamTaskId
+  readonly teamId: TeamId
+  readonly revision: number
+  readonly phase: TeamTaskPhase
+  readonly subject: TeamSelectionText
+  readonly executionKind: TeamTaskExecution['kind']
+  readonly ownerId?: ParticipantId | undefined
+  readonly reviewerId?: ParticipantId | undefined
+  readonly childTeamId?: TeamId | undefined
+  readonly workflowPlanId?: TeamWorkflowPlanId | undefined
+  readonly priority: number
+  readonly attemptCount: number
+  readonly maxAttempts: number
+  readonly dependencyCount: number
+  readonly reviewCount: number
+  readonly hasLease: boolean
+  readonly cancellationRequested: boolean
+}
+
+/** Member list data without grants, scopes, provider configuration or attempt statistics. */
+export interface TeamMemberSummary {
+  readonly id: ParticipantId
+  readonly teamId: TeamId
+  readonly kind: ParticipantKind
+  readonly phase: ParticipantPhase
+  readonly displayName: TeamSelectionText
+  /** Exact protocol role; an oversized role rejects the bounded row. */
+  readonly role: string
+  readonly capabilityCount: number
+}
+
+/** Workflow list data without DAG templates, bindings or result bodies. */
+export interface TeamWorkflowSummary {
+  readonly id: TeamWorkflowPlanId
+  readonly teamId: TeamId
+  readonly revision: number
+  readonly phase: TeamWorkflowPlanPhase
+  readonly name: TeamSelectionText
+  readonly taskCount: number
+  readonly boundTaskCount: number
+  readonly channelId?: ChannelId | undefined
+}
+
+/** Exact collection and Team cursors accompany each bounded summary response. */
+export type TeamBrowsePage = {
+  readonly teamId: TeamId
+  /** Global Team journal watermark; collection continuation uses nextCursor. */
+  readonly teamCursor: number
+  readonly total: number
+  /** Entries examined, including the ordinal prefix and one look-ahead row. */
+  readonly scanned: number
+  readonly nextCursor?: number | undefined
+} & (
+  | { readonly kind: 'tasks'; readonly items: readonly TeamTaskSummary[] }
+  | { readonly kind: 'members'; readonly items: readonly TeamMemberSummary[] }
+  | { readonly kind: 'workflowPlans'; readonly items: readonly TeamWorkflowSummary[] }
+)
+
+/** Select current task fields or one independently paged immutable history. */
+export type TeamTaskInspectionSelection =
+  | { readonly section: 'record' }
+  | { readonly section: 'attempts' | 'reviews'; readonly afterCursor?: number | undefined; readonly limit?: number | undefined }
+
+/** Read an exact task; expectedRevision pins continuation to the inspected revision. */
+export type TeamTaskInspectRequest = TeamTaskGetRequest & TeamTaskInspectionSelection & {
+  readonly expectedRevision?: number | undefined
+}
+
+/** Provider-resolved history cursor and row allowance. */
+export type TeamTaskInspectSpec = TeamTaskGetRequest & {
+  readonly expectedRevision?: number | undefined
+} & (
+  | { readonly section: 'record' }
+  | { readonly section: 'attempts' | 'reviews'; readonly afterCursor: number; readonly limit: number }
+)
+
+/** Current task fields without cumulative attempt and review arrays. */
+export type TeamTaskRecord = Omit<TeamTaskSnapshot, 'attemptHistory' | 'reviewHistory'>
+
+/** A detached byte-bounded task view; private artifact references are omitted. */
+export type TeamTaskInspection = {
+  readonly teamId: TeamId
+  readonly taskId: TeamTaskId
+  readonly teamCursor: number
+  readonly revision: number
+} & (
+  | { readonly section: 'record'; readonly task: TeamTaskRecord; readonly history: { readonly attempts: number; readonly reviews: number } }
+  | ({ readonly startCursor: number; readonly total: number; readonly scanned: number; readonly nextCursor?: number | undefined } & (
+    | { readonly section: 'attempts'; readonly items: readonly TaskAttemptSnapshot[] }
+    | { readonly section: 'reviews'; readonly items: readonly TeamTaskReviewDecision[] }
+  ))
+)
 
 /** Read-only diagnostics used by schedulers and product completion policies. */
 export interface TeamQuiescenceSnapshot {
@@ -4810,6 +5053,15 @@ export interface TeamGetRequest {
   readonly teamId: TeamId
 }
 
+/** Resolve one member's latest published Session binding without activating it. */
+export interface TeamMemberSessionRequest {
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+}
+
+/** Latest published member epoch; offline bindings remain readable historical Sessions. */
+export type TeamMemberSessionSnapshot = Pick<ActivationBindingSnapshot, 'activation' | 'sessionId' | 'provider'>
+
 /** Durable stream selected by a Team audit read. */
 export type TeamAuditStream = 'team' | 'channel'
 
@@ -5125,6 +5377,50 @@ export interface TeamWorkflowPlanGetRequest {
   readonly teamId: TeamId
   /** Workflow plan to read. */
   readonly planId: TeamWorkflowPlanId
+}
+
+/** Revision-pinned inspection of one workflow's task definitions and bindings. */
+export interface TeamWorkflowInspectRequest extends TeamWorkflowPlanGetRequest {
+  readonly expectedRevision?: number | undefined
+  readonly afterCursor?: number | undefined
+  readonly limit?: number | undefined
+}
+
+/** Provider-resolved workflow inspection window. */
+export type TeamWorkflowInspectSpec = Omit<TeamWorkflowInspectRequest, 'afterCursor' | 'limit'> & {
+  readonly afterCursor: number
+  readonly limit: number
+}
+
+/** Current lifecycle and bounds, without the complete DAG or result bodies. */
+export type TeamWorkflowRecord = Pick<TeamWorkflowPlanSnapshot, 'id' | 'teamId' | 'revision' | 'phase' | 'failure' | 'cancellation'> & {
+  readonly name: string
+  readonly bounds: TeamWorkflowPlanBounds
+  readonly resultTaskCount?: number | undefined
+}
+
+/** One dependency identity and its admitted task, including off-page dependencies. */
+export interface TeamWorkflowInspectionTaskRef {
+  readonly templateId: TeamWorkflowTaskTemplateId
+  readonly subject: TeamSelectionText
+  readonly taskId?: TeamTaskId | undefined
+}
+
+/** One bounded task row; instructions and task results belong to task inspection. */
+export interface TeamWorkflowInspectionTask extends TeamWorkflowInspectionTaskRef {
+  readonly blockedBy: readonly TeamWorkflowInspectionTaskRef[]
+}
+
+/** Current workflow metadata and one ordered task window at the same revision. */
+export interface TeamWorkflowInspection {
+  readonly record: TeamWorkflowRecord
+  readonly teamCursor: number
+  readonly startCursor: number
+  readonly items: readonly TeamWorkflowInspectionTask[]
+  readonly total: number
+  /** Template and binding entries inspected, including dependency lookups. */
+  readonly scanned: number
+  readonly nextCursor?: number | undefined
 }
 
 /** Request one bounded page of workflow plans in durable admission order. */

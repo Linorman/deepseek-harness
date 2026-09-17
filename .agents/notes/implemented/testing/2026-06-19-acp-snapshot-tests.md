@@ -12,6 +12,8 @@ The blocker for a full-transcript test is the model: the agent's output is drive
 
 ## Decision
 
+Persistence wait deadlines retain a scenario-specific diagnostic even when the first asynchronous log read exceeds the budget; the underlying polling error remains its cause. Workspace-settlement tests observe the seeded assignment’s actual closing turn before relying on `whenIdle()`, because workspace attachment can precede inbox admission.
+
 A snapshot test boots the real ACP example, drives its stdio protocol from a deterministic script, and compares normalized output with committed expected outputs. A session log recorded once from the real API supplies all later model streams. The fixture is a [projection of the product's persisted JSONL](2026-08-18-session-snapshot-envelope-projection.md): its header and payloads remain, while body sequence/time envelopes are omitted.
 
 ### The fixture projects the persisted session JSONL

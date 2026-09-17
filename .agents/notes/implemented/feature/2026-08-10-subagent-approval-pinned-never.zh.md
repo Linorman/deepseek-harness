@@ -31,4 +31,4 @@ Status: implemented
 - 模型可见：每个子 agent 的运行时上下文快照携带 `subagent:delegation` 声明以及固定的审批已禁用语句；父级请求不变。executor 边界测试证明：即使根部有一个本会批准的应答者，子 agent 的升级仍被拒绝且不咨询该应答者，审计对照常落日志。
 - 边界：进程内一次性、可继续以及 workflow 派生的子 agent 都经由共享辅助函数强制执行；`subagent-acp` 与 `clocky-sdk` 子 agent 运行在外部进程中，由各自的提供方组合决定。
 - 在钉定之前持久化的子 agent 冷恢复时折叠到部署审批默认值；处于预发布阶段，不添加迁移。
-- `packages/subagent/subagent-in-process-driver/tests/inheritance.spec.ts` 与 `packages/subagent/subagent/tests/continuation-inheritance.spec.ts` 分别固定一次性与可继续 child 的委派 `approval/policy` 事件。
+- `packages/compat/subagent-in-process-driver/tests/inheritance.spec.ts` 与 `packages/compat/subagent/tests/continuation-inheritance.spec.ts` 分别固定一次性与可继续 child 的委派 `approval/policy` 事件。

@@ -892,7 +892,7 @@ describe('Team activation controller edges', () => {
     expect(quiesceDurable.current()).toMatchObject({ activation: { status: 'stopping' } })
     expect(quiesceInternals.entries).toHaveLength(1)
     await quiesceLease.dispose()
-    expect(quiesceRaw.disposeSpy).toHaveBeenCalledTimes(2)
+    expect(quiesceRaw.disposeSpy).toHaveBeenCalledOnce()
     expect(quiesceDurable.current()).toMatchObject({ activation: { status: 'offline' }, quiescenceSource: 'quiesced' })
     expect(quiesceInternals.entries).toHaveLength(0)
   })
@@ -1117,14 +1117,20 @@ describe('Team activation controller edges', () => {
 
   it('applies as a plugin and reports bounded close timeout after handle admission closes', async () => {
     const fake = fakeContext()
-    const cleanup = apply(fake.ctx)
+    const effects: Array<() => Promise<void>> = []
+    Object.assign(fake.ctx, { effect: (setup: () => Iterable<() => unknown>) => {
+      const disposers = [...setup()]
+      effects.push(async () => { for (const dispose of disposers.reverse()) await dispose() })
+    } })
+    apply(fake.ctx)
+    const cleanup = effects.pop()!
     expect(fake.teams.registerSystemActivationProofSource).toHaveBeenCalledOnce()
     expect(fake.teams.registerSystemPhaseProofSource).toHaveBeenCalledOnce()
     expect(fake.callbacks.get('team/changed')).toHaveLength(1)
     await cleanup()
     expect(fake.callbacks.get('team/changed')).toHaveLength(0)
-    const pluginCleanup = apply(fake.ctx)
-    await pluginCleanup()
+    apply(fake.ctx)
+    await effects.pop()!()
 
     const timed = new TeamActivationController(fake.ctx, { disposalTimeoutMs: 1 })
     const internal = timed as unknown as Internals

@@ -1,5 +1,51 @@
 {
   "scenario": "native-team-direct-receipt",
+  "browse": {
+    "total": 2,
+    "first": [
+      "coordinator"
+    ],
+    "next": [
+      "worker"
+    ],
+    "firstScanned": 2,
+    "sameCursor": true
+  },
+  "memberSession": {
+    "sessionId": "session-native-team-worker",
+    "status": "idle",
+    "matchesWorker": true,
+    "matchesTeam": true
+  },
+  "selection": {
+    "objective": {
+      "text": "Prove a native direct delivery receives one durable receipt.",
+      "truncated": false
+    },
+    "phase": "active",
+    "coordinator": {
+      "text": "coordinator",
+      "truncated": false
+    },
+    "sessionId": "session-native-team-coordinator",
+    "counts": {
+      "participants": 2,
+      "activations": 2,
+      "tasks": {
+        "pending": 0,
+        "assigned": 0,
+        "running": 0,
+        "review": 0,
+        "completed": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "deleted": 0
+      },
+      "channels": 1,
+      "workflowPlans": 0
+    },
+    "sameCursor": true
+  },
   "team": {
     "objective": "Prove a native direct delivery receives one durable receipt.",
     "phase": "active",

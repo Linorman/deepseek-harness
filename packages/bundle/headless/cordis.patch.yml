@@ -14,18 +14,6 @@
 - id: hmr
   disabled: true
 
-- id: goal
-  disabled: true
-
-- id: goal-round-driver
-  disabled: true
-
-- id: command-goal
-  disabled: true
-
-- id: tool-goal
-  disabled: true
-
 - id: tools
   config:
     # Keep the same temporary process-wide Code Mode opt-in as the Web surface.
@@ -94,6 +82,8 @@
         root: !!js process.cwd()
         allowTeamWorkspacePath: true
         observationStateRoot: !!js clockyHomePath('team-workspace-observations')
+        observationExcludedRoots:
+          - !!js clockyHomePath()
 
     - id: team-workspace-recovery
       name: '@clocky/clocky-team-workspace-recovery'
@@ -185,6 +175,8 @@
     - id: team-run
       name: '@clocky/clocky-team-run'
       config:
+        maxChildTeams: 32
+        maxLiveActivations: 128
         workerCount: 1
         maxWorkerCount: 32
         maxCoordinatorOutputContinuations: 3

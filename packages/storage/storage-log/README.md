@@ -6,6 +6,10 @@ English | [中文](README.zh.md)
 
 `backend` is required. `routes` can select a named backend per stream; only own route keys override the default, so opaque names such as `constructor`, `team/<id>`, and `channel/<id>` remain safe. An unknown backend or one without a log facet fails when the consumer opens that stream. The returned handle is caller-owned and must be closed when its projection/runtime ends. Plugin unload closes admission, drains accepted opens, settles all returned handles, then unmounts the form; an aggregate cleanup failure is reported only after every owned handle settles.
 
+`append(expectedTail, values, { summary })` commits a consumer projection atomically with the complete batch. An append without a summary clears the previous projection. `readSummary(descriptor, maxBytes)` reads bounded current-tail metadata without opening a stream or validating history; missing streams or absent summaries return `undefined`. Unsupported backends reject summary reads and writes.
+
+`scanNames({ prefix, afterCursor?, limit })` bounds actual directory/index work and never calls the full `list()` path. `maxScanEntries`, `maxOpenScans`, `maxScanNameBytes`, and `scanIdleMs` bound each page, retained iterators/retry pages, name bytes and idle cursor validity. Cursors belong to a single scan and are not durable ordering or authority; an empty page may still continue. Expired cursors reject with `scan-expired`. Unload closes every retained iterator, and failed cleanup does not free its slot. `hasStream(name)` performs an exact metadata existence check without loading values.
+
 ## Model Experience
 
 ### Request context and condition

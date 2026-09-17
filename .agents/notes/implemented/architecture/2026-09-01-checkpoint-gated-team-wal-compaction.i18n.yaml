@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-01-checkpoint-gated-team-wal-compaction.md
-2026-09-01-checkpoint-gated-team-wal-compaction.md: 1c1e9c52dea78e52798f4b50dd8e21390034b2ca
-2026-09-01-checkpoint-gated-team-wal-compaction.zh.md: 55853b0dcf1f565be6c507440c4011f4f126453e
+2026-09-01-checkpoint-gated-team-wal-compaction.md: 95d45b0fcc9bba417348537964a5122b89083fae
+2026-09-01-checkpoint-gated-team-wal-compaction.zh.md: 0c7e0cb5f00249ab61de1db80a98dcb99ff36c97

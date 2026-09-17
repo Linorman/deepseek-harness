@@ -1,3 +1,7 @@
+import type { TeamMemberInspectParams, TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamTaskInspectParams, TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamBrowseParams, TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamMemberSessionResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamInboxRespondParams } from '@clocky/clocky-sdk-protocol'
 import type { TeamHumanActionResponseResult } from '@clocky/clocky-team'
 import type { TeamHumanInboxReadInput, TeamHumanInboxPage, TeamHumanInboxAcknowledgeInput, TeamHumanInboxAcknowledgement } from '@clocky/clocky-team'
@@ -12,6 +16,7 @@ import type {
   TeamListResult,
   TeamListParams,
   TeamGetResult,
+  TeamSelectionResult,
   TeamGoalUpdateParams,
   TeamGoalUpdateResult,
   TeamGoalTransitionParams,
@@ -158,6 +163,73 @@ export class Clocky implements AsyncDisposable {
   async listTeams(params: TeamListParams = {}): Promise<TeamListResult> {
     await this.start()
     return await this.client.listTeams(params)
+  }
+
+  /** Resolve one member's published Session without activating it.
+   * @param teamId - owning Team.
+   * @param participantId - retained Team member.
+   * @returns validated published binding.
+   */
+  async getTeamMemberSession(teamId: string, participantId: string): Promise<TeamMemberSessionResult> {
+    await this.start()
+    return await this.client.getTeamMemberSession({ teamId, participantId })
+  }
+
+  /** Read current task fields or one revision-pinned history page without private artifact references.
+   * @param params - Exact Team/task, section, optional revision and history continuation.
+   * @returns the validated bounded task inspection.
+   */
+  async inspectTeamTask(params: TeamTaskInspectParams): Promise<TeamTaskInspectResult> {
+    await this.start()
+    return await this.client.inspectTeamTask(params)
+  }
+
+  /** Read bounded collection summaries.
+   * @param params - Collection selection.
+   * @returns the matching page.
+   */
+  async browseTeam(params: TeamBrowseParams): Promise<TeamBrowseResult> {
+    await this.start()
+    return await this.client.browseTeam(params)
+  }
+
+  /** Read one workflow's bounded task/dependency window.
+   * @param params - Exact workflow and revision/page selection.
+   * @returns current workflow inspection.
+   */
+  async inspectWorkflowPlan(params: import('@clocky/clocky-sdk-protocol').TeamWorkflowInspectParams):
+  Promise<import('@clocky/clocky-team').TeamWorkflowInspection> {
+    await this.start()
+    return await this.client.inspectWorkflowPlan(params)
+  }
+
+  /** Read the latest durable human action without loading its Team history.
+   * @param teamId - Owning Team.
+   * @param actionId - Exact action identity.
+   * @returns current action snapshot.
+   */
+  async readTeamAction(teamId: string, actionId: string): Promise<import('@clocky/clocky-team').TeamHumanActionSnapshot> {
+    await this.start()
+    return await this.client.readTeamAction({ teamId, actionId })
+  }
+
+  /** Read exact member metadata and a capability window.
+   * @param params - member selection and optional continuation.
+   * @returns validated bounded detail.
+   */
+  async inspectTeamMember(params: TeamMemberInspectParams): Promise<TeamMemberInspectResult> {
+    await this.start()
+    return await this.client.inspectTeamMember(params)
+  }
+
+  /** Read bounded Team selection data without activating an Agent.
+   * @param teamId - Team identity to inspect.
+   * @param options - Request exact scalar metadata when it fits the selection byte allowance.
+   * @returns validated selection projection.
+   */
+  async getTeamSelection(teamId: string, options: { readonly includeMetadata?: boolean | undefined } = {}): Promise<TeamSelectionResult> {
+    await this.start()
+    return await this.client.getTeamSelection({ teamId, ...options })
   }
 
   /**

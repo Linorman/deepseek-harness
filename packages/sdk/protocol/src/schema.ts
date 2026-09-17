@@ -1,3 +1,13 @@
+import { teamMemberInspectRequestSchema, teamMemberInspectionSchema } from '@clocky/clocky-team/schema'
+import type { TeamMemberInspectParams, TeamMemberInspectResult } from './types.ts'
+import type { TeamSelectionParams } from './types.ts'
+import { teamTaskInspectRequestSchema, teamTaskInspectionSchema } from '@clocky/clocky-team/schema'
+import type { TeamTaskInspectParams, TeamTaskInspectResult } from './types.ts'
+import { teamBrowsePageSchema } from '@clocky/clocky-team/schema'
+import type { TeamBrowseParams, TeamBrowseResult } from './types.ts'
+import { teamMemberSessionSnapshotSchema } from '@clocky/clocky-team/schema'
+import type { TeamMemberSessionParams, TeamMemberSessionResult } from './types.ts'
+import { teamListPageSchema, teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
 import { AttachmentId } from '@clocky/clocky-attachment'
 /** Strict parsers for SDK activation frames at the JSON-RPC wire boundary. @module @clocky/clocky-sdk-protocol/schema */
 
@@ -38,6 +48,7 @@ import type {
   TeamListResult,
   TeamGetParams,
   TeamGetResult,
+  TeamSelectionResult,
   TeamGoalUpdateParams,
   TeamGoalUpdateResult,
   TeamGoalTransitionParams,
@@ -138,7 +149,6 @@ import {
   teamQuiescenceSnapshotSchema,
   teamMetricsSnapshotSchema,
   teamPhaseSchema,
-  teamSnapshotSchema,
   teamStateSnapshotSchema,
   teamTaskCreateIdempotencyKeySchema,
   teamTaskDetailsUpdateInputSchema,
@@ -158,21 +168,47 @@ const positiveSafeIntegerSchema = nonNegativeSafeIntegerSchema.min(1)
 
 /** Parse a durable Team summary listing request. */
 export const teamListParamsSchema = z.object({
-  afterCursor: z.number().int().min(-1).optional(),
+  afterCursor: z.union([z.literal(-1), nonEmptyStringSchema]).optional(),
   limit: positiveSafeIntegerSchema.optional(),
 }).strict() satisfies z.ZodType<TeamListParams>
 
 /** Parse a durable Team summary listing result. */
-export const teamListResultSchema = z.object({
-  items: z.array(teamSnapshotSchema),
-  nextCursor: nonNegativeSafeIntegerSchema.optional(),
-}).strict() satisfies z.ZodType<TeamListResult>
+export const teamListResultSchema = teamListPageSchema satisfies z.ZodType<TeamListResult>
 
 /** Parse one complete Team state request. */
+export const teamSelectionParamsSchema = z.object({ teamId: nonEmptyStringSchema, includeMetadata: z.boolean().optional() })
+  .strict() satisfies z.ZodType<TeamSelectionParams>
+
+/** Complete Team projection request. */
 export const teamGetParamsSchema = z.object({ teamId: nonEmptyStringSchema }).strict() satisfies z.ZodType<TeamGetParams>
 
 /** Parse one complete Team state result. */
 export const teamGetResultSchema = z.object({ state: teamStateSnapshotSchema }).strict() satisfies z.ZodType<TeamGetResult>
+
+/** Exact wire identities for member Session inspection. */
+export const teamMemberSessionParamsSchema = z.object({ teamId: nonEmptyStringSchema, participantId: nonEmptyStringSchema })
+  .strict() satisfies z.ZodType<TeamMemberSessionParams>
+/** Published member binding without supervision configuration or history. */
+export const teamMemberSessionResultSchema = z.object({ binding: teamMemberSessionSnapshotSchema })
+  .strict() satisfies z.ZodType<TeamMemberSessionResult>
+
+/** Actor-free task section, with optional revision-pinned history pagination. */
+export const teamTaskInspectParamsSchema = teamTaskInspectRequestSchema satisfies z.ZodType<TeamTaskInspectParams>
+/** Strict wrapper around the bounded task inspection. */
+export const teamTaskInspectResultSchema = z.object({ inspection: teamTaskInspectionSchema })
+  .strict() satisfies z.ZodType<TeamTaskInspectResult>
+
+/** Parse a collection summary request. */
+export const teamBrowseParamsSchema = z.object({ teamId: nonEmptyStringSchema, kind: z.enum(['tasks', 'members', 'workflowPlans']),
+  afterCursor: z.number().int().min(-1).optional(), limit: z.number().int().positive().optional(),
+}).strict() satisfies z.ZodType<TeamBrowseParams>
+/** Summary response with exact collection and Team ownership. */
+export const teamBrowseResultSchema = z.object({ page: teamBrowsePageSchema }).strict() satisfies z.ZodType<TeamBrowseResult>
+
+/** Bounded selection data with explicit coordinator availability. */
+export const teamSelectionResultSchema = z.object({ selection: teamSelectionSnapshotSchema })
+  .strict() satisfies z.ZodType<TeamSelectionResult>
+
 
 /** Parse an actor-free Team objective definition update. */
 export const teamGoalUpdateParamsSchema = teamGoalUpdateInputSchema as unknown as z.ZodType<TeamGoalUpdateParams>
@@ -687,3 +723,9 @@ export const activationDisposeResultSchema = z.object({
 export const activationStatusNotificationSchema = z.object({
   state: sdkActivationStateSchema,
 }).strict() satisfies z.ZodType<ActivationStatusNotification>
+
+/** Validate member inspection identities and capability continuation. */
+export const teamMemberInspectParamsSchema = teamMemberInspectRequestSchema satisfies z.ZodType<TeamMemberInspectParams>
+/** Validate exact scalar metadata and a bounded capability window. */
+export const teamMemberInspectResultSchema = z.object({ detail: teamMemberInspectionSchema })
+  .strict() satisfies z.ZodType<TeamMemberInspectResult>

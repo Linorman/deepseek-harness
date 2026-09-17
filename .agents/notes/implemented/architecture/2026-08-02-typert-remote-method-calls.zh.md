@@ -125,7 +125,7 @@ Typert、SRC 弱解析器、Host Gateway 和 Client Remote 之间只交换一种
 
 ```text
 InvocationDescriptor {
-  id: '@clocky/clocky-goal#goals/create'
+  id: '@clocky/clocky-compat-goal#goals/create'
   service: 'goals'
   namespace: 'goals'
   method: 'create'
@@ -174,7 +174,7 @@ Remote Client DTS 不复制业务 DTO，也不重新声明一个结构相同的�
 
 ```text
 import type { SessionId } from '@clocky/clocky-session/types'
-import type { CreateGoalRequest, CreateGoalResult } from '@clocky/clocky-goal/types'
+import type { CreateGoalRequest, CreateGoalResult } from '@clocky/clocky-compat-goal/types'
 ```
 
 因此 `SessionId`、Agent wire ID、request 和 result 在 Host 与 Browser Client 中都指向同一 TypeScript declaration，未来 TUI 复用时也不需要第二份类型。DTO 的跳转定义、重命名和引用查找回到业务类型的唯一源码位置，而不是停在生成文件中的副本。
@@ -233,14 +233,14 @@ Host lib build
 消费代码通过业务包本身选择能力：
 
 ```text
-import goalsRemote from '@clocky/clocky-goal/remote'
+import goalsRemote from '@clocky/clocky-compat-goal/remote'
 ```
 
 该 import 让 `.d.ts` 的 map augmentation 进入当前 TypeScript project，同时把同一约定的 JS descriptor 作为值交给运行时。未 import 的业务包不会扩展当前 project 的 Remote API 类型。
 
 业务 package 的发布文件必须包含 `lib/typert.remote-client.d.ts.map`。生成 DTS 以 `//# sourceMappingURL=typert.remote-client.d.ts.map` 引用相邻 map；map 中的 source 从 `lib` 相对指向业务源码，例如 `../src/index.ts`。`/remote` export 不单独列出 map，package `files` 负责发布它。该目标是开发期路径：workspace 消费者经 package link 解析它，因此发布产物仍然不含 `src`，已发布的 map 只是解析不到东西。
 
-仅需要静态类型时可以使用 `import type {} from '@clocky/clocky-goal/remote'`；这种 import 在运行时会被擦除，不会加载 JS，也不能触发任何运行时注册。需要真实调用的环境必须把普通 value import 得到的 contribution 交给 Client Remote Service。
+仅需要静态类型时可以使用 `import type {} from '@clocky/clocky-compat-goal/remote'`；这种 import 在运行时会被擦除，不会加载 JS，也不能触发任何运行时注册。需要真实调用的环境必须把普通 value import 得到的 contribution 交给 Client Remote Service。
 
 workspace 对 `/remote` 的解析必须明确指向 `lib` 生成物，不能被通用 package-to-`src` paths 规则带回 Host 源码。普通业务 import 仍可按各环境既有规则解析到 SRC 或 LIB。
 
@@ -302,7 +302,7 @@ Typert.remotes  已导入的 Remote contribution
 `@clocky/clocky-api-remotes/client` 集中加载需要的 Remote contribution：
 
 ```text
-import goalsRemote from '@clocky/clocky-goal/remote'
+import goalsRemote from '@clocky/clocky-compat-goal/remote'
 import sessionsRemote from '@clocky/clocky-session/remote'
 
 await ctx.remote.$mount(goalsRemote)
@@ -462,7 +462,7 @@ Gateway 只向 Connection 注册 ownership matcher 和 RPC handler，不注册 H
 
 ## 已交付范围与后续工作
 
-已交付的纵向链路是 `@clocky/clocky-goal/remote → Browser Client Remote → Connection RPC /api → Host Gateway → GoalService.remoteExportCreate()`。同一个带 Agent lookup 的 direct descriptor 同时支持 `ctx.remote.goals.create(agentId, request)` 与 `agentCtx.remote.goals.create(request)`。普通冷会话在 lookup 时通过 `agentFor()` 恢复，subagent-owned identity 保持既有 `agent-busy` fence；`@RemoteScope('agent')` 仍是独立的 scoped receiver 模式。
+已交付的纵向链路是 `@clocky/clocky-compat-goal/remote → Browser Client Remote → Connection RPC /api → Host Gateway → GoalService.remoteExportCreate()`。同一个带 Agent lookup 的 direct descriptor 同时支持 `ctx.remote.goals.create(agentId, request)` 与 `agentCtx.remote.goals.create(request)`。普通冷会话在 lookup 时通过 `agentFor()` 恢复，subagent-owned identity 保持既有 `agent-busy` fence；`@RemoteScope('agent')` 仍是独立的 scoped receiver 模式。
 
 Connection 提供共享 channel interceptor 与当前 HTTP carrier 映射。WebSocket 迁移、TUI runtime 与 carrier、TUI Agent Scope 接线、Permission/Approval 状态机、Session 事件流、调用授权、重试、幂等及跨版本协议兼容均不属于本决策。
 
@@ -493,7 +493,7 @@ Connection 提供共享 channel interceptor 与当前 HTTP carrier 映射。WebS
 - Goal Service 直接装饰业务签名已经符合 Remote 约定的变更类方法，仅保留 `remoteExportCreate(...)` 把 `GoalView` 适配为 `CreateGoalResult`，无需第二条路由、第二份 codec 或 Client 方法清单。
 - 一次干净的 `build:lib` 会在 Client 编译前生成 Host 与消费方 Remote 产物，包括业务包 `/remote` 下的 JS、DTS 和 declaration map。
 - `clean` 后，单独运行 `typecheck`、`lint` 或 `doc-typecheck` 都会重新生成 Remote 约定；pre-push 钩子使用同一个已包含约定准备步骤的 typecheck，CI 中的源码消费方则等待一次共享的约定 pass。
-- 导入 `@clocky/clocky-goal/remote` 会加入严格的 `ctx.remote.goals.create(...)` 类型，并可通过 declaration 导航到 `remoteExportCreate`；不导入时不会出现该 namespace。
+- 导入 `@clocky/clocky-compat-goal/remote` 会加入严格的 `ctx.remote.goals.create(...)` 类型，并可通过 declaration 导航到 `remoteExportCreate`；不导入时不会出现该 namespace。
 - 挂载同一次 import 得到的 JS contribution 会提供 endpoint、参数、结果、lookup、Context 和 Zod 反射，并在无需手写 stub 的情况下实体化调用。
 - Root 与 Agent-scoped 调用会经过真实的共享 `/api` carrier，将 `agentId` 解析为活 Agent，调用原始 Goal receiver，并通过既有 RPC envelope 返回。
 - Agent 与 Session lookup 会共享同一次并发冷恢复；普通冷会话得到恢复后的对象，冷态或 live subagent identity 均在业务调用前返回 `agent-busy`。

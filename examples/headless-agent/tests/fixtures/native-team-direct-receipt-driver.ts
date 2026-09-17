@@ -507,10 +507,46 @@ async function runScenario(ctx: Context): Promise<Record<string, unknown>> {
       limit: 1,
     })
     state = await ctx.teams.getTeam({ teamId: created.team.id })
+    const discovery = await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })
+    const discovered = discovery.items.find(team => team.id === state.team.id)
+    if (discovered?.cursor !== state.team.cursor || discovered.phase !== state.team.phase) {
+      throw new Error('Discovery summary disagrees with the authoritative Team')
+    }
     const names = new Map(state.participants.map(participant => [participant.id, participant.displayName]))
 
+    const firstMembers = await ctx.teams.browse({ teamId: created.team.id, kind: 'members', limit: 1 })
+    const nextMembers = await ctx.teams.browse({ teamId: created.team.id, kind: 'members', limit: 1,
+      afterCursor: firstMembers.nextCursor })
+    if (firstMembers.kind !== 'members' || nextMembers.kind !== 'members') throw new Error('Member browse kind changed')
+    for (const member of [...firstMembers.items, ...nextMembers.items]) {
+      if (member.role !== state.participants.find(value => value.id === member.id)?.role) {
+        throw new Error('Member summary changed its protocol role')
+      }
+      if ('stats' in member || 'authorityGrant' in member) throw new Error('Member summary contains execution history or grants')
+    }
+    const memberSession = await ctx.teams.getMemberSession({ teamId: created.team.id, participantId: worker.id })
+    const selected = await ctx.teams.getTeamSelection({ teamId: created.team.id })
+    if (selected.coordinator.kind !== 'bound') throw new Error('Coordinator selection binding is unavailable')
+    const metadata = await ctx.teams.getTeamSelection({ teamId: created.team.id, includeMetadata: true })
+    if (metadata.metadata?.kind !== 'available' || metadata.metadata.goal.objective !== state.goal.objective
+      || metadata.team.cursor !== selected.team.cursor) throw new Error('Bounded selection metadata disagrees with the durable goal')
     return {
       scenario: 'native-team-direct-receipt',
+      browse: { total: firstMembers.total, first: firstMembers.items.map(member => member.displayName.text),
+        next: nextMembers.items.map(member => member.displayName.text), firstScanned: firstMembers.scanned,
+        sameCursor: firstMembers.teamCursor === state.team.cursor
+          && nextMembers.teamCursor === state.team.cursor },
+      memberSession: { sessionId: memberSession.sessionId, status: memberSession.activation.status,
+        matchesWorker: memberSession.activation.participantId === worker.id,
+        matchesTeam: memberSession.activation.teamId === created.team.id },
+      selection: {
+        objective: selected.goal.objective,
+        phase: selected.team.phase,
+        coordinator: selected.coordinator.name,
+        sessionId: selected.coordinator.binding.sessionId,
+        counts: selected.counts,
+        sameCursor: selected.team.cursor === state.team.cursor,
+      },
       team: {
         objective: state.goal.objective,
         phase: state.team.phase,

@@ -12,7 +12,7 @@ AgentRuntime provider 可能在 Team provider 记录其 epoch 前发布 activati
 
 `clocky-team`定义 `ActivationBindingSnapshot`、bind/status/read 操作和 `TEAM_ACTIVATION_NOT_FOUND`。`clocky-team-hub`把 `activation/changed` record 存入 Team journal，并按 `ActivationId`索引投影。agent Participant 会保留 offline epoch，每个 epoch 命名相同 Session，且最多一个 epoch 为 resident。Team journal format 7 与 checkpoint format 8 会持久化该投影。
 
-`clocky-team-activation-controller`是 Team Consumer：它读取 active local-agent 或 remote-agent Participant，在 placement 前拒绝另一 Session 或 resident epoch，请求 `ctx.agentRuntimes`返回 handle，通过 `ctx.teams.bindActivation()`记录返回 epoch，并且只在此后返回 `TeamActivationLease`。binding 失败会释放 raw handle。lease 拥有中断、health 同步和 stopping/offline 释放。controller 会订阅准确 handle 的 status stream，并通过串行 cursor-conflict 重试更新持久 epoch。
+`clocky-team-activation-controller`是 Team Consumer：它读取 active local-agent 或 remote-agent Participant，在 placement 前拒绝另一 Session 或 resident epoch，请求 `ctx.agentRuntimes`返回 handle，通过 `ctx.teams.bindActivation()`记录返回 epoch，并且只在此后返回 `TeamActivationLease`。binding 失败会释放 raw handle。即使没有容量预留，失败的清理仍按 Team 和 Participant 保留；终止成功前不能再次启动。reservation-release 写入失败时保留已确认的终止事实，重试不重复释放 handle。关闭失败后可重试保留的清理，接纳仍保持关闭。Provider 从未被调用的预留在存储失败后仍保留 release owner。Bind 报错不证明 journal 拒绝了 epoch：清理重新读取尝试绑定的准确身份，使用 controller-owned quiescence proof 结算已提交的 binding。终止、readback 与持久结算可独立重试，保留已知终止结果。lease 拥有中断、health 同步和 stopping/offline 释放。controller 会订阅准确 handle 的 status stream，并通过串行 cursor-conflict 重试更新持久 epoch。
 
 Activation request 的 cursor 保护初始接纳。Provider 在 Team queue 外启动，因此其他任务可以在准备 handle 期间推进 journal。Controller 在绑定已准备的 handle 前重新读取 cursor；Hub 仍在 Team queue 内校验 proof、membership 和 admission。启动期间的其他进展不再要求释放并重新创建同一 residency。
 
@@ -28,7 +28,7 @@ Activation request 的 cursor 保护初始接纳。Provider 在 Team queue 外�
 
 ## Consequences
 
-本地投递只能在持久 activation binding 存在后开始。offline epoch 可以在不丢失先前审计性的情况下，以新的 ActivationId cold resume 相同 Session。controller 拥有已接收 handle，并在 shutdown 时释放它们；provider unload 仍不会撤销已经返回给 controller 的 handle。
+本地投递只能在持久 activation binding 存在后开始。offline epoch 可以在不丢失先前审计性的情况下，以新的 ActivationId cold resume 相同 Session。controller 拥有已接收 handle，并在 shutdown 时释放它们；provider unload 仍不会撤销已经返回给 controller 的 handle。Stale fencing 在释放前核对完整 owned epoch 身份；没有本地 owner 时必须有准确的 provider fencer 或持久终止证据，缺少 handle 或 offline status 不能授权持久 quiescence。已接纳的 stale fence 在 provider 终止与 journal 写回期间占有 Participant 的 recovery slot，close 期间也不释放。Proof-source 注册 effect 与 shutdown 由同一 generator effect 收集，插件卸载不能在已接纳的清理完成前撤销它们。
 
 `claimChannelDelivery()`现在会将本地 direct delivery 与其准确的持久 activation 和 pending channel admission 线性化。远程 binding 仍不会授权 direct delivery；远程 Link 需要自己的已认证 framing 与跨进程 claim 和 receipt path。
 

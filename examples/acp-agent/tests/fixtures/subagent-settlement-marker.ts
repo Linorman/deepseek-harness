@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
-import type {} from '@clocky/clocky-subagent'
+import type {} from '@clocky/clocky-compat-subagent'
 
 export const name = 'subagent-settlement-marker'
 

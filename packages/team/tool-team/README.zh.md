@@ -4,6 +4,8 @@
 
 `@clocky/clocky-tool-team`只会在 Session header 命名有效 Team 和 Participant 的 live Agent scope 中安装 Team 工具。`team_task_report`和`team_task_integrate`消费由 [`@clocky/clocky-team-agent-client`](../team-agent-client/README.zh.md) 准入的持久 task-assignment source。所有工具都使用 activation-bound `TeamLink`，绝不接受模型提供的 Team、Participant、activation、Session、revision、recipient 或 next-phase authority。
 
+原始输入与续跑输入可以重复携带同一 durable assignment。报告、heartbeat 和 integration 要求选定 task/attempt 的全部来源在 Team、channel、Envelope、activation 和 revision 上一致；冲突来源仍被拒绝。
+
 ## Task reporting
 
 `team_task_report(task_id, attempt_id, outcome, summary?, failure_code?, failure_message?, evidence?, artifacts?, changed_paths?, verification?)`接受 `completed`、`failed` 或 `released`。`completed`必须提供 `summary`，并可以携带 evidence statement、changed path、verification text 和 workspace-owned artifact reference；`failed`必须提供 `failure_code` 和 `failure_message`；`released`不接受 outcome-specific text。该工具要求请求的 task/attempt 恰好有一条已持久化的 `team-task-assignment` `user/message` source，要求 source 匹配调用 Agent 的当前 Team/Participant header 和 active activation binding，并要求 task 保留准确的 running lease。有本地 Team authority 时它打开短生命周期的已配置 Link；远程 child 则借用当前固定 Link。两条路径都由 Link 导出 actor fact，再由 Team provider 应用 owner fence 与 `task-mutate` policy。

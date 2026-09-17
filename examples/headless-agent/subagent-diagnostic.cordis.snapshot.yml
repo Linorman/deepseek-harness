@@ -1,7 +1,7 @@
 # Keyless real-Loader composition for the descriptor-less cold-child
 # diagnostic snapshot. The seeded parent owns one session-backed child whose
 # log carries `origin: 'subagent'` but no descriptor event, so the projection
-# fold produces no identity and `list_agents` must surface the child as a
+# fold produces no identity and `legacy_list_agents` must surface the child as a
 # `[diagnostic: corrupt]` row instead of silently dropping it.
 
 - id: persistence
@@ -34,10 +34,10 @@
   name: '@clocky/clocky-session-projection'
 
 - id: subagent
-  name: '@clocky/clocky-subagent'
+  name: '@clocky/clocky-compat-subagent'
 
 - id: tool-subagent-list-agents
-  name: '@clocky/clocky-tool-subagent-control/list-agents'
+  name: '@clocky/clocky-compat-tool-subagent-control/list-agents'
 
 # Await the persisted resume before the headless driver inspects root agents.
 - id: resumed-agent

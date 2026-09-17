@@ -28,7 +28,7 @@ function childCharge(createdAt = 20) {
 }
 
 
-function chargePrefix(nested = false) {
+function chargePrefix(nested = false, parentCount?: number, childCount?: number) {
   const grant = { operations: ['register', 'usage'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} }
   const owner = participant({ id: 'charge-owner', kind: 'human', role: 'human', owner: { kind: 'system' }, authorityGrant: grant })
   const initial = teamTaskSnapshotSchema.parse({ id: 'charge-task', teamId, revision: 1,
@@ -41,11 +41,32 @@ function chargePrefix(nested = false) {
   const reserved = teamTaskSnapshotSchema.parse({ ...initial, revision: 2, phase: 'running', attemptCount: 1,
     delegation: { ...initial.delegation, phase: 'creating', startedAt: 16, updatedAt: 16, childTeamId: 'child-team',
       creation: { parentTeamId: teamId, parentTaskId: initial.id, delegationId: initial.delegation!.id,
-        goal: { objective: 'Child work', budgets: {} }, rules: {}, budgets: {}, authorityGrant: grant } } })
-  return [createdTeam(nested ? { parentTeamId: 'root-team', parentTaskId: 'root-task', depth: 1, maxTeamDepth: 2 } : { maxTeamDepth: 2 }), teamPhase(),
+        goal: { objective: 'Child work', budgets: {} }, rules: {},
+        budgets: childCount === undefined ? {} : { maxChildTeams: childCount }, authorityGrant: grant } } })
+  const root = createdTeam({
+    ...(nested ? { parentTeamId: 'root-team', parentTaskId: 'root-task', depth: 1, maxTeamDepth: 2 } : { maxTeamDepth: 2 }),
+    ...parentCount === undefined ? {} : { budgets: { maxChildTeams: parentCount } },
+  })
+  return [root, teamPhase(),
     ...['invited', 'provisioning', 'active'].map((phase, index) => ({ type: 'participant/changed', participant: { ...owner, phase }, createdAt: 12 + index })),
     { type: 'task/changed', task: initial, createdAt: 15 }, { type: 'task/changed', task: reserved, createdAt: 16 }]
 }
+
+describe('durable descendant count reservations', () => {
+  it('rejects a checkpoint that narrows the Team ceiling below its retained subtree', () => {
+    const valid = checkpointFor(chargePrefix(false, 2, 1))
+    expect(() => teamProjectionFromData(valid)).not.toThrow()
+    expect(() => teamProjectionFromData({ ...valid, budgets: { maxChildTeams: 1 } })).toThrow(/descendant reservations/)
+    expect(() => teamProjectionFromData({ ...valid, budgets: { maxChildTeams: -1 } })).toThrow(/descendant count ceiling/)
+  })
+
+  it.each(['json', 'sqlite'] as const)('rejects omitted or oversubscribed descendant ceilings in %s journals', async (backend) => {
+    for (const childCount of [undefined, 1]) {
+      const ctx = await recover(backend, chargePrefix(false, 1, childCount))
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toMatchObject({ code: 'TEAM_JOURNAL_MALFORMED' })
+    }
+  })
+})
 
 for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable child relations (${backend})`, () => {

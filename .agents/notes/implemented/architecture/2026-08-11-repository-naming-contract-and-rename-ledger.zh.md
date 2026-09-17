@@ -185,9 +185,9 @@ PascalCase 标识符中的首字母缩略词使用首字母大写格式：`Ui`�
 |---|---|---|
 | `@clocky/clocky-tool-schedule`、`schedule/tool-schedule/`、插件 `tool-schedule` | `@clocky/clocky-schedule`、`schedule/schedule/`、插件 `schedule` | 该包拥有持久 Schedule 领域、持久化屏障、管理工具、定时器、后续轮次和运行时生命周期。`tool-` 只描述其中一部分。 |
 | `ScheduleOwner` | `ScheduleRuntime` | 该逐 agent 对象运行实时定时器、持久化投影、分派、空闲等待和资源释放。`Owner` 没有说明这一执行职责。耦合的私有 `owner*` 名称也改用 `runtime*`。 |
-| `WorkflowService`, `ctx.workflows` | `WorkflowEngine`, `ctx.workflowEngine` | 一个引擎负责解析并执行工作流程序。复数键错误地暗示这是注册表。保留 `@clocky/clocky-workflow` 以及工作流事件和工具。 |
-| `@clocky/clocky-workflow-workerthread`, `WorkerWorkflowEngine` | `@clocky/clocky-workflow-worker-thread`, `WorkerThreadWorkflowEngine` | `worker thread` 是准确的 Node 机制，仓库拼写要求使用完整单词。 |
-| `@clocky/clocky-goal-session`, `goal/goal-session/` | `@clocky/clocky-goal-round-driver`, `goal/goal-round-driver/` | 该插件驱动同一会话内的 Goal Rounds。它既不存储目标，也不定义会话。保留 `GoalService`、目标来源、事件和约定。 |
+| `WorkflowService`, `ctx.workflows` | `WorkflowEngine`, `ctx.workflowEngine` | 一个引擎负责解析并执行工作流程序。复数键错误地暗示这是注册表。保留 `@clocky/clocky-compat-workflow` 以及工作流事件和工具。 |
+| `@clocky/clocky-workflow-workerthread`, `WorkerWorkflowEngine` | `@clocky/clocky-compat-workflow-worker-thread`, `WorkerThreadWorkflowEngine` | `worker thread` 是准确的 Node 机制，仓库拼写要求使用完整单词。 |
+| `@clocky/clocky-goal-session`, `goal/goal-session/` | `@clocky/clocky-compat-goal-round-driver`, `compat/goal-round-driver/` | 该插件驱动同一会话内的 Goal Rounds。它既不存储目标，也不定义会话。保留 `GoalService`、目标来源、事件和约定。 |
 | `packages/compact/` | `packages/compaction/` | 该组是以名词命名的领域系列。`compact` 仍作为面向用户的命令动词。 |
 | `@clocky/clocky-compact`, `ctx.compact`, `CompactService` | `@clocky/clocky-compaction`, `ctx.compaction`, `CompactionEngine` | 该对象运行压缩（compaction）算法和生命周期。它是引擎，而不是通用服务。 |
 | `compact/*` 事件和公开领域前缀 | `compaction/*` | 事件和领域类型使用名词形式。保留动词形式的操作，例如 `compactNow`、`compactRegion` 和 `compactIfNeeded`。 |
@@ -240,14 +240,14 @@ PascalCase 标识符中的首字母缩略词使用首字母大写格式：`Ui`�
 | `SkillService` | `SkillRegistry` | 该服务注册提供方，并从其目录解析 skill（技能）。 |
 | `@clocky/clocky-skill-local`、`LocalSkillProvider`，提供方 id `local` | `@clocky/clocky-skill-filesystem`、`FileSystemSkillProvider`，提供方 id `filesystem` | 该提供方通过可位于本地或远端的 `ctx.fs` 发现 skill 文件。其机制是文件系统访问，而不是本地性。 |
 | `SubagentService` | `SubagentRuntime` | 该服务选择提供方，并拥有实时 spawn、恢复、跟进、取消和结算行为。 |
-| `@clocky/clocky-subagent-spawn`, `SpawnProvider` | `@clocky/clocky-subagent-spawn-in-process`, `SpawnInProcessProvider` | 该提供方在当前进程内启动子 agent。配置的提供方 id 仍为 `spawn`。 |
-| `@clocky/clocky-subagent-fork`, `ForkProvider` | `@clocky/clocky-subagent-fork-in-process`, `ForkInProcessProvider` | 该提供方在当前进程内 fork 一个 agent。配置的提供方 id 仍为 `fork`。 |
-| `@clocky/clocky-subagent-inprocess`, `subagent-inprocess/` | `@clocky/clocky-subagent-in-process-driver`, `subagent-in-process-driver/` | 该包包含通用的进程内驱动逻辑，而不是第三个提供方。 |
+| `@clocky/clocky-subagent-spawn`, `SpawnProvider` | `@clocky/clocky-compat-subagent-spawn-in-process`, `SpawnInProcessProvider` | 该提供方在当前进程内启动子 agent。配置的提供方 id 仍为 `spawn`。 |
+| `@clocky/clocky-subagent-fork`, `ForkProvider` | `@clocky/clocky-compat-subagent-fork-in-process`, `ForkInProcessProvider` | 该提供方在当前进程内 fork 一个 agent。配置的提供方 id 仍为 `fork`。 |
+| `@clocky/clocky-subagent-inprocess`, `subagent-inprocess/` | `@clocky/clocky-compat-subagent-in-process-driver`, `subagent-in-process-driver/` | 该包包含通用的进程内驱动逻辑，而不是第三个提供方。 |
 | 私有的 `SdkProvider`，位于 `clocky-subagent-clocky-sdk` 中 | `SdkSubagentProvider` | 重复的包限定词是有意保留的，类名还必须说明它通过 SDK 提供 subagent。 |
 | `WebService`, `WebServiceConfig` | `WebRuntime`, `WebRuntimeConfig` | 该对象选择提供方并运行实时搜索和抓取操作。保留包、键、提供方包和模型工具。 |
 | `@clocky/clocky-web-fetch-local`、`LocalFetchProvider`、`LocalFetchLimits`，提供方 id `local-http` | `@clocky/clocky-web-fetch-http`、`HttpFetchProvider`、`HttpFetchLimits`，提供方 id `http` | 该提供方执行直接 HTTP 抓取。`local` 只说明代码恰好在哪里运行，并未说明它提供哪种机制。 |
 
-保留 `@clocky/clocky-subagent-clocky-sdk`、其提供方 id `clocky-sdk`、外部 ACP（Agent Client Protocol）、subagent 工具包名、主文件系统包和后端，以及文件系统工具和事件。
+保留 `@clocky/clocky-compat-subagent-clocky-sdk`、其提供方 id `clocky-sdk`、外部 ACP（Agent Client Protocol）、subagent 工具包名、主文件系统包和后端，以及文件系统工具和事件。
 
 ### 钩子、防护、Plan Mode、扩展与诊断
 

@@ -51,8 +51,8 @@ export function ChannelSummaryDialog({ page, capabilities, readCatalog, translat
       || new TextEncoder().encode(JSON.stringify(messages)).byteLength > capabilities.maxSourceBytes) {
       failRange(t('channel.summaryLimit')); return
     }
-    if (messages.some(message => message.audience !== null && page.channel.manifest.participants.some(participant =>
-      participant.id !== message.senderId && !message.audience!.includes(participant.id)))) {
+    if (messages.some(({ audience, senderId }) => audience !== null && page.channel.manifest.participants.some(participant =>
+      participant.id !== senderId && !audience.includes(participant.id)))) {
       failRange(t('channel.summarySubset')); return
     }
     if (retry.current === undefined || retry.current.from !== start || retry.current.to !== end) {

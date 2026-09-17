@@ -35,7 +35,6 @@ import {
 import { hostFrameSchema, muxFrameSchema, askUserQuestionItemSchema } from '../src/api/events.schema.ts'
 import { approvalRequestIdSchema, approvalResponsePayloadSchema } from '../src/api/approvals.schema.ts'
 import { askUserQuestionAnswerSchema, questionResponsePayloadSchema } from '../src/api/questions.schema.ts'
-import { goalEditRequestSchema } from '../src/api/goals.schema.ts'
 import {
   teamCancelRequestSchema,
   teamCancelValueSchema,
@@ -144,6 +143,8 @@ describe('rpcErrorSchema', () => {
     expect(rpcErrorSchema.parse({
       code: 'team-audit-compacted', message: 'm', details: { teamId: 'team-1', firstCursor: 7 },
     }).code).toBe('team-audit-compacted')
+    expect(rpcErrorSchema.parse({ code: 'team-inbox-compacted', message: 'm', details: { firstCursor: 8 } }).code).toBe('team-inbox-compacted')
+    expect(rpcErrorSchema.safeParse({ code: 'team-inbox-compacted', message: 'm', details: { firstCursor: -1 } }).success).toBe(false)
     expect(rpcErrorSchema.parse({ code: 'internal', message: 'm', details: {} }).code).toBe('internal')
   })
 
@@ -477,14 +478,6 @@ describe('skills domain schemas', () => {
   })
 })
 
-describe('goals domain schemas', () => {
-  it('requires at least one replacement field for goal.edit', () => {
-    const ref = { id: 'g1', revision: 1 }
-    expect(goalEditRequestSchema.parse({ sessionId: 's1', ref, objective: 'updated' }).objective).toBe('updated')
-    expect(goalEditRequestSchema.parse({ sessionId: 's1', ref, maxGoalRounds: 3 }).maxGoalRounds).toBe(3)
-    expect(() => goalEditRequestSchema.parse({ sessionId: 's1', ref })).toThrow()
-  })
-})
 
 describe('events frame schemas', () => {
   it('accepts every mux frame branch', () => {
@@ -654,9 +647,10 @@ describe('Team domain schemas', () => {
   })
 
   it('validates receipts and finals', () => {
-    expect(teamListValueSchema.parse({ items: [] })).toEqual({ items: [] })
+    expect(teamListValueSchema.parse({ items: [], scanned: 0 })).toEqual({ items: [], scanned: 0 })
     expect(teamListRequestSchema.parse({ afterCursor: -1, limit: 2 })).toEqual({ afterCursor: -1, limit: 2 })
-    expect(teamListValueSchema.parse({ items: [], nextCursor: 1 })).toEqual({ items: [], nextCursor: 1 })
+    expect(teamListValueSchema.parse({ items: [], scanned: 1, nextCursor: 'next-page' }))
+      .toEqual({ items: [], scanned: 1, nextCursor: 'next-page' })
     expect(teamInputReceiptSchema.parse({ envelopeId: 'envelope-1' })).toEqual({ envelopeId: 'envelope-1' })
     expect(teamStartValueSchema.parse({
       state: {

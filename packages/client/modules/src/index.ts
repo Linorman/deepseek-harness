@@ -1,3 +1,4 @@
+import { z } from 'zod'
 /**
  * Node half of the client module system (`clocky.client` dual-face package): scans
  * the host Loader's entries for packages declaring `clocky.client`, composes the
@@ -32,12 +33,20 @@ import type { Context } from '@clocky/cordis'
 import type {} from '@clocky/cordis-plugin-loader'
 import type { IndexInjection } from '@clocky/clocky-host-webserver'
 import { optionalStringArray, stripClientSuffix } from './client/manifest.ts'
-import type { WebBootEntry, WebBootGraph } from './client/manifest.ts'
+import type { BrowserPluginConfig, WebBootEntry, WebBootGraph } from './client/manifest.ts'
 
 export { stripClientSuffix } from './client/manifest.ts'
 export type {
-  BootManifest, BootModuleRow, BootPluginRow, WebBootEntry, WebBootGraph,
+  BrowserConfigValue, BrowserPluginConfig, BootManifest, BootModuleRow, BootPluginRow, WebBootEntry, WebBootGraph,
 } from './client/manifest.ts'
+
+/** Public browser options keyed by exact client package name. These values are served to every browser. */
+export interface Config {
+  /** Explicit public JSON options keyed by exact declared browser package; applied on the next page boot. */
+  readonly browserConfig?: Record<string, BrowserPluginConfig> | undefined
+}
+/** Only explicitly supplied JSON objects can enter the browser boot graph. */
+export const Config = z.object({ browserConfig: z.record(z.string().min(1), z.record(z.string(), z.json())).default({}) })
 
 declare module '@clocky/cordis' {
   interface Context {
@@ -293,13 +302,16 @@ export class ClientModuleRegistry extends Service {
   private readonly resolvePkgJson: (spec: string) => string
   private flushQueued = false
   private composed: WebBootGraph
+  private readonly browserConfig: Record<string, BrowserPluginConfig>
 
   /**
    * Build the service: subscribe, seed, and run the activation flush.
    * @param ctx - plugin context carrying webServer and loader.
+   * @param config - Explicit browser-visible plugin options.
    */
-  constructor(ctx: Context) {
+  constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'clientModules')
+    this.browserConfig = Config.parse(config).browserConfig
     // Resolution anchor: the config tree's baseUrl (the cordis.yml directory,
     // whose package declares every composed plugin as a dependency). The
     // modules package's own URL would miss sibling packages under pnpm's
@@ -329,6 +341,12 @@ export class ClientModuleRegistry extends Service {
     // current entries, flushed synchronously (nothing async between subscribe,
     // seed, and flush).
     for (const entry of ctx.loader.entries()) this.dirty.add(entry.options.name)
+    const declared = new Set([...ctx.loader.entries()].map(entry => entry.options.name))
+    for (const name of Object.keys(this.browserConfig)) {
+      if (!declared.has(name) || this.resolveMeta(name) === null) {
+        throw new Error(`client-modules: browserConfig target '${name}' is not a declared browser plugin`)
+      }
+    }
     this.composed = this.compose()
     const failures: Error[] = []
     this.flush(err => failures.push(err))
@@ -410,7 +428,10 @@ export class ClientModuleRegistry extends Service {
   }
 
   private compose(): WebBootGraph {
-    const entries = orderByModuleGraph([...this.table.values()].map(record => record.entry))
+    const entries = orderByModuleGraph([...this.table.values()].map((record) => {
+      const config = this.browserConfig[record.entry.id]
+      return config === undefined ? record.entry : { ...record.entry, config: structuredClone(config) }
+    }))
     return { rev: shortHash(JSON.stringify(entries)), entries }
   }
 

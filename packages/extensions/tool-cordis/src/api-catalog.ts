@@ -825,74 +825,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'goals',
-    summary: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
-    description: 'Goal service (`ctx.goals`) backed exclusively by the owning session log.',
-    methods: [
-      {
-        signature: 'get(agent: Agent): GoalView | undefined',
-        description: 'Read the current goal for one exact live agent.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }],
-        returns: 'a fresh view or `undefined` when no goal is current.',
-        throws: ['{@link GoalError} when the agent is not the registry\'s live instance.'],
-      },
-      {
-        signature: 'disarm(agent: Agent): GoalView | undefined',
-        description: 'Remove process-local continuation authority without changing durable goal phase or revision. Lifecycle owners use this before unloading a driver; a later human-authorized resume records the new activation edge.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }],
-        returns: 'a fresh disarmed view, or `undefined` when no goal is current.',
-      },
-      {
-        signature: 'create(agent: Agent, request: CreateGoalRequest): GoalView',
-        description: 'Create and arm a goal. A completed goal may be replaced; every other current phase must be cleared or resumed instead.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'request', description: 'objective and optional round cap.' }],
-        returns: 'the created live view.',
-      },
-      {
-        signature: '@Remote(\'edit\') edit(agent: Agent, ref: GoalRef, request: EditGoalRequest): GoalView',
-        description: 'Edit objective and/or round cap without changing phase.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }, { name: 'request', description: 'at least one replacement field.' }],
-        returns: 'the edited view.',
-      },
-      {
-        signature: '@Remote(\'pause\') pause(agent: Agent, ref: GoalRef): GoalView',
-        description: 'Pause an active goal and disarm automatic continuation.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }],
-        returns: 'the paused view.',
-      },
-      {
-        signature: '@Remote(\'resume\') resume(agent: Agent, ref: GoalRef): GoalView',
-        description: 'Resume and arm a stopped goal, or rearm an active goal after a session-start edge, while its round budget still has capacity.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }],
-        returns: 'the active view.',
-      },
-      {
-        signature: '@Remote(\'complete\') complete(agent: Agent, ref: GoalRef): GoalView',
-        description: 'Mark a current non-complete goal complete and disarm it.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }],
-        returns: 'the completed view.',
-      },
-      {
-        signature: 'block(agent: Agent, ref: GoalRef, reason: GoalBlockReason): GoalView',
-        description: 'Mark an active goal blocked and disarm it.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }, { name: 'reason', description: 'policy-owned stable code and human-readable explanation.' }],
-        returns: 'the blocked view with its durable reason.',
-      },
-      {
-        signature: '@Remote(\'clear\') clear(agent: Agent, ref: GoalRef): GoalRef',
-        description: 'Clear the current goal while retaining a durable tombstone and history.',
-        parameters: [{ name: 'agent', description: 'owning live agent.' }, { name: 'ref', description: 'expected current revision.' }],
-        returns: 'the tombstone ref whose revision is one past the cleared snapshot.',
-      },
-      {
-        signature: '@Remote(\'create\') remoteExportCreate(agent: Agent, request: CreateGoalRequest): CreateGoalResult',
-        description: 'Create one Goal through the remote boundary.',
-        parameters: [{ name: 'agent', description: 'exact live Agent resolved from the wire identity.' }, { name: 'request', description: 'objective and optional round cap.' }],
-        returns: 'the created Goal identity.',
-      },
-    ],
-  },
-  {
     key: 'invariants',
     summary: 'Package-owned invariant registry with global and regex-based selection.',
     description: 'Package-owned invariant registry with global and regex-based selection.',
@@ -1839,6 +1771,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'durable stream metadata in stable stream-name order.',
       },
       {
+        signature: 'async scanNames(request: LogNameScanRequest): Promise<LogNameScanPage>',
+        description: 'Scan bounded physical entries instead of reading complete journal metadata or values.',
+        parameters: [{ name: 'request', description: 'Prefix, optional local cursor, and requested scan work.' }],
+        returns: 'names and a continuation; empty pages still advance. Expired cursors require a fresh scan.',
+      },
+      {
+        signature: 'async hasStream(name: string): Promise<boolean>',
+        description: 'Distinguish a concurrently deleted stream from a materialized malformed journal.',
+        parameters: [{ name: 'name', description: 'Exact routed stream name.' }],
+        returns: 'whether its configured backend retains durable metadata.',
+      },
+      {
+        signature: 'async readSummary(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined>',
+        description: 'Read bounded tail metadata through the stream\'s configured backend.',
+        parameters: [{ name: 'descriptor', description: 'Exact journal identity and durable version.' }, { name: 'maxBytes', description: 'Positive metadata byte budget, including its wrapper.' }],
+        returns: 'a detached tail summary, or undefined if absent.',
+      },
+      {
         signature: 'get(name: string): LogStream | undefined',
         description: 'Read an open handle for diagnostics. Consumers hold the typed result of `open`; this method does not infer a descriptor\'s value type.',
         parameters: [{ name: 'name', description: 'Stream name.' }],
@@ -1849,98 +1799,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Close admission, settle accepted backend calls, then close every resolved caller handle. All owned work settles before an aggregate failure is reported.',
         parameters: [],
         returns: 'resolution after every accepted call and returned handle settles.',
-      },
-    ],
-  },
-  {
-    key: 'subagents',
-    summary: 'Named provider registry with one-shot runs, durable discovery, and continuable-child operations.',
-    description: 'Named provider registry with one-shot runs, durable discovery, and continuable-child operations.',
-    methods: [
-      {
-        signature: 'async startContinuable(spec: ContinuableStartSpec): Promise<ContinuableStart>',
-        description: 'Establish one durable continuable child and deliver its initial prompt. Resolves when the child\'s inbox accepts that prompt, without waiting for the turn to start or for the message to reach the Session log; any earlier failure rejects with no ids and rolls back the child entirely.',
-        parameters: [{ name: 'spec', description: 'provider, delegation request, and caller cancellation.' }],
-        returns: 'the durable child id and the accepted prompt\'s message id.',
-        throws: ['when continuation services are unavailable or materialization fails.'],
-      },
-      {
-        signature: 'async followup( parent: Agent, childId: SessionId, content: ContentBlock[], options: SubagentFollowupOptions, ): Promise<MessageId>',
-        description: 'Deliver one later message to a continuable child as its next FIFO turn. A resident child\'s Agent inbox accepts it directly (waking a `waiting` Activation), while an absent one is cold-resumed from its persisted Session. The Agent inbox is the only queue, so every accepted message has one observable order.',
-        parameters: [{ name: 'parent', description: 'the exact live direct parent authorizing this delivery.' }, { name: 'childId', description: 'durable child session id.' }, { name: 'content', description: 'user-role content to deliver.' }, { name: 'options', description: 'the message source fields and caller cancellation, which stops the operation only before inbox acceptance.' }],
-        returns: 'the accepted message\'s inbox id.',
-        throws: ['when continuation services are unavailable, parent authority is rejected, or the message was not admitted.'],
-      },
-      {
-        signature: 'interrupt(targetSessionId: SessionId, authority: SubagentInterruptAuthority): void',
-        description: 'Interrupt one live continuable child\'s current turn under a human parent address or an exact live ancestor Agent. Fire-and-return: the cancel signal is issued before this returns, but the target may keep running until it observes the signal. Unclaimed pending inbox work, the Activation, and published descendants are preserved; claimed work is not requeued. Once the interrupted driver is idle, a waking send resumes the parked FIFO queue. An absent target — including a one-shot or unknown id — is an accepted no-op, as is a manager-less composition, which cannot own a live Activation.',
-        parameters: [{ name: 'targetSessionId', description: 'the durable child session id to interrupt.' }, { name: 'authority', description: 'the human parent address or exact live ancestor Agent.' }],
-        throws: ['{SubagentError} `UNAUTHORIZED` when the authority does not own the live target.'],
-      },
-      {
-        signature: 'async reportFrom( child: Agent, content: ContentBlock[], options: SubagentReportOptions, ): Promise<MessageId>',
-        description: 'Deliver selected content from one live continuable child to its durable direct parent. The child is the authority credential; callers cannot name a recipient. Reporting does not conclude the child\'s turn or Activation.',
-        parameters: [{ name: 'child', description: 'exact live reporting child.' }, { name: 'content', description: 'selected model-facing content.' }, { name: 'options', description: 'parent scheduling and pre-acceptance cancellation.' }],
-        returns: 'the stable identity of the parent-accepted message.',
-        throws: ['when continuation services are unavailable, sender authorization fails, or the direct parent is not live.'],
-      },
-      {
-        signature: 'registerContinuableSetup(contribution: ContinuableSetupContribution): () => void',
-        description: 'Compose one deployment capability into every continuable child\'s unpublished creation context on fresh creation and cold resume. Grants wait for the next Activation; removing the contribution revokes every resident installation immediately.',
-        parameters: [{ name: 'contribution', description: 'synchronous child-scope installer.' }],
-        returns: 'the exact Cordis effect disposer.',
-      },
-      {
-        signature: 'async drainContinuableDescendants(parents: readonly Agent[]): Promise<void>',
-        description: 'Close continuable admission below exact live parent Agents, stop only their visible descendant Activations synchronously, then await admitted scoped materializations and release those forests child-first. The scoped cutoff lasts until each exact parent leaves the registry; unrelated parent trees remain live.',
-        parameters: [{ name: 'parents', description: 'exact host-owned parent Agents entering teardown.' }],
-        returns: 'once every retained descendant Activation released its `AgentHandle`.',
-        throws: ['an aggregate error after all branches settle when any failed.'],
-      },
-      {
-        signature: 'async drainContinuableChildren(parent: Agent, childIds: readonly SessionId[]): Promise<void>',
-        description: 'Release selected resident continuable direct children of one exact live parent. Other children of the same parent remain admitted and resident. Absent targets and a manager-less composition are accepted no-ops.',
-        parameters: [{ name: 'parent', description: 'exact live direct parent authorizing the selected release.' }, { name: 'childIds', description: 'durable direct-child ids to release when resident.' }],
-        returns: 'once every selected Activation released its `AgentHandle`.',
-        throws: ['{SubagentError} `UNAUTHORIZED` when a resident target belongs to a different parent or the supplied parent identity is stale.'],
-      },
-      {
-        signature: 'listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentListEntry[]>',
-        description: 'Enumerate the parent\'s direct session-backed subagents without loading or resuming an Agent and without any query service: the listing merges the live session store with optional session persistence (live-preferred) and serves each child\'s durable mode/label from the registered `subagent` projection unit down a three-rung ladder — the registry\'s watermark snapshot for a live child; for a cold one, a durable projection-cache row when the optional cache serves an own-suffix identity (its `seq` gate proves the value postdates the fork seed, where a child\'s own descriptor is immutable once appended), else one persistence inspection folded through the registry. The projection fold is the single classification authority; per-child diagnostics relay a fold that served no identity or a failed inspection, never a list-time descriptor parse. Absent persistence, enumeration is live-only (a cold child cannot be resumed then either, so its absence is capability absence, not an error). This service consults no Agent registrations, Activations, or providers.\n\nEvery persistence read receives `signal`, and the listing rechecks cancellation around each of those awaits. Read rejections that settle after an abort become a stable `SubagentError` with code `CANCELLED`.',
-        parameters: [{ name: 'parentSessionId', description: 'parent session whose direct children are listed.' }, { name: 'signal', description: 'caller-owned cancellation forwarded to persistence reads and observed around every read await.' }],
-        returns: 'children and per-child diagnostics ordered by `createdAt`, then id.',
-        throws: ['{@link SubagentError} when the projection registry or the session store is not mounted, or the caller cancels the listing.'],
-      },
-      {
-        signature: 'listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]>',
-        description: 'Enumerate the root\'s complete session-backed subagent tree in stable pre-order from one live-preferred corpus, without loading or resuming an Agent. Ordinary sessions and one-shot children remain traversal nodes so continuable descendants below them are discovered; each returned entry adds its durable `parentId` and root-relative `depth`. Identity resolution, diagnostics, optional persistence, and cancellation follow the same projection-backed contract as listChildren.',
-        parameters: [{ name: 'rootSessionId', description: 'session whose complete descendant tree is listed.' }, { name: 'signal', description: 'caller-owned cancellation forwarded to persistence reads and observed around every read await.' }],
-        returns: 'children and per-candidate diagnostics with tree position, in stable pre-order.',
-        throws: ['{@link SubagentError} under the same conditions as {@link listChildren}.'],
-      },
-      {
-        signature: 'registerProvider(provider: SubagentProvider): () => void',
-        description: 'Register a provider under its name. Registration is effect-scoped and HMR safe; removing a provider blocks new starts but does not revoke runs that were already returned to their holders.',
-        parameters: [{ name: 'provider', description: 'the trusted provider implementation.' }],
-        returns: 'the exact Cordis effect disposer.',
-      },
-      {
-        signature: 'getProvider(name: string): SubagentProvider | undefined',
-        description: 'Look up a provider by name.',
-        parameters: [{ name: 'name', description: 'the provider name.' }],
-        returns: 'the provider, or undefined when absent.',
-      },
-      {
-        signature: 'list(): string[]',
-        description: 'List registered provider names in insertion order.',
-        parameters: [],
-        returns: 'the registered names.',
-      },
-      {
-        signature: 'async start(name: string, request: SubagentStartRequest): Promise<SubagentRun>',
-        description: 'Establish a published child on the named provider. Capability and semantic checks run before delegation. Provider ownership lasts until its promise fulfills; a rejection therefore has no run for the caller to dispose and emits no run lifecycle events. Post-publication turn and infrastructure failures settle through the returned run.',
-        parameters: [{ name: 'name', description: 'the provider to use.' }, { name: 'request', description: 'child label, prompt, parent, signal, and optional capabilities.' }],
-        returns: 'the published holder-owned run.',
       },
     ],
   },
@@ -2383,9 +2241,16 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'number of activations published by this pass.',
       },
       {
+        signature: 'async prepareRoles(teamId: TeamId, roles: readonly string[], signal?: AbortSignal): Promise<void>',
+        description: 'Prepare declared workflow roles before channel admission or task publication.',
+        parameters: [{ name: 'teamId', description: 'Team whose active membership authorizes the roles.' }, { name: 'roles', description: 'Unique roles already resolved by the workflow compiler.' }, { name: 'signal', description: 'Cancellation of this compilation.' }],
+        returns: 'resolution when every agent role has a resident activation; unavailable routes reject.',
+      },
+      {
         signature: 'close(): Promise<void>',
-        description: 'Stop new preparation, cancel provider admission and await every owned activation release.',
+        description: 'Stop new preparation and cancel provider admission; failed releases remain available to a later close.',
         parameters: [],
+        returns: 'Shared in-flight cleanup; rejects with collected failures until all owned leases settle.',
       },
     ],
   },
@@ -2501,6 +2366,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Wait for one task previously accepted through this coordinator authority.',
         parameters: [{ name: 'authority', description: 'opaque capability minted for the exact current coordinator.' }, { name: 'request', description: 'owned task identity and optional local wait cancellation.' }],
         returns: 'the task\'s terminal result or retained terminal attempt fact.',
+        throws: ['TeamRunError when the Team stalls or a local reviewer stops without an accepted decision.'],
       },
       {
         signature: 'async listDefaultWorkerTasks(authority: TeamRunCoordinatorTaskAuthority): Promise<TeamRunDefaultWorkerTaskList>',
@@ -2822,6 +2688,42 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the current Team state and its journal cursor.',
       },
       {
+        signature: 'getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot>',
+        description: 'Read one current human action without copying the Team projection.',
+        parameters: [{ name: 'request', description: 'Exact Team and action identity.' }],
+        returns: 'the bounded action snapshot; unsupported providers reject.',
+      },
+      {
+        signature: 'abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>',
+        description: 'Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.',
+        parameters: [{ name: 'request', description: 'Team selected for read-only inspection.' }],
+        returns: 'the lightweight selection projection; no activation is created or resumed.',
+      },
+      {
+        signature: 'abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>',
+        description: 'Read bounded display summaries without materializing task/plan execution history.',
+        parameters: [{ name: 'request', description: 'Team, collection, provider-order cursor and requested row limit.' }],
+        returns: 'a byte- and row-limited page, with actual scan work and optional continuation.',
+      },
+      {
+        signature: 'abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>',
+        description: 'Read current task fields or one bounded attempt/review history page, without private artifact references.',
+        parameters: [{ name: 'request', description: 'Exact Team/task, section, optional revision fence and history continuation.' }],
+        returns: 'detached data capped by the provider\'s response budget; indivisible oversized records reject.',
+      },
+      {
+        signature: 'abstract getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot>',
+        description: 'Resolve the latest published Session of one retained Team member without starting an Agent.',
+        parameters: [{ name: 'request', description: 'exact owning Team and member.' }],
+        returns: 'published binding, including offline history; missing members or bindings reject.',
+      },
+      {
+        signature: 'abstract inspectMember(request: TeamMemberInspectRequest): Promise<TeamMemberInspection>',
+        description: 'Read non-secret member metadata and one capability page without activating an Agent.',
+        parameters: [{ name: 'request', description: 'Team/member identity and optional cursor-pinned capability continuation.' }],
+        returns: 'bounded detail; a changed Team cursor rejects continuation until refreshed.',
+      },
+      {
         signature: 'upsertHumanAction(request: TeamHumanActionUpsertRequest): Promise<TeamHumanActionSnapshot>',
         description: 'Retain one host-mediated approval/question in the Team journal. Providers that do not offer durable interaction records fail explicitly so callers cannot mistake a transient mux frame for Team truth. The Host source derives the pending action, policy actor, and timestamps; callers provide only runtime proof and JSON routing fields.',
         parameters: [{ name: 'request', description: 'Host runtime authority, Team identity, and observed cursor.' }],
@@ -2848,8 +2750,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       {
         signature: 'abstract listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage>',
         description: 'List a bounded page of visible Team summaries for product and transport consumers.',
-        parameters: [{ name: 'request', description: 'provider-order cursor and page limit.' }],
-        returns: 'detached Team summaries and an optional continuation cursor.',
+        parameters: [{ name: 'request', description: 'opaque discovery position or -1, plus a physical scan-work limit.' }],
+        returns: 'detached summaries, scanned work and an optional continuation, including for empty pages.',
       },
       {
         signature: 'abstract archiveTeam(request: TeamArchiveRequest): Promise<TeamStateSnapshot>',
@@ -2873,7 +2775,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'abstract watchTeam(request: TeamWatchRequest): Promise<TeamWatchResult>',
         description: 'Wait until a Team journal moves beyond a caller-observed cursor, closes, or the caller aborts its local wait. Providers omit `request.signal` before parsing the JSON-only request fields; cancellation changes no durable data.',
         parameters: [{ name: 'request', description: 'Team identity, last observed journal cursor, and optional local cancellation.' }],
-        returns: 'whether the cursor advanced or the provider closed the watch.',
+        returns: 'an advanced cursor, or closed at an immutable archived tail or provider shutdown.',
         throws: ['when `request.signal` aborts before the watch resolves.'],
       },
       {
@@ -2978,6 +2880,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the detached durable binding after acceptance.',
       },
       {
+        signature: 'abstract reserveActivation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>',
+        description: 'Reserve capacity before invoking an activation provider.',
+        parameters: [{ name: 'request', description: 'Exact controller-owned startup identity and cursor.' }],
+        returns: 'the durable startup reservation.',
+      },
+      {
+        signature: 'abstract releaseActivationReservation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>',
+        description: 'Release an unpublished startup only after its controller proves cleanup.',
+        parameters: [{ name: 'request', description: 'Exact reservation, owner and current cursor.' }],
+        returns: 'the reservation carrying its durable release time.',
+      },
+      {
         signature: 'abstract updateActivationStatus(request: ActivationStatusUpdateRequest): Promise<ActivationBindingSnapshot>',
         description: 'Persist one permitted residency-status transition for a bound activation.',
         parameters: [{ name: 'request', description: 'source-owned runtime proof, Team/activation identity, observed cursor, and next status.' }],
@@ -3036,6 +2950,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Admit one complete JSON workflow plan before any compiled task or channel record is created. Providers retain the plan in `compiling` so recovery can resume the compiler from durable bindings.',
         parameters: [{ name: 'request', description: 'Team cursor, retry identity, complete workflow plan, and current coordinator proof.' }],
         returns: 'the accepted or idempotently replayed workflow plan.',
+      },
+      {
+        signature: 'inspectWorkflowPlan(request: TeamWorkflowInspectRequest): Promise<TeamWorkflowInspection>',
+        description: 'Read current workflow metadata and one task/dependency window.',
+        parameters: [{ name: 'request', description: 'Exact workflow, optional revision and page selection.' }],
+        returns: 'a bounded inspection without complete plan or result bodies.',
       },
       {
         signature: 'getWorkflowPlan(request: TeamWorkflowPlanGetRequest): Promise<TeamWorkflowPlanSnapshot>',
@@ -4000,19 +3920,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'workflowEngine',
-    summary: 'Workflow Service Definition contract.',
-    description: 'Workflow Service Definition contract. Invalid requests throw before publication; a live run is holder-owned, its result never rejects, cancellation and disposal are bounded, and disposal waits for child cleanup within that bound. Lifecycle listener failures are contained, and `workflow/end` fires exactly once as the result settles.',
-    methods: [
-      {
-        signature: 'abstract start(request: WorkflowStartRequest): WorkflowRun',
-        description: 'Parse and execute a workflow script.',
-        parameters: [{ name: 'request', description: 'the script, its `args`, the parent agent, and an optional cancel signal.' }],
-        returns: 'the live run; its `result` resolves when the script settles.',
-      },
-    ],
-  },
-  {
     key: 'workflowExtensions',
     summary: 'Effect-scoped registry for deployment-defined workflow conditions and targets.',
     description: 'Effect-scoped registry for deployment-defined workflow conditions and targets.',
@@ -4367,14 +4274,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'target', description: 'the resolved target about to be written.' }, { name: 'actor', description: 'the opaque tool-execution context the decider keys off.' }],
   },
   {
-    name: 'goal/changed',
-    mode: 'emit',
-    signature: '\'goal/changed\'(this: import(\'@clocky/clocky-scope\').Scoped<Agent>, payload: { agent: Agent; change: GoalChanged }): void',
-    summary: 'Goal mutation accepted by one live agent.',
-    description: 'Goal mutation accepted by one live agent. The matching `goal/change` session event has already committed. Listener failures are contained. Scope-filtered dispatch (`@clocky/clocky-scope`): agent-scoped listeners receive only that agent.',
-    parameters: [{ name: 'payload', description: '.change - fresh current projection or clear tombstone.' }],
-  },
-  {
     name: 'llm/adapters-updated',
     mode: 'emit',
     signature: '\'llm/adapters-updated\'(): void',
@@ -4455,38 +4354,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [],
   },
   {
-    name: 'subagent/end',
-    mode: 'emit',
-    signature: '\'subagent/end\'(this: Scoped<SubagentRuntime>, info: SubagentRunEndInfo): void',
-    summary: 'A published child settled.',
-    description: 'A published child settled. Scope-filtered dispatch uses the same delegating parent carrier as `subagent/start`, so the lifecycle pair reaches the same scoped audience.',
-    parameters: [{ name: 'info', description: 'the run identity and terminal outcome.' }],
-  },
-  {
-    name: 'subagent/provider-added',
-    mode: 'emit',
-    signature: '\'subagent/provider-added\'(provider: SubagentProvider): void',
-    summary: 'A provider became resolvable in the registry.',
-    description: 'A provider became resolvable in the registry.',
-    parameters: [{ name: 'provider', description: 'the registered provider.' }],
-  },
-  {
-    name: 'subagent/provider-removed',
-    mode: 'emit',
-    signature: '\'subagent/provider-removed\'(name: string): void',
-    summary: 'A provider left the registry.',
-    description: 'A provider left the registry. Accepted runs remain holder-owned.',
-    parameters: [{ name: 'name', description: 'the provider name that no longer resolves.' }],
-  },
-  {
-    name: 'subagent/start',
-    mode: 'emit',
-    signature: '\'subagent/start\'(this: Scoped<SubagentRuntime>, info: SubagentRunInfo): void',
-    summary: 'A provider established a published child.',
-    description: 'A provider established a published child. For in-process providers, `ctx.agents.get(info.id)` resolves during this notification. Scope-filtered dispatch keys the carrier by the delegating parent, so a parent-scoped listener observes only its own delegations. Paired with `subagent/end`.',
-    parameters: [{ name: 'info', description: 'the provider and published child identity.' }],
-  },
-  {
     name: 'system-prompt/assemble',
     mode: 'waterfall',
     signature: '\'system-prompt/assemble\'(this: Scoped<SystemPrompt>, assembly: PromptAssembly, context: AssembleContext, next: () => Promise<PromptAssembly>): Promise<PromptAssembly>',
@@ -4517,6 +4384,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'An enrollment issuer stopped accepting credentials.',
     description: 'An enrollment issuer stopped accepting credentials. Existing credentials may no longer attach after the issuer\'s transport listener is replaced.',
     parameters: [{ name: 'provider', description: 'removed issuer identity.' }],
+  },
+  {
+    name: 'team-link/provider-added',
+    mode: 'emit',
+    signature: '\'team-link/provider-added\'(this: TeamLinkRegistry, provider: TeamLinkProviderRef): void',
+    summary: 'A provider became available, including replacement after configuration changes.',
+    description: 'A provider became available, including replacement after configuration changes.',
+    parameters: [{ name: 'provider', description: 'named provider available for fresh connections.' }],
   },
   {
     name: 'team-scheduler/assigned',
@@ -4655,30 +4530,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'table', description: 'Mutable row table; listeners append in activation order.' }],
   },
   {
-    name: 'workflow/agent-end',
-    mode: 'emit',
-    signature: '\'workflow/agent-end\'(info: WorkflowRunInfo, agent: WorkflowAgentEndInfo): void',
-    summary: 'One `agent()` call settled (clean result, child failure, or run cancellation).',
-    description: 'One `agent()` call settled (clean result, child failure, or run cancellation). Paired with Events[\'workflow/agent-start\'] by `agent.seq`, exactly once per started call on every stop path — on an engine termination path (a worker killed past its grace) the end is engine-synthesized with outcome `\'cancelled\'`.',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'agent', description: 'the call identity plus its outcome.' }],
-  },
-  {
-    name: 'workflow/agent-start',
-    mode: 'emit',
-    signature: '\'workflow/agent-start\'(info: WorkflowRunInfo, agent: WorkflowAgentInfo): void',
-    summary: 'One `agent()` call established a published child run.',
-    description: 'One `agent()` call established a published child run. Paired with Events[\'workflow/agent-end\'] by `agent.seq`. A call that never receives a published run from the provider emits neither event in this pair.',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'agent', description: 'the call\'s sequence number, label, phase, and child id.' }],
-  },
-  {
-    name: 'workflow/end',
-    mode: 'emit',
-    signature: '\'workflow/end\'(info: WorkflowRunInfo, result: WorkflowResultInfo): void',
-    summary: 'A workflow run settled (any stop reason).',
-    description: 'A workflow run settled (any stop reason). Fired when WorkflowRun.result resolves. Paired with Events[\'workflow/start\'].',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'result', description: 'the outcome data (stop reason, error, agent count) — deliberately WITHOUT the result value (see {@link WorkflowResultInfo}).' }],
-  },
-  {
     name: 'workflow/extension-added',
     mode: 'emit',
     signature: '\'workflow/extension-added\'(this: WorkflowExtensionRegistry, extension: Omit<WorkflowExtension, \'validate\'>): void',
@@ -4694,30 +4545,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     description: 'A workflow graph extension was removed from future graph admission.',
     parameters: [{ name: 'extension', description: 'extension identity.' }],
   },
-  {
-    name: 'workflow/log',
-    mode: 'emit',
-    signature: '\'workflow/log\'(info: WorkflowRunInfo, message: string): void',
-    summary: 'The script emitted a narration line (a `log(message)` call).',
-    description: 'The script emitted a narration line (a `log(message)` call).',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'message', description: 'the logged message, verbatim.' }],
-  },
-  {
-    name: 'workflow/phase',
-    mode: 'emit',
-    signature: '\'workflow/phase\'(info: WorkflowRunInfo, title: string): void',
-    summary: 'The script entered a phase (a `phase(title)` call) — progress grouping for observers; no execution semantics.',
-    description: 'The script entered a phase (a `phase(title)` call) — progress grouping for observers; no execution semantics.',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot.' }, { name: 'title', description: 'the phase title, verbatim.' }],
-  },
-  {
-    name: 'workflow/start',
-    mode: 'emit',
-    signature: '\'workflow/start\'(info: WorkflowRunInfo): void',
-    summary: 'A workflow run started — the script\'s meta block validated, the body about to execute.',
-    description: 'A workflow run started — the script\'s meta block validated, the body about to execute. Paired with Events[\'workflow/end\'].',
-    parameters: [{ name: 'info', description: 'the run\'s identity snapshot (id + meta).' }],
-  },
 ]
 
 /** Shapes of every exported type the Service and Event signatures reference (transitively), sorted by name. */
@@ -4732,7 +4559,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ActivationBindingSnapshot',
-    declaration: 'export interface ActivationBindingSnapshot {\n    readonly activation: ActivationSnapshot;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly selection?: {\n        readonly preset?: string | undefined;\n        readonly provider?: string | undefined;\n        readonly model?: string | undefined;\n    } | undefined;\n    readonly recovery?: ActivationRecoverySnapshot | undefined;\n    readonly fencedAt?: number | undefined;\n    readonly quiescedAt?: number | undefined;\n    readonly quiescenceSource?: \'fenced\' | \'quiesced\' | undefined;\n    readonly quiescedWakeChannelIds?: readonly ChannelId[] | undefined;\n}',
+    declaration: 'export interface ActivationBindingSnapshot {\n    readonly reservationId?: ActivationReservationId | undefined;\n    readonly activation: ActivationSnapshot;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly selection?: {\n        readonly preset?: string | undefined;\n        readonly provider?: string | undefined;\n        readonly model?: string | undefined;\n    } | undefined;\n    readonly recovery?: ActivationRecoverySnapshot | undefined;\n    readonly fencedAt?: number | undefined;\n    readonly quiescedAt?: number | undefined;\n    readonly quiescenceSource?: \'fenced\' | \'quiesced\' | undefined;\n    readonly quiescedWakeChannelIds?: readonly ChannelId[] | undefined;\n}',
   },
   {
     name: 'ActivationBindInput',
@@ -4765,6 +4592,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ActivationControllerRecoveryStallPhaseScope',
     declaration: 'export interface ActivationControllerRecoveryStallPhaseScope {\n    readonly kind: \'activation-controller-recovery-stall\';\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly phase: \'stalled\';\n    readonly reason: TeamStallReason;\n    readonly activationId: ActivationId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly supervisor?: ActivationSupervisorDescriptor | undefined;\n}',
+  },
+  {
+    name: 'ActivationControllerReservationScope',
+    declaration: 'export type ActivationControllerReservationScope = ActivationReservationInput & ({\n    readonly kind: \'activation-controller-reserve\';\n} | {\n    readonly kind: \'activation-controller-release-reservation\';\n});',
+  },
+  {
+    name: 'ActivationControllerStartupStallPhaseScope',
+    declaration: 'export interface ActivationControllerStartupStallPhaseScope extends Omit<ActivationControllerClosureStallPhaseScope, \'kind\' | \'activationId\'> {\n    readonly kind: \'activation-controller-startup-stall\';\n    readonly reservationId: ActivationReservationId;\n}',
   },
   {
     name: 'ActivationControllerStatusScope',
@@ -4805,6 +4640,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ActivationRecoverySnapshot',
     declaration: 'export type ActivationRecoverySnapshot = SdkActivationRecoverySnapshot | AcpActivationRecoverySnapshot;',
+  },
+  {
+    name: 'ActivationReservationId',
+    declaration: 'export type ActivationReservationId = Branded<\'ActivationReservationId\'>;',
+  },
+  {
+    name: 'ActivationReservationInput',
+    declaration: 'export interface ActivationReservationInput {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly reservationId: ActivationReservationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly expectedCursor: number;\n}',
+  },
+  {
+    name: 'ActivationReservationRequest',
+    declaration: 'export interface ActivationReservationRequest extends ActivationReservationInput {\n    readonly actor: TeamSystemActivationProof;\n}',
+  },
+  {
+    name: 'ActivationReservationSnapshot',
+    declaration: 'export interface ActivationReservationSnapshot {\n    readonly id: ActivationReservationId;\n    readonly sessionId: SessionId;\n    readonly provider: string;\n    readonly reservedAt: number;\n    readonly releasedAt?: number | undefined;\n}',
   },
   {
     name: 'ActivationSnapshot',
@@ -5053,6 +4904,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'Branded',
     declaration: 'export type Branded<B extends string> = string & {\n    readonly [BRAND]: B;\n};',
+  },
+  {
+    name: 'BrowserConfigValue',
+    declaration: 'export type BrowserConfigValue = null | boolean | number | string | BrowserConfigValue[] | BrowserPluginConfig;',
+  },
+  {
+    name: 'BrowserPluginConfig',
+    declaration: 'export interface BrowserPluginConfig {\n    [key: string]: BrowserConfigValue;\n}',
   },
   {
     name: 'CancelOptions',
@@ -5471,30 +5330,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ContextSnapshotSection {\n    readonly name: string;\n    readonly text: string;\n}',
   },
   {
-    name: 'ContinuableCreateRequest',
-    declaration: 'export interface ContinuableCreateRequest {\n    readonly sessionId: SessionId;\n    readonly parent: Agent;\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'ContinuableCreateSpec',
-    declaration: 'export interface ContinuableCreateSpec {\n    readonly seed?: readonly SessionEvent[];\n}',
-  },
-  {
-    name: 'ContinuableSetupContribution',
-    declaration: 'export type ContinuableSetupContribution = (childCtx: Context) => () => void;',
-  },
-  {
-    name: 'ContinuableStart',
-    declaration: 'export interface ContinuableStart {\n    readonly childId: SessionId;\n    readonly messageId: MessageId;\n}',
-  },
-  {
-    name: 'ContinuableStartSpec',
-    declaration: 'export interface ContinuableStartSpec {\n    readonly provider: string;\n    readonly label: string;\n    readonly childId?: SessionId;\n    readonly request: Omit<SubagentStartRequest, \'label\' | \'signal\' | \'outputSchema\'>;\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'ContinuableSubagentDescriptorData',
-    declaration: 'export interface ContinuableSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: \'continuable\';\n    readonly label: string;\n    readonly agentProvider?: string;\n    readonly agentModel?: string;\n    readonly persona?: string;\n    readonly toolFilter?: ToolRestriction;\n}',
-  },
-  {
     name: 'CordisDynamicPackageId',
     declaration: 'export type CordisDynamicPackageId = Branded<\'CordisDynamicPackageId\'>;',
   },
@@ -5525,14 +5360,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CreateAgentOptions',
     declaration: 'export interface CreateAgentOptions {\n    readonly sessionId: SessionId;\n    readonly meta?: {\n        readonly cwd?: string;\n        readonly teamId?: string;\n        readonly participantId?: string;\n        readonly parentSession?: SessionId;\n        readonly seedLength?: number;\n        readonly agentPreset?: string;\n    };\n    readonly seed?: readonly SessionEvent[];\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
-  },
-  {
-    name: 'CreateGoalRequest',
-    declaration: 'export interface CreateGoalRequest {\n    readonly objective: string;\n    readonly maxGoalRounds?: number;\n}',
-  },
-  {
-    name: 'CreateGoalResult',
-    declaration: 'export interface CreateGoalResult {\n    readonly ref: GoalRef;\n}',
   },
   {
     name: 'CreateSessionOptions',
@@ -5671,10 +5498,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface DynamicCordisRunRequest {\n    requestId: ApprovalRequestId;\n    agentId: SessionId;\n    pluginId: CordisDynamicPluginId;\n    packageId: CordisDynamicPackageId;\n    mode: CordisDynamicRunMode;\n    name: string;\n    purpose: string;\n    requiresApproval: boolean;\n}',
   },
   {
-    name: 'EditGoalRequest',
-    declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
-  },
-  {
     name: 'EncodedImageAttachment',
     declaration: 'export interface EncodedImageAttachment {\n    mediaType: ImageMediaType;\n    data: string;\n    name?: string;\n}',
   },
@@ -5769,34 +5592,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GenericResultView',
     declaration: 'export interface GenericResultView {\n    card: \'generic\';\n    title?: string;\n    content?: ContentBlock[];\n}',
-  },
-  {
-    name: 'GoalActivation',
-    declaration: 'export type GoalActivation = \'armed\' | \'disarmed\';',
-  },
-  {
-    name: 'GoalBlockReason',
-    declaration: 'export interface GoalBlockReason {\n    readonly code: string;\n    readonly message: string;\n}',
-  },
-  {
-    name: 'GoalChanged',
-    declaration: 'export interface GoalChanged {\n    readonly operation: GoalOperation;\n    readonly ref: GoalRef;\n    readonly goal?: GoalView;\n}',
-  },
-  {
-    name: 'GoalOperation',
-    declaration: 'export type GoalOperation = \'create\' | \'edit\' | \'pause\' | \'resume\' | \'complete\' | \'block\' | \'clear\';',
-  },
-  {
-    name: 'GoalPhase',
-    declaration: 'export type GoalPhase = \'active\' | \'paused\' | \'blocked\' | \'complete\';',
-  },
-  {
-    name: 'GoalSnapshot',
-    declaration: 'export interface GoalSnapshot extends GoalRef {\n    readonly objective: string;\n    readonly phase: GoalPhase;\n    readonly blockedReason?: GoalBlockReason;\n    readonly maxGoalRounds: number;\n}',
-  },
-  {
-    name: 'GoalView',
-    declaration: 'export interface GoalView extends GoalSnapshot {\n    readonly roundsStarted: number;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly activation: GoalActivation;\n}',
   },
   {
     name: 'GrantRecord',
@@ -6031,6 +5826,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export class LlmRuntime extends Service {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
+    name: 'LogAppendOptions',
+    declaration: 'export interface LogAppendOptions {\n    readonly summary: unknown;\n}',
+  },
+  {
     name: 'LogAppendResult',
     declaration: 'export interface LogAppendResult {\n    readonly tailSequence: number;\n}',
   },
@@ -6048,11 +5847,23 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LogFacet',
-    declaration: 'export interface LogFacet {\n    open(descriptor: LogStreamDescriptor): Promise<LogStream>;\n    list(): Promise<readonly LogStreamInfo[]>;\n}',
+    declaration: 'export interface LogFacet {\n    open(descriptor: LogStreamDescriptor): Promise<LogStream>;\n    readSummary?(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined>;\n    list(): Promise<readonly LogStreamInfo[]>;\n    scanNames?(prefix: string, maxNameBytes: number): AsyncIterable<string | undefined>;\n    has?(name: string): Promise<boolean>;\n}',
+  },
+  {
+    name: 'LogNameScanCursor',
+    declaration: 'export type LogNameScanCursor = Branded<\'LogNameScanCursor\'>;',
+  },
+  {
+    name: 'LogNameScanPage',
+    declaration: 'export interface LogNameScanPage {\n    readonly names: readonly string[];\n    readonly scanned: number;\n    readonly nextCursor?: LogNameScanCursor;\n}',
+  },
+  {
+    name: 'LogNameScanRequest',
+    declaration: 'export interface LogNameScanRequest {\n    readonly prefix: string;\n    readonly afterCursor?: LogNameScanCursor;\n    readonly limit: number;\n}',
   },
   {
     name: 'LogStream',
-    declaration: 'export interface LogStream extends LogStreamDescriptor {\n    readonly firstSequence: number;\n    readonly tailSequence: number;\n    append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult>;\n    read(afterSequence: number, limit: number): Promise<readonly LogEntry[]>;\n    readCheckpoint(): Promise<LogCheckpoint | undefined>;\n    writeCheckpoint(checkpoint: LogCheckpoint): Promise<void>;\n    compact(request: LogCompactionRequest): Promise<void>;\n    close(): Promise<void>;\n}',
+    declaration: 'export interface LogStream extends LogStreamDescriptor {\n    readonly firstSequence: number;\n    readonly tailSequence: number;\n    append(expectedSequence: number, values: readonly unknown[], options?: LogAppendOptions): Promise<LogAppendResult>;\n    read(afterSequence: number, limit: number): Promise<readonly LogEntry[]>;\n    readCheckpoint(): Promise<LogCheckpoint | undefined>;\n    writeCheckpoint(checkpoint: LogCheckpoint): Promise<void>;\n    compact(request: LogCompactionRequest): Promise<void>;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'LogStreamDescriptor',
@@ -6061,6 +5872,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'LogStreamInfo',
     declaration: 'export interface LogStreamInfo extends LogStreamDescriptor {\n    readonly tailSequence: number;\n    readonly checkpointSequence?: number;\n}',
+  },
+  {
+    name: 'LogSummary',
+    declaration: 'export interface LogSummary {\n    readonly sequence: number;\n    readonly value: unknown;\n}',
   },
   {
     name: 'LspHover',
@@ -6211,14 +6026,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ModelModalityMap {\n    text: \'text\';\n    image: \'image\';\n}',
   },
   {
-    name: 'ObjectJsonSchema',
-    declaration: 'export type ObjectJsonSchema = JsonSchemaNode & {\n    type: \'object\';\n};',
-  },
-  {
-    name: 'OneShotSubagentDescriptorData',
-    declaration: 'export interface OneShotSubagentDescriptorData extends SubagentDescriptorBase {\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n}',
-  },
-  {
     name: 'ParticipantId',
     declaration: 'export type ParticipantId = Branded<\'ParticipantId\'>;',
   },
@@ -6280,7 +6087,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ParticipantSnapshot',
-    declaration: 'export interface ParticipantSnapshot {\n    readonly id: ParticipantId;\n    readonly teamId: TeamId;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly phase: ParticipantPhase;\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    readonly stats?: ParticipantStats | undefined;\n}',
+    declaration: 'export interface ParticipantSnapshot {\n    readonly activationReservation?: ActivationReservationSnapshot | undefined;\n    readonly id: ParticipantId;\n    readonly teamId: TeamId;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly phase: ParticipantPhase;\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    readonly stats?: ParticipantStats | undefined;\n}',
   },
   {
     name: 'ParticipantStats',
@@ -6465,10 +6272,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ResolvedRetryPolicy',
     declaration: 'export type ResolvedRetryPolicy = ResolvedNormalRetryPolicy | ResolvedAlwaysRetryPolicy;',
-  },
-  {
-    name: 'ResolvedSubagentStartRequest',
-    declaration: 'export interface ResolvedSubagentStartRequest extends SubagentStartRequest {\n    readonly descriptor: SubagentDescriptorData;\n}',
   },
   {
     name: 'RestoredSessionOptions',
@@ -7051,78 +6854,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type StreamChunk = {\n    type: \'block-start\';\n    index: number;\n    blockType: ContentBlockType;\n} | {\n    type: \'text-delta\';\n    index: number;\n    text: string;\n} | {\n    type: \'reasoning-delta\';\n    index: number;\n    text: string;\n} | {\n    type: \'tool-call-delta\';\n    index: number;\n    id: CallId;\n    name?: string;\n    argumentsDelta: string;\n} | {\n    type: \'block-end\';\n    index: number;\n    block: ContentBlock;\n} | {\n    type: \'usage\';\n    usage: TokenUsage;\n} | {\n    type: \'finish\';\n    reason: FinishReason;\n    replayState?: ReplayEnvelope;\n};',
   },
   {
-    name: 'SubagentCapabilities',
-    declaration: 'export interface SubagentCapabilities {\n    readonly outputSchema: boolean;\n    readonly depthLimit: boolean;\n    readonly toolFilter: boolean;\n    readonly persona: boolean;\n}',
-  },
-  {
-    name: 'SubagentDescendantListEntry',
-    declaration: 'export type SubagentDescendantListEntry = SubagentListEntry & {\n    readonly parentId: SessionId;\n    readonly depth: number;\n};',
-  },
-  {
-    name: 'SubagentDescriptorData',
-    declaration: 'export type SubagentDescriptorData = OneShotSubagentDescriptorData | ContinuableSubagentDescriptorData;',
-  },
-  {
-    name: 'SubagentFollowupOptions',
-    declaration: 'export interface SubagentFollowupOptions {\n    readonly source: MessageSource;\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'SubagentInterruptAuthority',
-    declaration: 'export type SubagentInterruptAuthority = {\n    readonly kind: \'user\';\n    readonly parentSessionId: SessionId;\n} | {\n    readonly kind: \'ancestor\';\n    readonly agent: Agent;\n};',
-  },
-  {
-    name: 'SubagentListEntry',
-    declaration: 'export type SubagentListEntry = {\n    readonly kind: \'child\';\n    readonly id: SessionId;\n    readonly activity: \'running\' | \'inactive\';\n    readonly hasChildren: boolean;\n} & ({\n    readonly mode: \'one-shot\';\n    readonly label?: string;\n} | {\n    readonly mode: \'continuable\';\n    readonly label: string;\n}) | {\n    readonly kind: \'diagnostic\';\n    readonly id: SessionId;\n    readonly reason: \'corrupt\' | \'unsupported\' | \'unavailable\';\n};',
-  },
-  {
-    name: 'SubagentProvider',
-    declaration: 'export interface SubagentProvider {\n    readonly name: string;\n    readonly capabilities: SubagentCapabilities;\n    readonly inheritsParentContext: boolean;\n    start(request: ResolvedSubagentStartRequest): Promise<SubagentRun>;\n    prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>;\n}',
-  },
-  {
-    name: 'SubagentReportDelivery',
-    declaration: 'export type SubagentReportDelivery = \'quiet\' | \'next-step\';',
-  },
-  {
-    name: 'SubagentReportOptions',
-    declaration: 'export interface SubagentReportOptions {\n    readonly delivery: SubagentReportDelivery;\n    readonly signal: AbortSignal;\n}',
-  },
-  {
-    name: 'SubagentResult',
-    declaration: 'export interface SubagentResult {\n    readonly output: ContentBlock[];\n    readonly structured?: unknown;\n    readonly diagnostic?: string;\n    readonly stopReason: SubagentStopReason;\n}',
-  },
-  {
-    name: 'SubagentRun',
-    declaration: 'export interface SubagentRun {\n    readonly id: SessionId;\n    readonly localAgent: Agent | undefined;\n    readonly result: Promise<SubagentResult>;\n    dispose(): Promise<void>;\n}',
-  },
-  {
-    name: 'SubagentRunEndInfo',
-    declaration: 'export interface SubagentRunEndInfo {\n    readonly runId: SubagentRunId;\n    readonly provider: string;\n    readonly id: SessionId;\n    readonly local: boolean;\n    readonly stopReason: SubagentResult[\'stopReason\'];\n    readonly lastAssistantMessage?: ContentBlock[];\n}',
-  },
-  {
-    name: 'SubagentRunId',
-    declaration: 'export type SubagentRunId = Branded<\'SubagentRunId\'>;',
-  },
-  {
-    name: 'SubagentRunInfo',
-    declaration: 'export interface SubagentRunInfo {\n    readonly runId: SubagentRunId;\n    readonly provider: string;\n    readonly id: SessionId;\n    readonly local: boolean;\n}',
-  },
-  {
-    name: 'SubagentRuntime',
-    declaration: 'export class SubagentRuntime extends Service {\n    constructor(ctx: Context);\n    async startContinuable(spec: ContinuableStartSpec): Promise<ContinuableStart>;\n    async followup(parent: Agent, childId: SessionId, content: ContentBlock[], options: SubagentFollowupOptions): Promise<MessageId>;\n    interrupt(targetSessionId: SessionId, authority: SubagentInterruptAuthority): void;\n    async reportFrom(child: Agent, content: ContentBlock[], options: SubagentReportOptions): Promise<MessageId>;\n    registerContinuableSetup(contribution: ContinuableSetupContribution): () => void;\n    async drainContinuableDescendants(parents: readonly Agent[]): Promise<void>;\n    async drainContinuableChildren(parent: Agent, childIds: readonly SessionId[]): Promise<void>;\n    listChildren(parentSessionId: SessionId, signal?: AbortSignal): Promise<SubagentListEntry[]>;\n    listDescendants(rootSessionId: SessionId, signal?: AbortSignal): Promise<SubagentDescendantListEntry[]>;\n    registerProvider(provider: SubagentProvider): () => void;\n    getProvider(name: string): SubagentProvider | undefined;\n    list(): string[];\n    async start(name: string, request: SubagentStartRequest): Promise<SubagentRun>;\n}',
-  },
-  {
-    name: 'SubagentStartRequest',
-    declaration: 'export interface SubagentStartRequest {\n    readonly label?: string;\n    readonly prompt: ContentBlock[];\n    readonly parent: Agent;\n    readonly signal: AbortSignal;\n    readonly agentOptions?: AgentOptions;\n    readonly outputSchema?: ObjectJsonSchema;\n    readonly maxDepth?: number;\n    readonly toolFilter?: ToolRestriction;\n    readonly persona?: string;\n}',
-  },
-  {
-    name: 'SubagentStopReason',
-    declaration: 'export type SubagentStopReason = SubagentStopReasonMap[keyof SubagentStopReasonMap];',
-  },
-  {
-    name: 'SubagentStopReasonMap',
-    declaration: 'export interface SubagentStopReasonMap {\n    completed: \'completed\';\n    aborted: \'aborted\';\n    error: \'error\';\n    \'max-tokens\': \'max-tokens\';\n    refusal: \'refusal\';\n}',
-  },
-  {
     name: 'SubprocessCollect',
     declaration: 'export interface SubprocessCollect {\n    maxBytes: number;\n    spill?: {\n        maxBytes: number;\n    };\n}',
   },
@@ -7353,6 +7084,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamAuthorityGrant',
     declaration: 'export interface TeamAuthorityGrant {\n    readonly operations: readonly TeamPolicyHook[];\n    readonly workspaceModes: readonly TeamTaskWorkspaceMode[];\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly budgets: TeamResourceBudget;\n}',
+  },
+  {
+    name: 'TeamBrowseKind',
+    declaration: 'export type TeamBrowseKind = \'tasks\' | \'members\' | \'workflowPlans\';',
+  },
+  {
+    name: 'TeamBrowsePage',
+    declaration: 'export type TeamBrowsePage = {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly total: number;\n    readonly scanned: number;\n    readonly nextCursor?: number | undefined;\n} & ({\n    readonly kind: \'tasks\';\n    readonly items: readonly TeamTaskSummary[];\n} | {\n    readonly kind: \'members\';\n    readonly items: readonly TeamMemberSummary[];\n} | {\n    readonly kind: \'workflowPlans\';\n    readonly items: readonly TeamWorkflowSummary[];\n});',
+  },
+  {
+    name: 'TeamBrowseRequest',
+    declaration: 'export interface TeamBrowseRequest {\n    readonly teamId: TeamId;\n    readonly kind: TeamBrowseKind;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
   },
   {
     name: 'TeamCancelInput',
@@ -7615,6 +7358,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamDelegationResultAdmission {\n    readonly binding: TeamChildRunBinding;\n    readonly requestEnvelopeId: EnvelopeId;\n    readonly requestSequence: number;\n    readonly responseEnvelopeId: EnvelopeId;\n    readonly responseSequence: number;\n    readonly contentFingerprint: TeamChildResultFingerprint;\n    readonly text: string;\n    readonly artifacts: readonly TeamArtifactReference[];\n    readonly parentTaskRevision: number;\n    readonly parentCursor: number;\n    readonly admittedAt: number;\n}',
   },
   {
+    name: 'TeamDiscoveryCursor',
+    declaration: 'export type TeamDiscoveryCursor = Branded<\'TeamDiscoveryCursor\'>;',
+  },
+  {
     name: 'TeamEnvelope',
     declaration: 'export interface TeamEnvelope extends TeamEnvelopeDraft {\n    readonly id: EnvelopeId;\n    readonly teamId: TeamId;\n    readonly sequence: number;\n    readonly senderId: ParticipantId;\n    readonly priority: EnvelopePriority;\n    readonly createdAt: number;\n}',
   },
@@ -7713,6 +7460,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamHumanActionPhase',
     declaration: 'export type TeamHumanActionPhase = \'pending\' | \'resolved\' | \'cancelled\';',
+  },
+  {
+    name: 'TeamHumanActionReadRequest',
+    declaration: 'export interface TeamHumanActionReadRequest {\n    readonly teamId: TeamId;\n    readonly actionId: TeamHumanActionId;\n}',
   },
   {
     name: 'TeamHumanActionResolveInput',
@@ -7976,11 +7727,23 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamListPage',
-    declaration: 'export interface TeamListPage {\n    readonly items: readonly TeamSnapshot[];\n    readonly nextCursor?: number | undefined;\n}',
+    declaration: 'export interface TeamListPage {\n    readonly scanned: number;\n    readonly items: readonly TeamSnapshot[];\n    readonly nextCursor?: TeamDiscoveryCursor | undefined;\n}',
   },
   {
     name: 'TeamListPageRequest',
-    declaration: 'export interface TeamListPageRequest {\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+    declaration: 'export interface TeamListPageRequest {\n    readonly afterCursor: TeamDiscoveryCursor | -1;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMemberInspection',
+    declaration: 'export interface TeamMemberInspection {\n    readonly record: TeamMemberInspectionRecord;\n    readonly teamCursor: number;\n    readonly startCursor: number;\n    readonly total: number;\n    readonly scanned: number;\n    readonly items: readonly string[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamMemberInspectionRecord',
+    declaration: 'export type TeamMemberInspectionRecord = Pick<ParticipantSnapshot, \'id\' | \'teamId\' | \'kind\' | \'displayName\' | \'role\' | \'phase\' | \'provider\' | \'preset\' | \'model\' | \'authScheme\'>;',
+  },
+  {
+    name: 'TeamMemberInspectRequest',
+    declaration: 'export interface TeamMemberInspectRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n    readonly expectedTeamCursor?: number | undefined;\n}',
   },
   {
     name: 'TeamMemberListPage',
@@ -7989,6 +7752,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamMemberListPageRequest',
     declaration: 'export interface TeamMemberListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMemberSessionRequest',
+    declaration: 'export interface TeamMemberSessionRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n}',
+  },
+  {
+    name: 'TeamMemberSessionSnapshot',
+    declaration: 'export type TeamMemberSessionSnapshot = Pick<ActivationBindingSnapshot, \'activation\' | \'sessionId\' | \'provider\'>;',
   },
   {
     name: 'TeamMetricsSnapshot',
@@ -8036,7 +7807,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamResourceBudget',
-    declaration: 'export interface TeamResourceBudget {\n    readonly maxInputTokens?: number;\n    readonly maxOutputTokens?: number;\n    readonly maxTotalTokens?: number;\n    readonly maxTurns?: number;\n    readonly maxWallTimeMs?: number;\n    readonly maxCostUnits?: number;\n    readonly maxRetries?: number;\n    readonly maxConcurrency?: number;\n    readonly maxArtifactBytes?: number;\n    readonly extensions?: JsonObject;\n}',
+    declaration: 'export interface TeamResourceBudget {\n    readonly maxInputTokens?: number;\n    readonly maxOutputTokens?: number;\n    readonly maxTotalTokens?: number;\n    readonly maxTurns?: number;\n    readonly maxWallTimeMs?: number;\n    readonly maxCostUnits?: number;\n    readonly maxRetries?: number;\n    readonly maxConcurrency?: number;\n    readonly maxChildTeams?: number;\n    readonly maxLiveActivations?: number;\n    readonly maxArtifactBytes?: number;\n    readonly extensions?: JsonObject;\n}',
   },
   {
     name: 'TeamResumeInput',
@@ -8300,11 +8071,27 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamsApi',
-    declaration: 'export interface TeamsApi {\n    inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>;\n    inboxRead(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxWatch(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>;\n    list(request: RpcRequest<{\n        afterCursor?: number;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamList>>;\n    get(request: RpcRequest<{\n        teamId: TeamId;\n    }>): Promise<RpcResponse<TeamStateSnapshot>>;\n    create(request: RpcRequest<{\n        objective: string;\n        cwd?: string;\n        agentPreset?: string;\n        selection?: ModelSelection;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStateSnapshot>>;\n    resume(request: RpcRequest<{\n        teamId: TeamId;\n        expectedCursor: number;\n        cwd?: string;\n        agentPreset?: string;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStateSnapshot>>;\n    start(request: RpcRequest<{\n        objective: string;\n        text: string;\n        idempotencyKey: ChannelPostIdempotencyKey;\n        cwd?: string;\n        agentPreset?: string;\n        selection?: ModelSelection;\n    }>, signal: AbortSignal): Promise<RpcResponse<TeamStartResult>>;\n    postInput(request: RpcRequest<{\n        teamId: TeamId;\n      /* …truncated — full shape in source */',
+    declaration: 'export interface TeamsApi {\n    memberInspect(request: RpcRequest<TeamMemberInspectRequest>): Promise<RpcResponse<TeamMemberInspection>>;\n    actionRead(request: RpcRequest<TeamHumanActionReadRequest>): Promise<RpcResponse<TeamHumanActionSnapshot>>;\n    taskInspect(request: RpcRequest<TeamTaskInspectRequest>): Promise<RpcResponse<TeamTaskInspection>>;\n    browse(request: RpcRequest<{\n        teamId: TeamId;\n        kind: TeamBrowseKind;\n        afterCursor?: number;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamBrowsePage>>;\n    memberSession(request: RpcRequest<TeamMemberSessionRequest>): Promise<RpcResponse<TeamMemberSessionSnapshot>>;\n    inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>;\n    inboxRead(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxWatch(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>;\n    list(request: RpcRequest<{\n        afterCursor?: TeamDiscoveryCursor | -1;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamList>>;\n    selection(request: RpcRequest<TeamSelectionRequest>): Promise<RpcResponse<TeamSelectionSnapshot>>;\n    get(request: RpcRequest<{\n        teamId: TeamId;\n    }>): Promise<RpcResponse<TeamStateSnapshot>>;\n    create(request: RpcRequest<{\n   /* …truncated — full shape in source */',
   },
   {
     name: 'TeamSchedulerDriveRequest',
     declaration: 'export interface TeamSchedulerDriveRequest {\n    readonly teamId?: TeamId;\n}',
+  },
+  {
+    name: 'TeamSelectionMetadata',
+    declaration: 'export type TeamSelectionMetadata = {\n    readonly kind: \'available\';\n    readonly goal: TeamGoalSnapshot;\n    readonly budgets: JsonObject;\n    readonly usage?: TeamUsageSnapshot | undefined;\n} | {\n    readonly kind: \'unavailable\';\n    readonly reason: \'too-large\' | \'not-provided\';\n};',
+  },
+  {
+    name: 'TeamSelectionRequest',
+    declaration: 'export interface TeamSelectionRequest extends TeamGetRequest {\n    readonly includeMetadata?: boolean | undefined;\n}',
+  },
+  {
+    name: 'TeamSelectionSnapshot',
+    declaration: 'export interface TeamSelectionSnapshot {\n    readonly metadata?: TeamSelectionMetadata | undefined;\n    readonly cancellation?: {\n        readonly reason: TeamSelectionText;\n    } | undefined;\n    readonly pendingHumanActionCount?: number | undefined;\n    readonly team: Pick<TeamSnapshot, \'id\' | \'parentTeamId\' | \'parentTaskId\' | \'depth\' | \'maxTeamDepth\' | \'workspacePath\' | \'phase\' | \'cursor\' | \'createdAt\' | \'updatedAt\' | \'archivedAt\'>;\n    readonly goal: {\n        readonly revision: number;\n        readonly phase: TeamGoalPhase;\n        readonly objective: TeamSelectionText;\n    };\n    readonly stallReason?: {\n        readonly code: string;\n        readonly message: TeamSelectionText;\n    } | undefined;\n    readonly closureKind?: \'complete\' | \'fail\' | \'cancel\' | undefined;\n    readonly coordinator: {\n        readonly kind: \'bound\';\n        readonly name: TeamSelectionText;\n        readonly participantKind: \'local-agent\' | \'remote-agent\';\n        readonly participantPhase: ParticipantPhase;\n        readonly binding: Pick<ActivationBindingSnapshot, \'activation\' | \'sessionId\' | \'provider\'>;\n    } | {\n        readonly kind: \'unavailable\';\n        readonly reason: \'missing-participant\' | \'ambiguous-participant\' | \'not-agent\' | \'starting\' | \'missing-binding\';\n    };\n    readonly counts: {\n        readonly participants: number;\n        readonly activations: number;\n        readonly tasks: Readonly<Record<TeamTaskPhase, number>>;\n        readonly channels: number;\n        readonly wo /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamSelectionText',
+    declaration: 'export interface TeamSelectionText {\n    readonly text: string;\n    readonly truncated: boolean;\n}',
   },
   {
     name: 'TeamSnapshot',
@@ -8313,10 +8100,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamStallReason',
     declaration: 'export interface TeamStallReason {\n    readonly code: string;\n    readonly message: string;\n}',
-  },
-  {
-    name: 'TeamStartResult',
-    declaration: 'export interface TeamStartResult {\n    readonly state: TeamStateSnapshot;\n    readonly envelopeId: EnvelopeId;\n}',
   },
   {
     name: 'TeamStateSnapshot',
@@ -8332,7 +8115,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemActivationScope',
-    declaration: 'export type TeamSystemActivationScope = ActivationControllerBindScope | ActivationControllerStatusScope | ActivationControllerFenceScope | ActivationControllerQuiesceScope | ActivationRecoveryQuiesceScope;',
+    declaration: 'export type TeamSystemActivationScope = ActivationControllerReservationScope | ActivationControllerBindScope | ActivationControllerStatusScope | ActivationControllerFenceScope | ActivationControllerQuiesceScope | ActivationRecoveryQuiesceScope;',
   },
   {
     name: 'TeamSystemArchiveProof',
@@ -8552,7 +8335,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemPhaseScope',
-    declaration: 'export type TeamSystemPhaseScope = TeamRunResumePhaseScope | TeamRunFinalizationQuiescePhaseScope | SchedulerStallPhaseScope | ActivationControllerCancellationStallPhaseScope | ActivationControllerClosureStallPhaseScope | ActivationControllerRecoveryStallPhaseScope;',
+    declaration: 'export type TeamSystemPhaseScope = TeamRunResumePhaseScope | TeamRunFinalizationQuiescePhaseScope | SchedulerStallPhaseScope | ActivationControllerCancellationStallPhaseScope | ActivationControllerClosureStallPhaseScope | ActivationControllerStartupStallPhaseScope | ActivationControllerRecoveryStallPhaseScope;',
   },
   {
     name: 'TeamSystemRootCreationProof',
@@ -8851,6 +8634,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TeamTaskId = Branded<\'TeamTaskId\'>;',
   },
   {
+    name: 'TeamTaskInspectionSelection',
+    declaration: 'export type TeamTaskInspectionSelection = {\n    readonly section: \'record\';\n} | {\n    readonly section: \'attempts\' | \'reviews\';\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n};',
+  },
+  {
+    name: 'TeamTaskInspectRequest',
+    declaration: 'export type TeamTaskInspectRequest = TeamTaskGetRequest & TeamTaskInspectionSelection & {\n    readonly expectedRevision?: number | undefined;\n};',
+  },
+  {
     name: 'TeamTaskIntegrationSpec',
     declaration: 'export interface TeamTaskIntegrationSpec {\n    readonly sourceTaskId: TeamTaskId;\n    readonly sourceAttemptId: TaskAttemptId;\n    readonly provider: string;\n    readonly target: string;\n    readonly expectedTarget?: string | undefined;\n    readonly mode: \'proposal\' | \'integrate\';\n}',
   },
@@ -8977,6 +8768,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamWorkflowGraph',
     declaration: 'export interface TeamWorkflowGraph {\n    readonly initial: TeamWorkflowTarget;\n    readonly transitions: readonly TeamWorkflowTransition[];\n    readonly defaultTarget?: TeamWorkflowTarget | undefined;\n    readonly maxTurns: number;\n}',
+  },
+  {
+    name: 'TeamWorkflowInspectRequest',
+    declaration: 'export interface TeamWorkflowInspectRequest extends TeamWorkflowPlanGetRequest {\n    readonly expectedRevision?: number | undefined;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
   },
   {
     name: 'TeamWorkflowPlan',
@@ -9584,7 +9379,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WebBootEntry',
-    declaration: 'export interface WebBootEntry {\n    id: string;\n    url: string;\n    rev: string;\n    inject?: string[];\n    immediately?: boolean;\n    external?: string[];\n}',
+    declaration: 'export interface WebBootEntry {\n    config?: BrowserPluginConfig;\n    id: string;\n    url: string;\n    rev: string;\n    inject?: string[];\n    immediately?: boolean;\n    external?: string[];\n}',
   },
   {
     name: 'WebBootGraph',
@@ -9651,18 +9446,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WebUpgradeRoute {\n    path: string;\n    handler: (req: IncomingMessage, socket: Duplex, head: Buffer) => void | Promise<void>;\n}',
   },
   {
-    name: 'WorkflowAgentEndInfo',
-    declaration: 'export interface WorkflowAgentEndInfo extends WorkflowAgentInfo {\n    outcome: WorkflowAgentOutcome;\n}',
-  },
-  {
-    name: 'WorkflowAgentInfo',
-    declaration: 'export interface WorkflowAgentInfo {\n    seq: number;\n    label: string;\n    phase?: string;\n    childId: SessionId;\n}',
-  },
-  {
-    name: 'WorkflowAgentOutcome',
-    declaration: 'export type WorkflowAgentOutcome = \'completed\' | \'failed\' | \'cancelled\';',
-  },
-  {
     name: 'WorkflowCondition',
     declaration: 'export type WorkflowCondition = {\n    readonly kind: \'always\';\n} | {\n    readonly kind: \'envelope-kind\';\n    readonly value: string;\n} | {\n    readonly kind: \'payload-present\';\n    readonly path: string;\n} | {\n    readonly kind: \'payload-equals\';\n    readonly path: string;\n    readonly value: JsonValue;\n} | {\n    readonly kind: \'extension\';\n    readonly name: string;\n    readonly version: number;\n    readonly config: JsonValue;\n};',
   },
@@ -9691,44 +9474,8 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WorkflowExtensionResolver {\n    get(kind: \'condition\' | \'target\', name: string, version: number): {\n        validate(value: JsonValue): void;\n        evaluate?: (input: {\n            readonly config: JsonValue;\n            readonly envelope: TeamEnvelope;\n            readonly state: JsonValue;\n        }) => boolean;\n        resolve?: (input: {\n            readonly config: JsonValue;\n            readonly state: JsonValue;\n        }) => WorkflowResolvedTarget;\n    } | undefined;\n}',
   },
   {
-    name: 'WorkflowMeta',
-    declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
-  },
-  {
-    name: 'WorkflowPhase',
-    declaration: 'export interface WorkflowPhase {\n    title: string;\n    detail?: string;\n    provider?: string;\n    model?: string;\n}',
-  },
-  {
     name: 'WorkflowResolvedTarget',
     declaration: 'export type WorkflowResolvedTarget = {\n    readonly kind: \'participant\';\n    readonly participantId: ParticipantId;\n} | {\n    readonly kind: \'terminate\';\n};',
-  },
-  {
-    name: 'WorkflowResult',
-    declaration: 'export interface WorkflowResult {\n    value: unknown;\n    stopReason: WorkflowStopReason;\n    error?: string;\n    agentsStarted: number;\n}',
-  },
-  {
-    name: 'WorkflowResultInfo',
-    declaration: 'export interface WorkflowResultInfo {\n    stopReason: WorkflowStopReason;\n    error?: string;\n    agentsStarted: number;\n}',
-  },
-  {
-    name: 'WorkflowRun',
-    declaration: 'export interface WorkflowRun {\n    readonly id: WorkflowRunId;\n    readonly meta: WorkflowMeta;\n    readonly result: Promise<WorkflowResult>;\n    cancel(reason?: string): void;\n    dispose(): Promise<void>;\n}',
-  },
-  {
-    name: 'WorkflowRunId',
-    declaration: 'export type WorkflowRunId = Branded<\'WorkflowRunId\'>;',
-  },
-  {
-    name: 'WorkflowRunInfo',
-    declaration: 'export interface WorkflowRunInfo {\n    id: WorkflowRunId;\n    meta: WorkflowMeta;\n}',
-  },
-  {
-    name: 'WorkflowStartRequest',
-    declaration: 'export interface WorkflowStartRequest {\n    script: string;\n    meta: WorkflowMeta;\n    args?: unknown;\n    subagentProvider?: string;\n    maxTotalAgents?: number;\n    parent: Agent;\n    signal?: AbortSignal;\n}',
-  },
-  {
-    name: 'WorkflowStopReason',
-    declaration: 'export type WorkflowStopReason = \'completed\' | \'cancelled\' | \'error\';',
   },
   {
     name: 'WorkflowTarget',

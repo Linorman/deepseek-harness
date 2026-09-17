@@ -74,11 +74,11 @@ async function run(ctx: Context, model: ChannelOpenModel): Promise<Record<string
     state.streamName = descriptor.name
     state.order.push('wal-opened')
     const append = stream.append.bind(stream)
-    stream.append = async (cursor, values) => {
+    stream.append = async (cursor, values, options) => {
       state.appendAttempts += 1
       assert.equal(state.appendAttempts, 1)
       if (state.at === 'after-append') {
-        await append(cursor, values)
+        await append(cursor, values, options)
         state.committed = true
         state.order.push('wal-appended')
       }
@@ -167,7 +167,7 @@ async function run(ctx: Context, model: ChannelOpenModel): Promise<Record<string
       assert.deepEqual(publications, [])
       const info = (await log.list()).find(item => item.name === state.streamName)
       if (at === 'before-append') assert.equal(info, undefined)
-      else assert.equal(info?.tailSequence, 1 + state.manifest!.participants.length)
+      else assert.equal(info?.tailSequence, 1 + state.manifest.participants.length)
       assert.deepEqual(state.order, ['runtime-acquired', 'wal-opened',
         ...at === 'after-append' ? ['wal-appended'] : [], 'append-error', 'close-entered', 'wal-closed', 'runtime-released'])
       summaries.push({ failureAt: at, order: state.order,

@@ -12,6 +12,15 @@
       config:
         providerName: workflow-test-local
         path: !!js clockyHomePath('workflow-principal.json')
+    - id: workflow-cancel-human-client
+      name: '@clocky/clocky-team-human-client'
+      config:
+        storagePageSize: 32
+        maxPageSize: 32
+        maxDeliveryBytes: 262144
+        maxPendingOperations: 128
+        watchTimeoutMs: 30000
+        pollIntervalMs: 250
     - id: workflow-cancel-human-actor
       name: '@clocky/clocky-team-human-actor'
     - id: workflow-task-cancellation-driver

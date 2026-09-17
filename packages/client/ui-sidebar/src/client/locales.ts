@@ -2,6 +2,7 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'brand.name': 'Clocky',
   'session.new': '新任务',
   'session.new.label': '新建任务',
   'toggle.open': '打开侧边栏',
@@ -13,6 +14,7 @@ export type SidebarKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
+  'brand.name': 'Clocky',
   'session.new': 'New Task',
   'session.new.label': 'New task',
   'toggle.open': 'Open sidebar',

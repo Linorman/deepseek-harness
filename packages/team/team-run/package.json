@@ -47,7 +47,8 @@
     "@clocky/clocky-team-channel-workflow": "workspace:^",
     "@clocky/cordis": "workspace:^",
     "@clocky/clocky-team-channel-admission": "workspace:^",
-    "@clocky/clocky-team-channel-basic": "workspace:^"
+    "@clocky/clocky-team-channel-basic": "workspace:^",
+    "@clocky/clocky-team-placement-default": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-agent": "workspace:^",
@@ -79,6 +80,12 @@
     "@clocky/clocky-team-channel-admission": "workspace:^",
     "@clocky/clocky-product-principal": "workspace:^",
     "@clocky/clocky-team-human-actor": "workspace:^",
-    "@clocky/clocky-team-channel-basic": "workspace:^"
+    "@clocky/clocky-team-channel-basic": "workspace:^",
+    "@clocky/clocky-team-placement-default": "workspace:^"
+  },
+  "peerDependenciesMeta": {
+    "@clocky/clocky-team-placement-default": {
+      "optional": true
+    }
   }
 }

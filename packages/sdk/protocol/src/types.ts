@@ -1,3 +1,9 @@
+import type { TeamMemberInspection } from '@clocky/clocky-team'
+import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from '@clocky/clocky-team'
+import type { TeamHumanActionSnapshot } from '@clocky/clocky-team'
+import type { TeamTaskInspectionSelection, TeamTaskInspection } from '@clocky/clocky-team'
+import type { TeamBrowseKind, TeamBrowsePage } from '@clocky/clocky-team'
+import type { TeamMemberSessionSnapshot } from '@clocky/clocky-team'
 import type { EncodedImageAttachment, ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { TeamHumanActionAnswer, TeamHumanActionResponseResult } from '@clocky/clocky-team'
 import type { TeamHumanInboxReadInput, TeamHumanInboxPage, TeamHumanInboxAcknowledgeInput, TeamHumanInboxAcknowledgement } from '@clocky/clocky-team'
@@ -40,6 +46,7 @@ import type {
   TeamPhase,
   TeamSnapshot,
   TeamStateSnapshot,
+  TeamSelectionSnapshot,
   TeamTaskReviewPolicy,
   TeamTaskIntegrationSpec,
   TeamTaskSnapshot,
@@ -59,14 +66,15 @@ export interface TeamInboxRespondParams {
 
 /** Empty request for a durable Team summary listing. */
 export interface TeamListParams {
-  readonly afterCursor?: number | undefined
+  readonly afterCursor?: string | -1 | undefined
   readonly limit?: number | undefined
 }
 
 /** Durable Team summaries visible to an SDK client. */
 export interface TeamListResult {
+  readonly scanned: number
   readonly items: readonly TeamSnapshot[]
-  readonly nextCursor?: number | undefined
+  readonly nextCursor?: string | undefined
 }
 
 /** Request one complete durable Team projection. */
@@ -74,9 +82,59 @@ export interface TeamGetParams {
   readonly teamId: string
 }
 
+/** Bounded selection with optional exact scalar metadata under the same byte allowance. */
+export interface TeamSelectionParams extends TeamGetParams {
+  readonly includeMetadata?: boolean | undefined
+}
+
 /** Complete durable Team state returned by the SDK runtime. */
 export interface TeamGetResult {
   readonly state: TeamStateSnapshot
+}
+
+/** Current task fields or revision-pinned attempt/review history. */
+export type TeamTaskInspectParams = TeamTaskInspectionSelection & {
+  readonly teamId: string
+  readonly taskId: string
+  readonly expectedRevision?: number | undefined
+}
+/** Bounded task inspection from the runtime. */
+export interface TeamTaskInspectResult { readonly inspection: TeamTaskInspection }
+
+/** Exact member and optional cursor-pinned capability page. */
+export interface TeamMemberInspectParams {
+  readonly teamId: string
+  readonly participantId: string
+  readonly afterCursor?: number | undefined
+  readonly limit?: number | undefined
+  readonly expectedTeamCursor?: number | undefined
+}
+/** Bounded member detail, never a complete Team state. */
+export interface TeamMemberInspectResult { readonly detail: TeamMemberInspection }
+
+/** Collection summary read with optional provider-order continuation. */
+export interface TeamBrowseParams {
+  readonly teamId: string
+  readonly kind: TeamBrowseKind
+  readonly afterCursor?: number | undefined
+  readonly limit?: number | undefined
+}
+/** Byte-bounded summaries, never complete execution records. */
+export interface TeamBrowseResult { readonly page: TeamBrowsePage }
+
+/** Exact Team/member lookup for a published Session binding. */
+export interface TeamMemberSessionParams {
+  readonly teamId: string
+  readonly participantId: string
+}
+/** Published binding for member transcript inspection; does not activate the member. */
+export interface TeamMemberSessionResult {
+  readonly binding: TeamMemberSessionSnapshot
+}
+
+/** Bounded first-selection result without roster or history collections. */
+export interface TeamSelectionResult {
+  readonly selection: TeamSelectionSnapshot
 }
 
 /** Replace one Team objective and/or goal-specific budget through authenticated human authority. */
@@ -623,6 +681,8 @@ export interface HarnessSdkNotificationMap {
 /** Client-to-server request methods with their param and result shapes. */
 export interface HarnessSdkRequestMap {
   'team/inbox-respond': { params: TeamInboxRespondParams; result: TeamHumanActionResponseResult }
+  'team/workflow-plan-inspect': { params: TeamWorkflowInspectParams; result: TeamWorkflowInspection }
+  'team/action-read': { params: TeamActionReadParams; result: TeamHumanActionSnapshot }
   'team/inbox-read': { params: TeamHumanInboxReadInput; result: TeamHumanInboxPage }
   'team/inbox-watch': { params: TeamHumanInboxReadInput; result: TeamHumanInboxPage }
   'team/inbox-acknowledge': { params: TeamHumanInboxAcknowledgeInput; result: TeamHumanInboxAcknowledgement }
@@ -634,6 +694,11 @@ export interface HarnessSdkRequestMap {
   'activation/dispose': { params: ActivationDisposeParams; result: ActivationDisposeResult }
   'initialize': { params: InitializeParams; result: InitializeResult }
   'team/list': { params: TeamListParams; result: TeamListResult }
+  'team/member-session': { params: TeamMemberSessionParams; result: TeamMemberSessionResult }
+  'team/task-inspect': { params: TeamTaskInspectParams; result: TeamTaskInspectResult }
+  'team/member-inspect': { params: TeamMemberInspectParams; result: TeamMemberInspectResult }
+  'team/browse': { params: TeamBrowseParams; result: TeamBrowseResult }
+  'team/selection': { params: TeamSelectionParams; result: TeamSelectionResult }
   'team/get': { params: TeamGetParams; result: TeamGetResult }
   'team/goal-update': { params: TeamGoalUpdateParams; result: TeamGoalUpdateResult }
   'team/goal-transition': { params: TeamGoalTransitionParams; result: TeamGoalTransitionResult }
@@ -675,4 +740,16 @@ export interface HarnessSdkRequestMap {
   'team/cancel': { params: TeamCancelParams; result: TeamCancelResult }
   'team/archive': { params: TeamArchiveParams; result: TeamArchiveResult }
   'shutdown': { params: undefined; result: Record<string, never> }
+}
+
+/** Exact human action read, independent from the complete Team projection. */
+export interface TeamActionReadParams {
+  readonly teamId: string
+  readonly actionId: string
+}
+
+/** Workflow identity and task-window selection accepted by SDK clients. */
+export type TeamWorkflowInspectParams = Omit<TeamWorkflowInspectRequest, 'teamId' | 'planId'> & {
+  readonly teamId: string
+  readonly planId: string
 }

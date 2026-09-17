@@ -1,3 +1,4 @@
+import { task as inspectionTaskFixture, settledAttempt as inspectionAttemptFixture } from '../../../team/team-hub/tests/fixtures.ts'
 import * as BasicChannel from '@clocky/clocky-team-channel-basic'
 import * as ChannelSummary from '@clocky/clocky-team-channel-summary'
 import AttachmentLocal from '@clocky/clocky-attachment-local'
@@ -9,7 +10,7 @@ import * as TeamHumanInbox from '../../../team/team-human-client/src/index.ts'
 import { createPrincipalChannelAdmission } from '@clocky/clocky-team-channel-admission/principal'
 import { join } from 'node:path'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFailed, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
 import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
@@ -150,7 +151,8 @@ async function setup(
   await ctx.plugin(TeamChannelAdmission)
   await ctx.plugin(ProductPrincipalRegistry)
   await ctx.plugin(TeamHumanActor)
-  await ctx.plugin(TeamHumanInbox, { storagePageSize: 2, maxPageSize: 2, maxDeliveryBytes: 65536, maxPendingOperations: 16, watchTimeoutMs: 100, pollIntervalMs: 5 })
+  await ctx.plugin(TeamHumanInbox, { storagePageSize: 2, maxPageSize: 2, maxDeliveryBytes: 65536,
+    maxPendingOperations: 16, watchTimeoutMs: 100, pollIntervalMs: 5 })
   await ctx.plugin(DirectChannel)
   await ctx.plugin(AgentRuntime)
   await ctx.plugin(InProcessRuntime, { providerName: 'in-process' })
@@ -396,17 +398,18 @@ describe('Team API', () => {
         expect(action).toBeDefined()
       })
       const pending = required(action, 'pending action')
+      expect(value(await client.teams.actionRead({ teamId: state.team.id, actionId: pending.id }))).toEqual(pending)
       const input = { teamId: state.team.id, actionId: pending.id, expectedUpdatedAt: pending.updatedAt,
         idempotencyKey: teamHumanActionResponseIdempotencyKeySchema.parse('restart-question-answer'),
         answer: { kind: 'question' as const, answers: [{ id: 'continue', selected: ['Proceed'] }] } }
-      const release = Promise.withResolvers<void>()
+      const release = Promise.withResolvers<undefined>()
       let responding: ReturnType<typeof client.teams.inboxRespond> | undefined
       if (window === 'accepted') {
-        const accepted = Promise.withResolvers<void>()
+        const accepted = Promise.withResolvers<undefined>()
         const original = first.teams.acceptHumanActionResponse.bind(first.teams)
         vi.spyOn(first.teams, 'acceptHumanActionResponse').mockImplementation(async (request) => {
           const result = await original(request)
-          accepted.resolve()
+          accepted.resolve(undefined)
           await release.promise
           return result
         })
@@ -423,15 +426,23 @@ describe('Team API', () => {
           const target = await copy.log.open({ name: info.name, version: info.version })
           try {
             let cursor = -1
+            let projection: ReturnType<typeof foldTeamRecord> | undefined
             for (;;) {
               const rows = await source.read(cursor, 32)
               if (rows.length === 0) break
-              await target.append(target.tailSequence, rows.map(row => row.value))
+              if (info.name.startsWith('team/')) {
+                const teamId = teamIdSchema.parse(info.name.slice('team/'.length))
+                for (const row of rows) {
+                  projection = foldTeamRecord(projection, teamJournalRecordSchema.parse(row.value), row.sequence, teamId)
+                }
+              }
+              await target.append(target.tailSequence, rows.map(row => row.value),
+                projection === undefined ? undefined : { summary: projection.team })
               cursor = rows[rows.length - 1]!.sequence
             }
           } finally { await target.close() }
         }
-      } finally { await copy.close(); release.resolve() }
+      } finally { await copy.close(); release.resolve(undefined) }
       if (responding !== undefined) value(await responding)
       else abort.abort()
       await asked
@@ -494,8 +505,23 @@ describe('Team API', () => {
   })
 
   it('runs the default local topology through the full fetch carrier', async () => {
+    let phase = 'setup'
+    const failureState: { read?: () => Promise<unknown> } = {}
+    onTestFailed(async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        const details = await Promise.race([
+          failureState.read?.().catch((error: unknown) => error instanceof Error ? error.message : String(error)),
+          new Promise((resolve) => {
+            timer = setTimeout(() => { resolve('state read did not settle') }, 500)
+          }),
+        ])
+        process.stderr.write(`Team fetch scenario stopped at: ${phase}; ${JSON.stringify(details)}\n`)
+      } finally { if (timer !== undefined) clearTimeout(timer) }
+    })
     const adapter = new GateAdapter()
     const ctx = await setup(adapter)
+    phase = 'initial reads'
     const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
       defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
       cwd: process.cwd(),
@@ -508,10 +534,19 @@ describe('Team API', () => {
       idempotencyKey: channelPostIdempotencyKeySchema.parse('host-team-start'),
       cwd: process.cwd(),
     }
+    phase = 'Team start'
     const started = value(await client.teams.start(startRequest))
     const created = started.state
     const teamId = created.team.id
     const channelId = required(created.channelIds[0], 'default Team channel')
+    failureState.read = async () => {
+      const current = await ctx.teams.getTeam({ teamId })
+      return { team: current.team.phase, closure: current.team.closure?.kind,
+        activations: current.activations.map(item => ({ session: item.sessionId, status: item.activation.status })),
+        quiescence: await ctx.teams.inspectQuiescence(teamId) }
+    }
+
+    phase = 'admission reads'
     const admission = await ctx.teams.getChannelAdmission({ channelId })
     expect(admission.channel.phase).toBe('active')
     expect(admission.invitations.map(invitation => invitation.status)).toEqual(['acknowledged', 'acknowledged'])
@@ -532,12 +567,33 @@ describe('Team API', () => {
         { kind: 'local-agent', role: 'worker', phase: 'provisioning' },
       ],
     })
+    phase = 'selection reads'
+    const selection = value(await client.teams.selection({ teamId }))
+    expect(selection).toMatchObject({ team: { id: teamId, phase: 'active' }, coordinator: { kind: 'bound' }, counts: { participants: 3 } })
+    expect(selection).not.toHaveProperty('participants')
+    expect(selection).not.toHaveProperty('activations')
+    const detailedSelection = value(await client.teams.selection({ teamId, includeMetadata: true }))
+    expect(detailedSelection.metadata).toMatchObject({ kind: 'available', goal: created.goal, budgets: created.budgets })
+    expect(detailedSelection).not.toHaveProperty('tasks')
+    const memberSummaries = value(await client.teams.browse({ teamId, kind: 'members', limit: 1 }))
+    expect(memberSummaries).toMatchObject({ kind: 'members', teamId, total: 3, nextCursor: 0 })
+    expect(memberSummaries.items).toHaveLength(1)
+    expect(memberSummaries.items[0]).not.toHaveProperty('capabilities')
+    expect(memberSummaries.items[0]).not.toHaveProperty('authorityGrant')
+
+    if (selection.coordinator.kind !== 'bound') throw new Error('Coordinator binding missing')
+    expect(value(await client.teams.memberSession({ teamId, participantId: selection.coordinator.binding.activation.participantId })))
+      .toEqual(selection.coordinator.binding)
+    expect(value(await client.teams.memberInspect({ teamId, participantId: selection.coordinator.binding.activation.participantId })))
+      .toMatchObject({ record: { id: selection.coordinator.binding.activation.participantId, teamId, role: 'coordinator' } })
+
     expect(value(await client.teams.get({ teamId })).team).toMatchObject({ id: teamId, phase: 'active' })
     expect(value(await client.teams.auditRead({ teamId, afterCursor: -1, limit: 1 })).items[0]).toMatchObject({
       teamId, stream: 'team', cursor: 0, type: 'team/created',
     })
 
     expect(started.envelopeId).toBeTruthy()
+    phase = 'start retry'
     const retried = value(await client.teams.start(startRequest))
     expect(retried.state.team.id).toBe(teamId)
     expect(retried.envelopeId).toBe(started.envelopeId)
@@ -546,6 +602,7 @@ describe('Team API', () => {
       objective: 'Different Team objective.',
     })
     expect(conflict.result).toMatchObject({ ok: false, error: { code: 'team-start-conflict' } })
+    phase = 'model entry'
     await adapter.started.promise
 
     const human = required(created.participants.find(item => item.role === 'human'), 'human participant')
@@ -555,20 +612,26 @@ describe('Team API', () => {
       'coordinator activation',
     )
     const final = client.teams.waitFinal({ teamId })
+    phase = 'final post'
     await postFinal(ctx, created, human, binding)
+    phase = 'closure intent'
     await vi.waitFor(async () => {
       expect((await ctx.teams.getTeam({ teamId })).team.closure?.kind).toBe('complete')
     })
+    phase = 'release model'
     adapter.release.resolve(undefined)
+    phase = 'final receipt'
     const finalValue = value(await final)
     expect(finalValue.teamId).toBe(teamId)
     expect(finalValue.channelId).toBe(channelId)
     expect(finalValue.envelopeId).toBeTruthy()
     expect(finalValue.text).toBe('Final result from the coordinator.')
+    phase = 'inbox read'
     const inbox = value(await client.teams.inboxRead({}))
     expect(inbox.items).toMatchObject([{ kind: 'final', teamId, envelopeId: finalValue.envelopeId, text: finalValue.text }])
     expect(inbox.displayCursor).toBe(-1)
-    expect(value(await client.teams.inboxAcknowledge({ throughCursor: inbox.items[0]!.sequence }))).toEqual({ displayCursor: inbox.items[0]!.sequence })
+    expect(value(await client.teams.inboxAcknowledge({ throughCursor: inbox.items[0]!.sequence })))
+      .toEqual({ displayCursor: inbox.items[0]!.sequence })
     expect(value(await client.teams.inboxRead({})).items).toEqual([])
     expect(value(await client.teams.get({ teamId })).team.phase).toBe('completed')
     const noOwner = await client.teams.postInput({ teamId, text: 'This run is already settled.' })
@@ -598,10 +661,13 @@ describe('Team API', () => {
     expect(missing.result.error.message).toContain('missing-team')
     expect(missing.result.error.details).toEqual({ teamId: 'missing-team' })
 
+    phase = 'create cancellable'
     const cancellable = value(await client.teams.create({ objective: 'Cancel this Team.', cwd: process.cwd() }))
+    phase = 'cancel Team'
     expect(value(await client.teams.cancel({ teamId: cancellable.team.id }))).toEqual({ accepted: true, phase: 'cancelled' })
     const cancelled = value(await client.teams.get({ teamId: cancellable.team.id }))
     expect(cancelled.team.phase).toBe('cancelled')
+    phase = 'archive Team'
     const archived = value(await client.teams.archive({
       teamId: cancellable.team.id,
       expectedCursor: cancelled.team.cursor,
@@ -728,7 +794,8 @@ describe('Team API', () => {
     expect(replayed.items).toMatchObject([{ teamId: terminal.team.id, text: 'Final result from the coordinator.' }])
     expect(replayed.displayCursor).toBe(-1)
     expect(value(await foreign.teams.inboxRead({})).items).toEqual([])
-    expect(value(await client.teams.inboxAcknowledge({ throughCursor: replayed.items[0]!.sequence })).displayCursor).toBe(replayed.items[0]!.sequence)
+    expect(value(await client.teams.inboxAcknowledge({ throughCursor: replayed.items[0]!.sequence })).displayCursor)
+      .toBe(replayed.items[0]!.sequence)
     expect(value(await client.teams.inboxRead({})).items).toEqual([])
     const input = { teamId: terminal.team.id, expectedCursor: terminal.team.cursor }
     const archiveTeam = vi.spyOn(ctx.teams, 'archiveTeam')
@@ -1129,6 +1196,27 @@ describe('Team API', () => {
     const task = value(await client.teams.taskCreate(initial))
     expect(task).toMatchObject({ teamId, subject: initial.subject, phase: 'pending' })
     expect(task.createCommand.creator).toEqual({ teamId, participantId: human.id })
+    const inspected = value(await client.teams.taskInspect({ teamId, taskId: task.id, section: 'record' }))
+    expect(inspected).toMatchObject({ section: 'record', revision: task.revision, task: { id: task.id, subject: task.subject } })
+    expect(inspected).not.toHaveProperty('task.attemptHistory')
+    expect((await client.teams.taskInspect({ teamId, taskId: 'foreign-task' as never, section: 'record' })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-task-not-found' } })
+    expect(value(await client.teams.taskInspect({ teamId, taskId: task.id, section: 'attempts', expectedRevision: task.revision, limit: 1 })))
+      .toMatchObject({ section: 'attempts', total: 0, items: [] })
+    expect((await client.teams.taskInspect({ teamId, taskId: task.id, section: 'record', expectedRevision: task.revision + 1 })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-task-stale-revision' } })
+
+
+    const privateArtifact = { id: 'private-proposal', provider: 'local', kind: 'patch', uri: 'private/proposal', visibility: 'private' }
+    const completedView = inspectionTaskFixture({ id: task.id, teamId, phase: 'completed', attemptCount: 1,
+      attemptHistory: [inspectionAttemptFixture({ teamId, taskId: task.id, outcome: { kind: 'completed', result: {
+        summary: 'Completed', artifacts: [privateArtifact], integration: { target: 'main', status: 'proposed', proposalArtifact: privateArtifact },
+      } } })] })
+    const readTask = vi.spyOn(ctx.teams, 'getTask').mockResolvedValueOnce(completedView)
+    const visibleTask = value(await client.teams.taskGet({ teamId, taskId: task.id }))
+    expect(JSON.stringify(visibleTask)).not.toContain('private/proposal')
+    expect(JSON.stringify(completedView)).toContain('private/proposal')
+    readTask.mockRestore()
 
     const updated = value(await client.teams.taskUpdate({
       teamId,
@@ -1517,19 +1605,27 @@ describe('Team API', () => {
     expect((await input(consultId)).result.ok).toBe(false)
     const discussionId = await open('discussion')
     expect((await input(discussionId)).result.ok).toBe(false)
-    await ctx.teams.postChannelEnvelope({ actor: agent, expectedCursor: (await ctx.teams.getChannel({ channelId: discussionId })).cursor,
+    const firstDiscussion = await ctx.teams.postChannelEnvelope({ actor: agent,
+      expectedCursor: (await ctx.teams.getChannel({ channelId: discussionId })).cursor,
       draft: { channelId: discussionId, audience: [human.id], delivery: 'context', kind: 'message', payload: { text: 'First turn.' } } })
     expect((await input(discussionId, { delivery: 'steer' })).result.ok).toBe(false)
     expect((await input(discussionId, { audience: [] })).result.ok).toBe(false)
     const discussion = value(await input(discussionId, { delivery: 'context' }))
     expect(discussion).toMatchObject({ kind: 'message', audience: [coordinator.id], payload: { text: 'Human response.' } })
+    await vi.waitFor(async () => {
+      const delivered = await ctx.teams.readChannel({ channelId: discussionId, afterCursor: -1 })
+      expect(delivered.records).toEqual(expect.arrayContaining([expect.objectContaining({
+        type: 'channel/receipt', envelopeId: discussion.id, participantId: coordinator.id,
+      }), expect.objectContaining({ type: 'channel/receipt', envelopeId: firstDiscussion.id, participantId: human.id })]))
+    })
     const selection = { channelId: discussionId, expectedCursor: (await ctx.teams.getChannel({ channelId: discussionId })).cursor,
       coveredSequenceRange: { from: discussion.sequence, to: discussion.sequence }, idempotencyKey: 'human-selected-summary' as never }
     const summary = value(await client.teams.channelSummarize(selection))
     expect(summary).toMatchObject({ sourceEnvelopeIds: [discussion.id], coveredSequenceRange: selection.coveredSequenceRange })
     expect(summary.text).toContain('Human response.')
     expect(value(await client.teams.channelSummarize(selection))).toEqual(summary)
-    expect((await client.teams.channelSummarize({ ...selection, coveredSequenceRange: { from: 0, to: discussion.sequence } })).result.ok).toBe(false)
+    expect((await client.teams.channelSummarize({ ...selection, coveredSequenceRange: { from: 0, to: discussion.sequence } })).result.ok)
+      .toBe(false)
 
     const task = value(await client.teams.taskCreate({
       teamId: created.team.id, expectedCursor: (await ctx.teams.getTeam({ teamId: created.team.id })).team.cursor,
@@ -2065,6 +2161,8 @@ describe('Team API', () => {
       created.activations.find(item => item.activation.participantId === coordinator.id),
       'coordinator activation',
     )
+    expect(value(await client.sessions.list({})).items.find(item => item.sessionId === binding.sessionId)?.team)
+      .toEqual({ teamId, participantId: coordinator.id })
     const coordinatorAgent = required(ctx.agents.get(binding.sessionId), 'coordinator Agent')
     const postHumanInput = vi.spyOn(ctx.teamRuns, 'postHumanInput')
 
@@ -2353,6 +2451,18 @@ describe('Team API', () => {
         details: { reason: 'IMAGE_DIMENSION_TOO_LARGE' },
       },
     })
+  })
+
+  it('preserves the principal inbox retention cursor through the authenticated fetch carrier', async () => {
+    const ctx = await setup(new GateAdapter())
+    vi.spyOn(ctx.teamHumanDelivery, 'read').mockRejectedValueOnce(new TeamError('Inbox history compacted',
+      'TEAM_INBOX_COMPACTED', { details: { firstCursor: 8 } }))
+    const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
+      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd(),
+    })))
+    await expect(client.teams.inboxRead({ afterCursor: -1 })).resolves.toMatchObject({ result: {
+      ok: false, error: { code: 'team-inbox-compacted', details: { firstCursor: 8 } },
+    } })
   })
 
   it('preserves compaction error codes and retained cursors across the Host boundary', async () => {

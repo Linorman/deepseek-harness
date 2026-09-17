@@ -324,6 +324,17 @@ describe('boot manifest wire', () => {
     ])
   })
 
+  it('detaches public JSON options and rejects executable or malformed configuration values', () => {
+    const config = { maxDrafts: 4, flags: [true, null], nested: { text: 'browser data' } }
+    const manifest = parseBootManifest({ rev: 'graph', entries: [{ id: 'a', url: '/a', rev: '1', config }] })
+    expect(manifest.plugins[0]?.config).toEqual(config)
+    config.nested.text = 'changed after parsing'
+    expect(manifest.plugins[0]?.config).toMatchObject({ nested: { text: 'browser data' } })
+    for (const invalid of [null, [], 'text', { fn: () => 1 }, { number: NaN }, { date: new Date() }]) {
+      expect(() => parseBootManifest({ rev: 'graph', entries: [{ id: 'a', url: '/a', rev: '1', config: invalid }] })).toThrow(/config/)
+    }
+  })
+
   it('rejects a non-array external', () => {
     expect(() => parseBootManifest({
       rev: 'graph',

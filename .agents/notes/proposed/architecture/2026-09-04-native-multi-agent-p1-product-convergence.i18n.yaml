@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md
-2026-09-04-native-multi-agent-p1-product-convergence.md: 1b2f8855ef947739743e6d2119ecb9ab5f51a611
-2026-09-04-native-multi-agent-p1-product-convergence.zh.md: 2dc526b39ad41d5bc14a20c83f7d7e455cd929b7
+2026-09-04-native-multi-agent-p1-product-convergence.md: 789090adb5b87a24ec8aee50ba8d8c0f3cbfe86b
+2026-09-04-native-multi-agent-p1-product-convergence.zh.md: d11c80203ef942c676352dde159e6d097f811d14

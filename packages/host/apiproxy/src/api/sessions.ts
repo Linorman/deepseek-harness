@@ -1,3 +1,4 @@
+import type { TeamId, ParticipantId } from '@clocky/clocky-team/types'
 /**
  * sessions domain contract. Method signatures are the source of truth:
  * unary methods take the RpcRequest<P> narrow form and the impl echoes rpcId; everything
@@ -178,6 +179,9 @@ export type QueueAction =
 
 /** One Session list entry. */
 export interface SessionSummary {
+  /** Immutable Team/Participant ownership from the persisted Session header. */
+  team?: { readonly teamId: TeamId; readonly participantId: ParticipantId }
+
   sessionId: SessionId
   /**
    * The later of creation and the latest human-authored prompt. Attached

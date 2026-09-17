@@ -1,6 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
 import { acknowledgeTestChannelActivations, openTestChannel } from '../../../core/team/tests/channel-lifecycle-authority.ts'
@@ -148,6 +148,13 @@ describe('Team Hub bounded WAL load and checkpoint recovery', () => {
     contexts.delete(first.ctx)
 
     const second = await setup(first.root)
+    const open = vi.spyOn(second.ctx.storageLog, 'open')
+    const discovery = await second.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 32 })
+    expect(discovery.items.map(team => team.id)).toEqual([created.team.id])
+    expect(discovery.scanned).toBeLessThanOrEqual(32)
+    expect(open).not.toHaveBeenCalled()
+    expect((second.ctx.teams as TeamHub).inspectLoadedTeam(created.team.id)).toBeUndefined()
+    open.mockRestore()
     const envelopes: TeamEnvelope[] = []
     const pageSizes: number[] = []
     let afterCursor = -1

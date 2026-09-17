@@ -1,3 +1,5 @@
+import { indexInboxAdmission, inboxAdmissionBytes, readInboxAdmission, isInboxAdmission, type InboxAdmissionKey } from './admission-index.ts'
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Durable principal-bound final delivery and independent display acknowledgement. @module @clocky/clocky-team-human-client */
 import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
@@ -5,18 +7,34 @@ import { z as schema } from 'zod'
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { setTimeout as delay } from 'node:timers/promises'
+import { productPrincipalId } from '@clocky/clocky-product-principal'
 import type { AuthenticatedProductCall, ProductPrincipalId } from '@clocky/clocky-product-principal'
 import { TeamError, teamHumanFinalInputSchema, teamHumanInboxItemSchema, teamHumanInboxReadInputSchema, teamHumanInboxAcknowledgeInputSchema, teamHumanMessageInputSchema, teamHumanInboxActionSchema, teamHumanActionResponseInputSchema } from '@clocky/clocky-team'
 import type { TeamHumanFinalInput, TeamHumanInboxItem, TeamHumanInboxPage, TeamHumanInboxReadInput, TeamHumanInboxAcknowledgeInput, TeamHumanInboxAcknowledgement, TeamHumanDeliveryRuntime, TeamHumanInboxFinal, TeamHumanSinkProof, TeamHumanInboxMessage, TeamHumanMessageInput, TeamSystemHumanDeliveryProof, TeamSystemHumanDeliveryScope, TeamId, ChannelId, TeamHumanActionResponder, TeamHumanActionResponseInput, TeamHumanActionResponseResult, TeamHumanInboxAction, TeamStateSnapshot } from '@clocky/clocky-team'
-import type { LogStream } from '@clocky/clocky-storage-log'
+import { StorageLogError } from '@clocky/clocky-storage-log'
+import type { LogStream, LogNameScanCursor } from '@clocky/clocky-storage-log'
 import type {} from '@clocky/clocky-storage-log'
 
 /** Cordis Consumer identity. */
 export const name = 'team-human-client'
 /** The Team provider supplies authorization; storage owns durable appends. */
 export const inject = ['teams', 'storageLog', 'productPrincipals']
+/** Optional bounded migration of displayed history into immutable admission anchors. */
+export interface InboxRetentionConfig {
+  /** Minimum physical inbox records retained after a compaction. */
+  readonly tailRecords: number
+  /** Maximum physical stream names examined per discovery page. */
+  readonly maxStreamsPerDrive: number
+  /** Maximum inbox records examined across one retention drive. */
+  readonly maxRecordsPerDrive: number
+  /** Maximum selected bytes per drive, counting the larger source or admission-anchor record for each item. */
+  readonly maxBytesPerDrive: number
+}
+
 /** Deployment bounds for storage, API pages and long polling. */
 export interface Config {
+  /** Omission disables automatic display-history retention; admission anchors remain durable. */
+  readonly retention?: InboxRetentionConfig
   /** Maximum records read from the log backend at once. */
   readonly storagePageSize: number
   /** Maximum deliveries in one product response. */
@@ -32,6 +50,12 @@ export interface Config {
 }
 /** Required load-time limits; no protocol values are inferred from a Session. */
 export const Config: z<Config> = z.object({
+  retention: z.object({
+    tailRecords: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
+    maxStreamsPerDrive: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
+    maxRecordsPerDrive: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
+    maxBytesPerDrive: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
+  }).default(undefined as unknown as InboxRetentionConfig),
   storagePageSize: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
   maxPageSize: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
   maxDeliveryBytes: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).required(),
@@ -47,15 +71,18 @@ const inboxCheckpointSchema = schema.object({
   version: schema.literal(1),
   principalId: schema.string().min(1),
   displayCursor: schema.number().int().nonnegative(),
+  indexedThroughCursor: schema.number().int().nonnegative().optional(),
 }).strict()
 
-/** Bounded-memory log owner: one open stream and serial mutation at a time. */
+/** One serialized inbox owner; retention opens at most one admission anchor beside its inbox stream. */
 export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime {
   private queue: Promise<unknown> = Promise.resolve()
   private readonly deliveryProofs = new Map<TeamSystemHumanDeliveryProof, TeamSystemHumanDeliveryScope>()
   private readonly channelQueue: { teamId: TeamId; channelId: ChannelId }[] = []
-  private teamCursor = -1
+  private teamCursor: TeamListPageRequest['afterCursor'] = -1
   private drive: Promise<void> | undefined
+  private retentionCursor: LogNameScanCursor | undefined
+  private readonly retentionNames: string[] = []
   private readonly actionResponders = new Set<TeamHumanActionResponder>()
   private pending = 0
   private readonly stop = new AbortController()
@@ -69,7 +96,7 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     const schedule = (): void => {
       if (this.isClosing()) return
       void this.runOnce().catch((error: unknown) => {
-        if (!this.isClosing()) ctx.logger.warn(`team-human-client: delivery remains pending: ${String(error)}`)
+        if (!this.isClosing()) ctx.logger.warn(`team-human-client: background pass failed: ${String(error)}`)
       })
     }
     ctx.on('channel/changed', schedule)
@@ -91,8 +118,8 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     validate()
     return await this.serial(input.principalId, async (stream) => {
       validate()
-      for await (const record of this.records(stream, input.principalId)) {
-        if (record.kind !== 'final' || record.teamId !== input.teamId || record.envelopeId !== input.envelopeId) continue
+      const record = await this.findAdmission(stream, { kind: 'final', ...input })
+      if (record !== undefined) {
         const { kind: _kind, sequence: _sequence, ...prior } = record
         if (!isDeepStrictEqual(prior, input)) throw new TeamError('Principal delivery retry changed its exact final content', 'TEAM_FINAL_INVALID')
         validate()
@@ -119,8 +146,8 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     validate()
     return await this.serial(input.principalId, async (stream) => {
       validate()
-      for await (const record of this.records(stream, input.principalId)) {
-        if (record.kind !== 'message' || record.teamId !== input.teamId || record.envelopeId !== input.envelopeId) continue
+      const record = await this.findAdmission(stream, { kind: 'message', ...input })
+      if (record !== undefined) {
         const { kind: _kind, sequence: _sequence, ...prior } = record
         if (!isDeepStrictEqual(prior, input)) throw new TeamError('Human message retry changed its accepted content', 'TEAM_INVALID_ARGUMENT')
         validate()
@@ -147,11 +174,9 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     const validate = () => { this.ctx.teams.validateHumanSinkProof(proof, { kind: 'message-read', input }) }
     validate()
     return await this.serial(input.principalId, async (stream) => {
-      for await (const record of this.records(stream, input.principalId)) {
-        if (record.kind === 'message' && record.teamId === input.teamId && record.envelopeId === input.envelopeId) { validate(); return record }
-      }
+      const item = await this.findAdmission(stream, { kind: 'message', ...input })
       validate()
-      return undefined
+      return item
     })
   }
 
@@ -172,12 +197,14 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     this.assertCall(call)
     for (const responder of this.actionResponders) {
       const result = await responder.respond(call, input)
-      if (result !== undefined) return result
       this.assertCall(call)
+      if (result !== undefined) return result
     }
     const fallback = this.actionResponders.values().next().value
     if (fallback === undefined) throw new TeamError('No human-action continuation provider is mounted', 'TEAM_INVALID_ARGUMENT')
-    return await fallback.unavailable(call, input)
+    const result = await fallback.unavailable(call, input)
+    this.assertCall(call)
+    return result
   }
 
   /** Persist source-specific action revisions; answering always rereads the authoritative current action. */
@@ -193,8 +220,8 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
           facts: { operation: 'principal-inbox-delivery', actionId: action.id } })
         if (policy.kind !== 'allow') continue
         await this.serial(principalId, async (stream) => {
-          for await (const record of this.records(stream, principalId)) {
-            if (record.kind !== 'action' || record.action.id !== action.id || record.action.updatedAt !== action.updatedAt) continue
+          const record = await this.findAdmission(stream, candidate)
+          if (record !== undefined) {
             const { sequence: _sequence, ...prior } = record
             if (!isDeepStrictEqual(prior, candidate)) throw new TeamError('Human action revision changed its retained content', 'TEAM_INVALID_ARGUMENT')
             return
@@ -212,19 +239,109 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
   /** Drive one bounded page of durable human deliveries, including startup replay. @returns Settlement of this pass. */
   runOnce(): Promise<void> {
     if (this.drive !== undefined) return this.drive
-    const operation = this.track(this.driveDeliveries())
+    const operation = this.track(this.driveCycle())
     this.drive = operation
     void operation.then(() => { if (this.drive === operation) this.drive = undefined },
       () => { if (this.drive === operation) this.drive = undefined })
     return operation
   }
 
+  private async driveCycle(): Promise<void> {
+    const results = await Promise.allSettled([this.driveDeliveries(), this.driveRetention()])
+    const failures: unknown[] = results.flatMap(result => result.status === 'rejected' ? [result.reason as unknown] : [])
+    if (failures.length === 1) throw failures[0]
+    if (failures.length > 1) throw new AggregateError(failures, 'Principal delivery and retention failed')
+  }
+
+  private async driveRetention(): Promise<void> {
+    const limits = this.config.retention
+    if (limits === undefined || this.isClosing()) return
+    if (this.retentionNames.length === 0) {
+      let page
+      try {
+        page = await this.ctx.storageLog.scanNames({ prefix: 'principal-inbox/',
+          ...this.retentionCursor === undefined ? {} : { afterCursor: this.retentionCursor }, limit: limits.maxStreamsPerDrive })
+      } catch (error: unknown) {
+        if (error instanceof StorageLogError && error.code === 'scan-expired') { this.retentionCursor = undefined; return }
+        throw error
+      }
+      this.retentionNames.push(...page.names)
+      this.retentionCursor = page.nextCursor
+    }
+    let remainingRecords = limits.maxRecordsPerDrive
+    let remainingBytes = limits.maxBytesPerDrive
+    for (let count = 0; count < limits.maxStreamsPerDrive && !this.isClosing(); count++) {
+      if (remainingRecords === 0 || remainingBytes === 0) return
+      const name = this.retentionNames.shift()
+      if (name === undefined) return
+      const observed = await this.serialStream(name, async (stream) => {
+        const checkpoint = await stream.readCheckpoint()
+        if (checkpoint === undefined) return undefined
+        const saved = inboxCheckpointSchema.parse(checkpoint.value)
+        const principalId = productPrincipalId(saved.principalId)
+        if (name !== inboxName(principalId) || checkpoint.sequence > stream.tailSequence
+          || saved.displayCursor >= checkpoint.sequence
+          || stream.firstSequence > 0 && (saved.indexedThroughCursor === undefined || saved.indexedThroughCursor < stream.firstSequence - 1)
+          || saved.indexedThroughCursor !== undefined
+            && (saved.indexedThroughCursor > saved.displayCursor || saved.indexedThroughCursor >= checkpoint.sequence)) {
+          throw new TeamError('Principal retention checkpoint is invalid', 'TEAM_INVALID_ARGUMENT')
+        }
+        const through = Math.min(saved.displayCursor, stream.tailSequence - limits.tailRecords)
+        if (through < stream.firstSequence) return undefined
+        const candidates: { sequence: number; value: schema.infer<typeof recordSchema> }[] = []
+        let sequence = stream.firstSequence
+        let deferred = false
+        for await (const record of this.records(stream, principalId, sequence - 1, Math.min(remainingRecords, through - sequence + 1))) {
+          if (sequence > through) break
+          const sourceBytes = Buffer.byteLength(JSON.stringify(record), 'utf8')
+          const bytes = record.kind === 'display' || sourceBytes > limits.maxBytesPerDrive
+            ? sourceBytes : Math.max(sourceBytes, inboxAdmissionBytes(record))
+          remainingRecords--
+          if (bytes > limits.maxBytesPerDrive) throw new TeamError('Inbox record exceeds retention.maxBytesPerDrive', 'TEAM_CHANNEL_BACKPRESSURE')
+          if (bytes > remainingBytes) { deferred = candidates.length === 0; remainingBytes = 0; break }
+          remainingBytes -= bytes
+          candidates.push({ sequence, value: record })
+          sequence++
+        }
+        return { principalId, checkpoint, saved, tail: stream.tailSequence, first: stream.firstSequence, candidates, deferred }
+      })
+      if (observed?.deferred === true) { this.retentionNames.unshift(name); return }
+      if (observed === undefined || observed.candidates.length === 0) continue
+      let through = observed.first - 1
+      for (const row of observed.candidates) {
+        if (row.value.kind === 'action') {
+          const current = await this.ctx.teams.getHumanAction({ teamId: row.value.teamId, actionId: row.value.action.id })
+          if (current.updatedAt < row.value.action.updatedAt) throw new TeamError('Inbox action is ahead of its source revision', 'TEAM_INVALID_ARGUMENT')
+          if (current.phase === 'pending' && current.response === undefined) break
+        }
+        through = row.sequence
+      }
+      if (through < observed.first) continue
+      await this.serialStream(name, async (stream) => {
+        if (stream.tailSequence !== observed.tail || stream.firstSequence !== observed.first
+          || !isDeepStrictEqual(await stream.readCheckpoint(), observed.checkpoint)) return
+        for (const row of observed.candidates) {
+          if (row.sequence > through) break
+          if (row.value.kind !== 'display') await indexInboxAdmission(this.ctx, row.value)
+        }
+        await stream.writeCheckpoint({ sequence: observed.checkpoint.sequence, value: { ...observed.saved,
+          indexedThroughCursor: Math.max(observed.saved.indexedThroughCursor ?? -1, through) } })
+        await stream.compact({ throughSequence: through, expectedCheckpointSequence: observed.checkpoint.sequence })
+      })
+    }
+  }
+
   /** Discover bounded Team pages and deliver only their currently pending principal-owned recipients. */
   private async driveDeliveries(): Promise<void> {
     if (this.isClosing()) return
     if (this.channelQueue.length === 0) {
-      const page = await this.ctx.teams.listTeamsPage({ afterCursor: this.teamCursor, limit: this.config.storagePageSize })
-      if (page.nextCursor !== undefined && page.nextCursor <= this.teamCursor) {
+      let page
+      try { page = await this.ctx.teams.listTeamsPage({ afterCursor: this.teamCursor, limit: this.config.storagePageSize }) }
+      catch (error: unknown) {
+        if (error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') { this.teamCursor = -1; return }
+        throw error
+      }
+      if (page.nextCursor !== undefined && page.nextCursor === this.teamCursor) {
         throw new TeamError('Human delivery Team page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
       }
       for (const team of page.items) {
@@ -293,19 +410,7 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     this.assertCall(call)
     const page = await this.serial(call.principal.id, async (stream) => {
       this.assertCall(call)
-      const checkpoint = await stream.readCheckpoint()
-      let displayCursor = -1
-      if (checkpoint !== undefined) {
-        const saved = inboxCheckpointSchema.parse(checkpoint.value)
-        if (saved.principalId !== call.principal.id || checkpoint.sequence > stream.tailSequence) {
-          throw new TeamError('Principal inbox display checkpoint is invalid', 'TEAM_INVALID_ARGUMENT')
-        }
-        displayCursor = saved.displayCursor
-      } else {
-        for await (const record of this.records(stream, call.principal.id)) {
-          if (record.kind === 'display') displayCursor = Math.max(displayCursor, record.throughCursor)
-        }
-      }
+      const { displayCursor } = await this.displayState(stream, call.principal.id)
       const after = input.afterCursor ?? displayCursor
       if (after > stream.tailSequence) throw new TeamError('Inbox cursor is ahead of durable storage', 'TEAM_INVALID_ARGUMENT')
       const limit = Math.min(input.limit ?? this.config.maxPageSize, this.config.maxPageSize)
@@ -362,36 +467,42 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
       if (end === undefined || end >= input.throughCursor || page.nextCursor === undefined) break
       cursor = page.nextCursor
     }
+    const observed = await this.serial(call.principal.id, async (stream) => {
+      this.assertCall(call)
+      const { displayCursor } = await this.displayState(stream, call.principal.id)
+      return { displayCursor, item: input.throughCursor <= displayCursor ? undefined
+        : await this.displayTarget(stream, call.principal.id, input.throughCursor) }
+    })
+    this.assertCall(call)
+    if (observed.item === undefined) return { displayCursor: observed.displayCursor }
+    await this.assertVisible(call, observed.item)
     return await this.serial(call.principal.id, async (stream) => {
-      const checkpoint = await stream.readCheckpoint()
-      let displayCursor = -1
-      if (checkpoint !== undefined) {
-        const saved = inboxCheckpointSchema.parse(checkpoint.value)
-        if (saved.principalId !== call.principal.id || checkpoint.sequence > stream.tailSequence) {
-          throw new TeamError('Principal inbox display checkpoint is invalid', 'TEAM_INVALID_ARGUMENT')
-        }
-        displayCursor = saved.displayCursor
-      } else {
-        for await (const record of this.records(stream, call.principal.id)) {
-          if (record.kind === 'display') displayCursor = Math.max(displayCursor, record.throughCursor)
-        }
-      }
+      const { displayCursor, indexedThroughCursor } = await this.displayState(stream, call.principal.id)
+      this.assertCall(call)
       if (input.throughCursor <= displayCursor) return { displayCursor }
-      const row = (await stream.read(input.throughCursor - 1, 1))[0]
-      const selected = row === undefined ? undefined : recordSchema.parse(row.value)
-      if (selected === undefined || selected.kind === 'display' || selected.sequence !== input.throughCursor
-        || selected.principalId !== call.principal.id) {
-        throw new TeamError('Display acknowledgement must select a retained inbox delivery', 'TEAM_INVALID_ARGUMENT')
+      const selected = await this.displayTarget(stream, call.principal.id, input.throughCursor)
+      if (!isDeepStrictEqual(selected, observed.item)) {
+        throw new TeamError('Display acknowledgement delivery changed during authorization', 'TEAM_INVALID_ARGUMENT')
       }
-      await this.assertVisible(call, selected)
       this.assertCall(call)
       await stream.append(stream.tailSequence, [{ kind: 'display', principalId: call.principal.id, throughCursor: input.throughCursor }])
       await stream.writeCheckpoint({
         sequence: stream.tailSequence,
-        value: { version: 1, principalId: call.principal.id, displayCursor: input.throughCursor },
+        value: { version: 1, principalId: call.principal.id, displayCursor: input.throughCursor,
+          ...indexedThroughCursor === undefined ? {} : { indexedThroughCursor } },
       })
       return { displayCursor: input.throughCursor }
     })
+  }
+
+  /** Select an immutable owned delivery without consulting Team services under the inbox serializer. */
+  private async displayTarget(stream: LogStream, principalId: ProductPrincipalId, throughCursor: number): Promise<TeamHumanInboxItem> {
+    const row = (await stream.read(throughCursor - 1, 1))[0]
+    const selected = row === undefined ? undefined : recordSchema.parse(row.value)
+    if (selected === undefined || selected.kind === 'display' || selected.sequence !== throughCursor || selected.principalId !== principalId) {
+      throw new TeamError('Display acknowledgement must select a retained inbox delivery', 'TEAM_INVALID_ARGUMENT')
+    }
+    return selected
   }
 
   /** Stop admission and long polls, then await every admitted storage call before disposal. */
@@ -400,17 +511,74 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     await Promise.allSettled([...this.operations])
   }
 
+  /** Display appends are authoritative even when their following checkpoint write never completes. */
+  private async displayState(stream: LogStream, principalId: ProductPrincipalId): Promise<{
+    displayCursor: number
+    indexedThroughCursor?: number
+  }> {
+    const checkpoint = await stream.readCheckpoint()
+    const saved = checkpoint === undefined ? undefined : inboxCheckpointSchema.parse(checkpoint.value)
+    if (checkpoint !== undefined && (saved?.principalId !== principalId || checkpoint.sequence > stream.tailSequence
+      || saved.displayCursor >= checkpoint.sequence)) {
+      throw new TeamError('Principal inbox display checkpoint is invalid', 'TEAM_INVALID_ARGUMENT')
+    }
+    let displayCursor = saved?.displayCursor ?? -1
+    const indexed = saved?.indexedThroughCursor === undefined ? {} : { indexedThroughCursor: saved.indexedThroughCursor }
+    if ((checkpoint?.sequence ?? -1) === stream.tailSequence) return { displayCursor, ...indexed }
+    for await (const record of this.records(stream, principalId, checkpoint?.sequence ?? -1)) {
+      if (record.kind !== 'display') continue
+      const row = (await stream.read(record.throughCursor - 1, 1))[0]
+      const target = row === undefined ? undefined : teamHumanInboxItemSchema.safeParse(row.value)
+      if (record.throughCursor < displayCursor || row?.sequence !== record.throughCursor
+        || target?.success !== true || target.data.sequence !== row.sequence || target.data.principalId !== principalId) {
+        throw new TeamError('Principal display record does not select a monotonic retained delivery', 'TEAM_INVALID_ARGUMENT')
+      }
+      displayCursor = record.throughCursor
+    }
+    const state = { displayCursor, ...indexed }
+    if (displayCursor !== (saved?.displayCursor ?? -1)) {
+      await stream.writeCheckpoint({ sequence: stream.tailSequence, value: { version: 1, principalId, ...state } })
+    }
+    return state
+  }
+
+  /** Resolve immutable references from their anchors before scanning the retained display suffix. */
+  private async findAdmission<Key extends InboxAdmissionKey>(stream: LogStream,
+    key: Key): Promise<Extract<TeamHumanInboxItem, { kind: Key['kind'] }> | undefined> {
+    let after = -1
+    if (stream.firstSequence > 0) {
+      const checkpoint = await stream.readCheckpoint()
+      const saved = checkpoint === undefined ? undefined : inboxCheckpointSchema.parse(checkpoint.value)
+      if (saved?.principalId !== key.principalId || saved.indexedThroughCursor === undefined
+        || saved.indexedThroughCursor < stream.firstSequence - 1 || saved.indexedThroughCursor > saved.displayCursor
+        || checkpoint === undefined || checkpoint.sequence > stream.tailSequence || saved.indexedThroughCursor >= checkpoint.sequence) {
+        throw new TeamError('Compacted principal inbox has no admission reference checkpoint', 'TEAM_INVALID_ARGUMENT')
+      }
+      const indexed = await readInboxAdmission(this.ctx, key)
+      if (indexed !== undefined && indexed.sequence <= saved.indexedThroughCursor) return indexed
+      after = stream.firstSequence - 1
+    }
+    for await (const record of this.records(stream, key.principalId, after)) {
+      if (record.kind !== 'display' && isInboxAdmission(record, key)) return record
+    }
+    return undefined
+  }
+
   /** Validate each durable boundary with fixed-page memory and no retained transcript projection. */
   private async *records(
-    stream: LogStream, principalId: ProductPrincipalId, after = -1,
+    stream: LogStream, principalId: ProductPrincipalId, after = -1, maxRecords?: number,
   ): AsyncGenerator<schema.infer<typeof recordSchema>> {
     if (after < stream.firstSequence - 1) {
-      throw new TeamError('Principal inbox cursor precedes the retained prefix; display recovery is required', 'TEAM_INVALID_ARGUMENT')
+      throw new TeamError('Principal inbox history was compacted; read from firstCursor - 1 to inspect the retained history',
+        'TEAM_INBOX_COMPACTED', { details: { firstCursor: stream.firstSequence } })
     }
     let cursor = after
     let displayCursor = -1
+    let consumed = 0
     for (;;) {
-      const rows = await stream.read(cursor, this.config.storagePageSize)
+      const limit = maxRecords === undefined ? this.config.storagePageSize : Math.min(this.config.storagePageSize, maxRecords - consumed)
+      if (limit === 0) return
+      const rows = await stream.read(cursor, limit)
       if (rows.length === 0) return
       for (const row of rows) {
         if (row.sequence <= cursor) {
@@ -430,6 +598,7 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
           displayCursor = value.throughCursor
         }
         yield value
+        consumed++
         cursor = row.sequence
       }
     }
@@ -467,12 +636,15 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
 
   /** One storage handle owner bounds open resources and serializes display and delivery appends. */
   private serial<T>(principalId: ProductPrincipalId, operation: (stream: LogStream) => Promise<T>): Promise<T> {
+    return this.serialStream(inboxName(principalId), operation)
+  }
+
+  private serialStream<T>(name: string, operation: (stream: LogStream) => Promise<T>): Promise<T> {
     if (this.isClosing()) return Promise.reject(new TeamError('Principal inbox is closed', 'TEAM_ACTOR_PROOF_INVALID'))
     if (this.pending >= this.config.maxPendingOperations) return Promise.reject(new TeamError('Principal inbox admission is full', 'TEAM_CHANNEL_BACKPRESSURE'))
     this.pending += 1
     const result = this.queue.then(async () => {
-      const partition = createHash('sha256').update(principalId).digest('hex')
-      const stream = await this.ctx.storageLog.open({ name: `principal-inbox/${partition}`, version: 1 })
+      const stream = await this.ctx.storageLog.open({ name, version: 1 })
       try { return await operation(stream) } finally { await stream.close() }
     })
     // The queue tail contains failures only to keep later independent operations runnable.
@@ -486,6 +658,10 @@ export class TeamHumanClient extends Service implements TeamHumanDeliveryRuntime
     void operation.then(() => this.operations.delete(operation), () => this.operations.delete(operation))
     return operation
   }
+}
+
+function inboxName(principalId: ProductPrincipalId): string {
+  return `principal-inbox/${createHash('sha256').update(principalId).digest('hex')}`
 }
 
 /**

@@ -1,3 +1,4 @@
+import type {} from '@clocky/clocky-team-placement-default'
 import { settleAgentWorkspaceLease } from '@clocky/clocky-agent'
 import type { HumanChannelAdmission } from '@clocky/clocky-team-channel-admission'
 import type { TeamSystemChannelAdmissionProof, TeamSystemChannelAdmissionScope } from '@clocky/clocky-team'
@@ -37,6 +38,8 @@ import type { WorkflowExtensionResolver } from '@clocky/clocky-team-channel-work
 import type {} from '@clocky/clocky-team-activation-controller'
 import {
   TeamError,
+  channelIdSchema,
+  envelopeIdSchema,
   fingerprintTeamFinalContent,
   teamFinalAdmissionIdempotencyKeySchema,
   teamClosureIdempotencyKeySchema,
@@ -46,6 +49,7 @@ import {
 } from '@clocky/clocky-team'
 import type {
   ChannelId,
+  EnvelopeId,
   ChannelPostIdempotencyKey,
   ChannelRecord,
   ChannelSnapshot,
@@ -135,6 +139,7 @@ import type {
 import { SessionId } from '@clocky/clocky-session'
 import type { Session, SessionEvent } from '@clocky/clocky-session'
 import { createUserMessage } from '@clocky/clocky-llm'
+import type { UserMessage } from '@clocky/clocky-llm'
 import type {} from '@clocky/clocky-system-prompt'
 import type { TeamActivationLease } from '@clocky/clocky-team-activation-controller'
 import type {} from '@clocky/clocky-team-workspace'
@@ -247,6 +252,7 @@ function coordinatorPrompt(
   channelId: ChannelId,
   finalPromptOrder: number,
   maxWorkerCount: number,
+  workerCapability: string,
 ): () => void {
   const disposers: (() => void)[] = []
   try {
@@ -259,18 +265,19 @@ function coordinatorPrompt(
           + 'Observe the parent task with team_task_list, team_task_watch, or team_task_wait. Its child_team_id identifies the child, and delegation_result contains its admitted text and artifact references. Wait for task settlement before claiming completion. '
           + 'This configuration cannot execute team_task_start or worker-only workflow routes. Finish with team_final using the required channel_id.'
         : 'You are the commander and coordinator of a Team. Turn the user objective into an executable plan, direct workers, monitor delivery, and synthesize the final result. '
-        + 'You are not the default executor for substantive work. First classify the objective and deliverables as research, analysis, writing or editing, planning, data work, operations, coding or building, testing or QA, or a mix. '
+        + 'Honor the user’s explicit delegation and resource constraints. First classify the objective and deliverables as research, analysis, writing or editing, planning, data work, operations, coding or building, testing or QA, or a mix. '
         + 'Identify the smallest feasible workstreams, dependencies, acceptance criteria, risks, and the handoff needed between them. Do not assume every request is coding; choose task instructions and validation for the actual domain. '
         + (maxWorkerCount === 1
           ? 'This Team permits one worker. Use team_task_start for bounded work and let additional tasks queue for that worker. '
-          : 'For every non-trivial objective with two or more feasible workstreams, set worker_count to useful parallelism within the configured limit, start independent worker tasks, and call team_task_start once per bounded workstream before waiting. ')
+          : 'Delegate work that can be independently delivered and verified when doing so saves time or context. Set worker_count to useful parallelism within the configured limit and start ready independent tasks before waiting. ')
+        + `Workflow worker capability: ${JSON.stringify(workerCapability)}. Use it in requiredCapabilities to select the worker pool. `
         + 'Keep independent workstreams running concurrently. Use team_workflow_start when dependencies, fan-in, or ordered stages need a declarative task graph; otherwise start independent default tasks directly. '
         + 'Give every task a self-contained brief with its purpose, inputs, exact deliverable, constraints, validation, and handoff. Assign one owner per task; workers execute their assignment and do not delegate it. '
         + 'Only declare read_scopes or write_scopes when a task touches the shared workspace. For research, analysis, writing, planning, data, or review tasks with no filesystem changes, leave both arrays empty. '
         + 'When a task writes shared files, use narrow workspace-relative scopes with no overlap between concurrent writers; never use a shared project directory or workspace root as a shortcut because overlapping writes are serialized. '
-        + 'If one worker must own a shared artifact, assign the other workers read-only research, analysis, or review tasks. Use the current workspace, permission mode, model limits, and available capabilities from runtime context; never invent access. '
-        + 'When the pool limit is reached, keep admitting ready tasks so they queue for the next idle worker instead of waiting or doing the work yourself. Monitor with team_task_list, team_task_watch, and team_task_wait; cancel or replace failed work when needed, and use settled worker evidence in your synthesis. '
-        + 'You may perform coordination, integration, and final synthesis, but delegate substantive work whenever a worker can make progress. A trivial one-step answer may stay with you. Never claim worker output before its task settles. '
+        + 'Keep one owner for a shared artifact; add read-only research or review only when it contributes useful evidence. Use the current workspace, permission mode, model limits, and available capabilities from runtime context; never invent access. '
+        + 'Ready independent tasks can queue when the pool is full. Monitor with team_task_list, team_task_watch, and team_task_wait. Inspect the retained evidence, artifact references, verification, and failure outcome before choosing the next action. Do not duplicate tasks still retrying or awaiting cancellation. '
+        + 'You may perform coordination, integration, final synthesis, and small tightly coupled work. A one-step answer or a single shared edit may use one executor. Never claim worker output before its task settles; request missing evidence rather than treating the summary alone as proof. '
         + 'Use team_task_delegate when a bounded workstream needs its own child Team. Supply an explicit budget and narrow scopes; optional template_id and template_version must be paired. The parent task exposes child_team_id and the admitted delegation_result text and artifact references; wait for its terminal settlement before using it as completed evidence. '
         + 'Finish with team_final using the required channel_id.',
     }))
@@ -343,6 +350,10 @@ const templateMembersSchema = durable.array(durable.object({
 
 /** Deployment-selected default Team topology and bounded receipt retry policy. */
 export interface Config {
+  /** Optional live startup/epoch ceiling frozen into each new root Team and delegated subtree. */
+  readonly maxLiveActivations?: number
+  /** Optional lifetime descendant-Team ceiling frozen into each new root Team. */
+  readonly maxChildTeams?: number
   /** Additional eager model participants with complete execution routes. */
   readonly members?: TeamRunMember[]
   /** Registered AgentRuntime provider that owns coordinator residency. */
@@ -393,6 +404,8 @@ export interface Config {
 
 /** Schemastery validator for {@link Config}. */
 export const Config: z<Config> = z.object({
+  maxLiveActivations: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(undefined as unknown as number),
+  maxChildTeams: z.number().step(1).min(0).max(Number.MAX_SAFE_INTEGER).default(undefined as unknown as number),
   members: z.array(z.object({ role: z.string().min(1), displayName: z.string().min(1),
     kind: z.union(['local-agent', 'remote-agent'] as const), capabilities: z.array(z.string().min(1)),
     provider: z.string().min(1), modelProvider: z.string().min(1), model: z.string().min(1),
@@ -513,7 +526,7 @@ export interface TeamRunHandle {
 export interface TeamRunHumanInputRequest {
   /** Team selected from a previously created local Team run. */
   readonly teamId: TeamId
-  /** Non-empty text/image content accepted by the direct v3 human-message protocol. */
+  /** Non-empty text/image content accepted by the direct v4 human-message protocol. */
   readonly content: readonly DirectChannelHumanContentBlock[]
   /** Sender-scoped key retained by the Team channel for retry-safe human admission. */
   readonly idempotencyKey?: ChannelPostIdempotencyKey
@@ -802,7 +815,7 @@ export interface TeamRunFinal {
   readonly channelId: ChannelId
   /** Immutable coordinator final Envelope identity. */
   readonly envelopeId: TeamEnvelope['id']
-  /** Exact final text accepted by the direct v3 channel. */
+  /** Exact final text accepted by the direct v4 channel. */
   readonly text: string
 }
 
@@ -994,6 +1007,8 @@ interface WorkflowStartState {
 }
 
 interface ResolvedConfig {
+  readonly maxLiveActivations?: number
+  readonly maxChildTeams?: number
   readonly members: readonly TeamRunMember[]
   readonly activationProvider: string
   readonly templateId: string
@@ -1027,7 +1042,10 @@ interface ResolvedConfig {
 export class TeamRunService extends Service {
   private readonly childStarts = new Map<TeamId, { readonly operation: Promise<TeamChildRunBinding>; readonly abort: AbortController }>()
   private readonly childChannelProofs = new Map<TeamSystemChannelLifecycleProof, TeamSystemChannelLifecycleScope>()
-  private readonly childResultProofs = new Map<TeamSystemChildResultProof, { readonly state: RunState; readonly scope: TeamSystemChildResultScope }>()
+  private readonly childResultProofs = new Map<TeamSystemChildResultProof, {
+    readonly state: RunState
+    readonly scope: TeamSystemChildResultScope
+  }>()
   private readonly runs = new Map<TeamId, RunState>()
   private readonly resumes = new Map<TeamId, Promise<TeamRunHandle>>()
   private readonly starts = new Map<ChannelPostIdempotencyKey, StartState>()
@@ -1322,7 +1340,10 @@ export class TeamRunService extends Service {
         workerPool: { count: this.config.workerCount },
         workspacePath: request.cwd,
       },
-      budgets: {},
+      budgets: {
+        ...this.config.maxChildTeams === undefined ? {} : { maxChildTeams: this.config.maxChildTeams },
+        ...this.config.maxLiveActivations === undefined ? {} : { maxLiveActivations: this.config.maxLiveActivations },
+      },
     }
     const created = await this.withRootCreationProof({
       kind: 'team-run-root-create',
@@ -1439,7 +1460,9 @@ export class TeamRunService extends Service {
             parentServiceId: recipient.id, coordinatorId: coordinator.id, channelId: channel.manifest.id } })
         assertChildIdentity(child.scope, await this.ctx.teams.assertChildRunAuthorization(child.authorization), 'start')
       }
-      disposePrompt = coordinatorPrompt(lease.localAgent, channel.manifest.id, config.finalPromptOrder, config.maxWorkerCount)
+      disposePrompt = coordinatorPrompt(
+        lease.localAgent, channel.manifest.id, config.finalPromptOrder, config.maxWorkerCount, config.workerCapability,
+      )
       const team = (await this.ctx.teams.getTeam({ teamId: created.team.id })).team
       const handle: TeamRunHandle = Object.freeze({
         members: Object.freeze(members),
@@ -1472,7 +1495,8 @@ export class TeamRunService extends Service {
         minimumWorkerCount: config.workerCount === 0 ? 0 : 1,
         defaultWorkerTaskIds: new Set(created.tasks.filter(task => task.workflowPlanId === undefined
           && task.createCommand.creator.participantId === coordinator.id).map(task => task.id)),
-        workflowPlanIds: new Set((created.workflowPlans ?? []).filter(plan => plan.actor?.participantId === coordinator.id).map(plan => plan.id)),
+        workflowPlanIds: new Set((created.workflowPlans ?? [])
+          .filter(plan => plan.actor?.participantId === coordinator.id).map(plan => plan.id)),
         workerStates: new Map(),
         workerActivations: new Map(),
         workerPoolMutation: Promise.resolve(),
@@ -1716,7 +1740,9 @@ export class TeamRunService extends Service {
         : AbortSignal.any([request.signal, this.admissionAbort.signal])
       await this.admitHumanEndpoint(channel, human, request.admitHumanChannel, admissionSignal)
       await this.ctx.teamChannelAdmission.waitUntilActive({ channelId: channel.manifest.id, signal: admissionSignal })
-      disposePrompt = coordinatorPrompt(lease.localAgent, channel.manifest.id, this.config.finalPromptOrder, this.config.maxWorkerCount)
+      disposePrompt = coordinatorPrompt(
+        lease.localAgent, channel.manifest.id, this.config.finalPromptOrder, this.config.maxWorkerCount, this.config.workerCapability,
+      )
       for (const spec of memberSpecs) {
         const participant = members.find(member => member.role === spec.role) as ParticipantSnapshot
         memberStates.set(participant.id, await this.activateTemplateMember(request.teamId, participant, spec,
@@ -1967,7 +1993,8 @@ export class TeamRunService extends Service {
   tryCoordinatorGoalAuthority(coordinator: Agent): TeamRunCoordinatorGoalAuthority | undefined {
     this.assertOpen()
     const state = [...this.runs.values()].find(run => run.handle.coordinatorLease.localAgent === coordinator)
-    if (state === undefined || state.handle.team.parentTeamId !== undefined || this.ctx.agents.get(coordinator.id) !== coordinator) return undefined
+    if (state === undefined || state.handle.team.parentTeamId !== undefined
+      || this.ctx.agents.get(coordinator.id) !== coordinator) return undefined
     const authority = Object.freeze({ [coordinatorGoalAuthorityToken]: undefined }) as TeamRunCoordinatorGoalAuthority
     this.coordinatorGoalAuthorities.set(authority, { state, coordinator })
     return authority
@@ -2107,6 +2134,7 @@ export class TeamRunService extends Service {
    * @param authority - opaque capability minted for the exact current coordinator.
    * @param request - owned task identity and optional local wait cancellation.
    * @returns the task's terminal result or retained terminal attempt fact.
+   * @throws TeamRunError when the Team stalls or a local reviewer stops without an accepted decision.
    */
   async waitForDefaultWorkerTask(
     authority: TeamRunCoordinatorTaskAuthority,
@@ -2129,6 +2157,11 @@ export class TeamRunService extends Service {
         })
         return terminal
       }
+      if (current.team.phase === 'stalled') {
+        throw new TeamRunError(`Team '${current.team.id}' is stalled before task '${task.id}' settled. Inspect its stall reason before retrying.`,
+          'TEAM_RUN_NOT_QUIESCENT')
+      }
+      if (await this.reviewWaitChanged(task, current)) continue
       const watched = await this.ctx.teams.watchTeam({
         teamId: state.handle.teamId,
         afterCursor: current.team.cursor,
@@ -2220,6 +2253,11 @@ export class TeamRunService extends Service {
       if (current.team.cursor > afterCursor) {
         return Object.freeze({ cursor: current.team.cursor, tasks: Object.freeze(defaultWorkerTaskValues(state, current.tasks)) })
       }
+      let reviewChanged = false
+      for (const task of current.tasks) {
+        if (state.defaultWorkerTaskIds.has(task.id) && await this.reviewWaitChanged(task, current)) reviewChanged = true
+      }
+      if (reviewChanged) continue
       const watched = await this.ctx.teams.watchTeam({
         teamId: state.handle.teamId,
         afterCursor: current.team.cursor,
@@ -2394,6 +2432,15 @@ export class TeamRunService extends Service {
       if (plan.phase === 'cancelled') return { id: plan.id, phase: plan.phase,
         ...plan.cancellation === undefined ? {} : { cancellation: plan.cancellation },
         ...plan.result === undefined ? {} : { result: plan.result } }
+      if (team.team.phase === 'stalled') {
+        throw new TeamRunError(`Team '${team.team.id}' is stalled before workflow '${plan.id}' settled. Inspect its stall reason before retrying.`,
+          'TEAM_RUN_NOT_QUIESCENT')
+      }
+      let reviewChanged = false
+      for (const task of team.tasks) {
+        if (task.workflowPlanId === plan.id && await this.reviewWaitChanged(task, team)) reviewChanged = true
+      }
+      if (reviewChanged) continue
       const watched = await this.ctx.teams.watchTeam({
         teamId: state.handle.teamId,
         afterCursor: team.team.cursor,
@@ -2404,6 +2451,24 @@ export class TeamRunService extends Service {
       }
       assertTeamWatchAdvance(watched, team.team.cursor, `workflow plan '${plan.id}' wait`)
     }
+  }
+
+  /** Reject a stopped review without inventing a review decision or rerunning its worker. */
+  private async reviewWaitChanged(task: TeamTaskSnapshot, team: TeamStateSnapshot): Promise<boolean> {
+    if (task.phase !== 'review' || task.reviewPolicy.kind !== 'participant' || task.cancellation !== undefined) return false
+    const reviewerId = task.reviewPolicy.reviewerId
+    const binding = team.activations.findLast(candidate => candidate.activation.participantId === reviewerId)
+    const agent = binding === undefined ? undefined : this.ctx.agents.get(binding.sessionId)
+    const ended = agent === undefined ? undefined : endedReviewTurn(agent.session, task)
+    if (ended === undefined) return false
+    const channel = await this.ctx.teams.readChannel({ channelId: ended.channelId, afterCursor: -1 })
+    if (channel.records.some(record => record.type === 'channel/envelope'
+      && record.envelope.kind === 'response' && record.envelope.causationId === ended.envelopeId)) return false
+    const failure = ended.reason.kind === 'error' ? ended.reason.error.message : `reviewer turn ended ${ended.reason.kind} without a decision`
+    const latest = await this.ctx.teams.getTask({ teamId: task.teamId, taskId: task.id })
+    if (latest.revision !== task.revision || latest.phase !== 'review' || latest.cancellation !== undefined) return true
+    throw new TeamRunError(`Task '${task.id}' review cannot progress: ${failure}. Correct the reviewer or cancel this task before rescheduling it.`,
+      'TEAM_RUN_REVIEW_FAILED')
   }
 
   /** Compile an admitted plan, recovering already durable bindings on every retry. */
@@ -2464,6 +2529,15 @@ export class TeamRunService extends Service {
         state.workflowPlanIds.add(plan.id)
         if (plan.phase !== 'compiling') return plan
 
+        const placement = this.ctx.get('teamPlacement')
+        const needsActivation = [...participants.values()].some(participant =>
+          (participant.kind === 'local-agent' || participant.kind === 'remote-agent')
+          && !current.activations.some(binding => binding.activation.participantId === participant.id
+            && (binding.activation.status === 'idle' || binding.activation.status === 'running')))
+        if (needsActivation) {
+          if (placement === undefined) throw workflowInvalid('declared agent roles require a placement provider')
+          await placement.prepareRoles(state.handle.teamId, request.plan.channel.participantRoles, request.signal)
+        }
         const teamBeforeChannel = await this.ctx.teams.getTeam({ teamId: state.handle.teamId })
         const channelParticipants = request.plan.channel.participantRoles.map((role) => {
           const participant = participants.get(role)
@@ -4455,8 +4529,7 @@ export class TeamRunService extends Service {
     if (record === undefined || record.scope.kind !== 'team-run-human-input'
       || this.runs.get(record.scope.teamId) !== record.state) return undefined
     const { state, scope } = record
-    if (scope.kind !== 'team-run-human-input'
-      || scope.teamId !== state.handle.teamId
+    if (scope.teamId !== state.handle.teamId
       || scope.channelId !== state.handle.channel.manifest.id
       || scope.humanId !== state.handle.recipient.id
       || scope.coordinatorId !== state.handle.coordinator.id) return undefined
@@ -5524,7 +5597,9 @@ function defaultWorkerTaskStatus(task: TeamTaskSnapshot): TeamRunDefaultWorkerTa
   return {
     ...defaultWorkerTaskReview(task),
     ...task.delegation?.childTeamId === undefined ? {} : { childTeamId: task.delegation.childTeamId },
-    ...task.delegation?.result === undefined ? {} : { delegationResult: { text: task.delegation.result.text, artifacts: structuredClone(task.delegation.result.artifacts) } },
+    ...task.delegation?.result === undefined ? {} : { delegationResult: {
+      text: task.delegation.result.text, artifacts: structuredClone(task.delegation.result.artifacts),
+    } },
     cancellation: cancellation === undefined ? null : {
       requestedRevision: cancellation.requestedRevision,
       attemptId: cancellation.target.kind === 'pending' || cancellation.target.kind === 'delegation' ? null : cancellation.target.attemptId,
@@ -5567,6 +5642,12 @@ function assertNever(value: never, label: string): never {
 
 /** Validate deployment-facing template and retry fields when direct callers bypass Loader normalization. */
 function resolveConfig(config: Config): ResolvedConfig {
+  if (config.maxLiveActivations !== undefined && (!Number.isSafeInteger(config.maxLiveActivations) || config.maxLiveActivations < 0)) {
+    throw new TypeError('maxLiveActivations must be a non-negative safe integer')
+  }
+  if (config.maxChildTeams !== undefined && (!Number.isSafeInteger(config.maxChildTeams) || config.maxChildTeams < 0)) {
+    throw new TypeError('maxChildTeams must be a non-negative safe integer')
+  }
   const members = resolveTemplateMembers(config.members ?? [])
   const activationProvider = requiredText(config.activationProvider ?? DEFAULT_ACTIVATION_PROVIDER, 'activationProvider')
   const templateId = requiredText(config.templateId ?? DEFAULT_TEMPLATE_ID, 'templateId')
@@ -5624,6 +5705,8 @@ function resolveConfig(config: Config): ResolvedConfig {
   }
   return {
     members,
+    ...config.maxLiveActivations === undefined ? {} : { maxLiveActivations: config.maxLiveActivations },
+    ...config.maxChildTeams === undefined ? {} : { maxChildTeams: config.maxChildTeams },
     activationProvider,
     templateId,
     templateVersion,
@@ -5872,7 +5955,7 @@ function latestRequestSelection(events: readonly SessionEvent[]): ModelSelection
   return { provider: event.data.provider, model: event.data.model }
 }
 
-/** Identify a valid explicit human-addressed final Envelope in one direct v3 channel suffix. */
+/** Identify a valid explicit human-addressed final Envelope in one direct v4 channel suffix. */
 function findFinal(records: readonly ChannelRecord[], handle: TeamRunHandle): TeamEnvelope | undefined {
   return findFinalForParticipants(records, handle.coordinator.id, handle.recipient.id)
 }
@@ -5973,4 +6056,38 @@ function coordinatorTurnPostedMessage(session: Session | undefined, turn: number
     && event.data.turn === turn
     && calls.has(event.data.message.source.callId)
     && event.data.message.content[0].isError !== true)
+}
+
+/** Read the completed turn that claimed this exact attempt's reviewer input. */
+function endedReviewTurn(session: Session, task: TeamTaskSnapshot): {
+  readonly channelId: ChannelId
+  readonly envelopeId: EnvelopeId
+  readonly reason: SessionEvent<'turn/end'>['data']['reason']
+} | undefined {
+  const attempt = task.attemptHistory.at(-1)
+  if (attempt === undefined) return undefined
+  const queues: Record<'next-step' | 'next-turn', UserMessage[]> = { 'next-step': [], 'next-turn': [] }
+  let turn: number | undefined
+  let claimed: { readonly turn: number; readonly channelId: ChannelId; readonly envelopeId: EnvelopeId } | undefined
+  let ended: ReturnType<typeof endedReviewTurn>
+  for (const event of session.events) {
+    if (event.type === 'turn/start') turn = event.data.turn
+    else if (event.type === 'agent/inbox/spliced') {
+      const removed = queues[event.data.target].splice(event.data.start, event.data.removedCount ?? 0, ...event.data.inserted)
+      if (event.data.outcome !== undefined || turn === undefined) continue
+      for (const message of removed) {
+        const source = message.source
+        if (source.kind !== 'team-channel-view' || source.teamId !== task.teamId || source.taskId !== task.id || source.review?.attemptId !== attempt.id) continue
+        claimed = { turn, channelId: channelIdSchema.parse(source.channelId),
+          envelopeId: envelopeIdSchema.parse(source.triggeringEnvelopeId) }
+        ended = undefined
+      }
+    } else if (event.type === 'turn/end') {
+      if (claimed?.turn === event.data.turn && event.data.reason.kind !== 'interrupted') {
+        ended = { channelId: claimed.channelId, envelopeId: claimed.envelopeId, reason: event.data.reason }
+      }
+      turn = undefined
+    }
+  }
+  return ended
 }

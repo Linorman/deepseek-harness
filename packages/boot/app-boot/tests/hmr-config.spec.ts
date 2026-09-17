@@ -1,3 +1,5 @@
+import { observeHmrConfig } from './hmr-observation.ts'
+import type { EventEmitter } from 'node:events'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -25,10 +27,14 @@ async function bootHmr(dir: string, root: string[] = [], usePolling?: boolean): 
   return ctx
 }
 
-async function eventually(test: () => boolean, message: string): Promise<void> {
+async function eventually(test: () => boolean, message: string, diagnostics?: () => unknown): Promise<void> {
   const deadline = Date.now() + HMR_EVENT_TIMEOUT_MS
   while (!test()) {
-    if (Date.now() >= deadline) throw new Error(message)
+    if (Date.now() >= deadline) {
+      const details = diagnostics?.()
+      if (details !== undefined) process.stderr.write(`HMR wait diagnostics: ${JSON.stringify(details)}\n`)
+      throw new Error(message, { cause: details })
+    }
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
@@ -121,9 +127,10 @@ describe('HMR exact config paths', () => {
       await ctx.hmr.registerConfig(filename, () => {
         observed.push(readFileSync(filename, 'utf8'))
       })
+      const diagnostics = observeHmrConfig(ctx)
       mkdirSync(dir)
       writeFileSync(filename, 'created')
-      await eventually(() => observed.includes('created'), 'HMR did not observe config creation under a new parent')
+      await eventually(() => observed.includes('created'), 'HMR did not observe config creation under a new parent', diagnostics)
     } finally {
       await ctx.fiber.dispose()
     }
@@ -170,6 +177,39 @@ describe('HMR exact config paths', () => {
     }
   })
 
+  it('reconciles exact config changes when native event delivery is absent, and stops after disposal', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'clocky-hmr-config-'))
+    const filename = join(dir, 'plugins.yml')
+    const ctx = new Context()
+    ctx.baseUrl = pathToFileURL(dir).href + '/'
+    try {
+      await ctx.plugin(Loader)
+      await ctx.plugin(Timer)
+      await ctx.plugin(Hmr, { root: [], ignored: [], debounce: 0, configPollIntervalMs: 20 })
+      const observed: string[] = []
+      const dispose = await ctx.hmr.registerConfig(filename, () => {
+        try { observed.push(readFileSync(filename, 'utf8')) }
+        catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') observed.push('removed'); else throw error }
+      })
+      const owner = ctx.hmr as unknown as { configs: Map<string, { watcher: EventEmitter }> }
+      for (const { watcher } of owner.configs.values()) {
+        watcher.removeAllListeners('add'); watcher.removeAllListeners('change'); watcher.removeAllListeners('unlink')
+      }
+      writeFileSync(filename, 'created')
+      await eventually(() => observed.includes('created'), 'Metadata reconciliation missed creation')
+      await new Promise(resolve => setTimeout(resolve, 60))
+      expect(observed).toEqual(['created'])
+      writeFileSync(filename, 'changed')
+      await eventually(() => observed.includes('changed'), 'Metadata reconciliation missed change')
+      unlinkSync(filename)
+      await eventually(() => observed.includes('removed'), 'Metadata reconciliation missed removal')
+      await dispose()
+      writeFileSync(filename, 'after-disposal')
+      await new Promise(resolve => setTimeout(resolve, 60))
+      expect(observed).toEqual(['created', 'changed', 'removed'])
+    } finally { await ctx.fiber.dispose(); rmSync(dir, { recursive: true, force: true }) }
+  })
+
   it('normalizes refresh failures and broadcasts them without escaping the watcher', { timeout: 60_000 }, async () => {
     const dir = mkdtempSync(join(tmpdir(), 'clocky-hmr-config-'))
     const filename = join(dir, 'plugins.yml')
@@ -185,7 +225,9 @@ describe('HMR exact config paths', () => {
         failure.resolve({ filename: failedFilename, error })
       })
       await ctx.hmr.registerConfig(filename, () => { throw 42 })
+      const diagnostics = observeHmrConfig(ctx)
       writeFileSync(filename, 'invalid')
+      await eventually(() => failureCount > 0, 'HMR did not broadcast the initial refresh failure', diagnostics)
 
       const observed = await failure.promise
       expect(observed.filename).toBe(filename)
@@ -196,7 +238,7 @@ describe('HMR exact config paths', () => {
       // second notification from the same path.
       await new Promise(resolve => setTimeout(resolve, 250))
       writeFileSync(filename, 'invalid again')
-      await eventually(() => failureCount === 2, 'HMR stopped broadcasting after an observer rejected')
+      await eventually(() => failureCount === 2, 'HMR stopped broadcasting after an observer rejected', diagnostics)
     } finally {
       await ctx.fiber.dispose()
     }

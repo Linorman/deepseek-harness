@@ -5,7 +5,7 @@
 
 import type { Context } from '@clocky/cordis'
 import type {} from '@clocky/clocky-agent-loop'
-import type {} from '@clocky/clocky-subagent'
+import type {} from '@clocky/clocky-compat-subagent'
 
 /** Fixture plugin name. */
 export const name = 'subagent-settlement-fence'

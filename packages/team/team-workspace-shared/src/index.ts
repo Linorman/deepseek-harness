@@ -65,6 +65,8 @@ const INTEGRATION_MARKER_VERSION = 1 as const
 export interface Config {
   /** Existing sidecar directory; defaults to integration state or a provider-owned child of the shared root. */
   readonly observationStateRoot?: string
+  /** Existing absolute runtime directories omitted from workspace observations; defaults to none. */
+  readonly observationExcludedRoots?: string[]
   /** Maximum directory entries inspected by one observation, including directories. */
   readonly observationMaxEntries?: number
   /** Maximum aggregate file bytes hashed by one observation. */
@@ -101,6 +103,7 @@ export interface Config {
 
 /** Schemastery validator for {@link Config}. Filesystem checks run during provider mounting. */
 export const Config: z<Config> = z.object({
+  observationExcludedRoots: z.array(z.string().min(1)).default([]),
   observationStateRoot: z.string(),
   observationMaxStateBytes: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(16 * 1024 * 1024),
   observationMaxEntries: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(2048),
@@ -910,6 +913,11 @@ async function resolveConfig(config: Config): Promise<ResolvedConfig> {
   if (!(await isDirectory(root))) {
     throw new TypeError(`team-workspace-shared: root '${config.root}' is not a directory`)
   }
+  const observationExcludedRoots = await Promise.all((config.observationExcludedRoots ?? [])
+    .map(path => canonicalDirectory(path, 'observationExcludedRoots')))
+  if (observationExcludedRoots.some(excluded => isPathUnder(root, excluded))) {
+    throw new TypeError('team-workspace-shared: observationExcludedRoots must not contain the shared root')
+  }
   const integrationRoot = config.integrationRoot === undefined
     ? undefined
     : await canonicalDirectory(config.integrationRoot, 'integrationRoot')
@@ -945,6 +953,7 @@ async function resolveConfig(config: Config): Promise<ResolvedConfig> {
   return {
     ...observation,
     observationStateRoot,
+    observationExcludedRoots,
     ...observationPulseIntervalMs === undefined ? {} : { observationPulseIntervalMs },
     observationMaxAllocationsPerPulse: positive(config.observationMaxAllocationsPerPulse ?? 1, 'observationMaxAllocationsPerPulse'),
     root,

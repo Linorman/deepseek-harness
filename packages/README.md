@@ -15,7 +15,7 @@ Groups hold `packages/<group>/<pkg>/`; names stay `@clocky/clocky-<pkg>`. **Grou
 | [`agent-runtime/`](agent-runtime/README.md) | Participant activation placement providers | Product — stable API |
 | [`api/`](api/README.md) | Remote BFF assembly and Typert RPC gateway | Product — stable API |
 | [`typert/`](typert/README.md) | Type graph generation, artifact loading, and runtime registry | Product — stable API |
-| [`goal/`](goal/README.md) | Same-session goal persistence and lifecycle | Product — stable API |
+| [`compat/`](compat/README.md) | Explicit same-session Goal, subagent and script-workflow compatibility | Private; excluded from product release |
 | [`schedule/`](schedule/README.md) | Session-local scheduled follow-ups | Product — stable API |
 | [`feedback/`](feedback/README.md) | Human feedback | Product — stable API |
 | [`identity/`](identity/README.md) | Reserved identity capability group | No implementation shipped |
@@ -31,9 +31,7 @@ Groups hold `packages/<group>/<pkg>/`; names stay `@clocky/clocky-<pkg>`. **Grou
 | [`skill/`](skill/README.md) | Skill capability family: the provider registry, local provider, and model-facing catalog/loader | Product — stable API |
 | [`compaction/`](compaction/README.md) | Compaction capability family: Service Definition + basic provider + command Consumer | Product — stable API |
 | [`context/`](context/README.md) | Model-visible request context, including workspace instructions and time context | Product — stable API |
-| [`subagent/`](subagent/README.md) | Subagent capability family: the provider-registry contract and the model-facing delegation tool | Product — stable API |
 | [`jobs/`](jobs/README.md) | Generic background-job runtime and model-facing `job_*` control tools | Product — stable API |
-| [`workflow/`](workflow/README.md) | Workflow seam, worker-thread engine, and model-facing `workflow`/`ralph` tools | Product — stable API |
 | [`web/`](web/README.md) | Web capability family: seam, search/fetch provider impls, and the model-facing web tools | Product — stable API |
 | [`attachment/`](attachment/README.md) | Durable attachment identity, validation, local content-addressed storage | Product — stable API |
 | [`spill/`](spill/README.md) | Spill capability family: storage seam, local impl, tool-result spill policy | Product — stable API |

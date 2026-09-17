@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /**
  * Content-addressed local provider for Team artifact bytes. It owns only the
  * object store; Team task state retains references and provenance separately.
@@ -429,7 +430,7 @@ interface ReachabilitySnapshot {
 async function collectReachableArtifacts(teams: TeamRuntime, pageSize: number): Promise<ReachabilitySnapshot> {
   const references = new Map<string, TeamArtifactReference>()
   let teamsScanned = 0
-  let afterCursor = -1
+  let afterCursor: TeamListPageRequest['afterCursor'] = -1
   while (true) {
     const page = await teams.listTeamsPage({ afterCursor, limit: pageSize })
     for (const summary of page.items) {
@@ -446,7 +447,7 @@ async function collectReachableArtifacts(teams: TeamRuntime, pageSize: number): 
       }
     }
     if (page.nextCursor === undefined) break
-    if (page.nextCursor <= afterCursor) {
+    if (page.nextCursor === afterCursor) {
       throw new TeamError('team-artifact-local: Team listing cursor did not advance', 'TEAM_CURSOR_CONFLICT')
     }
     afterCursor = page.nextCursor

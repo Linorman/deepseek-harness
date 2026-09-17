@@ -26,7 +26,7 @@ The submission envelope is modeled end to end, and every command route either co
 
 ## Testing
 
-Registry executor enforcement, admission failure settlement, and frozen invocation attachments are covered in `packages/interaction/commands/tests/commands.spec.ts`; batch admission ordering and limits in `packages/attachment/attachment/tests/admission.spec.ts`; producer behavior in `packages/goal/command-goal/tests/command-goal.spec.ts` and `packages/plan/plan-mode/tests/plan-mode.spec.ts`; client refusal and consumption paths in the ui-commands, ui-conversation, and ui-input-trigger client suites; and the assembled-application flow in the apps/web keyless lanes.
+Registry executor enforcement, admission failure settlement, and frozen invocation attachments are covered in `packages/interaction/commands/tests/commands.spec.ts`; batch admission ordering and limits in `packages/attachment/attachment/tests/admission.spec.ts`; producer behavior in `packages/compat/command-goal/tests/command-goal.spec.ts` and `packages/plan/plan-mode/tests/plan-mode.spec.ts`; client refusal and consumption paths in the ui-commands, ui-conversation, and ui-input-trigger client suites; and the assembled-application flow in the apps/web keyless lanes.
 
 ## Alternatives considered
 

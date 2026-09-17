@@ -86,7 +86,7 @@ describe('plugin activation', () => {
     document.body.append(container)
     const target = installFacade()
     const entries: WebBootEntry[] = [
-      { id: 'consumer', url: '/consumer.js', rev: '1' },
+      { id: 'consumer', url: '/consumer.js', rev: '1', config: { maxDrafts: 4 } },
       { id: MODULES_ID, url: '/modules.js', rev: '1' },
       { id: 'renderer', url: '/renderer.js', rev: '1' },
     ]
@@ -96,7 +96,8 @@ describe('plugin activation', () => {
         id: 'consumer',
         factory: () => ({
           inject: ['modules'],
-          apply: (ctx: Context) => {
+          apply: (ctx: Context, config: { maxDrafts: number }) => {
+            expect(config).toEqual({ maxDrafts: 4 })
             expect(ctx.modules).toBeDefined()
             events.push('consumer')
           },

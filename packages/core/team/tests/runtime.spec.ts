@@ -1,3 +1,8 @@
+import type { TeamMemberInspection } from '../src/types.ts'
+import type { TeamBrowsePage } from '../src/types.ts'
+import type { TeamMemberSessionSnapshot } from '../src/types.ts'
+import type { TeamSelectionSnapshot } from '../src/types.ts'
+import type { ActivationReservationRequest, ActivationReservationSnapshot } from '../src/types.ts'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@clocky/cordis'
 import {
@@ -204,8 +209,19 @@ import type {
 } from '../src/index.ts'
 
 class FakeTeamRuntime extends TeamRuntime {
+  override inspectTask(): Promise<never> { return Promise.reject(new Error('Fake runtime has no task inspection')) }
   createTeam(_request: TeamCreateRequest): Promise<TeamStateSnapshot> {
     throw new Error('FakeTeamRuntime does not persist Teams')
+  }
+
+  inspectMember(): Promise<TeamMemberInspection> { throw new Error('not implemented') }
+
+  getMemberSession(): Promise<TeamMemberSessionSnapshot> { throw new Error('not implemented') }
+
+  browse(): Promise<TeamBrowsePage> { throw new Error('not implemented') }
+
+  getTeamSelection(): Promise<TeamSelectionSnapshot> {
+    throw new Error('FakeTeamRuntime does not persist selection views')
   }
 
   getTeam(_request: TeamGetRequest): Promise<TeamStateSnapshot> {
@@ -250,6 +266,14 @@ class FakeTeamRuntime extends TeamRuntime {
 
   transitionParticipantPhase(_request: ParticipantPhaseTransitionRequest): Promise<ParticipantSnapshot> {
     throw new Error('FakeTeamRuntime does not persist participants')
+  }
+
+  reserveActivation(_request: ActivationReservationRequest): Promise<ActivationReservationSnapshot> {
+    throw new Error('FakeTeamRuntime does not persist activation reservations')
+  }
+
+  releaseActivationReservation(_request: ActivationReservationRequest): Promise<ActivationReservationSnapshot> {
+    throw new Error('FakeTeamRuntime does not persist activation reservations')
   }
 
   bindActivation(_request: ActivationBindRequest): Promise<ActivationBindingSnapshot> {

@@ -2,6 +2,25 @@
    font-weight: 500 in this UI — non-variable webfonts snap intermediate
    weights unpredictably across platforms. */
 body {
+  --clocky-workspace-canvas: #f4f6fa;
+  --clocky-workspace-surface: #ffffff;
+  --clocky-workspace-ink: #182230;
+  --clocky-workspace-muted: #5b687b;
+  --clocky-workspace-border: #dfe5ee;
+  --clocky-workspace-accent: #315fcc;
+  --clocky-workspace-accent-hover: #264da9;
+  --clocky-workspace-selection: #eaf0fc;
+  --clocky-workspace-success: #15803d;
+  --clocky-workspace-warning: #955600;
+  --clocky-workspace-error: #b42318;
+  --clocky-navigation-fill: #151b26;
+  --clocky-navigation-ink: #e6edf7;
+  --clocky-navigation-muted: #a8b5c8;
+  --clocky-navigation-border: #334155;
+  --clocky-navigation-hover: #242f40;
+  --clocky-navigation-selected: #2b3c55;
+  --clocky-navigation-action: #315fcc;
+  --clocky-workspace-control-radius: 8px;
   --clocky-static-amber-100: rgb(254, 245, 231);
   --clocky-static-amber-400: rgb(247, 173, 49);
   --clocky-static-amber-500: rgb(245, 158, 11);
@@ -78,6 +97,17 @@ body {
 }
 
 body[data-ds-dark-theme] {
+  --clocky-workspace-canvas: #111722;
+  --clocky-workspace-surface: #1a2230;
+  --clocky-workspace-ink: #e6edf7;
+  --clocky-workspace-muted: #a8b5c8;
+  --clocky-workspace-border: #334155;
+  --clocky-workspace-accent: #85abff;
+  --clocky-workspace-accent-hover: #adc6ff;
+  --clocky-workspace-selection: #263753;
+  --clocky-workspace-success: #4ed17e;
+  --clocky-workspace-warning: #fbbf24;
+  --clocky-workspace-error: #ff9b91;
   --clocky-static-amber-100: rgb(254, 245, 231);
   --clocky-static-amber-400: rgb(247, 173, 49);
   --clocky-static-amber-500: rgb(245, 158, 11);
@@ -151,6 +181,51 @@ body[data-ds-dark-theme] {
   --clocky-static-red-50: rgb(254, 242, 242);
   --clocky-static-red-600: rgb(236, 19, 19);
   --clocky-static-red-900: rgb(87, 12, 12);
+}
+
+/* Team working surfaces reuse the shared primitives through semantic aliases. */
+[data-team-workspace-page] {
+  --clocky-control-radius: var(--clocky-workspace-control-radius);
+  --clocky-alias-bg-base: var(--clocky-workspace-canvas);
+  --clocky-alias-bg-layer-1: var(--clocky-workspace-surface);
+  --clocky-alias-bg-layer-2: var(--clocky-workspace-surface);
+  --clocky-alias-bg-layer-3: var(--clocky-workspace-surface);
+  --clocky-alias-label-primary: var(--clocky-workspace-ink);
+  --clocky-alias-label-secondary: var(--clocky-workspace-muted);
+  --clocky-alias-label-tertiary: var(--clocky-workspace-muted);
+  --clocky-alias-border-l1: var(--clocky-workspace-border);
+  --clocky-alias-border-l2: var(--clocky-workspace-border);
+  --clocky-alias-interactive-bg-hover: var(--clocky-workspace-selection);
+  --clocky-alias-interactive-bg-active: var(--clocky-workspace-selection);
+  --clocky-alias-state-business-primary: var(--clocky-workspace-accent);
+  --clocky-alias-state-success-primary: var(--clocky-workspace-success);
+  --clocky-alias-state-warn-label: var(--clocky-workspace-warning);
+  --clocky-alias-state-error-primary: var(--clocky-workspace-error);
+  --clocky-alias-button-primary-fill: var(--clocky-workspace-accent);
+  --clocky-alias-button-primary-hover: var(--clocky-workspace-accent-hover);
+}
+
+/* Navigation remains graphite in both content themes; custom brand slots remain available. */
+[data-clocky-navigation] {
+  --clocky-specific-sidebar-fill: var(--clocky-navigation-fill);
+  --clocky-alias-label-primary: var(--clocky-navigation-ink);
+  --clocky-alias-label-secondary: var(--clocky-navigation-muted);
+  --clocky-alias-label-tertiary: var(--clocky-navigation-muted);
+  --clocky-alias-brand-primary: var(--clocky-navigation-ink);
+  --clocky-alias-brand-text: var(--clocky-navigation-ink);
+  --clocky-alias-border-l1: var(--clocky-navigation-border);
+  --clocky-alias-border-l2: var(--clocky-navigation-border);
+  --clocky-alias-bg-layer-1: var(--clocky-navigation-fill);
+  --clocky-alias-bg-layer-2: var(--clocky-navigation-hover);
+  --clocky-alias-button-elevated-fill: var(--clocky-navigation-action);
+  --clocky-alias-button-floating-fill: var(--clocky-navigation-hover);
+  --clocky-alias-button-floating-hover: var(--clocky-navigation-selected);
+  --clocky-alias-interactive-bg-hover: var(--clocky-navigation-hover);
+  --clocky-alias-interactive-bg-active: var(--clocky-navigation-selected);
+  --clocky-alias-state-business-primary: var(--clocky-static-accent-300);
+  --clocky-alias-state-error-primary: var(--clocky-static-red-400);
+  --clocky-specific-sidebar-nav-item-active: var(--clocky-navigation-selected);
+  --clocky-specific-sidebar-nav-item-hover: var(--clocky-navigation-hover);
 }
 
 body {

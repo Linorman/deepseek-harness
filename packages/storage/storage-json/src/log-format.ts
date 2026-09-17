@@ -10,6 +10,8 @@ import type { LogCheckpoint, LogEntry, LogStreamDescriptor, LogStreamInfo } from
 /** Parsed stream state held by one open JSON log handle. */
 export interface LogState {
   readonly version: number
+  /** Consumer summary of the current durable tail; cleared by append without a summary. */
+  readonly summary?: unknown
   /** First retained sequence after an optional prefix compaction. */
   readonly firstSequence?: number
   readonly entries: readonly LogEntry[]
@@ -24,16 +26,16 @@ export interface LogState {
  */
 export function serializeLog(descriptor: LogStreamDescriptor, state: LogState): string {
   const firstSequence = state.firstSequence ?? 0
-  const document = {
-    stream: {
-      name: descriptor.name,
-      version: state.version,
-      ...(firstSequence === 0 ? {} : { firstSequence }),
-    },
-    entries: state.entries,
-    ...(state.checkpoint === undefined ? {} : { checkpoint: state.checkpoint }),
+  const stream = {
+    name: descriptor.name,
+    version: state.version,
+    tailSequence: state.entries.at(-1)?.sequence ?? EMPTY_LOG_SEQUENCE,
+    ...(firstSequence === 0 ? {} : { firstSequence }),
+    ...(state.summary === undefined ? {} : { summary: state.summary }),
   }
-  return `${JSON.stringify(document, null, 2)}\n`
+  const body = JSON.stringify({ entries: state.entries,
+    ...(state.checkpoint === undefined ? {} : { checkpoint: state.checkpoint }) }, null, 2)
+  return `{"stream":${JSON.stringify(stream)},\n${body.slice(2)}\n`
 }
 
 /**
@@ -112,6 +114,9 @@ function parseDocument(text: string): { info: LogStreamInfo; state: LogState } {
     throw new StorageError('malformed-medium', `log stream '${stream['name']}' has a non-zero first sequence without entries`)
   }
   const tailSequence = entries.at(-1)?.sequence ?? firstSequence - 1
+  if (stream['tailSequence'] !== undefined && stream['tailSequence'] !== tailSequence) {
+    throw new StorageError('malformed-medium', `log stream '${stream['name']}' header tail disagrees with entries`)
+  }
   const info: LogStreamInfo = {
     name: stream['name'],
     version: stream['version'],
@@ -122,6 +127,7 @@ function parseDocument(text: string): { info: LogStreamInfo; state: LogState } {
     info,
     state: {
       version: info.version,
+      ...(Object.hasOwn(stream, 'summary') ? { summary: stream['summary'] } : {}),
       ...(firstSequence === 0 ? {} : { firstSequence }),
       entries,
       ...(checkpoint === undefined ? {} : { checkpoint }),

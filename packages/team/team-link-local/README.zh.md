@@ -22,8 +22,7 @@
 
 `providerName`默认为 `local`；`pageSize`默认为 `128`；`notificationRetryDelayMs`默认为 `100`；`disposalTimeoutMs`默认为 `5000`。`pageSize`不得超过已挂载 Team provider 的 pending-delivery page 限制。Link close 会取消其本地 wait 和延迟 retry、停止通知接纳，并在 `disposalTimeoutMs` 内等待已接收的 replay 和 notification 工作。
 
-首个 pending-delivery scan 会在 provider 提供时使用 channel 的 durable `replayWatermark`。这样可以跳过已经确认的 prefix，同时保留所有仍 pending 的 Envelope，继续通过 claim 与 receipt 完成 recovery。
-重复或回退的 Team 或 channel watch cursor 会让 Link 关闭，而不会重复尝试同一 continuation。
+首个 pending-delivery scan 会在 provider 提供时使用 channel 的 durable `replayWatermark`。这样可以跳过已经确认的 prefix，同时保留所有仍 pending 的 Envelope，继续通过 claim 与 receipt 完成 recovery。 重复或回退的 Team 或 channel watch cursor 会让 Link 关闭，而不会重复尝试同一 continuation。
 
 `heartbeatTaskAttempt()`会携带其私有 lease proof 以及仅有的`taskId`、`attemptId`和`expectedRevision`；`settleTaskAttempt()`额外带有 Link 允许的 `released`、`failed`或`completed` outcome；`integrateTask()`使用同一条 task/attempt fence 调用 Team workspace registry，由 durable integration task 派生 source artifact 与 target fact。Hub 解析 proof 以选择 Team queue，在持有该 lock 时重新校验 binding，并在续期、integration 或结算前派生 Team、Participant、activation、Session 与精确 lease owner。普通 `post()`保留独立的 binding-derived contract；`resolveTaskReview()`使用同一条 proof-only path，这些 operation 都不授予 Team-closure authority。
 

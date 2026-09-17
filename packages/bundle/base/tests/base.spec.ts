@@ -46,14 +46,14 @@ describe('clocky-base bundle', () => {
       'tool-ralph',
     ].includes(String(row.id)))).toBe(false)
     for (const packageName of [
-      '@clocky/clocky-subagent',
-      '@clocky/clocky-subagent-spawn-in-process',
-      '@clocky/clocky-tool-ralph',
-      '@clocky/clocky-tool-subagent',
-      '@clocky/clocky-tool-subagent-control',
-      '@clocky/clocky-tool-subagent-report',
-      '@clocky/clocky-tool-workflow',
-      '@clocky/clocky-workflow-worker-thread',
+      '@clocky/clocky-compat-subagent',
+      '@clocky/clocky-compat-subagent-spawn-in-process',
+      '@clocky/clocky-compat-tool-ralph',
+      '@clocky/clocky-compat-tool-subagent',
+      '@clocky/clocky-compat-tool-subagent-control',
+      '@clocky/clocky-compat-tool-subagent-report',
+      '@clocky/clocky-compat-tool-workflow',
+      '@clocky/clocky-compat-workflow-worker-thread',
     ]) {
       expect(manifest.dependencies ?? {}).not.toHaveProperty(packageName)
     }

@@ -31,7 +31,7 @@ API Proxy 还包含一些不以业务方法为约定的 BFF 操作：Session 生
 | `llm.providers` | `ctx.remote.llm`，位于 `@clocky/clocky-llm` | `LlmRuntime.listProviders()`、`listConfigurableProviders()` | 两项读取都直接使用 `@Remote`；Client 关联注册行与配置目录行。 |
 | `credentials.describe`、`credentials.set`、`credentials.unset` | `ctx.remote.credentials`，位于 `@clocky/clocky-credentials-local` | `LocalCredentialProvider.describe(ref)`、`set(ref, value)`、`unset(ref)` | 直接使用 `@Remote`；当 UI 请求多个 ref 时，Client 批量发起 `describe` 调用。 |
 | `agentPreset.read`、`agentPreset.copy`、`agentPreset.remove` | `ctx.remote.agentPresets`，位于 `@clocky/clocky-agent-presets` | `readDocument(id)`、`copy(from, id, name?)`、`remove(id)` | `copy` 和 `remove` 直接暴露现有方法；`readDocument` 将存储的内容与一次实时发现取得的元数据组合。 |
-| `subagent.interrupt` | `ctx.remote.subagents`，位于 `@clocky/clocky-subagent` | `interruptByParent(targetSessionId, parentSessionId)` | 适配器构造内部的用户权限变体，不解析也不恢复任一 Agent。 |
+| `subagent.interrupt` | `ctx.remote.subagents`，位于 `@clocky/clocky-compat-subagent` | `interruptByParent(targetSessionId, parentSessionId)` | 适配器构造内部的用户权限变体，不解析也不恢复任一 Agent。 |
 | `workspace.list`、`workspace.insertSessionBefore`、`workspace.archiveSession` | `ctx.remote.workspace`，位于 `@clocky/clocky-workspace` | `snapshot()`、`insertSessionBefore(workspaceId, sessionId, before?)`、`archiveSession(sessionId)` | 注册表适配器分离可变实体，并返回已完成更新的 workspace 或归档快照。 |
 
 Remote API 有意采用服务名称，而不保留旧 RPC 的点分名称。例如，Session 重命名将变为 `ctx.remote.sessionTitle.rename(...)`。

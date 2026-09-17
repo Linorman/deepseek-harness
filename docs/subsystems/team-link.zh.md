@@ -140,4 +140,21 @@ An enrollment issuer stopped accepting credentials. Existing credentials may no 
 ```
 
 Source: [`packages/core/team-link/src/index.ts`](../../packages/core/team-link/src/index.ts)
+
+<a id="team-linkprovider-added--emit"></a>
+
+#### `team-link/provider-added` — emit
+
+A provider became available, including replacement after configuration changes.
+
+```ts cordis-catalog
+/**
+ * A provider became available, including replacement after configuration changes.
+ * @param provider - named provider available for fresh connections.
+ * @mode emit
+ */
+'team-link/provider-added'(this: TeamLinkRegistry, provider: TeamLinkProviderRef): void
+```
+
+Source: [`packages/core/team-link/src/index.ts`](../../packages/core/team-link/src/index.ts)
 <!-- END GENERATED cordis-surface -->

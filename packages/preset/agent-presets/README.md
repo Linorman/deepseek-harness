@@ -36,7 +36,7 @@ A subagent's child joins its parent's standing composition through `composeFrom(
 
 Re-mounting the parent's preset by id would differ from the bind in two ways that both matter. A composition file edited since the parent started would hand the child a DIFFERENT generation than the one its parent's history was produced under, and a preset deleted since would fail the child outright while its parent keeps running. The bind is also synchronous, which is what lets the in-process subagent drivers use it at all — they compose their children inside a synchronous creation window.
 
-The child records the joined id on its own durable header ([`clocky-subagent`](../../subagent/subagent/README.md)), so a cold read of the child's history rebuilds the composition it actually ran under rather than the deployment default.
+The child records the joined id on its own durable header ([`clocky-subagent`](../../compat/subagent/README.md)), so a cold read of the child's history rebuilds the composition it actually ran under rather than the deployment default.
 
 ### Which preset a session runs
 

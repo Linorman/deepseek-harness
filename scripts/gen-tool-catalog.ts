@@ -15,7 +15,6 @@ import type { Agent } from '@clocky/clocky-agent'
 import { createScope } from '@clocky/clocky-scope'
 import SessionStore, { SessionId } from '@clocky/clocky-session'
 import SqliteSessionQueryEngine from '@clocky/clocky-session-query-sqlite'
-import GoalService from '@clocky/clocky-goal'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import ToolRuntime, { type Config as ToolsConfig } from '@clocky/clocky-tools'
 import LocalBashExecutor from '@clocky/clocky-bash-local'
@@ -45,7 +44,6 @@ import * as ToolFsSearch from '@clocky/clocky-tool-fs-search'
 import * as ToolStrReplaceEditor from '@clocky/clocky-tool-str-replace-editor'
 import TerminalSessionService from '@clocky/clocky-terminal'
 import * as ToolPty from '@clocky/clocky-tool-terminal'
-import * as ToolGoal from '@clocky/clocky-tool-goal'
 import * as ToolSchedule from '@clocky/clocky-schedule'
 import Lsp from '@clocky/clocky-lsp'
 import * as ToolLsp from '@clocky/clocky-tool-lsp'
@@ -332,20 +330,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
     note:
       'The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema.',
   },
-  {
-    pkg: '@clocky/clocky-tool-goal',
-    dir: 'tool-goal',
-    source: 'packages/goal/tool-goal/src/index.ts',
-    requires: ['ctx.tools', 'ctx.agents', 'ctx.goals', 'ctx.systemPrompt', 'a calling Agent in an authorized open turn'],
-    writes: ['tool/call', 'goal/change for mutations', 'tool/result'],
-    async mount(ctx) {
-      await ctx.plugin(AgentRegistry)
-      await ctx.plugin(GoalService)
-      await ctx.plugin(ToolGoal)
-    },
-    note:
-      'create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds.',
-  },
+
   {
     pkg: '@clocky/clocky-schedule',
     dir: 'schedule',

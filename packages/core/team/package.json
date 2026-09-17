@@ -31,7 +31,11 @@
       "default": "./lib/types/schema.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./selection": {
+      "types": "./lib/types/selection.d.ts",
+      "default": "./lib/types/selection.js"
+    }
   },
   "files": [
     "lib/index.js",

@@ -30,11 +30,70 @@
 }
 
 .centerCol {
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
+
+.sessionStage {
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--clocky-alias-label-primary);
+  background: var(--clocky-alias-bg-base);
+}
+
+.sessionStage[open] { display: flex; flex-direction: column; }
+.sessionStage[data-inspecting] {
+  position: fixed;
+  width: min(1120px, calc(100vw - 64px));
+  height: 88dvh;
+  margin: auto;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: session-enter 220ms var(--ds-ease-in-out);
+}
+.sessionStage::backdrop { background: rgb(15 23 42 / 38%); }
+.sessionStage[data-expanded] { width: calc(100vw - 24px); height: calc(100dvh - 24px); }
+.sessionStageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--clocky-alias-border-l1);
+  font-size: 14px;
+}
+.sessionStageHeader button {
+  font: inherit;
+  padding: 8px 12px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--clocky-alias-border-l1);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sessionStageHeader button:hover { background: var(--clocky-specific-sidebar-fill); }
+.sessionContext { display: grid; gap: 4px; min-width: 0; text-align: center; }
+.sessionContext small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--clocky-alias-label-secondary); font-size: 12px; }
+.sessionStageHeader button:focus-visible { outline: 2px solid var(--clocky-alias-state-business-primary); outline-offset: 2px; }
+.sessionColumns { display: grid; flex: 1; min-height: 0; overflow: hidden; }
+@keyframes session-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 600px) {
+  .sessionStage[data-inspecting] { width: 100%; height: 100dvh; border-radius: 0; }
+  .sessionStageHeader { padding: 12px; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .sessionStage[data-inspecting] { animation: none; } }
 
 .detailsCol {
   min-width: 0;

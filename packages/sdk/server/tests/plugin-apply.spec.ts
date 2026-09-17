@@ -330,6 +330,21 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
         const state = await harness.ctx.teams.getTeam({ teamId: created.teamId as never })
         expect(state.activations.some(binding => binding.activation.status === 'idle')).toBe(true)
       })
+      harness.send({ jsonrpc: '2.0', id: 'missing-plan', method: 'team/workflow-plan-inspect',
+        params: { teamId: created.teamId, planId: 'missing' } })
+      const missingPlan = await harness.waitForFrame(frame => frame.id === 'missing-plan', 'missing workflow inspection')
+      expect(missingPlan.error).toMatchObject({ message: expect.stringContaining('not found') as unknown })
+      harness.send({ jsonrpc: '2.0', id: 'missing-action', method: 'team/action-read',
+        params: { teamId: created.teamId, actionId: 'missing' } })
+      const missingAction = await harness.waitForFrame(frame => frame.id === 'missing-action', 'bounded missing action')
+      expect(missingAction.error).toMatchObject({ message: expect.stringContaining('missing') as unknown })
+      harness.send({ jsonrpc: '2.0', id: 'selection', method: 'team/selection', params: { teamId: created.teamId, includeMetadata: true } })
+      const selected = await harness.waitForFrame(frame => frame.id === 'selection', 'bounded Team selection')
+      expect(selected.result).toMatchObject({ selection: { team: { id: created.teamId },
+        coordinator: { kind: 'bound', binding: { sessionId: created.coordinatorSessionId } } } })
+      expect(selected.result).not.toHaveProperty('state')
+      expect(selected.result).toMatchObject({ selection: { metadata: { kind: 'available', goal: { teamId: created.teamId } } } })
+      expect(llmServer.requests).toHaveLength(1)
       const state = await harness.ctx.teams.getTeam({ teamId: created.teamId as never })
       const human = state.participants.find(participant => participant.role === 'human')
       const coordinator = state.participants.find(participant => participant.role === 'coordinator')
@@ -337,6 +352,36 @@ describe('clocky-sdk-jsonrpc-server plugin apply', () => {
       if (human === undefined || coordinator === undefined || channelId === undefined) {
         throw new Error('SDK Team creation did not retain its default human/coordinator channel')
       }
+      harness.send({ jsonrpc: '2.0', id: 'member-session', method: 'team/member-session',
+        params: { teamId: created.teamId, participantId: coordinator.id } })
+      const memberSession = await harness.waitForFrame(frame => frame.id === 'member-session', 'published member Session')
+      expect(memberSession.result).toMatchObject({ binding: { sessionId: created.coordinatorSessionId,
+        activation: { teamId: created.teamId, participantId: coordinator.id } } })
+      expect(llmServer.requests).toHaveLength(1)
+      harness.send({ jsonrpc: '2.0', id: 'member-inspect', method: 'team/member-inspect',
+        params: { teamId: created.teamId, participantId: coordinator.id, limit: 1 } })
+      const memberInspection = await harness.waitForFrame(frame => frame.id === 'member-inspect', 'member detail')
+      expect(memberInspection.result).toMatchObject({ detail: { record: { id: coordinator.id, teamId: created.teamId }, startCursor: -1 } })
+
+      harness.send({ jsonrpc: '2.0', id: 'browse', method: 'team/browse',
+        params: { teamId: created.teamId, kind: 'members', limit: 1 } })
+      const browsed = await harness.waitForFrame(frame => frame.id === 'browse', 'member display summaries')
+      expect(browsed.result).toMatchObject({ page: { kind: 'members', teamId: created.teamId,
+        items: [{ id: human.id, displayName: { truncated: false } }] } })
+      expect(browsed.result).not.toHaveProperty('state')
+      expect(llmServer.requests).toHaveLength(1)
+
+      const inspect = vi.spyOn(harness.ctx.teams, 'inspectTask').mockResolvedValue({
+        teamId: state.team.id, taskId: 'inspection-task' as never, revision: 2, teamCursor: state.team.cursor,
+        section: 'attempts', startCursor: -1, total: 0, scanned: 0, items: [],
+      })
+      harness.send({ jsonrpc: '2.0', id: 'task-inspect', method: 'team/task-inspect',
+        params: { teamId: created.teamId, taskId: 'inspection-task', section: 'attempts', expectedRevision: 2, limit: 1 } })
+      const inspected = await harness.waitForFrame(frame => frame.id === 'task-inspect', 'bounded task inspection')
+      expect(inspected.result).toMatchObject({ inspection: { section: 'attempts', revision: 2, items: [] } })
+      expect(inspect).toHaveBeenCalledWith({ teamId: created.teamId, taskId: 'inspection-task', section: 'attempts', expectedRevision: 2, limit: 1 })
+      inspect.mockRestore()
+
       const channel = await harness.ctx.teams.getChannel({ channelId })
       harness.send({
         jsonrpc: '2.0',

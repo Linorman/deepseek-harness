@@ -28,6 +28,11 @@ from clocky import (
     TeamChannelResponse,
     TeamChannelAttachmentResponse,
     TeamGetResponse,
+    TeamMemberInspectResponse,
+    TeamTaskInspectResponse,
+    TeamWorkflowInspection,
+    TeamBrowseResponse,
+    TeamMemberSessionResponse,
     TeamGoalBlocker,
     TeamGoalTransitionInput,
     TeamGoalTransitionRequest,
@@ -465,7 +470,7 @@ for line in sys.stdin:
         }, open(os.environ["CAPTURE"], "w"))
         result = {"serverInfo": {"name": "fake-runtime"}}
     elif method == "team/list":
-        result = {"items": []}
+        result = {"items": [], "scanned": 0}
     elif method == "shutdown":
         json.dump(requests, open(os.environ["REQUESTS"], "w"))
         result = {}
@@ -578,7 +583,7 @@ for line in sys.stdin:
         print(REJECTED_CREDENTIAL, file=sys.stderr, flush=True)
         result = {"serverInfo": {"name": "fake-runtime"}}
     elif message.get("method") == "team/list":
-        result = {"items": []}
+        result = {"items": [], "scanned": 0}
     elif message.get("method") == "shutdown":
         result = {}
     else:
@@ -832,6 +837,82 @@ def test_team_channel_media_preserves_order_and_exact_envelope_selection(monkeyp
     assert calls[3] == calls[1]
 
 
+def test_member_session_rejects_foreign_identity_and_malformed_binding(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = HarnessClient(HarnessConfig())
+    raw = {"binding": {"activation": {"id": "epoch", "teamId": "foreign", "participantId": "member", "status": "offline"},
+                       "sessionId": "session", "provider": "test"}}
+    monkeypatch.setattr(client, "request", lambda *args, **kwargs: TeamMemberSessionResponse.model_validate(raw))
+    with pytest.raises(SdkProtocolError, match="different Team or participant"):
+        client.get_team_member_session("team", "member")
+    raw["binding"]["sessionId"] = 17
+    with pytest.raises(ValidationError):
+        TeamMemberSessionResponse.model_validate(raw)
+
+
+def test_task_inspection_keeps_exact_selection_and_history_accounting(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = {"inspection": {"teamId": "team", "taskId": "task", "revision": 2, "teamCursor": 3,
+                          "section": "attempts", "startCursor": -1, "total": 0, "scanned": 0, "items": []}}
+    client = HarnessClient(HarnessConfig())
+    monkeypatch.setattr(client, "request", lambda *args, **kwargs: TeamTaskInspectResponse.model_validate(raw))
+    assert client.inspect_team_task("team", "task", "attempts", expected_revision=2).inspection.items == []
+    for patch in [{"teamId": "foreign"}, {"taskId": "foreign"}, {"revision": 3}, {"section": "reviews"}, {"startCursor": 0}]:
+        original = dict(raw["inspection"])
+        raw["inspection"].update(patch)
+        with pytest.raises(SdkProtocolError, match="does not match its task selection"):
+            client.inspect_team_task("team", "task", "attempts", expected_revision=2)
+        raw["inspection"] = original
+    for patch in [{"total": 2}, {"nextCursor": 0}, {"scanned": 2}]:
+        with pytest.raises(ValidationError):
+            TeamTaskInspectResponse.model_validate({"inspection": {**raw["inspection"], **patch}})
+    with pytest.raises(ValueError, match="does not accept history pagination"):
+        client.inspect_team_task("team", "task", "record", limit=1)
+    record = {"inspection": {"teamId": "team", "taskId": "task", "revision": 2, "teamCursor": 3, "section": "record",
+                             "task": {"id": "task", "teamId": "team", "revision": 2, "subject": "Task", "attemptCount": 0, "execution": {"kind": "participant"}},
+                             "history": {"attempts": 0, "reviews": 0}}}
+    assert TeamTaskInspectResponse.model_validate(record).inspection.task["subject"] == "Task"
+    for task_patch in [{"id": "foreign"}, {"revision": True}, {"attemptHistory": []}]:
+        with pytest.raises(ValidationError):
+            TeamTaskInspectResponse.model_validate({"inspection": {**record["inspection"], "task": {**record["inspection"]["task"], **task_patch}}})
+
+
+def test_member_inspection_checks_exact_identity_and_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = {"detail": {"record": {"id": "member", "teamId": "team", "kind": "local-agent", "phase": "active",
+                               "displayName": "Member", "role": "worker"}, "teamCursor": 3, "startCursor": -1,
+                     "total": 1, "scanned": 1, "items": ["read"]}}
+    client = HarnessClient(HarnessConfig())
+    calls = []
+    def request(method, params, **kwargs):
+        calls.append((method, params))
+        return TeamMemberInspectResponse.model_validate(raw)
+    monkeypatch.setattr(client, "request", request)
+    assert client.inspect_team_member("team", "member", limit=1).detail.items == ["read"]
+    assert calls[0] == ("team/member-inspect", {"teamId": "team", "participantId": "member", "limit": 1})
+    with pytest.raises(SdkProtocolError):
+        client.inspect_team_member("team", "member", expected_team_cursor=2)
+    with pytest.raises(SdkProtocolError):
+        client.inspect_team_member("team", "foreign")
+    with pytest.raises(ValidationError):
+        TeamMemberInspectResponse.model_validate({"detail": {**raw["detail"], "nextCursor": 0}})
+
+
+def test_browse_summaries_validate_ownership_kind_and_accounting(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = {"page": {"kind": "members", "teamId": "team", "teamCursor": 2, "total": 1, "scanned": 1, "items": [{
+        "id": "member", "teamId": "team", "kind": "local-agent", "phase": "active", "capabilityCount": 2,
+        "displayName": {"text": "Worker", "truncated": False}, "role": "worker",
+    }]}}
+    assert TeamBrowseResponse.model_validate(raw).page.items[0].displayName.text == "Worker"
+    assert TeamBrowseResponse.model_validate(raw).page.items[0].role == "worker"
+    with pytest.raises(ValidationError):
+        TeamBrowseResponse.model_validate({"page": {**raw["page"], "items": [{**raw["page"]["items"][0], "role": {"text": "work", "truncated": True}}]}})
+    for patch in [{"teamId": "foreign"}, {"kind": "tasks"}, {"scanned": 0}, {"nextCursor": 0}]:
+        with pytest.raises(ValidationError):
+            TeamBrowseResponse.model_validate({"page": {**raw["page"], **patch}})
+    client = HarnessClient(HarnessConfig())
+    monkeypatch.setattr(client, "request", lambda *args, **kwargs: TeamBrowseResponse.model_validate(raw))
+    with pytest.raises(SdkProtocolError, match="different Team or collection"):
+        client.browse_team("other-team", "members")
+
+
 def test_team_read_methods_forward_bounded_page_fields(tmp_path: Path) -> None:
     script = tmp_path / "paged_runtime.py"
     requests_dump = tmp_path / "requests.json"
@@ -849,7 +930,26 @@ for line in sys.stdin:
     if method == "initialize":
         result = {"serverInfo": {"name": "paged-runtime"}}
     elif method == "team/list":
-        result = {"items": [], "nextCursor": 10}
+        result = {"items": [], "scanned": 1, "nextCursor": "next-team-page"}
+    elif method == "team/member-session":
+        result = {"binding": {"activation": {"id": "epoch", "teamId": msg["params"]["teamId"], "participantId": msg["params"]["participantId"], "status": "offline"}, "sessionId": "session", "provider": "test"}}
+    elif method == "team/task-inspect":
+        result = {"inspection": {"teamId": msg["params"]["teamId"], "taskId": msg["params"]["taskId"], "revision": 2, "teamCursor": 3,
+                                  "section": msg["params"]["section"], "startCursor": msg["params"].get("afterCursor", -1), "total": 0, "scanned": 0, "items": []}}
+    elif method == "team/browse":
+        result = {"page": {"kind": msg["params"]["kind"], "teamId": msg["params"]["teamId"], "teamCursor": 1, "total": 0, "scanned": 0, "items": []}}
+        if msg["params"]["kind"] == "members":
+            result["page"].update({"total": 1, "scanned": 1, "items": [{"id": "member-1", "teamId": msg["params"]["teamId"],
+                "kind": "local-agent", "phase": "active", "displayName": {"text": "Worker", "truncated": False}, "role": "worker", "capabilityCount": 0}]})
+    elif method == "team/workflow-plan-inspect":
+        result = {"record": {"id": msg["params"]["planId"], "teamId": msg["params"]["teamId"], "revision": 1,
+                             "phase": "compiling", "name": "Workflow", "bounds": {"maxTasks": 1, "maxParallelism": 1, "maxTotalAttempts": 1}},
+                  "teamCursor": 1, "startCursor": msg["params"].get("afterCursor", -1), "items": [], "total": 0, "scanned": 0}
+    elif method == "team/action-read":
+        result = {"id": "foreign" if msg["params"]["actionId"] == "wrong-action" else msg["params"]["actionId"], "teamId": "foreign" if msg["params"]["teamId"] == "wrong-team" else msg["params"]["teamId"], "kind": "question", "phase": "pending",
+                  "sessionId": "session", "participantId": "member", "sourceId": "question", "details": {}, "createdAt": 1, "updatedAt": 1}
+    elif method == "team/selection":
+        result = {"selection": {"team": {"id": msg["params"]["teamId"]}, "coordinator": {"kind": "unavailable", "reason": "starting"}}}
     elif method == "team/member-list":
         result = {"items": [], "nextCursor": 11}
     elif method == "team/task-list":
@@ -888,7 +988,7 @@ for line in sys.stdin:
         launch_args_override=(sys.executable, str(script)),
         env={"REQUESTS_DUMP": str(requests_dump)},
     ) as harness:
-        assert harness.list_teams(after_cursor=2, limit=3).nextCursor == 10
+        assert harness.list_teams(after_cursor="previous-team-page", limit=3).nextCursor == "next-team-page"
         assert harness.list_team_members("team-1", after_cursor=3, limit=4).nextCursor == 11
         assert harness.list_team_tasks("team-1", after_cursor=4, limit=5).nextCursor == 12
         assert harness.client.list_workflow_plans("team-1", after_cursor=5, limit=6).nextCursor == 13
@@ -902,9 +1002,22 @@ for line in sys.stdin:
         assert team.admission("channel-1").value["invitations"] == [{"status": "pending"}]
         assert harness.client.list_team_channels("team-1", 3, 2).nextCursor == 14
         assert team.channels(4, 1).nextCursor == 14
+        selected = harness.get_team_selection("team-1", include_metadata=True).selection
+        assert selected["team"] == {"id": "team-1"}
+        assert selected["coordinator"] == {"kind": "unavailable", "reason": "starting"}
+        assert harness.get_team_member_session("team-1", "member-1").binding.sessionId == "session"
+        assert harness.browse_team("team-1", "tasks", after_cursor=3, limit=2).page.kind == "tasks"
+        assert harness.inspect_team_task("team-1", "task-1", "attempts", expected_revision=2, after_cursor=3, limit=2).inspection.revision == 2
+        assert harness.read_team_action("team-1", "action-1").id == "action-1"
+        with pytest.raises(SdkProtocolError, match="different Team or action"):
+            harness.read_team_action("team-1", "wrong-action")
+        with pytest.raises(SdkProtocolError, match="different Team or action"):
+            harness.read_team_action("wrong-team", "action-1")
+        assert harness.browse_team("team-1", "members").page.items[0].role == "worker"
+        assert harness.inspect_workflow_plan("team-1", "plan-1").record.name == "Workflow"
 
     requests = json.loads(requests_dump.read_text())
-    assert requests[1]["params"] == {"afterCursor": 2, "limit": 3}
+    assert requests[1]["params"] == {"afterCursor": "previous-team-page", "limit": 3}
     assert requests[2]["params"] == {"teamId": "team-1", "afterCursor": 3, "limit": 4}
     assert requests[3]["params"] == {"teamId": "team-1", "afterCursor": 4, "limit": 5}
     assert requests[4]["params"] == {"teamId": "team-1", "afterCursor": 5, "limit": 6}
@@ -919,6 +1032,19 @@ for line in sys.stdin:
     assert requests[10]["method"] == "team/channel-list"
     assert requests[10]["params"] == {"teamId": "team-1", "afterCursor": 3, "limit": 2}
     assert requests[11]["params"] == {"teamId": "team-1", "afterCursor": 4, "limit": 1}
+
+    assert requests[12]["method"] == "team/selection"
+    assert requests[12]["params"] == {"teamId": "team-1", "includeMetadata": True}
+
+    assert requests[13]["method"] == "team/member-session"
+    assert requests[13]["params"] == {"teamId": "team-1", "participantId": "member-1"}
+
+    assert requests[14]["method"] == "team/browse"
+    assert requests[14]["params"] == {"teamId": "team-1", "kind": "tasks", "afterCursor": 3, "limit": 2}
+    assert requests[15]["method"] == "team/task-inspect"
+    assert requests[15]["params"] == {"teamId": "team-1", "taskId": "task-1", "section": "attempts", "expectedRevision": 2, "afterCursor": 3, "limit": 2}
+    assert requests[16]["method"] == "team/action-read"
+    assert requests[16]["params"] == {"teamId": "team-1", "actionId": "action-1"}
 
 
 def test_create_team_exposes_handle_and_cancel_uses_team_wire(tmp_path: Path) -> None:
@@ -1769,3 +1895,24 @@ def test_channel_catalog_and_explicit_summary_routes(monkeypatch: pytest.MonkeyP
     selection = {"channelId": "channel-1", "expectedCursor": 9, "coveredSequenceRange": {"from": 3, "to": 5}, "idempotencyKey": "range-1"}
     assert team.summarize_channel(selection).value["coveredSequenceRange"] == {"from": 3, "to": 5}
     assert calls == [("team/channel-catalog", {}), ("team/channel-summarize", selection)]
+
+
+def test_workflow_inspection_rejects_wrong_identity_and_impossible_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = {"record": {"id": "plan", "teamId": "team", "revision": 2, "phase": "compiling", "name": "Workflow",
+                      "bounds": {"maxTasks": 2, "maxParallelism": 1, "maxTotalAttempts": 2}},
+           "teamCursor": 2, "startCursor": -1, "items": [], "total": 0, "scanned": 0}
+    client = HarnessClient(HarnessConfig())
+    monkeypatch.setattr(client, "request", lambda *args, **kwargs: TeamWorkflowInspection.model_validate(raw))
+    assert client.inspect_workflow_plan("team", "plan").record.revision == 2
+    for patch in [{"id": "foreign"}, {"teamId": "foreign"}, {"revision": 3}]:
+        previous = dict(raw["record"])
+        raw["record"].update(patch)
+        with pytest.raises(SdkProtocolError):
+            client.inspect_workflow_plan("team", "plan", expected_revision=2)
+        raw["record"] = previous
+    for patch in [{"total": 1}, {"nextCursor": 0}, {"total": -1}]:
+        with pytest.raises(ValidationError):
+            TeamWorkflowInspection.model_validate({**raw, **patch})
+    for patch in [{"phase": "failed"}, {"phase": "completed"}, {"resultTaskCount": 1}]:
+        with pytest.raises(ValidationError):
+            TeamWorkflowInspection.model_validate({**raw, "record": {**raw["record"], **patch}})

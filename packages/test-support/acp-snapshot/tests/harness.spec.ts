@@ -8,12 +8,19 @@ import { PROTOCOL_VERSION } from '@agentclientprotocol/sdk'
 import { runScenario, snapshotSpillRoot, type AgentUnderTest, type InputStep } from '../src/harness.ts'
 import { launchAcpTestAgent } from '../src/launcher.ts'
 
-const fsControl = vi.hoisted(() => ({ cleanupFailure: undefined as Error | undefined }))
+const fsControl = vi.hoisted(() => ({ cleanupFailure: undefined as Error | undefined, logReadDelayMs: 0 }))
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...actual,
+    async readFile(...args: Parameters<typeof actual.readFile>) {
+      const path = typeof args[0] === 'string' ? args[0] : ''
+      const delay = path.includes('acp-snap-sessions-') && path.endsWith('session.jsonl') ? fsControl.logReadDelayMs : 0
+      const value = await actual.readFile(...args)
+      if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay))
+      return value
+    },
     async rm(...args: Parameters<typeof actual.rm>): Promise<void> {
       if (String(args[0]).includes('acp-snap-cwd-') && fsControl.cleanupFailure !== undefined) {
         const failure = fsControl.cleanupFailure
@@ -680,6 +687,20 @@ describe('runScenario', () => {
       { steps: [...boot, { op: 'promptAndCancel', text: 'hang' }, { op: 'waitForInboxMessage', text: 'missing', timeoutMs: 20 }] },
       { agent: AGENT, mode: 'replay', fixtureFile: unmatched.fixtureFile },
     )).rejects.toThrow(/did not persist expected inbox message within 20ms/)
+  })
+
+  it('retains the inbox timeout diagnostic when the first log read exceeds the wait budget', { timeout: 20_000 }, async () => {
+    const input = await scenario({ prompt: 'hang-until-cancel', persistLogsOnCancel: true,
+      logs: [{ file: 'project/main/session.jsonl', lines: [{ type: 'session', version: 0, id: '{{SID}}', createdAt: 1 }] }],
+    })
+    fsControl.logReadDelayMs = 100
+    try {
+      await expect(runScenario(
+        { steps: [...boot, { op: 'promptAndCancel', text: 'hang' }, { op: 'waitForInboxMessage', text: 'missing', timeoutMs: 20 }] },
+        { agent: AGENT, mode: 'replay', fixtureFile: input.fixtureFile },
+      )).rejects.toMatchObject({ message: expect.stringContaining('did not persist expected inbox message within 20ms') as string,
+        cause: { message: 'Timed out in waitFor!' } })
+    } finally { fsControl.logReadDelayMs = 0 }
   })
 
   it('waitForTitleAfterTurnEnd holds the app through a standalone durable title', { timeout: 20_000 }, async () => {

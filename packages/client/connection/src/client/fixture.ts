@@ -1,3 +1,5 @@
+import { projectMemberInspection } from '@clocky/clocky-team/selection'
+import { projectWorkflowInspection, projectHumanAction, projectTeamSelection, projectMemberSession, projectTeamBrowse, projectTaskInspection } from '@clocky/clocky-team/selection'
 // FixtureApi: standalone UI development without a server. Real contract shape: unary takes
 // RpcRequest<P> and returns RpcResponse<T> (echoing the rpcId); streams yield RpcRequest<frame>
 // (the fixture IS the fake server, so it mints frame rpcIds); root respond takes ClientResponse
@@ -1079,8 +1081,6 @@ function projectionValuesOf(log: readonly SessionEvent[]): Record<string, unknow
   values['permissions'] = permissionSelectOf(log)
   // Always present (plan-mode unit composed): the {active, pending} view.
   values['plan'] = planViewOf(log)
-  // Always present (GoalService unit composed): null before create / after clear.
-  values['goal'] = backscanGoal(log)
   // Always present (token-meter composed): full-log provider billing.
   values['tokenUsage'] = tokenUsageOf(log)
   // Always present (token-meter composed): last request pressure and capacity.
@@ -1154,10 +1154,6 @@ function projectionFramesOf(id: SessionId, log: readonly SessionEvent[], event: 
     /* v8 ignore next -- the advancing title event is in the log, so the key is present. */
     if (!Object.hasOwn(values, 'title')) return []
     return [{ type: 'session/projection', sessionId: id, key: 'title', value: values['title'], seq: event.seq }]
-  }
-  // The goal domain's own durable change advances its projection.
-  if (type === 'goal/change') {
-    return [{ type: 'session/projection', sessionId: id, key: 'goal', value: backscanGoal(log), seq: event.seq }]
   }
   // Standing-plan fold: writes replace the list; turn/start clears it (null).
   if (type === 'todo/write' || type === 'turn/start') {
@@ -1392,51 +1388,6 @@ function backscanTodos(log: readonly SessionEvent[]): TodoItem[] | undefined {
     if (event.type === 'todo/write') return event.data.todos
   }
   return undefined
-}
-
-/** Fixture-local mirror of the goal projection value (clocky-goal's GoalProjection shape). */
-interface FxGoalProjection {
-  goal: {
-    id: string
-    revision: number
-    objective: string
-    phase: 'active' | 'paused' | 'blocked' | 'complete'
-    maxGoalRounds: number
-  }
-  roundsStarted: number
-  createdAt: number
-  updatedAt: number
-}
-
-/** One durable goal change. */
-type FxGoalChange =
-  | { kind: 'goal/change'; version: 1; operation: 'clear'; cleared: { id: string; revision: number }; clearedAt: number }
-  | {
-    kind: 'goal/change'
-    version: 1
-    operation: 'create' | 'edit' | 'pause' | 'resume' | 'complete'
-    goal: FxGoalProjection['goal']
-    roundsStarted: number
-    createdAt: number
-    updatedAt: number
-  }
-
-/**
- * Current goal projection over the full log (host parallel: the GoalService
- * unit's last-wins fold of goal/change whole values; clear returns null).
- */
-function backscanGoal(log: readonly SessionEvent[]): FxGoalProjection | null {
-  for (let i = log.length - 1; i >= 0; i--) {
-    const event = log[i] as unknown as {
-      type: string
-      data?: FxGoalChange
-    } | undefined
-    if (event === undefined || event.type !== 'goal/change' || event.data === undefined) continue
-    const change = event.data
-    if (change.operation === 'clear') return null
-    return { goal: change.goal, roundsStarted: change.roundsStarted, createdAt: change.createdAt, updatedAt: change.updatedAt }
-  }
-  return null
 }
 
 interface StreamConn<F> {
@@ -1721,30 +1672,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     for (const frame of projectionFramesOf(id, log, event)) emitMux(frame)
   }
 
-  /** Append one durable goal/change (host GoalService parallel). */
-  const appendGoalChange = (id: SessionId, change: FxGoalChange): FxGoalProjection => {
-    const log = logOf(id)
-    append(id, {
-      type: 'goal/change',
-      data: change,
-    })
-    return backscanGoal(log) as FxGoalProjection
-  }
-
-  type FxGoalRef = { id: string; revision: number }
-  type FxGoalView = FxGoalProjection['goal'] & {
-    roundsStarted: number
-    createdAt: number
-    updatedAt: number
-    activation: 'armed' | 'disarmed'
-  }
-
-  const goalFailure = <T>(message: string): RpcResult<T> => ({
-    ok: false,
-    error: { code: 'internal', message, details: {} },
-  })
-
-  const requireGoalSession = (id: SessionId): RpcResult<never> | undefined => (
+  const requireRemoteSession = (id: SessionId): RpcResult<never> | undefined => (
     summaryOf(id) === undefined
       ? { ok: false, error: { code: 'session-not-found', message: `no session ${id}`, details: { sessionId: id } } }
       : undefined
@@ -1753,21 +1681,20 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   /** Canonical fixture implementation of the generated Commands Remote contract. */
   const commandRemotes = {
     list(id: SessionId): RpcResult<readonly CommandDescriptor[]> {
-      const missing = requireGoalSession(id)
+      const missing = requireRemoteSession(id)
       if (missing !== undefined) return missing
       return {
         ok: true,
         value: [
           { name: 'compact', description: 'fixture：压缩当前会话上下文' },
           { name: 'echo', description: 'fixture：回显参数', input: { hint: 'text to echo' } },
-          { name: 'goal', description: 'set or view the goal for a long-running task', input: { hint: '<objective>', images: true } },
           { name: 'permission', description: 'Switch the permission preset (sandbox mode + approval policy)', input: { hint: '<preset>' } },
           { name: 'plan', description: 'Enter or leave plan mode', input: { hint: '[off|message]', images: true } },
         ],
       }
     },
     execute(id: SessionId, line: string, images: readonly unknown[] = []): RpcResult<CommandExecution | undefined> {
-      const missing = requireGoalSession(id)
+      const missing = requireRemoteSession(id)
       if (missing !== undefined) return missing
       // Structured split mirroring the Host parser: name + verbatim rawInput
       // (separator whitespace included) — the run payload carries no line.
@@ -1780,15 +1707,13 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       // without `input.images`, and the two producer grammar rejections cover
       // the declaring commands' control-only lines. The fixture stores no
       // bytes, so an accepted batch is acknowledged and dropped.
-      const known = ['permission', 'goal', 'compact', 'echo', 'plan']
+      const known = ['permission', 'compact', 'echo', 'plan']
       if (images.length > 0 && name !== undefined && known.includes(name)) {
-        const rejection = name !== 'goal' && name !== 'plan'
+        const rejection = name !== 'plan'
           ? `/${name} does not accept image attachments`
-          : name === 'goal' && args.trim() === ''
-            ? 'Image attachments only accompany a goal objective: /goal <objective> or /goal edit <objective>.'
-            : name === 'plan' && args.trim() === 'off'
-              ? 'Image attachments cannot accompany /plan off.'
-              : undefined
+          : args.trim() === 'off'
+            ? 'Image attachments cannot accompany /plan off.'
+            : undefined
         if (rejection !== undefined) {
           const commandId = `fx-cmd-${logOf(id).length}` as CommandId
           append(id, { type: 'command/run', data: { commandId, name, args, source: { kind: 'user' } } })
@@ -1814,28 +1739,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           append(id, { type: 'approval/policy', data: { policy: spec.approval } })
           result = { kind: 'success', text: `preset ${preset}` }
         }
-        append(id, { type: 'command/done', data: { commandId, ...result } })
-        return { ok: true, value: { commandId, result } }
-      }
-      if (name === 'goal') {
-        const commandId = `fx-cmd-${logOf(id).length}` as CommandId
-        append(id, { type: 'command/run', data: { commandId, name, args, source: { kind: 'user' } } })
-        const objective = args.trim()
-        const current = backscanGoal(logOf(id))
-        let text: string
-        if (objective === '') {
-          text = current === null ? 'No goal is set. Usage: /goal <objective>' : `Current goal: ${current.goal.objective}`
-        } else if (current !== null && current.goal.phase !== 'complete') {
-          text = `A goal already exists (${current.goal.objective}). Clear it first.`
-        } else {
-          const created = appendGoalChange(id, {
-            kind: 'goal/change', version: 1, operation: 'create',
-            goal: { id: `fx-goal-${logOf(id).length}`, revision: 1, objective, phase: 'active', maxGoalRounds: 256 },
-            roundsStarted: 0, createdAt: Date.now(), updatedAt: Date.now(),
-          })
-          text = `Goal created: ${created.goal.objective}`
-        }
-        const result: CommandResult = { kind: 'success', text }
         append(id, { type: 'command/done', data: { commandId, ...result } })
         return { ok: true, value: { commandId, result } }
       }
@@ -1865,19 +1768,11 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     },
   }
 
-  const goalView = (projection: FxGoalProjection): FxGoalView => ({
-    ...projection.goal,
-    roundsStarted: projection.roundsStarted,
-    createdAt: projection.createdAt,
-    updatedAt: projection.updatedAt,
-    activation: projection.goal.phase === 'active' ? 'armed' : 'disarmed',
-  })
-
   /** Canonical fixture implementation of the generated Goal Remote contract. */
   /** Canonical fixture implementation of the generated reference-discovery Remote contracts. */
   const referenceRemotes = {
     files(id: SessionId, query: string): RpcResult<{ path: string; kind: 'file' | 'directory' }[]> {
-      const missing = requireGoalSession(id)
+      const missing = requireRemoteSession(id)
       if (missing !== undefined) return missing
       const needle = query.toLocaleLowerCase()
       const items = [
@@ -1894,7 +1789,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       createdAt: number
       mention: string
     }[]> {
-      const missing = requireGoalSession(id)
+      const missing = requireRemoteSession(id)
       if (missing !== undefined) return missing
       const needle = query.toLocaleLowerCase()
       const value = sessions
@@ -1918,113 +1813,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       return { ok: true, value }
     },
   }
-
-  const goalRemotes = {
-    create(id: SessionId, request: { objective: string; maxGoalRounds?: number }): RpcResult<{ ref: FxGoalRef }> {
-      const missing = requireGoalSession(id)
-      if (missing !== undefined) return missing
-      const current = backscanGoal(logOf(id))
-      if (current !== null && current.goal.phase !== 'complete') {
-        return goalFailure(`goal "${current.goal.id}" already exists`)
-      }
-      const now = Date.now()
-      const projection = appendGoalChange(id, {
-        kind: 'goal/change', version: 1, operation: 'create',
-        goal: {
-          id: `fx-goal-${logOf(id).length}`,
-          revision: 1,
-          objective: request.objective,
-          phase: 'active',
-          maxGoalRounds: request.maxGoalRounds ?? 256,
-        },
-        roundsStarted: 0, createdAt: now, updatedAt: now,
-      })
-      return { ok: true, value: { ref: { id: projection.goal.id, revision: projection.goal.revision } } }
-    },
-    edit(id: SessionId, ref: FxGoalRef, request: { objective?: string; maxGoalRounds?: number }): RpcResult<FxGoalView> {
-      return mutateGoal(id, ref, current => ({
-        ...current.goal,
-        revision: current.goal.revision + 1,
-        ...request.objective === undefined ? {} : { objective: request.objective },
-        ...request.maxGoalRounds === undefined ? {} : { maxGoalRounds: request.maxGoalRounds },
-      }))
-    },
-    pause(id: SessionId, ref: FxGoalRef): RpcResult<FxGoalView> {
-      return mutateGoal(id, ref, current => (
-        current.goal.phase === 'active'
-          ? { ...current.goal, revision: current.goal.revision + 1, phase: 'paused' }
-          : undefined
-      ))
-    },
-    resume(id: SessionId, ref: FxGoalRef): RpcResult<FxGoalView> {
-      return mutateGoal(id, ref, current => (
-        current.goal.phase === 'paused' || current.goal.phase === 'blocked' || current.goal.phase === 'active'
-          ? { ...current.goal, revision: current.goal.revision + 1, phase: 'active' }
-          : undefined
-      ))
-    },
-    complete(id: SessionId, ref: FxGoalRef): RpcResult<FxGoalView> {
-      return mutateGoal(id, ref, current => (
-        current.goal.phase === 'complete'
-          ? undefined
-          : { ...current.goal, revision: current.goal.revision + 1, phase: 'complete' }
-      ))
-    },
-    clear(id: SessionId, ref: FxGoalRef): RpcResult<FxGoalRef> {
-      const resolved = resolveGoal(id, ref)
-      if (!resolved.ok) return resolved
-      const current = resolved.value
-      const tombstone = { id: current.goal.id, revision: current.goal.revision + 1 }
-      appendGoalChange(id, {
-        kind: 'goal/change', version: 1, operation: 'clear', cleared: tombstone, clearedAt: Date.now(),
-      })
-      return { ok: true, value: tombstone }
-    },
-  }
-
-  /** Resolve one current goal revision for a canonical Remote mutation. */
-  function resolveGoal(id: SessionId, ref: FxGoalRef): RpcResult<FxGoalProjection> {
-    const missing = requireGoalSession(id)
-    if (missing !== undefined) return missing
-    const current = backscanGoal(logOf(id))
-    if (current === null || current.goal.id !== ref.id || current.goal.revision !== ref.revision) {
-      return goalFailure('stale or missing goal revision')
-    }
-    return { ok: true, value: current }
-  }
-
-  /** Shared CAS mutation path behind the canonical Remote verbs. */
-  function mutateGoal(
-    id: SessionId,
-    ref: FxGoalRef,
-    next: (current: FxGoalProjection) => FxGoalProjection['goal'] | undefined,
-  ): RpcResult<FxGoalView> {
-    const resolved = resolveGoal(id, ref)
-    if (!resolved.ok) return resolved
-    const current = resolved.value
-    const goal = next(current)
-    if (goal === undefined) {
-      return goalFailure(`invalid goal transition from "${current.goal.phase}"`)
-    }
-    const projection = appendGoalChange(id, {
-      kind: 'goal/change', version: 1,
-      operation: goal.phase === current.goal.phase ? 'edit' : goal.phase === 'paused' ? 'pause' : goal.phase === 'active' ? 'resume' : 'complete',
-      goal, roundsStarted: current.roundsStarted, createdAt: current.createdAt, updatedAt: Date.now(),
-    })
-    return { ok: true, value: goalView(projection) }
-  }
-
-  const mapGoalResult = <T, U>(result: RpcResult<T>, map: (value: T) => U): RpcResult<U> => (
-    result.ok ? { ok: true, value: map(result.value) } : result
-  )
-
-  const goalRefResult = (result: RpcResult<FxGoalView>): RpcResult<{ ref: { id: never; revision: number } }> => (
-    mapGoalResult(result, view => ({ ref: { id: view.id as never, revision: view.revision } }))
-  )
-
-  const legacyGoalResponse = <P, T>(request: RpcRequest<P>, result: RpcResult<T>): Promise<RpcResponse<T>> => (
-    Promise.resolve({ rpcId: request.rpcId, result })
-  )
 
   /** At most one in-flight replay per session; cancel clears it. */
   const replays = new Map<SessionId, { timer: ReturnType<typeof setTimeout>; finish(aborted: boolean): void }>()
@@ -2296,7 +2084,8 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     const coordinatorId = `fx-team-coordinator-${String(teamId)}` as FixtureTeamState['participants'][number]['id']
     const coordinatorSessionId = sessions[0]?.sessionId ?? (() => {
       const sessionId = sid(`fx-team-session-${String(teamId)}`)
-      sessions.push({ sessionId, updatedAt: Date.now(), running: false, blank: false, cwd: '/tmp/fixture' })
+      sessions.push({ sessionId, updatedAt: Date.now(), running: false, blank: false, cwd: '/tmp/fixture',
+        team: { teamId, participantId: coordinatorId } })
       logs.set(sessionId, [])
       modelSelections.set(sessionId, { provider: 'test-provider', model: 'test-model' })
       nextTurn.set(sessionId, 1)
@@ -2670,17 +2459,116 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       },
     },
     teams: {
+      memberInspect: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, (state) => {
+          const member = state.participants.find(value => value.id === request.payload.participantId)
+          return member === undefined ? { ok: false as const, reason: 'owner' as const }
+            : projectMemberInspection(member, state.team.cursor, { ...request.payload,
+              afterCursor: request.payload.afterCursor ?? -1, limit: Math.min(request.payload.limit ?? 64, 64) }, 16384)
+        })
+        if (!response.result.ok) return err(request, response.result.error)
+        const projected = response.result.value
+        return projected.ok ? ok(request, projected.value) : err(request, { code: projected.reason === 'cursor' ? 'team-cursor-conflict' : 'internal',
+          message: `Member inspection failed: ${projected.reason}`, details: { teamId: request.payload.teamId } })
+      },
+
+      actionRead: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, state =>
+          projectHumanAction(state.humanActions?.find(action => action.id === request.payload.actionId), 16384))
+        if (!response.result.ok) return err(request, response.result.error)
+        return response.result.value.ok ? ok(request, response.result.value.value)
+          : err(request, { code: 'internal', message: `Human action is ${response.result.value.reason}`, details: {} })
+      },
+      workflowPlanInspect: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, (state) => {
+          const plan = state.workflowPlans?.find(value => value.id === request.payload.planId)
+          if (plan === undefined) return undefined
+          return projectWorkflowInspection(plan, state.team.cursor, { ...request.payload,
+            afterCursor: request.payload.afterCursor ?? -1, limit: Math.min(request.payload.limit ?? 64, 64) }, 512, 16384)
+        })
+        if (!response.result.ok) return err(request, response.result.error)
+        const result = response.result.value
+        return result?.ok === true ? ok(request, result.value)
+          : err(request, { code: 'internal', message: `Workflow inspection failed: ${result?.reason ?? 'missing'}`, details: {} })
+      },
+      taskInspect: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, (state) => {
+          const task = state.tasks.find(candidate => candidate.id === request.payload.taskId)
+          if (task === undefined) return undefined
+          const input = request.payload.section === 'record' ? request.payload : { ...request.payload,
+            afterCursor: request.payload.afterCursor ?? -1, limit: Math.min(request.payload.limit ?? 64, 64) }
+          return projectTaskInspection(task, state.team.cursor, input, 16384)
+        })
+        if (!response.result.ok) return err(request, response.result.error)
+        const value = response.result.value
+        if (value === undefined) return err(request, { code: 'team-task-not-found', message: 'Task is not in the selected Team',
+          details: { teamId: request.payload.teamId, taskId: request.payload.taskId } })
+        if (value.ok) return ok(request, value.value)
+        if (value.reason === 'revision') return err(request, { code: 'team-task-stale-revision',
+          message: 'Task inspection revision changed; refresh the task record',
+          details: { teamId: request.payload.teamId, taskId: request.payload.taskId } })
+        return err(request, { code: 'internal', message: `Task inspection ${value.reason} cannot be read`, details: {} })
+      },
+      browse: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, state => projectTeamBrowse({
+          team: state.team, participants: new Map(state.participants.map(member => [member.id, member])),
+          tasks: new Map(state.tasks.map(task => [task.id, task])),
+          workflowPlans: new Map((state.workflowPlans ?? []).map(plan => [plan.id, plan])),
+        }, { ...request.payload, afterCursor: request.payload.afterCursor ?? -1,
+          limit: Math.min(request.payload.limit ?? 64, 64) }, 512, 16384))
+        if (!response.result.ok) return err(request, response.result.error)
+        const projected = response.result.value
+        return projected.ok ? ok(request, projected.value) : err(request, { code: 'internal',
+          message: `Team browse ${projected.reason} cannot fit the selected response`, details: {} })
+      },
+
+      memberSession: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, state => projectMemberSession({
+          participants: new Map(state.participants.map(member => [member.id, member])),
+          activations: new Map(state.activations.map(binding => [binding.activation.id, binding])),
+        }, request.payload.participantId, 16384))
+        if (!response.result.ok) return err(request, response.result.error)
+        const projected = response.result.value
+        return projected.ok ? ok(request, projected.value) : err(request, { code: 'internal',
+          message: `Member Session lookup failed: ${projected.reason}`, details: {} })
+      },
+
+      selection: async (request) => {
+        const response = await withFixtureTeam(request, request.payload.teamId, state => projectTeamSelection({
+          team: state.team, budgets: state.budgets,
+          ...state.usage === undefined ? {} : { usage: state.usage },
+          humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
+          participants: new Map(state.participants.map(member => [member.id, member])),
+          activations: new Map(state.activations.map(binding => [binding.activation.id, binding])),
+          tasks: new Map(state.tasks.map(task => [task.id, task])),
+          channelIds: new Set(state.channelIds),
+          workflowPlans: { size: state.workflowPlans?.length ?? 0 },
+        }, 512, 16384, request.payload.includeMetadata))
+        if (!response.result.ok) return err(request, response.result.error)
+        const projected = response.result.value
+        return projected.ok ? ok(request, projected.value) : err(request, { code: 'internal',
+          message: `Team operation failed: Team selection ${projected.reason} exceeds maxSelectionBytes`, details: {} })
+      },
       inboxRespond: request => err(request, { code: 'bad-request', message: 'Fixture inbox has no action continuation', details: { issues: [] } }),
       inboxRead: request => ok(request, { items: [], displayCursor: -1, cursor: -1 }),
       inboxWatch: request => ok(request, { items: [], displayCursor: -1, cursor: -1 }),
       inboxAcknowledge: request => err(request, { code: 'bad-request', message: 'Fixture inbox has no retained delivery to acknowledge', details: { issues: [] } }),
-      list: request => ok(request, {
-        ...boundedFixturePage(
-          [...fixtureTeams.values()].flatMap(state => state.team.archivedAt === undefined ? [state.team] : []),
-          request.payload.afterCursor,
-          request.payload.limit,
-        ),
-      }),
+      list: (request) => {
+        const cursor = request.payload.afterCursor
+        if (cursor !== undefined && cursor !== -1 && !cursor.startsWith('fixture-team:')) {
+          return err(request, { code: 'bad-request', message: 'Fixture Team discovery cursor is invalid', details: { issues: [] } })
+        }
+        const after = cursor === undefined || cursor === -1 ? '' : cursor.slice('fixture-team:'.length)
+        const candidates = [...fixtureTeams.values()].flatMap(state =>
+          state.team.archivedAt === undefined && state.team.id > after ? [state.team] : [])
+          .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+        const page = boundedFixturePage(candidates, -1, request.payload.limit)
+        const last = page.items.at(-1)
+        return ok(request, { items: page.items, scanned: page.items.length,
+          ...page.nextCursor === undefined || last === undefined ? {} : {
+            nextCursor: `fixture-team:${last.id}` as NonNullable<ResponseValue<'team.list'>['nextCursor']>,
+          } })
+      },
       get: request => withFixtureTeam(request, request.payload.teamId, state => state),
       create: (request) => {
         const teamId = fixtureTeamId(`fx-team-${nextFixtureTeam++}`)
@@ -3217,46 +3105,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         })
       },
     },
-    goals: {
-      // Compatibility face only: old API Proxy payloads and acknowledgements
-      // adapt to the canonical fixture Remote implementation above.
-      create: request => legacyGoalResponse(
-        request,
-        mapGoalResult(
-          goalRemotes.create(request.payload.sessionId, {
-            objective: request.payload.objective,
-            ...request.payload.maxGoalRounds === undefined ? {} : { maxGoalRounds: request.payload.maxGoalRounds },
-          }),
-          value => ({ ref: { id: value.ref.id as never, revision: value.ref.revision } }),
-        ),
-      ),
-      edit: request => legacyGoalResponse(
-        request,
-        goalRefResult(goalRemotes.edit(request.payload.sessionId, request.payload.ref, {
-          ...request.payload.objective === undefined ? {} : { objective: request.payload.objective },
-          ...request.payload.maxGoalRounds === undefined ? {} : { maxGoalRounds: request.payload.maxGoalRounds },
-        })),
-      ),
-      pause: request => legacyGoalResponse(
-        request,
-        goalRefResult(goalRemotes.pause(request.payload.sessionId, request.payload.ref)),
-      ),
-      resume: request => legacyGoalResponse(
-        request,
-        goalRefResult(goalRemotes.resume(request.payload.sessionId, request.payload.ref)),
-      ),
-      complete: request => legacyGoalResponse(
-        request,
-        goalRefResult(goalRemotes.complete(request.payload.sessionId, request.payload.ref)),
-      ),
-      clear: request => legacyGoalResponse(
-        request,
-        mapGoalResult(
-          goalRemotes.clear(request.payload.sessionId, request.payload.ref),
-          () => ({ cleared: true as const }),
-        ),
-      ),
-    },
     events: {
       async *mux(_request, signal) {
         const conn = new FxInbox<MuxFrame>()
@@ -3444,15 +3292,6 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         case 'commands/execute': return Promise.resolve(commandRemotes.execute(sessionId, args.line as string, args.images ?? []))
         case 'fileReferences/list': return Promise.resolve(referenceRemotes.files(sessionId, args.query ?? ''))
         case 'sessionReferenceResolver/candidates': return Promise.resolve(referenceRemotes.sessions(sessionId, args.query ?? ''))
-        case 'goals/create': return Promise.resolve(goalRemotes.create(sessionId, {
-          objective: args.request?.objective as string,
-          ...args.request?.maxGoalRounds === undefined ? {} : { maxGoalRounds: args.request.maxGoalRounds },
-        }))
-        case 'goals/edit': return Promise.resolve(goalRemotes.edit(sessionId, args.ref as FxGoalRef, args.request ?? {}))
-        case 'goals/pause': return Promise.resolve(goalRemotes.pause(sessionId, args.ref as FxGoalRef))
-        case 'goals/resume': return Promise.resolve(goalRemotes.resume(sessionId, args.ref as FxGoalRef))
-        case 'goals/complete': return Promise.resolve(goalRemotes.complete(sessionId, args.ref as FxGoalRef))
-        case 'goals/clear': return Promise.resolve(goalRemotes.clear(sessionId, args.ref as FxGoalRef))
         default:
           return Promise.reject(new Error(`fixture connection RPC endpoint ${JSON.stringify(endpoint)} is unavailable`))
       }
@@ -3531,6 +3370,13 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'team.channel.invitation': return this.api.teams.channelInvitation(request)
       case 'team.channel.invitation.acknowledge': return this.api.teams.channelInvitationAcknowledge(request)
       case 'team.list': return this.api.teams.list(request)
+      case 'team.selection': return this.api.teams.selection(request)
+      case 'team.member.inspect': return this.api.teams.memberInspect(request)
+      case 'team.member.session': return this.api.teams.memberSession(request)
+      case 'team.workflow.plan.inspect': return this.api.teams.workflowPlanInspect(request)
+      case 'team.action.read': return this.api.teams.actionRead(request)
+      case 'team.task.inspect': return this.api.teams.taskInspect(request)
+      case 'team.browse': return this.api.teams.browse(request)
       case 'team.get': return this.api.teams.get(request)
       case 'team.create': return this.api.teams.create(request, signal)
       case 'team.resume': return this.api.teams.resume(request, signal)
@@ -3544,6 +3390,8 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'team.quiescence': return this.api.teams.quiescence(request)
       case 'team.metrics': return this.api.teams.metrics(request)
       case 'team.audit.read': return this.api.teams.auditRead(request)
+      case 'team.artifact.list': return this.api.teams.artifactList(request)
+      case 'team.workflow.plan.list': return this.api.teams.workflowPlanList(request)
       case 'team.artifact.read': return this.api.teams.artifactRead(request, signal)
       case 'team.member.list': return this.api.teams.memberList(request)
       case 'team.member.invite': return this.api.teams.memberInvite(request)
@@ -3583,12 +3431,6 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'agentPreset.copy': return this.api.agentPresets.copy(request)
       case 'agentPreset.openDocument': return this.api.agentPresets.openDocument(request, new AbortController().signal)
       case 'agentPreset.remove': return this.api.agentPresets.remove(request)
-      case 'goal.create': return this.api.goals.create(request)
-      case 'goal.edit': return this.api.goals.edit(request)
-      case 'goal.pause': return this.api.goals.pause(request)
-      case 'goal.resume': return this.api.goals.resume(request)
-      case 'goal.complete': return this.api.goals.complete(request)
-      case 'goal.clear': return this.api.goals.clear(request)
       case 'settings.describe': return this.api.settings.describe(request)
       case 'settings.openDocument': return this.api.settings.openDocument(request, signal)
       case 'settings.update': return this.api.settings.update(request)

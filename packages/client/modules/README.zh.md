@@ -14,6 +14,8 @@ Node 侧会扫描已启用的 Loader 配置项以发现 web `clocky.client` 包�
 
 `clocky.client.external` 是统一基座之外的可选精确 specifier 请求列表。统一基座包括外壳播种的 React、Cordis 和静态 UI 库，以及由 HTML parser 预载的 runtime。请求由其命名的动态 package row 或精确静态表键回答；只有末尾 `/client` 会别名到 package row，并且不存在 provider 别名声明。纯类型 import 会被擦除，不产生请求。组合阶段会拒绝畸形请求、缺失提供方、自请求和同步请求环；import 与 prefetch 会在消费者物化前递归登记动态提供方。参见[共享模块与模块图](../AGENTS.md#shared-modules-and-the-module-graph)。
 
+`Config.browserConfig`将准确的已声明浏览器包名映射到显式公开的 JSON 配置。只有此映射会写入启动行，不推断或复制 Host 插件配置。未知目标和非 JSON 值在加载时拒绝。配置参与 graph revision，并在页面启动时应用；修改后需要刷新页面。这些值属于浏览器公开内容，不能放置凭据。
+
 ## 模型体验
 
 无。模块 loader 属于浏览器侧内核机制；这里没有任何内容进入模型请求。

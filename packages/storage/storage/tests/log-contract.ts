@@ -29,6 +29,45 @@ export interface LogBackendContractHarness {
  */
 export function runLogBackendContract(label: string, create: () => Promise<LogBackendContractHarness>) {
   describe(`log backend contract: ${label}`, () => {
+    it('commits a detached tail summary with the winning batch and preserves it through restart and compaction', async () => {
+      const harness = await create()
+      const backend = harness.backend
+      const read = () => backend.log!.readSummary!(DESCRIPTOR, 4096)
+      expect(await read()).toBeUndefined()
+      const stream = await backend.log!.open(DESCRIPTOR)
+      const summary = { phase: 'active', text: '界😀' }
+      await stream.append(-1, [{ first: true }, { second: true }], { summary })
+      summary.phase = 'mutated'
+      expect(await read()).toEqual({ sequence: 1, value: { phase: 'active', text: '界😀' } })
+      await expect(stream.append(-1, [{}], { summary: { stale: true } })).rejects.toMatchObject({ code: 'sequence-conflict' })
+      await expect(stream.append(1, [{}], { summary: 1n })).rejects.toMatchObject({ code: 'invalid-value' })
+      expect(await read()).toMatchObject({ sequence: 1, value: { phase: 'active' } })
+      await expect(backend.log!.readSummary!(DESCRIPTOR, 8)).rejects.toMatchObject({ code: 'invalid-value' })
+      await expect(backend.log!.readSummary!({ ...DESCRIPTOR, version: 999 }, 4096)).rejects.toMatchObject({ code: 'version-mismatch' })
+      await stream.writeCheckpoint({ sequence: 1, value: { folded: true } })
+      await stream.compact({ throughSequence: 0, expectedCheckpointSequence: 1 })
+      expect(await read()).toMatchObject({ sequence: 1, value: { phase: 'active' } })
+      await stream.close()
+      await backend.close()
+      await expect(read()).rejects.toMatchObject({ code: 'closed' })
+      const reopened = await harness.reopen()
+      expect(await reopened.log!.readSummary!(DESCRIPTOR, 4096)).toMatchObject({ sequence: 1, value: { phase: 'active' } })
+      const resumed = await reopened.log!.open(DESCRIPTOR)
+      await resumed.append(1, [{}])
+      expect(await reopened.log!.readSummary!(DESCRIPTOR, 4096)).toBeUndefined()
+      const winners = await Promise.allSettled([
+        resumed.append(2, [{ winner: 'a' }], { summary: 'a' }),
+        resumed.append(2, [{ winner: 'b' }], { summary: 'b' }),
+      ])
+      expect(winners.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+      const rows = await resumed.read(2, 1)
+      expect(await reopened.log!.readSummary!(DESCRIPTOR, 4096)).toEqual({
+        sequence: 3, value: (rows[0]!.value as { winner: string }).winner,
+      })
+      await resumed.close()
+      await reopened.close()
+    })
+
     it('serves an empty stream without materializing entries', async () => {
       const { backend } = await create()
       const stream = await backend.log!.open(DESCRIPTOR)

@@ -17,8 +17,13 @@
     model: child-delegation-model
 - id: team-run
   config:
+    maxChildTeams: 1
+    maxLiveActivations: 2
     workerCount: 0
     maxWorkerCount: 0
+- id: team-delegation
+  config:
+    maxOperationsPerDrive: 1
 - insert:
     - id: child-delegation-json-storage
       name: '@clocky/clocky-storage-json'

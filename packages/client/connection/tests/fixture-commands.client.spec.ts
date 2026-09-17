@@ -30,13 +30,13 @@ describe('createFixtureApi commands/skills', () => {
     const { rpc } = createFixtureFaces()
     const commands = await callRemote<{ name: string; input?: { hint: string; images?: boolean } }[]>(
       rpc, 'commands/list', { agentId: sid('fx-alpha') })
-    expect(commands.map(c => c.name)).toEqual(['compact', 'echo', 'goal', 'permission', 'plan'])
+    expect(commands.map(c => c.name)).toEqual(['compact', 'echo', 'permission', 'plan'])
     // input hint rides only the commands declaring it.
     const echo = commands.find(c => c.name === 'echo')
     expect(echo?.input?.hint).toBeTruthy()
     expect(commands.find(c => c.name === 'compact')?.input).toBeUndefined()
-    // Image acceptance is declared per descriptor; only goal and plan carry it.
-    expect(commands.filter(c => c.input?.images === true).map(c => c.name)).toEqual(['goal', 'plan'])
+    // Image acceptance is declared per descriptor.
+    expect(commands.filter(c => c.input?.images === true).map(c => c.name)).toEqual(['plan'])
   })
 
   it('rejects a catalog request for an unknown session', async () => {
@@ -73,11 +73,11 @@ describe('createFixtureApi commands/skills', () => {
   it('addresses execute to the session; an unknown session errs', async () => {
     const { rpc } = createFixtureFaces()
     const hit = await callRemote<{ commandId: string } | undefined>(
-      rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/goal ship' })
+      rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/echo ship' })
     expect(hit?.commandId).toBeTruthy()
 
     const missing = await rpc.call('/api', 'commands/execute', {
-      args: { agentId: sid('fx-nope'), line: '/goal ship' },
+      args: { agentId: sid('fx-nope'), line: '/echo ship' },
     })
     expect(missing).toMatchObject({ ok: false, error: { code: 'session-not-found' } })
   })
@@ -111,9 +111,6 @@ describe('createFixtureApi commands/skills', () => {
   it('a declaring command accepts an image-carrying execute', async () => {
     const { rpc } = createFixtureFaces()
     const png = { mediaType: 'image/png', data: 'AA==' }
-    const accepted = await callRemote<{ result: { kind: string } } | undefined>(
-      rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/goal ship it', images: [png] })
-    expect(accepted?.result.kind).toBe('success')
     const planMessage = await callRemote<{ result: { kind: string } } | undefined>(
       rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/plan sketch the layout', images: [png] })
     expect(planMessage?.result.kind).toBe('success')
@@ -125,12 +122,6 @@ describe('createFixtureApi commands/skills', () => {
   it('mirrors the producer grammar rejections for control-only declaring lines', async () => {
     const { rpc } = createFixtureFaces()
     const png = { mediaType: 'image/png', data: 'AA==' }
-    const bareGoal = await callRemote<{ result: { kind: string; text?: string } } | undefined>(
-      rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/goal', images: [png] })
-    expect(bareGoal?.result).toEqual({
-      kind: 'error',
-      text: 'Image attachments only accompany a goal objective: /goal <objective> or /goal edit <objective>.',
-    })
     const refused = await callRemote<{ result: { kind: string; text?: string } } | undefined>(
       rpc, 'commands/execute', { agentId: sid('fx-alpha'), line: '/plan off', images: [png] })
     expect(refused?.result).toEqual({
@@ -148,7 +139,7 @@ describe('createFixtureApi commands/skills', () => {
 
   it('answers no execution for unknown names and non-command lines', async () => {
     const { rpc } = createFixtureFaces()
-    for (const line of ['/nope', 'plain text', '/']) {
+    for (const line of ['/nope', '/goal ship', 'plain text', '/']) {
       // Absence is the whole answer: nothing matched, so no lifecycle id exists.
       expect(await callRemote(rpc, 'commands/execute', { agentId: sid('fx-alpha'), line }))
         .toBeUndefined()

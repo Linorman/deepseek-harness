@@ -62,6 +62,7 @@ describe('JSON log format', () => {
     ['an invalid checkpoint', JSON.stringify({ stream: descriptor, entries: [], checkpoint: { sequence: -1 } })],
     ['a checkpoint beyond the tail', JSON.stringify({ stream: descriptor, entries: [], checkpoint: { sequence: 0, value: {} } })],
     ['a checkpoint before the retained prefix', JSON.stringify({ stream: { ...descriptor, firstSequence: 2 }, entries: [{ sequence: 2, value: true }], checkpoint: { sequence: 1, value: {} } })],
+    ['a mismatched header tail', JSON.stringify({ stream: { ...descriptor, tailSequence: 8 }, entries: [] })],
     ['a non-zero empty retained prefix', JSON.stringify({ stream: { ...descriptor, firstSequence: 2 }, entries: [] })],
   ])('rejects %s as malformed durable data', (_label, source) => {
     expect(() => parseLog(source, descriptor)).toThrow(/log stream/)

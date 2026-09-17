@@ -91,6 +91,8 @@ Typert 只在 Host tsdown 中以 `tsconfig.host.json` 为种子运行。它分�
 pnpm run build
 ```
 
+类型感知 lint 消费被引用项目的声明。Client 项目设置`disableSourceOfProjectReferenceRedirect`，防止 Host 实现中的导入把 Host `Context` 合并带入 Client program。公共`lint`和`lint:fix`先运行`typecheck`，CI lint 等待 Client tsc；直接调用`lint:contracts-ready`需要两个 compiler face 的声明均已生成。
+
 `pnpm run hygiene` 包含 `publint`（用构建出的 `lib/*.js` 文件校验包入口点）和 `verify-node-next-types`（用一个临时的 NodeNext 消费方校验构建出的声明文件）。新 worktree 在 `pnpm run build` 运行之前没有打包的 JS 和声明文件；普通提交和推送无需构建，除非所选检查会使用这些产物。
 
 ### 环境变量

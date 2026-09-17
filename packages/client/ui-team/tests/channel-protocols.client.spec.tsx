@@ -1,3 +1,4 @@
+import type { TeamStateSnapshot } from '@clocky/clocky-client-connection/client'
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
@@ -10,7 +11,7 @@ import { en } from '../src/client/locales.ts'
 afterEach(cleanup)
 const capabilities = { allowedPolicies: ['summarized-window'], maxSourceEnvelopes: 10, maxSourceBytes: 65536, maxSummaryBytes: 4096, maxHistorySpan: 20 }
 function fixture() {
-  type Member = TeamTaskSelection['state']['participants'][number]
+  type Member = TeamStateSnapshot['participants'][number]
   type PrincipalId = Extract<NonNullable<Member['owner']>, { kind: 'product-principal' }>['principalId']
   const teamId = 'protocol-team' as TeamTaskSelection['teamId']
   const goal = { teamId, objective: 'Protocol forms', revision: 1, phase: 'active' as const, budgets: {} }
@@ -19,7 +20,7 @@ function fixture() {
     { id: 'two' as Member['id'], teamId, kind: 'human', role: 'human', displayName: 'Human two', phase: 'active', capabilities: [], owner: { kind: 'product-principal', principalId: 'p2' as PrincipalId } },
     { id: 'worker' as Member['id'], teamId, kind: 'local-agent', role: 'worker', displayName: 'Worker', phase: 'active', capabilities: [] },
   ]
-  const state: TeamTaskSelection['state'] = { team: { id: teamId, goal, phase: 'active', depth: 0, maxTeamDepth: 2, cursor: 1, createdAt: 1, updatedAt: 1 },
+  const state: TeamStateSnapshot = { team: { id: teamId, goal, phase: 'active', depth: 0, maxTeamDepth: 2, cursor: 1, createdAt: 1, updatedAt: 1 },
     goal, rules: {}, budgets: {}, participants: members, activations: [], tasks: [], channelIds: ['protocol-channel' as never], workspaceAllocations: [] }
   const catalog: TeamChannelCatalogState = { loading: false, value: { adapters: [{ type: 'direct', version: 4 }, { type: 'consult', version: 1 },
     { type: 'discussion', version: 1 }, { type: 'workflow', version: 1 }], viewPolicies: [{ type: 'recent-window', version: 1 }, { type: 'summarized-window', version: 1 }], summary: capabilities } }
@@ -131,7 +132,8 @@ describe('visible summary source selection', () => {
       ? { ...record, envelope: { ...record.envelope, payload: { content: [{ type: 'image', attachment: {
         attachmentId: `sha256:${'e'.repeat(64)}`, mediaType: 'image/png', bytes: 4, width: 1, height: 1,
       } }] } } } : record) }
-    const view = render(<ChannelSummaryDialog page={page} capabilities={capabilities} translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    const view = render(<ChannelSummaryDialog page={page} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
     fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
     fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '10' } })
     fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
@@ -146,7 +148,8 @@ describe('visible summary source selection', () => {
   it('enforces the actual summary capability and its configured history bound', () => {
     const props = fixture()
     const page = summaryFixture()
-    const view = render(<ChannelSummaryDialog page={page} capabilities={undefined} translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    const view = render(<ChannelSummaryDialog page={page} capabilities={undefined}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
     fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
     fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
     fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
@@ -160,7 +163,8 @@ describe('visible summary source selection', () => {
 
   it('rejects undisplayed, discontinuous and subset-only ranges without submitting them', () => {
     const props = fixture()
-    const view = render(<ChannelSummaryDialog page={summaryFixture(true)} capabilities={capabilities} translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    const view = render(<ChannelSummaryDialog page={summaryFixture(true)} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
     fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
     fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '12' } })
     fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
@@ -176,12 +180,14 @@ describe('visible summary source selection', () => {
     const props = fixture()
     props.manage.mockRejectedValueOnce(new Error('Channel cursor changed'))
     const page = summaryFixture()
-    const view = render(<ChannelSummaryDialog page={page} capabilities={capabilities} translate={props.translate} manage={props.manage} onClose={props.onClose} />)
+    const view = render(<ChannelSummaryDialog page={page} capabilities={capabilities}
+      translate={props.translate} manage={props.manage} onClose={props.onClose} />)
     fireEvent.change(view.getByLabelText('First record sequence'), { target: { value: '10' } })
     fireEvent.change(view.getByLabelText('Last record sequence'), { target: { value: '11' } })
     fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
     await view.findByText('Channel cursor changed')
-    view.rerender(<ChannelSummaryDialog page={{ ...page, channel: { ...page.channel, cursor: 13 } }} capabilities={capabilities} translate={props.translate}
+    view.rerender(<ChannelSummaryDialog page={{ ...page, channel: { ...page.channel, cursor: 13 } }} capabilities={capabilities}
+      translate={props.translate}
       manage={props.manage} onClose={props.onClose} />)
     fireEvent.click(view.getByRole('button', { name: 'Create channel summary' }))
     await waitFor(() => { expect(props.manage).toHaveBeenCalledTimes(2) })

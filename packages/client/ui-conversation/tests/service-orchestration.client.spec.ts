@@ -84,6 +84,15 @@ describe('ConversationController', () => {
     await b.runtime.dispose()
   })
 
+  it('does not fall back to generic Session prompting when a Team member is not the current coordinator', async () => {
+    const b = await bench()
+    await b.runtime.sessions.updateSummary('s1', { team: { teamId: 'team-1' as TeamId, participantId: 'worker' as never } })
+    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue(undefined)
+    await expect(b.scoped.send('Worker input')).rejects.toThrow('not the current Team coordinator')
+    expect(b.prompt).not.toHaveBeenCalled()
+    await b.runtime.dispose()
+  })
+
   it('returns a localized Team attachment rejection to the composer', async () => {
     const b = await bench()
     const postInputError = Object.assign(new Error('Team route rejected'), {
@@ -96,7 +105,8 @@ describe('ConversationController', () => {
     const postInput = vi.fn(async () => { throw postInputError })
     // The conversation seam consumes only teamId; the test double does not
     // need to fabricate the unrelated coordinator snapshot fields.
-    vi.spyOn(b.runtime.teamTasks, 'teamForCoordinatorSession').mockReturnValue({ teamId: 'team-1' as TeamId } as never)
+    await b.runtime.sessions.updateSummary('s1', { team: { teamId: 'team-1' as TeamId, participantId: 'coordinator' as never } })
+    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId } as never)
     b.runtime.teamTasks.stub('postInput', postInput)
     b.runtime.sessions.behavior('s1').projections.set('imageLimits', {
       maxImageBytes: 5 * 1024 * 1024,
@@ -195,7 +205,8 @@ describe('InputHub command plane', () => {
     b.runtime.ctx.provide('inputTriggers', { sessionOf } as never)
 
     expect(b.hub.inputTriggers('s1' as SessionId)).toBe(controller)
-    vi.spyOn(b.runtime.teamTasks, 'teamForCoordinatorSession').mockReturnValue({ teamId: 'team-1' as TeamId } as never)
+    await b.runtime.sessions.updateSummary('s1', { team: { teamId: 'team-1' as TeamId, participantId: 'coordinator' as never } })
+    vi.spyOn(b.runtime.teamTasks, 'resolveCoordinatorSession').mockResolvedValue({ teamId: 'team-1' as TeamId } as never)
     expect(b.hub.inputTriggers('s1' as SessionId)).toBeUndefined()
     expect(sessionOf).toHaveBeenCalledOnce()
     await b.runtime.dispose()

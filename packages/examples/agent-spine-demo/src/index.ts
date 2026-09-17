@@ -1,6 +1,6 @@
 /**
  * Default executor-less, UI-less agent spine. It bundles the common services,
- * background-job registry and controls, optional persisted goals, concrete loop, local skill and
+ * background-job registry and controls, concrete loop, local skill and
  * agent-instructions providers, and model-facing shell/skill consumers;
  * deployments still choose the LLM adapter, bash executor, and presentation.
  * The plugin intentionally exposes named exports only because Loader default
@@ -19,9 +19,6 @@ import ToolRuntime, { type Config as ToolsConfig } from '@clocky/clocky-tools'
 import SkillRegistry, { type Config as SkillRegistryConfig } from '@clocky/clocky-skill'
 import * as SkillFileSystem from '@clocky/clocky-skill-filesystem'
 import AgentRegistry from '@clocky/clocky-agent'
-import GoalService, { type Config as GoalDomainConfig } from '@clocky/clocky-goal'
-import * as goalSession from '@clocky/clocky-goal-round-driver'
-import * as toolGoal from '@clocky/clocky-tool-goal'
 import LocalJobRegistry, { type Config as JobsConfig } from '@clocky/clocky-jobs-local'
 import InvariantRegistry, { type Config as InvariantConfig } from '@clocky/clocky-invariants'
 import * as sessionInvariant from '@clocky/clocky-session/invariant'
@@ -58,14 +55,6 @@ export interface SkillConfig {
   tool?: toolSkill.Config
 }
 
-/** Persisted goal domain, model-tool policy, and same-session driver config. */
-export interface GoalConfig {
-  /** Goal-domain creation defaults. */
-  domain?: GoalDomainConfig
-  /** Model-facing goal-tool authority policy. */
-  tool?: toolGoal.Config
-}
-
 /**
  * Bundle config: each field forwarded verbatim to the child that owns it —
  * `agents` to the agent loop (an app that pre-creates no agents, like the ACP
@@ -80,8 +69,7 @@ export interface GoalConfig {
  * `toolBash`/`toolJobs` to the model-facing tool plugins this bundle owns.
  * Provider adapters own their `retryPolicy`; this bundle always mounts its
  * executor.
- * `goals` opts into and configures the persisted goal domain plus its model tool
- * and same-session driver; `invariants` configures global and package-filtered
+ * `invariants` configures global and package-filtered
  * relational checks. Owner schemas supply defaults for optional input;
  * workspace context instead requires an explicit byte budget or `false` because
  * it changes model-visible input. Producer opt-in stays producer-local:
@@ -124,8 +112,6 @@ export interface Config {
   toolJobs?: toolJobs.Config | false
   /** Global enablement and package-name filters for invariant companions. */
   invariants?: InvariantConfig
-  /** Opt-in persisted same-session goal stack; set false or omit to leave it unmounted. */
-  goals?: GoalConfig | false
 }
 
 /** The skill config schema exported for app packages that forward `skills`. */
@@ -150,12 +136,6 @@ export const JobsConfigSchema: z<JobsConfig> = LocalJobRegistry.Config
 /** The job-control-tool config schema exported for app packages that forward `toolJobs`. */
 export const ToolJobsConfigSchema: z<toolJobs.Config> = toolJobs.Config
 
-/** The persisted-goal config schema exported for app packages that opt in. */
-export const GoalConfigSchema: z<GoalConfig> = z.object({
-  domain: GoalService.Config,
-  tool: toolGoal.Config,
-})
-
 /** Intersect the owners' schemas so validation + defaulting stay identical. */
 export const Config = z.intersect([
   AgentLoop.Config,
@@ -170,8 +150,7 @@ export const Config = z.intersect([
     jobs: JobsConfigSchema,
     toolJobs: z.union([z.const(false), ToolJobsConfigSchema]),
     invariants: InvariantRegistry.Config,
-    goals: z.union([z.const(false), GoalConfigSchema]),
-  }) as unknown as z<Pick<Config, 'tools' | 'clockyHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'invariants' | 'goals'>>,
+  }) as unknown as z<Pick<Config, 'tools' | 'clockyHome' | 'sessionTitle' | 'skills' | 'workspaceContext' | 'toolBash' | 'jobs' | 'toolJobs' | 'invariants'>>,
 ]) as unknown as z<Config>
 
 /**
@@ -195,7 +174,6 @@ export function pickSpineConfig(config: Omit<Config, 'agents'>): Omit<Config, 'a
     ...config.jobs !== undefined ? { jobs: config.jobs } : {},
     ...config.toolJobs !== undefined ? { toolJobs: config.toolJobs } : {},
     ...config.invariants !== undefined ? { invariants: config.invariants } : {},
-    ...config.goals !== undefined ? { goals: config.goals } : {},
   }
 }
 
@@ -236,11 +214,6 @@ export function apply(ctx: Context, config: Config): void {
   }
   ctx.plugin(AgentRegistry)
   ctx.plugin(llmRetry)
-  if (config.goals !== undefined && config.goals !== false) {
-    ctx.plugin(GoalService, config.goals.domain ?? {})
-    ctx.plugin(toolGoal, config.goals.tool ?? {})
-    ctx.plugin(goalSession)
-  }
   ctx.plugin(LocalJobRegistry, config.jobs ?? {})
   ctx.plugin(InvariantRegistry, config.invariants ?? {})
   ctx.plugin(sessionInvariant)

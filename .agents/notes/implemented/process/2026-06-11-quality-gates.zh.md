@@ -21,6 +21,8 @@ Status: implemented
 - knip（死代码/依赖）、publint（包的正确性）、workspace 约束（workspace 规则：private、cordis peer+dev、统一版本、ESM），以及对构建出的包声明文件进行 NodeNext 消费方类型检查。
 - lefthook pre-commit 执行不加载项目的 Oxlint 验证，并应用带[一次有界重试](2026-08-09-oxlint-only-fix-workflow.zh.md)的安全修复，拒绝已暂存的空白问题并检查 vendor manifest（元数据清单）；pre-push 运行增量类型检查。CI 在 Node 22.19/24/26 上运行完整矩阵，并对 Headless、TUI、ACP（Agent Client Protocol）、JSON-RPC、工作流和代码运行时入口路径执行已构建应用的冒烟测试。
 
+`doc-sync`同时检查 manifest 派生的 module graph 和包含人工归属声明的 service graph；service graph 最新不能代替 package dependency graph 的 freshness。
+
 ## 后果
 
 - 约定不会因 agent 更替而失效；可低成本发现的 commit/push 缺陷会在本地触发失败，其余违规会在 CI 的完整检查中触发失败。

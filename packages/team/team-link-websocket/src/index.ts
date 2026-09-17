@@ -227,7 +227,7 @@ function rawDataText(data: WebSocket.RawData): string {
 function remoteRejected(frame: Extract<TeamLinkServerFrame, { readonly type: 'response'; readonly ok: false }>): TeamLinkWebSocketError {
   return new TeamLinkWebSocketError(
     `remote Team Link request rejected: ${frame.error.code}: ${frame.error.message}`,
-    'TEAM_LINK_WEBSOCKET_REMOTE_REJECTED',
+    frame.error.code === 'unauthorized' ? 'TEAM_LINK_WEBSOCKET_UNAUTHORIZED' : 'TEAM_LINK_WEBSOCKET_REMOTE_REJECTED',
   )
 }
 

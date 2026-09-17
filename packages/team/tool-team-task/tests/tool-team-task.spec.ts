@@ -16,6 +16,7 @@ import type {
 import ToolRuntime from '@clocky/clocky-tools'
 import type { ToolExecutionResult } from '@clocky/clocky-tools'
 import * as ToolTeamTask from '../src/index.ts'
+import { WORKFLOW_PLAN_PARAMETER } from '../src/workflow-schema.ts'
 
 const noReview = { reviewPolicy: { kind: 'none' as const }, reviewResult: null, cancellation: null }
 const noReviewValue = { review_policy: { kind: 'none' }, review_result: null, cancellation: null }
@@ -81,7 +82,9 @@ async function harness(options: { readonly initiallyEligible?: boolean; readonly
   const authority = {} as TeamRunCoordinatorTaskAuthority
   let eligible = options.initiallyEligible ?? false
   const terminals: TeamRunDefaultWorkerTaskTerminal[] = [
-    { ...noReview, id: taskId('task-completed'), phase: 'completed', result: { summary: 'Completed work.' } },
+    { ...noReview, id: taskId('task-completed'), phase: 'completed', result: { summary: 'Completed work.', evidence: ['Observed result'], verification: 'pnpm test', changedPaths: ['report.md'],
+      artifacts: [{ id: 'report', kind: 'report', uri: 'file:///workspace/report.md', visibility: 'team' }],
+      integration: { target: 'main', status: 'proposed', verification: 'patch checked' } } },
     { ...noReview, id: taskId('task-failed'), phase: 'failed', outcome: { kind: 'failed', failure: { code: 'WORKER_FAILED', message: 'Worker could not complete the task.' } } },
     { ...noReview, id: taskId('task-released'), phase: 'failed', outcome: { kind: 'released' } },
     { ...noReview, id: taskId('task-expired'), phase: 'failed', outcome: { kind: 'lease-expired' } },
@@ -261,6 +264,7 @@ const workflowPlan = {
   bounds: { maxTasks: 1, maxParallelism: 1, maxTotalAttempts: 1 },
   channel: {
     participantRoles: ['coordinator', 'worker'],
+    viewPolicy: { type: 'recent-window', version: 1 },
     graph: {
       initial: { kind: 'participant', role: 'coordinator' },
       transitions: [{ condition: { kind: 'always' }, target: { kind: 'terminate' } }],
@@ -482,13 +486,15 @@ describe('tool-team-task', () => {
     })
     expect(mounted.ctx.tools.get('team_task_wait', mounted.agent)?.presentCall?.({})).toBeUndefined()
     expect(value(await mounted.wait({ task_id: 'task-completed' })))
-      .toEqual({ ...noReviewValue, task_id: 'task-completed', phase: 'completed', summary: 'Completed work.' })
+      .toEqual({ ...noReviewValue, task_id: 'task-completed', phase: 'completed', summary: 'Completed work.', evidence: ['Observed result'], verification: 'pnpm test', changed_paths: ['report.md'],
+        artifacts: [{ id: 'report', kind: 'report', uri: 'file:///workspace/report.md', visibility: 'team' }],
+        integration: { target: 'main', status: 'proposed', verification: 'patch checked' } })
     expect(value(await mounted.wait({ task_id: 'task-failed' }, 'wait-failed')))
-      .toEqual({ ...noReviewValue, task_id: 'task-failed', phase: 'failed', failure: { code: 'WORKER_FAILED', message: 'Worker could not complete the task.' } })
+      .toEqual({ ...noReviewValue, task_id: 'task-failed', phase: 'failed', outcome: 'failed', failure: { code: 'WORKER_FAILED', message: 'Worker could not complete the task.' } })
     expect(value(await mounted.wait({ task_id: 'task-released' }, 'wait-released')))
-      .toEqual({ ...noReviewValue, task_id: 'task-released', phase: 'failed' })
+      .toEqual({ ...noReviewValue, task_id: 'task-released', phase: 'failed', outcome: 'released' })
     expect(value(await mounted.wait({ task_id: 'task-expired' }, 'wait-expired')))
-      .toEqual({ ...noReviewValue, task_id: 'task-expired', phase: 'failed' })
+      .toEqual({ ...noReviewValue, task_id: 'task-expired', phase: 'failed', outcome: 'lease-expired' })
     expect(value(await mounted.wait({ task_id: 'task-cancelled' }, 'wait-cancelled')))
       .toEqual({ ...noReviewValue, task_id: 'task-cancelled', phase: 'cancelled' })
     expect(value(await mounted.wait({ task_id: 'task-deleted' }, 'wait-deleted')))
@@ -496,6 +502,31 @@ describe('tool-team-task', () => {
     expect(mounted.teamRuns.waitForDefaultWorkerTask).toHaveBeenCalledWith(mounted.authority, {
       taskId: 'task-deleted', signal,
     })
+  })
+
+  it('preserves a summary-only result without inventing evidence', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    mounted.teamRuns.waitForDefaultWorkerTask.mockResolvedValueOnce({
+      ...noReview, id: taskId('minimal-result'), phase: 'completed', result: { summary: 'Summary only.' },
+    })
+    expect(value(await mounted.wait({ task_id: 'minimal-result' })))
+      .toEqual({ ...noReviewValue, task_id: 'minimal-result', phase: 'completed', summary: 'Summary only.' })
+  })
+
+  it('executes the model-visible two-stage example and rejects a missing required plan field', async () => {
+    const mounted = await harness({ initiallyEligible: true })
+    const example = structuredClone(WORKFLOW_PLAN_PARAMETER.examples[0])
+    expect(value(await mounted.workflowStart({ plan: example }))).toMatchObject({ phase: 'ready' })
+    expect(mounted.teamRuns.startWorkflowPlan).toHaveBeenCalledWith(mounted.authority,
+      expect.objectContaining({ plan: example }))
+    const invalid = { ...example, bounds: { maxTasks: 2, maxParallelism: 1 } }
+    const failed = await mounted.workflowStart({ plan: invalid })
+    expect(failed.isError).toBe(true)
+    expect(failed.error?.message).toContain('maxTotalAttempts')
+    expect(mounted.teamRuns.startWorkflowPlan).toHaveBeenCalledTimes(1)
+    const watch = mounted.ctx.tools.get('team_task_watch', mounted.agent)
+    expect(watch?.description).toContain('Omit after_cursor for an immediate first snapshot')
+    expect(watch?.description).not.toContain('previous list')
   })
 
   it('passes only JSON workflow plans and complete call lineage to the TeamRun compiler', async () => {

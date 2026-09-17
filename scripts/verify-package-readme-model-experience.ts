@@ -79,7 +79,6 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/client/ui-reference': { kind: 'indirect', reason: 'Browser-side reference selection delegates file guidance and session snapshot preparation to Host-owned providers.' },
   'packages/client/ui-commands': { kind: 'indirect', reason: 'The dispatch paths trigger the host command.execute RPC; each command handler\'s host package owns any model-visible effect.' },
   'packages/client/ui-model-selection': { kind: 'indirect', reason: 'Selection routes session.selectModel; the Host snapshots the selection at the next prompt-assembly boundary and owns the model-visible effect.' },
-  'packages/client/ui-goal': { kind: 'indirect', reason: 'The strip verbs route goal.* mutations; the host GoalService owns the model-visible goal/change context message.' },
   'packages/extensions/ui-cordis': { kind: 'indirect', reason: 'The definition card drives the host dynamic run/stop verbs that the model\'s cordis_run/cordis_stop tools also reach; the runner owns any model-visible effect.' },
   'packages/client/ui-permission-presets': { kind: 'indirect', reason: 'The picker submits the host /permission command; the knob events it appends own the model-visible effect through the sandbox/approval consumers.' },
   'packages/client/ui-settings-plugins': { kind: 'none', reason: 'Browser-side settings surface; registers no model surface.' },
@@ -163,7 +162,7 @@ const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/web/web': { kind: 'indirect', reason: 'The provider registry delegates model rendering to clocky-tool-web.' },
   'packages/web/web-fetch-http': { kind: 'indirect', reason: 'The provider backend delegates model rendering to clocky-tool-web.' },
   'packages/web/web-search-exa': { kind: 'indirect', reason: 'The provider backend delegates model rendering to clocky-tool-web.' },
-  'packages/workflow/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
+  'packages/compat/workflow': { kind: 'indirect', reason: 'The service delegates parent and child model rendering to its consumer and engine.' },
 }
 
 interface Failure {
@@ -282,6 +281,8 @@ for (const [pkg, contract] of Object.entries(SENTENCE_MODEL_EXPERIENCE)) {
 
 for (const packageJson of packageJsons) {
   const pkg = packageJson.slice(0, -'/package.json'.length)
+  const manifest = JSON.parse(readFileSync(resolve(root, packageJson), 'utf8')) as { private?: boolean }
+  const privateCompatibility = pkg.startsWith('packages/compat/') && manifest.private === true
   const readme = packageJson.replace(/package\.json$/, 'README.md')
   const abs = resolve(root, readme)
   if (!existsSync(abs)) {
@@ -521,7 +522,8 @@ for (const packageJson of packageJsons) {
   for (const entry of modelContextEntries) {
     if (!/\bschemas?\b/i.test(entry.title)) continue
     const fragments = toolCatalogLinkFragments(entry.modelView.raw)
-    if (fragments.length === 0) {
+    // Private compatibility tools cannot link a section in the public product catalog.
+    if (fragments.length === 0 && !privateCompatibility) {
       failures.push({ path: readme, message: `line ${entry.heading.index}: tool-schema entry must link an anchored section of ../../../docs/tool-catalog.md` })
       catalogError = true
       break
@@ -543,7 +545,7 @@ for (const packageJson of packageJsons) {
 }
 
 if (failures.length === 0) {
-  console.log(`verify-package-readme-model-experience: ${packageJsons.length} README(s) checked (${omittedSectionCount} audited omissions, ${structuredCount} structured, ${modelContextEntryCount} model-context entries, ${kvCacheEffectCount} KV-cache fields, ${systemPromptEntryCount} fenced system-prompt entries, ${toolSchemaEntryCount} catalog-linked tool-schema entries, ${explainedNoneCount} explained none, ${indirectCount} indirect, ${verbatimBlockCount} verbatim markdown blocks), all conform.`)
+  console.log(`verify-package-readme-model-experience: ${packageJsons.length} README(s) checked (${omittedSectionCount} audited omissions, ${structuredCount} structured, ${modelContextEntryCount} model-context entries, ${kvCacheEffectCount} KV-cache fields, ${systemPromptEntryCount} fenced system-prompt entries, ${toolSchemaEntryCount} tool-schema entries, ${explainedNoneCount} explained none, ${indirectCount} indirect, ${verbatimBlockCount} verbatim markdown blocks), all conform.`)
   process.exit(0)
 }
 

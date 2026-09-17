@@ -49,7 +49,7 @@ import type {
 } from '@clocky/clocky-team'
 
 /** Durable format stamped on every Team journal stream. */
-export const TEAM_JOURNAL_FORMAT_VERSION = 32
+export const TEAM_JOURNAL_FORMAT_VERSION = 33
 /** Durable format stamped on every channel WAL stream. */
 export const CHANNEL_WAL_FORMAT_VERSION = 7
 /** Durable format stamped on every Team or channel audit projection stream. */

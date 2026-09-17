@@ -100,7 +100,7 @@ function config(overrides: Partial<Config> = {}): Config {
 
 /** Create a Team context with deterministic pages, current state, and channel routing. */
 async function harness(options: {
-  readonly pages?: readonly { readonly items: readonly TeamSnapshot[]; readonly nextCursor?: number }[]
+  readonly pages?: readonly { readonly items: readonly TeamSnapshot[]; readonly nextCursor?: string }[]
   readonly states?: Map<string, TeamStateSnapshot>
   readonly backend?: TeamClosureDriveBackend
   readonly channelTeamId?: TeamId
@@ -112,7 +112,10 @@ async function harness(options: {
   let pageIndex = 0
   let closureDriverSource: TeamSystemClosureDriverProofSource | undefined
   const teams = {
-    listTeamsPage: vi.fn(async () => pages[pageIndex++] ?? { items: [] }),
+    listTeamsPage: vi.fn(async () => {
+      const page = pages[pageIndex++] ?? { items: [] }
+      return { ...page, scanned: page.items.length }
+    }),
     getTeam: vi.fn(async ({ teamId }: { readonly teamId: TeamId }) => {
       const current = states.get(String(teamId))
       if (current === undefined) throw new Error(`missing Team '${teamId}'`)
@@ -176,7 +179,7 @@ describe('Team closure driver', () => {
     const calls: TeamClosureDriveRequest[] = []
     const mounted = await harness({
       pages: [
-        { items: [ordinary, quiescing], nextCursor: 8 },
+        { items: [ordinary, quiescing], nextCursor: '8' },
         { items: [terminal, cancelled] },
       ],
       states: new Map([
@@ -189,7 +192,7 @@ describe('Team closure driver', () => {
     const fiber = await mounted.ctx.plugin(ClosureDriverPlugin, config({ maxTeamsPerDrive: 4, pageSize: 2 }))
 
     expect(mounted.teams.listTeamsPage).toHaveBeenNthCalledWith(1, { afterCursor: -1, limit: 2 })
-    expect(mounted.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: 8, limit: 2 })
+    expect(mounted.teams.listTeamsPage).toHaveBeenNthCalledWith(2, { afterCursor: '8', limit: 2 })
     expect(calls.map(call => call.state.team.id)).toEqual([quiescing.id, cancelled.id])
     expect(calls.map(call => call.triggers)).toEqual([['startup'], ['startup']])
     await fiber.dispose()
@@ -201,7 +204,7 @@ describe('Team closure driver', () => {
     const calls: TeamClosureDriveRequest[] = []
     const mounted = await harness({
       pages: [
-        { items: [first], nextCursor: 1 },
+        { items: [first], nextCursor: '1' },
         { items: [second] },
       ],
       states: new Map([
@@ -222,8 +225,8 @@ describe('Team closure driver', () => {
     const calls: TeamClosureDriveRequest[] = []
     const mounted = await harness({
       pages: [
-        { items: [candidate], nextCursor: 0 },
-        { items: [candidate], nextCursor: 0 },
+        { items: [candidate], nextCursor: '0' },
+        { items: [candidate], nextCursor: '0' },
       ],
       states: new Map([[String(candidate.id), state(candidate)]]),
       backend: recordingBackend(calls),
@@ -237,7 +240,7 @@ describe('Team closure driver', () => {
   it('retains the discovery cursor after a transient budget hydration failure', async () => {
     const candidate = team('budget-retry')
     const mounted = await harness({
-      pages: [{ items: [candidate], nextCursor: 7 }, { items: [] }],
+      pages: [{ items: [candidate], nextCursor: '7' }, { items: [] }],
       states: new Map([[String(candidate.id), state(candidate)]]),
       backend: { name: 'hub', async drive() {} },
     })
@@ -431,7 +434,7 @@ describe('Team closure driver', () => {
         states: new Map([[String(candidate.id), state(candidate)]]),
         backend: recordingBackend(calls),
       })
-      mounted.teams.listTeamsPage.mockImplementation(async () => eligible ? { items: [candidate] } : { items: [] })
+      mounted.teams.listTeamsPage.mockImplementation(async () => eligible ? { items: [candidate], scanned: 1 } : { items: [], scanned: 0 })
       const driver = new TeamClosureDriver(mounted.ctx, mounted.ctx.teamClosureDrives, config({ pulseIntervalMs: 5 }))
       await driver.start()
       eligible = true
@@ -490,18 +493,18 @@ describe('Team closure driver', () => {
   it('keeps an optional pulse single-flight while provider paging is slow', async () => {
     vi.useFakeTimers()
     try {
-      const slowPage = Promise.withResolvers<{ readonly items: readonly TeamSnapshot[] }>()
+      const slowPage = Promise.withResolvers<{ readonly items: readonly TeamSnapshot[]; readonly scanned: number }>()
       const mounted = await harness({ backend: { name: 'hub', async drive() {} } })
       let calls = 0
       mounted.teams.listTeamsPage.mockImplementation(async () => {
         calls += 1
-        return calls === 1 ? { items: [] } : await slowPage.promise
+        return calls === 1 ? { items: [], scanned: 0 } : await slowPage.promise
       })
       const driver = new TeamClosureDriver(mounted.ctx, mounted.ctx.teamClosureDrives, config({ pulseIntervalMs: 1 }))
       await driver.start()
       await vi.advanceTimersByTimeAsync(3)
       expect(calls).toBe(2)
-      slowPage.resolve({ items: [] })
+      slowPage.resolve({ items: [], scanned: 0 })
       await vi.advanceTimersByTimeAsync(0)
       await vi.advanceTimersByTimeAsync(1)
       expect(calls).toBe(3)

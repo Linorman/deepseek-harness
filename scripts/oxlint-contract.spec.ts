@@ -107,6 +107,68 @@ probePromise()
     }
   }, 20_000)
 
+  it('keeps Host implementation merges out of the Client program without disabling typed rules', async () => {
+    const base = join(repositoryRoot, '.tmp', `oxlint-reference-${randomUUID()}`)
+    const sources = {
+      core: 'export class Context {}\n',
+      host: `import type { Context } from 'probe-core'
+export type HostContext = Context
+export interface HostSessions { list(): string[] }
+declare module 'probe-core' { interface Context { sessions: HostSessions } }
+export const hostValue = 'host'
+`,
+      shared: `import { hostValue } from 'probe-host'
+export function value(): string { return hostValue }
+`,
+      client: `import type { Context } from 'probe-core'
+import { value } from 'probe-shared'
+export const clientValue: string = value()
+export interface ClientSessions { refresh(): Promise<void>; list: { subscribe(): void } }
+declare module 'probe-core' { interface Context { sessions: ClientSessions } }
+export type ClientContext = Context
+`,
+    }
+    const references = { core: [], host: ['core'], shared: ['core', 'host'], client: ['core', 'shared'] }
+    try {
+      for (const project of ['core', 'host', 'shared', 'client'] as const) {
+        await mkdir(join(base, project, 'src'), { recursive: true })
+        await writeFile(join(base, project, 'src/index.ts'), sources[project])
+        await writeFile(join(base, project, 'tsconfig.json'), JSON.stringify({
+          extends: join(repositoryRoot, 'tsconfig.base.client.json'),
+          compilerOptions: { rootDir: 'src', outDir: 'lib', types: [], paths: {
+            'probe-core': [join(base, 'core/src/index.ts')],
+            'probe-host': [join(base, 'host/src/index.ts')],
+            'probe-shared': [join(base, 'shared/src/index.ts')],
+          } }, include: ['src'], references: references[project].map(name => ({ path: `../${name}` })),
+        }))
+      }
+      const built = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc', '-b', join(base, 'client'), '--pretty', 'false'], {
+        cwd: repositoryRoot, encoding: 'utf8',
+      })
+      expect(built.error).toBeUndefined()
+      expect(built.status, `${built.stdout}${built.stderr}`).toBe(0)
+      const config = join(base, 'oxlint.json')
+      await writeFile(config, JSON.stringify({ plugins: ['typescript'], options: { typeAware: true },
+        rules: { 'typescript/no-unsafe-call': 'error', 'typescript/no-floating-promises': 'error' } }))
+      const probe = join(base, 'client/src/probe.ts')
+      await writeFile(probe, `import type { ClientContext } from './index.ts'
+export async function probe(ctx: ClientContext): Promise<void> { await ctx.sessions.refresh() }
+`)
+      const valid = runOxlint(['--no-ignore', '--type-check', '--config', config, probe])
+      expect(valid.error).toBeUndefined()
+      expect(valid.status, normalizedOutput(valid)).toBe(0)
+      await writeFile(probe, `import type { ClientContext } from './index.ts'
+export function probe(ctx: ClientContext): void { ctx.sessions.refresh(); ctx.sessions.list() }
+`)
+      const invalid = runOxlint(['--no-ignore', '--type-check', '--config', config, probe])
+      const output = normalizedOutput(invalid)
+      expect(invalid.status, output).toBe(1)
+      expect(output).toContain('typescript(no-floating-promises)')
+      expect(output).toContain('TS2349')
+      expect(output).not.toContain("Property 'refresh' does not exist")
+    } finally { await rm(base, { recursive: true, force: true }) }
+  }, 20_000)
+
   it('runs JavaScript compatibility and nursery rules', async () => {
     const suffix = randomUUID()
     const configPath = await writeContractConfig(suffix)

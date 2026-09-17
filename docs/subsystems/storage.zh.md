@@ -23,6 +23,8 @@ interface StorageForms {}
 
 `mount(form, facility)` 是一个 effect，其 disposer 负责卸载；对同一键的第二次挂载抛出 `duplicate-mount`。`form(form)` 解析已挂载的 facility，在拥有插件加载之前抛出 `form-not-mounted`——组合方应据此安排插件顺序，而不是静默推迟。领域层和日志层分别合并 `domain: DomainFacility` 与 `log: StorageLogFacility`，所以每种形式都可通过 `ctx.storage.<form>` 和其可注入服务访问。
 
+`LogNameScanRequest` 选择 prefix、工作量上限和可选 `LogNameScanCursor`。`StorageLogFacility.scanNames()` 返回 `LogNameScanPage.names`、`scanned` 和可选 continuation，空页也可能继续。Backend `LogFacet.scanNames()` 每一步最多扫描一个物理条目，不加载 value；`LogFacet.has()` 精确检查物化状态。本地 scan cursor 可以过期，不能授予权限。
+
 ## 后端约定
 
 ```ts type-equiv
@@ -52,6 +54,8 @@ interface StorageBackend {
 ## 仅追加流
 
 `LogFacet.open({ name, version })` 返回一个由调用方拥有的 `LogStream`。一个流只会在当前尾序列等于 `expectedSequence` 时接受非空批次；该批次作为一次操作持久化并获得连续条目，否则以 `sequence-conflict` 拒绝。`read(afterSequence, limit)` 返回有序且有界的一页。检查点携带其覆盖的序列，不会超过尾序列，也不会倒退。`compact({ throughSequence, expectedCheckpointSequence })` 只会在准确的后续 checkpoint 覆盖 prefix 时原子移除它；在保留 prefix 之前读取会以 `compacted` 拒绝。值以分离的 JSON 快照跨越持久化边界。
+
+`LogAppendOptions.summary`携带与批次一起提交的可选 consumer 投影，省略时清除旧值。`LogFacet.readSummary(descriptor, maxBytes)`不加载 journal，返回包含投影及当前 tail 的`LogSummary`；格式不兼容或元数据超限时拒绝，不证明历史有效性。不支持此能力的后端会明确拒绝。
 
 `StorageLogFacility`把每个流名称路由至配置的默认后端，或路由至其自身属性 `routes` 覆盖。它对每个名称只允许一个本地句柄，在 dispose 时关闭准入、排空每一个已接受的 open，然后结算每个返回的句柄。缺少 `log` 的后端以 `facet-unsupported` 失败。流名称是不透明值而不是 KV 标识符，因此允许 `team/<TeamId>` 和 `channel/<ChannelId>` 流。JSON 提供方每个根目录只接受一个本地 Hub 并拒绝另一个所有者；SQLite 在事务中序列化预期尾序列比较和完整批次。
 
@@ -236,6 +240,25 @@ async open(descriptor: LogStreamDescriptor): Promise<LogStream>
  * @returns durable stream metadata in stable stream-name order.
  */
 async list(): Promise<readonly LogStreamInfo[]>
+
+/** Scan bounded physical entries instead of reading complete journal metadata or values.
+ * @param request - Prefix, optional local cursor, and requested scan work.
+ * @returns names and a continuation; empty pages still advance. Expired cursors require a fresh scan.
+ */
+async scanNames(request: LogNameScanRequest): Promise<LogNameScanPage>
+
+/** Distinguish a concurrently deleted stream from a materialized malformed journal.
+ * @param name - Exact routed stream name.
+ * @returns whether its configured backend retains durable metadata.
+ */
+async hasStream(name: string): Promise<boolean>
+
+/** Read bounded tail metadata through the stream's configured backend.
+ * @param descriptor - Exact journal identity and durable version.
+ * @param maxBytes - Positive metadata byte budget, including its wrapper.
+ * @returns a detached tail summary, or undefined if absent.
+ */
+async readSummary(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined>
 
 /**
  * Read an open handle for diagnostics. Consumers hold the typed result of

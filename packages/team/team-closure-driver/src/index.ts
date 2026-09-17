@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Restart-safe, provider-routed convergence of durable Team closure work. @module @clocky/clocky-team-closure-driver */
 
 import { Context, Service } from '@clocky/cordis'
@@ -190,7 +191,7 @@ export class TeamClosureDriver {
   private readonly config: ResolvedConfig
   private readonly drives = new Map<string, TeamDrive>()
   private readonly accepted = new Set<Promise<void>>()
-  private discoveryCursor = -1
+  private discoveryCursor: TeamListPageRequest['afterCursor'] = -1
   private readonly listeners: (() => void)[] = []
   private readonly proofs = new Map<TeamSystemClosureDriverProof, TeamSystemClosureDriverScope>()
   private readonly abort = new AbortController()
@@ -362,13 +363,15 @@ export class TeamClosureDriver {
     let inspected = 0
     const retryState = { retry: false }
     while (!this.closing && inspected < this.config.maxTeamsPerDrive) {
-      const page = await this.ctx.teams.listTeamsPage({
-        afterCursor,
-        limit: Math.min(this.config.pageSize, this.config.maxTeamsPerDrive - inspected),
-      })
-      if (page.items.length === 0) {
-        this.discoveryCursor = -1
-        return
+      let page
+      try { page = await this.ctx.teams.listTeamsPage({
+        afterCursor, limit: Math.min(this.config.pageSize, this.config.maxTeamsPerDrive - inspected),
+      }) } catch (error: unknown) {
+        if (error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') { this.discoveryCursor = -1; return }
+        throw error
+      }
+      if (page.nextCursor === afterCursor || page.nextCursor !== undefined && page.scanned === 0) {
+        throw new TeamError('Team closure discovery did not advance', 'TEAM_CURSOR_CONFLICT')
       }
       const candidates = page.items.filter(team => isClosureDriveCandidate(team, [trigger]))
       const budgetActions = await Promise.all(page.items
@@ -390,8 +393,8 @@ export class TeamClosureDriver {
             return undefined
           }
         }))
-      inspected += page.items.length
-      if (page.nextCursor !== undefined && page.nextCursor <= afterCursor) {
+      inspected += page.scanned
+      if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
         throw new TeamError('Team closure discovery page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
       }
       await settleAll(

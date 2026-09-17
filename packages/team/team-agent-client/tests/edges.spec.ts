@@ -1398,6 +1398,14 @@ describe('Team Agent Client Link lifecycle edges', () => {
     await client.close()
   })
 
+  it.each([{ maxTaskReportReminders: -1 }, { maxTaskHandoffBytes: 127 }])('rejects invalid task recovery limits %o', (config) => {
+    const fake = fakeContext()
+    const target = agent('task-recovery-config')
+    expect(() => Config(config)).toThrow()
+    expect(() => new FixedBindingTeamAgentLinkDelivery(fake.ctx, { agent: target, binding: activation(target.session.id) }, config))
+      .toThrow()
+  })
+
   it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])('rejects an invalid workspace mutation attempt limit: %s', (workspaceMutationMaxAttempts) => {
     const fake = fakeContext()
     const target = agent('workspace-mutation-config')

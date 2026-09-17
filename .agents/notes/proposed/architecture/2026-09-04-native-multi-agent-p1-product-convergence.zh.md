@@ -89,7 +89,11 @@ Child-Team task 还会保留 delegation projection，其 phase 为 `requested`�
 
 Child authority grant 与 budget 必须同时是 parent task、remaining parent Team grant 和 human authority 的子集。系统会在 child creation 前检查 `maxTeamDepth`、total child count、live Activation、token、turn、wall-time、cost、retry、concurrency 与 artifact limit。与现有 child usage accounting 一样，pending parent charge 会阻止新的 child work。
 
+`TeamResourceBudget.maxChildTeams` 统计累计接纳的后代身份。每个已接纳 delegation 永久预留一个 child 身份及其冻结的 `maxChildTeams`，取消、终态结算、删除和归档后仍保留额度。有界父 Team 拒绝未明确后代额度的 child。现有父任务日志预留整个子树即可建立祖先上限，无需跨日志计数器；未使用的后代额度也不回收。TeamRun 的可选 `maxChildTeams` Config 在 root 创建时冻结上限；省略时不增加数量上限。
+
 Child template 会 provision 一个代表准确 parent delegation 的 service Participant。Child completion 要求 coordinator result Envelope 只发给该 service Participant，并具有 durable service receipt；它不会伪造 human recipient。Root Team 仍是最终 human-addressed answer 的唯一 owner。
+
+`maxLiveActivations` 统计 Participant 的持久启动预留、所有未确认 quiescence 的 epoch（包括 coordinator、idle 与 stopping）及未结算 child 的冻结 live 额度。controller 在调用 provider 前预留，binding 只能消费准确预留一次。只有未发布启动的已确认清理或 epoch quiescence 才释放本地额度。provider 抛错但未返回句柄时，预留跨重启保留，关闭恢复记录 `ACTIVATION_STARTUP_UNCONFIRMED`；已返回的句柄在清理失败后保留并重试。发行 root 配置 32 个累计后代与 128 个 live slot，支持现有 32-member worker pool 和有界 child fan-out；部署可以覆盖这些 Config 值。
 
 #### Delegation saga
 

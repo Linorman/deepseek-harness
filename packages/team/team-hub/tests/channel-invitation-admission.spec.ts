@@ -3,7 +3,7 @@ import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
 import * as Basic from '@clocky/clocky-team-channel-basic'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
@@ -156,7 +156,11 @@ describe('durable endpoint channel admission', () => {
         adapter: { type: 'consult', version: 1 }, viewPolicy: { type: 'full-transcript', version: 1 },
         participants: [{ id: f.sender.id, role: 'initiator' }, { id: f.fast.id, role: 'respondent' }], limits: {},
         invitations: [{ participantId: f.fast.id, required: false }] })
-      await acknowledge(f, f.sender, channel.manifest.id)
+      const admission = await f.ctx.teams.getChannelAdmission({ channelId: channel.manifest.id })
+      // Disk contention must not turn the setup ACK into the timeout under test.
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(Math.min(...admission.invitations.map(value => value.deadline)) - 1)
+      try { await acknowledge(f, f.sender, channel.manifest.id) }
+      finally { clock.mockRestore() }
       const result = await expireThroughConsumer(f, channel.manifest.id)
       expect(result.channel.phase).toBe('failed')
       expect(result.invitations.find(value => value.participantId === f.fast.id)?.reason?.code).toBe('TEAM_CHANNEL_OPTIONAL_REMOVAL_UNSUPPORTED')

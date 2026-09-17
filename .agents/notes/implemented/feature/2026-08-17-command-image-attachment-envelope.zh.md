@@ -26,7 +26,7 @@ Web composer 的一次提交是一个信封——草稿文本、已附加图片�
 
 ## Testing
 
-注册表执行器强制、准入失败结算、冻结的调用附件由 `packages/interaction/commands/tests/commands.spec.ts` 覆盖；批量准入顺序与限额在 `packages/attachment/attachment/tests/admission.spec.ts`；生产方行为在 `packages/goal/command-goal/tests/command-goal.spec.ts` 与 `packages/plan/plan-mode/tests/plan-mode.spec.ts`；客户端拒绝与消费路径在 ui-commands、ui-conversation、ui-input-trigger 客户端套件；组装后应用流程在 apps/web 的 keyless 通道。
+注册表执行器强制、准入失败结算、冻结的调用附件由 `packages/interaction/commands/tests/commands.spec.ts` 覆盖；批量准入顺序与限额在 `packages/attachment/attachment/tests/admission.spec.ts`；生产方行为在 `packages/compat/command-goal/tests/command-goal.spec.ts` 与 `packages/plan/plan-mode/tests/plan-mode.spec.ts`；客户端拒绝与消费路径在 ui-commands、ui-conversation、ui-input-trigger 客户端套件；组装后应用流程在 apps/web 的 keyless 通道。
 
 ## Alternatives considered
 

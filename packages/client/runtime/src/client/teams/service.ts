@@ -1,16 +1,35 @@
+import { WorkflowInspector } from './workflow-inspector.ts'
+import { TaskInspector } from './task-inspector.ts'
 /** Browser-owned Team task list, selection, and first-input draft service. */
 
 import type { Context } from '@clocky/cordis'
 import type {
   ChannelId, ChannelPostIdempotencyKey, ChannelReadPageResult, IApiClient, MuxFrame, RpcError, RpcRequest, RpcResponse, SessionId,
-  TeamArtifactReadResult, TeamArtifactReference, TeamAuditList, TeamHumanActionSnapshot, TeamId, TeamSnapshot, TeamStateSnapshot, TeamTaskId, TeamTaskSnapshot,
+  TeamArtifactReadResult,
+  TeamArtifactReference,
+  TeamAuditList,
+  TeamHumanActionSnapshot,
+  TeamId,
+  TeamSnapshot,
+  TeamStateSnapshot,
+  TeamTaskId,
+  TeamTaskSnapshot,
+
 } from '@clocky/clocky-client-connection/client'
 import { createSnapshotStore, type SnapshotStore } from '../contract/store.ts'
 import type {
   ITeamTasks, TeamHumanAction, TeamInboxPage, TeamInboxState, TeamActionResponseInput, TeamActionResponseResult,
   TeamManagementCommand, TeamTaskDraft, TeamTaskDraftOptions, TeamTaskListState,
   TeamTaskSelection, TeamTaskStartInput,
-  TeamChannelState, TeamChannelListState, TeamChannelAttachmentInput, TeamChannelAttachmentResult, TeamCollectionKind, TeamCollectionPage, TeamCollectionsState,
+  TeamChannelState,
+  TeamChannelListState,
+  TeamChannelAttachmentInput,
+  TeamChannelAttachmentResult,
+  TeamCollectionKind,
+  TeamCollectionReadMode,
+  TeamCollectionPage,
+  TeamCollectionsState,
+
 } from '../contract/team-tasks.ts'
 
 const TEAM_COLLECTION_PAGE_LIMIT = 64
@@ -32,12 +51,11 @@ export class TeamTaskStartError extends Error {
 export class TeamTaskRuntime implements ITeamTasks {
   /** UI-facing Team product projection. */
   readonly list: SnapshotStore<TeamTaskListState & { readonly inbox: TeamInboxState }>
+  private readonly workflowInspector: WorkflowInspector
+  private readonly taskInspector: TaskInspector
   private refreshing: Promise<void> | undefined
   private continuing: Promise<void> | undefined
-  private visiblePageCount = 1
   private starting: Promise<TeamTaskSelection> | undefined
-  private readonly selections = new Map<TeamId, TeamTaskSelection>()
-  private readonly pendingHumanActions = new Map<string, TeamHumanAction>()
   private selectionGeneration = 0
   private inboxGeneration = 0
   private inboxContinuation: Promise<void> | undefined
@@ -50,11 +68,9 @@ export class TeamTaskRuntime implements ITeamTasks {
   private channelListGeneration = 0
   private channelListAbort: AbortController | undefined
   private channelListOperation: Promise<void> | undefined
-  private channelListPages = 1
   private channelListActivity = 0
   private channelCatalogGeneration = 0
   private channelCatalogAbort: AbortController | undefined
-  private readonly channelAcknowledgementKeys = new Map<string, Parameters<IApiClient['teams']['channelInvitationAcknowledge']>[0]['idempotencyKey']>()
   private readonly collectionOperations = new Map<string, Promise<void>>()
 
   /** @param ctx - client root context. @param api - shared Host API client. */
@@ -64,6 +80,14 @@ export class TeamTaskRuntime implements ITeamTasks {
       pendingHumanActions: [],
       inbox: emptyInboxState(),
     })
+    this.workflowInspector = new WorkflowInspector(api, (workflowDetail) => {
+      this.list.set({ ...this.list.getSnapshot(), workflowDetail })
+    })
+    ctx.effect(() => () => { this.workflowInspector.close() })
+    this.taskInspector = new TaskInspector(api, (taskDetail) => {
+      this.list.set({ ...this.list.getSnapshot(), taskDetail })
+    })
+    ctx.effect(() => () => { this.taskInspector.close() })
     ctx.reflect.provide('teamTasks', this, undefined)
     ctx.effect(() => () => { this.closeChannelView(); this.resetChannelList(); this.channelCatalogAbort?.abort() })
   }
@@ -71,6 +95,8 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Enter a local first-input draft without allocating a durable Team or Session. */
   startDraft(options: TeamTaskDraftOptions = {}): void {
     if (this.starting !== undefined) return
+    this.taskInspector.close()
+    this.workflowInspector.close()
     this.closeChannelView()
     this.resetChannelList()
     this.selectionGeneration += 1
@@ -79,6 +105,8 @@ export class TeamTaskRuntime implements ITeamTasks {
       ...state,
       current: undefined,
       selected: undefined,
+      memberSession: undefined,
+      collections: undefined,
       draft: {
         idempotencyKey: crypto.randomUUID() as ChannelPostIdempotencyKey,
         ...options.agentPreset === undefined ? {} : { agentPreset: options.agentPreset },
@@ -124,14 +152,15 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Refresh durable Team summaries and retain local selection or draft state. */
-  refresh(): Promise<void> {
-    if (this.continuing !== undefined) return this.continuing.then(async () => { await this.refresh() })
-    this.refreshing ??= this.load().then(async () => { await this.refreshCurrentSelection() })
+  refresh(firstPage = false): Promise<void> {
+    if (firstPage && this.refreshing !== undefined) return this.refreshing.then(async () => { await this.refresh(true) })
+    if (this.continuing !== undefined) return this.continuing.then(async () => { await this.refresh(firstPage) })
+    this.refreshing ??= this.load(firstPage ? -1 : undefined).then(async () => { await this.refreshCurrentSelection() })
       .finally(() => { this.refreshing = undefined })
     return this.refreshing
   }
 
-  /** Load exactly one additional Team page, preserving the displayed projection on failure. */
+  /** Replace the Team window with its next page; a failure preserves the current window. */
   loadMore(): Promise<void> {
     if (this.continuing !== undefined) return this.continuing
     const pendingRefresh = this.refreshing
@@ -144,14 +173,13 @@ export class TeamTaskRuntime implements ITeamTasks {
       try {
         const result = (await this.api.teams.list({ afterCursor })).result
         if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
-        if (result.value.nextCursor !== undefined && result.value.nextCursor <= afterCursor) {
+        if (result.value.nextCursor !== undefined && result.value.nextCursor === afterCursor) {
           throw new TeamTaskStartError('Team list returned a non-advancing page cursor')
         }
-        this.visiblePageCount += 1
         const latest = this.list.getSnapshot()
         this.list.set({
-          ...latest, nextCursor: result.value.nextCursor,
-          items: [...new Map([...latest.items, ...result.value.items].map(item => [item.id, item])).values()],
+          ...latest, startCursor: afterCursor, nextCursor: result.value.nextCursor,
+          items: result.value.items,
           state: 'idle', error: null,
         })
       } catch (error: unknown) {
@@ -171,58 +199,33 @@ export class TeamTaskRuntime implements ITeamTasks {
     return () => { clearInterval(timer) }
   }
 
-  /** Resolve a selected Team and its exact coordinator transcript binding. */
+  /** Resolve a Team and explicitly resume its offline coordinator when needed. */
   async open(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
-    if (this.list.getSnapshot().current !== teamId) { this.closeChannelView(); this.resetChannelList() }
-    const generation = ++this.selectionGeneration
-    const response = await this.api.teams.get({ teamId }, signal)
-    this.assertCurrentSelectionRequest(generation, signal)
-    const result = response.result
-    if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
-    let state = result.value
-    const coordinator = state.participants.find(participant => participant.role === 'coordinator')
-    const coordinatorBinding = coordinator === undefined
-      ? undefined
-      : state.activations.find(binding => binding.activation.participantId === coordinator.id)
-    if (state.team.phase !== 'completed' && state.team.phase !== 'failed' && state.team.phase !== 'cancelled'
-      && coordinatorBinding?.activation.status === 'offline') {
-      const resumed = await this.api.teams.resume({ teamId, expectedCursor: state.team.cursor }, signal)
-      this.assertCurrentSelectionRequest(generation, signal)
-      if (!resumed.result.ok) throw new TeamTaskStartError(resumed.result.error.message, resumed.result.error)
-      state = resumed.result.value
+    const selected = await this.inspect(teamId, signal)
+    if (!['completed', 'failed', 'cancelled'].includes(selected.state.team.phase)
+      && selected.state.coordinator.kind === 'bound' && selected.state.coordinator.binding.activation.status === 'offline') {
+      return this.resume(teamId, signal)
     }
-    const selection = selectionOf(state)
-    if (this.list.getSnapshot().current !== selection.teamId) { this.closeChannelView(); this.resetChannelList() }
-    const current = this.list.getSnapshot()
-    this.list.set({
-      ...current,
-      current: selection.teamId,
-      selected: selection,
-      ...current.current === selection.teamId ? {} : { collections: undefined },
-      items: replaceTeam(current.items, state.team),
-    })
-    this.replaceDurableHumanActions(state)
-    this.selections.set(selection.teamId, selection)
-    await this.refreshCollections(selection.teamId, generation, signal)
-    this.assertCurrentSelectionRequest(generation, signal)
-    return selection
+    return selected
   }
 
-  /** Select a Team for historical action context without creating or resuming an activation. */
+  /** Select bounded Team data without creating or resuming an activation. */
   async inspect(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
-    if (this.list.getSnapshot().current !== teamId) { this.closeChannelView(); this.resetChannelList() }
+    if (this.list.getSnapshot().current !== teamId) {
+      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+    }
     const generation = ++this.selectionGeneration
-    const response = await this.api.teams.get({ teamId }, signal)
+    const response = await this.api.teams.selection({ teamId, includeMetadata: true }, signal)
     this.assertCurrentSelectionRequest(generation, signal)
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const state = response.result.value
-    const selection = selectionOf(state)
-    if (this.list.getSnapshot().current !== selection.teamId) { this.closeChannelView(); this.resetChannelList() }
+    const selection = selectionOf(response.result.value)
+    if (this.list.getSnapshot().current !== teamId) {
+      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+    }
+    this.assertCurrentSelectionRequest(generation, signal)
     const current = this.list.getSnapshot()
     this.list.set({ ...current, current: teamId, selected: selection,
-      ...current.current === teamId ? {} : { collections: undefined }, items: replaceTeam(current.items, state.team) })
-    this.selections.set(teamId, selection)
-    this.replaceDurableHumanActions(state)
+      ...current.current === teamId ? {} : { collections: undefined, memberSession: undefined } })
     await this.refreshCollections(teamId, generation, signal)
     this.assertCurrentSelectionRequest(generation, signal)
     return selection
@@ -230,20 +233,23 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Archive one terminal Team through its revisioned Host operation. */
   async archive(teamId: TeamId, signal?: AbortSignal): Promise<TeamStateSnapshot> {
-    const current = this.list.getSnapshot().items.find(item => item.id === teamId)
+    const current = this.list.getSnapshot().items.find(item => item.id === teamId) ?? this.currentSelection(teamId)?.state.team
     if (current === undefined) throw new TeamTaskStartError(`Team '${teamId}' is not in the current list`)
     const response = await this.api.teams.archive({ teamId, expectedCursor: current.cursor }, signal)
     const result = response.result
     if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
-    if (this.list.getSnapshot().current === teamId) { this.closeChannelView(); this.resetChannelList() }
+    if (this.list.getSnapshot().current === teamId) {
+      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+    }
     const next = this.list.getSnapshot()
     this.list.set({
       ...next,
       current: next.current === teamId ? undefined : next.current,
       selected: next.selected?.teamId === teamId ? undefined : next.selected,
+      memberSession: next.memberSession?.teamId === teamId ? undefined : next.memberSession,
+      collections: next.current === teamId ? undefined : next.collections,
       items: next.items.filter(item => item.id !== teamId),
     })
-    this.selections.delete(teamId)
     return result.value
   }
 
@@ -267,6 +273,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
     const task = response.result.value
     this.replaceSelectedTask(teamId, task)
+    if (this.list.getSnapshot().taskDetail?.taskId === task.id) await this.readTaskDetail(teamId, task.id)
     if (task.lease !== undefined && task.cancellation !== undefined) {
       void this.reconcileTaskUntilSettled(teamId, task.id, signal)
     }
@@ -286,6 +293,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
     const task = response.result.value
     this.replaceSelectedTask(teamId, task)
+    if (this.list.getSnapshot().taskDetail?.taskId === task.id) await this.readTaskDetail(teamId, task.id)
     if (task.lease !== undefined && task.cancellation !== undefined) {
       void this.reconcileTaskUntilSettled(teamId, task.id, signal)
     }
@@ -294,18 +302,13 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Replace one task in the selected Team projection after a Host mutation. */
   private replaceSelectedTask(teamId: TeamId, task: TeamTaskSnapshot): void {
+    this.taskInspector.changed(teamId, task.id, task.revision)
     const current = this.list.getSnapshot()
     const selected = current.selected
     if (selected?.teamId !== teamId) return
-    const nextSelection: TeamTaskSelection = {
-      ...selected,
-      state: {
-        ...selected.state,
-        tasks: selected.state.tasks.map(candidate => candidate.id === task.id ? task : candidate),
-      },
-    }
-    this.list.set({ ...current, selected: nextSelection })
-    this.selections.set(teamId, nextSelection)
+    const collections = current.collections
+    if (collections?.teamId === teamId) this.list.set({ ...current,
+      collections: { ...collections, tasks: { ...collections.tasks, hasNewer: true } } })
   }
 
   /** Poll one accepted cancellation until its durable lease settles so detail controls converge without a page reload. */
@@ -314,28 +317,28 @@ export class TeamTaskRuntime implements ITeamTasks {
       if (signal?.aborted) return
       await new Promise<void>((resolve) => { setTimeout(resolve, 1_000) })
       if (signal?.aborted) return
-      try {
-        const response = await this.api.teams.taskGet({ teamId, taskId }, signal)
-        if (!response.result.ok) return
-        const task = response.result.value
-        this.replaceSelectedTask(teamId, task)
-        if (task.lease === undefined && ['completed', 'failed', 'cancelled', 'deleted'].includes(task.phase)) return
-      } catch {
-        return
-      }
+      const detail = this.list.getSnapshot().taskDetail
+      if (detail?.teamId !== teamId || detail.taskId !== taskId) return
+      await this.readTaskDetail(teamId, taskId)
+      const current = this.list.getSnapshot().taskDetail
+      if (current?.teamId !== teamId || current.taskId !== taskId || current.record.error !== undefined) return
+      const task = current.record.value?.task
+      if (task === undefined || task.lease === undefined && ['completed', 'failed', 'cancelled', 'deleted'].includes(task.phase)) return
     }
   }
 
   /** Re-attach one durable Team and return its coordinator transcript selection. */
   async resume(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
-    const current = this.list.getSnapshot().items.find(item => item.id === teamId)
+    const current = this.list.getSnapshot().items.find(item => item.id === teamId) ?? this.currentSelection(teamId)?.state.team
     if (current === undefined) throw new TeamTaskStartError(`Team '${teamId}' is not in the current list`)
-    const state = await this.api.teams.get({ teamId }, signal)
+    const generation = ++this.selectionGeneration
+    const state = await this.api.teams.selection({ teamId }, signal)
+    this.assertCurrentSelectionRequest(generation, signal)
     if (!state.result.ok) throw new TeamTaskStartError(state.result.error.message, state.result.error)
     const response = await this.api.teams.resume({ teamId, expectedCursor: state.result.value.team.cursor }, signal)
+    this.assertCurrentSelectionRequest(generation, signal)
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const selection = await this.open(teamId, signal)
-    return selection
+    return this.inspect(teamId, signal)
   }
 
   /** Post one human-authored content batch through the durable Team channel. */
@@ -360,10 +363,22 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Read the principal's unread page or explicitly reopen history. */
   async refreshInbox(history = false, signal?: AbortSignal): Promise<void> {
+    await this.readInboxPage(history ? { afterCursor: -1 } : {}, signal)
+  }
+
+  async recoverInbox(signal?: AbortSignal): Promise<void> {
+    const error = this.currentInbox().error
+    if (error?.code !== 'team-inbox-compacted' || error.details.firstCursor === undefined) {
+      throw new Error('Inbox recovery requires a retained history cursor')
+    }
+    await this.readInboxPage({ afterCursor: error.details.firstCursor - 1 }, signal)
+  }
+
+  private async readInboxPage(request: { afterCursor?: number }, signal?: AbortSignal): Promise<void> {
     const generation = ++this.inboxGeneration
     this.updateInbox({ phase: 'loading', loadingMore: false, error: null })
     try {
-      const response = await this.api.teams.inboxRead(history ? { afterCursor: -1 } : {}, signal)
+      const response = await this.api.teams.inboxRead(request, signal)
       if (signal?.aborted || generation !== this.inboxGeneration) return
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       this.updateInbox({ ...response.result.value, nextCursor: response.result.value.nextCursor, phase: 'ready', hasNewer: false, error: null })
@@ -374,7 +389,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     }
   }
 
-  /** Extend the visible principal-wide range by one requested page. */
+  /** Replace the principal inbox window with the explicitly requested next page. */
   loadMoreInbox(signal?: AbortSignal): Promise<void> {
     this.inboxContinuation ??= this.appendInboxPage(signal).finally(() => { this.inboxContinuation = undefined })
     return this.inboxContinuation
@@ -393,7 +408,7 @@ export class TeamTaskRuntime implements ITeamTasks {
       const page = response.result.value
       if (page.nextCursor !== undefined && page.nextCursor <= afterCursor) throw new Error('Inbox returned a non-advancing cursor')
       this.updateInbox({ ...page, nextCursor: page.nextCursor, phase: 'ready', hasNewer: false, error: null,
-        items: [...new Map([...this.currentInbox().items, ...page.items].map(item => [item.sequence, item])).values()],
+        items: page.items,
       })
     } catch (error: unknown) {
       if (!signal?.aborted && generation === this.inboxGeneration) this.inboxFailure(error)
@@ -405,7 +420,11 @@ export class TeamTaskRuntime implements ITeamTasks {
     const generation = this.inboxGeneration
     const response = await this.api.teams.inboxWatch({ afterCursor: this.currentInbox().cursor }, signal)
     signal.throwIfAborted()
-    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    if (!response.result.ok) {
+      const error = new TeamTaskStartError(response.result.error.message, response.result.error)
+      if (generation === this.inboxGeneration) this.inboxFailure(error)
+      throw error
+    }
     const page = response.result.value
     if (generation === this.inboxGeneration) {
       this.updateInbox({ displayCursor: page.displayCursor, hasNewer: page.items.length > 0,
@@ -435,14 +454,14 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Resolve historical inbox entries against the current authoritative Team action. */
   async readAction(teamId: TeamId, actionId: TeamActionResponseInput['actionId'], signal?: AbortSignal): Promise<TeamActionResponseResult['action']> {
     const generation = this.inboxGeneration
-    const response = await this.api.teams.get({ teamId }, signal)
+    const response = await this.api.teams.actionRead({ teamId, actionId }, signal)
     signal?.throwIfAborted()
     if (generation !== this.inboxGeneration) throw new DOMException('Inbox connection changed', 'AbortError')
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const action = response.result.value.humanActions?.find(candidate => candidate.id === actionId)
-    if (action === undefined) throw new TeamTaskStartError(`Action '${actionId}' is unavailable in Team '${teamId}'`)
+    const action = response.result.value
+    if (action.teamId !== teamId || action.id !== actionId) throw new TeamTaskStartError('Action response belongs to a different Team or action')
     this.publishInboxAction(action)
-    if (this.list.getSnapshot().current === teamId) this.publishRefreshedSelection(response.result.value)
+    if (this.list.getSnapshot().current === teamId) await this.refreshCurrentSelection(signal)
     return action
   }
 
@@ -454,7 +473,6 @@ export class TeamTaskRuntime implements ITeamTasks {
       signal?.throwIfAborted()
       if (generation !== this.inboxGeneration) throw new DOMException('Inbox connection changed', 'AbortError')
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-      this.applyDurableHumanActionEvent(response.result.value.action)
       this.publishInboxAction(response.result.value.action)
       return response.result.value
     } finally { await this.refresh() }
@@ -466,9 +484,15 @@ export class TeamTaskRuntime implements ITeamTasks {
   private updateInbox(update: Partial<TeamInboxState>): void {
     const current = this.list.getSnapshot()
     const previous = this.currentInbox()
-    this.list.set({ ...current, inbox: { ...previous, ...update,
-      displayCursor: Math.max(previous.displayCursor, update.displayCursor ?? previous.displayCursor),
-    } })
+    const inbox = { ...previous, ...update,
+      displayCursor: Math.max(previous.displayCursor, update.displayCursor ?? previous.displayCursor) }
+    const pendingHumanActions = update.items === undefined ? (current.pendingHumanActions ?? [])
+      : Object.freeze(inbox.items.flatMap((item) => {
+        if (item.kind !== 'action') return []
+        const projected = projectDurableHumanAction(item.action)
+        return projected === undefined ? [] : [Object.freeze(projected)]
+      }))
+    this.list.set({ ...current, inbox, pendingHumanActions })
   }
 
   private inboxFailure(error: unknown): void {
@@ -477,15 +501,25 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   private publishInboxAction(action: TeamHumanActionSnapshot): void {
-    this.updateInbox({ items: this.currentInbox().items.map(item => item.kind === 'action'
-      && item.teamId === action.teamId && item.action.id === action.id && action.updatedAt >= item.action.updatedAt
-      ? { ...item, action } : item) })
+    const current = this.currentInbox()
+    const present = current.items.some(item => item.kind === 'action' && item.teamId === action.teamId && item.action.id === action.id)
+    this.updateInbox({ hasNewer: current.hasNewer || !present,
+      items: current.items.map(item => item.kind === 'action'
+        && item.teamId === action.teamId && item.action.id === action.id && action.updatedAt >= item.action.updatedAt
+        ? { ...item, action } : item) })
   }
 
   /** Apply one authenticated management command and reconcile success or conflict with the Host. */
   async manage(teamId: TeamId, command: TeamManagementCommand, signal?: AbortSignal): Promise<void> {
-    if ('channelId' in command.input && !this.selections.get(teamId)?.state.channelIds.includes(command.input.channelId)) {
-      throw new TeamTaskStartError(`Channel '${command.input.channelId}' is not in selected Team '${teamId}'`)
+    if ('channelId' in command.input && (this.list.getSnapshot().channel?.admission?.channel.manifest.id !== command.input.channelId
+      || this.list.getSnapshot().channel?.admission?.channel.manifest.teamId !== teamId)) {
+      const admission = await this.api.teams.channelAdmission({ teamId, channelId: command.input.channelId }, signal)
+      signal?.throwIfAborted()
+      if (!admission.result.ok) throw new TeamTaskStartError(admission.result.error.message, admission.result.error)
+      const manifest = admission.result.value.channel.manifest
+      if (manifest.teamId !== teamId || manifest.id !== command.input.channelId) {
+        throw new TeamTaskStartError(`Channel '${command.input.channelId}' is not in selected Team '${teamId}'`)
+      }
     }
     let response: RpcResponse<unknown>
     try {
@@ -514,6 +548,10 @@ export class TeamTaskRuntime implements ITeamTasks {
         default: assertNever(command)
       }
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+      if ((command.operation === 'taskUpdate' || command.operation === 'taskReview')
+        && this.list.getSnapshot().taskDetail?.taskId === command.input.taskId) {
+        await this.readTaskDetail(teamId, command.input.taskId)
+      }
     } finally {
       await this.refreshCurrentSelection()
       if (command.operation === 'channelOpen' || command.operation === 'channelClose') await this.readChannels(teamId)
@@ -552,7 +590,12 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Keep a summary source window intact while refreshing only its cursor and authority. */
-  private async readChannelPage(channelId: ChannelId, afterCursor: number, signal: AbortSignal | undefined, preserveWindow: boolean): Promise<ChannelReadPageResult> {
+  private async readChannelPage(channelId: ChannelId,
+    afterCursor: number,
+    signal: AbortSignal |
+     undefined,
+    preserveWindow: boolean): Promise<ChannelReadPageResult> {
+
     const selectionGeneration = this.selectionGeneration
     const selectedTeam = this.list.getSnapshot().current
     this.channelAbort?.abort()
@@ -570,21 +613,28 @@ export class TeamTaskRuntime implements ITeamTasks {
         || selectedTeam !== this.list.getSnapshot().current) throw new DOMException('Channel selection changed', 'AbortError')
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       const incoming = response.result.value
+      if (selectedTeam !== undefined && incoming.channel.manifest.teamId !== selectedTeam) {
+        throw new TeamTaskStartError('Channel response belongs to a different Team')
+      }
       const oldPage = previous?.channelId === channelId ? previous.page : undefined
-      const unreadCursor = oldPage?.nextCursor ?? (oldPage !== undefined && incoming.channel.cursor > oldPage.channel.cursor ? oldPage.channel.cursor : undefined)
+      const unreadCursor = oldPage?.nextCursor ??
+         (oldPage !== undefined &&
+         incoming.channel.cursor > oldPage.channel.cursor ? oldPage.channel.cursor : undefined)
       const page = preserveWindow && oldPage !== undefined ? { ...oldPage, channel: incoming.channel,
         ...unreadCursor === undefined ? {} : { nextCursor: unreadCursor } }
-        : afterCursor === -1 || oldPage === undefined ? incoming : {
-          ...incoming, records: [...new Map([...oldPage.records, ...incoming.records].map(record => [
-            record.type === 'channel/envelope' ? record.envelope.sequence : record.sequence, record,
-          ])).values()],
-        }
+        : incoming
       const lastSummary = this.list.getSnapshot().channel?.lastSummary
-      this.publishChannel({ ...this.list.getSnapshot().channel, channelId, page, loading: true, acknowledging: false,
+      this.publishChannel({ ...this.list.getSnapshot().channel, channelId, page,
+        startCursor: preserveWindow ? previous?.startCursor : afterCursor, loading: true, acknowledging: false,
         hasNewer: preserveWindow ? previous?.hasNewer === true || unreadCursor !== undefined : false,
         ...lastSummary === undefined ? {} : { lastSummary } })
       if (this.list.getSnapshot().channelCatalog === undefined) void this.readChannelCatalog()
-      await Promise.all([this.refreshChannelInvitation(channelId, generation, combined), this.refreshChannelAdmission(channelId, generation, combined)])
+      await Promise.all([this.refreshChannelInvitation(channelId,
+        generation,
+        combined),
+      this.refreshChannelAdmission(channelId,
+        generation,
+        combined)])
       combined.throwIfAborted()
       if (selectionGeneration !== this.selectionGeneration || selectedTeam !== this.list.getSnapshot().current) throw new DOMException('Channel selection changed', 'AbortError')
       if (!combined.aborted && generation === this.channelGeneration) {
@@ -595,8 +645,14 @@ export class TeamTaskRuntime implements ITeamTasks {
     } catch (error: unknown) {
       const sameSelection = selectionGeneration === this.selectionGeneration && selectedTeam === this.list.getSnapshot().current
       if (generation === this.channelGeneration) {
-        this.patchChannel({ loading: false, ...combined.aborted || !sameSelection ? {} : { error: error instanceof Error ? error.message : String(error) } })
-        if (!sameSelection && selectedTeam === this.list.getSnapshot().current && !controller.signal.aborted && this.list.getSnapshot().channel?.page !== undefined) {
+        this.patchChannel({ loading: false,
+          ...combined.aborted ||
+           !sameSelection ? {} : { error: error instanceof Error ? error.message : String(error) } })
+        if (!sameSelection &&
+           selectedTeam === this.list.getSnapshot().current &&
+           !controller.signal.aborted &&
+           this.list.getSnapshot().channel?.page !== undefined) {
+
           void this.watchSelectedChannel(channelId, generation, controller.signal)
         }
       }
@@ -614,7 +670,8 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Retain consent identity across ambiguous transport errors; changed invitation revisions require another click. */
   acknowledgeChannel(channelId: ChannelId): Promise<void> {
-    if (this.channelAcknowledgement !== undefined && this.channelAcknowledgementGeneration === this.channelGeneration) return this.channelAcknowledgement
+    if (this.channelAcknowledgement !== undefined &&
+       this.channelAcknowledgementGeneration === this.channelGeneration) return this.channelAcknowledgement
     const current = this.list.getSnapshot().channel
     const invitation = current?.channelId === channelId ? current.invitation?.invitation : undefined
     if (current?.channelId !== channelId) return Promise.resolve()
@@ -623,12 +680,9 @@ export class TeamTaskRuntime implements ITeamTasks {
       return Promise.resolve()
     }
     const generation = this.channelGeneration
-    const key = `${channelId}:${invitation.revision}:${invitation.manifestFingerprint}`
-    let idempotencyKey = this.channelAcknowledgementKeys.get(key)
-    if (idempotencyKey === undefined) {
-      idempotencyKey = crypto.randomUUID() as Parameters<IApiClient['teams']['channelInvitationAcknowledge']>[0]['idempotencyKey']
-      this.channelAcknowledgementKeys.set(key, idempotencyKey)
-    }
+    const idempotencyKey = `team-channel-consent:${JSON.stringify([
+      channelId, invitation.participantId, invitation.revision, invitation.manifestFingerprint,
+    ])}` as Parameters<IApiClient['teams']['channelInvitationAcknowledge']>[0]['idempotencyKey']
     const input = { channelId, revision: invitation.revision, manifestFingerprint: invitation.manifestFingerprint, idempotencyKey }
     this.patchChannel({ acknowledging: true, acknowledgementError: undefined })
     const operation = (async () => {
@@ -670,7 +724,9 @@ export class TeamTaskRuntime implements ITeamTasks {
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       this.patchChannel({ invitation: response.result.value, invitationError: undefined })
     } catch (error: unknown) {
-      if (!signal?.aborted && generation === this.channelGeneration && invitationGeneration === this.channelInvitationGeneration) this.patchChannel({
+      if (!signal?.aborted &&
+         generation === this.channelGeneration &&
+         invitationGeneration === this.channelInvitationGeneration) this.patchChannel({
         invitationError: error instanceof Error ? error.message : String(error) })
     }
   }
@@ -694,7 +750,8 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Load channel pages only through the authorized provider list, retaining the visible window on failure. */
-  readChannels(teamId: TeamId, more = false): Promise<void> {
+  readChannels(teamId: TeamId, mode: TeamCollectionReadMode = 'refresh'): Promise<void> {
+    const more = mode === 'next'
     const selectedTeam = this.list.getSnapshot().current
     if (selectedTeam !== undefined && selectedTeam !== teamId) return Promise.resolve()
     if (this.list.getSnapshot().channels?.teamId !== teamId) this.resetChannelList()
@@ -709,26 +766,34 @@ export class TeamTaskRuntime implements ITeamTasks {
     this.publishChannelList({ ...base, loading: !more, loadingMore: more, error: undefined })
     const operation = (async () => {
       try {
-        let afterCursor = more ? previous?.nextCursor : undefined
-        let items: TeamChannelListState['items'] = more ? base.items : []
-        const pages = more ? 1 : this.channelListPages
-        for (let index = 0; index < pages; index++) {
-          const response = await this.api.teams.channelList({ teamId, ...afterCursor === undefined ? {} : { afterCursor } }, controller.signal)
-          if (controller.signal.aborted || generation !== this.channelListGeneration) return
-          if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-          const page = response.result.value
-          if (page.nextCursor !== undefined && page.nextCursor <= (afterCursor ?? -1)) {
-            throw new TeamTaskStartError('Channel list returned a non-advancing page cursor')
-          }
-          items = [...new Map([...items, ...page.items].map(channel => [channel.manifest.id, channel])).values()]
-          afterCursor = page.nextCursor
-          if (afterCursor === undefined) break
+        let afterCursor: number | undefined
+        switch (mode) {
+          case 'next': afterCursor = previous?.nextCursor; break
+          case 'first': afterCursor = undefined; break
+          case 'refresh': afterCursor = previous?.startCursor; break
+          default: assertNever(mode)
         }
-        if (more) this.channelListPages += 1
-        this.publishChannelList({ teamId, items, nextCursor: afterCursor, loading: false, loadingMore: false, hasNewer: activity !== this.channelListActivity })
+        const response = await this.api.teams.channelList({ teamId,
+          ...afterCursor === undefined ? {} : { afterCursor } }, controller.signal)
+        if (controller.signal.aborted || generation !== this.channelListGeneration) return
+        if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+        const page = response.result.value
+        if (page.nextCursor !== undefined && page.nextCursor <= (afterCursor ?? -1)) {
+          throw new TeamTaskStartError('Channel list returned a non-advancing page cursor')
+        }
+        this.publishChannelList({ teamId,
+          items: page.items, startCursor: afterCursor,
+          nextCursor: page.nextCursor,
+          loading: false,
+          loadingMore: false,
+          hasNewer: activity !== this.channelListActivity })
       } catch (error: unknown) {
         if (!controller.signal.aborted && generation === this.channelListGeneration) {
-          this.publishChannelList({ ...(this.list.getSnapshot().channels ?? base), loading: false, loadingMore: false, error: error instanceof Error ? error.message : String(error) })
+          this.publishChannelList({ ...(this.list.getSnapshot().channels ??
+             base),
+          loading: false,
+          loadingMore: false,
+          error: error instanceof Error ? error.message : String(error) })
         }
       }
     })().finally(() => { if (this.channelListOperation === operation) this.channelListOperation = undefined })
@@ -755,7 +820,9 @@ export class TeamTaskRuntime implements ITeamTasks {
       this.list.set({ ...this.list.getSnapshot(), channelCatalog: { value: response.result.value, loading: false } })
     } catch (error: unknown) {
       if (!controller.signal.aborted && generation === this.channelCatalogGeneration) this.list.set({ ...this.list.getSnapshot(),
-        channelCatalog: { ...this.list.getSnapshot().channelCatalog, loading: false, error: error instanceof Error ? error.message : String(error) } })
+        channelCatalog: { ...this.list.getSnapshot().channelCatalog,
+          loading: false,
+          error: error instanceof Error ? error.message : String(error) } })
     }
   }
 
@@ -763,35 +830,40 @@ export class TeamTaskRuntime implements ITeamTasks {
     this.channelListGeneration += 1
     this.channelListAbort?.abort()
     this.channelListOperation = undefined
-    this.channelListPages = 1
     this.list.set({ ...this.list.getSnapshot(), channels: undefined })
   }
 
   private async watchSelectedChannel(channelId: ChannelId, generation: number, signal: AbortSignal): Promise<void> {
+    const isCurrent = () => !signal.aborted && generation === this.channelGeneration
     try {
-      while (!signal.aborted && generation === this.channelGeneration) {
+      while (isCurrent()) {
         const current = this.list.getSnapshot().channel
         const page = current?.page
         if (page === undefined || !['pending', 'active', 'closing'].includes(page.channel.phase)) return
         const response = await this.api.teams.channelWatch({ channelId, afterCursor: page.channel.cursor }, signal)
-        if (signal.aborted || generation !== this.channelGeneration) return
+        if (!isCurrent()) return
         if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
         if (response.result.value.kind === 'changed' && response.result.value.cursor <= page.channel.cursor) {
           throw new TeamTaskStartError('Channel watch returned a non-advancing cursor')
         }
         this.patchChannel({ loading: true })
         const refreshed = await this.api.teams.channelRead({ channelId, afterCursor: page.channel.cursor }, signal)
-        if (signal.aborted || generation !== this.channelGeneration) return
+        if (!isCurrent()) return
         if (!refreshed.result.ok) throw new TeamTaskStartError(refreshed.result.error.message, refreshed.result.error)
         const snapshot = refreshed.result.value
         this.patchChannel({ hasNewer: true, page: { ...page, channel: snapshot.channel,
           nextCursor: page.nextCursor ?? page.channel.cursor } })
-        await Promise.all([this.refreshChannelInvitation(channelId, generation, signal), this.refreshChannelAdmission(channelId, generation, signal)])
-        if (!signal.aborted && generation === this.channelGeneration) this.patchChannel({ loading: false })
+        await Promise.all([this.refreshChannelInvitation(channelId,
+          generation,
+          signal),
+        this.refreshChannelAdmission(channelId,
+          generation,
+          signal)])
+        if (isCurrent()) this.patchChannel({ loading: false })
         if (response.result.value.kind === 'closed') return
       }
     } catch (error: unknown) {
-      if (!signal.aborted && generation === this.channelGeneration) this.patchChannel({ loading: false, error: error instanceof Error ? error.message : String(error) })
+      if (isCurrent()) this.patchChannel({ loading: false, error: error instanceof Error ? error.message : String(error) })
     }
   }
 
@@ -811,8 +883,32 @@ export class TeamTaskRuntime implements ITeamTasks {
     return result.value
   }
 
+  /** Read one task without expanding its complete Team history.
+   * @param teamId - Selected Team.
+   * @param taskId - Task to inspect, including unloaded dependencies.
+   * @param section - Current fields or one history.
+   * @param mode - Replace, advance or restart the history window.
+   */
+  async readTaskDetail(teamId: TeamId, taskId: TeamTaskId, section: 'record' | 'attempts' | 'reviews' = 'record',
+    mode: 'refresh' | 'first' | 'next' = 'refresh'): Promise<void> {
+    if (this.list.getSnapshot().current !== teamId) return
+    await this.taskInspector.read(teamId, taskId, section, mode)
+  }
+
+  /** Release the selected task's reads and bounded inspection data. */
+  closeTaskDetail(): void { this.taskInspector.close() }
+
+  /** Read the selected workflow independently from the summary list. */
+  async readWorkflowDetail(teamId: TeamId, planId: Parameters<NonNullable<ITeamTasks['readWorkflowDetail']>>[1],
+    mode: Parameters<NonNullable<ITeamTasks['readWorkflowDetail']>>[2] = 'open'): Promise<void> {
+    if (this.list.getSnapshot().current === teamId) await this.workflowInspector.read(teamId, planId, mode)
+  }
+
+  /** Dismiss the workflow page without affecting execution. */
+  closeWorkflowDetail(): void { this.workflowInspector.close() }
+
   /** Read one bounded collection page, retaining current data after failure or cancellation. */
-  readCollections(teamId: TeamId, collection: TeamCollectionKind, more = false, signal?: AbortSignal): Promise<void> {
+  readCollections(teamId: TeamId, collection: TeamCollectionKind, mode: TeamCollectionReadMode = 'refresh', signal?: AbortSignal): Promise<void> {
     const current = this.list.getSnapshot()
     if (current.current !== teamId) return Promise.resolve()
     const generation = this.selectionGeneration
@@ -821,35 +917,36 @@ export class TeamTaskRuntime implements ITeamTasks {
     if (pending !== undefined) return pending
     const previous = current.collections?.teamId === teamId ? current.collections : emptyCollections(teamId)
     const priorPage = previous[collection]
+    const more = mode === 'next'
     if (more && priorPage.nextCursor === undefined) return Promise.resolve()
-    const afterCursor = more ? (priorPage.nextCursor ?? -1) : -1
+    const afterCursor = mode === 'first' ? -1 : more ? (priorPage.nextCursor ?? -1) : (priorPage.startCursor ?? -1)
     const startCursor = current.selected?.teamId === teamId ? current.selected.state.team.cursor : undefined
     const operation = (async () => {
       const loadingPage = { ...priorPage, loading: !more, loadingMore: more, error: undefined }
       this.publishCollections(teamId, { ...previous, [collection]: loadingPage })
       try {
-        const response = collection === 'members'
-          ? await this.api.teams.memberList({ teamId, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
-          : collection === 'tasks'
-            ? await this.api.teams.taskList({ teamId, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
-            : collection === 'workflowPlans'
-              ? await this.api.teams.workflowPlanList({ teamId, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
-              : await this.api.teams.artifactList({ teamId, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
+        const response = collection === 'members' || collection === 'tasks' || collection === 'workflowPlans'
+          ? await this.api.teams.browse({ teamId, kind: collection, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
+          : await this.api.teams.artifactList({ teamId, afterCursor, limit: TEAM_COLLECTION_PAGE_LIMIT }, signal)
         signal?.throwIfAborted()
         if (generation !== this.selectionGeneration || this.list.getSnapshot().current !== teamId) return
         if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
         const page = response.result.value
+        if ((collection === 'tasks' || collection === 'members' || collection === 'workflowPlans') && (!('kind' in page) || page.kind !== collection || page.teamId !== teamId)) {
+          throw new TeamTaskStartError(`${collection} summaries do not match the selected Team`)
+        }
         if (page.nextCursor !== undefined && page.nextCursor <= afterCursor) {
           throw new TeamTaskStartError(`${collection} list returned a non-advancing page cursor`)
         }
-        const items = more || priorPage.items.length === 0
-          ? [...new Map([...priorPage.items, ...page.items].map(item => [item.id, item])).values()]
-          : [...page.items, ...priorPage.items.filter(prior => !page.items.some(item => item.id === prior.id))]
+        if (page.items.length > TEAM_COLLECTION_PAGE_LIMIT) {
+          throw new TeamTaskStartError(`${collection} list exceeded its requested row limit`)
+        }
+        const items = [...new Map(page.items.map(item => [item.id, item])).values()]
         const latestSelection = this.list.getSnapshot().selected
         const newerCursor = startCursor !== undefined && latestSelection?.teamId === teamId
           && latestSelection.state.team.cursor > startCursor
         const nextPage = {
-          items, nextCursor: page.nextCursor, loading: false, loadingMore: false,
+          items, startCursor: afterCursor, nextCursor: page.nextCursor, loading: false, loadingMore: false,
           hasNewer: more ? priorPage.hasNewer || newerCursor : newerCursor,
         }
         const currentCollections = this.list.getSnapshot().collections ?? emptyCollections(teamId)
@@ -883,31 +980,42 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Load the first bounded member/task pages after selection without making the read fatal. */
   private async refreshCollections(teamId: TeamId, generation: number, signal?: AbortSignal): Promise<void> {
-    const api = this.api.teams as unknown as {
-      readonly memberList?: unknown
-      readonly taskList?: unknown
-      readonly workflowPlanList?: unknown
-      readonly artifactList?: unknown
-    }
-    if (typeof api.memberList !== 'function' || typeof api.taskList !== 'function'
-      || typeof api.workflowPlanList !== 'function' || typeof api.artifactList !== 'function') return
     if (generation !== this.selectionGeneration || this.list.getSnapshot().current !== teamId) return
     await Promise.all([
-      this.readCollections(teamId, 'members', false, signal),
-      this.readCollections(teamId, 'tasks', false, signal),
-      this.readCollections(teamId, 'workflowPlans', false, signal),
-      this.readCollections(teamId, 'artifacts', false, signal),
+      this.readCollections(teamId, 'members', 'refresh', signal),
+      this.readCollections(teamId, 'tasks', 'refresh', signal),
+      this.readCollections(teamId, 'workflowPlans', 'refresh', signal),
+      this.readCollections(teamId, 'artifacts', 'refresh', signal),
     ])
   }
 
-  /** Resolve one Participant's Session descendant from the selected Team state. */
+  /** Read one member detail without selecting or resuming a Team. */
+  async inspectMember(input: Parameters<IApiClient['teams']['memberInspect']>[0], signal?: AbortSignal):
+  Promise<Extract<Awaited<ReturnType<IApiClient['teams']['memberInspect']>>['result'], { ok: true }>['value']> {
+    const response = await this.api.teams.memberInspect(input, signal)
+    signal?.throwIfAborted()
+    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    const value = response.result.value
+    if (value.record.teamId !== input.teamId || value.record.id !== input.participantId
+      || value.startCursor !== (input.afterCursor ?? -1)
+      || input.expectedTeamCursor !== undefined && value.teamCursor !== input.expectedTeamCursor
+      || input.limit !== undefined && value.items.length > input.limit) {
+      throw new TeamTaskStartError('Member inspection belongs to another selection or exceeds the requested page')
+    }
+    return value
+  }
+
+  /** Resolve a member's published Session through the owning Team, without loading or activating the Team. */
   async participantSession(teamId: TeamId, participantId: Parameters<NonNullable<ITeamTasks['participantSession']>>[1], signal?: AbortSignal): Promise<SessionId> {
-    let selection = this.selections.get(teamId)
-    if (selection === undefined) selection = await this.open(teamId, signal)
-    const participant = selection.state.participants.find(candidate => candidate.id === participantId)
-    if (participant === undefined) throw new TeamTaskStartError(`Participant '${participantId}' is not in Team '${teamId}'`)
-    const binding = selection.state.activations.find(candidate => candidate.activation.participantId === participant.id)
-    if (binding === undefined) throw new TeamTaskStartError(`Participant '${participantId}' has no Session descendant`)
+    const response = await this.api.teams.memberSession({ teamId, participantId }, signal)
+    signal?.throwIfAborted()
+    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    const binding = response.result.value
+    if (binding.activation.teamId !== teamId || binding.activation.participantId !== participantId) {
+      throw new TeamTaskStartError('Member Session response belongs to a different Team or participant')
+    }
+    if (this.list.getSnapshot().current === teamId) this.list.set({ ...this.list.getSnapshot(),
+      memberSession: { teamId, participantId, sessionId: binding.sessionId } })
     return binding.sessionId
   }
 
@@ -944,18 +1052,18 @@ export class TeamTaskRuntime implements ITeamTasks {
           })
           throw new TeamTaskStartError(result.error.message, result.error)
         }
-        const selection = selectionOf(result.value.state)
+        const selected = await this.api.teams.selection({ teamId: result.value.state.team.id, includeMetadata: true }, signal)
+        if (!selected.result.ok) throw new TeamTaskStartError(selected.result.error.message, selected.result.error)
+        const selection = selectionOf(selected.result.value)
         if (this.list.getSnapshot().current !== selection.teamId) { this.closeChannelView(); this.resetChannelList() }
         const current = this.list.getSnapshot()
         this.list.set({
           ...current,
           current: selection.teamId,
           selected: selection,
-          items: replaceTeam(current.items, result.value.state.team),
           draft: undefined,
         })
-        this.replaceDurableHumanActions(result.value.state)
-        this.selections.set(selection.teamId, selection)
+        if (result.value.state.humanActions?.some(action => action.phase === 'pending')) this.updateInbox({ hasNewer: true })
         return selection
       } catch (error: unknown) {
         if (error instanceof TeamTaskStartError && error.rpcError !== undefined) throw error
@@ -971,23 +1079,51 @@ export class TeamTaskRuntime implements ITeamTasks {
     return this.starting
   }
 
-  /**
-   * Resolve the Team that owns one coordinator Session, if it is selected locally.
-   * @param sessionId - coordinator Session identity to look up.
-   * @returns the selected Team projection, or `undefined` when no Team owns it.
+  /** Resolve a coordinator from Session-owned metadata without retaining historical routes.
+   * @param sessionId - Session receiving input.
+   * @param owner - Immutable Team and Participant identity from its header.
+   * @param signal - Optional cancellation for the bounded read.
+   * @returns the exact current coordinator route, or undefined for another Team member.
    */
-  teamForCoordinatorSession(sessionId: SessionId): TeamTaskSelection | undefined {
-    return [...this.selections.values()].find(selection => selection.coordinatorSessionId === sessionId)
+  async resolveCoordinatorSession(sessionId: SessionId,
+    owner?: Parameters<IApiClient['teams']['memberSession']>[0], signal?: AbortSignal,
+  ): Promise<Pick<TeamTaskSelection, 'teamId' | 'coordinatorSessionId'> | undefined> {
+    if (owner === undefined) {
+      const current = this.list.getSnapshot().selected
+      if (current?.coordinatorSessionId !== sessionId || current.state.coordinator.kind !== 'bound') return undefined
+      owner = { teamId: current.teamId, participantId: current.state.coordinator.binding.activation.participantId }
+    }
+    const response = await this.api.teams.selection({ teamId: owner.teamId }, signal)
+    signal?.throwIfAborted()
+    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    const coordinator = response.result.value.coordinator
+    if (response.result.value.team.id !== owner.teamId) throw new TeamTaskStartError('Coordinator selection belongs to another Team')
+    if (coordinator.kind !== 'bound' || coordinator.participantPhase !== 'active'
+      || coordinator.binding.activation.participantId !== owner.participantId || coordinator.binding.sessionId !== sessionId) {
+      return undefined
+    }
+    return { teamId: owner.teamId, coordinatorSessionId: sessionId }
+  }
+
+  /** Return the lightweight selection only for its current Team. */
+  private currentSelection(teamId: TeamId): TeamTaskSelection | undefined {
+    const selected = this.list.getSnapshot().selected
+    return selected?.teamId === teamId ? selected : undefined
   }
 
   /** Retain visible records while invalidating all requests from the lost connection. */
   handleDisconnected(): void {
+    this.taskInspector.disconnect()
+    this.workflowInspector.disconnect()
     this.selectionGeneration += 1
     this.collectionOperations.clear()
     this.channelCatalogGeneration += 1
     this.channelCatalogAbort?.abort()
     const catalog = this.list.getSnapshot().channelCatalog
-    if (catalog !== undefined) this.list.set({ ...this.list.getSnapshot(), channelCatalog: { ...catalog, loading: false, disconnected: true } })
+    if (catalog !== undefined) this.list.set({ ...this.list.getSnapshot(),
+      channelCatalog: { ...catalog,
+        loading: false,
+        disconnected: true } })
     this.channelGeneration += 1
     this.channelAbort?.abort()
     this.patchChannel({ loading: false, acknowledging: false, disconnected: true })
@@ -1000,6 +1136,8 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Refresh after a new connection generation becomes available. */
   handleConnected(): void {
+    void this.taskInspector.reconnect()
+    void this.workflowInspector.reconnect()
     if (this.list.getSnapshot().channelCatalog !== undefined) void this.readChannelCatalog()
     const channels = this.list.getSnapshot().channels
     if (channels !== undefined) void this.readChannels(channels.teamId)
@@ -1024,8 +1162,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     }
     this.inboxGeneration += 1
     this.list.set({ ...this.list.getSnapshot(), inbox: emptyInboxState(this.inboxGeneration) })
-    this.pendingHumanActions.clear()
-    this.publishPendingHumanActions()
+    this.updateInbox({ items: [] })
     void this.refresh().then(async () => {
       const current = this.list.getSnapshot()
       if (current.current !== undefined) await this.refreshCollections(current.current, this.selectionGeneration)
@@ -1041,16 +1178,18 @@ export class TeamTaskRuntime implements ITeamTasks {
    */
   handleMuxEnvelope(envelope: RpcRequest<MuxFrame> | MuxFrame): void {
     const frame = isMuxRequest(envelope) ? envelope.payload : envelope
-    const rpcId = isMuxRequest(envelope) ? String(envelope.rpcId) : undefined
-    this.handleHumanActionFrame(frame, rpcId)
+    this.handleHumanActionFrame(frame)
     if (frame.type === 'team/changed' && frame.event.type === 'human-action/changed') {
-      this.applyDurableHumanActionEvent(frame.event.action)
       this.publishInboxAction(frame.event.action)
+    }
+    if (frame.type === 'team/changed' && frame.event.type === 'workflow-plan/changed') {
+      this.workflowInspector.changed(frame.event.plan.teamId, frame.event.plan.id, frame.event.plan.revision)
     }
     if (frame.type === 'team/changed' || frame.type === 'channel/changed') void this.refresh()
     if (frame.type === 'team/changed' && frame.event.type === 'task/changed'
       && this.list.getSnapshot().current === frame.event.task.teamId) {
       const teamId = frame.event.task.teamId
+      this.taskInspector.changed(teamId, frame.event.task.id, frame.event.task.revision)
       const generation = this.selectionGeneration
       void this.refreshCurrentSelection().then(async () => {
         if (generation === this.selectionGeneration && this.list.getSnapshot().current === teamId) {
@@ -1069,129 +1208,17 @@ export class TeamTaskRuntime implements ITeamTasks {
     }
   }
 
-  /** Apply one approval/question requested or resolved frame to the Team action projection. */
-  private handleHumanActionFrame(frame: MuxFrame, rpcId: string | undefined): void {
-    if (frame.type === 'approval/requested') {
-      const teamId = frame.teamId ?? this.teamForSession(frame.sessionId)
-      if (teamId === undefined) return
-      const action: TeamHumanAction = {
-        kind: 'approval',
-        requestId: String(frame.approvalId),
-        sessionId: frame.sessionId,
-        teamId,
-        approvalId: frame.approvalId,
-        toolName: frame.toolName,
-        ...frame.callId === undefined ? {} : { callId: String(frame.callId) },
-        ...frame.reason === undefined ? {} : { reason: frame.reason },
-        ...frame.participantId === undefined ? {} : { participantId: String(frame.participantId) },
-        ...frame.taskId === undefined ? {} : { taskId: String(frame.taskId) },
-      }
-      this.pendingHumanActions.set(actionKey(action), Object.freeze(action))
-      this.publishPendingHumanActions()
-      return
-    }
-    if (frame.type === 'question/requested') {
-      const teamId = frame.teamId ?? this.teamForSession(frame.sessionId)
-      if (teamId === undefined || rpcId === undefined) return
-      const action: TeamHumanAction = {
-        kind: 'question',
-        requestId: rpcId,
-        sessionId: frame.sessionId,
-        teamId,
-        questionRpcId: rpcId,
-        questions: structuredClone(frame.questions),
-        ...frame.participantId === undefined ? {} : { participantId: String(frame.participantId) },
-        ...frame.taskId === undefined ? {} : { taskId: String(frame.taskId) },
-      }
-      this.pendingHumanActions.set(actionKey(action), Object.freeze(action))
-      this.publishPendingHumanActions()
-      return
-    }
-    if (frame.type === 'approval/resolved') {
-      this.removeHumanActions(frame.sessionId, action => action.kind === 'approval' && action.approvalId === frame.approvalId)
-      return
-    }
-    if (frame.type === 'question/resolved') {
-      this.removeHumanActions(frame.sessionId, action => action.kind === 'question' && action.questionRpcId === String(frame.questionRpcId))
+  /** Transient notifications advertise inbox changes without retaining another action body cache. */
+  private handleHumanActionFrame(frame: MuxFrame): void {
+    if (((frame.type === 'approval/requested' || frame.type === 'question/requested') && frame.teamId !== undefined)
+      || frame.type === 'approval/resolved' || frame.type === 'question/resolved') {
+      this.updateInbox({ hasNewer: true })
     }
   }
 
-  /** Remove resolved actions and publish one detached list snapshot. */
-  private removeHumanActions(sessionId: SessionId, matches: (action: TeamHumanAction) => boolean): void {
-    let changed = false
-    for (const [key, action] of this.pendingHumanActions) {
-      if (action.sessionId !== sessionId || !matches(action)) continue
-      this.pendingHumanActions.delete(key)
-      changed = true
-    }
-    if (changed) this.publishPendingHumanActions()
-  }
-
-  /** Apply one durable action change without waiting for a full Team refresh. */
-  private applyDurableHumanActionEvent(action: TeamHumanActionSnapshot): void {
-    let changed = false
-    for (const [key, current] of this.pendingHumanActions) {
-      if (current.teamId !== action.teamId || current.sessionId !== action.sessionId || current.requestId !== action.sourceId) continue
-      this.pendingHumanActions.delete(key)
-      changed = true
-    }
-    const projected = projectDurableHumanAction(action)
-    if (projected !== undefined) {
-      this.pendingHumanActions.set(actionKey(projected), Object.freeze(projected))
-      changed = true
-    }
-    if (changed) this.publishPendingHumanActions()
-  }
-
-  /**
-   * Resolve Team identity for any selected Participant Session when a frame omits provenance.
-   * @param sessionId - Participant Session identity to resolve.
-   * @returns selected Team identity, or undefined when no selected Team owns it.
-   */
-  teamForSession(sessionId: SessionId): TeamId | undefined {
-    return [...this.selections.values()].find(selection => (
-      selection.coordinatorSessionId === sessionId
-      || selection.state.activations.some(binding => binding.sessionId === sessionId)
-    ))?.teamId
-  }
-
-  /** Publish pending action state without exposing the mutable lookup. */
-  private publishPendingHumanActions(): void {
-    const current = this.list.getSnapshot()
-    this.list.set({
-      ...current,
-      pendingHumanActions: Object.freeze([...this.pendingHumanActions.values()]),
-    })
-  }
-
-  /** Replace one Team's transient action entries with its durable pending projection. */
-  private replaceDurableHumanActions(state: TeamStateSnapshot): void {
-    for (const [key, action] of this.pendingHumanActions) {
-      if (action.teamId === state.team.id) this.pendingHumanActions.delete(key)
-    }
-    for (const action of state.humanActions ?? []) {
-      const projected = projectDurableHumanAction(action)
-      if (projected !== undefined) this.pendingHumanActions.set(actionKey(projected), Object.freeze(projected))
-    }
-    this.publishPendingHumanActions()
-  }
-
-  /** Refresh durable human-action records for Teams already selected in this connection. */
+  /** Reconnect the principal inbox without reading historical Team projections. */
   private async refreshSelectedHumanActions(): Promise<void> {
-    const selections = [...this.selections.values()]
-    await Promise.all(selections.map(async (selection) => {
-      try {
-        const response = await this.api.teams.get({ teamId: selection.teamId })
-        if (response.result.ok && this.selections.get(selection.teamId) === selection
-          && this.publishRefreshedSelection(response.result.value)) {
-          this.replaceDurableHumanActions(response.result.value)
-        }
-      } catch (error: unknown) {
-        // The normal list refresh reports transport failures; a stale action
-        // projection is safer than replacing it with an untrusted empty list.
-        void error
-      }
-    }))
+    await this.refreshInbox()
   }
 
   /** Reject a late open result before it can redirect either Team detail or its transcript. */
@@ -1205,13 +1232,13 @@ export class TeamTaskRuntime implements ITeamTasks {
     const teamId = this.list.getSnapshot().current
     if (teamId === undefined) return
     const generation = this.selectionGeneration
-    const previous = this.selections.get(teamId)
+    const previous = this.currentSelection(teamId)
     try {
-      const response = await this.api.teams.get({ teamId }, signal)
+      const response = await this.api.teams.selection({ teamId, includeMetadata: true }, signal)
       if (generation !== this.selectionGeneration || this.list.getSnapshot().current !== teamId
-        || this.selections.get(teamId) !== previous || signal?.aborted) return
+        || this.currentSelection(teamId) !== previous || signal?.aborted) return
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-      if (this.publishRefreshedSelection(response.result.value)) this.replaceDurableHumanActions(response.result.value)
+      this.publishRefreshedSelection(response.result.value)
     } catch (error: unknown) {
       if (generation !== this.selectionGeneration || signal?.aborted) return
       const rpcError = error instanceof TeamTaskStartError ? error.rpcError : undefined
@@ -1221,18 +1248,16 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Replace cached business state and report whether the Host projection is at least as current. */
-  private publishRefreshedSelection(state: TeamStateSnapshot): boolean {
-    const previous = this.selections.get(state.team.id)
+  private publishRefreshedSelection(state: TeamTaskSelection['state']): boolean {
+    const previous = this.currentSelection(state.team.id)
     if (previous !== undefined && state.team.cursor < previous.state.team.cursor) return false
     const channels = this.list.getSnapshot().channels
     if (channels?.teamId === state.team.id && previous !== undefined
-      && (previous.state.channelIds.length !== state.channelIds.length
-        || previous.state.channelIds.some((id, index) => id !== state.channelIds[index]))) {
+      && previous.state.counts.channels !== state.counts.channels) {
       this.channelListActivity += 1
       this.publishChannelList({ ...channels, hasNewer: true })
     }
     const selection = selectionOf(state)
-    this.selections.set(selection.teamId, selection)
     const current = this.list.getSnapshot()
     if (current.current === selection.teamId) {
       const collections = current.collections?.teamId === selection.teamId && previous !== undefined
@@ -1243,33 +1268,25 @@ export class TeamTaskRuntime implements ITeamTasks {
           workflowPlans: { ...current.collections.workflowPlans, hasNewer: true },
           artifacts: { ...current.collections.artifacts, hasNewer: true } }
         : current.collections
-      this.list.set({ ...current, selected: selection, collections, items: replaceTeam(current.items, state.team), error: null })
+      this.list.set({ ...current, selected: selection, collections, error: null })
     }
     return true
   }
 
-  private async load(): Promise<void> {
+  private async load(requestedStart?: NonNullable<TeamTaskListState['nextCursor']> | -1): Promise<void> {
     this.list.set({ ...this.list.getSnapshot(), state: 'loading', error: null })
     try {
-      const items: TeamTaskListState['items'][number][] = []
-      let afterCursor = -1
-      let nextCursor: number | undefined
-      for (let pageIndex = 0; pageIndex < this.visiblePageCount; pageIndex += 1) {
-        const pageResult = (await this.api.teams.list({ afterCursor })).result
-        if (!pageResult.ok) {
-          this.list.set({ ...this.list.getSnapshot(), phase: 'ready', state: 'error', error: pageResult.error })
-          return
-        }
-        items.push(...pageResult.value.items)
-        nextCursor = pageResult.value.nextCursor
-        if (nextCursor === undefined) break
-        if (nextCursor <= afterCursor) throw new TeamTaskStartError('Team list returned a non-advancing page cursor')
-        afterCursor = nextCursor
+      const afterCursor = requestedStart ?? this.list.getSnapshot().startCursor ?? -1
+      const response = await this.api.teams.list({ afterCursor })
+      if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+      const page = response.result.value
+      if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
+        throw new TeamTaskStartError('Team list returned a non-advancing page cursor')
       }
       this.list.set({
         ...this.list.getSnapshot(),
-        items: [...new Map(items.map(item => [item.id, item])).values()],
-        nextCursor,
+        items: page.items, startCursor: afterCursor,
+        nextCursor: page.nextCursor,
         phase: 'ready',
         state: 'idle',
         error: null,
@@ -1281,7 +1298,8 @@ export class TeamTaskRuntime implements ITeamTasks {
         ...current,
         phase: 'ready',
         state: 'error',
-        error: { code: 'internal', message, details: {} },
+        error: error instanceof TeamTaskStartError && error.rpcError !== undefined
+          ? error.rpcError : { code: 'internal', message, details: {} },
       })
     }
   }
@@ -1327,23 +1345,17 @@ function emptyCollectionPage<T>(): TeamCollectionPage<T> {
 
 /** Create an empty bounded collection projection for one Team selection. */
 function emptyCollections(teamId: TeamId): TeamCollectionsState {
-  return { teamId, members: emptyCollectionPage(), tasks: emptyCollectionPage(), workflowPlans: emptyCollectionPage(), artifacts: emptyCollectionPage() }
+  return { teamId,
+    members: emptyCollectionPage(),
+    tasks: emptyCollectionPage(),
+    workflowPlans: emptyCollectionPage(),
+    artifacts: emptyCollectionPage() }
 }
 
 /** Extract the active coordinator Session from a default Team state. */
-function selectionOf(state: TeamStateSnapshot): TeamTaskSelection {
-  const coordinator = state.participants.find(participant => participant.role === 'coordinator')
-  if (coordinator === undefined) throw new TeamTaskStartError(`Team '${state.team.id}' has no coordinator participant`)
-  const activation = state.activations.find(binding => binding.activation.participantId === coordinator.id)
-  if (activation === undefined) throw new TeamTaskStartError(`Team '${state.team.id}' has no coordinator activation`)
-  return Object.freeze({ teamId: state.team.id, state, coordinatorSessionId: activation.sessionId })
-}
-
-/** Insert or replace one Team summary without changing the Host's list order. */
-function replaceTeam(items: readonly TeamTaskListState['items'][number][], team: TeamTaskListState['items'][number]): readonly TeamTaskListState['items'][number][] {
-  const index = items.findIndex(item => item.id === team.id)
-  if (index < 0) return [team, ...items]
-  return items.map(item => item.id === team.id ? team : item)
+function selectionOf(state: TeamTaskSelection['state']): TeamTaskSelection {
+  if (state.coordinator.kind !== 'bound') throw new TeamTaskStartError(`Team '${state.team.id}' coordinator is unavailable: ${state.coordinator.reason}`)
+  return Object.freeze({ teamId: state.team.id, state, coordinatorSessionId: state.coordinator.binding.sessionId })
 }
 
 /** Distinguish the connection stream envelope from a bare frame test helper. */
@@ -1386,11 +1398,6 @@ function projectDurableHumanAction(action: TeamHumanActionSnapshot): TeamHumanAc
     participantId: String(action.participantId),
     ...action.taskId === undefined ? {} : { taskId: String(action.taskId) },
   }
-}
-
-/** Build a stable Team-local identity for one pending human action. */
-function actionKey(action: TeamHumanAction): string {
-  return `${String(action.teamId)}\u0000${action.kind}\u0000${action.requestId}`
 }
 
 /** Keep the closed management operation map exhaustive. */

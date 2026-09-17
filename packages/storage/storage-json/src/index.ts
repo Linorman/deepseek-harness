@@ -5,11 +5,11 @@
  * @module @clocky/clocky-storage-json
  */
 
-import { mkdir, readdir, readFile } from 'node:fs/promises'
+import { lstat, mkdir, open, opendir, readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import { StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
+import { parseLogSummary, StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
 import type {
   KvFacet, KvUnit, KvUnitDescriptor, LogFacet, LogStream, LogStreamDescriptor,
   LogStreamInfo, StorageBackend,
@@ -74,6 +74,50 @@ export class JsonStorageBackend implements StorageBackend {
 
   /** Append-only log streams under this backend's `logs/` directory. */
   readonly log: LogFacet = {
+    readSummary: async (descriptor, maxBytes) => {
+      if (this.closed) throw new StorageError('closed', 'json backend is closed')
+      const path = join(await this.ensureLogOwner(), logFileName(descriptor.name))
+      let handle
+      try { handle = await open(path, 'r') }
+      catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+        throw error
+      }
+      try {
+        const buffer = Buffer.alloc(maxBytes)
+        let used = 0
+        let end = -1
+        while (used < maxBytes && end < 0) {
+          const { bytesRead } = await handle.read(buffer, used, maxBytes - used, used)
+          if (bytesRead === 0) break
+          const newline = buffer.subarray(used, used + bytesRead).indexOf(10)
+          if (newline >= 0) end = used + newline
+          used += bytesRead
+        }
+        if (end < 0) throw new StorageError('invalid-value', `log '${descriptor.name}' summary header exceeds ${maxBytes} bytes or is incomplete`)
+        const line = buffer.subarray(0, end).toString('utf8')
+        let document: unknown
+        try { document = JSON.parse(`${line.slice(0, -1)}}`) }
+        catch (error: unknown) { throw new StorageError('malformed-medium', `log '${descriptor.name}' has invalid summary JSON`, { cause: error }) }
+        if (typeof document !== 'object' || document === null || !('stream' in document)) {
+          throw new StorageError('malformed-medium', `log '${descriptor.name}' has no summary header`)
+        }
+        return parseLogSummary(document.stream, descriptor)
+      } finally { await handle.close() }
+    },
+    has: async (name) => {
+      if (this.closed) throw new StorageError('closed', 'json backend is closed')
+      const path = join(await this.ensureLogOwner(), logFileName(name))
+      let info
+      try { info = await lstat(path) }
+      catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+        throw error
+      }
+      if (!info.isFile()) throw new StorageError('malformed-medium', `log '${name}' is not a regular file`)
+      return true
+    },
+    scanNames: (prefix, maxNameBytes) => this.scanLogNames(prefix, maxNameBytes),
     open: async (descriptor: LogStreamDescriptor): Promise<LogStream> => {
       if (this.closed) throw new StorageError('closed', 'json backend is closed')
       validateLogDescriptor(descriptor)
@@ -116,6 +160,23 @@ export class JsonStorageBackend implements StorageBackend {
     }
     this.openLogs.set(descriptor.name, stream)
     return stream
+  }
+
+  /** Examine one directory entry per yield without reading any journal payload. */
+  private async * scanLogNames(prefix: string, maxNameBytes: number): AsyncIterable<string | undefined> {
+    if (this.closed) throw new StorageError('closed', 'json backend is closed')
+    const directory = await opendir(await this.ensureLogOwner(), { bufferSize: 1 })
+    for await (const entry of directory) {
+      // oxlint-disable-next-line typescript/no-unnecessary-condition -- backend disposal can race each directory read.
+      if (this.closed) throw new StorageError('closed', 'json backend is closed')
+      if (!entry.name.endsWith('.json')) { yield undefined; continue }
+      if (!entry.isFile()) throw new StorageError('malformed-medium', `log entry '${entry.name}' is not a regular file`)
+      const name = Buffer.from(entry.name.slice(0, -5), 'base64url').toString('utf8')
+      if (!name || logFileName(name) !== entry.name) throw new StorageError('malformed-medium', `log entry '${entry.name}' has an invalid name`)
+      if (!name.startsWith(prefix)) { yield undefined; continue }
+      if (Buffer.byteLength(name) > maxNameBytes) throw new StorageError('invalid-value', 'log name exceeds the discovery byte limit')
+      yield name
+    }
   }
 
   /** Read every materialized stream header without opening a caller handle. */

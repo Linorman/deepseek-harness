@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Durable recovery of release-requested Team workspace allocations. @module @clocky/clocky-team-workspace-recovery */
 
 import type { Context } from '@clocky/cordis'
@@ -104,7 +105,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   let accepting = true
   let timer: ReturnType<typeof setInterval> | undefined
   let running: Promise<void> | undefined
-  let sweepCursor: number | undefined = -1
+  let sweepCursor: TeamListPageRequest['afterCursor'] | undefined = -1
   let overflow = false
   const schedule = (): void => {
     if (!accepting || running !== undefined) return
@@ -120,7 +121,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
       ? reconcileTeams(ctx, proofs, resolved, teams)
       : recoverOnce(ctx, resolved, proofs, cursor).then((next) => { sweepCursor = next })
     ).catch((error: unknown) => {
-      if (cursor !== undefined) sweepCursor = undefined
+      if (cursor !== undefined) sweepCursor = error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED' ? -1 : undefined
       ctx.logger.warn(`team-workspace-recovery: drive failed: ${renderError(error)}`)
     }).finally(() => {
       running = undefined
@@ -201,19 +202,18 @@ async function recoverOnce(
   ctx: Context,
   config: ResolvedConfig,
   proofs: WorkspaceRecoveryProofIssuer,
-  afterCursor: number,
-): Promise<number | undefined> {
+  afterCursor: TeamListPageRequest['afterCursor'],
+): Promise<TeamListPageRequest['afterCursor'] | undefined> {
   let inspected = 0
   while (inspected < config.maxTeamsPerDrive) {
     const page = await readWithRetry(config, 'Team list', async () => await ctx.teams.listTeamsPage({
       afterCursor,
       limit: Math.min(config.pageSize, config.maxTeamsPerDrive - inspected),
     }))
-    if (page.items.length === 0) return
     const selected = page.items.slice(0, config.maxTeamsPerDrive - inspected)
     await reconcileTeams(ctx, proofs, config, selected.map(team => team.id))
-    inspected += selected.length
-    if (page.nextCursor !== undefined && page.nextCursor <= afterCursor) {
+    inspected += page.scanned
+    if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
       throw new TeamError('Team list recovery page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
     }
     if (inspected >= config.maxTeamsPerDrive) return page.nextCursor

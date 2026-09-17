@@ -1,7 +1,7 @@
 # Keyless assembled-app coverage for continuable child settlement delivery. The
 # replay child deliberately never calls report; the parent can reach its final
 # answer only if the continuation manager places the child's closing message in
-# the parent turn without list_agents, send_message, or a Task collector.
+# the parent turn without legacy_list_agents, send_message, or a Task collector.
 
 - id: base
   name: '@clocky/cordis-plugin-include'

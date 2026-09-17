@@ -15,10 +15,11 @@ export type {
   SkillsApi, SkillEntry,
   ModelCatalogFailure, ModelCatalogModel, ModelProviderGroup, ModelReasoning,
   ModelReasoningEffort, ModelSelection, QueueAction, QueuedInboxItem, SessionModels,
-  GoalsApi, GoalRef, AgentPresetEntry,
+  AgentPresetEntry,
   SettingsApi, SettingsNamespaceView, SettingsPathOpView, SettingsSecretView,
   CredentialsApi, CredentialView, ConfigurableProviderView, DiscoveredModelView, LlmApi,
-  TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamInputReceipt, TeamList, TeamMemberList, TeamStartResult, TeamTaskList, TeamWorkflowPlanList, TeamsApi,
+  TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamInputReceipt, TeamList,
+  TeamMemberList, TeamStartResult, TeamTaskList, TeamWorkflowPlanList, TeamsApi,
   JobView,
 } from '@clocky/clocky-host-apiproxy/api'
 export type { ToolCallView, ToolResultView } from '@clocky/clocky-tools/presentation'

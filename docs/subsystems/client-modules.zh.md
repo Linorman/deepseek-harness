@@ -21,6 +21,8 @@ Web 插件表：[clocky-client-modules](../../packages/client/modules) 中 clien
  * `require` is synchronous (see {@link WebBootGraph.entries}).
  */
 interface WebBootEntry {
+  /** Explicit public configuration for this browser plugin. */
+  config?: BrowserPluginConfig
   /** Entry name == package name. */
   id: string
   /** Bundle endpoint, '/plugins/<id>/client.js?rev=<rev>'. */

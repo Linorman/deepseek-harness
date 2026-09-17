@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-command-image-attachment-envelope.md
-2026-08-17-command-image-attachment-envelope.md: e3bd8567704c41af996c4808593640487e7bbe0f
-2026-08-17-command-image-attachment-envelope.zh.md: bca0c12746b7564d1d7c0f57d797d129c918619c
+2026-08-17-command-image-attachment-envelope.md: 477dd7a26a5afa9c0ad128609a056778514cd1a9
+2026-08-17-command-image-attachment-envelope.zh.md: 6f628eb933b75323f9eb88eb292ffa75f0c74e12

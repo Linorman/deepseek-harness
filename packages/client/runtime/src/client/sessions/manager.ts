@@ -543,6 +543,7 @@ export class SessionManager {
           sessionId: frame.sessionId, updatedAt: Date.now(), running: false, blank: frame.blank,
           ...(frame.cwd !== undefined ? { cwd: frame.cwd } : {}),
           ...(frame.agentPreset !== undefined ? { agentPreset: frame.agentPreset } : {}),
+          ...frame.team === undefined ? {} : { team: frame.team },
         })
         this.sessions.get(frame.sessionId)?.handleBlank(frame.blank)
         return
@@ -662,6 +663,7 @@ export class SessionManager {
       if (
         prev !== undefined && prev.updatedAt === entry.updatedAt && prev.running === entry.running
         && prev.blank === entry.blank && prev.agentPreset === entry.agentPreset
+        && prev.team?.teamId === entry.team?.teamId && prev.team?.participantId === entry.team?.participantId
         && prev.cwd === entry.cwd && prev.title === entry.title
         && prev.pendingInteraction === entry.pendingInteraction
         && prev.projectionValues === entry.projectionValues
@@ -702,6 +704,7 @@ function applyMutation(summaries: readonly SessionSummary[], mutation: SessionLi
         // Blank only lowers: a stale true (session-added racing the local
         // first send) never re-hides an already-surfaced session.
         blank: existing.blank && mutation.summary.blank,
+        ...mutation.summary.team === undefined ? {} : { team: mutation.summary.team },
         ...(existing.cwd === undefined && mutation.summary.cwd !== undefined ? { cwd: mutation.summary.cwd } : {}),
         // Newest wins, not fill-only: a blank-session preset switch replaces
         // the creation-time value, and every producer of this field (the
@@ -710,7 +713,9 @@ function applyMutation(summaries: readonly SessionSummary[], mutation: SessionLi
           ? { agentPreset: mutation.summary.agentPreset } : {}),
       }
       if (filled.cwd === existing.cwd && filled.blank === existing.blank
-        && filled.agentPreset === existing.agentPreset) return [...summaries]
+        && filled.agentPreset === existing.agentPreset
+        && filled.team?.teamId === existing.team?.teamId
+        && filled.team?.participantId === existing.team?.participantId) return [...summaries]
       return summaries.map(summary => summary.sessionId === mutation.summary.sessionId ? filled : summary)
     }
     case 'remove':

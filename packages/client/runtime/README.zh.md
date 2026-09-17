@@ -2,7 +2,9 @@
 
 [English](README.md) | 中文
 
-客户端 cordis 启动与不依赖 React 的对象服务：SlotRegistry 包装 SlotCore 并提供 renderer 数据源；SessionRuntime 拥有 Session 对象、列表与 scope 状态，以及供已注册 conversation view target 共用的事件窗口与历史分页。TeamTaskRuntime 持有浏览器 Team 列表、选中 Team 与局部首输入草稿；它只把 Team 的协调者 Session 解析为转录后代。WorkspaceRuntime 持有供非产品组合使用的 Host Workspace 与目录操作。运行时把共享 Host 流分发给 Session 与 Workspace 所有者，并把每个通用 `host/remote-event` 帧交给 `ctx.remote.$dispatch`；各领域包通过 `ctx.remote.$on` 订阅自身 owner 事件，并自行决定使哪些缓存或会话行失效。客户端不持有任何实体化之前的会话状态——agent scope（host clocky-scope 的客户端镜像，以 agent/session 共用 id 为键）在会话行进入列表镜像时创建，并随 prune 销毁。约定：api-contracts v3 §4。每个 `Session` 持有一个通用的 `ProjectionValueStore`，由历史记录尾部的 `projections` 块播种，并经 `session/projection` 帧按 seq 高者胜更新；领域键（含 `todos`）经 `projections.faceOf`／`useProjection` 读取，不经 `ConversationSnapshot`。该 store 还会通过 `SessionSummary.projectionValues` 发布一份引用稳定的完整值映射，使全局列表消费方无需为每个会话创建订阅，即可复用同一组投影。
+TeamTaskRuntime 保留有界 selection、可选标量元数据和独立集合窗口。首次打开与后台刷新使用`team.selection`；类型化任务事件使独立任务 inspector 标记为待刷新。成员 Session 链接携带 Participant 身份，并通过`team.member.session`核对。Session 摘要携带头部中不可变的 Team/Participant 身份；协调者输入通过有界 selection 核对，不需要独立历史路由缓存。进入草稿或归档会释放当前选择和窗口。
+
+Team、通道和收件箱列表、通道记录及审计视图各保留一个 provider 页。续页替换当前窗口，失败保留原页。Team/通道列表刷新重读当前起点，返回首页才重启遍历；已选 Team、任务和通道不依赖列表成员。收件箱换页复用未提交回答确认。通道同意操作的重试身份由通道、参与者、邀请版本和 manifest 指纹派生，不需要历史键缓存。
 
 对于每条 Session 提示词，运行时都会采样浏览器当前的 `Intl.DateTimeFormat().resolvedOptions().timeZone`，并只把该值附加到这一次请求。该值不缓存，因此旅行与并发标签页都能保留消息本地的来源信息。浏览器若无法提供非空时区，会在本地拒绝该提示词，而不会悄然使用部署状态代替。
 
@@ -22,11 +24,15 @@ Team 列表刷新只读取用户已明确请求的页范围。`loadMore()` 根�
 
 `TeamTaskRuntime` 持有 `ctx.teamTasks`。客户端启动时会清除已选转录并调用 `startDraft()`，不分配 Team 或 Session。`start()` 通过 `team.start` 将修剪后的文本同时作为 Team 目标和首条可信人类消息发送。启动失败时保留同一键和语义指纹；在放弃草稿前，改变后的重试会被拒绝。`open(teamId)` 读取持久化 Team 状态并解析协调者 activation 的 Session id。`archive(teamId)` 使用当前 Team cursor，在 Host 确认持久归档标记后隐藏终态 Team。连接时会对 Team 列表进行单飞刷新；尚无 Team watch 流。Session 刷新与转录导航仍归调用方持有，因为 Team runtime 从不把 Session 视作产品身份。
 
+`readTaskDetail()`拥有一个当前任务记录、最近的已结算 attempt，以及每类历史的一页替换窗口。成员、任务与工作流集合读取 browse 摘要。历史读取锁定记录版本；切换任务或关闭详情会取消旧读取。模块导航保留这份有界选择，重连后重新验证。观察到新版本时，操作会禁用直到显式刷新。任务写入成功会刷新所选记录；取消后的轮询使用有界详情，并在不再查看该任务时停止。
+
+`readWorkflowDetail()`保留一个工作流版本及任务窗口。切换计划会取消旧读取，模块导航复用当前页；新版本事件保留可见内容，续页前必须显式刷新。工作流链接保留已选计划身份。
+
 ## Workspace 与 Session 列表
 
 Workspace 和 Session 列表各自具有单调的 `pending` → `ready` 基线阶段，也有各自的刷新活动／错误状态。列表请求期间到达的增量插入或更新／移除／顺序帧与一元变更回显会在其响应之上回放。每次成功的 Workspace 基线都会重新建立 Host 持久 Workspace 顺序，因此重连会接纳该客户端离线期间提交的变更。`WorkspaceRuntime.insertBefore` 会立即安装乐观顺序；只有最新一元回声可以替换它，更新的 Host 顺序帧优先于旧回声，而最新请求被拒时会恢复最近一次由 Host 确认的顺序，不会恢复更早且尚未提交的拖拽。已移除的 Workspace id 会保留进程本地删除标记，避免延迟到达的 changed 帧将其复活。Workspace 新近程度只在两条基线都 ready 后派生，且绝不改变 Workspace 列表顺序。
 
-`SessionSummary.pendingInteraction` 将阻塞 Session 的实时用户操作分类为 `approval`、`plan-review` 或 `question`。`SessionManager` 依据稳定的请求标识跟踪可应答请求的 requested/resolved mux 帧，即使 `Session` 对象尚未实例化也不例外；实例化前的缓冲会保留每个仍有效的请求，替换回放产生的重复项，并移除已解决的请求，因此打开 Session 时，列表状态始终有一个对应的可应答 `PendingWait`。审批与问题并发时，第一个 pending 问题具有更高的呈现优先级，以匹配 composer 路由；只有满足 plan-review composer 二元呈现约束的请求才会保留独立的 `plan-review` 状态。普通 Session 状态的作用域限定在连接代次内：断连时清除，mux 打开时的回放只恢复仍处于 pending 的请求。Team page 则会从持久 `TeamStateSnapshot.humanActions` 预置 pending human-action 列表，因此 Team 级请求在 Hub 重启后仍保留，即使当时的 Session promise 无法恢复。
+`SessionSummary.pendingInteraction` 将阻塞 Session 的实时用户操作分类为 `approval`、`plan-review` 或 `question`。`SessionManager` 依据稳定的请求标识跟踪可应答请求的 requested/resolved mux 帧，即使 `Session` 对象尚未实例化也不例外；实例化前的缓冲会保留每个仍有效的请求，替换回放产生的重复项，并移除已解决的请求，因此打开 Session 时，列表状态始终有一个对应的可应答 `PendingWait`。审批与问题并发时，第一个 pending 问题具有更高的呈现优先级，以匹配 composer 路由；只有满足 plan-review composer 二元呈现约束的请求才会保留独立的 `plan-review` 状态。普通 Session 状态的作用域限定在连接代次内：断连时清除，mux 打开时的回放只恢复仍处于 pending 的请求。Team 操作另有持久的 principal inbox 记录，在 Hub 重启后仍然存在，不依赖当时的 Session promise。
 
 `WorkspaceRuntime.delete(workspaceId)` 在一元响应成功后从客户端投影中移除注册记录；对应的 `host/workspace-removed` 帧具有幂等性，并负责同步其他标签页。Session 状态与当前 Session selection 相互独立，因此 Workspace 消失后，其已纳入客户端投影的 Session 会立即投影到 Ungrouped 下。
 
@@ -54,7 +60,7 @@ SlotRegistry 分别为 renderer 提供 `useSessions` 与 `useWorkspaces` 的裸 
 
 Definition 作者只根据当前事件完成匹配，为每条关联事件提供稳定业务 id，并保证 update 能按日志 `seq` 回放；renderer 只消费最终 Node data 与受限 Location value，不扫描 Session 或 Chat 集合。完整注册和分页路径见 [Conversation Node 实操手册](../../../docs/cookbook/adding-a-conversation-node.zh.md)。
 
-`ui-conversation` 注册内建 Chat Definition 与 keyed Chat snapshot builder。append 来源的 user、assistant 和 Tool result 构成人类可见记录；仅供模型使用的 replacement 副本不进入 Chat，compaction 检查点除外，它会成为独立标记，并在更早分页补齐 summary 溯源后更新。持久 inbox splice Context 能把 next-step 用户消息判定为 steering，无须让 inbox 状态成为 Session 特例。上下文消息保留生产者 provenance 与 form。StatsLine 读取 `ConversationSnapshot.chat.legacy.nodes`；Session 则把该 legacy slice 镜像到顶层 `nodes`、`partial` 和 `runningCalls` 公共兼容字段，无须运行第二套业务 fold。`ui-trajectory` 在同一个 Session 窗口上注册独立 Definition 与 target builder；它保留现有的 stage-oriented view model，既不消费 Chat 兼容字段，也不运行另一套 history fold。
+`ui-conversation` 注册内建 Chat Definition 与 keyed Chat snapshot builder。append 来源的 user、assistant 和 Tool result 构成人类可见记录；仅供模型使用的 replacement 副本不进入 Chat，compaction 检查点除外，它会成为独立标记，并在更早分页补齐 summary 溯源后更新。持久 inbox splice Context 能把 next-step 用户消息判定为 steering，无须让 inbox 状态成为 Session 特例。上下文消息保留生产者 provenance 与 form。StatsLine 读取 `ConversationSnapshot.chat.legacy.nodes`；Session 则把该 legacy slice 镜像到顶层 `nodes`、`partial` 和 `runningCalls` 公共兼容字段，无须运行第二套业务 fold。`ui-trajectory` 在同一个 Session 窗口上注册独立 Definition 与 target builder；它保留现有的 stage-oriented view model，既不消费 Chat 兼容字段，也不运行另一套 history fold。 Inbox compaction 错误保留当前可见页；`recoverInbox()`显式从服务端给出的保留边界继续读取，watch 发现 compaction 时亦如此。
 
 Chat builder 为每个 Session 保留一个 mutable keyed store。内容更新只通知受影响的 node key；结构变化才重建顺序和 Location 成员关系；prepend 只增加行，不替换既有 keyed value。每个 Assistant chunk 都会更新 Definition State，但最多每个 animation frame 请求一次物化；final message 与 Turn/Step 关闭会立即发布。参见 [Client Tool 展示所有权决策](../../../.agents/notes/implemented/architecture/2026-08-08-client-tool-presentation-ownership.zh.md)。
 

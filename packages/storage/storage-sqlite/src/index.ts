@@ -8,7 +8,7 @@
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import type { DatabaseSync } from 'node:sqlite'
-import { StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
+import { parseLogSummary, StorageError, UNIT_NAME_RE, storageBackendServiceKey } from '@clocky/clocky-storage'
 import type {
   KvFacet, KvUnit, KvUnitDescriptor, LogFacet, LogStream, LogStreamDescriptor,
   LogStreamInfo, StorageBackend,
@@ -61,6 +61,38 @@ export class SqliteStorageBackend implements StorageBackend {
   readonly kv: KvFacet = { open: descriptor => this.openUnit(descriptor) }
   /** Durable append-only streams backed by `log_*` tables. */
   readonly log: LogFacet = {
+    readSummary: async (descriptor, maxBytes) => {
+      this.ensureOpenForLogs()
+      const db = await this.ready
+      this.ensureOpenForLogs()
+      const row = db.prepare('SELECT version, tail_sequence, length(CAST(summary AS BLOB)) AS bytes, '
+        + 'CASE WHEN length(CAST(summary AS BLOB)) <= ? THEN summary END AS summary FROM log_streams WHERE name = ?')
+        .get(maxBytes, descriptor.name) as
+        | { version: number; tail_sequence: number; bytes: number | null; summary: string | null }
+        | undefined
+      if (row === undefined) return undefined
+      if (row.bytes !== null && row.bytes > maxBytes) {
+        throw new StorageError('invalid-value', `log '${descriptor.name}' summary exceeds ${maxBytes} bytes`)
+      }
+      let summary: unknown
+      if (row.summary !== null) {
+        try { summary = JSON.parse(row.summary) }
+        catch (error: unknown) { throw new StorageError('malformed-medium', `log '${descriptor.name}' has invalid summary JSON`, { cause: error }) }
+      }
+      const header = { name: descriptor.name, version: row.version, tailSequence: row.tail_sequence,
+        ...(row.summary === null ? {} : { summary }) }
+      if (Buffer.byteLength(JSON.stringify({ stream: header })) + 1 > maxBytes) {
+        throw new StorageError('invalid-value', `log '${descriptor.name}' summary metadata exceeds ${maxBytes} bytes`)
+      }
+      return parseLogSummary(header, descriptor)
+    },
+    has: async (name) => {
+      this.ensureOpenForLogs()
+      const db = await this.ready
+      this.ensureOpenForLogs()
+      return db.prepare('SELECT 1 FROM log_streams WHERE name = ?').get(name) !== undefined
+    },
+    scanNames: (prefix, maxNameBytes) => this.scanLogNames(prefix, maxNameBytes),
     open: descriptor => this.openLog(descriptor),
     list: () => this.listLogs(),
   }
@@ -165,6 +197,29 @@ export class SqliteStorageBackend implements StorageBackend {
     )
   }
 
+  /** Seek one indexed stream name per yield without validating or reading its values. */
+  private async * scanLogNames(prefix: string, maxNameBytes: number): AsyncIterable<string | undefined> {
+    this.ensureOpenForLogs()
+    const db = await this.ready
+    this.ensureOpenForLogs()
+    const upper = prefixSuccessor(prefix)
+    const select = 'SELECT CASE WHEN length(CAST(name AS BLOB)) <= ? THEN name END AS name FROM log_streams WHERE name '
+    const suffix = `${upper === undefined ? '' : ' AND name < ?'} ORDER BY name LIMIT 1`
+    const first = db.prepare(`${select}>= ?${suffix}`)
+    const next = db.prepare(`${select}> ?${suffix}`)
+    let after: string | undefined
+    while (true) {
+      this.ensureOpenForLogs()
+      const args = [maxNameBytes, after ?? prefix, ...upper === undefined ? [] : [upper]]
+      const row = (after === undefined ? first : next).get(...args) as { name: string | null } | undefined
+      if (row === undefined) return
+      if (row.name === null) throw new StorageError('invalid-value', 'log name exceeds the discovery byte limit')
+      if (row.name.length === 0) throw new StorageError('malformed-medium', 'log stream name is empty')
+      after = row.name
+      yield row.name
+    }
+  }
+
   /** List and validate every materialized stream in stable name order. */
   private async listLogs(): Promise<readonly LogStreamInfo[]> {
     this.ensureOpenForLogs()
@@ -242,4 +297,18 @@ export function apply(ctx: Context, config: Config) {
     }
   }, 'storage-sqlite.registerBackend')
   ctx.provide(storageBackendServiceKey('sqlite'), backend)
+}
+
+/** Exclusive UTF-8 prefix upper bound; an empty or maximal prefix has no upper bound. */
+function prefixSuccessor(prefix: string): string | undefined {
+  let end = prefix.length
+  // oxlint-disable-next-line typescript/no-misused-spread -- SQLite BINARY ranges use scalar values, not grapheme clusters.
+  for (const character of [...prefix].reverse()) {
+    end -= character.length
+    // String iteration yields one complete, nonempty code point.
+    const point = character.codePointAt(0) as number
+    if (point === 0x10ffff) continue
+    return prefix.slice(0, end) + String.fromCodePoint(point === 0xd7ff ? 0xe000 : point + 1)
+  }
+  return undefined
 }

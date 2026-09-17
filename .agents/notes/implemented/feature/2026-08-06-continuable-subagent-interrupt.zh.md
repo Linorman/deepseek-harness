@@ -41,4 +41,4 @@ Status: implemented
 
 ## 测试
 
-`packages/subagent/subagent/tests/continuation.spec.ts` 中的核心覆盖证明了持久化 `turn/end` 中止、队列先暂停后按 FIFO 恢复、后代不受影响、两种授权及其取消 cause、self/sibling/stale/非 ancestor 拒绝、absent/一次性/disposal 竞态 no-op，以及 `keepInbox` 循环行为不变。`packages/subagent/tool-subagent-control/tests` 中的自定义工具覆盖证明直接与更深 ancestor 以 `parent` cause 中断并暂停队列、self/sibling/陌生调用方被拒绝且不触碰目标、目标不存在时 no-op 且不冷恢复，以及 descendants 列表的 pre-order 位置。
+`packages/compat/subagent/tests/continuation.spec.ts` 中的核心覆盖证明了持久化 `turn/end` 中止、队列先暂停后按 FIFO 恢复、后代不受影响、两种授权及其取消 cause、self/sibling/stale/非 ancestor 拒绝、absent/一次性/disposal 竞态 no-op，以及 `keepInbox` 循环行为不变。`packages/compat/tool-subagent-control/tests` 中的自定义工具覆盖证明直接与更深 ancestor 以 `parent` cause 中断并暂停队列、self/sibling/陌生调用方被拒绝且不触碰目标、目标不存在时 no-op 且不冷恢复，以及 descendants 列表的 pre-order 位置。

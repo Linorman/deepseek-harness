@@ -22,7 +22,7 @@ Loader 会先导入变化后的模块名，再 dispose（资源释放）活动 f
 
 Include 读取并校验尚未提交的候选内容，把补丁应用到其副本，对账 Loader 树，然后才提交缓存内容和解析数据。解析、校验、应用或回滚失败后，`refresh()` 会向调用方 reject。初始加载仍会明确报错；只有文件不存在时才可以使用 `initial`。YAML/JSON 结果若不是数组即为无效；文件刷新和 Include 配置更新都会重新应用补丁，且不修改缓存的解析结果。
 
-HMR 收容实时刷新 rejection。其 `registerConfig(filename, refresh)` 方法从最近的现有祖先目录开始监听一个确切路径，串行化并合并刷新，并返回一个异步 disposer；该 disposer 会关闭 watcher 并排空活跃工作。确切路径和普通配置文件的刷新都使用此队列。失败会被规范化为 `Error`、记入日志，并通过并行事件 `hmr/config-update-failed(filename, error)` 广播；发生 rejection 的观察者会被记录，但不会阻止后续刷新。创建、变更和移除均会被观察。
+HMR 收容实时刷新 rejection。其 `registerConfig(filename, refresh)` 方法从最近的现有祖先目录开始监听一个确切路径，串行化并合并刷新，并返回一个异步 disposer；该 disposer 会关闭 watcher 并排空活跃工作。确切路径和普通配置文件的刷新都使用此队列。失败会被规范化为 `Error`、记入日志，并通过并行事件 `hmr/config-update-failed(filename, error)` 广播；发生 rejection 的观察者会被记录，但不会阻止后续刷新。创建、变更和移除均会被观察。 确切配置路径还会按`configPollIntervalMs`（默认 1000 ms）比较设备/inode、大小与纳秒级修改/变更时间。原生事件与元数据复核共用一个串行、去重的刷新路径。初始不存在不触发刷新；即使原生通知丢失，创建、修改和删除仍可收敛。关闭 registration 会停止新检查并排空已接纳的刷新工作。
 
 一个 HMR 实例的主 watcher 启动与确切配置注册共享一个取消信号。owner 移除会在异步清理前关闭接纳，并取消尚未完成的就绪等待；Chokidar 在 watcher 关闭后不会发出 `ready`。注册在目录查找后重新检查 owner 与调用方的生命周期，在等待就绪前登记调用方拥有的清理，并持续追踪注册，直到发布或清理结束。卸载会关闭实际 watcher，并排空已接纳的注册和刷新。提前发出的 fiber dispose 通知还会取消仍在等待的主 watcher 初始化，因为 Cordis 要等待 setup 完成才执行常规 teardown。已取消的注册以 `INACTIVE_EFFECT` 拒绝，保持应用启动器对正常退出的处理语义。
 

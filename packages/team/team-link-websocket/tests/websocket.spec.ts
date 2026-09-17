@@ -633,7 +633,7 @@ describe('WebSocket Team Link provider', () => {
         target: { ...interrupt.target, participantId: 'other-participant' },
       }),
     })
-    await expect(foreign.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+    await expect(foreign.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH', retryable: false })
 
     const duplicatePeer = await peer()
     const duplicateContext = await setup(duplicatePeer)
@@ -796,7 +796,7 @@ describe('WebSocket Team Link provider', () => {
       id: attach.id,
       binding: { ...identity(), sessionId: 'other-session' as ActivationBindingSnapshot['sessionId'] },
     })
-    await expect(connecting).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+    await expect(connecting).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH', retryable: false })
   })
 
   it('rejects attach and subscription responses that violate their expected order or result', async () => {
@@ -813,7 +813,7 @@ describe('WebSocket Team Link provider', () => {
       ok: false,
       error: { code: 'unauthorized', message: 'binding is not authorized' },
     })
-    await expect(rejectedAttach).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_REMOTE_REJECTED' })
+    await expect(rejectedAttach).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_UNAUTHORIZED', retryable: false })
 
     const prematurePeer = await peer()
     const prematureContext = await setup(prematurePeer)
@@ -863,7 +863,7 @@ describe('WebSocket Team Link provider', () => {
       ok: false,
       error: { code: 'not-pending', message: 'delivery is no longer pending' },
     })
-    await expect(rejected).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_REMOTE_REJECTED' })
+    await expect(rejected).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_REMOTE_REJECTED', retryable: true })
 
     const retried = link.claim(envelope.channelId, envelope.id)
     const second = await receiveFrame(socket)
@@ -959,7 +959,7 @@ describe('WebSocket Team Link provider', () => {
       deliveryId: deliveryId('foreign-team'),
       envelope: teamEnvelopeSchema.parse({ ...envelope, teamId: 'other-team' }),
     })
-    await expect(foreign.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+    await expect(foreign.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH', retryable: false })
 
     const audiencePeer = await peer()
     const audienceContext = await setup(audiencePeer)
@@ -970,19 +970,19 @@ describe('WebSocket Team Link provider', () => {
       deliveryId: deliveryId('foreign-audience'),
       envelope: teamEnvelopeSchema.parse({ ...envelope, audience: [] }),
     })
-    await expect(audience.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH' })
+    await expect(audience.link.done).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_BINDING_MISMATCH', retryable: false })
   })
 
   it('rejects a missing capability and a stalled connect without logging the capability', async () => {
     const remote = await peer()
     const ctx = await setup(remote, { connectTimeoutMs: 25 })
     delete process.env.CLOCKY_TEAM_LINK_WEBSOCKET_TEST_CAPABILITY
-    await expect(ctx.teamLinks.connect({ provider: 'websocket', binding })).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_CAPABILITY_MISSING' })
+    await expect(ctx.teamLinks.connect({ provider: 'websocket', binding })).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_CAPABILITY_MISSING', retryable: false })
     process.env[CAPABILITY_ENV] = CAPABILITY
 
     const stalled = ctx.teamLinks.connect({ provider: 'websocket', binding })
     await remote.accept()
-    await expect(stalled).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_CONNECT_TIMEOUT' })
+    await expect(stalled).rejects.toMatchObject({ code: 'TEAM_LINK_WEBSOCKET_CONNECT_TIMEOUT', retryable: true })
   })
 
   it('times out a black-hole operation and clears its pending request', async () => {

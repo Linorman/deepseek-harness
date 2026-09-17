@@ -13,7 +13,7 @@ import pytest
 
 from clocky import Clocky, HarnessClient, HarnessConfig
 from clocky.errors import TransportClosedError
-from clocky_runtime import resolve_bundled_launch_args
+from clocky_runtime import bundled_default_config_path, resolve_bundled_launch_args
 
 _MODES = ("exe", "node")
 _REPO_ROOT = Path(__file__).parents[3]
@@ -65,6 +65,87 @@ _CORDIS_YML = """\
   name: '@clocky/clocky-tool-todo'
   config:
     allowParallelInProgress: true
+- id: agent-default-model
+  name: '@clocky/clocky-agent-default-model'
+  config:
+    provider: test-provider
+    model: test-model-pro
+- id: team-storage
+  name: '@clocky/clocky-storage'
+
+- id: team-storage-json
+  name: '@clocky/clocky-storage-json'
+  config:
+    root: !!js "(process.env.CLOCKY_SESSION_ROOT ?? './.sessions') + '/team-hub'"
+
+- id: team-storage-log
+  name: '@clocky/clocky-storage-log'
+  config:
+    backend: json
+    routes: {}
+
+- id: team-hub
+  name: '@clocky/clocky-team-hub'
+
+- id: team-channel-direct
+  name: '@clocky/clocky-team-channel-direct'
+
+- id: team-agent-runtime
+  name: '@clocky/clocky-agent-runtime'
+
+- id: team-agent-runtime-in-process
+  name: '@clocky/clocky-agent-runtime-in-process'
+
+- id: team-activation-controller
+  name: '@clocky/clocky-team-activation-controller'
+
+- id: team-link
+  name: '@clocky/clocky-team-link'
+
+- id: team-link-local
+  name: '@clocky/clocky-team-link-local'
+
+- id: team-human-actor
+  name: '@clocky/clocky-team-human-actor'
+
+- id: team-channel-admission
+  name: '@clocky/clocky-team-channel-admission'
+
+- id: team-agent-client
+  name: '@clocky/clocky-team-agent-client'
+
+- id: tool-team
+  name: '@clocky/clocky-tool-team'
+
+- id: team-run
+  name: '@clocky/clocky-team-run'
+
+- id: team-closure-drive-registry
+  name: '@clocky/clocky-team-closure-driver/registry'
+
+- id: team-closure-driver-hub
+  name: '@clocky/clocky-team-closure-driver/hub'
+  config:
+    backend: hub
+
+- id: team-closure-driver
+  name: '@clocky/clocky-team-closure-driver'
+  config:
+    backend: hub
+    maxTeamsPerDrive: 128
+    pageSize: 32
+    disposalTimeoutMs: 5000
+    pulseIntervalMs: 1000
+
+- id: team-human-client
+  name: '@clocky/clocky-team-human-client'
+  config:
+    storagePageSize: 32
+    maxPageSize: 32
+    maxDeliveryBytes: 262144
+    maxPendingOperations: 128
+    watchTimeoutMs: 30000
+    pollIntervalMs: 250
 """
 
 
@@ -195,8 +276,10 @@ def test_bundled_runtime_accepts_the_local_qwen_route_without_a_model_call(
         provider="local-vllm",
         model="Qwen3.8-27B-AWQ-4bit",
         cwd=str(tmp_path),
+        cordis=str(bundled_default_config_path()),
         session_root=str(tmp_path / "sessions"),
         env={
+            "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(_SDK_CREDENTIAL.encode()).hexdigest(),
             "CLOCKY_LOCAL_MODEL_API_KEY": "EMPTY",
             "CLOCKY_LOCAL_MODEL_REASONING_EFFORT": "high",
         },

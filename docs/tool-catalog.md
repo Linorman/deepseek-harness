@@ -27,7 +27,6 @@ This table connects model-visible tool names to the plugin package and service s
 | `@clocky/clocky-tool-fs` | `edit`, `read`, `read_image`, `write` | `ctx.tools`, `ctx.fs`, `ctx.systemPrompt`, `ctx.attachments (image-tool registration)`, `ctx.llm + an image-capable route (image-tool execution)` | `tool/call`, `fs/write-intent or fs/edit-intent for mutations`, `fs/observed after read presence/absence or successful file operation`, `durable attachment (read_image)`, `tool/result` | - | The read-before-write/edit policy is added by `@clocky/clocky-fs-observation-policy` (an `fs/*` event-gate plugin, no schema change); a deployment that loads these tools is expected to also load it. The image tool is not registered without `ctx.attachments`; its schema is route-independent, and execution refuses unless the exact routed model declares image input. |
 | `@clocky/clocky-tool-fs-search` | `glob`, `grep` | `ctx.tools`, `ctx.subprocess`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | glob and grep are unconditional discovery tools that spawn the packaged ripgrep binary (`@vscode/ripgrep`) through ctx.subprocess as ordinary foreground calls (never background jobs) — no host `rg` install and no shell layer. The catalog uses `sampleOverCapGlobResults: true`; deployments must choose that behavior explicitly. Capped results save the complete formatted list through the optional ctx.spillStore backend; returned locators are follow-up-readable/searchable when the backend exposes local paths in co-located deployments. |
 | `@clocky/clocky-tool-terminal` | `terminal_close`, `terminal_list`, `terminal_open`, `terminal_read`, `terminal_send`, `terminal_signal` | `ctx.tools`, `ctx.terminals`, `ctx.systemPrompt`, `ctx.jobs at call time for run_in_background` | `tool/call`, `tool/result` | - | The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema. |
-| `@clocky/clocky-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@clocky/clocky-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
 | `@clocky/clocky-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@clocky/clocky-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
 | `@clocky/clocky-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
@@ -964,100 +963,6 @@ Send an allowed signal to the current foreground process group of a persistent t
 Source: [`packages/terminal/tool-terminal/src/index.ts`](../packages/terminal/tool-terminal/src/index.ts)
 
 The six terminal tools are opt-in and complement one-shot shell/filesystem tools. `terminal_send(run_in_background: true)` registers with `ctx.jobs`; TUI, named key sequences, BEL, resize, auto-start, and cross-agent sharing are absent from the schema.
-
-<a id="clockyclocky-tool-goal"></a>
-
-## `@clocky/clocky-tool-goal`
-
-### `create_goal`
-
-Create one persisted same-session completion goal when the current direct human request is a long-running objective that should continue across autonomous goal rounds. You may infer that intent without requiring the user to say "create a goal". Do not use this for trivial single-turn work. Execution rejects non-human and subagent authority.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "objective": {
-      "type": "string",
-      "description": "The concrete completion objective inferred from the direct human request."
-    },
-    "max_goal_rounds": {
-      "type": "number",
-      "description": "Optional positive safe-integer limit on automatic continuation rounds."
-    }
-  },
-  "required": [
-    "objective"
-  ]
-}
-```
-
-Source: [`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
-
-### `get_goal`
-
-Read the current same-session goal, including its exact id/revision, objective, phase, completed continuation rounds, round limit, blocker reason when present, and whether another continuation is armed. Call this before updating a goal.
-
-```json
-{
-  "type": "object",
-  "properties": {}
-}
-```
-
-Source: [`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
-
-### `update_goal`
-
-Update the exact current goal revision. edit, pause, and resume require a direct top-level human request. During an automatic continuation of the current goal, complete and blocked are also allowed. blocked is rejected before the configured minimum round count; the model remains responsible for judging that the same condition persisted across those rounds and must explain it in blocked_reason.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "goal_id": {
-      "type": "string",
-      "description": "Exact id returned by get_goal."
-    },
-    "revision": {
-      "type": "number",
-      "description": "Exact positive revision returned by get_goal."
-    },
-    "action": {
-      "type": "string",
-      "description": "edit | pause | resume | complete | blocked",
-      "enum": [
-        "edit",
-        "pause",
-        "resume",
-        "complete",
-        "blocked"
-      ]
-    },
-    "objective": {
-      "type": "string",
-      "description": "Replacement objective; valid only with action edit."
-    },
-    "max_goal_rounds": {
-      "type": "number",
-      "description": "Replacement cap; valid only with action edit."
-    },
-    "blocked_reason": {
-      "type": "string",
-      "description": "Concrete blocking condition; required only with action blocked."
-    }
-  },
-  "required": [
-    "goal_id",
-    "revision",
-    "action"
-  ]
-}
-```
-
-Source: [`packages/goal/tool-goal/src/index.ts`](../packages/goal/tool-goal/src/index.ts)
-
-create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds.
 
 <a id="clockyclocky-schedule"></a>
 
@@ -2003,7 +1908,7 @@ Delegate a bounded task to a child Team with its own coordinator. Provide comple
       }
     },
     "budget": {
-      "description": "Resource ceilings: maxInputTokens, maxOutputTokens, maxTotalTokens, maxTurns, maxWallTimeMs, maxCostUnits, maxRetries, maxConcurrency, maxArtifactBytes. Values cannot exceed this Team’s allowance."
+      "description": "Resource ceilings: maxInputTokens, maxOutputTokens, maxTotalTokens, maxTurns, maxWallTimeMs, maxCostUnits, maxRetries, maxConcurrency, maxChildTeams, maxLiveActivations, maxArtifactBytes. Values cannot exceed this Team’s allowance. A bounded parent requires maxChildTeams (zero for a leaf child) and maxLiveActivations (including the child coordinator and idle workers)."
     },
     "template_id": {
       "type": "string",
@@ -2064,7 +1969,7 @@ Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team
 
 ### `team_task_start`
 
-Start one independent, bounded Team task for the configured worker pool. Provide a concise subject, complete instructions, the expected deliverable, validation, and any filesystem regions the task may read or modify. For a non-trivial objective with multiple feasible workstreams, start at least two independent tasks before waiting. Use narrow, non-overlapping workspace-relative file scopes only for concurrent shared-workspace writers; leave scopes empty for work that does not touch files, and use a read-only research, analysis, or review task when only one writer is safe. Use workspace-relative read_scopes and write_scopes; absolute paths under the current workspace are converted, while paths outside the workspace are rejected. The current workspace and permission mode are shown in runtime context. The coordinator may set the pool with team_worker_pool_set; the scheduler assigns this task to an eligible idle worker, or leaves it queued when every worker is busy. The returned review_policy identifies the selected reviewer or none. The task continues after this call; start other independent tasks before waiting when useful, then use team_task_wait when a result is needed. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+Start one independent, bounded Team task for the configured worker pool. Provide a concise subject, complete instructions, the expected deliverable, validation, and any filesystem regions the task may read or modify. Use narrow, non-overlapping workspace-relative scopes for concurrent writers; leave scopes empty for work that does not touch files. Use workspace-relative read_scopes and write_scopes; absolute paths under the current workspace are converted, while paths outside the workspace are rejected. The current workspace and permission mode are shown in runtime context. The coordinator may set the pool with team_worker_pool_set; the scheduler assigns this task to an eligible idle worker, or leaves it queued when every worker is busy. The returned review_policy identifies the selected reviewer or none. The task continues after this call; start other independent tasks before waiting when useful, then use team_task_wait when a result is needed. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
 
 ```json
 {
@@ -2104,7 +2009,7 @@ Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team
 
 ### `team_task_wait`
 
-Wait for a worker or child-Team task started by this coordinator, including any configured review. The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start or team_task_delegate. Cancelling this call stops only the wait, not the task. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+Wait for a worker or child-Team task started by this coordinator, including any configured review. If its reviewer stops without a decision, the call reports an error and leaves the task in review; correct the reviewer or cancel the task before rescheduling. The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start or team_task_delegate. Cancelling this call stops only the wait, not the task. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
 
 ```json
 {
@@ -2125,7 +2030,7 @@ Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team
 
 ### `team_task_watch`
 
-Wait for a bounded Team cursor advance and return the compact state of this coordinator's worker and child-Team tasks. Provide the cursor from the previous list or watch result; cancelling this call stops only the watch. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
+Wait for a bounded Team cursor advance and return the compact state of this coordinator's worker and child-Team tasks. Omit after_cursor for an immediate first snapshot; thereafter use the cursor from the previous watch result; cancelling this call stops only the watch. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.
 
 ```json
 {
@@ -2143,7 +2048,7 @@ Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team
 
 ### `team_worker_pool_set`
 
-Set the desired number of worker agents for this Team. For any non-trivial objective with multiple feasible workstreams, including research, analysis, writing, data, operations, coding, or mixed work, set at least 2 before starting independent work and increase it when the task graph has more parallel work. The request is capped by the deployment limit; tasks beyond currently available workers stay queued and are assigned as workers become idle, so do not wait for a slot before starting independent tasks.
+Set the desired number of worker agents for this Team. The request is capped by the deployment limit; tasks beyond currently available workers stay queued and are assigned as workers become idle, so do not wait for a slot before starting independent tasks.
 
 ```json
 {
@@ -2171,7 +2076,612 @@ Compile one bounded declarative Team workflow from JSON. Provide task templates,
   "type": "object",
   "properties": {
     "plan": {
-      "description": "Complete JSON-serializable TeamWorkflowPlan."
+      "type": "object",
+      "description": "A complete task DAG. Use plan-local task ids in blockedBy and result.taskTemplateIds. Select only configured participant roles and capabilities; extensions require explicit installation.",
+      "examples": [
+        {
+          "version": 1,
+          "name": "two-stage",
+          "tasks": [
+            {
+              "id": "research",
+              "subject": "Gather evidence",
+              "description": "Collect evidence and write findings to findings.txt.",
+              "blockedBy": [],
+              "requiredCapabilities": [],
+              "priority": 0,
+              "readScopes": [],
+              "writeScopes": [
+                "findings.txt"
+              ],
+              "workspaceMode": "shared",
+              "budget": {},
+              "reviewPolicy": {
+                "kind": "none"
+              },
+              "maxAttempts": 1
+            },
+            {
+              "id": "report",
+              "subject": "Write the report",
+              "description": "Read findings.txt and produce the requested report.",
+              "blockedBy": [
+                "research"
+              ],
+              "requiredCapabilities": [],
+              "priority": 0,
+              "readScopes": [
+                "findings.txt"
+              ],
+              "writeScopes": [],
+              "workspaceMode": "shared",
+              "budget": {},
+              "reviewPolicy": {
+                "kind": "none"
+              },
+              "maxAttempts": 1
+            }
+          ],
+          "bounds": {
+            "maxTasks": 2,
+            "maxParallelism": 1,
+            "maxTotalAttempts": 2
+          },
+          "channel": {
+            "participantRoles": [
+              "coordinator",
+              "worker"
+            ],
+            "viewPolicy": {
+              "type": "recent-window",
+              "version": 1
+            },
+            "graph": {
+              "initial": {
+                "kind": "participant",
+                "role": "coordinator"
+              },
+              "transitions": [
+                {
+                  "condition": {
+                    "kind": "always"
+                  },
+                  "target": {
+                    "kind": "terminate"
+                  }
+                }
+              ],
+              "maxTurns": 1
+            }
+          },
+          "result": {
+            "kind": "task-results",
+            "taskTemplateIds": [
+              "report"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "integer",
+          "const": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "description": "Self-contained task brief, expected output, and verification."
+              },
+              "blockedBy": {
+                "type": "array",
+                "description": "Prerequisite task ids; use [] for a ready task.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "requiredCapabilities": {
+                "type": "array",
+                "description": "Use the configured worker capability shown in your Team instructions.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "priority": {
+                "type": "integer",
+                "description": "Nonnegative priority; 0 is ordinary priority."
+              },
+              "readScopes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "writeScopes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "workspaceMode": {
+                "type": "string",
+                "description": "Use shared unless another provider is mounted.",
+                "enum": [
+                  "shared",
+                  "worktree",
+                  "sandbox",
+                  "remote"
+                ]
+              },
+              "budget": {
+                "type": "object",
+                "description": "Task-specific resource restrictions; {} adds none.",
+                "additionalProperties": true
+              },
+              "reviewPolicy": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "none"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "participant"
+                      },
+                      "reviewerRole": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "reviewerRole"
+                    ]
+                  }
+                ]
+              },
+              "maxAttempts": {
+                "type": "integer",
+                "description": "Positive attempt limit, including the first attempt."
+              }
+            },
+            "required": [
+              "id",
+              "subject",
+              "description",
+              "blockedBy",
+              "requiredCapabilities",
+              "priority",
+              "readScopes",
+              "writeScopes",
+              "workspaceMode",
+              "budget",
+              "reviewPolicy",
+              "maxAttempts"
+            ]
+          }
+        },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxTasks": {
+              "type": "integer",
+              "description": "Positive limit at least the number of tasks."
+            },
+            "maxParallelism": {
+              "type": "integer",
+              "description": "Positive simultaneous-task limit."
+            },
+            "maxTotalAttempts": {
+              "type": "integer",
+              "description": "Positive total attempt limit for the plan."
+            }
+          },
+          "required": [
+            "maxTasks",
+            "maxParallelism",
+            "maxTotalAttempts"
+          ]
+        },
+        "channel": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "participantRoles": {
+              "type": "array",
+              "description": "Configured roles, normally coordinator and worker.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "viewPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Installed policy, for example recent-window."
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "Exact installed policy version, normally 1."
+                }
+              },
+              "required": [
+                "type",
+                "version"
+              ]
+            },
+            "graph": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "initial": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "participant"
+                        },
+                        "role": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "role"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "round-robin",
+                            "stay",
+                            "return-to-initiator",
+                            "terminate"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "extension"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "config": {}
+                      },
+                      "required": [
+                        "kind",
+                        "name",
+                        "version",
+                        "config"
+                      ]
+                    }
+                  ]
+                },
+                "transitions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "condition": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "always"
+                              }
+                            },
+                            "required": [
+                              "kind"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "envelope-kind"
+                              },
+                              "value": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "value"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "payload-present"
+                              },
+                              "path": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "path"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "payload-equals"
+                              },
+                              "path": {
+                                "type": "string"
+                              },
+                              "value": {}
+                            },
+                            "required": [
+                              "kind",
+                              "path",
+                              "value"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer"
+                              },
+                              "config": {}
+                            },
+                            "required": [
+                              "kind",
+                              "name",
+                              "version",
+                              "config"
+                            ]
+                          }
+                        ]
+                      },
+                      "target": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "participant"
+                              },
+                              "role": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "role"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "round-robin",
+                                  "stay",
+                                  "return-to-initiator",
+                                  "terminate"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "kind"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "extension"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "version": {
+                                "type": "integer"
+                              },
+                              "config": {}
+                            },
+                            "required": [
+                              "kind",
+                              "name",
+                              "version",
+                              "config"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "condition",
+                      "target"
+                    ]
+                  }
+                },
+                "defaultTarget": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "participant"
+                        },
+                        "role": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "role"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "round-robin",
+                            "stay",
+                            "return-to-initiator",
+                            "terminate"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "extension"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "integer"
+                        },
+                        "config": {}
+                      },
+                      "required": [
+                        "kind",
+                        "name",
+                        "version",
+                        "config"
+                      ]
+                    }
+                  ]
+                },
+                "maxTurns": {
+                  "type": "integer",
+                  "description": "Positive channel-turn limit."
+                }
+              },
+              "required": [
+                "initial",
+                "transitions",
+                "maxTurns"
+              ]
+            }
+          },
+          "required": [
+            "participantRoles",
+            "viewPolicy",
+            "graph"
+          ]
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "task-results"
+            },
+            "taskTemplateIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "kind",
+            "taskTemplateIds"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "name",
+        "tasks",
+        "bounds",
+        "channel",
+        "result"
+      ]
     }
   },
   "required": [
@@ -2214,7 +2724,7 @@ Source: [`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team
 
 ### `team_workflow_wait`
 
-Wait for a declarative Team workflow started by this coordinator. Use the plan_id returned by team_workflow_start. Cancelling this call stops only the wait, not the workflow.
+Wait for a declarative Team workflow started by this coordinator. A stopped reviewer without a decision is reported as an error instead of an indefinite wait. Use the plan_id returned by team_workflow_start. Cancelling this call stops only the wait, not the workflow.
 
 ```json
 {

@@ -122,13 +122,13 @@ const changedCoverageMode = changedCoverageRaw === '1'
 // Keep the narrow exception in forks while the rest of the inventory avoids per-file processes.
 const processBoundTests = [
   'packages/session/session-persistence-jsonl/tests/jsonl.spec.ts',
-  'packages/subagent/subagent-acp/tests/subagent-acp.spec.ts',
+  'packages/compat/subagent-acp/tests/subagent-acp.spec.ts',
   'packages/subprocess/subprocess-local/tests/process-exit.spec.ts',
   'packages/subprocess/subprocess-local/tests/spawn.spec.ts',
   'packages/context/time-context/tests/time-context.spec.ts',
   'packages/llm/llm-pi-ai/tests/adapter.spec.ts',
   'packages/boot/app-boot/tests/app-boot.spec.ts',
-  'packages/workflow/workflow-worker-thread/tests/session.spec.ts',
+  'packages/compat/workflow-worker-thread/tests/session.spec.ts',
 ]
 
 export default defineConfig({
@@ -205,9 +205,9 @@ export default defineConfig({
         'packages/client/ui-workspace/src/client/WorkspaceBrowser.tsx',
         'packages/client/ui-workspace/src/client/WorkspacePicker.tsx',
         'packages/client/ui-renderer/src/client/*',
-        // This isolated settings-scope lifecycle has complete unit coverage;
-        // keep it out of the broader client-runtime GUI debt exemption.
-        'packages/client/runtime/src/**/!(settings-scope).ts',
+        // These isolated state owners have complete unit coverage; keep them
+        // outside the broader client-runtime GUI debt exemption.
+        'packages/client/runtime/src/**/!(settings-scope|task-inspector|workflow-inspector).ts',
         // Keep the browser conversation tree under its existing GUI debt
         // exemption while gating the newly stateful Host half and vocabulary.
         'packages/client/ui-conversation/src/client/*',

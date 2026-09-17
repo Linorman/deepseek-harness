@@ -1,0 +1,45 @@
+{
+  "mode": "rework",
+  "descriptions": {
+    "team_task_start": "Start one independent, bounded Team task for the configured worker pool. Provide a concise subject, complete instructions, the expected deliverable, validation, and any filesystem regions the task may read or modify. Use narrow, non-overlapping workspace-relative scopes for concurrent writers; leave scopes empty for work that does not touch files. Use workspace-relative read_scopes and write_scopes; absolute paths under the current workspace are converted, while paths outside the workspace are rejected. The current workspace and permission mode are shown in runtime context. The coordinator may set the pool with team_worker_pool_set; the scheduler assigns this task to an eligible idle worker, or leaves it queued when every worker is busy. The returned review_policy identifies the selected reviewer or none. The task continues after this call; start other independent tasks before waiting when useful, then use team_task_wait when a result is needed. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_list": "List the current phase, review facts, and accepted child response of every worker or child-Team task started by this coordinator. The list is bounded by the durable Team task set and excludes workflow-plan tasks. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_watch": "Wait for a bounded Team cursor advance and return the compact state of this coordinator's worker and child-Team tasks. Omit after_cursor for an immediate first snapshot; thereafter use the cursor from the previous watch result; cancelling this call stops only the watch. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled.",
+    "team_task_wait": "Wait for a worker or child-Team task started by this coordinator, including any configured review. If its reviewer stops without a decision, the call reports an error and leaves the task in review; correct the reviewer or cancel the task before rescheduling. The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start or team_task_delegate. Cancelling this call stops only the wait, not the task. Review facts select the active attempt, or the latest settled attempt when none is active. A null review_result means that attempt has no review decision, not that review is disabled."
+  },
+  "observations": [
+    {
+      "stage": "start",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "rework",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "list",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "watch",
+      "review_policy": "participant",
+      "review_result": null
+    },
+    {
+      "stage": "wait",
+      "review_policy": "participant",
+      "review_result": {
+        "decision": "accepted",
+        "attempt": 2
+      }
+    }
+  ],
+  "attempts": 2,
+  "reviewDecisions": [
+    "pending",
+    "completed"
+  ],
+  "team": "completed"
+}

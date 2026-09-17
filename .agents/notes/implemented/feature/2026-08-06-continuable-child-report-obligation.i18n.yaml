@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-06-continuable-child-report-obligation.md
-2026-08-06-continuable-child-report-obligation.md: 887e4e75a491d930ba339c3f86e76ea839e23962
-2026-08-06-continuable-child-report-obligation.zh.md: f6f78366c3ee490ab907d9af1d7b4f3f7794038e
+2026-08-06-continuable-child-report-obligation.md: affe35ae8092dfee8a0dce57dee09b73e7b06b94
+2026-08-06-continuable-child-report-obligation.zh.md: 7e7d3c54c43caf6648027b2134193ba0c970e356

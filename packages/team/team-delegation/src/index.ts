@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 /** Parent-owned child-Team creation, consent, result settlement, and cancellation. @module @clocky/clocky-team-delegation */
 import { realpath } from 'node:fs/promises'
 import type { Context } from '@clocky/cordis'
@@ -8,7 +9,7 @@ import '@clocky/clocky-team-run'
 import '@clocky/clocky-team-workspace'
 import {
   TeamError, channelInvitationIdempotencyKeySchema, channelPostIdempotencyKeySchema,
-  type TeamId, type ChannelId, type TeamTaskSnapshot, type TeamStateSnapshot,
+  type TeamId, type ChannelId, type TeamTaskSnapshot, type TeamStateSnapshot, type TeamSnapshot,
   type TeamSystemDelegationProof, type TeamSystemDelegationScope, type TeamTaskDelegationInput,
   type TeamSystemChildCreationProof, type TeamSystemChildCreationScope,
   type TeamSystemChannelAdmissionProof, type TeamSystemChannelAdmissionScope,
@@ -45,6 +46,7 @@ interface Drive { requested: boolean; readonly operation: Promise<void> }
 export class TeamDelegation implements TeamDelegationDriver {
   private closing = false
   private readonly drives = new Map<TeamId, Drive>()
+  private readonly scheduledDrives = new Map<TeamId, ReturnType<typeof setImmediate>>()
   private readonly parents = new Map<TeamId, TeamId>()
   private readonly channels = new Map<ChannelId, TeamId>()
   private readonly delegation = new Map<TeamSystemDelegationProof, TeamSystemDelegationScope>()
@@ -56,7 +58,7 @@ export class TeamDelegation implements TeamDelegationDriver {
   private timer?: ReturnType<typeof setInterval>
   private discovery: Promise<void> | undefined
   /** Provider-order cursor retained between bounded restart-safe discovery pulses. */
-  private teamCursor = -1
+  private teamCursor: TeamListPageRequest['afterCursor'] = -1
 
   constructor(private readonly ctx: Context, private readonly config: Config) {}
 
@@ -74,9 +76,10 @@ export class TeamDelegation implements TeamDelegationDriver {
       this.ctx.teams.registerSystemEnvelopePostProofSource({ name, resolveEnvelopePostProof: proof => this.envelopes.get(proof) }),
       this.ctx.teams.registerSystemChildResultProofSource({ name, resolveChildResultProof: proof => this.results.get(proof) }),
       this.ctx.on('team/changed', (event) => {
+        if (this.closing) return
         if (event.type === 'team/created' || event.type === 'team/changed') {
-          if (event.team.parentTeamId !== undefined) this.parents.set(event.team.id, event.team.parentTeamId)
-          this.request(event.team.id)
+          this.observeTeam(event.team)
+          this.request(event.team.id, event.team.parentTeamId)
         } else if (event.type === 'task/changed') this.request(event.task.teamId)
         else if (event.type === 'activation/changed') this.request(event.binding.activation.teamId)
       }),
@@ -92,20 +95,32 @@ export class TeamDelegation implements TeamDelegationDriver {
 
   /** Drive one parent, coalescing events that arrive while it advances.
    * @param teamId - Exact parent selected by a durable event or startup discovery.
-   * @returns Completion of all work accepted by this drive.
+   * @returns Completion of one bounded round; coalesced work runs in a later event-loop turn.
    */
   drive(teamId: TeamId): Promise<void> {
     if (this.closing) return Promise.resolve()
+    const scheduled = this.scheduledDrives.get(teamId)
+    if (scheduled !== undefined) { clearImmediate(scheduled); this.scheduledDrives.delete(teamId) }
     const prior = this.drives.get(teamId)
     if (prior !== undefined) { prior.requested = true; return prior.operation }
     const drive: Drive = { requested: true, operation: Promise.resolve().then(async () => {
-      while (drive.requested && !this.closing) {
-        drive.requested = false
-        for (let index = 0; index < this.config.maxOperationsPerDrive && !this.isClosing(); index++) {
-          if (!await this.advance(teamId)) break
-        }
+      drive.requested = false
+      for (let index = 0; index < this.config.maxOperationsPerDrive && !this.isClosing(); index++) {
+        if (!await this.advance(teamId)) break
+        if (index + 1 === this.config.maxOperationsPerDrive) drive.requested = true
       }
-    }).finally(() => { this.drives.delete(teamId) }) }
+    }).catch((error: unknown) => {
+      drive.requested = false
+      throw error
+    }).finally(() => {
+      this.drives.delete(teamId)
+      if (drive.requested && !this.closing) {
+        this.scheduledDrives.set(teamId, setImmediate(() => {
+          this.scheduledDrives.delete(teamId)
+          this.request(teamId)
+        }))
+      }
+    }) }
     this.drives.set(teamId, drive)
     return drive.operation
   }
@@ -114,6 +129,8 @@ export class TeamDelegation implements TeamDelegationDriver {
   async close(): Promise<void> {
     this.closing = true
     if (this.timer !== undefined) clearInterval(this.timer)
+    for (const scheduled of this.scheduledDrives.values()) clearImmediate(scheduled)
+    this.scheduledDrives.clear()
     const errors: unknown[] = []
     for (const dispose of this.disposers.splice(0).reverse()) {
       try { await dispose() } catch (error: unknown) { errors.push(error) }
@@ -128,14 +145,26 @@ export class TeamDelegation implements TeamDelegationDriver {
         errors.push(reason)
       }
     }
+    this.parents.clear()
+    this.channels.clear()
     if (errors.length > 0) throw new AggregateError(errors, 'Delegation operations failed during disposal')
   }
 
-  private request(teamId: TeamId): void {
+  private request(teamId: TeamId, parentId?: TeamId): void {
     if (this.closing) return
     void this.drive(teamId).catch((error: unknown) => { this.report(error) })
-    const parent = this.parents.get(teamId)
+    const parent = parentId ?? this.parents.get(teamId)
     if (parent !== undefined && parent !== teamId) void this.drive(parent).catch((error: unknown) => { this.report(error) })
+  }
+
+  /** Terminal children cannot produce new work; their durable ancestry still wakes parent settlement. */
+  private observeTeam(team: TeamSnapshot): void {
+    if (terminal(team.phase)) {
+      this.parents.delete(team.id)
+      if (team.childRun !== undefined) this.channels.delete(team.childRun.channelId)
+    } else if (team.parentTeamId !== undefined) {
+      this.parents.set(team.id, team.parentTeamId)
+    }
   }
 
   private discover(): void {
@@ -144,14 +173,17 @@ export class TeamDelegation implements TeamDelegationDriver {
     this.discovery = this.ctx.teams.listTeamsPage({ afterCursor, limit: this.config.teamPageSize }).then(async (page) => {
       for (const team of page.items) {
         if (this.closing) return
-        if (team.parentTeamId !== undefined) this.parents.set(team.id, team.parentTeamId)
+        this.observeTeam(team)
         await this.drive(team.id)
       }
-      if (page.nextCursor !== undefined && page.nextCursor <= afterCursor) {
+      if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
         throw new TeamError('Team discovery page cursor did not advance', 'TEAM_CURSOR_CONFLICT')
       }
       this.teamCursor = page.nextCursor ?? -1
-    }).catch((error: unknown) => { this.report(error) }).finally(() => { this.discovery = undefined })
+    }).catch((error: unknown) => {
+      if (error instanceof TeamError && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') this.teamCursor = -1
+      else this.report(error)
+    }).finally(() => { this.discovery = undefined })
   }
 
   private isClosing(): boolean { return this.closing }
@@ -190,6 +222,7 @@ export class TeamDelegation implements TeamDelegationDriver {
 
   private async advance(teamId: TeamId): Promise<boolean> {
     const state = await this.ctx.teams.getTeam({ teamId })
+    this.observeTeam(state.team)
     const tasks = state.tasks.filter(task => task.execution.kind === 'child-team' && !terminal(task.phase))
     for (const task of tasks) {
       try { if (await this.advanceTask(state, task)) return true } catch (error: unknown) {
@@ -236,6 +269,7 @@ export class TeamDelegation implements TeamDelegationDriver {
       if (!(error instanceof TeamError) || error.code !== 'TEAM_NOT_FOUND') throw error
       if (cancelling) {
         await this.withProof(this.delegation, { kind: 'delegation-settle', ...input, childTeamId }, actor => this.ctx.teams.settleTaskDelegation({ ...input, childTeamId, actor }))
+        this.parents.delete(childTeamId)
         return true
       }
       if (delegation.childCursor !== undefined || delegation.creation === undefined) throw new TeamError('Reserved child stream disappeared', 'TEAM_DELEGATION_CHILD_MISSING')
@@ -243,6 +277,7 @@ export class TeamDelegation implements TeamDelegationDriver {
       await this.withProof(this.creation, { kind: 'team-child-create', ...creation, expectedParentCursor: state.team.cursor }, actor => this.ctx.teams.createTeam({ ...creation, actor }))
       return true
     }
+    this.observeTeam(child.team)
     if (terminal(child.team.phase)) {
       await this.withProof(this.delegation, { kind: 'delegation-settle', ...input, childTeamId }, actor => this.ctx.teams.settleTaskDelegation({ ...input, childTeamId, actor }))
       return true

@@ -19,10 +19,10 @@
           runnerFailureSignatures:
             - 'passthrough-runner: profile rejected'
       - id: tool-subagent
-        name: '@clocky/clocky-tool-subagent'
+        name: '@clocky/clocky-compat-tool-subagent'
         config:
           provider: spawn
-          toolName: subagent
+          toolName: legacy_subagent
           backgroundMode: continuable
           maxDepth: 2
       # Re-pin the recorded model: cordis.yml ships test-model-pro, but this

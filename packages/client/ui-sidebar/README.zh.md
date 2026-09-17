@@ -4,7 +4,7 @@
 
 侧边栏外壳插件：负责品牌行、New Task 操作、布局持有的折叠控件、可感知滚动的 Team 区域，以及固定在底部的 Settings seat。[ui-team](../ui-team/README.zh.md) 持有渲染到 `sidebar.teamTasks` 的 Team 导航器；可选的 `sidebar.workspaces` seat 只供显式 custom composition 挂载 legacy Workspace／Session 浏览器。本包不派生 Team 行，也不持有其视图偏好。折叠到布局拥有的 56px 轨道仍属于本地呈现行为。约定：[slot 系统标准](../../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.zh.md)。
 
-展开的品牌行把 `sidebar.brand.mark` 与 `sidebar.brand.name` 渲染为两个独立的 single slot，收起轨道则渲染同一个 mark slot。没有占位者时，外壳使用机器人回退图形，并把构建版本与字标位置分开。部署包可以单独替换任一值，而无须替换 New Task 控件或轨道几何；声明感知的 `slots.inject()` 让这种包无论先于还是后于侧边栏激活都能生效。
+展开品牌行分别渲染 `sidebar.brand.mark` 和 `sidebar.brand.name` 两个 single slot，收起轨道复用同一个标记 slot。没有占用者时显示机器人标记和 Clocky 文字，构建版本通过名称提示显示。部署插件可以分别替换标记或名称，而无需替换新任务操作或轨道几何；声明感知的 `slots.inject()` 支持部署插件在侧边栏前后激活。
 
 New Task 只创建页面局部 Team 草稿并清空当前转录选择；在首条输入由 `team.start` 接纳之前，它既不会创建 Team，也不会创建 Session。Team 专属导航由 ui-team 持有。
 

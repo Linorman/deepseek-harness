@@ -513,7 +513,7 @@ describe('headless stream-json snapshots', () => {
         const records = parseJsonl(logs[0]?.content ?? '')
         const calls = records.filter(record => record.type === 'tool/call')
           .map(record => (record.data as JsonObject | undefined)?.name)
-        expect(calls).toEqual(['update_goal', 'create_goal', 'get_goal'])
+        expect(calls).toEqual(['legacy_update_goal', 'legacy_create_goal', 'legacy_get_goal'])
         const probeResult = records.find((record) => {
           if (record.type !== 'tool/result') return false
           const data = record.data as JsonObject | undefined
@@ -585,7 +585,7 @@ describe('headless stream-json snapshots', () => {
 
         const parentRecords = parseJsonl(parent.content)
         const parentCalls = parentRecords.filter(record => record.type === 'tool/call')
-        expect(parentCalls.map(record => (record.data as JsonObject | undefined)?.name)).toEqual(['ralph'])
+        expect(parentCalls.map(record => (record.data as JsonObject | undefined)?.name)).toEqual(['legacy_ralph'])
         const parentResult = parentRecords.find(record => record.type === 'tool/result')
         const parentResultData = parentResult?.data as JsonObject | undefined
         const parentMessage = parentResultData?.message as JsonObject | undefined
@@ -627,7 +627,7 @@ describe('headless stream-json snapshots', () => {
     const childReplay = join(settlementScenarioDir, 'child.replay.jsonl')
     const childExpected = join(settlementScenarioDir, 'child.expected.jsonl')
     const streamExpected = join(settlementScenarioDir, 'stream-json.expected.jsonl')
-    const task = 'Start one continuable background subagent and answer from its completion notice. Do not call list_agents, send_message, job_output, or job_list.'
+    const task = 'Start one continuable background subagent and answer from its completion notice. Do not call legacy_list_agents, send_message, job_output, or job_list.'
     let runCwd = ''
     const result = await runLoaderSmoke({
       label: 'continuable settlement headless stream-json snapshot',
@@ -656,7 +656,7 @@ describe('headless stream-json snapshots', () => {
 
         const parentRecords = parseJsonl(parent.content)
         const calls = parentRecords.filter(record => record.type === 'tool/call')
-        expect(calls.map(record => (record.data as JsonObject | undefined)?.name)).toEqual(['subagent'])
+        expect(calls.map(record => (record.data as JsonObject | undefined)?.name)).toEqual(['legacy_subagent'])
         const callArguments = (calls[0]?.data as JsonObject | undefined)?.arguments
         if (typeof callArguments !== 'string') throw new Error('subagent call did not persist its arguments')
         expect(JSON.parse(callArguments)).not.toHaveProperty('run_in_background')
@@ -678,7 +678,7 @@ describe('headless stream-json snapshots', () => {
         if (refreshing) await writeFile(childExpected, normalizedChild)
         await expect(normalizedChild).toMatchFileSnapshot(childExpected)
         expect(normalizedChild).toContain('CHILD_RESULT')
-        expect(normalizedChild).not.toContain('"name":"report"')
+        expect(normalizedChild).not.toContain('"name":"legacy_report"')
       },
     })
 

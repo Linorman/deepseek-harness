@@ -1,3 +1,14 @@
+import { teamMemberInspectParamsSchema, teamMemberInspectResultSchema, type TeamMemberInspectParams, type TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
+import type { TeamWorkflowInspection } from '@clocky/clocky-team'
+import { teamWorkflowInspectRequestSchema, teamWorkflowInspectionSchema } from '@clocky/clocky-team/schema'
+import type { TeamActionReadParams } from '@clocky/clocky-sdk-protocol'
+import type { TeamHumanActionSnapshot } from '@clocky/clocky-team'
+import { teamHumanActionReadRequestSchema, teamHumanActionSnapshotSchema } from '@clocky/clocky-team/schema'
+import { teamSelectionParamsSchema, type TeamSelectionParams } from '@clocky/clocky-sdk-protocol'
+import { teamTaskInspectParamsSchema, teamTaskInspectResultSchema, type TeamTaskInspectParams, type TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
+import { teamBrowseParamsSchema, teamBrowseResultSchema, type TeamBrowseParams, type TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
+import { teamMemberSessionParamsSchema, teamMemberSessionResultSchema, type TeamMemberSessionParams, type TeamMemberSessionResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamInboxRespondParams } from '@clocky/clocky-sdk-protocol'
 import { teamHumanActionResponseInputSchema, teamHumanActionResponseResultSchema } from '@clocky/clocky-team'
 import type { TeamHumanActionResponseResult } from '@clocky/clocky-team'
@@ -57,6 +68,7 @@ import {
   type TeamListResult,
   type TeamGetParams,
   type TeamGetResult,
+  type TeamSelectionResult,
   type TeamGoalUpdateParams,
   type TeamGoalUpdateResult,
   type TeamGoalTransitionParams,
@@ -137,6 +149,7 @@ import {
   teamListResultSchema,
   teamGetParamsSchema,
   teamGetResultSchema,
+  teamSelectionResultSchema,
   teamGoalUpdateParamsSchema,
   teamGoalUpdateResultSchema,
   teamGoalTransitionParamsSchema,
@@ -505,6 +518,102 @@ export class HarnessClient {
     const parsed = parseProtocolValue('team/list params', teamListParamsSchema, params)
     const result = await this.request('team/list', parsed)
     return parseProtocolValue('team/list result', teamListResultSchema, result)
+  }
+
+  /** Resolve the latest published Session of a retained member without activating it.
+   * @param params - exact owning Team and member.
+   * @returns validated published binding.
+   */
+  async getTeamMemberSession(params: TeamMemberSessionParams): Promise<TeamMemberSessionResult> {
+    const parsed = parseProtocolValue('team/member-session params', teamMemberSessionParamsSchema, params)
+    const result = parseProtocolValue('team/member-session result', teamMemberSessionResultSchema,
+      await this.request('team/member-session', parsed))
+    if (result.binding.activation.teamId !== parsed.teamId || result.binding.activation.participantId !== parsed.participantId) {
+      throw new SdkProtocolError('team/member-session response belongs to a different Team or participant')
+    }
+    return result
+  }
+
+  /** Read current task fields or one revision-pinned history page without private artifact references.
+   * @param params - Exact Team/task, section, optional revision and history continuation.
+   * @returns the validated bounded task inspection.
+   */
+  async inspectTeamTask(params: TeamTaskInspectParams): Promise<TeamTaskInspectResult> {
+    const parsed = parseProtocolValue('team/task-inspect params', teamTaskInspectParamsSchema, params)
+    const result = parseProtocolValue('team/task-inspect result', teamTaskInspectResultSchema, await this.request('team/task-inspect', parsed))
+    const value = result.inspection
+    if (value.teamId !== parsed.teamId || value.taskId !== parsed.taskId || value.section !== parsed.section
+      || parsed.expectedRevision !== undefined && value.revision !== parsed.expectedRevision
+      || value.section !== 'record' && parsed.section !== 'record' && value.startCursor !== (parsed.afterCursor ?? -1)) {
+      throw new SdkProtocolError('team/task-inspect response does not match its task selection')
+    }
+    return result
+  }
+
+  /** Read bounded collection summaries.
+   * @param params - Collection selection.
+   * @returns the matching page.
+   */
+  async browseTeam(params: TeamBrowseParams): Promise<TeamBrowseResult> {
+    const parsed = parseProtocolValue('team/browse params', teamBrowseParamsSchema, params)
+    const result = parseProtocolValue('team/browse result', teamBrowseResultSchema, await this.request('team/browse', parsed))
+    if (result.page.teamId !== parsed.teamId || result.page.kind !== parsed.kind) {
+      throw new SdkProtocolError('team/browse response belongs to a different Team or collection')
+    }
+    return result
+  }
+
+  /** Read a revision-pinned workflow task/dependency page.
+   * @param params - Exact workflow and window.
+   * @returns bounded inspection data with matching ownership and revision.
+   */
+  async inspectWorkflowPlan(params: TeamWorkflowInspectParams): Promise<TeamWorkflowInspection> {
+    const input = parseProtocolValue('team/workflow-plan-inspect params', teamWorkflowInspectRequestSchema, params)
+    const value = parseProtocolValue('team/workflow-plan-inspect result', teamWorkflowInspectionSchema,
+      await this.request('team/workflow-plan-inspect', input))
+    if (value.record.teamId !== input.teamId || value.record.id !== input.planId || value.startCursor !== (input.afterCursor ?? -1)
+      || input.expectedRevision !== undefined && value.record.revision !== input.expectedRevision) {
+      throw new SdkProtocolError('Workflow inspection response does not match its selection')
+    }
+    return value
+  }
+
+  /** Read one bounded current human action.
+   * @param params - Team and action identity.
+   * @returns current action with matching scope.
+   */
+  async readTeamAction(params: TeamActionReadParams): Promise<TeamHumanActionSnapshot> {
+    const input = parseProtocolValue('team/action-read params', teamHumanActionReadRequestSchema, params)
+    const action = parseProtocolValue('team/action-read result', teamHumanActionSnapshotSchema, await this.request('team/action-read', input))
+    if (action.teamId !== input.teamId || action.id !== input.actionId) throw new SdkProtocolError('Action response does not match its selection')
+    return action
+  }
+
+  /** Read member metadata and one capability window without activating the member.
+   * @param params - exact member and optional cursor-pinned continuation.
+   * @returns validated detail for the requested member.
+   */
+  async inspectTeamMember(params: TeamMemberInspectParams): Promise<TeamMemberInspectResult> {
+    const input = parseProtocolValue('team/member-inspect params', teamMemberInspectParamsSchema, params)
+    const result = parseProtocolValue('team/member-inspect result', teamMemberInspectResultSchema,
+      await this.request('team/member-inspect', input))
+    const detail = result.detail
+    if (detail.record.teamId !== input.teamId || detail.record.id !== input.participantId
+      || detail.startCursor !== (input.afterCursor ?? -1)
+      || input.expectedTeamCursor !== undefined && detail.teamCursor !== input.expectedTeamCursor) {
+      throw new SdkProtocolError('Member inspection belongs to another member or capability window')
+    }
+    return result
+  }
+
+  /** Read bounded Team selection data without activating an Agent.
+   * @param params - Team identity to inspect.
+   * @returns validated selection projection.
+   */
+  async getTeamSelection(params: TeamSelectionParams): Promise<TeamSelectionResult> {
+    const parsed = parseProtocolValue('team/selection params', teamSelectionParamsSchema, params)
+    const result = await this.request('team/selection', parsed)
+    return parseProtocolValue('team/selection result', teamSelectionResultSchema, result)
   }
 
   /**

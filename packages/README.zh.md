@@ -15,7 +15,7 @@ npm scope 为 `@clocky/clocky-*`；Cordis `Service` 子类和函数插件通过 
 | [`agent-runtime/`](agent-runtime/README.zh.md) | Participant activation placement 提供方 | 产品：稳定 API |
 | [`api/`](api/README.zh.md) | Remote BFF 装配与 Typert RPC 网关 | 产品：稳定 API |
 | [`typert/`](typert/README.zh.md) | 类型图生成、产物加载与运行时注册表 | 产品：稳定 API |
-| [`goal/`](goal/README.zh.md) | 同会话 goal 的持久化与生命周期 | 产品：稳定 API |
+| [`compat/`](compat/README.zh.md) | 显式启用的同 Session Goal、subagent 与脚本 workflow 兼容实现 | Private；不进入产品发行 |
 | [`schedule/`](schedule/README.zh.md) | 仅限会话内的定时后续操作 | 产品：稳定 API |
 | [`feedback/`](feedback/README.zh.md) | 人类反馈 | 产品：稳定 API |
 | [`identity/`](identity/README.zh.md) | 共享匿名身份 | 产品：稳定 API |
@@ -31,9 +31,7 @@ npm scope 为 `@clocky/clocky-*`；Cordis `Service` 子类和函数插件通过 
 | [`skill/`](skill/README.zh.md) | skill（技能）能力系列：提供方注册表、本地提供方和面向模型的目录／loader | 产品：稳定 API |
 | [`compaction/`](compaction/README.zh.md) | 压缩（compaction）能力系列：Service Definition + 基础提供方 + 命令 Consumer | 产品：稳定 API |
 | [`context/`](context/README.zh.md) | 模型可见请求上下文，包括 workspace 指令和时间上下文 | 产品：稳定 API |
-| [`subagent/`](subagent/README.zh.md) | subagent 能力系列：提供方注册表约定和面向模型的委托工具 | 产品：稳定 API |
 | [`jobs/`](jobs/README.zh.md) | 通用后台任务运行时和面向模型的 `job_*` 控制工具 | 产品：稳定 API |
-| [`workflow/`](workflow/README.zh.md) | 工作流 seam、worker 线程引擎和面向模型的 `workflow`/`ralph` 工具 | 产品：稳定 API |
 | [`web/`](web/README.zh.md) | Web 能力系列：seam、搜索／获取提供方实现和面向模型的 Web 工具 | 产品：稳定 API |
 | [`attachment/`](attachment/README.zh.md) | 持久附件标识、校验、本地内容寻址存储 | 产品：稳定 API |
 | [`spill/`](spill/README.zh.md) | spill 能力系列：存储 seam、本地实现、工具结果 spill 策略 | 产品：稳定 API |

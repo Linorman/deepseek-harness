@@ -1,9 +1,11 @@
+/** Bounded identity, scalar metadata and counts returned by the Team selection endpoint. */
+export type TeamSelectionView = Extract<Awaited<ReturnType<IApiClient['teams']['selection']>>['result'], { ok: true }>['value']
 /** Browser Team-task product state and operations. */
 
 import type {
   ChannelId, ChannelPostIdempotencyKey, ChannelReadPageResult, IApiClient, MuxFrame, ParticipantId, RpcError, SessionId,
-  TeamArtifactList, TeamArtifactReadResult, TeamAuditList, ModelSelection, TeamMemberList, TeamTaskList, TeamWorkflowPlanList,
-  TeamId, TeamSnapshot, TeamStateSnapshot, TeamTaskId, TeamTaskSnapshot,
+  TeamArtifactList, TeamArtifactReadResult, TeamAuditList, ModelSelection,
+  TeamId, TeamList, TeamSnapshot, TeamStateSnapshot, TeamTaskId, TeamTaskSnapshot,
 } from '@clocky/clocky-client-connection/client'
 import type { ObservableSnapshot } from './store.ts'
 
@@ -53,6 +55,8 @@ export type TeamChannelMessageContent = readonly ({ readonly type: 'text'; reado
   | { readonly type: 'image'; readonly attachment: TeamChannelAttachmentResult['attachment'] })[]
 /** Explicitly loaded channel pages owned by the runtime. */
 export interface TeamChannelListState {
+  /** Exclusive cursor that produced this single window; absent for the first page. */
+  readonly startCursor?: number | undefined
   readonly teamId: TeamId
   readonly items: TeamChannelListPage['items']
   readonly nextCursor?: number | undefined
@@ -63,6 +67,8 @@ export interface TeamChannelListState {
 }
 /** Runtime-owned channel inspection and explicit invitation consent. */
 export interface TeamChannelState {
+  /** Exclusive cursor that produced the retained record window. */
+  readonly startCursor?: number | undefined
   readonly channelId: ChannelId
   readonly page?: ChannelReadPageResult | undefined
   readonly invitation?: TeamChannelInvitation | undefined
@@ -80,6 +86,8 @@ export interface TeamChannelState {
 
 /** One independently loaded Team collection page owned by the browser runtime. */
 export interface TeamCollectionPage<T> {
+  /** Exclusive cursor that produced this window; absent before its first successful read. */
+  readonly startCursor?: number | undefined
   readonly items: readonly T[]
   readonly nextCursor?: number | undefined
   readonly loading: boolean
@@ -88,17 +96,68 @@ export interface TeamCollectionPage<T> {
   readonly error?: string | undefined
 }
 
-/** Independently bounded member, task, workflow-plan, and artifact projections for one selected Team. */
+/** Member rows omit provider configuration, grants and task-outcome statistics. */
+export type TeamMemberSummary = Extract<Extract<Awaited<ReturnType<IApiClient['teams']['browse']>>['result'], { ok: true }>['value'], { kind: 'members' }>['items'][number]
+
+/** Task rows omit instructions, execution outcomes and attempt/review history. */
+export type TeamTaskSummary = Extract<Extract<Awaited<ReturnType<IApiClient['teams']['browse']>>['result'], { ok: true }>['value'], { kind: 'tasks' }>['items'][number]
+
+/** Workflow list rows exclude the DAG, task bindings and result payloads. */
+export type TeamWorkflowSummary = Extract<Extract<Awaited<ReturnType<IApiClient['teams']['browse']>>['result'], { ok: true }>['value'], { kind: 'workflowPlans' }>['items'][number]
+/** Current workflow metadata and one task/dependency page. */
+export type TeamWorkflowInspection = Extract<Awaited<ReturnType<IApiClient['teams']['workflowPlanInspect']>>['result'], { ok: true }>['value']
+/** Navigation of the single retained workflow inspection. */
+export type TeamWorkflowDetailReadMode = TeamCollectionReadMode | 'open'
+/** Runtime-owned workflow read status; failures preserve the visible revision. */
+export interface TeamWorkflowDetailState {
+  readonly teamId: TeamId
+  readonly planId: TeamWorkflowSummary['id']
+  readonly value?: TeamWorkflowInspection | undefined
+  readonly loading: boolean
+  readonly hasNewer: boolean
+  readonly disconnected: boolean
+  readonly error?: string | undefined
+}
+
+/** One selected Team owns each independently loaded collection. */
 export interface TeamCollectionsState {
   readonly teamId: TeamId
-  readonly members: TeamCollectionPage<TeamMemberList['items'][number]>
-  readonly tasks: TeamCollectionPage<TeamTaskList['items'][number]>
-  readonly workflowPlans: TeamCollectionPage<TeamWorkflowPlanList['items'][number]>
+  readonly members: TeamCollectionPage<TeamMemberSummary>
+  readonly tasks: TeamCollectionPage<TeamTaskSummary>
+  readonly workflowPlans: TeamCollectionPage<TeamWorkflowSummary>
   /** Provider-owned visible artifact references returned by the bounded artifact read. */
   readonly artifacts: TeamCollectionPage<TeamArtifactList['items'][number]>
 }
 /** Collection selector accepted by the bounded Team collection reader. */
 export type TeamCollectionKind = 'members' | 'tasks' | 'workflowPlans' | 'artifacts'
+/** Explicit navigation of one retained collection window. */
+export type TeamCollectionReadMode = 'refresh' | 'next' | 'first'
+/** Actor-free task inspection data returned by the Host. */
+export type TeamTaskInspection = Extract<Awaited<ReturnType<IApiClient['teams']['taskInspect']>>['result'], { ok: true }>['value']
+/** Current task fields, independent of retained execution histories. */
+export type TeamTaskRecord = Extract<TeamTaskInspection, { section: 'record' }>['task']
+/** One public settled attempt from an independently paged history. */
+export type TeamTaskAttempt = Extract<TeamTaskInspection, { section: 'attempts' }>['items'][number]
+/** One independently loaded part of the selected task inspector. */
+export interface TeamTaskDetailPart<T> {
+  readonly value?: T | undefined
+  readonly loading: boolean
+  readonly error?: string | undefined
+}
+/** The runtime retains one current record, one latest attempt, and one window per history. */
+export interface TeamTaskDetailState {
+  readonly teamId: TeamId
+  readonly taskId: TeamTaskId
+  readonly record: TeamTaskDetailPart<Extract<TeamTaskInspection, { section: 'record' }>>
+  readonly latest: TeamTaskDetailPart<TeamTaskAttempt>
+  readonly attempts: TeamTaskDetailPart<Extract<TeamTaskInspection, { section: 'attempts' }>>
+  readonly reviews: TeamTaskDetailPart<Extract<TeamTaskInspection, { section: 'reviews' }>>
+  readonly hasNewer: boolean
+  readonly disconnected: boolean
+}
+/** History navigation replaces the retained window rather than accumulating rows. */
+export type TeamTaskDetailReadMode = 'refresh' | 'first' | 'next'
+
 /** Bounded, explicitly loaded principal inbox plus its read and display state. */
 export interface TeamInboxState {
   readonly connectionGeneration: number
@@ -138,10 +197,21 @@ export interface TeamTaskDraft {
 
 /** Team list, selected Team identity, and local first-input draft. */
 export interface TeamTaskListState {
+  /** One explicitly opened workflow inspection. */
+  readonly workflowDetail?: TeamWorkflowDetailState | undefined
+  /** Cursor that produced the retained Team window; absent before its first read. */
+  readonly startCursor?: TeamList['nextCursor'] | -1
+
+  /** Last exact member Session lookup for the current Team; retained for shareable inspection routes. */
+  readonly memberSession?: {
+    readonly teamId: TeamId
+    readonly participantId: Parameters<IApiClient['teams']['memberSession']>[0]['participantId']
+    readonly sessionId: SessionId
+  } | undefined
   /** Durable Team summaries returned by the Host. */
   readonly items: readonly TeamSnapshot[]
   /** Exclusive continuation cursor for the next unloaded Team page. */
-  readonly nextCursor?: number | undefined
+  readonly nextCursor?: TeamList['nextCursor']
   /** Whether an explicit continuation read is pending. */
   readonly loadingMore?: boolean
   /** Current Team product selection. */
@@ -165,7 +235,9 @@ export interface TeamTaskListState {
   readonly channelCatalog?: TeamChannelCatalogState | undefined
   /** Independently paged selected-Team collections; full state remains available for authority and fallback. */
   readonly collections?: TeamCollectionsState | undefined
-  /** Host-owned approval/question requests carrying Team provenance. */
+  /** Independently read current task and history windows. */
+  readonly taskDetail?: TeamTaskDetailState | undefined
+  /** Pending action previews derived only from the current principal inbox page. */
   readonly pendingHumanActions?: readonly TeamHumanAction[]
 }
 
@@ -221,13 +293,41 @@ export interface TeamTaskSelection {
   /** Selected durable Team identity. */
   readonly teamId: TeamId
   /** Complete Team projection used by Team product consumers. */
-  readonly state: TeamStateSnapshot
+  readonly state: TeamSelectionView
   /** Local coordinator transcript selected only as a Participant descendant. */
   readonly coordinatorSessionId: SessionId
 }
 
 /** Browser Team-task state and Host operations. */
 export interface ITeamTasks {
+  /** Read one exact member and a capability window; the caller owns cancellation and displayed detail.
+   * @param input - Team/member identity and optional cursor-pinned continuation.
+   * @param signal - Inspection lifetime.
+   * @returns bounded member metadata and capabilities.
+   */
+  inspectMember?(input: Parameters<IApiClient['teams']['memberInspect']>[0], signal?: AbortSignal):
+  Promise<Extract<Awaited<ReturnType<IApiClient['teams']['memberInspect']>>['result'], { ok: true }>['value']>
+
+  /** Resolve the current coordinator without a historical route cache.
+   * @param sessionId - Target Session.
+   * @param owner - Header ownership, or the currently selected coordinator when omitted.
+   * @param signal - Optional cancellation for the bounded read.
+   * @returns the current route, or undefined for another member or a standalone Session.
+   */
+  resolveCoordinatorSession(sessionId: SessionId, owner?: Parameters<IApiClient['teams']['memberSession']>[0],
+    signal?: AbortSignal): Promise<Pick<TeamTaskSelection, 'teamId' | 'coordinatorSessionId'> | undefined>
+
+  /** Read one workflow page without expanding complete plans.
+   * @param teamId - Current Team.
+   * @param planId - Exact workflow plan.
+   * @param mode - Open, refresh, first or next page.
+   * @returns completion after the bounded read settles.
+   */
+  readWorkflowDetail?(teamId: TeamId, planId: TeamWorkflowSummary['id'], mode?: TeamWorkflowDetailReadMode): Promise<void>
+  /** Close workflow inspection and retire any pending read. */
+  closeWorkflowDetail?(): void
+
+
   /** Observable Team product state for Team-aware navigation and composition. */
   readonly list: ObservableSnapshot<TeamTaskListState>
   /**
@@ -240,10 +340,11 @@ export interface ITeamTasks {
   /** Drop the local Team task draft without mutating a durable Team. */
   abandonDraft(): void
   /**
-   * Refresh durable Team summaries from the Host.
+   * Refresh the retained Team page or explicitly return to the beginning.
+   * @param firstPage - Reset discovery to its first page.
    * @returns completion after the current single-flight refresh settles.
    */
-  refresh(): Promise<void>
+  refresh(firstPage?: boolean): Promise<void>
   /** Load one further Team page after an explicit user request. */
   loadMore?(): Promise<void>
   /** Start a bounded live Team-list refresh loop; the returned disposer is local-only. */
@@ -278,6 +379,8 @@ export interface ITeamTasks {
   postInput(teamId: TeamId, content: readonly Record<string, unknown>[], delivery?: 'context' | 'turn' | 'steer', signal?: AbortSignal): Promise<void>
   /** Read an initial unread or historical inbox page, preserving prior content on failure. */
   refreshInbox?(history?: boolean, signal?: AbortSignal): Promise<void>
+  /** Explicitly read the retained inbox suffix after a compacted-cursor error, preserving prior content on failure. */
+  recoverInbox?(signal?: AbortSignal): Promise<void>
   /** Read one explicit continuation page without filtering another Team's unseen deliveries. */
   loadMoreInbox?(signal?: AbortSignal): Promise<void>
   /** Wait for one newer page and flag available content without silently extending the displayed range. */
@@ -315,15 +418,21 @@ export interface ITeamTasks {
   /** End channel inspection and abort its read/watch operations. */
   closeChannelView?(): void
   /** Refresh the explicit channel-list window; continuation loads exactly one additional provider page. */
-  readChannels?(teamId: TeamId, more?: boolean): Promise<void>
+  readChannels?(teamId: TeamId, mode?: TeamCollectionReadMode): Promise<void>
   /** Read bytes only through an exact saved Envelope reference. */
   readChannelAttachment?(input: TeamChannelAttachmentInput, signal?: AbortSignal): Promise<TeamChannelAttachmentResult>
   /** Refresh the active registration catalog before opening a channel. */
   readChannelCatalog?(): Promise<void>
   /** Read and verify one visible Team artifact's bytes for the detail view. */
   readArtifact?(teamId: TeamId, artifactId: string, signal?: AbortSignal): Promise<TeamArtifactReadResult>
-  /** Read a bounded collection page; failure preserves rows and newer markers, and cancellation clears loading without an error. */
-  readCollections?(teamId: TeamId, collection: TeamCollectionKind, more?: boolean, signal?: AbortSignal): Promise<void>
+  /** Read one retained collection window: refresh its cursor, advance, or return to the first page.
+   * Failure and cancellation preserve the prior window.
+   */
+  readCollections?(teamId: TeamId, collection: TeamCollectionKind, mode?: TeamCollectionReadMode, signal?: AbortSignal): Promise<void>
+  /** Read the selected task record or replace one revision-pinned history window. */
+  readTaskDetail?(teamId: TeamId, taskId: TeamTaskId, section?: 'record' | 'attempts' | 'reviews', mode?: TeamTaskDetailReadMode): Promise<void>
+  /** Close the selected task read and release its bounded data. */
+  closeTaskDetail?(): void
   /** Resolve a Participant's descendant Session without deriving Team state from transcript rows. */
   participantSession?(teamId: TeamId, participantId: ParticipantId, signal?: AbortSignal): Promise<SessionId>
   /**

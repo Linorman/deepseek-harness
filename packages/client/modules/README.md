@@ -14,6 +14,8 @@ The Node half scans enabled Loader entries for web `clocky.client` packages, res
 
 `clocky.client.external` is an optional exact-specifier request list beyond the implicit baseline: shell-seeded React, Cordis, and static UI libraries plus parser-preloaded runtime. A request is answered by the dynamic package row it names or an exact static-table key; only a trailing `/client` aliases a package row, and there is no provider-alias declaration. Type-only imports are erased and create no request. Composition rejects malformed requests, missing suppliers, self-requests, and synchronous request cycles; import and prefetch recursively register dynamic suppliers before their consumers materialize. See [shared modules and the module graph](../AGENTS.md#shared-modules-and-the-module-graph).
 
+`Config.browserConfig` maps exact declared browser package names to explicit public JSON options. Only this map is serialized into boot rows; Host plugin configuration is never inferred or copied. Unknown targets and non-JSON values fail at load. Options contribute to the graph revision and are applied when the page boots; reload the page after changing them. These values are public browser content, not a place for credentials.
+
 ## Model Experience
 
 None, as the module loader is browser-side kernel machinery; nothing here reaches a model request.

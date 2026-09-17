@@ -1,6 +1,6 @@
 /**
  * Loader fixture that resumes the seeded diagnostic-scenario parent before
- * CLI dispatch, so `list_agents` runs against its pre-seeded cold child.
+ * CLI dispatch, so `legacy_list_agents` runs against its pre-seeded cold child.
  * @module subagent-diagnostic-agent
  */
 

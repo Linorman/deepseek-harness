@@ -1,3 +1,4 @@
+import type { TeamListPageRequest } from '@clocky/clocky-team'
 import { fingerprintChannelSummarySources } from '@clocky/clocky-team'
 import { admitTestFinal } from './final-admission-fixture.ts'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -1309,7 +1310,7 @@ const directAdapter: TeamChannelAdapter = {
   projectView() { return {} },
 }
 /** Fail a settled fixture through current controller quiescence and durable closure authority. */
-async function failDurableFixture(ctx: Context, teamId: TeamId) {
+async function failDurableFixture(ctx: Context, teamId: TeamId, authority = teamRunClosureAuthority(ctx)) {
   const state = await ctx.teams.getTeam({ teamId })
   for (const binding of state.activations) {
     await quiesceTestActivation(ctx, {
@@ -1318,7 +1319,7 @@ async function failDurableFixture(ctx: Context, teamId: TeamId) {
       expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor,
     })
   }
-  const actor = teamRunClosureAuthority(ctx).issue({ kind: 'team-run-create-failure', teamId })
+  const actor = authority.issue({ kind: 'team-run-create-failure', teamId })
   const closing = await ctx.teams.failTeam({ actor: actor.proof, teamId,
     expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor,
     idempotencyKey: teamClosureIdempotencyKeySchema.parse(`durable-failure:${teamId}`),
@@ -2284,6 +2285,149 @@ for (const backend of ['json', 'sqlite'] as const) {
       expect(replay.team.cursor).toBe(fenced.team.cursor)
       await harness.dispose()
     })
+    it('rejects oversized discovery metadata before materializing a Team journal', async () => {
+      const harness = await setup(backend, undefined, { maxDiscoveryBytes: 128 })
+      await expect(createTestRootTeam(harness.ctx, { goal: { objective: '界😀'.repeat(100), budgets: {} }, rules: {}, budgets: {} }))
+        .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+      expect((await harness.ctx.storageLog.list()).filter(item => item.name.startsWith('team/'))).toEqual([])
+      await harness.dispose()
+    })
+
+    it('discovers an exact current summary after restart without opening the Team journal', async () => {
+      const first = await setup(backend)
+      const created = await createTestRootTeam(first.ctx, { goal: { objective: 'Cold summary', budgets: {} }, rules: {}, budgets: {} })
+      await seedTeamPhase(first.ctx, created.team.id, 'quiescing')
+      const current = await first.ctx.teams.getTeam({ teamId: created.team.id })
+      await first.dispose()
+      const second = await setup(backend, first.root)
+      const open = vi.spyOn(second.ctx.storageLog, 'open').mockRejectedValue(new Error('Discovery opened a journal'))
+      expect((await second.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 128 })).items).toEqual([current.team])
+      expect(open).not.toHaveBeenCalled()
+      expect((second.ctx.teams as TeamHub).inspectLoadedTeam(created.team.id)).toBeUndefined()
+      open.mockRestore()
+      expect((await second.ctx.teams.getTeam({ teamId: created.team.id })).team).toEqual(current.team)
+      await second.dispose()
+    })
+
+    it('caps discovery work through archived Teams without using full stream listing', async () => {
+      const first = await setup(backend)
+      const archivedIds: TeamId[] = []
+      const authority = teamRunClosureAuthority(first.ctx)
+      for (let index = 0; index < 16; index += 1) {
+        const created = await createTestRootTeam(first.ctx, { goal: { objective: `Archived ${index}`, budgets: {} }, rules: {}, budgets: {} })
+        const ended = await failDurableFixture(first.ctx, created.team.id, authority)
+        await archiveTestTerminalTeam(first.ctx, { teamId: ended.team.id, expectedCursor: ended.team.cursor })
+        archivedIds.push(ended.team.id)
+      }
+      const visible = await createTestRootTeam(first.ctx, { goal: { objective: 'Visible work', budgets: {} }, rules: {}, budgets: {} })
+      const root = first.root
+      await first.dispose()
+      const second = await setup(backend, root)
+      vi.spyOn(second.ctx.storageLog, 'list').mockRejectedValue(new Error('Unbounded stream listing was invoked'))
+      const hub = second.ctx.teams as TeamHub
+      const watching = new AbortController()
+      const watch = second.ctx.teams.watchTeam({ teamId: visible.team.id, afterCursor: visible.team.cursor, signal: watching.signal })
+      const observedWatch = watch.catch((error: unknown) => error)
+      await vi.waitFor(() => { expect(hub.inspectLoadedTeam(visible.team.id)).toBeDefined() })
+      const ids = [...archivedIds, visible.team.id]
+      const loaded = () => ids.filter(id => hub.inspectLoadedTeam(id) !== undefined).length
+      const opens = vi.spyOn(second.ctx.storageLog, 'open')
+      const found: TeamId[] = []
+      let cursor: TeamListPageRequest['afterCursor'] = -1
+      let pages = 0
+      for (;;) {
+        const before = loaded()
+        const page = await second.ctx.teams.listTeamsPage({ afterCursor: cursor, limit: 3 })
+        pages += 1
+        expect(page.scanned).toBeLessThanOrEqual(3)
+        expect(loaded() - before).toBeLessThanOrEqual(3)
+        found.push(...page.items.map(team => team.id))
+        if (page.nextCursor === undefined) break
+        expect(page.nextCursor).not.toBe(cursor)
+        cursor = page.nextCursor
+      }
+      expect(opens).not.toHaveBeenCalled()
+      opens.mockRestore()
+      expect(found).toEqual([visible.team.id])
+      expect(loaded()).toBe(1)
+      expect(archivedIds.every(id => hub.inspectLoadedTeam(id) === undefined)).toBe(true)
+      const archivedId = archivedIds[0]!
+      expect((await second.ctx.teams.getTeam({ teamId: archivedId })).team.archivedAt).toBeDefined()
+      expect(hub.inspectLoadedTeam(archivedId)).toBeUndefined()
+      const historical = await second.ctx.teams.getTeam({ teamId: archivedId })
+      await expect(second.ctx.teams.watchTeam({ teamId: archivedId, afterCursor: historical.team.cursor })).resolves.toEqual({ kind: 'closed' })
+      expect(hub.inspectLoadedTeam(archivedId)).toBeUndefined()
+      watching.abort()
+      await observedWatch
+      console.info('CLOCKY_TEAM_DISCOVERY_BOUND', JSON.stringify({ backend, pages, maxScanEntries: 3, retainedTeams: loaded() }))
+      await second.dispose()
+    })
+
+    it('releases archived channel and audit handles while another Team is watched', async () => {
+      const h = await setup(backend)
+      const created = await createTestRootTeam(h.ctx, { goal: { objective: 'Archived history', budgets: {} }, rules: {}, budgets: {} })
+      const complete = await completeDurableFixture(h.ctx, created.team.id)
+      const archived = await archiveTestTerminalTeam(h.ctx, { teamId: created.team.id, expectedCursor: complete.team.cursor })
+      const active = await createTestRootTeam(h.ctx, { goal: { objective: 'Watched work', budgets: {} }, rules: {}, budgets: {} })
+      const controller = new AbortController()
+      const watch = h.ctx.teams.watchTeam({ teamId: active.team.id, afterCursor: active.team.cursor, signal: controller.signal })
+      const observed = watch.catch((error: unknown) => error)
+      try {
+        expect((await h.ctx.teams.getTeam({ teamId: archived.team.id })).team.archivedAt).toBeDefined()
+        await h.ctx.teams.readAudit({ teamId: archived.team.id, afterCursor: -1, limit: 1 })
+        const hub = h.ctx.teams as TeamHub
+        expect(hub.inspectLoadedTeam(archived.team.id)).toBeUndefined()
+        expect(archived.channelIds.every(id => hub.inspectLoadedChannel(id) === undefined)).toBe(true)
+        expect(h.ctx.storageLog.get(`audit/${archived.team.id}`)).toBeUndefined()
+        const originalOpen = h.ctx.storageLog.open.bind(h.ctx.storageLog)
+        const opening = vi.spyOn(h.ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+          if (descriptor.name === `audit/${archived.team.id}`) throw new Error('Audit read failed')
+          return await originalOpen(descriptor)
+        })
+        try {
+          await expect(h.ctx.teams.readAudit({ teamId: archived.team.id, afterCursor: -1, limit: 1 })).rejects.toThrow('Audit read failed')
+          expect(hub.inspectLoadedTeam(archived.team.id)).toBeUndefined()
+          expect(archived.channelIds.every(id => hub.inspectLoadedChannel(id) === undefined)).toBe(true)
+        } finally { opening.mockRestore() }
+      } finally { controller.abort(); await observed; await h.dispose() }
+    })
+
+    it('waits for archived stream eviction before a concurrent reader reopens it', async () => {
+      const h = await setup(backend)
+      const created = await createTestRootTeam(h.ctx, { goal: { objective: 'Concurrent archive reads', budgets: {} }, rules: {}, budgets: {} })
+      const ended = await failDurableFixture(h.ctx, created.team.id)
+      await archiveTestTerminalTeam(h.ctx, { teamId: ended.team.id, expectedCursor: ended.team.cursor })
+      const closing = Promise.withResolvers<undefined>()
+      const release = Promise.withResolvers<undefined>()
+      const originalOpen = h.ctx.storageLog.open.bind(h.ctx.storageLog)
+      let opened = 0
+      const open = vi.spyOn(h.ctx.storageLog, 'open').mockImplementation(async (descriptor) => {
+        const stream = await originalOpen(descriptor)
+        if (descriptor.name === `team/${created.team.id}` && opened++ === 0) {
+          const originalClose = stream.close.bind(stream)
+          vi.spyOn(stream, 'close').mockImplementation(async () => {
+            closing.resolve(undefined)
+            await release.promise
+            await originalClose()
+          })
+        }
+        return stream
+      })
+      try {
+        const first = h.ctx.teams.getTeam({ teamId: created.team.id })
+        await closing.promise
+        let secondFinished = false
+        const second = h.ctx.teams.getTeam({ teamId: created.team.id }).then((value) => { secondFinished = true; return value })
+        await new Promise(resolve => setImmediate(resolve))
+        expect(secondFinished).toBe(false)
+        expect(opened).toBe(1)
+        release.resolve(undefined)
+        expect((await first).team.archivedAt).toBeDefined()
+        expect((await second).team.archivedAt).toBeDefined()
+        expect(opened).toBe(2)
+      } finally { release.resolve(undefined); open.mockRestore(); await h.dispose() }
+    })
+
     it('archives terminal Teams durably and omits them from default listings', async () => {
       const first = await setup(backend)
       const created = await createTestRootTeam(first.ctx, { goal: { objective: 'Archive me', budgets: {} }, rules: {}, budgets: {} })
@@ -2704,7 +2848,7 @@ for (const backend of ['json', 'sqlite'] as const) {
         await first.dispose()
         const auditPath = join(root, 'logs', `${Buffer.from(`audit/${created.team.id}`, 'utf8').toString('base64url')}.json`)
         const original = await readFile(auditPath, 'utf8')
-        const altered = original.replace('"version": 1', '"version": 999')
+        const altered = original.replace('"version":1', '"version":999')
         expect(altered).not.toBe(original)
         await writeFile(auditPath, altered, 'utf8')
         const second = await setup(backend, root)
@@ -2903,15 +3047,19 @@ for (const backend of ['json', 'sqlite'] as const) {
       })
       expect(channel6.records).toHaveLength(1)
       expect(channel6.nextCursor).toBeUndefined()
-      const teams1 = await first.ctx.teams.listTeamsPage({ afterCursor: -1, limit: 1 })
-      expect(teams1.items).toHaveLength(1)
-      expect(teams1.nextCursor).toBeDefined()
-      const teams2 = await first.ctx.teams.listTeamsPage({ afterCursor: teams1.nextCursor!, limit: 1 })
-      expect(teams2.items).toHaveLength(1)
-      expect(teams2.nextCursor).toBeDefined()
-      const teams3 = await first.ctx.teams.listTeamsPage({ afterCursor: teams2.nextCursor!, limit: 1 })
-      expect(teams3.items).toHaveLength(1)
-      expect(teams3.nextCursor).toBeUndefined()
+      let discoveryCursor: TeamListPageRequest['afterCursor'] = -1
+      const discovered = []
+      for (;;) {
+        const page = await first.ctx.teams.listTeamsPage({ afterCursor: discoveryCursor, limit: 1 })
+        expect(page.items.length).toBeLessThanOrEqual(1)
+        expect(page.scanned).toBeLessThanOrEqual(1)
+        discovered.push(...page.items)
+        if (page.nextCursor === undefined) break
+        expect(page.nextCursor).not.toBe(discoveryCursor)
+        discoveryCursor = page.nextCursor
+      }
+      expect(discovered).toHaveLength(3)
+      expect(new Set(discovered.map(team => team.id)).size).toBe(3)
       const root = first.root
       await first.dispose()
       const second = await setup(backend, root, { recoveryPageSize: 2 })

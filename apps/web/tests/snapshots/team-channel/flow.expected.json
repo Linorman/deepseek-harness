@@ -5,7 +5,7 @@
   },
   "invitation": "acknowledged",
   "metadataEndpoints": 2,
-  "channelListContinuations": 2,
+  "channelListContinuations": 4,
   "staleAcknowledgementError": "team-channel-cursor-conflict",
   "cancelledChannel": "closed",
   "cancelledInvitation": "cancelled",

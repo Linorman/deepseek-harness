@@ -1,13 +1,25 @@
+import { channelDraftFingerprint } from './channel-draft.ts'
+import type { TeamLoadedContext } from './TeamPage.tsx'
 /** Member and direct-channel forms backed by authenticated Team commands. */
 
 import { useEffect, useId, useRef, useState } from 'react'
+import type { SetStateAction } from 'react'
 import { Button, Input, Modal } from '@clocky/clocky-client-ui-primitives'
 import type {
-  ChannelId, ChannelReadPageResult, ParticipantId, TeamManagementCommand, TeamTaskSelection, TeamChannelInput, TeamChannelCatalogState, TeamChannelAdmission,
+  ChannelId,
+  ChannelReadPageResult,
+  ParticipantId,
+  TeamManagementCommand,
+  TeamChannelInput,
+  TeamChannelCatalogState,
+  TeamChannelAdmission,
+
 } from '@clocky/clocky-client-runtime/client'
-import { encodeChannelImage, type ChannelDraftPart } from './channel-draft.ts'
+import { encodeChannelImages, type ChannelDraftPart, type ChannelComposerDraft } from './channel-draft.ts'
+import { Config } from './workspace-store.ts'
 import type { TeamKey } from './locales.ts'
 import css from './TeamBrowser.module.css'
+import hubCss from './ChannelHub.module.css'
 
 /** Exact selected subject for one management dialog. */
 export type TeamManagementTarget =
@@ -20,9 +32,32 @@ export type TeamManagementTarget =
  * @param props - exact target, authoritative Team/channel projections, and injected command/read owners.
  * @returns the shared application dialog for this operation.
  */
-export function TeamManagementDialog({ target, state, channel, senderId, channelPending, catalog, readCatalog, admission, translate: t, manage, onClose, refreshChannel }: {
+export function TeamManagementDialog({ target,
+  state,
+  channel,
+  senderId,
+  channelPending,
+  catalog,
+  readCatalog,
+  admission,
+  translate: t,
+  manage,
+  onClose,
+  refreshChannel,
+  inline = false,
+  maxDraftBytes,
+  draft,
+  onDraftChange, onDraftDiscard }: {
+  readonly maxDraftBytes?: number | undefined
   readonly target: TeamManagementTarget
-  readonly state: TeamTaskSelection['state']
+  /** Present the same channel command form in its conversation instead of a dialog. */
+  readonly inline?: boolean
+  /** Controlled draft supplied by the workspace when this form is an inline composer. */
+  readonly draft?: ChannelComposerDraft | undefined
+  /** Retain the complete unsent draft without adding a second business subscription. */
+  readonly onDraftDiscard?: (() => void) | undefined
+  readonly onDraftChange?: ((draft: ChannelComposerDraft) => void) | undefined
+  readonly state: TeamLoadedContext
   readonly channel: ChannelReadPageResult['channel'] | undefined
   readonly senderId?: ParticipantId | undefined
   readonly channelPending?: boolean | undefined
@@ -32,8 +67,9 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
   readonly translate: (key: TeamKey, vars?: Record<string, unknown>) => string
   readonly manage: (command: TeamManagementCommand, signal?: AbortSignal) => Promise<void>
   readonly onClose: () => void
-  readonly refreshChannel: () => Promise<void>
+  readonly refreshChannel?: () => Promise<void>
 }) {
+  const limits = Config.parse({ maxDraftBytes })
   const id = useId()
   const [name, setName] = useState('')
   const [role, setRole] = useState('worker')
@@ -42,29 +78,64 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
   const [provider, setProvider] = useState('')
   const [preset, setPreset] = useState('')
   const [model, setModel] = useState('')
-  const [text, setText] = useState('')
   const [adapterChoice, setAdapterChoice] = useState('')
   const [viewChoice, setViewChoice] = useState('')
   const [initiator, setInitiator] = useState<ParticipantId | undefined>()
   const [respondent, setRespondent] = useState<ParticipantId | undefined>()
   const [maxTurns, setMaxTurns] = useState('')
   const [speakerPolicy, setSpeakerPolicy] = useState<'' | 'round-robin' | 'free-form'>('')
-  const [content, setContent] = useState<readonly ChannelDraftPart[]>(() => [{ id: crypto.randomUUID(), content: { type: 'text', text: '' } }])
-  const [audienceMode, setAudienceMode] = useState<'selected' | 'broadcast'>('selected')
   const [importing, setImporting] = useState(false)
   const imageInput = useRef<HTMLInputElement>(null)
   const imageImport = useRef<AbortController | undefined>()
-  const [delivery, setDelivery] = useState<'context' | 'turn' | 'steer'>('turn')
-  const [selected, setSelected] = useState<readonly ParticipantId[]>(() => target.kind === 'channelOpen'
-    ? state.participants.filter(participant => participant.phase === 'active').map(participant => participant.id)
-    : channel?.manifest.participants.filter(participant => participant.id !== senderId
-      && state.participants.some(member => member.id === participant.id && member.phase === 'active')).map(participant => participant.id) ?? [])
+  const [localDraft, setLocalDraft] = useState<ChannelComposerDraft>(() => ({
+    text: '', content: [{ id: crypto.randomUUID(), content: { type: 'text', text: '' } }],
+    audienceMode: 'selected', delivery: 'turn', retryKey: crypto.randomUUID(), retryFingerprint: undefined,
+    selected: target.kind === 'channelOpen'
+      ? state.participants.filter(participant => participant.phase === 'active').map(participant => participant.id)
+      : channel?.manifest.participants.filter(participant => participant.id !== senderId
+        && state.participants.some(member => member.id === participant.id && member.phase === 'active')).map(participant => participant.id) ?? [],
+  }))
+  const composerDraft = draft ?? localDraft
+  const { text, content, audienceMode, delivery, selected } = composerDraft
+  const draftRef = useRef(composerDraft)
+  draftRef.current = composerDraft
+  const updateDraft = (change: (current: ChannelComposerDraft) => ChannelComposerDraft): boolean => {
+    const next = change(draftRef.current)
+    try {
+      if (onDraftChange === undefined) setLocalDraft(next)
+      else onDraftChange(next)
+      draftRef.current = next
+      setError(undefined)
+      return true
+    } catch (cause: unknown) {
+      setError(cause instanceof Error && cause.name === 'DraftCapacityError' ? t('channel.draftCapacity')
+        : cause instanceof Error ? cause.message : String(cause))
+      return false
+    }
+  }
+  function updateField<Key extends keyof ChannelComposerDraft>(key: Key, change: SetStateAction<ChannelComposerDraft[Key]>): void {
+    updateDraft(current => ({ ...current, [key]: typeof change === 'function' ? change(current[key]) : change }))
+  }
+  const setText = (value: SetStateAction<string>) => { updateField('text', value) }
+  const setContent = (value: SetStateAction<readonly ChannelDraftPart[]>) => { updateField('content', value) }
+  const setSelected = (value: SetStateAction<readonly ParticipantId[]>) => { updateField('selected', value) }
+  const setAudienceMode = (value: ChannelComposerDraft['audienceMode']) => { updateField('audienceMode', value) }
+  const setDelivery = (value: ChannelComposerDraft['delivery']) => { updateField('delivery', value) }
+  const clearDraft = (): void => {
+    const next: ChannelComposerDraft = { ...draftRef.current, text: '',
+      content: [{ id: crypto.randomUUID(), content: { type: 'text', text: '' } }],
+      retryKey: crypto.randomUUID(), retryFingerprint: undefined }
+    if (onDraftDiscard !== undefined) {
+      onDraftDiscard()
+      setLocalDraft(next)
+      draftRef.current = next
+    } else updateDraft(() => next)
+  }
+  const [discardDraft, setDiscardDraft] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [invalidField, setInvalidField] = useState<string | undefined>()
   const request = useRef<AbortController | undefined>()
-  const retryKey = useRef(crypto.randomUUID())
-  const retryFingerprint = useRef<string | undefined>()
   const form = useRef<HTMLFormElement | null>(null)
   const cancellingOpening = target.kind === 'channelClose' && channel?.phase === 'pending'
   const title = t(cancellingOpening ? 'channel.cancelOpening' : `manage.${target.kind}`)
@@ -84,14 +155,14 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
 
   useEffect(() => {
     const previous = document.activeElement
-    form.current?.closest('dialog')?.querySelector<HTMLButtonElement>('[data-management-cancel]')?.focus()
+    if (!inline) form.current?.closest('dialog')?.querySelector<HTMLButtonElement>('[data-management-cancel]')?.focus()
     return () => {
       request.current?.abort()
       imageImport.current?.abort()
       imageImport.current = undefined
-      if (previous instanceof HTMLElement && previous.isConnected) previous.focus()
+      if (!inline && previous instanceof HTMLElement && previous.isConnected) previous.focus()
     }
-  }, [])
+  }, [inline])
 
   const close = (): void => { if (!busy) onClose() }
   const addImages = async (files: readonly File[]): Promise<void> => {
@@ -101,10 +172,11 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
     setImporting(true)
     setError(undefined)
     try {
-      const encoded = await Promise.all(files.map(async file => ({ id: crypto.randomUUID(), content: await encodeChannelImage(file, controller.signal) })))
+      const encoded = await encodeChannelImages(files, draftRef.current, limits.maxDraftBytes, controller.signal)
       if (!controller.signal.aborted) setContent(previous => [...previous, ...encoded])
     } catch (cause: unknown) {
-      if (!controller.signal.aborted) { setError(cause instanceof Error ? cause.message : String(cause)); controller.abort() }
+      if (!controller.signal.aborted) { setError(cause instanceof RangeError ? t('channel.draftCapacity')
+        : cause instanceof Error ? cause.message : String(cause)); controller.abort() }
     } finally {
       if (imageImport.current === controller) setImporting(false)
     }
@@ -112,9 +184,8 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
   const moveContent = (index: number, direction: -1 | 1): void => {
     setContent((previous) => {
       const next = [...previous]
-      const selected = next[index]!
-      next[index] = next[index + direction]!
-      next[index + direction] = selected
+      const selected = next.splice(index, 1)
+      next.splice(index + direction, 0, ...selected)
       return next
     })
   }
@@ -189,13 +260,15 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
         if (audience !== null && audience.length === 0) { failField('members', t('manage.audienceRequired')); return }
         if (channel.manifest.adapter.type === 'discussion' && delivery === 'steer') { failField('basic-text', t('channel.discussionNoSteer')); return }
         const selectedDelivery = channel.manifest.adapter.type === 'consult' ? 'turn' : delivery
-        const fingerprint = JSON.stringify({ content: ordered, audience, delivery: selectedDelivery })
-        if (retryFingerprint.current !== undefined && retryFingerprint.current !== fingerprint) retryKey.current = crypto.randomUUID()
-        retryFingerprint.current = fingerprint
+        const fingerprint = channelDraftFingerprint({ content: ordered, audience, delivery: selectedDelivery })
+        const previousDraft = draftRef.current
+        const key = previousDraft.retryFingerprint !== undefined &&
+           previousDraft.retryFingerprint !== fingerprint ? crypto.randomUUID() : previousDraft.retryKey
+        if (!updateDraft(current => ({ ...current, retryKey: key, retryFingerprint: fingerprint }))) return
         command = { operation: 'channelInput', input: {
           channelId: target.channelId, expectedCursor: channel.cursor,
           audience, delivery: selectedDelivery, content: ordered,
-          idempotencyKey: retryKey.current as NonNullable<TeamChannelInput['idempotencyKey']>,
+          idempotencyKey: key as NonNullable<TeamChannelInput['idempotencyKey']>,
         } }
         break
       }
@@ -210,84 +283,112 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
     const controller = new AbortController()
     request.current = controller
     setBusy(true)
+    let accepted = false
+    let failure: { cause: unknown } | undefined
     try {
-      await manage(command, controller.signal)
-      if (!controller.signal.aborted && 'channelId' in target) await refreshChannel()
-      if (!controller.signal.aborted) onClose()
-    } catch (cause: unknown) {
-      if (!controller.signal.aborted && 'channelId' in target) await refreshChannel()
-      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
+      try {
+        await manage(command, controller.signal)
+        accepted = true
+        if (!controller.signal.aborted && inline) {
+          clearDraft()
+        }
+      } catch (cause: unknown) { failure = { cause } }
+      if (!controller.signal.aborted && 'channelId' in target && refreshChannel !== undefined) {
+        try { await refreshChannel() }
+        catch (cause: unknown) {
+          if (failure === undefined) failure = { cause: new Error(t('channel.acceptedRefreshFailed', {
+            message: cause instanceof Error ? cause.message : String(cause),
+          })) }
+        }
+      }
+      if (!controller.signal.aborted) {
+        if (failure !== undefined) setError(failure.cause instanceof Error ? failure.cause.message : String(failure.cause))
+        if (accepted && !inline) onClose()
+      }
     } finally {
       if (request.current === controller) { request.current = undefined; setBusy(false) }
     }
   }
+
   const stopWaiting = (): void => {
     request.current?.abort()
     setError(t('manage.cancelledRead'))
   }
   const footer = <div className={css.actions}>
-    <Button data-management-cancel disabled={busy} onClick={close}>{t('cancel')}</Button>
+    {inline && <Button variant="outline" disabled={busy || importing} onClick={() => { setDiscardDraft(true) }}>{t('channel.discardDraft')}</Button>}
+    {!inline && <Button data-management-cancel disabled={busy} onClick={close}>{t('cancel')}</Button>}
     {busy && <Button onClick={stopWaiting}>{t('detail.cancelRead')}</Button>}
     <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || importing || target.kind === 'channelPost' && channelPending}>{title}</Button>
   </div>
-  return <Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent ?? ''}>
-    <form id={`${id}-form`} ref={form} noValidate className={css.managementForm} onSubmit={(event) => { event.preventDefault(); void submit() }}>
-      {participant !== undefined && <p><strong>{participant.displayName}</strong> · {participant.role}</p>}
-      {(target.kind === 'memberRemove' || target.kind === 'memberActivate' || target.kind === 'memberInterrupt' || target.kind === 'channelClose')
+  const formContent = <form id={`${id}-form`} ref={form} noValidate className={inline ? hubCss.composerForm : css.managementForm} onKeyDown={(event) => {
+    if (inline && (event.metaKey || event.ctrlKey) && event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() }
+  }} onSubmit={(event) => { event.preventDefault(); void submit() }}>
+    {participant !== undefined && <p><strong>{participant.displayName}</strong> · {participant.role}</p>}
+    {(target.kind === 'memberRemove' || target.kind === 'memberActivate' || target.kind === 'memberInterrupt' || target.kind === 'channelClose')
         && <p className={css.notice}>{t(cancellingOpening ? 'channel.cancelOpeningDescription' : `manage.${target.kind}Description`)}</p>}
-      {target.kind === 'memberInvite' && <>
-        <label htmlFor={`${id}-name`}>{t('manage.name')}</label>
-        <Input id={`${id}-name`} value={name} disabled={busy} onChange={(event) => { setName(event.target.value) }} aria-invalid={invalidField === 'name'} aria-describedby={invalidField === 'name' ? `${id}-error` : undefined} />
-        <label htmlFor={`${id}-role`}>{t('manage.role')}</label>
-        <Input id={`${id}-role`} value={role} disabled={busy} onChange={(event) => { setRole(event.target.value) }} aria-invalid={invalidField === 'role'} aria-describedby={invalidField === 'role' ? `${id}-error` : undefined} />
-        <fieldset className={css.managementChoices} disabled={busy}><legend>{t('manage.kind')}</legend>
-          {(['local-agent', 'remote-agent', 'service'] as const).map(value => <label key={value}>
-            <input type="radio" name={`${id}-kind`} value={value} checked={kind === value} onChange={() => { setKind(value) }} />{t(`manage.kind.${value}`)}
-          </label>)}
+    {target.kind === 'memberInvite' && <>
+      <label htmlFor={`${id}-name`}>{t('manage.name')}</label>
+      <Input id={`${id}-name`} value={name} disabled={busy} onChange={(event) => { setName(event.target.value) }} aria-invalid={invalidField === 'name'} aria-describedby={invalidField === 'name' ? `${id}-error` : undefined} />
+      <label htmlFor={`${id}-role`}>{t('manage.role')}</label>
+      <Input id={`${id}-role`} value={role} disabled={busy} onChange={(event) => { setRole(event.target.value) }} aria-invalid={invalidField === 'role'} aria-describedby={invalidField === 'role' ? `${id}-error` : undefined} />
+      <fieldset className={css.managementChoices} disabled={busy}><legend>{t('manage.kind')}</legend>
+        {(['local-agent', 'remote-agent', 'service'] as const).map(value => <label key={value}>
+          <input type="radio" name={`${id}-kind`} value={value} checked={kind === value} onChange={() => { setKind(value) }} />{t(`manage.kind.${value}`)}
+        </label>)}
+      </fieldset>
+      <label htmlFor={`${id}-capabilities`}>{t('manage.capabilities')}</label>
+      <Input id={`${id}-capabilities`} value={capabilities} disabled={busy} onChange={(event) => { setCapabilities(event.target.value) }} />
+      <label htmlFor={`${id}-provider`}>{t('manage.provider')}</label>
+      <Input id={`${id}-provider`} value={provider} disabled={busy} onChange={(event) => { setProvider(event.target.value) }} />
+      <label htmlFor={`${id}-preset`}>{t('manage.preset')}</label>
+      <Input id={`${id}-preset`} value={preset} disabled={busy} onChange={(event) => { setPreset(event.target.value) }} />
+      <label htmlFor={`${id}-model`}>{t('manage.model')}</label>
+      <Input id={`${id}-model`} value={model} disabled={busy} onChange={(event) => { setModel(event.target.value) }} />
+    </>}
+    {target.kind === 'channelOpen' && <>
+      {catalog?.loading && <p role="status">{t('channel.catalogLoading')}</p>}
+      {catalog?.error !== undefined && <p role="alert" className={css.error}>{catalog.error}</p>}
+      {readCatalog !== undefined && <button type="button" disabled={busy || catalog?.loading} onClick={() => { void readCatalog() }}>{t('channel.refreshCatalog')}</button>}
+      <fieldset id={`${id}-protocol`} tabIndex={-1} className={css.managementChoices} disabled={busy || catalog?.loading}>
+        <legend>{t('channel.protocol')}</legend>
+        {adapters.map(ref => <label key={`${ref.type}@${ref.version}`}><input type="radio" name={`${id}-protocol-choice`}
+          checked={adapterChoice === `${ref.type}@${ref.version}`} onChange={() => { setAdapterChoice(`${ref.type}@${ref.version}`) }} />
+        {t(`channel.protocol.${ref.type as 'direct' | 'consult' | 'discussion'}`)} v{ref.version}</label>)}
+      </fieldset>
+      <p>{t('channel.workflowSeparate')}</p>
+      <fieldset id={`${id}-view`} tabIndex={-1} className={css.managementChoices} disabled={busy || catalog?.loading}>
+        <legend>{t('channel.creationView')}</legend>
+        {catalog?.value?.viewPolicies.map(ref => <label key={`${ref.type}@${ref.version}`}><input type="radio" name={`${id}-view-choice`}
+          checked={viewChoice === `${ref.type}@${ref.version}`} onChange={() => { setViewChoice(`${ref.type}@${ref.version}`) }} />{ref.type} v{ref.version}</label>)}
+      </fieldset>
+      {adapter?.type === 'consult' && <div id={`${id}-consult`} tabIndex={-1}>
+        <fieldset className={css.managementChoices} disabled={busy}><legend>{t('channel.initiator')}</legend>
+          {options.map(member => <label key={member.id}><input type="radio" name={`${id}-initiator`} checked={initiator === member.id}
+
+            onChange={() => {
+              setInitiator(member.id)
+              if (respondent === member.id) setRespondent(undefined)
+            }} />{member.displayName}</label>)}
         </fieldset>
-        <label htmlFor={`${id}-capabilities`}>{t('manage.capabilities')}</label>
-        <Input id={`${id}-capabilities`} value={capabilities} disabled={busy} onChange={(event) => { setCapabilities(event.target.value) }} />
-        <label htmlFor={`${id}-provider`}>{t('manage.provider')}</label>
-        <Input id={`${id}-provider`} value={provider} disabled={busy} onChange={(event) => { setProvider(event.target.value) }} />
-        <label htmlFor={`${id}-preset`}>{t('manage.preset')}</label>
-        <Input id={`${id}-preset`} value={preset} disabled={busy} onChange={(event) => { setPreset(event.target.value) }} />
-        <label htmlFor={`${id}-model`}>{t('manage.model')}</label>
-        <Input id={`${id}-model`} value={model} disabled={busy} onChange={(event) => { setModel(event.target.value) }} />
-      </>}
-      {target.kind === 'channelOpen' && <>
-        {catalog?.loading && <p role="status">{t('channel.catalogLoading')}</p>}
-        {catalog?.error !== undefined && <p role="alert" className={css.error}>{catalog.error}</p>}
-        {readCatalog !== undefined && <button type="button" disabled={busy || catalog?.loading} onClick={() => { void readCatalog() }}>{t('channel.refreshCatalog')}</button>}
-        <fieldset id={`${id}-protocol`} tabIndex={-1} className={css.managementChoices} disabled={busy || catalog?.loading}>
-          <legend>{t('channel.protocol')}</legend>
-          {adapters.map(ref => <label key={`${ref.type}@${ref.version}`}><input type="radio" name={`${id}-protocol-choice`}
-            checked={adapterChoice === `${ref.type}@${ref.version}`} onChange={() => { setAdapterChoice(`${ref.type}@${ref.version}`) }} />
-          {t(`channel.protocol.${ref.type as 'direct' | 'consult' | 'discussion'}`)} v{ref.version}</label>)}
+        <fieldset className={css.managementChoices} disabled={busy}><legend>{t('channel.respondent')}</legend>
+          {options.map(member => <label key={member.id}><input type="radio" name={`${id}-respondent`} checked={respondent === member.id}
+
+            onChange={() => {
+              setRespondent(member.id)
+              if (initiator === member.id) setInitiator(undefined)
+            }} />{member.displayName}</label>)}
         </fieldset>
-        <p>{t('channel.workflowSeparate')}</p>
-        <fieldset id={`${id}-view`} tabIndex={-1} className={css.managementChoices} disabled={busy || catalog?.loading}>
-          <legend>{t('channel.creationView')}</legend>
-          {catalog?.value?.viewPolicies.map(ref => <label key={`${ref.type}@${ref.version}`}><input type="radio" name={`${id}-view-choice`}
-            checked={viewChoice === `${ref.type}@${ref.version}`} onChange={() => { setViewChoice(`${ref.type}@${ref.version}`) }} />{ref.type} v{ref.version}</label>)}
-        </fieldset>
-        {adapter?.type === 'consult' && <div id={`${id}-consult`} tabIndex={-1}>
-          <fieldset className={css.managementChoices} disabled={busy}><legend>{t('channel.initiator')}</legend>
-            {options.map(member => <label key={member.id}><input type="radio" name={`${id}-initiator`} checked={initiator === member.id}
-              onChange={() => { setInitiator(member.id); if (respondent === member.id) setRespondent(undefined) }} />{member.displayName}</label>)}
-          </fieldset>
-          <fieldset className={css.managementChoices} disabled={busy}><legend>{t('channel.respondent')}</legend>
-            {options.map(member => <label key={member.id}><input type="radio" name={`${id}-respondent`} checked={respondent === member.id}
-              onChange={() => { setRespondent(member.id); if (initiator === member.id) setInitiator(undefined) }} />{member.displayName}</label>)}
-          </fieldset>
-        </div>}
-        {adapter?.type === 'discussion' && <fieldset id={`${id}-discussion`} tabIndex={-1} className={css.managementChoices} disabled={busy}>
-          <legend>{t('channel.discussionLimits')}</legend>
-          <label htmlFor={`${id}-max-turns`}>{t('channel.maxTurns')}</label>
-          <Input id={`${id}-max-turns`} type="number" min={1} step={1} value={maxTurns} onChange={(event) => { setMaxTurns(event.target.value) }} />
-          {(['round-robin', 'free-form'] as const).map(policy => <label key={policy}><input type="radio" name={`${id}-speaker-policy`} checked={speakerPolicy === policy}
-            onChange={() => { setSpeakerPolicy(policy) }} />{t(`channel.speaker.${policy}`)}</label>)}
-        </fieldset>}
-      </>}
+      </div>}
+      {adapter?.type === 'discussion' && <fieldset id={`${id}-discussion`} tabIndex={-1} className={css.managementChoices} disabled={busy}>
+        <legend>{t('channel.discussionLimits')}</legend>
+        <label htmlFor={`${id}-max-turns`}>{t('channel.maxTurns')}</label>
+        <Input id={`${id}-max-turns`} type="number" min={1} step={1} value={maxTurns} onChange={(event) => { setMaxTurns(event.target.value) }} />
+        {(['round-robin', 'free-form'] as const).map(policy => <label key={policy}><input type="radio" name={`${id}-speaker-policy`} checked={speakerPolicy === policy}
+          onChange={() => { setSpeakerPolicy(policy) }} />{t(`channel.speaker.${policy}`)}</label>)}
+      </fieldset>}
+    </>}
+    <details className={inline ? hubCss.composerOptions : hubCss.expandedOptions} open={!inline}>
+      <summary hidden={!inline}>{t('channelHub.deliveryOptions')}</summary>
       {target.kind === 'channelPost' && !basic && <fieldset id={`${id}-audience`} tabIndex={-1} className={css.managementChoices} disabled={busy || importing}>
         <legend>{t('channel.audienceMode')}</legend>
         <label><input type="radio" name={`${id}-audience-mode`} checked={audienceMode === 'selected'} onChange={() => { setAudienceMode('selected') }} />{t('channel.selectedAudience')}</label>
@@ -305,53 +406,65 @@ export function TeamManagementDialog({ target, state, channel, senderId, channel
         {target.kind === 'channelOpen' && adapter?.type === 'discussion' && <ol>{selected.map((memberId, index) => <li key={memberId}>
           {state.participants.find(member => member.id === memberId)?.displayName ?? t('channel.unknownParticipant')}
           <button type="button" disabled={index === 0} aria-label={t('channel.moveMemberUp', { index: index + 1 })} onClick={() => { setSelected((previous) => {
-            const next = [...previous]; const item = next[index]!; next[index] = next[index - 1]!; next[index - 1] = item; return next
+            const next = [...previous]; const moved = next.splice(index, 1); next.splice(index - 1, 0, ...moved); return next
           }) }}>{t('channel.moveUp')}</button>
           <button type="button" disabled={index === selected.length - 1} aria-label={t('channel.moveMemberDown', { index: index + 1 })} onClick={() => { setSelected((previous) => {
-            const next = [...previous]; const item = next[index]!; next[index] = next[index + 1]!; next[index + 1] = item; return next
+            const next = [...previous]; const moved = next.splice(index, 1); next.splice(index + 1, 0, ...moved); return next
           }) }}>{t('channel.moveDown')}</button>
         </li>)}</ol>}
-      </fieldset>}
-      {target.kind === 'channelPost' && basic && <>
-        <p>{t(channel?.manifest.adapter.type === 'consult' ? 'channel.consultDelivery' : 'channel.discussionDelivery')}</p>
-        <label htmlFor={`${id}-basic-text`}>{t('manage.text')}</label>
-        <textarea id={`${id}-basic-text`} className={`${css.managementText} clocky-resize-none`} rows={5} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} />
-      </>}
-      {target.kind === 'channelClose' && <>
-        <label htmlFor={`${id}-text`}>{t('manage.reason')}</label>
-        <textarea id={`${id}-text`} className={`${css.managementText} clocky-resize-none`} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} aria-invalid={invalidField === 'text'} aria-describedby={invalidField === 'text' ? `${id}-error` : undefined} rows={5} />
-      </>}
-      {target.kind === 'channelPost' && !basic && <fieldset id={`${id}-content`} tabIndex={-1} className={css.managementChoices}
-        disabled={busy || importing} aria-invalid={invalidField === 'content'} aria-describedby={invalidField === 'content' ? `${id}-error` : undefined}>
-        <legend>{t('channel.orderedContent')}</legend>
-        {content.map((part, index) => <div key={part.id} className={css.channelDraftPart} role="group" aria-label={t('channel.contentItem', { index: index + 1 })}>
-          {part.content.type === 'text' ? <>
-            <label htmlFor={`${id}-content-${part.id}`}>{index === 0 ? t('manage.text') : t('channel.textPart', { index: index + 1 })}</label>
-            <textarea id={`${id}-content-${part.id}`} rows={3} className={`${css.managementText} clocky-resize-none`} value={part.content.text}
-              onChange={(event) => { const value = event.target.value; setContent(previous => previous.map(item => item.id === part.id ? { ...item, content: { type: 'text', text: value } } : item)) }} />
-          </> : <img className={css.channelDraftImage} src={`data:${part.content.mediaType};base64,${part.content.data}`} alt={part.content.name ?? t('channel.image')} />}
-          <div className={css.actions}>
-            <button type="button" disabled={index === 0} aria-label={t('channel.moveUpItem', { index: index + 1 })} onClick={() => { moveContent(index, -1) }}>{t('channel.moveUp')}</button>
-            <button type="button" disabled={index === content.length - 1} aria-label={t('channel.moveDownItem', { index: index + 1 })} onClick={() => { moveContent(index, 1) }}>{t('channel.moveDown')}</button>
-            <button type="button" aria-label={t('channel.removeItem', { index: index + 1 })} onClick={() => { setContent(previous => previous.filter(item => item.id !== part.id)) }}>{t('channel.remove')}</button>
-          </div>
-        </div>)}
-        <div className={css.actions}>
-          <button type="button" onClick={() => { setContent(previous => [...previous, { id: crypto.randomUUID(), content: { type: 'text', text: '' } }]) }}>{t('channel.addText')}</button>
-          <button type="button" onClick={() => { imageInput.current?.click() }}>{t('channel.addImages')}</button>
-          <input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden aria-label={t('channel.addImages')}
-            onChange={(event) => { const files = [...event.currentTarget.files ?? []]; event.currentTarget.value = ''; void addImages(files) }} />
-        </div>
       </fieldset>}
       {target.kind === 'channelPost' && channel?.manifest.adapter.type !== 'consult' && <fieldset className={css.managementChoices} disabled={busy}><legend>{t('manage.delivery')}</legend>
         {(basic ? ['turn', 'context'] as const : ['turn', 'context', 'steer'] as const).map(value => <label key={value}><input type="radio" name={`${id}-delivery`} checked={delivery === value} onChange={() => { setDelivery(value) }} />{t(`manage.delivery.${value}`)}</label>)}
       </fieldset>}
-      {error !== undefined && <p id={`${id}-error`} className={css.error} role="alert">{error}</p>}
-      {busy && <p className={css.muted} role="status">{t('manage.pending')}</p>}
-      {importing && <p className={css.muted} role="status">{t('channel.importingImages')}</p>}
+    </details>
+    {target.kind === 'channelPost' && basic && <>
+      <p>{t(channel.manifest.adapter.type === 'consult' ? 'channel.consultDelivery' : 'channel.discussionDelivery')}</p>
+      <label htmlFor={`${id}-basic-text`}>{t('manage.text')}</label>
+      <textarea id={`${id}-basic-text`} className={`${css.managementText} clocky-resize-none`} rows={inline ? 3 : 5} placeholder={inline ? t('channelHub.placeholder') : undefined} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} />
+    </>}
+    {target.kind === 'channelClose' && <>
+      <label htmlFor={`${id}-text`}>{t('manage.reason')}</label>
+      <textarea id={`${id}-text`} className={`${css.managementText} clocky-resize-none`} value={text} disabled={busy} onChange={(event) => { setText(event.target.value) }} aria-invalid={invalidField === 'text'} aria-describedby={invalidField === 'text' ? `${id}-error` : undefined} rows={5} />
+    </>}
+    {target.kind === 'channelPost' && !basic && <fieldset id={`${id}-content`} tabIndex={-1} className={css.managementChoices}
+      disabled={busy || importing} aria-invalid={invalidField === 'content'} aria-describedby={invalidField === 'content' ? `${id}-error` : undefined}>
+      <legend>{t('channel.orderedContent')}</legend>
+      {content.map((part, index) => <div key={part.id} className={css.channelDraftPart} role="group" aria-label={t('channel.contentItem', { index: index + 1 })}>
+        {part.content.type === 'text' ? <>
+          <label htmlFor={`${id}-content-${part.id}`}>{index === 0 ? t('manage.text') : t('channel.textPart', { index: index + 1 })}</label>
+          <textarea id={`${id}-content-${part.id}`} rows={3} placeholder={inline ? t('channelHub.placeholder') : undefined} className={`${css.managementText} clocky-resize-none`} value={part.content.text}
+            onChange={(event) => { const value = event.target.value; setContent(previous => previous.map(item => item.id === part.id ? { ...item, content: { type: 'text', text: value } } : item)) }} />
+        </> : <img className={css.channelDraftImage} src={`data:${part.content.mediaType};base64,${part.content.data}`} alt={part.content.name ?? t('channel.image')} />}
+        {(!inline || content.length > 1 || part.content.type === 'image') && <div className={css.actions}>
+          <button type="button" disabled={index === 0} aria-label={t('channel.moveUpItem', { index: index + 1 })} onClick={() => { moveContent(index, -1) }}>{t('channel.moveUp')}</button>
+          <button type="button" disabled={index === content.length - 1} aria-label={t('channel.moveDownItem', { index: index + 1 })} onClick={() => { moveContent(index, 1) }}>{t('channel.moveDown')}</button>
+          <button type="button" aria-label={t('channel.removeItem', { index: index + 1 })} onClick={() => { setContent(previous => previous.filter(item => item.id !== part.id)) }}>{t('channel.remove')}</button>
+        </div>}
+      </div>)}
+      <div className={css.actions}>
+        <button type="button" onClick={() => { setContent(previous => [...previous, { id: crypto.randomUUID(), content: { type: 'text', text: '' } }]) }}>{t('channel.addText')}</button>
+        <button type="button" onClick={() => { imageInput.current?.click() }}>{t('channel.addImages')}</button>
+        <input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden aria-label={t('channel.addImages')}
+          onChange={(event) => { const files = [...event.currentTarget.files ?? []]; event.currentTarget.value = ''; void addImages(files) }} />
+      </div>
+    </fieldset>}
+    {error !== undefined && <p id={`${id}-error`} className={css.error} role="alert">{error}</p>}
+    {busy && <p className={css.muted} role="status">{t('manage.pending')}</p>}
+    {importing && <p className={css.muted} role="status">{t('channel.importingImages')}</p>}
 
-    </form>
-  </Modal>
+  </form>
+  return inline ? <><Modal open={discardDraft} title={t('channel.discardDraft')} closeLabel={t('cancel')}
+    description={t('channel.discardDraftDescription')} onClose={() => { setDiscardDraft(false) }}
+    footer={<><Button onClick={() => { setDiscardDraft(false) }}>{t('inbox.keepDraft')}</Button>
+      <Button onClick={() => { clearDraft(); setError(undefined); setDiscardDraft(false) }}>{t('channel.discardDraft')}</Button></>} />
+  <div className={hubCss.composer} data-channel-composer data-parts={content.length}>
+    {formContent}
+    <p className={hubCss.composerIdentity}>{t('channelHub.identity')}: {state.participants.find(member => member.id === senderId)?.displayName ?? t('channel.senderUnavailable')}
+      {' · '}{audienceMode === 'broadcast' ? t('channel.broadcastAudience') : options.filter(member => selected.includes(member.id)).map(member => member.displayName).join(' · ')}
+    </p>
+    {footer}
+  </div></>
+    : <Modal open onClose={close} title={title} closeLabel={t('cancel')} footer={footer} bodyClassName={css.managementContent ?? ''}>{formContent}</Modal>
 }
 
 /** Keep management forms exhaustive when another operation is introduced. */

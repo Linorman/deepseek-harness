@@ -13,7 +13,7 @@ import {
   StorageError,
 } from '@clocky/clocky-storage'
 import type {
-  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor,
+  LogAppendOptions, LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor,
 } from '@clocky/clocky-storage'
 
 /**
@@ -100,7 +100,7 @@ class SqliteLogStream implements LogStream {
   ) {
     this.selectStream = db.prepare('SELECT version, tail_sequence FROM log_streams WHERE name = ?')
     this.createStream = db.prepare('INSERT INTO log_streams (name, version, tail_sequence) VALUES (?, ?, ?)')
-    this.updateTail = db.prepare('UPDATE log_streams SET tail_sequence = ? WHERE name = ?')
+    this.updateTail = db.prepare('UPDATE log_streams SET tail_sequence = ?, summary = ? WHERE name = ?')
     this.insertEntry = db.prepare('INSERT INTO log_entries (stream, sequence, value) VALUES (?, ?, ?)')
     this.selectEntries = db.prepare(
       'SELECT sequence, value FROM log_entries WHERE stream = ? AND sequence > ? ORDER BY sequence ASC LIMIT ?',
@@ -127,10 +127,11 @@ class SqliteLogStream implements LogStream {
     return row?.tail_sequence ?? EMPTY_LOG_SEQUENCE
   }
 
-  append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult> {
+  append(expectedSequence: number, values: readonly unknown[], options?: LogAppendOptions): Promise<LogAppendResult> {
     try {
       assertSequence('expectedSequence', expectedSequence)
       if (values.length === 0) throw new Error(`log stream '${this.name}' append values must be non-empty`)
+      const summary = options === undefined ? null : serializeValue(this.name, 'summary', options.summary)
       const serialized = values.map(value => serializeValue(this.name, 'append value', value))
       const result = this.transaction(() => {
         const tail = this.currentTail()
@@ -141,7 +142,7 @@ class SqliteLogStream implements LogStream {
           this.insertEntry.run(this.name, tail + index + 1, value)
         }
         const tailSequence = tail + serialized.length
-        this.updateTail.run(tailSequence, this.name)
+        this.updateTail.run(tailSequence, summary, this.name)
         return { tailSequence }
       })
       return Promise.resolve(result)

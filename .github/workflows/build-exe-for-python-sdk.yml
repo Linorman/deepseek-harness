@@ -277,6 +277,8 @@ jobs:
             --scenario sdk-default
           "$RUNNER_TEMP/clocky-sdk-smoke/bin/python" scripts/smoke-python-runtime.py \
             --scenario sdk-mcp
+          "$RUNNER_TEMP/clocky-sdk-smoke/bin/python" scripts/smoke-python-runtime.py \
+            --scenario sdk-child-team
 
       - name: Check Linux GLIBC requirements
         if: runner.os == 'Linux'

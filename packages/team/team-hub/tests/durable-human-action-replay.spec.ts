@@ -1,6 +1,8 @@
+import { projectHumanAction } from '@clocky/clocky-team/selection'
+import { teamHumanActionIdSchema, teamHumanActionSnapshotSchema, teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
 /** Human-action admission and late settlement across durable Team closure. @module */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { retainedFinalAdapter, retainedFinalFixture } from './durable-final-fixtures.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import type { DurableChannelFixture } from './durable-replay-fixtures.ts'
@@ -120,3 +122,31 @@ for (const backend of ['json', 'sqlite'] as const) {
     }
   })
 }
+
+it.each(['json', 'sqlite'] as const)('reads one durable action without copying the Team state (%s)', async (backend) => {
+  const input = fixture('fail', true)
+  const ctx = await recoverHuman(backend, input.closing, [])
+  const expected = teamHumanActionSnapshotSchema.parse(action())
+  const completeRead = vi.spyOn(ctx.teams, 'getTeam').mockRejectedValue(new Error('Full Team materialization forbidden'))
+  const actual = await ctx.teams.getHumanAction({ teamId, actionId: expected.id })
+  expect(actual).toEqual(expected)
+  expect(Object.isFrozen(actual)).toBe(true)
+  expect(completeRead).not.toHaveBeenCalled()
+  await expect(ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('missing') }))
+    .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  expect(teamHumanActionReadRequestSchema.safeParse({ teamId, actionId: expected.id, extra: true }).success).toBe(false)
+  expect(projectHumanAction(expected, 1)).toEqual({ ok: false, reason: 'too-large' })
+  expect(projectHumanAction(undefined, 16384)).toEqual({ ok: false, reason: 'missing' })
+  const projected = projectHumanAction(expected, 16384)
+  expect(projected).toEqual({ ok: true, value: expected })
+  expect(projected.ok && projected.value === expected).toBe(false)
+})
+
+it.each(['json', 'sqlite'] as const)('rejects an oversized durable action (%s)', async (backend) => {
+  const input = fixture('fail', true)
+  const records = input.closing.map(record => record.type === 'human-action/changed'
+    ? { ...record, action: { ...action(), details: { prompt: 'x'.repeat(20000) } } } : record)
+  const ctx = await recoverHuman(backend, records, [])
+  await expect(ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('question-a') }))
+    .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+})

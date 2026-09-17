@@ -183,14 +183,14 @@ export function apply(ctx: Context): void {
       if (imageIds.length > 0) return { kind: 'error', text: t('image.unsupportedType') }
       try {
         const draft = ctx.teamTasks.list.getSnapshot().draft
-        const selection = await ctx.teamTasks.start({
+        await ctx.teamTasks.start({
           text,
           ...draft?.cwd === undefined ? {} : { cwd: draft.cwd },
           ...draft?.agentPreset === undefined ? {} : { agentPreset: draft.agentPreset },
           ...draft?.selection === undefined ? {} : { selection: draft.selection },
         }, signal)
         await sessions.refresh()
-        sessions.open(selection.coordinatorSessionId)
+        sessions.clear()
         return { kind: 'success' }
       } catch (error: unknown) {
         return { kind: 'error', text: error instanceof Error ? error.message : String(error) }

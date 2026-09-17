@@ -74,7 +74,7 @@
     "@clocky/clocky-storage": "workspace:^",
     "@clocky/clocky-storage-json": "workspace:^",
     "@clocky/clocky-storage-log": "workspace:^",
-    "@clocky/clocky-subagent": "workspace:^",
+    "@clocky/clocky-compat-subagent": "workspace:^",
     "@clocky/clocky-team-channel-direct": "workspace:^",
     "@clocky/clocky-team-activation-controller": "workspace:^",
     "@clocky/clocky-team-agent-client": "workspace:^",

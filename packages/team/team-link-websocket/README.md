@@ -6,6 +6,8 @@ English | [中文](README.zh.md)
 
 V6 invitation notifications share the bounded notification capacity and dispatch independently per channel. Exact acknowledgement results remove their retained entry; terminal invitation updates also clear it. A null-audience Envelope for another sender may reach claim, whose Hub-verified manifest and fixed recipient intent remain the final delivery authority. This permits v4 broadcasts without granting late members historical deliveries.
 
+Explicit remote `unauthorized` rejection, missing capability, invalid configuration, binding mismatch, malformed frames/results, and unexpected or out-of-order protocol frames are non-retryable connection failures. Transport timeouts and disconnects remain retryable. Remote request rejection alone is not classified as permanent because the remote reason may describe transient admission state.
+
 ## Provider contract
 
 `providerName` defaults to `websocket`. `endpoint` is a complete `ws:` or `wss:` Hub URL; it cannot contain URL credentials or a fragment. `capabilityEnv` is a required POSIX environment-variable name. The provider reads that variable only when `connect()` begins, sends its value only in the literal v7 `attach` frame, and never logs or stores it. `connectTimeoutMs` defaults to `5000` and bounds socket opening, attach, and subscribe. `responseTimeoutMs` defaults to `30000` and bounds each attach, subscribe, and operation response. `maxFrameBytes` defaults to `1048576`; `maxPendingRequests` and `maxBufferedNotifications` default to `64` each. The latter bounds queued Envelope notifications and every interrupt delivery retained until its acknowledgement succeeds.

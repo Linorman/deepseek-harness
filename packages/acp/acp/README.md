@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Automation-only [Agent Client Protocol](https://agentclientprotocol.com) server over JSON-RPC stdio. ACP projects each client session onto one local Team run: it accepts human text/image input, streams committed coordinator output, receives the explicit Team final result, relays one-shot permissions, and requests soft interruption. The primary in-repository client is [`clocky-subagent-acp`](../../subagent/subagent-acp/README.md).
+Automation-only [Agent Client Protocol](https://agentclientprotocol.com) server over JSON-RPC stdio. ACP projects each client session onto one local Team run: it accepts human text/image input, streams committed coordinator output, receives the explicit Team final result, relays one-shot permissions, and requests soft interruption. The primary in-repository client is [`clocky-subagent-acp`](../../compat/subagent-acp/README.md).
 
 This package is a transport adapter, not a UI integration or a capability seam. It does not expose editor navigation, transcript replay, commands, modes, configuration pickers, elicitation, reasoning, plans, titles, or tool presentation. Interactive rendering and human questions belong to the Web host and client modules.
 

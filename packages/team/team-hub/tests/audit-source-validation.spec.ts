@@ -121,7 +121,8 @@ async function replaceAudit(backend: Backend, root: string, name: string, rows: 
   if (backend === 'json') {
     const path = join(root, 'logs', `${Buffer.from(name).toString('base64url')}.json`)
     const document = jsonObjectSchema.parse(JSON.parse(await readFile(path, 'utf8')))
-    await writeFile(path, `${JSON.stringify({ ...document, entries: rows }, null, 2)}\n`)
+    const stream = jsonObjectSchema.parse(document['stream'])
+    await writeFile(path, `${JSON.stringify({ ...document, stream: { ...stream, tailSequence: rows.at(-1)?.sequence ?? -1 }, entries: rows }, null, 2)}\n`)
   } else {
     sql(root, (db) => {
       db.exec('BEGIN IMMEDIATE')

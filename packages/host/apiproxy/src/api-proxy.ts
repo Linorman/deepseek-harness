@@ -1,3 +1,5 @@
+import { withoutPrivateTaskArtifacts } from '@clocky/clocky-team/selection'
+import { teamTaskIdSchema } from '@clocky/clocky-team'
 import { teamChannelInputRequestSchema, teamChannelAttachmentRequestSchema, teamWorkflowPlanListRequestSchema } from './api/teams.schema.ts'
 import type { TeamChannelPostInput, TeamWorkflowPlanList } from './api/teams.ts'
 import { teamChannelListInputSchema } from '@clocky/clocky-team/schema'
@@ -60,7 +62,6 @@ import type {
   ParticipantPhaseTransitionInput,
   ParticipantSnapshot,
   JsonObject,
-  TaskAttemptResult,
   TeamHumanActionId,
   TeamHumanActionKind,
   TeamHumanActionSnapshot,
@@ -112,7 +113,7 @@ import {
 import type { PresetBearingSession } from '@clocky/clocky-agent-presets'
 import type {} from '@clocky/clocky-tools'
 import type {
-  ApiProxy, ConfigurableProviderView, CredentialView, GoalRef, HistoryEntry, HostFrame,
+  ApiProxy, ConfigurableProviderView, CredentialView, HistoryEntry, HostFrame,
   ModelCatalogFailure, ModelProviderGroup,
   ModelReasoning, MuxFrame, PromptContentPart, QuestionResponsePayload, SessionListMetadata,
   SessionModels, SessionProjectionsBlock, SessionSearchItem,
@@ -141,9 +142,6 @@ import type {} from '@clocky/clocky-jobs'
 import type { JobSnapshot } from '@clocky/clocky-jobs'
 // Type-only: resolves `ctx.get('sessionProjectionCache')` (the cold listing column).
 import type {} from '@clocky/clocky-session-projection-cache'
-// GoalError narrows domain rejections to their stable codes at the wire boundary.
-import { GoalError } from '@clocky/clocky-goal'
-import type { GoalRef as CoreGoalRef } from '@clocky/clocky-goal'
 // Type-only edges: resolve the command-change stream and `ctx.get('skills')`.
 import type {} from '@clocky/clocky-commands'
 // Type-only: the dynamic-package runner's forwarded-event declarations. Its
@@ -583,6 +581,7 @@ function sessionListUpdatedAt(header: SessionHeader, metadata: SessionListMetada
 
 /** Shared Session-header projection for list baselines and creation frames. */
 function sessionListFields(header: SessionHeader, events: readonly SessionEvent[] = []): {
+  team?: NonNullable<SessionSummary['team']>
   cwd?: string
   agentPreset?: string
 } {
@@ -590,7 +589,10 @@ function sessionListFields(header: SessionHeader, events: readonly SessionEvent[
   // while blank ran its turns under the newer composition, and a picker
   // showing the creation-time value would contradict what the model saw.
   const agentPreset = resolveSessionPreset({ header, events })
+  const team = header.teamId === undefined && header.participantId === undefined ? undefined
+    : { teamId: teamIdSchema.parse(header.teamId), participantId: participantIdSchema.parse(header.participantId) }
   return {
+    ...team === undefined ? {} : { team },
     ...header.cwd === undefined ? {} : { cwd: header.cwd },
     ...agentPreset === undefined ? {} : { agentPreset },
   }
@@ -1338,25 +1340,10 @@ function redactTaskForHuman(task: TeamTaskSnapshot): TeamTaskSnapshot {
         ...attempt,
         outcome: {
           ...attempt.outcome,
-          result: redactTaskResultForHuman(attempt.outcome.result),
+          result: withoutPrivateTaskArtifacts(attempt.outcome.result),
         },
       }
     }),
-  }
-}
-
-/** Retain only artifact fields that a human Team reader may inspect. */
-function redactTaskResultForHuman(result: TaskAttemptResult): TaskAttemptResult {
-  return {
-    ...result,
-    ...result.artifacts === undefined ? {} : { artifacts: result.artifacts.filter(artifact => artifact.visibility !== 'private') },
-    ...result.integration === undefined ? {} : {
-      integration: {
-        ...result.integration,
-        ...result.integration.proposalArtifact?.visibility === 'private' ? {} : result.integration.proposalArtifact === undefined ? {} : { proposalArtifact: result.integration.proposalArtifact },
-        ...result.integration.artifacts === undefined ? {} : { artifacts: result.integration.artifacts.filter(artifact => artifact.visibility !== 'private') },
-      },
-    },
   }
 }
 
@@ -1368,7 +1355,7 @@ function redactWorkflowPlanForHuman(plan: TeamWorkflowPlanSnapshot): TeamWorkflo
     result: {
       ...plan.result,
       tasks: plan.result.tasks.map(task => task.phase === 'completed'
-        ? { ...task, result: redactTaskResultForHuman(task.result) }
+        ? { ...task, result: withoutPrivateTaskArtifacts(task.result) }
         : task),
     },
   }
@@ -2011,47 +1998,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   }
 
   /**
-   * Resolve the goal service THIS agent runs.
-   *
-   * The service is per session: an agent preset mounts it behind an `isolate`
-   * realm, which no host context resolves. Reading it from the root would
-   * answer "absent" for a session whose composition mounts it — so the lookup
-   * is keyed by the agent, and only a deployment composing it nowhere is
-   * genuinely absent.
-   */
-  function goalServiceFor(agent: Agent): NonNullable<ReturnType<typeof ctx.get<'goals'>>> | { error: RpcError } {
-    const presets = ctx.get('agentPresets')
-    const goals = presets?.serviceFor(agent, 'goals') ?? ctx.get('goals')
-    if (goals === undefined) {
-      return { error: { code: 'internal', message: 'goal service is absent: neither this session\'s agent preset nor the host composition mounts @clocky/clocky-goal', details: {} } }
-    }
-    return goals
-  }
-
-  /** Map one goal-domain rejection to the wire error (stable GoalError codes ride in details). */
-  function goalError(request: RpcRequest<unknown>, error: unknown): RpcResponse<never> {
-    const details = error instanceof GoalError ? { goalCode: error.code } : {}
-    return err(request, { code: 'internal', message: String(error), details })
-  }
-
-  /** Resolve a session's agent, apply one goal mutation, and acknowledge with the new CAS ref. */
-  async function mutateGoal(
-    request: RpcRequest<{ sessionId: SessionId }>,
-    mutation: (goals: NonNullable<ReturnType<typeof ctx.get<'goals'>>>, agent: Agent) => CoreGoalRef,
-  ): Promise<RpcResponse<{ ref: GoalRef }>> {
-    const found = await agentFor(request.payload.sessionId)
-    if ('error' in found) return err(request, found.error)
-    const goals = goalServiceFor(found.agent)
-    if ('error' in goals) return err(request, goals.error)
-    try {
-      const ref = mutation(goals, found.agent)
-      return ok(request, { ref: { id: ref.id, revision: ref.revision } })
-    } catch (error: unknown) {
-      return goalError(request, error)
-    }
-  }
-
-  /**
    * Whether an adapter currently serves this provider, and therefore whether
    * a session selecting it can start a turn. Catalog membership cannot answer
    * it: an adapter may serve a model its own catalog stopped advertising, so
@@ -2503,6 +2449,14 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     if (teamError?.code === 'TEAM_NOT_FOUND' && teamId !== undefined) {
       return err(request, { code: 'team-not-found', message: teamError.message, details: { teamId } })
     }
+    if (teamError?.code === 'TEAM_TASK_STALE_REVISION' || teamError?.code === 'TEAM_TASK_NOT_FOUND') {
+      const payload = request.payload
+      const selected = typeof payload === 'object' && payload !== null && 'taskId' in payload
+        ? teamTaskIdSchema.safeParse(payload.taskId) : undefined
+      return err(request, { code: teamError.code === 'TEAM_TASK_STALE_REVISION' ? 'team-task-stale-revision' : 'team-task-not-found',
+        message: teamError.message,
+        details: { ...teamId === undefined ? {} : { teamId }, ...selected?.success === true ? { taskId: selected.data } : {} } })
+    }
     if (teamError?.code === 'TEAM_CURSOR_CONFLICT') {
       return err(request, {
         code: 'team-cursor-conflict',
@@ -2533,7 +2487,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           ...selected?.success === true ? { channelId: selected.data } : {} },
       })
     }
-    if (teamError?.code === 'TEAM_CHANNEL_COMPACTED' || teamError?.code === 'TEAM_AUDIT_COMPACTED') {
+    if (teamError?.code === 'TEAM_CHANNEL_COMPACTED' || teamError?.code === 'TEAM_AUDIT_COMPACTED' || teamError?.code === 'TEAM_INBOX_COMPACTED') {
       const details = teamError.details
       const rawTeamId = details?.teamId
       const rawChannelId = details?.channelId
@@ -2551,7 +2505,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         ...firstCursor === undefined ? {} : { firstCursor },
       }
       return err(request, {
-        code: teamError.code === 'TEAM_CHANNEL_COMPACTED' ? 'team-channel-compacted' : 'team-audit-compacted',
+        code: teamError.code === 'TEAM_CHANNEL_COMPACTED' ? 'team-channel-compacted'
+          : teamError.code === 'TEAM_AUDIT_COMPACTED' ? 'team-audit-compacted' : 'team-inbox-compacted',
         message: teamError.message,
         details: mappedDetails,
       })
@@ -2573,6 +2528,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           }
           break
         case 'TEAM_RUN_WORKFLOW_INVALID':
+        case 'TEAM_RUN_REVIEW_FAILED':
           break
         case 'TEAM_RUN_NOT_FOUND':
         case 'TEAM_RUN_WORKFLOW_NOT_FOUND':
@@ -3377,6 +3333,47 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         } catch (error: unknown) {
           return teamFailure(request, error)
         }
+      },
+
+      async memberInspect(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectMember']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.inspectMember(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async memberSession(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['getMemberSession']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.getMemberSession(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async taskInspect(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectTask']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.inspectTask(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async browse(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['browse']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.browse(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
+      async actionRead(request) {
+        const service = teamServiceFor<TeamHumanActionSnapshot>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.getHumanAction(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+      async selection(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['getTeamSelection']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.getTeamSelection(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
       },
 
       async get(request) {
@@ -4276,6 +4273,13 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
       },
 
+      async workflowPlanInspect(request) {
+        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectWorkflowPlan']>>>(request)
+        if ('refused' in service) return service.refused
+        try { return ok(request, await service.teams.inspectWorkflowPlan(request.payload)) }
+        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+      },
+
       async workflowPlanList(request) {
         const input = teamWorkflowPlanListRequestSchema.parse(request.payload)
         const service = teamServiceFor<TeamWorkflowPlanList>(request)
@@ -4619,54 +4623,6 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async openPath(request, signal) {
         return openPath(request, request.payload.path, signal)
-      },
-    },
-
-    goals: {
-      // Mutations only — the read side is the 'goal' session projection.
-      // Every verb resolves the session's agent (agentFor: implicit cold
-      // resume, the command.* precedent) and acknowledges with the new CAS
-      // ref; the committed goal/change event carries the whole value to every
-      // client through the projection frames.
-      async create(request) {
-        const { objective, maxGoalRounds } = request.payload
-        return mutateGoal(request, (goals, agent) => goals.create(agent, {
-          objective,
-          ...(maxGoalRounds !== undefined ? { maxGoalRounds } : {}),
-        }))
-      },
-
-      async edit(request) {
-        const { ref, objective, maxGoalRounds } = request.payload
-        return mutateGoal(request, (goals, agent) => goals.edit(agent, ref, {
-          ...(objective !== undefined ? { objective } : {}),
-          ...(maxGoalRounds !== undefined ? { maxGoalRounds } : {}),
-        }))
-      },
-
-      async pause(request) {
-        return mutateGoal(request, (goals, agent) => goals.pause(agent, request.payload.ref))
-      },
-
-      async resume(request) {
-        return mutateGoal(request, (goals, agent) => goals.resume(agent, request.payload.ref))
-      },
-
-      async complete(request) {
-        return mutateGoal(request, (goals, agent) => goals.complete(agent, request.payload.ref))
-      },
-
-      async clear(request) {
-        const found = await agentFor(request.payload.sessionId)
-        if ('error' in found) return err(request, found.error)
-        const goals = goalServiceFor(found.agent)
-        if ('error' in goals) return err(request, goals.error)
-        try {
-          goals.clear(found.agent, request.payload.ref)
-          return ok(request, { cleared: true as const })
-        } catch (error: unknown) {
-          return goalError(request, error)
-        }
       },
     },
 

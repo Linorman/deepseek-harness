@@ -440,7 +440,7 @@ Source: [`packages/feedback/command-feedback/src/index.ts:61`](../packages/feedb
 'goal/change': GoalChangeMeta
 ```
 
-Source: [`packages/goal/goal/src/domain.ts:66`](../packages/goal/goal/src/domain.ts)
+Source: [`packages/compat/goal/src/domain.ts:66`](../packages/compat/goal/src/domain.ts)
 
 ### `hook/*`
 
@@ -726,7 +726,7 @@ Source: [`packages/core/session/src/types.ts:267`](../packages/core/session/src/
 'subagent/descriptor': SubagentDescriptorData
 ```
 
-Source: [`packages/subagent/subagent/src/descriptor.ts:37`](../packages/subagent/subagent/src/descriptor.ts)
+Source: [`packages/compat/subagent/src/descriptor.ts:37`](../packages/compat/subagent/src/descriptor.ts)
 
 ### `team/*`
 
@@ -868,7 +868,7 @@ Source: [`packages/core/session/src/types.ts:308`](../packages/core/session/src/
 'tool-workflow/agent-end': ToolWorkflowAgentEndData
 ```
 
-Source: [`packages/workflow/tool-workflow/src/types.ts:57`](../packages/workflow/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:57`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowagent-start--log-only"></a>
 
@@ -882,7 +882,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:57`](../packages/workflow
 'tool-workflow/agent-start': ToolWorkflowAgentStartData
 ```
 
-Source: [`packages/workflow/tool-workflow/src/types.ts:52`](../packages/workflow/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:52`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-end--log-only"></a>
 
@@ -896,7 +896,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:52`](../packages/workflow
 'tool-workflow/run-end': ToolWorkflowRunEndData
 ```
 
-Source: [`packages/workflow/tool-workflow/src/types.ts:62`](../packages/workflow/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:62`](../packages/compat/tool-workflow/src/types.ts)
 
 <a id="tool-workflowrun-start--log-only"></a>
 
@@ -910,7 +910,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:62`](../packages/workflow
 'tool-workflow/run-start': ToolWorkflowRunStartData
 ```
 
-Source: [`packages/workflow/tool-workflow/src/types.ts:47`](../packages/workflow/tool-workflow/src/types.ts)
+Source: [`packages/compat/tool-workflow/src/types.ts:47`](../packages/compat/tool-workflow/src/types.ts)
 
 ### `turn/*`
 

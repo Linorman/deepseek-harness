@@ -9,6 +9,8 @@ Frame v7 carries `invitation` notifications and the `invitation-ack` operation. 
 
 `getChannel(channelId)` uses the current activation proof to read only a member channel’s manifest, phase and cursors, including while admission is pending. Frame v7 maps it to `channel-get`; messages, summaries and adapter state are excluded.
 
+Providers may classify connection failures with `TeamLinkConnectionError.retryable`. A false value requires provider reconfiguration or a new binding rather than repeating the same connection. Registry `team-link/provider-added` notifications let paused consumers retry after a provider is replaced; observer exceptions cannot veto registration. Unknown failures remain eligible for the consumer’s normal reconnect policy.
+
 ## Provider contract
 
 A `TeamLinkProvider` registers under one non-empty name and receives that name, one activation/Session/AgentRuntime-provider snapshot, and optional connection cancellation. Activation id, Team, Participant, Session, and placement provider identify the connection; residency status is mutable and the provider rechecks it before publication. Its `connect()` call returns a `TeamLink` only after it has published the provider-owned connection. The returned Link retains the requested provider name and binding identity; `TeamLinkRegistry.connect()` validates both and closes a mismatched Link before rejecting it. Removing a registration prevents future connections but does not revoke Links already returned to callers.

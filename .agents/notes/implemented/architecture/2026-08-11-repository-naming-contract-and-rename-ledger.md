@@ -185,9 +185,9 @@ Keep `@clocky/clocky-tools` and `ctx.tools`. Keep `@clocky/clocky-api-gateway`, 
 |---|---|---|
 | `@clocky/clocky-tool-schedule`, `schedule/tool-schedule/`, plugin `tool-schedule` | `@clocky/clocky-schedule`, `schedule/schedule/`, plugin `schedule` | The package owns the durable Schedule domain, persistence barriers, management tools, timers, follow-ups, and runtime lifecycle. `tool-` describes only one part. |
 | `ScheduleOwner` | `ScheduleRuntime` | The per-agent object runs live timers, durable projection, dispatch, idle waits, and disposal. `Owner` does not state that execution role. Coupled private `owner*` names follow `runtime*`. |
-| `WorkflowService`, `ctx.workflows` | `WorkflowEngine`, `ctx.workflowEngine` | One engine parses and executes workflow programs. The plural key wrongly suggests a registry. Keep `@clocky/clocky-workflow` and workflow events and tools. |
-| `@clocky/clocky-workflow-workerthread`, `WorkerWorkflowEngine` | `@clocky/clocky-workflow-worker-thread`, `WorkerThreadWorkflowEngine` | `worker thread` is the precise Node mechanism and the repository spelling uses the full words. |
-| `@clocky/clocky-goal-session`, `goal/goal-session/` | `@clocky/clocky-goal-round-driver`, `goal/goal-round-driver/` | The plugin drives same-session Goal Rounds. It neither stores goals nor defines sessions. Keep `GoalService`, goal source, events, and contracts. |
+| `WorkflowService`, `ctx.workflows` | `WorkflowEngine`, `ctx.workflowEngine` | One engine parses and executes workflow programs. The plural key wrongly suggests a registry. Keep `@clocky/clocky-compat-workflow` and workflow events and tools. |
+| `@clocky/clocky-workflow-workerthread`, `WorkerWorkflowEngine` | `@clocky/clocky-compat-workflow-worker-thread`, `WorkerThreadWorkflowEngine` | `worker thread` is the precise Node mechanism and the repository spelling uses the full words. |
+| `@clocky/clocky-goal-session`, `goal/goal-session/` | `@clocky/clocky-compat-goal-round-driver`, `compat/goal-round-driver/` | The plugin drives same-session Goal Rounds. It neither stores goals nor defines sessions. Keep `GoalService`, goal source, events, and contracts. |
 | `packages/compact/` | `packages/compaction/` | The group is a noun-domain family. `compact` remains the user command verb. |
 | `@clocky/clocky-compact`, `ctx.compact`, `CompactService` | `@clocky/clocky-compaction`, `ctx.compaction`, `CompactionEngine` | The object runs the compaction algorithm and lifecycle. It is an engine, not a generic service. |
 | `compact/*` events and public domain prefixes | `compaction/*` | Events and domain types use the noun. Keep verb-shaped operations such as `compactNow`, `compactRegion`, and `compactIfNeeded`. |
@@ -240,14 +240,14 @@ Keep the complete session projection family and `SessionProjection*` vocabulary.
 | `SkillService` | `SkillRegistry` | The service registers providers and resolves skills from their catalogs. |
 | `@clocky/clocky-skill-local`, `LocalSkillProvider`, provider id `local` | `@clocky/clocky-skill-filesystem`, `FileSystemSkillProvider`, provider id `filesystem` | The provider discovers skill files through `ctx.fs`, which can be local or remote. The mechanism is filesystem access, not locality. |
 | `SubagentService` | `SubagentRuntime` | The service selects providers and owns live spawn, resume, follow-up, cancellation, and settlement behavior. |
-| `@clocky/clocky-subagent-spawn`, `SpawnProvider` | `@clocky/clocky-subagent-spawn-in-process`, `SpawnInProcessProvider` | This provider starts a child agent in the current process. The configured provider id remains `spawn`. |
-| `@clocky/clocky-subagent-fork`, `ForkProvider` | `@clocky/clocky-subagent-fork-in-process`, `ForkInProcessProvider` | This provider forks an agent in the current process. The configured provider id remains `fork`. |
-| `@clocky/clocky-subagent-inprocess`, `subagent-inprocess/` | `@clocky/clocky-subagent-in-process-driver`, `subagent-in-process-driver/` | The package contains common in-process driving logic, not a third provider. |
+| `@clocky/clocky-subagent-spawn`, `SpawnProvider` | `@clocky/clocky-compat-subagent-spawn-in-process`, `SpawnInProcessProvider` | This provider starts a child agent in the current process. The configured provider id remains `spawn`. |
+| `@clocky/clocky-subagent-fork`, `ForkProvider` | `@clocky/clocky-compat-subagent-fork-in-process`, `ForkInProcessProvider` | This provider forks an agent in the current process. The configured provider id remains `fork`. |
+| `@clocky/clocky-subagent-inprocess`, `subagent-inprocess/` | `@clocky/clocky-compat-subagent-in-process-driver`, `subagent-in-process-driver/` | The package contains common in-process driving logic, not a third provider. |
 | Private `SdkProvider` in `clocky-subagent-clocky-sdk` | `SdkSubagentProvider` | The repeated package qualifier is intentional, and the class must say that it provides subagents through the SDK. |
 | `WebService`, `WebServiceConfig` | `WebRuntime`, `WebRuntimeConfig` | The object selects providers and runs live search and fetch operations. Keep the package, key, provider packages, and model tool. |
 | `@clocky/clocky-web-fetch-local`, `LocalFetchProvider`, `LocalFetchLimits`, provider id `local-http` | `@clocky/clocky-web-fetch-http`, `HttpFetchProvider`, `HttpFetchLimits`, provider id `http` | This provider performs direct HTTP fetches. `local` says where code happens to run, not which mechanism it provides. |
 
-Keep `@clocky/clocky-subagent-clocky-sdk`, its provider id `clocky-sdk`, external ACP, the subagent tool package names, the main filesystem package and backends, and filesystem tools and events.
+Keep `@clocky/clocky-compat-subagent-clocky-sdk`, its provider id `clocky-sdk`, external ACP, the subagent tool package names, the main filesystem package and backends, and filesystem tools and events.
 
 ### Hooks, guards, plan mode, extensions, and diagnostics
 

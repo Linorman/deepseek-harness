@@ -15,6 +15,22 @@ async function root(): Promise<string> {
 afterEach(async () => { for (const path of roots.splice(0)) await rm(path, { recursive: true, force: true }) })
 
 describe('bounded shared fingerprint traversal', () => {
+  it('excludes configured runtime directories without hiding neighboring user changes', async () => {
+    const path = await root()
+    const runtime = join(path, 'runtime')
+    await mkdir(runtime)
+    await writeFile(join(runtime, 'session.log'), 'first turn')
+    await writeFile(join(path, 'report.md'), 'first report')
+    const limits = { ...bounds, observationExcludedRoots: [runtime] }
+    const before = await snapshotDirectory(path, limits)
+    await writeFile(join(runtime, 'session.log'), 'another turn')
+    expect((await snapshotDirectory(path, limits)).version.digest).toBe(before.version.digest)
+    await writeFile(join(path, 'report.md'), 'revised report')
+    const after = await snapshotDirectory(path, limits)
+    expect(after.version.digest).not.toBe(before.version.digest)
+    expect(Object.keys(after.files)).toEqual(['report.md'])
+  })
+
   it('hashes actual content and retains hostile-looking file names as ordinary data', async () => {
     const path = await root()
     await writeFile(join(path, '__proto__'), 'first')

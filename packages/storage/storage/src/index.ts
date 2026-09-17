@@ -18,9 +18,10 @@ export {
   EMPTY_LOG_SEQUENCE,
 } from './log.ts'
 export type {
-  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogFacet, LogStream,
-  LogStreamDescriptor, LogStreamInfo,
+  LogAppendOptions, LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogFacet, LogStream,
+  LogStreamDescriptor, LogStreamInfo, LogSummary,
 } from './log.ts'
+export { parseLogSummary } from './summary.ts'
 export { assertLogCompactionBounds, assertLogCompactionRequest } from './compaction.ts'
 
 /**

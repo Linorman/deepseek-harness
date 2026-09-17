@@ -1,3 +1,5 @@
+export type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
+export type { TeamActionReadParams } from '@clocky/clocky-sdk-protocol'
 /**
  * TypeScript client SDK for Clocky runtime: spawn the
  * `clocky-jsonrpc-agent` runtime as a subprocess and drive agent turns over
@@ -54,7 +56,17 @@ export type {
   TeamListParams,
   TeamListResult,
   TeamGetParams,
+  TeamSelectionParams,
   TeamGetResult,
+  TeamSelectionResult,
+  TeamTaskInspectParams,
+  TeamTaskInspectResult,
+  TeamBrowseParams,
+  TeamBrowseResult,
+  TeamMemberSessionParams,
+  TeamMemberInspectParams,
+  TeamMemberInspectResult,
+  TeamMemberSessionResult,
   TeamGoalUpdateParams,
   TeamGoalUpdateResult,
   TeamGoalTransitionParams,

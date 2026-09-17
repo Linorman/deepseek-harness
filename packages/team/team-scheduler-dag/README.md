@@ -10,6 +10,12 @@ Ready pending work also waits for a running activation that satisfies its partic
 
 Wake-channel creation and recovery, and consult review posting, wait through `teamChannelAdmission.waitUntilActive()` before assignment or Envelope dispatch. The wait holds no Hub lock and stops with scheduler disposal. Missing endpoint consent is handled by the admission Consumer’s durable deadline; the scheduler never substitutes plugin registration for an acknowledgement.
 
+Wake recovery, review dispatch, and new assignments have independent per-drive allowances. `maxReviewDispatchesPerDrive` defaults to `8` and bounds review requests or recovered responses. Exhausting `maxWakeDispatchesPerDrive` ends only wake scanning; eligible new tasks and reviews can still advance. Review-channel creation is idempotent for the exact Team, task, attempt, and reviewer, including an attached channel with no request Envelope yet.
+
+A scheduler-issued proof can become stale while its task advances during channel publication. The scheduler retries with fresh state and proofs under `maxConflictsPerDrive`; persistent proof failures still reject, and each unassigned wake channel is closed. Explicit policy denials never trigger this retry.
+
+Each discovery drive consumes one configured Team page and preserves its opaque cursor for the next pulse, including empty pages. Each Team drive finishes one bounded round; changes coalesced during that round schedule a later event-loop turn. Disposal cancels those deferred turns and retains the proof sources until accepted work settles.
+
 ## Scheduling and expiry
 
 Each drive checks frozen consumption/time ceilings, expires due assigned or running leases, then selects ready `pending` tasks in descending priority and durable task-creation order. It considers only active `local-agent` and `remote-agent` participants that declare every required capability, have an exact `idle` activation, and hold fewer than `maxActiveAttemptsPerParticipant` active attempts. Before ranking those candidates, it calls `ctx.teamWorkspaces.eligible(task.workspaceMode, { task, binding })` and skips a `false` result; an unavailable provider rejects the drive. The scheduler never calls `allocate()`. It calls `assignTask()` with the task revision and configured `leaseDurationMs`; the Team provider remains the final authority for membership, capabilities, activation identity, task phase, revision, and lease validity. Discovery uses bounded `listTeamsPage()` calls with the configured `teamPageSize`; a pulse never requests the full Team collection.

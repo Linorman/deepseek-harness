@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 `@clocky/clocky-team-workspace-shared` registers a local shared-root `TeamWorkspaceProvider` on `ctx.teamWorkspaces`. It allocates one already-existing checkout root only for matching local-Agent attempts; it neither creates a checkout nor changes an Agent's working directory.
 
+`observationExcludedRoots` is an explicit list of existing absolute runtime directories, empty by default. The scanner omits these subtrees; the configured shared root must not be inside an excluded directory. Headless and Web exclude their configured Clocky home so Session and Team journal writes do not become worker change evidence. Other workspace files remain observable.
+
 ## Root configuration
 
 `root` is required and must be an absolute path to an existing directory. Mounting resolves it through `fs.realpath` and retains that canonical directory as the fallback root. A relative, missing, or non-directory root rejects at load. A symlink spelling is accepted only as its resolved target, so all later comparisons use one path identity. `allowTeamWorkspacePath` is opt-in; when true, a Team's durable `workspacePath` selects the canonical existing root for that Team's allocations.

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "outDir": "./.tmp/tsc-unscoped",
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

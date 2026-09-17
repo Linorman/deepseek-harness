@@ -24,12 +24,6 @@ interface CommandFace {
   popupFor(actx: ClientContext): PopupDismissFace
 }
 
-/** Minimal Team ownership lookup used to fence the generic Session command plane. */
-interface TeamOwnershipFace {
-  teamForSession?: (sessionId: SessionId) => unknown
-  teamForCoordinatorSession?: (sessionId: SessionId) => unknown
-}
-
 /** Attachment-send face resolved lazily to keep hub/service construction acyclic. */
 interface ConversationAttachmentFace {
   sendSession(
@@ -242,13 +236,9 @@ export class InputHub implements SessionInputResolver {
   private controller(actx: ClientContext): InputTriggerController | undefined {
     const sessionId = this.sessions().scopeOf(actx)
     if (sessionId !== undefined) {
-      const teamTasks = this.rootCtx.get('teamTasks') as unknown as TeamOwnershipFace | undefined
-      const owned = typeof teamTasks?.teamForSession === 'function'
-        ? teamTasks.teamForSession(sessionId)
-        : typeof teamTasks?.teamForCoordinatorSession === 'function'
-          ? teamTasks.teamForCoordinatorSession(sessionId)
-          : undefined
-      if (owned !== undefined) return undefined
+      if (this.sessions().list.getSnapshot().byId[sessionId]?.team !== undefined) return undefined
+      const team = this.rootCtx.get('teamTasks')?.list.getSnapshot()
+      if (team?.selected?.coordinatorSessionId === sessionId || team?.memberSession?.sessionId === sessionId) return undefined
     }
     const inputTriggers = this.rootCtx.get('inputTriggers')
     return inputTriggers?.sessionOf(actx)

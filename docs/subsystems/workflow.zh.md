@@ -4,9 +4,9 @@
 
 工作流 seam 允许 agent（智能体）运行由模型编写、会启动 subagent 的编排脚本。与 [subagent](subagent.zh.md) 一样，它是**一项可选能力**，不属于 agent loop，因此其类型和操作记录在此处，而非 [core.md](core.zh.md)。与 bash 一样，每个上下文只允许一个引擎实现提供 `ctx.workflowEngine`；没有命名提供方注册表（第二个引擎通过插件配置替换第一个，而不与它同时运行）。
 
-Service Definition：[clocky-workflow](../../packages/workflow/workflow)（`ctx.workflowEngine` + 下文词汇）。Service Provider 是 [clocky-workflow-worker-thread](../../packages/workflow/workflow-worker-thread)（一个 `node:worker_threads` 引擎——每个 run 一个 worker，脚本的 vm 上下文位于其中）；面向模型的 Consumer 是 [clocky-tool-workflow](../../packages/workflow/tool-workflow)。提案与设计理由见 [dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.zh.md)。
+Service Definition：[clocky-workflow](../../packages/compat/workflow)（`ctx.workflowEngine` + 下文词汇）。Service Provider 是 [clocky-workflow-worker-thread](../../packages/compat/workflow-worker-thread)（一个 `node:worker_threads` 引擎——每个 run 一个 worker，脚本的 vm 上下文位于其中）；面向模型的 Consumer 是 [clocky-tool-workflow](../../packages/compat/tool-workflow)。提案与设计理由见 [dynamic-workflows Agent Note](../../.agents/notes/implemented/feature/2026-07-05-dynamic-workflows.zh.md)。
 
-源码：浏览器安全词汇位于 [`packages/workflow/workflow/src/types.ts`](../../packages/workflow/workflow/src/types.ts)，Host 请求与活跃运行句柄位于 [`runtime-types.ts`](../../packages/workflow/workflow/src/runtime-types.ts)。
+源码：浏览器安全词汇位于 [`packages/compat/workflow/src/types.ts`](../../packages/compat/workflow/src/types.ts)，Host 请求与活跃运行句柄位于 [`runtime-types.ts`](../../packages/compat/workflow/src/runtime-types.ts)。
 
 ## 启动请求
 
@@ -151,7 +151,7 @@ Workflow Service Definition contract. Invalid requests throw before publication;
 abstract start(request: WorkflowStartRequest): WorkflowRun
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="ctxworkflowextensions--workflowextensionregistry"></a>
 
@@ -222,7 +222,7 @@ One `agent()` call settled (clean result, child failure, or run cancellation). P
 'workflow/agent-end'(info: WorkflowRunInfo, agent: WorkflowAgentEndInfo): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="workflowagent-start--emit"></a>
 
@@ -243,7 +243,7 @@ One `agent()` call established a published child run. Paired with Events['workfl
 'workflow/agent-start'(info: WorkflowRunInfo, agent: WorkflowAgentInfo): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="workflowend--emit"></a>
 
@@ -264,7 +264,7 @@ A workflow run settled (any stop reason). Fired when WorkflowRun.result resolves
 'workflow/end'(info: WorkflowRunInfo, result: WorkflowResultInfo): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="workflowextension-added--emit"></a>
 
@@ -316,7 +316,7 @@ The script emitted a narration line (a `log(message)` call).
 'workflow/log'(info: WorkflowRunInfo, message: string): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="workflowphase--emit"></a>
 
@@ -335,7 +335,7 @@ The script entered a phase (a `phase(title)` call) — progress grouping for obs
 'workflow/phase'(info: WorkflowRunInfo, title: string): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 
 <a id="workflowstart--emit"></a>
 
@@ -353,5 +353,5 @@ A workflow run started — the script's meta block validated, the body about to 
 'workflow/start'(info: WorkflowRunInfo): void
 ```
 
-Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+Source: [`packages/compat/workflow/src/index.ts`](../../packages/compat/workflow/src/index.ts)
 <!-- END GENERATED cordis-surface -->

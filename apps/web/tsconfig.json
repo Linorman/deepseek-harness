@@ -28,6 +28,8 @@
     "tests/minimal-preset.snapshot.ts",
     "tests/team-channel.snapshot.ts",
     "tests/team-collections.snapshot.ts",
+    "tests/team-workspace.snapshot.ts",
+    "tests/action-window.snapshot.ts",
     "tests/team-child-navigation.snapshot.ts",
     "tests/message-feedback-protocol.snapshot.ts",
     "tests/live-interactions.e2e.ts",

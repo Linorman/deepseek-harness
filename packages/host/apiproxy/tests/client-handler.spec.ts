@@ -7,7 +7,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { SessionId } from '@clocky/clocky-session'
-import type { ApiProxy, GoalRef, HostFrame, MuxFrame, RpcMessage, RpcRequest, RpcResponse } from '@clocky/clocky-host-apiproxy'
+import type { ApiProxy, HostFrame, MuxFrame, RpcMessage, RpcRequest, RpcResponse } from '@clocky/clocky-host-apiproxy'
 import { InProcessApiClient, RpcId, toFetchHandler } from '@clocky/clocky-host-apiproxy'
 
 const sid = (id: string): SessionId => id as SessionId
@@ -23,7 +23,6 @@ function scriptedApi(overrides: {
   skills?: Partial<ApiProxy['skills']>
   agentPresets?: Partial<ApiProxy['agentPresets']>
   events?: Partial<ApiProxy['events']>
-  goals?: Partial<ApiProxy['goals']>
   settings?: Partial<ApiProxy['settings']>
   credentials?: Partial<ApiProxy['credentials']>
   llm?: Partial<ApiProxy['llm']>
@@ -88,15 +87,6 @@ function scriptedApi(overrides: {
       openDocument: r => ok(r, { opened: true as const }),
       remove: r => ok(r, {}),
       ...overrides.agentPresets,
-    },
-    goals: {
-      create: err,
-      edit: err,
-      pause: err,
-      resume: err,
-      complete: err,
-      clear: err,
-      ...overrides.goals,
     },
     settings: {
       describe: r => ok(r, { writable: true, hasDocument: false, namespaces: [] }),
@@ -251,6 +241,18 @@ describe('unary round trip', () => {
       expect(response.result.error.code).toBe('bad-request')
       expect((response.result.error.details as { issues: unknown[] }).issues.length).toBeGreaterThan(0)
     }
+  })
+
+  it.each(['create', 'edit', 'pause', 'resume', 'complete', 'clear'])('does not expose the same-Session goal.%s endpoint', async (verb) => {
+    const api = scriptedApi()
+    expect(api).not.toHaveProperty('goals')
+    expect(client(api)).not.toHaveProperty('goals')
+    const handler = toFetchHandler(api)
+    const response = await handler.fetch(`http://clocky.internal/api/goal.${verb}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'client-request', rpcId: 'legacy-goal', method: `goal.${verb}`, payload: {} }),
+    })
+    expect(response.status).toBe(404)
   })
 
   it('rejects a method/path mismatch as bad-request', async () => {
@@ -552,63 +554,6 @@ describe('SSE stream path', () => {
     expect(count).toBe(2)
     // Generator teardown may lag the abort by a microtask; poll briefly.
     await vi.waitFor(() => { expect(implSawAbort).toBe(true) })
-  })
-})
-
-describe('goals unary surface', () => {
-  const ref: GoalRef = { id: 'goal-1' as GoalRef['id'], revision: 1 }
-  /** The `{ ref }` acknowledgement every non-clear mutation answers (state travels on the projection). */
-  const ack = { ref: { id: 'goal-1' as GoalRef['id'], revision: 2 } }
-
-  it('round-trips every goal method with its own payload and value shape', async () => {
-    const seen: { method: string; payload: unknown }[] = []
-    const record = recorderInto(seen)
-    const api = scriptedApi({
-      goals: {
-        create: record('goal.create', r => ok(r, ack)),
-        edit: record('goal.edit', r => ok(r, { ref: { ...ack.ref, revision: 3 } })),
-        pause: record('goal.pause', r => ok(r, ack)),
-        resume: record('goal.resume', r => ok(r, ack)),
-        complete: record('goal.complete', r => ok(r, ack)),
-        clear: record('goal.clear', r => ok(r, { cleared: true as const })),
-      },
-    })
-    const c = client(api)
-
-    const created = await c.goals.create({ sessionId: sid('s1'), objective: 'ship it', maxGoalRounds: 4 })
-    expect(created.result).toEqual({ ok: true, value: ack })
-    const edited = await c.goals.edit({ sessionId: sid('s1'), ref, objective: 'ship v2' })
-    expect(edited.result).toEqual({ ok: true, value: { ref: { ...ack.ref, revision: 3 } } })
-    expect((await c.goals.pause({ sessionId: sid('s1'), ref })).result).toEqual({ ok: true, value: ack })
-    expect((await c.goals.resume({ sessionId: sid('s1'), ref })).result).toEqual({ ok: true, value: ack })
-    expect((await c.goals.complete({ sessionId: sid('s1'), ref })).result).toEqual({ ok: true, value: ack })
-    const cleared = await c.goals.clear({ sessionId: sid('s1'), ref })
-    expect(cleared.result).toEqual({ ok: true, value: { cleared: true } })
-
-    // The handler dispatched each call through its own route row: payload parsed per method.
-    expect(seen.map(s => s.method)).toEqual(['goal.create', 'goal.edit', 'goal.pause', 'goal.resume', 'goal.complete', 'goal.clear'])
-    expect(seen[0]?.payload).toEqual({ sessionId: 's1', objective: 'ship it', maxGoalRounds: 4 })
-    expect(seen[1]?.payload).toEqual({ sessionId: 's1', ref, objective: 'ship v2' })
-  })
-
-  it('passes business errors through as results, not throws', async () => {
-    // Default scripted goals impl answers an err result: it must arrive as a result, not a throw.
-    const failed = await client(scriptedApi()).goals.pause({ sessionId: sid('s1'), ref })
-    expect(failed.result.ok).toBe(false)
-    if (!failed.result.ok) expect(failed.result.error.code).toBe('internal')
-  })
-
-  it('rejects an invalid goal payload at the handler as bad-request', async () => {
-    const response = await client(scriptedApi()).goals.create({ sessionId: sid('s1'), objective: '' })
-    expect(response.result.ok).toBe(false)
-    if (!response.result.ok) expect(response.result.error.code).toBe('bad-request')
-
-    let editCalls = 0
-    const api = scriptedApi({ goals: { edit: (r) => { editCalls++; return ok(r, ack) } } })
-    const emptyEdit = await client(api).goals.edit({ sessionId: sid('s1'), ref })
-    expect(emptyEdit.result.ok).toBe(false)
-    if (!emptyEdit.result.ok) expect(emptyEdit.result.error.code).toBe('bad-request')
-    expect(editCalls).toBe(0)
   })
 })
 

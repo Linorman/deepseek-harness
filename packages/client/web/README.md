@@ -10,6 +10,8 @@ The boot page uses plain DOM and local CSS, so client-bundle and plugin-activati
 
 The optional override parameter `seams` forwards the module system's `loadBundle` transport override (`BootSeams`) for environments where external `<script>` execution cannot reach the page context; ordinary browser callers omit it. A pre-injected page transport is the default ahead of it: when `globalThis.__CLOCKY_TRANSPORT__` (the connection package's `ClientTransportHooks`) carries `loadBundle`, the module stage adopts it as the bundle transport and skips the immediate-tier HTTP prefetch — explicit `seams` still win.
 
+Browser plugin entries receive detached public `config` from the parsed boot manifest. Cordis validates each plugin’s own schema before activation. Missing options preserve the plugin’s ordinary default-config behavior.
+
 ## Model Experience
 
 None, as the entry shell boots the browser plugin tree; nothing here reaches a model request.

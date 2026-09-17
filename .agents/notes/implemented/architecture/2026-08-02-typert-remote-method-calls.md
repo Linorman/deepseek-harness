@@ -125,7 +125,7 @@ Typert, the permissive SRC parser, Host Gateway, and Client Remote exchange one 
 
 ```text
 InvocationDescriptor {
-  id: '@clocky/clocky-goal#goals/create'
+  id: '@clocky/clocky-compat-goal#goals/create'
   service: 'goals'
   namespace: 'goals'
   method: 'create'
@@ -174,7 +174,7 @@ Remote Client DTS does not copy business DTOs or redeclare structurally identica
 
 ```text
 import type { SessionId } from '@clocky/clocky-session/types'
-import type { CreateGoalRequest, CreateGoalResult } from '@clocky/clocky-goal/types'
+import type { CreateGoalRequest, CreateGoalResult } from '@clocky/clocky-compat-goal/types'
 ```
 
 Consequently, `SessionId`, the Agent wire ID, the request, and the result all refer to the same TypeScript declaration in the Host and Browser Client. A future TUI can reuse them without a second set of types. Go to Definition, renames, and Find References for a DTO return to the one source location for the business type instead of stopping at a copy in a generated file.
@@ -233,14 +233,14 @@ Every business package that provides Remote methods exports a generated `/remote
 Consumer code selects a capability through the business package itself:
 
 ```text
-import goalsRemote from '@clocky/clocky-goal/remote'
+import goalsRemote from '@clocky/clocky-compat-goal/remote'
 ```
 
 This import brings the `.d.ts` map augmentation into the current TypeScript project while supplying the JS descriptor for the same contract as a value to the runtime. A business package that is not imported does not extend the current project's Remote API types.
 
 The business package's published files must include `lib/typert.remote-client.d.ts.map`. The generated DTS refers to its adjacent map with `//# sourceMappingURL=typert.remote-client.d.ts.map`; the map source points from `lib` to the business source by a relative path such as `../src/index.ts`. The `/remote` export does not list the map separately; the package `files` field publishes it. That target is a development-time path: a workspace consumer resolves it through the package link, so the published payload keeps excluding `src` and a published map simply resolves nothing.
 
-Code that needs only static types may use `import type {} from '@clocky/clocky-goal/remote'`. This import is erased at runtime, loads no JS, and cannot trigger runtime registration. An environment that makes real calls must pass the contribution from a normal value import to the Client Remote Service.
+Code that needs only static types may use `import type {} from '@clocky/clocky-compat-goal/remote'`. This import is erased at runtime, loads no JS, and cannot trigger runtime registration. An environment that makes real calls must pass the contribution from a normal value import to the Client Remote Service.
 
 Workspace resolution for `/remote` must explicitly target generated `lib` artifacts and must not let a general package-to-`src` paths rule redirect it to Host source. Ordinary business imports may continue resolving to SRC or LIB according to each environment's existing rules.
 
@@ -302,7 +302,7 @@ Typert.remotes  已导入的 Remote contribution
 `@clocky/clocky-api-remotes/client` centrally loads the required Remote contributions:
 
 ```text
-import goalsRemote from '@clocky/clocky-goal/remote'
+import goalsRemote from '@clocky/clocky-compat-goal/remote'
 import sessionsRemote from '@clocky/clocky-session/remote'
 
 await ctx.remote.$mount(goalsRemote)
@@ -462,7 +462,7 @@ The Gateway registers only its ownership matcher and RPC handler with Connection
 
 ## Shipped scope and deferred work
 
-The shipped vertical path is `@clocky/clocky-goal/remote → Browser Client Remote → Connection RPC /api → Host Gateway → GoalService.remoteExportCreate()`. The same direct descriptor with an Agent lookup supports both `ctx.remote.goals.create(agentId, request)` and `agentCtx.remote.goals.create(request)`. Ordinary cold sessions are resumed through `agentFor()` during lookup, while subagent-owned identities retain the existing `agent-busy` fence; `@RemoteScope('agent')` remains the distinct scoped-receiver mode.
+The shipped vertical path is `@clocky/clocky-compat-goal/remote → Browser Client Remote → Connection RPC /api → Host Gateway → GoalService.remoteExportCreate()`. The same direct descriptor with an Agent lookup supports both `ctx.remote.goals.create(agentId, request)` and `agentCtx.remote.goals.create(request)`. Ordinary cold sessions are resumed through `agentFor()` during lookup, while subagent-owned identities retain the existing `agent-busy` fence; `@RemoteScope('agent')` remains the distinct scoped-receiver mode.
 
 Connection supplies the shared-channel interceptor and current HTTP carrier mapping. WebSocket migration, the TUI runtime and carrier, TUI Agent Scope wiring, Permission/Approval state machines, Session event streams, call authorization, retries, idempotency, and cross-version protocol compatibility remain outside this decision.
 
@@ -493,7 +493,7 @@ The package topology is `api/remotes → api/gateway → client/connection → h
 - Goal Service directly decorates mutation methods whose business signatures already match the Remote contract and keeps `remoteExportCreate(...)` only to adapt `GoalView` into `CreateGoalResult`, without a second route, codec, or Client method list.
 - A clean `build:lib` emits Host and consumer Remote artifacts before Client compilation, including the business package's JS, DTS, and declaration map under `/remote`.
 - After `clean`, standalone `typecheck`, `lint`, and `doc-typecheck` regenerate the Remote contracts; the pre-push hook uses the same prepared typecheck, and CI source consumers wait for one shared contract pass.
-- Importing `@clocky/clocky-goal/remote` adds the strict `ctx.remote.goals.create(...)` type and declaration navigation to `remoteExportCreate`; omitting that import omits the namespace.
+- Importing `@clocky/clocky-compat-goal/remote` adds the strict `ctx.remote.goals.create(...)` type and declaration navigation to `remoteExportCreate`; omitting that import omits the namespace.
 - Mounting the same import's JS contribution supplies endpoint, parameter, result, lookup, Context, and Zod reflection and materializes the call without a handwritten stub.
 - Root and Agent-scoped calls cross the real shared `/api` carrier, resolve `agentId` to the live Agent, invoke the original Goal receiver, and return through the existing RPC envelope.
 - Agent and Session lookups share a single in-flight cold-session resume; ordinary cold sessions receive restored objects, while both cold and live subagent identities return `agent-busy` before business invocation.

@@ -2,7 +2,7 @@
 
 English | [中文](team.zh.md)
 
-`@clocky/clocky-team` defines the durable Team vocabulary and the `ctx.teams` Service Definition. [`@clocky/clocky-team-hub`](../../packages/team/team-hub/README.md) is the explicitly mounted local provider: it owns journals, channel WALs, source-specific durable audit projections, roster/task/activation projections, bounded root-or-child hierarchy, authenticated Envelope admission, derived pending deliveries, receipt cursors, recovery, cursor watches, ephemeral delivery claims, fenced task attempts, revisioned Team goals, durable declarative workflow plans, process-local metrics, and durable archival of terminal Teams without deleting their state. [`@clocky/clocky-team-activation-controller`](../../packages/team/team-activation-controller/README.md) exposes the bind-or-dispose owner at `ctx.teamActivations`; [`@clocky/clocky-team-channel-direct`](../../packages/team/team-channel-direct/README.md) supplies direct v1, product direct v2, and two-party human text/image direct v3; [`@clocky/clocky-team-link-local`](../../packages/team/team-link-local/README.md) owns local pending-delivery replay; [`@clocky/clocky-team-agent-client`](../../packages/team/team-agent-client/README.md) owns local Agent inbox admission and consumes provider-owned task workspace roots; [`@clocky/clocky-team-scheduler-dag`](../../packages/team/team-scheduler-dag/README.md) expires leases, keeps compiling workflow tasks dormant, makes deterministic shared-work assignments, and can run an explicitly configured terminal-channel retention drive; [`@clocky/clocky-command-team-goal`](../../packages/team/command-team-goal/README.md) scopes human `/goal` control to a bound Team participant; and [`@clocky/clocky-team-run`](../../packages/team/team-run/README.md) owns the local default human/coordinator/worker topology, reviewer routing when configured, workspace outcome publication, declarative workflow compilation, and explicit final-result receipt. Local and WebSocket Links, Host Remotes, the TypeScript/Python SDKs, and the Web Team page consume this spine. The worktree provider supplies an opt-in policy/CAS integration authority, and SQLite-backed Hubs reconcile externally appended projections before reads. Automatic leader election/failover, remote push authority, and hard cancellation remain separate deployment work. The [local Team Hub decision](../../.agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.md) owns the local-provider rationale.
+`@clocky/clocky-team` defines the durable Team vocabulary and the `ctx.teams` Service Definition. [`@clocky/clocky-team-hub`](../../packages/team/team-hub/README.md) is the explicitly mounted local provider: it owns journals, channel WALs, source-specific durable audit projections, roster/task/activation projections, bounded root-or-child hierarchy, authenticated Envelope admission, derived pending deliveries, receipt cursors, recovery, cursor watches, ephemeral delivery claims, fenced task attempts, revisioned Team goals, durable declarative workflow plans, process-local metrics, and durable archival of terminal Teams without deleting their state. [`@clocky/clocky-team-activation-controller`](../../packages/team/team-activation-controller/README.md) exposes the bind-or-dispose owner at `ctx.teamActivations`; [`@clocky/clocky-team-channel-direct`](../../packages/team/team-channel-direct/README.md) supplies product direct v4 multicast with independent recipient receipts; [`@clocky/clocky-team-link-local`](../../packages/team/team-link-local/README.md) owns local pending-delivery replay; [`@clocky/clocky-team-agent-client`](../../packages/team/team-agent-client/README.md) owns local Agent inbox admission and consumes provider-owned task workspace roots; [`@clocky/clocky-team-scheduler-dag`](../../packages/team/team-scheduler-dag/README.md) expires leases, keeps compiling workflow tasks dormant, makes deterministic shared-work assignments, and can run an explicitly configured terminal-channel retention drive; [`@clocky/clocky-command-team-goal`](../../packages/team/command-team-goal/README.md) scopes human `/goal` control to a bound Team participant; and [`@clocky/clocky-team-run`](../../packages/team/team-run/README.md) owns the local default human/coordinator/worker topology, reviewer routing when configured, workspace outcome publication, declarative workflow compilation, and explicit final-result receipt. Local and WebSocket Links, Host Remotes, the TypeScript/Python SDKs, and the Web Team page consume this spine. The worktree provider supplies an opt-in policy/CAS integration authority, and SQLite-backed Hubs reconcile externally appended projections before reads. Automatic leader election/failover, remote push authority, and hard cancellation remain separate deployment work. The [local Team Hub decision](../../.agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.md) owns the local-provider rationale.
 
 [`@clocky/clocky-team-channel-basic`](../../packages/team/team-channel-basic/README.md) supplies bounded consult and discussion protocols, and [`@clocky/clocky-team-channel-workflow`](../../packages/team/team-channel-workflow/README.md) supplies bounded declarative workflow transitions. Their adapters validate manifests and fold state without executing delivery or model turns.
 
@@ -22,15 +22,21 @@ An integration task adds an immutable source task/attempt, provider, target, exp
 
 `TeamTaskDependencyOutcome` records an unstarted workflow task’s terminal prerequisite id, revision, and failed/cancelled/deleted phase. `TeamRunWorkflowTaskCancelRequest` selects an owned plan/template binding; its result includes nullable `blockedByOutcome` (null means no dependency cancellation). Terminal plans may retain their configured task-result projection for completed, failed, or cancelled outcomes.
 
+`ActivationReservationSnapshot` retains one provider-start admission under a branded `ActivationReservationId`. `ActivationReservationRequest` combines JSON `ActivationReservationInput` with a runtime-only controller proof. `ParticipantSnapshot.activationReservation` persists before provider startup; `ActivationBindingSnapshot.reservationId` consumes that identity once. `maxLiveActivations` counts pending starts, unquiesced epochs and delegated child capacity under the tighter Team budget or grant. Unknown startup blocks closure with `ACTIVATION_STARTUP_UNCONFIRMED`.
+
+`TeamDiscoveryCursor` is an opaque provider scan position, distinct from numeric journal and collection cursors. `TeamListPage.scanned` counts examined entries, including skipped names; a page with no visible items can still continue. `TEAM_DISCOVERY_CURSOR_EXPIRED` requests a fresh `afterCursor: -1` scan.
+
+`TeamTaskExecution` distinguishes Participant attempts from child-Team work; the child variant freezes its template, authority grant and budget. `TeamTaskDelegationSnapshot` retains the reserved child identity, replayable creation payload, cursor, failure and admitted result. The parent task has no Participant lease. `TeamChildRunBinding` identifies the service recipient, coordinator and consult channel; `TeamDelegationResultAdmission` binds the accepted response to its parent task. [`@clocky/clocky-team-delegation`](../../packages/team/team-delegation/README.md) is the Consumer driving these records. It contributes no `ctx` service and registers its cancellation driver with TeamRun.
+
 ## Provider registration
 
-`transitionTeamPhase()` accepts JSON-only lifecycle fields plus a source-owned `TeamSystemPhaseProof`. The Hub permits only the scheduler's exact active-to-stalled scope and TeamRun's exact stalled-to-active resume scope, resolves it under the Team lock, and supplies its derived system identity to close policy. Test fixture state is seeded directly in a private journal helper rather than introducing a public generic transition authority.
+`transitionTeamPhase()` accepts JSON-only lifecycle fields plus a source-owned `TeamSystemPhaseProof`. The Hub resolves the registered source under the Team lock, validates the exact transition and target, and supplies its derived system identity to close policy. Test fixture state is seeded directly in a private journal helper rather than introducing a public generic transition authority.
 
 `compactTeam()` and `compactChannel()` accept JSON-only prefix fields plus `TeamSystemMaintenanceProof`. Only `team-scheduler-dag` can resolve one exact terminal Team-journal or channel-WAL prefix; its scope fixes the Team/channel, cursor, and `throughSequence` before policy, audit repair, checkpoint, or storage compaction can occur.
 
 Activation lifecycle commands carry JSON-only fields plus `TeamSystemActivationProof`. `team-activation-controller` owns exact bind/status/fence/quiesce scopes, while `team-activation-recovery` owns only wake-cleanup retry for an offline epoch recorded as locally quiesced. The Hub resolves a source proof before Team selection and under the Team lock before policy, lease cleanup, or journal acceptance; its durable activation records retain only the derived binding.
 
-`TeamRuntime` declares common Team, participant, activation, task, channel, authenticated Envelope-admission, recipient-receipt, delivery-claim, and source-cursor audit-read operations, then supplies the registrations shared by providers. Task operations separate lease-free detail/cancel/review/delete actions from assignment and owner-fenced attempt actions; a provider maps reported outcomes to direct completion or review, retry, failure, or cancellation under its frozen limits and route. `postChannelEnvelope()` receives only a runtime actor plus JSON cursor/retry/draft fields. An activation proof derives the current sender; TeamRun and scheduler source proofs derive only their scoped human-input, assignment, or review post. Task-assignment and review-request drafts require the scheduler source rather than an activation proof. `resolveTaskReview()` derives its configured reviewer from an activation or authenticated-human runtime proof and takes no caller-selected Participant identity; the scheduler recovers only an exact closed consult response through a separate source-scoped proof after it validates the task and both Envelope records. Receipt and delivery claims derive the recipient from their runtime actor under the Team-to-channel lock before policy evaluation or durable mutation. `updateTeamGoal()` and `transitionTeamGoalPhase()` receive JSON-only fields plus `TeamActorProof`; the Hub resolves the exact current Team, Participant, activation, Session, and provider from that proof rather than accepting a caller-supplied actor identity. A claim proves an exact running/idle activation and pending recipient admission at one Hub linearization point without reserving a model turn or appending a claim record. A duplicate receipt, or an already-committed recipient reply with the incoming Envelope as `causationId`, produces no local delivery. `bindActivation()` and `updateActivationStatus()` use the Team cursor and return detached bindings; a duplicate activation id, Session change, or concurrent resident epoch rejects. A duplicate receipt returns its original record without another WAL append. A child creation request names a parent Team and task; the provider validates that task under the parent queue and snapshots its depth policy in the child journal. A channel adapter registers under an exact `(type, version)` identity and is removed by its effect disposer. A channel manifest freezes that identity and its participants; the WAL records lifecycle edges separately. Policies register per Team operation and compose through the `team/policy` waterfall: an allowing policy calls `next()`, while a denial returns a structured decision. The local Hub appends one rebuildable audit entry per business record after commit, repairs missing audit suffixes before `readAudit()`, and never treats a failed audit append as a reason to roll back business state.
+`TeamRuntime` declares common Team, participant, activation, task, channel, authenticated Envelope-admission, recipient-receipt, delivery-claim, and source-cursor audit-read operations, then supplies the registrations shared by providers. Task operations separate lease-free detail/cancel/review/delete actions from assignment and owner-fenced attempt actions; a provider maps reported outcomes to direct completion or review, retry, failure, or cancellation under its frozen limits and route. `postChannelEnvelope()` receives only a runtime actor plus JSON cursor/retry/draft fields. An activation proof derives the current sender; TeamRun, scheduler and delegation source proofs derive only their scoped human-input, assignment, review or parent-service post. Task-assignment and review-request drafts require the scheduler source rather than an activation proof. `resolveTaskReview()` derives its configured reviewer from an activation or authenticated-human runtime proof and takes no caller-selected Participant identity; the scheduler recovers only an exact closed consult response through a separate source-scoped proof after it validates the task and both Envelope records. Receipt and delivery claims derive the recipient from their runtime actor under the Team-to-channel lock before policy evaluation or durable mutation. `updateTeamGoal()` and `transitionTeamGoalPhase()` receive JSON-only fields plus `TeamActorProof`; the Hub resolves the exact current Team, Participant, activation, Session, and provider from that proof rather than accepting a caller-supplied actor identity. A claim proves an exact running/idle activation and pending recipient admission at one Hub linearization point without reserving a model turn or appending a claim record. A duplicate receipt, or an already-committed recipient reply with the incoming Envelope as `causationId`, produces no local delivery. `bindActivation()` and `updateActivationStatus()` use the Team cursor and return detached bindings; a duplicate activation id, Session change, or concurrent resident epoch rejects. A duplicate receipt returns its original record without another WAL append. A child creation request names a parent Team and task; the provider validates that task under the parent queue and snapshots its depth policy in the child journal. A channel adapter registers under an exact `(type, version)` identity and is removed by its effect disposer. A channel manifest freezes that identity and its participants; the WAL records lifecycle edges separately. Policies register per Team operation and compose through the `team/policy` waterfall: an allowing policy calls `next()`, while a denial returns a structured decision. The local Hub appends one rebuildable audit entry per business record after commit, repairs missing audit suffixes before `readAudit()`, and never treats a failed audit append as a reason to roll back business state.
 
 `requestParticipantInterrupt()` accepts only TeamRun's source proof for its exact current human-to-coordinator topology, resolves the current idle/running coordinator target under Team/channel locks, and applies `interrupt` policy with the derived human requester. Only that target's activation proof may list or acknowledge the request; acknowledgement is idempotent and has no Team-cancellation or turn-settlement effect.
 
@@ -54,9 +60,11 @@ Providers call the protected Team and channel notification helpers only after du
 
 `ChannelSummarySelectionInput` selects a channel, expected WAL cursor, inclusive source range and idempotency key. `ChannelSummarySourceRequest` adds a current coordinator or authenticated human proof; `ChannelSummarySource` returns authorized source Envelopes and their fingerprint, or an existing retry result. `ChannelSummarizeRequest` additionally carries the canonical Consumer output proof. `ChannelSummaryRecord.sourceFingerprint` binds the complete canonical ordered source Envelopes. The [summary Consumer](../../packages/team/team-channel-summary/README.md) owns extraction limits and caller-visible behavior; the Hub validates channel-wide source visibility during admission and replay.
 
-`TeamRunCreateRequest` creates one local default Team. `TeamRunHandle` retains its human, coordinator, provisioned worker, direct v3 channel, and coordinator lease. `TeamRunHumanInputRequest` appends trusted text/image human content; `TeamRunFinalWaitRequest` waits for the coordinator's explicit final Envelope; and `TeamRunFinal` returns the received human-facing text after its durable receipt and narrow topology settlement. `TeamRunCoordinatorTaskAuthority` and `TeamRunCoordinatorGoalAuthority` are opaque exact-coordinator capabilities. `TeamRunCoordinatorGoalUpdateRequest` carries only the observed revision and replacement objective; TeamRun issues a private short-lived activation proof and admits it only from the current human direct-v3 turn. `TeamRunDefaultWorkerTaskStartRequest` carries its branded retry key, instructions, and read/write scopes; `TeamRunDefaultWorkerTask` identifies the accepted task and extends `TeamRunDefaultWorkerTaskReview`, whose frozen `reviewPolicy` and nullable `reviewResult` identify only the active attempt or, without an active lease, the latest settled attempt; `TeamRunDefaultWorkerTaskWaitRequest` supplies an owned task id and local wait cancellation; `TeamRunDefaultWorkerTaskWatchRequest` supplies the last observed Team cursor and local watch cancellation; `TeamRunDefaultWorkerTaskCancelRequest` supplies an owned task id; `TeamRunDefaultWorkerTaskOwnerProposalRequest` supplies an owned task id and optional preferred Participant; `TeamRunDefaultWorkerTaskList` and `TeamRunDefaultWorkerTaskWatch` return compact task phases and review facts; `TeamRunDefaultWorkerTaskOwnerProposal` returns the retained advisory hint; and `TeamRunDefaultWorkerTaskTerminal` preserves its terminal result or attempt outcome. `TeamRunWorkflowPlanStartRequest` accepts a complete JSON `TeamWorkflowPlan` and a lineage-derived retry key; `TeamRunWorkflowPlanWaitRequest` waits for one owned plan; and `TeamRunWorkflowPlanTerminal` contains the durable projected task results or terminal failure.
+`TeamRunCreateRequest` creates one local default Team. `TeamRunHandle` retains its human, coordinator, provisioned worker, direct v4 channel, and coordinator lease. `TeamRunHumanInputRequest` appends trusted text/image human content; `TeamRunFinalWaitRequest` waits for the coordinator's explicit final Envelope; and `TeamRunFinal` returns the received human-facing text after its durable receipt and narrow topology settlement. `TeamRunCoordinatorTaskAuthority` and `TeamRunCoordinatorGoalAuthority` are opaque exact-coordinator capabilities. `TeamRunCoordinatorGoalUpdateRequest` carries only the observed revision and replacement objective; TeamRun issues a private short-lived activation proof and admits it only from the current human direct-v4 turn. `TeamRunDefaultWorkerTaskStartRequest` carries its branded retry key, instructions, and read/write scopes; `TeamRunDefaultWorkerTask` identifies the accepted task and extends `TeamRunDefaultWorkerTaskReview`, whose frozen `reviewPolicy` and nullable `reviewResult` identify only the active attempt or, without an active lease, the latest settled attempt; `TeamRunDefaultWorkerTaskWaitRequest` supplies an owned task id and local wait cancellation; `TeamRunDefaultWorkerTaskWatchRequest` supplies the last observed Team cursor and local watch cancellation; `TeamRunDefaultWorkerTaskCancelRequest` supplies an owned task id; `TeamRunDefaultWorkerTaskOwnerProposalRequest` supplies an owned task id and optional preferred Participant; `TeamRunDefaultWorkerTaskList` and `TeamRunDefaultWorkerTaskWatch` return compact task phases and review facts; `TeamRunDefaultWorkerTaskOwnerProposal` returns the retained advisory hint; and `TeamRunDefaultWorkerTaskTerminal` preserves its terminal result or attempt outcome. `TeamRunWorkflowPlanStartRequest` accepts a complete JSON `TeamWorkflowPlan` and a lineage-derived retry key; `TeamRunWorkflowPlanWaitRequest` waits for one owned plan; and `TeamRunWorkflowPlanTerminal` contains the durable projected task results or terminal failure.
 
 `workerCount` snapshots the local worker pool in new Team rules. Slot zero uses role `worker`; later slots use `worker-2`, `worker-3`, and so on, each with its own activation-bound Session. Workflow channels may include these role names while task assignment continues to apply the scheduler's capability, load, workspace, and plan-parallelism checks.
+
+`TeamTaskInspectRequest` combines exact Team/task ids with `TeamTaskInspectionSelection` and an optional revision fence; the provider resolves it to `TeamTaskInspectSpec`. `TeamTaskInspection` contains either a history-free `TeamTaskRecord` with counts, or an indexed attempt/review page with explicit start, total, scan count and continuation. The [Core contract](../../packages/core/team/README.md) owns response bounds and private-artifact filtering.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -381,7 +389,17 @@ Activation owner for tasks whose participants have an explicit deployment route.
  */
 prepare(teamId: TeamId, signal?: AbortSignal): Promise<number>
 
-/** Stop new preparation, cancel provider admission and await every owned activation release. */
+/** Prepare declared workflow roles before channel admission or task publication.
+ * @param teamId - Team whose active membership authorizes the roles.
+ * @param roles - Unique roles already resolved by the workflow compiler.
+ * @param signal - Cancellation of this compilation.
+ * @returns resolution when every agent role has a resident activation; unavailable routes reject.
+ */
+async prepareRoles(teamId: TeamId, roles: readonly string[], signal?: AbortSignal): Promise<void>
+
+/** Stop new preparation and cancel provider admission; failed releases remain available to a later close.
+ * @returns Shared in-flight cleanup; rejects with collected failures until all owned leases settle.
+ */
 close(): Promise<void>
 ```
 
@@ -535,6 +553,7 @@ async startDelegatedTask( authority: TeamRunCoordinatorTaskAuthority, request: T
  * @param authority - opaque capability minted for the exact current coordinator.
  * @param request - owned task identity and optional local wait cancellation.
  * @returns the task's terminal result or retained terminal attempt fact.
+ * @throws TeamRunError when the Team stalls or a local reviewer stops without an accepted decision.
  */
 async waitForDefaultWorkerTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskWaitRequest, ): Promise<TeamRunDefaultWorkerTaskTerminal>
 
@@ -973,6 +992,42 @@ abstract createTeam(request: TeamCreateRequest): Promise<TeamStateSnapshot>
  */
 abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
 
+/** Read one current human action without copying the Team projection.
+ * @param request - Exact Team and action identity.
+ * @returns the bounded action snapshot; unsupported providers reject.
+ */
+getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot>
+
+/** Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.
+ * @param request - Team selected for read-only inspection.
+ * @returns the lightweight selection projection; no activation is created or resumed.
+ */
+abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>
+
+/** Read bounded display summaries without materializing task/plan execution history.
+ * @param request - Team, collection, provider-order cursor and requested row limit.
+ * @returns a byte- and row-limited page, with actual scan work and optional continuation.
+ */
+abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>
+
+/** Read current task fields or one bounded attempt/review history page, without private artifact references.
+ * @param request - Exact Team/task, section, optional revision fence and history continuation.
+ * @returns detached data capped by the provider's response budget; indivisible oversized records reject.
+ */
+abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>
+
+/** Resolve the latest published Session of one retained Team member without starting an Agent.
+ * @param request - exact owning Team and member.
+ * @returns published binding, including offline history; missing members or bindings reject.
+ */
+abstract getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot>
+
+/** Read non-secret member metadata and one capability page without activating an Agent.
+ * @param request - Team/member identity and optional cursor-pinned capability continuation.
+ * @returns bounded detail; a changed Team cursor rejects continuation until refreshed.
+ */
+abstract inspectMember(request: TeamMemberInspectRequest): Promise<TeamMemberInspection>
+
 /**
  * Retain one host-mediated approval/question in the Team journal. Providers
  * that do not offer durable interaction records fail explicitly so callers
@@ -1018,8 +1073,8 @@ async inspectQuiescence(teamId: TeamId): Promise<TeamQuiescenceSnapshot>
 
 /**
  * List a bounded page of visible Team summaries for product and transport consumers.
- * @param request - provider-order cursor and page limit.
- * @returns detached Team summaries and an optional continuation cursor.
+ * @param request - opaque discovery position or -1, plus a physical scan-work limit.
+ * @returns detached summaries, scanned work and an optional continuation, including for empty pages.
  */
 abstract listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage>
 
@@ -1049,7 +1104,7 @@ abstract readAudit(request: TeamAuditReadRequest): Promise<TeamAuditReadResult>
  * the caller aborts its local wait. Providers omit `request.signal` before
  * parsing the JSON-only request fields; cancellation changes no durable data.
  * @param request - Team identity, last observed journal cursor, and optional local cancellation.
- * @returns whether the cursor advanced or the provider closed the watch.
+ * @returns an advanced cursor, or closed at an immutable archived tail or provider shutdown.
  * @throws when `request.signal` aborts before the watch resolves.
  */
 abstract watchTeam(request: TeamWatchRequest): Promise<TeamWatchResult>
@@ -1173,6 +1228,18 @@ abstract transitionParticipantPhase(request: ParticipantPhaseTransitionRequest):
  */
 abstract bindActivation(request: ActivationBindRequest): Promise<ActivationBindingSnapshot>
 
+/** Reserve capacity before invoking an activation provider.
+ * @param request - Exact controller-owned startup identity and cursor.
+ * @returns the durable startup reservation.
+ */
+abstract reserveActivation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
+/** Release an unpublished startup only after its controller proves cleanup.
+ * @param request - Exact reservation, owner and current cursor.
+ * @returns the reservation carrying its durable release time.
+ */
+abstract releaseActivationReservation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
 /**
  * Persist one permitted residency-status transition for a bound activation.
  * @param request - source-owned runtime proof, Team/activation identity, observed cursor, and next status.
@@ -1254,6 +1321,12 @@ proposeTaskOwner(request: TeamTaskOwnerProposalRequest): Promise<TeamTaskSnapsho
  * @returns the accepted or idempotently replayed workflow plan.
  */
 admitWorkflowPlan(request: TeamWorkflowPlanAdmissionRequest): Promise<TeamWorkflowPlanSnapshot>
+
+/** Read current workflow metadata and one task/dependency window.
+ * @param request - Exact workflow, optional revision and page selection.
+ * @returns a bounded inspection without complete plan or result bodies.
+ */
+inspectWorkflowPlan(request: TeamWorkflowInspectRequest): Promise<TeamWorkflowInspection>
 
 /**
  * Read one durable workflow plan and its compiled task/channel bindings.

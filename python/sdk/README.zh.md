@@ -74,6 +74,10 @@ with Clocky(credential="product-credential", provider="local-vllm", model="Qwen3
 
 `Clocky` 与 `HarnessClient` 提供 `inbox_read(after_cursor=None, limit=None)`、`inbox_watch(...)` 和 `inbox_acknowledge(through_cursor)`。读取返回 `TeamHumanInboxPage`，确认返回 `TeamHumanInboxAcknowledgement`；这些已导出 model 保留准确的 final provenance 与共享持久 display cursor。Inbox 由初始化时认证的 principal 选择，display acknowledgement 独立于 channel receipt。[Inbox Consumer](../../packages/team/team-human-client/README.zh.md) 定义权限、分页、重启行为与当前缺口。
 
+Team-list 的 `nextCursor` 是 opaque string，`after_cursor=-1` 开始新扫描。存在 cursor 时继续读取空页，并用 `scanned` 统计工作量。Discovery cursor 过期后需要重扫；其他 collection cursor 仍为数值。
+
+`inspect_team_task(team_id, task_id, "record")`返回当前字段及历史计数。使用`"attempts"`或`"reviews"`，配合`after_cursor`、`limit`和`expected_revision`读取有界历史页。响应会校验所选 Team、任务、分区、版本和窗口。版本过期时需要刷新记录；私有产物引用不会返回。
+
 ## 单任务取消
 
 `HarnessClient.cancel_team_task()`和`Team.cancel_task()`接收`teamId`、`taskId`、`expectedRevision`及可选`reason`（Team helper 提供自身 Team id）。`value.cancellation`保留精确 intent；assigned 或 running phase 表示终止仍在等待。Team 继续运行，应观察任务直到 cancelled。 [取消归属](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).

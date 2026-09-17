@@ -17,7 +17,7 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     { type: 'finish', reason: { kind: 'stop' } },
   ] }]))
   const pagingOverlay = join(output, 'paging.overlay.yml')
-  await writeFile(pagingOverlay, '- id: team-hub\n  config:\n    recoveryPageSize: 1\n')
+  await writeFile(pagingOverlay, '- id: team-hub\n  config:\n    recoveryPageSize: 1\n- id: modules\n  config:\n    browserConfig:\n      "@clocky/clocky-client-ui-team":\n        maxDrafts: 1\n        maxDraftBytes: 2048\n        maxViewStates: 4\n')
   const scaffold = await launchWebScaffold({ replayFixture: join(process.cwd(), 'apps/web/tests/snapshots/lifecycle-chrome/session.jsonl'),
     replayOverride: override, extraOverlayPath: pagingOverlay, replayInputModalities: ['text', 'image'] })
   const browser = await chromium.launch()
@@ -60,10 +60,32 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     if (coordinator === undefined) throw new Error('Created Team has no coordinator')
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '验证通道邀请与实时记录 进行中' }).click()
-    await page.getByRole('button', { name: '打开任务详情' }).click()
-    const panel = page.locator('[data-team-detail-panel]')
+    await page.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '频道', exact: true }).click()
+    const panel = page.locator('[data-team-workspace-page]')
     const channels = panel.getByRole('region', { name: '通道', exact: true })
     let channelListContinuations = 0
+    const channelWindow = () => channels.locator('[data-channel-id]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-channel-id')).join(','))
+    const recordWindow = () => channels.locator('[data-channel-record]').evaluateAll(nodes => nodes.map(node => node.getAttribute('data-channel-record')).join(','))
+    async function selectChannel(id: ChannelId): Promise<void> {
+      const target = panel.locator(`[data-channel-id="${id}"]`)
+      if (await target.count() === 0) {
+        const first = channels.getByRole('complementary').getByRole('button', { name: '返回首页', exact: true })
+        if (await first.count() > 0) {
+          const previous = await channelWindow()
+          await first.click()
+          await expect.poll(channelWindow).not.toBe(previous)
+        }
+      }
+      for (let index = 0; index < 16 && await target.count() === 0; index++) {
+        const previous = await channelWindow()
+        await channels.getByRole('button', { name: '下一页通道', exact: true }).click()
+        channelListContinuations += 1
+        await expect.poll(channelWindow).not.toBe(previous)
+        expect(await channels.locator('[data-channel-id]').count()).toBeLessThanOrEqual(1)
+      }
+      await target.click()
+    }
+
     async function openPending(): Promise<ChannelId> {
       const before = await rpc<TeamStateSnapshot>('team.get', { teamId })
       await channels.getByRole('button', { name: '新建通道', exact: true }).click()
@@ -75,18 +97,10 @@ it('accepts human channel invitations, observes other-client WAL updates and can
       const after = await rpc<TeamStateSnapshot>('team.get', { teamId })
       const id = after.channelIds.find(id => !before.channelIds.includes(id))
       if (id === undefined) throw new Error('UI did not attach a new channel')
-      const channelButton = panel.locator(`[data-channel-id="${id}"]`)
-      for (let index = 0; index < after.channelIds.length && await channelButton.count() === 0; index++) {
-        const more = channels.getByRole('button', { name: '加载更多通道', exact: true })
-        if (await more.count() === 0) await channels.getByRole('button', { name: '刷新通道列表', exact: true }).click()
-        await more.waitFor()
-        const beforeCount = await channels.locator('[data-channel-id]').count()
-        await more.click()
-        channelListContinuations += 1
-        await expect.poll(() => channels.locator('[data-channel-id]').count()).toBeGreaterThan(beforeCount)
-      }
-      await channelButton.click()
+      await selectChannel(id)
       await channels.getByRole('button', { name: '接受通道邀请' }).waitFor()
+      const detailsButton = channels.getByRole('button', { name: '频道详情', exact: true })
+      if (await detailsButton.getAttribute('aria-expanded') !== 'true') await detailsButton.click()
       const metadata = channels.getByRole('region', { name: '参与者确认状态', exact: true })
       await metadata.waitFor()
       const admission = await rpc<ChannelAdmissionSnapshot>('team.channel.admission', { teamId, channelId: id })
@@ -95,7 +109,7 @@ it('accepts human channel invitations, observes other-client WAL updates and can
       for (const invitation of admission.invitations) {
         const participant = after.participants.find(candidate => candidate.id === invitation.participantId)
         if (participant === undefined) throw new Error('Invitation participant is absent from the Team')
-        await metadata.getByText(new RegExp(`\\b${participant.role}\\b`)).waitFor()
+        await metadata.getByText(new RegExp(`\\b${participant.role}\\b`)).first().waitFor()
         expect(await metadata.innerText()).not.toContain(invitation.manifestFingerprint)
       }
       expect((await rpc<ChannelHumanInvitationSnapshot>('team.channel.invitation', { channelId: id })).invitation.status).toBe('pending')
@@ -133,15 +147,17 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     blockSocketReconnects = false
     await channels.getByText('通道有新记录；加载后续记录或刷新以查看。', { exact: true }).waitFor()
     for (let index = 0; index < 16 && await channels.getByText('RECONNECT_CONTEXT', { exact: true }).count() === 0; index++) {
-      const reconnectCount = await channels.locator('[data-channel-record]').count()
-      await channels.getByRole('button', { name: '加载更多', exact: true }).click()
-      await expect.poll(() => channels.locator('[data-channel-record]').count()).toBeGreaterThan(reconnectCount)
+      const previous = await recordWindow()
+      await channels.getByRole('button', { name: '下一页', exact: true }).click()
+      await expect.poll(recordWindow).not.toBe(previous)
+      expect(await channels.locator('[data-channel-record]').count()).toBeLessThanOrEqual(1)
     }
     await channels.getByText('RECONNECT_CONTEXT', { exact: true }).waitFor()
     expect(reconnectEnvelope.sequence).toBeGreaterThan(beforeReconnect.channel.cursor)
     await page.screenshot({ path: join(output, '04-reconnect.png') })
     const cancelled = await openPending()
-    await channels.getByRole('button', { name: '取消开通', exact: true }).click()
+    await channels.getByRole('button', { name: '频道操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '取消开通', exact: true }).click()
     const cancelDialog = page.getByRole('dialog', { name: '取消开通' })
     await cancelDialog.getByRole('button', { name: '取消开通', exact: true }).click()
     await expect.poll(() => cancelDialog.count()).toBe(0)
@@ -149,7 +165,7 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     expect(cancellation.channel.phase).toBe('closed')
     expect(cancellation.invitation.status).toBe('cancelled')
     await page.screenshot({ path: join(output, '02-pending-cancelled.png') })
-    await panel.locator(`[data-channel-id="${active}"]`).click()
+    await selectChannel(active)
     await channels.getByRole('button', { name: '发送消息', exact: true }).waitFor()
     const before = await rpc<ChannelReadPageResult>('team.channel.read', { channelId: active, afterCursor: -1 })
     const envelopeCount = await channels.locator('[data-channel-message]').count()
@@ -161,24 +177,59 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     expect(backgroundHistoryStable).toBe(true)
     const contextRecord = channels.locator('[data-channel-message]').filter({ hasText: 'OTHER_CLIENT_CONTEXT' })
     while (await contextRecord.count() === 0) {
-      const count = await channels.locator('[data-channel-record]').count()
-      await channels.getByRole('button', { name: '加载更多', exact: true }).click()
-      await expect.poll(() => channels.locator('[data-channel-record]').count()).toBeGreaterThan(count)
+      const previous = await recordWindow()
+      await channels.getByRole('button', { name: '下一页', exact: true }).click()
+      await expect.poll(recordWindow).not.toBe(previous)
+      expect(await channels.locator('[data-channel-record]').count()).toBeLessThanOrEqual(1)
     }
     await contextRecord.getByText('OTHER_CLIENT_CONTEXT', { exact: true }).waitFor()
     await page.screenshot({ path: join(output, '03-watched-record.png') })
-    await channels.getByRole('button', { name: '生成通道摘要', exact: true }).click()
+    await channels.getByRole('button', { name: '频道操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '生成通道摘要', exact: true }).click()
     const summaryDialog = page.getByRole('dialog', { name: '生成通道摘要', exact: true })
     await summaryDialog.getByLabel('起始记录序号', { exact: true }).fill(String(contextEnvelope.sequence))
     await summaryDialog.getByLabel('结束记录序号', { exact: true }).fill(String(contextEnvelope.sequence))
     await summaryDialog.getByRole('button', { name: '生成通道摘要', exact: true }).click()
     await expect.poll(() => summaryDialog.count()).toBe(0)
-    await channels.getByRole('region', { name: '已保存的通道摘要', exact: true }).getByText(/OTHER_CLIENT_CONTEXT/).waitFor()
+    const savedSummaryRegion = channels.getByRole('region', { name: '已保存的通道摘要', exact: true })
+    await savedSummaryRegion.locator('summary').click()
+    await savedSummaryRegion.getByText(/OTHER_CLIENT_CONTEXT/).waitFor()
     await page.screenshot({ path: join(output, '07-durable-summary.png') })
-    const settled = scaffold.whenTurnSettled(60_000).then(sessionId => ({ ok: true as const, sessionId }), error => ({ ok: false as const, error }))
-    await channels.getByRole('button', { name: '发送消息', exact: true }).click()
-    const message = page.getByRole('dialog', { name: '发送消息' })
+    const settled = scaffold.whenTurnSettled(60_000).then(sessionId => ({ ok: true as const,
+      sessionId }),
+    (error: unknown) => ({ ok: false as const,
+      error }))
+    const message = channels.locator('[data-channel-composer]')
+    await message.getByLabel('消息内容').fill('保留这段草稿')
+    await message.getByLabel('消息内容').fill('x'.repeat(4096))
+    await message.getByText('草稿存储已达上限。请先丢弃不再需要的频道草稿，或减少内容。', { exact: true }).waitFor()
+    expect(await message.getByLabel('消息内容').inputValue()).toBe('保留这段草稿')
+    await page.evaluate(() => {
+      // Preserve the prototype method for restoration; invocation supplies the reader through call().
+      // oxlint-disable-next-line typescript/unbound-method
+      const original = FileReader.prototype.readAsDataURL
+      document.body.dataset.imageReads = '0'
+      FileReader.prototype.readAsDataURL = function (file: Blob) {
+        document.body.dataset.imageReads = String(Number(document.body.dataset.imageReads) + 1)
+        original.call(this, file)
+      }
+      window.addEventListener('restore-image-reader', () => { FileReader.prototype.readAsDataURL = original }, { once: true })
+    })
+    await message.locator('input[type=file]').setInputFiles({ name: 'oversized.png', mimeType: 'image/png', buffer: Buffer.alloc(2048) })
+    await message.getByText('草稿存储已达上限。请先丢弃不再需要的频道草稿，或减少内容。', { exact: true }).waitFor()
+    expect(await page.locator('body').getAttribute('data-image-reads')).toBe('0')
+    expect(await message.getByLabel('消息内容').inputValue()).toBe('保留这段草稿')
+    await page.evaluate(() => { window.dispatchEvent(new Event('restore-image-reader')); delete document.body.dataset.imageReads })
+    await page.screenshot({ path: join(output, '09-draft-capacity.png'), animations: 'disabled' })
+    await message.getByRole('button', { name: '丢弃此草稿', exact: true }).click()
+    const discard = page.getByRole('dialog', { name: '丢弃此草稿', exact: true })
+    await discard.getByRole('button', { name: '继续填写', exact: true }).click()
+    expect(await message.getByLabel('消息内容').inputValue()).toBe('保留这段草稿')
+    await message.getByRole('button', { name: '丢弃此草稿', exact: true }).click()
+    await discard.getByRole('button', { name: '丢弃此草稿', exact: true }).click()
+    await expect.poll(() => message.getByLabel('消息内容').inputValue()).toBe('')
     await message.getByLabel('消息内容').fill('请确认收到此通道消息。')
+    await message.locator('summary').filter({ hasText: '接收者与投递方式' }).click()
     await message.getByRole('radio', { name: '广播给通道中的其他成员', exact: true }).check()
     const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWNgZGIGAAAOAAeCcsnOAAAAAElFTkSuQmCC'
     await message.locator('input[type=file]').setInputFiles({ name: 'channel.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') })
@@ -188,30 +239,63 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     await message.getByRole('button', { name: '上移内容项 2', exact: true }).click()
     await message.getByRole('button', { name: '下移内容项 1', exact: true }).click()
     await page.screenshot({ path: join(output, '05-ordered-draft.png') })
-    await message.getByRole('button', { name: '发送消息', exact: true }).click()
-    await expect.poll(() => message.count()).toBe(0)
+    let inputAccepted = false
+    const refreshed = Promise.withResolvers<undefined>()
+    const releaseRefresh = Promise.withResolvers<undefined>()
+    const acceptedResponse = page.waitForResponse(reply => new URL(reply.url()).pathname === '/api/team.channel.input')
+      .then((reply) => { inputAccepted = true; return reply })
+    const refreshPattern = '**/api/team.channel.read'
+    const refreshHandlers = new Set<Promise<void>>()
+    await page.route(refreshPattern, (route) => {
+      const handling = (async () => {
+        if (inputAccepted) { refreshed.resolve(undefined); await releaseRefresh.promise }
+        await route.continue()
+      })()
+      refreshHandlers.add(handling)
+      return handling.finally(() => { refreshHandlers.delete(handling) })
+    })
+    try {
+      await message.getByRole('button', { name: '发送消息', exact: true }).click()
+      await acceptedResponse
+      await refreshed.promise
+      await expect.poll(async () => await message.count() === 0 || await message.getByLabel('消息内容').inputValue() === '').toBe(true)
+      expect(await message.getByAltText('channel.png', { exact: true }).count()).toBe(0)
+      await page.screenshot({ path: join(output, '08-accepted-before-refresh.png'), animations: 'disabled' })
+    } finally {
+      inputAccepted = false
+      releaseRefresh.resolve(undefined)
+      await Promise.all([...refreshHandlers])
+      await page.unroute(refreshPattern)
+    }
     const turn = await settled
     if (!turn.ok) throw turn.error
     await recordFixture(scaffold, turn.sessionId, join(output, 'coordinator-session.jsonl'))
-    await page.getByText('通道消息已经收到。', { exact: true }).first().waitFor()
+    await panel.getByRole('button', { name: '打开协调会话', exact: true }).click()
+    const session = page.getByRole('dialog', { name: '执行记录', exact: true })
+    await session.getByText('通道消息已经收到。', { exact: true }).first().waitFor()
+    const modelText = await session.getByText('通道消息已经收到。', { exact: true }).first().textContent()
+    await session.getByRole('button', { name: '返回团队', exact: true }).click()
     const activeRecords = await readChannelEvidence(active)
     const savedSummary = activeRecords.records.find(record => record.type === 'channel/summary' && record.sourceEnvelopeIds.includes(contextEnvelope.id))
     if (savedSummary?.type !== 'channel/summary') throw new Error('The selected source summary is absent from the WAL')
     const posted = activeRecords.records.find(record => record.type === 'channel/envelope'
       && record.envelope.audience === null && JSON.stringify(record.envelope.payload).includes('channel.png'))
     if (posted?.type !== 'channel/envelope' || !Array.isArray(posted.envelope.payload.content)) throw new Error('Broadcast image message is absent from the WAL')
-    const orderedContentTypes = posted.envelope.payload.content.map(part => typeof part === 'object' && part !== null && !Array.isArray(part) ? part.type : undefined)
+    const postedContent: readonly unknown[] = posted.envelope.payload.content
+    const orderedContentTypes = postedContent.map(part => typeof part === 'object' && part !== null && 'type' in part ? part.type : undefined)
     expect(orderedContentTypes).toEqual(['text', 'image', 'text'])
-    expect(posted.envelope.payload.content[1]).toMatchObject({ type: 'image', attachment: { mediaType: 'image/png', width: 1, height: 1, name: 'channel.png' } })
-    expect(posted.envelope.payload.content[1]).not.toHaveProperty('data')
+    expect(postedContent[1]).toMatchObject({ type: 'image', attachment: { mediaType: 'image/png', width: 1, height: 1, name: 'channel.png' } })
+    expect(postedContent[1]).not.toHaveProperty('data')
     const imageMessage = channels.locator(`[data-channel-message="${posted.envelope.id}"]`)
     while (await imageMessage.count() === 0) {
-      const count = await channels.locator('[data-channel-record]').count()
-      await channels.getByRole('button', { name: '加载更多', exact: true }).click()
-      await expect.poll(() => channels.locator('[data-channel-record]').count()).toBeGreaterThan(count)
+      const previous = await recordWindow()
+      await channels.getByRole('button', { name: '下一页', exact: true }).click()
+      await expect.poll(recordWindow).not.toBe(previous)
+      expect(await channels.locator('[data-channel-record]').count()).toBeLessThanOrEqual(1)
     }
     const image = imageMessage.getByAltText('channel.png', { exact: true })
-    await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).complete && (element as HTMLImageElement).naturalWidth === 1)).toBe(true)
+    await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).complete &&
+       (element as HTMLImageElement).naturalWidth === 1)).toBe(true)
     const imagePreviewLoaded = (await image.getAttribute('src'))?.startsWith('data:image/png;base64,') === true
     await imageMessage.getByRole('button', { name: '查看原图：channel.png', exact: true }).click()
     await page.getByRole('dialog', { name: '查看原图', exact: true }).waitFor()
@@ -219,7 +303,10 @@ it('accepts human channel invitations, observes other-client WAL updates and can
     await page.getByRole('button', { name: '关闭原图', exact: true }).click()
     await writeFile(join(output, 'active-channel.json'), JSON.stringify(activeRecords, null, 2))
     await writeFile(join(output, 'cancelled-channel.json'), JSON.stringify(cancellation, null, 2))
+    await channels.getByRole('button', { name: '关闭频道详情', exact: true }).click()
     await page.setViewportSize({ width: 390, height: 844 })
+    await page.locator('[data-sidebar-collapsed]').waitFor()
+    await page.locator('[data-sidebar-collapsed]').evaluate(async (element) => { await Promise.all(element.getAnimations().map(animation => animation.finished)) })
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
     await page.screenshot({ path: join(output, '04-narrow.png') })
     expect(errors.pageErrors).toEqual([])
@@ -232,9 +319,11 @@ it('accepts human channel invitations, observes other-client WAL updates and can
         && JSON.stringify(record.envelope.payload).includes('OTHER_CLIENT_CONTEXT')),
       broadcast: posted.envelope.audience === null, orderedContentTypes, imagePreviewLoaded, modelImageCapability,
       selectedViewPolicy: accepted.channel.manifest.viewPolicy,
-      summaryCoversSelectedMessage: savedSummary.coveredSequenceRange.from === contextEnvelope.sequence && savedSummary.coveredSequenceRange.to === contextEnvelope.sequence,
+      summaryCoversSelectedMessage: savedSummary.coveredSequenceRange.from === contextEnvelope.sequence &&
+         savedSummary.coveredSequenceRange.to === contextEnvelope.sequence,
+
       summaryRetainsContext: savedSummary.text.includes('OTHER_CLIENT_CONTEXT'),
-      backgroundHistoryStable, modelText: await page.getByText('通道消息已经收到。', { exact: true }).first().textContent(),
+      backgroundHistoryStable, modelText,
       pageErrors: errors.pageErrors }, null, 2)}\n`
     const golden = join(import.meta.dirname, 'snapshots/team-channel/flow.expected.json')
     if (process.env.CLOCKY_SNAPSHOT === 'refresh') await writeFile(golden, actual)
@@ -295,8 +384,8 @@ it('runs a consult request and response through the shipped browser and Host', a
     if (human === undefined || coordinator === undefined) throw new Error('Created Team lacks human or coordinator participant')
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '验证一问一答浏览器流程 进行中' }).click()
-    await page.getByRole('button', { name: '打开任务详情' }).click()
-    const panel = page.locator('[data-team-detail-panel]')
+    await page.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '频道', exact: true }).click()
+    const panel = page.locator('[data-team-workspace-page]')
     const channels = panel.getByRole('region', { name: '通道', exact: true })
     const before = await rpc<TeamStateSnapshot>('team.get', { teamId })
     await channels.getByRole('button', { name: '新建通道', exact: true }).click()
@@ -319,18 +408,19 @@ it('runs a consult request and response through the shipped browser and Host', a
     const admission = await rpc<ChannelHumanAdmissionSnapshot>('team.channel.admission', { teamId, channelId })
     expect(admission.channel.manifest.adapter).toEqual({ type: 'consult', version: 1 })
     expect(admission.expectedNext).toMatchObject({ kind: 'participant', participantId: human.id })
-    await channels.getByRole('button', { name: '发送消息', exact: true }).click()
-    const message = page.getByRole('dialog', { name: '发送消息' })
+    const message = channels.locator('[data-channel-composer]')
     const settled = scaffold.whenTurnSettled(60_000).then(
       sessionId => ({ ok: true as const, sessionId }),
       (error: unknown) => ({ ok: false as const, error }),
     )
     await message.getByLabel('消息内容').fill('请给出一条咨询回应。')
     await message.getByRole('button', { name: '发送消息', exact: true }).click()
-    await expect.poll(() => message.count()).toBe(0)
+    await expect.poll(async () => await message.count() === 0 || await message.getByLabel('消息内容').inputValue() === '').toBe(true)
     const turn = await settled
     if (!turn.ok) throw turn.error
-    await page.getByText('咨询响应已经记录。', { exact: true }).first().waitFor()
+    await channels.getByRole('button', { name: '频道操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '刷新记录', exact: true }).click()
+    await channels.getByText('咨询响应已经记录。', { exact: true }).first().waitFor()
     const pageResult = await rpc<ChannelReadPageResult>('team.channel.read', { channelId, afterCursor: -1, limit: 128 })
     const envelopes = pageResult.records.filter(record => record.type === 'channel/envelope').map(record => record.envelope.kind)
     expect(envelopes).toContain('request')
@@ -385,8 +475,8 @@ it('runs a round-robin discussion through the shipped browser and Host', async (
     if (human === undefined || coordinator === undefined) throw new Error('Created Team lacks human or coordinator participant')
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '验证讨论轮流发言浏览器流程 进行中' }).click()
-    await page.getByRole('button', { name: '打开任务详情' }).click()
-    const panel = page.locator('[data-team-detail-panel]')
+    await page.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '频道', exact: true }).click()
+    const panel = page.locator('[data-team-workspace-page]')
     const channels = panel.getByRole('region', { name: '通道', exact: true })
     const before = await rpc<TeamStateSnapshot>('team.get', { teamId })
     await channels.getByRole('button', { name: '新建通道', exact: true }).click()
@@ -410,18 +500,19 @@ it('runs a round-robin discussion through the shipped browser and Host', async (
     expect(admission.channel.manifest.adapter).toEqual({ type: 'discussion', version: 1 })
     expect(admission.protocolStatus).toMatchObject({ kind: 'discussion', turnCount: 0, maxTurns: 3, speakerPolicy: 'round-robin' })
     expect(admission.expectedNext).toMatchObject({ kind: 'participant', participantId: human.id })
-    await channels.getByRole('button', { name: '发送消息', exact: true }).click()
-    const message = page.getByRole('dialog', { name: '发送消息' })
+    const message = channels.locator('[data-channel-composer]')
     const settled = scaffold.whenTurnSettled(60_000).then(
       sessionId => ({ ok: true as const, sessionId }),
       (error: unknown) => ({ ok: false as const, error }),
     )
     await message.getByLabel('消息内容').fill('讨论第一轮发言。')
     await message.getByRole('button', { name: '发送消息', exact: true }).click()
-    await expect.poll(() => message.count()).toBe(0)
+    await expect.poll(async () => await message.count() === 0 || await message.getByLabel('消息内容').inputValue() === '').toBe(true)
     const turn = await settled
     if (!turn.ok) throw turn.error
-    await page.getByText('讨论回应已经记录。', { exact: true }).first().waitFor()
+    await channels.getByRole('button', { name: '频道操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '刷新记录', exact: true }).click()
+    await channels.getByText('讨论回应已经记录。', { exact: true }).first().waitFor()
     const pageResult = await rpc<ChannelReadPageResult>('team.channel.read', { channelId, afterCursor: -1, limit: 128 })
     const envelopes = pageResult.records.filter(record => record.type === 'channel/envelope').map(record => record.envelope)
     expect(envelopes).toHaveLength(2)
@@ -481,8 +572,8 @@ it('runs a free-form discussion through the shipped browser and Host', async () 
     if (human === undefined || coordinator === undefined) throw new Error('Created Team lacks human or coordinator participant')
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: '验证自由讨论浏览器流程 进行中' }).click()
-    await page.getByRole('button', { name: '打开任务详情' }).click()
-    const panel = page.locator('[data-team-detail-panel]')
+    await page.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '频道', exact: true }).click()
+    const panel = page.locator('[data-team-workspace-page]')
     const channels = panel.getByRole('region', { name: '通道', exact: true })
     const before = await rpc<TeamStateSnapshot>('team.get', { teamId })
     await channels.getByRole('button', { name: '新建通道', exact: true }).click()
@@ -504,18 +595,19 @@ it('runs a free-form discussion through the shipped browser and Host', async () 
     await expect.poll(async () => (await rpc<ChannelHumanInvitationSnapshot>('team.channel.invitation', { channelId })).channel.phase).toBe('active')
     const admission = await rpc<ChannelHumanAdmissionSnapshot>('team.channel.admission', { teamId, channelId })
     expect(admission.protocolStatus).toMatchObject({ kind: 'discussion', turnCount: 0, maxTurns: 3, speakerPolicy: 'free-form' })
-    await channels.getByRole('button', { name: '发送消息', exact: true }).click()
-    const message = page.getByRole('dialog', { name: '发送消息' })
+    const message = channels.locator('[data-channel-composer]')
     const settled = scaffold.whenTurnSettled(60_000).then(
       sessionId => ({ ok: true as const, sessionId }),
       (error: unknown) => ({ ok: false as const, error }),
     )
     await message.getByLabel('消息内容').fill('自由讨论第一条消息。')
     await message.getByRole('button', { name: '发送消息', exact: true }).click()
-    await expect.poll(() => message.count()).toBe(0)
+    await expect.poll(async () => await message.count() === 0 || await message.getByLabel('消息内容').inputValue() === '').toBe(true)
     const turn = await settled
     if (!turn.ok) throw turn.error
-    await page.getByText('自由讨论回应已经记录。', { exact: true }).first().waitFor()
+    await channels.getByRole('button', { name: '频道操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '刷新记录', exact: true }).click()
+    await channels.getByText('自由讨论回应已经记录。', { exact: true }).first().waitFor()
     const pageResult = await rpc<ChannelReadPageResult>('team.channel.read', { channelId, afterCursor: -1, limit: 128 })
     const envelopes = pageResult.records.filter(record => record.type === 'channel/envelope').map(record => record.envelope)
     expect(envelopes).toHaveLength(2)

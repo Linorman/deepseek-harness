@@ -6,10 +6,12 @@ import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
-import { taskConcurrencyUsage, teamClosureIdempotencyKeySchema, type TeamSystemChildCreationProof, type TeamSystemChildCreationScope,
+import { taskConcurrencyUsage, taskChildTeamReservation, teamClosureIdempotencyKeySchema,
+  type JsonObject, type TeamSystemChildCreationProof, type TeamSystemChildCreationScope,
   type TeamSystemClosureDriverProof, type TeamSystemClosureDriverScope, type TeamSystemTaskControlProof, type TeamSystemTaskControlScope } from '@clocky/clocky-team'
 import TeamHub from '../src/index.ts'
 import { delegationFixture } from './delegation-fixtures.ts'
+import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.ts'
 
 const roots: string[] = []
 const contexts: Context[] = []
@@ -17,7 +19,7 @@ afterEach(async () => {
   for (const ctx of contexts.splice(0)) await ctx.fiber.dispose()
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
-async function setup(backend: 'json' | 'sqlite' = 'json') {
+async function setup(backend: 'json' | 'sqlite' = 'json', budgets: JsonObject = {}, childBudgets: JsonObject = {}) {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp', 'task-delegation-'))
   roots.push(root)
@@ -26,15 +28,15 @@ async function setup(backend: 'json' | 'sqlite' = 'json') {
   if (backend === 'json') await ctx.plugin(StorageJson, { root })
   else await ctx.plugin(StorageSqlite, { path: join(root, 'hub.db') })
   await ctx.plugin(StorageLog, { backend, routes: {} })
-  await ctx.plugin(TeamHub, { maxTeamDepth: 2 })
-  const fixture = await delegationFixture(ctx, root)
+  const hub = await ctx.plugin(TeamHub, { maxTeamDepth: 2 })
+  const fixture = await delegationFixture(ctx, root, budgets, childBudgets)
   const creation = new Map<TeamSystemChildCreationProof, TeamSystemChildCreationScope>()
   ctx.teams.registerSystemChildCreationProofSource({ name: 'team-child-delegation', resolveChildCreationProof: proof => creation.get(proof) })
-  async function create() {
-    const { state } = await fixture.current()
+  async function create(payload = fixture.creation) {
+    const state = await ctx.teams.getTeam({ teamId: payload.parentTeamId })
     const actor = Object.freeze({}) as TeamSystemChildCreationProof
-    creation.set(actor, { kind: 'team-child-create', ...fixture.creation, expectedParentCursor: state.team.cursor })
-    try { return await ctx.teams.createTeam({ ...fixture.creation, actor }) } finally { creation.delete(actor) }
+    creation.set(actor, { kind: 'team-child-create', ...payload, expectedParentCursor: state.team.cursor })
+    try { return await ctx.teams.createTeam({ ...payload, actor }) } finally { creation.delete(actor) }
   }
   async function cancel() {
     const { task, input } = await fixture.current()
@@ -49,10 +51,79 @@ async function setup(backend: 'json' | 'sqlite' = 'json') {
       return await ctx.teams.cancelTask({ actor, teamId: input.teamId, taskId: input.taskId, expectedRevision: input.expectedRevision })
     } finally { dispose() }
   }
-  return { ctx, fixture, create, cancel }
+  return { ctx, fixture, create, cancel, hub }
 }
 
 describe('parent child-Team reservations', () => {
+  it.each(['json', 'sqlite'] as const)('passes only reserved descendant capacity into a third Team level (%s)', async (backend) => {
+    const { ctx, fixture, create } = await setup(backend, { maxChildTeams: 2 }, { maxChildTeams: 1 })
+    if (fixture.task.execution.kind !== 'child-team') throw new Error('Expected child execution')
+    const child = await create()
+    await provisionTestCoordinator(ctx, child.team.id)
+    const current = await ctx.teams.getTeam({ teamId: child.team.id })
+    const task = await createTestCoordinatorTask(ctx, { teamId: child.team.id, expectedCursor: current.team.cursor,
+      subject: 'Grandchild', description: 'Use the reserved descendant slot',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+      budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      execution: { ...fixture.task.execution, budget: { maxChildTeams: 0 } } })
+    const state = await ctx.teams.getTeam({ teamId: child.team.id })
+    const { parentTeamId: _parent, parentTaskId: _task, delegationId: _delegation, ...payload } = fixture.creation
+    const begin = { teamId: child.team.id, taskId: task.id, expectedCursor: state.team.cursor,
+      expectedRevision: task.revision, delegationId: task.delegation!.id, child: { ...payload, budgets: { maxChildTeams: 0 } } }
+    const reserved = await ctx.teams.beginTaskDelegation({ ...begin, actor: fixture.issue({ kind: 'delegation-begin', ...begin }) })
+    const grandchild = await create(reserved.delegation!.creation)
+    expect(grandchild.team.depth).toBe(2)
+    expect(grandchild.budgets.maxChildTeams).toBe(0)
+    expect(taskChildTeamReservation(reserved)).toBe(1)
+    expect(taskChildTeamReservation((await fixture.current()).task)).toBe(2)
+  })
+
+  it.each(['json', 'sqlite'] as const)('retains the child identity and subtree quota across cancellation and %s replay', async (backend) => {
+    const { ctx, fixture, cancel, hub } = await setup(backend, { maxChildTeams: 2 }, { maxChildTeams: 1 })
+    if (fixture.task.execution.kind !== 'child-team') throw new Error('Expected child execution')
+    expect(taskChildTeamReservation(fixture.task)).toBe(2)
+    await cancel()
+    const { input } = await fixture.current()
+    const settle = { ...input, childTeamId: fixture.task.delegation!.childTeamId! }
+    const ended = await ctx.teams.settleTaskDelegation({ ...settle,
+      actor: fixture.issue({ kind: 'delegation-settle', ...settle }) })
+    expect(taskConcurrencyUsage(ended)).toBe(0)
+    expect(taskChildTeamReservation(ended)).toBe(2)
+    const current = await ctx.teams.getTeam({ teamId: fixture.parentId })
+    const second = await createTestCoordinatorTask(ctx, { teamId: fixture.parentId, expectedCursor: current.team.cursor,
+      subject: 'Second child', description: 'Must not reuse the first subtree quota',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+      budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+      execution: { ...fixture.task.execution, budget: { maxChildTeams: 0 } } })
+    const state = await ctx.teams.getTeam({ teamId: fixture.parentId })
+    const child = { ...fixture.creation, budgets: { maxChildTeams: 0 } }
+    const { parentTeamId: _parent, parentTaskId: _task, delegationId: _delegation, ...payload } = child
+    const begin = { teamId: fixture.parentId, taskId: second.id, expectedCursor: state.team.cursor,
+      expectedRevision: second.revision, delegationId: second.delegation!.id, child: payload }
+    await expect(ctx.teams.beginTaskDelegation({ ...begin, actor: fixture.issue({ kind: 'delegation-begin', ...begin }) }))
+      .rejects.toMatchObject({ code: 'TEAM_BUDGET_EXCEEDED' })
+    expect((await ctx.teams.getTask({ teamId: fixture.parentId, taskId: second.id })).delegation?.childTeamId).toBeUndefined()
+    await hub.dispose()
+    await ctx.plugin(TeamHub, { maxTeamDepth: 2 })
+    const replayed = await ctx.teams.getTeam({ teamId: fixture.parentId })
+    expect(replayed.tasks.reduce((sum, task) => sum + taskChildTeamReservation(task), 0)).toBe(2)
+  })
+
+  it.each([
+    [{ maxChildTeams: 0 }, { maxChildTeams: 0 }, 'TEAM_BUDGET_EXCEEDED'],
+    [{ maxChildTeams: 1 }, { maxChildTeams: 1 }, 'TEAM_BUDGET_EXCEEDED'],
+    [{ maxChildTeams: 1 }, {}, 'TEAM_BUDGET_INVALID'],
+  ] as const)('rejects child creation without enough frozen descendant capacity (%j, %j)', async (parent, child, code) => {
+    await expect(setup('json', parent, child)).rejects.toMatchObject({ code })
+  })
+
+  it('admits the exact lifetime child limit without charging its retry twice', async () => {
+    const { fixture, create } = await setup('json', { maxChildTeams: 1 }, { maxChildTeams: 0 })
+    const first = await create()
+    expect((await create()).team.id).toBe(first.team.id)
+    expect(taskChildTeamReservation(fixture.task)).toBe(1)
+  })
+
   it('reuses one durable child identity and retains capacity without a Participant lease', async () => {
     const { fixture, create } = await setup()
     expect(taskConcurrencyUsage(fixture.task)).toBe(1)

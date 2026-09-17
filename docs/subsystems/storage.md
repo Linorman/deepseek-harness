@@ -23,6 +23,8 @@ interface StorageForms {}
 
 `mount(form, facility)` is an effect whose disposer unmounts; a second mount of the same key throws `duplicate-mount`. `form(form)` resolves a mounted facility and throws `form-not-mounted` until the owning plugin loads — assemblies order plugins accordingly rather than silently deferring. The domain and log layers merge `domain: DomainFacility` and `log: StorageLogFacility`, so each form is reachable through both `ctx.storage.<form>` and its injectable service.
 
+`LogNameScanRequest` selects a prefix, work limit and optional `LogNameScanCursor`. `StorageLogFacility.scanNames()` returns `LogNameScanPage.names`, `scanned` and an optional continuation, even for empty pages. Backend `LogFacet.scanNames()` yields at most one physical entry per step without loading values; `LogFacet.has()` checks exact materialization. Local scan cursors can expire and never grant authority.
+
 ## The backend contract
 
 ```ts type-equiv
@@ -52,6 +54,8 @@ A backend owns one medium (a file-tree root, a database file) and exposes option
 ## Append-only streams
 
 `LogFacet.open({ name, version })` returns a caller-owned `LogStream`. A stream accepts a non-empty batch only when its current tail equals `expectedSequence`; the batch receives contiguous entries and is durable as one operation, otherwise it rejects `sequence-conflict`. `read(afterSequence, limit)` returns an ordered bounded page. A checkpoint carries the sequence it covers, never advances beyond the tail, and never moves backward. `compact({ throughSequence, expectedCheckpointSequence })` atomically removes only a prefix covered by an exact later checkpoint; a read before the retained prefix rejects `compacted`. Values cross the durable boundary as detached JSON snapshots.
+
+`LogAppendOptions.summary` carries an optional consumer projection committed with its batch; omission clears it. `LogFacet.readSummary(descriptor, maxBytes)` returns `LogSummary` with the projection and current tail without journal hydration, and rejects incompatible formats or oversized metadata. It does not certify history validity. Unsupported backends reject this capability.
 
 `StorageLogFacility` routes each stream name to the configured default backend or an own-property `routes` override. It permits one local handle per name, closes admission during disposal, drains every accepted open, and then settles every returned handle. A backend that lacks `log` fails with `facet-unsupported`. Stream names are opaque rather than KV identifiers, allowing `team/<TeamId>` and `channel/<ChannelId>` streams. The JSON provider admits one local Hub per root and rejects another owner; SQLite serializes expected-tail comparisons and full batches in a transaction.
 
@@ -236,6 +240,25 @@ async open(descriptor: LogStreamDescriptor): Promise<LogStream>
  * @returns durable stream metadata in stable stream-name order.
  */
 async list(): Promise<readonly LogStreamInfo[]>
+
+/** Scan bounded physical entries instead of reading complete journal metadata or values.
+ * @param request - Prefix, optional local cursor, and requested scan work.
+ * @returns names and a continuation; empty pages still advance. Expired cursors require a fresh scan.
+ */
+async scanNames(request: LogNameScanRequest): Promise<LogNameScanPage>
+
+/** Distinguish a concurrently deleted stream from a materialized malformed journal.
+ * @param name - Exact routed stream name.
+ * @returns whether its configured backend retains durable metadata.
+ */
+async hasStream(name: string): Promise<boolean>
+
+/** Read bounded tail metadata through the stream's configured backend.
+ * @param descriptor - Exact journal identity and durable version.
+ * @param maxBytes - Positive metadata byte budget, including its wrapper.
+ * @returns a detached tail summary, or undefined if absent.
+ */
+async readSummary(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined>
 
 /**
  * Read an open handle for diagnostics. Consumers hold the typed result of

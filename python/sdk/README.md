@@ -79,6 +79,10 @@ The same behavior can be selected for the runtime subprocess with `CLOCKY_CORDIS
 
 `Clocky` and `HarnessClient` expose `inbox_read(after_cursor=None, limit=None)`, `inbox_watch(...)`, and `inbox_acknowledge(through_cursor)`. Reads return `TeamHumanInboxPage`; acknowledgement returns `TeamHumanInboxAcknowledgement`. These exported models preserve exact final provenance and the shared durable display cursor. The initialized principal selects the inbox, and display acknowledgement remains independent of channel receipts. The [inbox Consumer](../../packages/team/team-human-client/README.md) defines permissions, pagination, restart behavior, and current limitations.
 
+Team-list `nextCursor` values are opaque strings; `after_cursor=-1` begins a fresh scan. Continue empty pages when a cursor is present and use `scanned` for work accounting. An expired discovery cursor requires restarting. Other collection cursors remain numeric.
+
+`inspect_team_task(team_id, task_id, "record")` returns current fields and history counts. Use `"attempts"` or `"reviews"` with `after_cursor`, `limit`, and `expected_revision` for a bounded history page. Replies are checked against the selected Team, task, section, revision and window. A stale revision requires refreshing the record; private artifact references are omitted.
+
 ## Single-task cancellation
 
 `HarnessClient.cancel_team_task()` and `Team.cancel_task()` accept `teamId`, `taskId`, `expectedRevision`, and optional `reason` (the Team helper supplies its own Team id). `value.cancellation` retains the exact intent; assigned or running phases mean termination is pending. Observe the task until cancelled while the Team continues. [Cancellation ownership](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).

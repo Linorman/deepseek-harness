@@ -9,15 +9,20 @@ import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import { storageBackendServiceKey } from '@clocky/clocky-storage'
 import type {
-  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor, LogStreamInfo,
+  LogAppendOptions, LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream,
+  LogStreamDescriptor, LogStreamInfo, LogSummary,
 } from '@clocky/clocky-storage'
 import { StorageLogError } from './error.ts'
+import { NameScanner } from './name-scan.ts'
+import type { LogNameScanRequest, LogNameScanPage, NameScanConfig } from './name-scan.ts'
+export type { LogNameScanCursor, LogNameScanRequest, LogNameScanPage } from './name-scan.ts'
 
 export { StorageLogError } from './error.ts'
 export type { StorageLogErrorCode } from './error.ts'
 export { defineLogStream } from './spec.ts'
 export type {
-  LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream, LogStreamDescriptor, LogStreamInfo,
+  LogAppendOptions, LogAppendResult, LogCheckpoint, LogCompactionRequest, LogEntry, LogStream,
+  LogStreamDescriptor, LogStreamInfo, LogSummary,
 } from '@clocky/clocky-storage'
 
 declare module '@clocky/clocky-storage' {
@@ -38,7 +43,7 @@ export const name = 'storage-log'
 export const inject = ['storage']
 
 /** Route configuration for append-only streams. */
-export interface Config {
+export interface Config extends NameScanConfig {
   /** Default backend name for streams without a more specific route. */
   readonly backend: string
   /** Per-stream backend route. */
@@ -47,6 +52,10 @@ export interface Config {
 
 /** Schemastery validator for {@link Config}. */
 export const Config: z<Config> = z.object({
+  maxOpenScans: z.number().step(1).min(1).default(32),
+  maxScanEntries: z.number().step(1).min(1).default(128),
+  scanIdleMs: z.number().step(1).min(1).default(30000),
+  maxScanNameBytes: z.number().step(1).min(1).default(4096),
   backend: z.string().required(),
   routes: z.dict(z.string()).default({}),
 })
@@ -57,6 +66,9 @@ export const Config: z<Config> = z.object({
  * backend calls, settles every returned handle, then releases the form.
  */
 export class StorageLogFacility {
+  private readonly config: Pick<Config, 'backend' | 'routes'>
+  private readonly nameScanner: NameScanner
+  private readonly backendNames: readonly string[]
   private readonly streams = new Map<string, RoutedLogStream>()
   /** A name remains reserved while an open is in flight, preventing racey double-open. */
   private readonly reserved = new Set<string>()
@@ -72,8 +84,12 @@ export class StorageLogFacility {
    */
   constructor(
     private readonly ctx: Context,
-    private readonly config: Config,
-  ) {}
+    config: Config,
+  ) {
+    this.config = { backend: config.backend, routes: Object.fromEntries(Object.entries(config.routes)) }
+    this.backendNames = [...new Set([config.backend, ...Object.values(config.routes)])]
+    this.nameScanner = new NameScanner(config, (prefix, maxBytes) => this.scanRoutedNames(prefix, maxBytes))
+  }
 
   /**
    * Open a caller-owned log stream over its configured backend. The facility
@@ -139,7 +155,7 @@ export class StorageLogFacility {
     const stream = new RoutedLogStream(inner, () => {
       this.streams.delete(descriptor.name)
       this.reserved.delete(descriptor.name)
-    })
+    }, backend.log.readSummary !== undefined)
     this.streams.set(descriptor.name, stream)
     return stream
   }
@@ -158,13 +174,55 @@ export class StorageLogFacility {
     return await this.track(this.listRouted())
   }
 
+  /** Scan bounded physical entries instead of reading complete journal metadata or values.
+   * @param request - Prefix, optional local cursor, and requested scan work.
+   * @returns names and a continuation; empty pages still advance. Expired cursors require a fresh scan.
+   */
+  async scanNames(request: LogNameScanRequest): Promise<LogNameScanPage> {
+    if (this.closing) throw new StorageLogError('closed', 'log facility is closed; cannot scan names')
+    return await this.track(this.nameScanner.scan(request))
+  }
+
+  /** Distinguish a concurrently deleted stream from a materialized malformed journal.
+   * @param name - Exact routed stream name.
+   * @returns whether its configured backend retains durable metadata.
+   */
+  async hasStream(name: string): Promise<boolean> {
+    if (this.closing) throw new StorageLogError('closed', 'log facility is closed; cannot inspect stream materialization')
+    const backend = this.ctx.storage.backend.get(this.backendNameFor(name))
+    if (backend.log?.has === undefined) throw new StorageLogError('facet-unsupported', 'backend cannot inspect stream materialization')
+    return await this.track(backend.log.has(name))
+  }
+
+  /** Read bounded tail metadata through the stream's configured backend.
+   * @param descriptor - Exact journal identity and durable version.
+   * @param maxBytes - Positive metadata byte budget, including its wrapper.
+   * @returns a detached tail summary, or undefined if absent.
+   */
+  async readSummary(descriptor: LogStreamDescriptor, maxBytes: number): Promise<LogSummary | undefined> {
+    if (this.closing) throw new StorageLogError('closed', 'log facility is closed')
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) throw new StorageLogError('scan-invalid', 'maxBytes must be a positive safe integer')
+    const backend = this.ctx.storage.backend.get(this.backendNameFor(descriptor.name))
+    if (backend.log?.readSummary === undefined) throw new StorageLogError('facet-unsupported', 'backend cannot read bounded log summaries')
+    return await this.track(backend.log.readSummary(descriptor, maxBytes))
+  }
+
+  private async * scanRoutedNames(prefix: string, maxBytes: number): AsyncIterable<string | undefined> {
+    for (const backendName of this.backendNames) {
+      const backend = this.ctx.storage.backend.get(backendName)
+      if (backend.log?.scanNames === undefined) throw new StorageLogError('facet-unsupported',
+        `backend '${backendName}' does not support bounded stream-name discovery`)
+      for await (const name of backend.log.scanNames(prefix, maxBytes)) {
+        yield name !== undefined && this.backendNameFor(name) === backendName ? name : undefined
+      }
+      // Finishing an empty backend still consumes one scan unit before another backend is consulted.
+      yield undefined
+    }
+  }
+
   /** Query every configured log backend and retain the streams it currently owns. */
   private async listRouted(): Promise<readonly LogStreamInfo[]> {
-    const backendNames = [...new Set([
-      this.config.backend,
-      ...Object.values(this.config.routes),
-    ])]
-    const listings = await Promise.all(backendNames.map(async (backendName) => {
+    const listings = await Promise.all(this.backendNames.map(async (backendName) => {
       const backend = this.ctx.storage.backend.get(backendName)
       if (backend.log === undefined) {
         throw new StorageLogError(
@@ -208,6 +266,8 @@ export class StorageLogFacility {
         if (result.status === 'rejected' && !isClosedAdmission(result.reason)) failures.push(result.reason)
       }
     }
+    try { await this.nameScanner.close() }
+    catch (error: unknown) { failures.push(error) }
     const closed = await Promise.allSettled([...this.streams.values()].map(stream => stream.close()))
     for (const result of closed) {
       if (result.status === 'rejected') failures.push(result.reason)
@@ -234,6 +294,7 @@ class RoutedLogStream implements LogStream {
   constructor(
     private readonly inner: LogStream,
     private readonly onClosed: () => void,
+    private readonly supportsSummary: boolean,
   ) {}
 
   get name(): string { return this.inner.name }
@@ -241,8 +302,9 @@ class RoutedLogStream implements LogStream {
   get firstSequence(): number { return this.inner.firstSequence }
   get tailSequence(): number { return this.inner.tailSequence }
 
-  append(expectedSequence: number, values: readonly unknown[]): Promise<LogAppendResult> {
-    return this.inner.append(expectedSequence, values)
+  append(expectedSequence: number, values: readonly unknown[], options?: LogAppendOptions): Promise<LogAppendResult> {
+    if (options !== undefined && !this.supportsSummary) return Promise.reject(new StorageLogError('facet-unsupported', 'backend cannot atomically commit log summaries'))
+    return this.inner.append(expectedSequence, values, options)
   }
 
   read(afterSequence: number, limit: number): Promise<readonly LogEntry[]> {

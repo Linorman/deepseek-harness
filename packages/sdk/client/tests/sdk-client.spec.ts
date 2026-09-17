@@ -279,6 +279,11 @@ describe('Clocky', () => {
       resumeTeam: vi.fn(async () => ({ teamId: 'team-forward', coordinatorSessionId: 'coordinator-forward' })),
       listTeams: vi.fn(async () => ({ items: [] })),
       getTeam: vi.fn(async () => ({ state: {} })),
+      readTeamAction: vi.fn(async () => ({})),
+      getTeamSelection: vi.fn(async () => ({ selection: {} })),
+      inspectTeamTask: vi.fn(async () => ({ inspection: {} })),
+      browseTeam: vi.fn(async () => ({ page: {} })),
+      getTeamMemberSession: vi.fn(async () => ({ binding: {} })),
       listTeamMembers: vi.fn(async () => ({ items: [] })),
       listTeamTasks: vi.fn(async () => ({ items: [] })),
       getTeamQuiescence: vi.fn(async () => ({ value: {} })),
@@ -290,6 +295,11 @@ describe('Clocky', () => {
 
     const resumed = await harness.resumeTeam({ teamId: 'team-forward', expectedCursor: 7 })
     await harness.listTeams()
+    await harness.getTeamMemberSession('team-forward', 'member-forward')
+    await harness.inspectTeamTask({ teamId: 'team-forward', taskId: 'task-forward', section: 'record' })
+    await harness.browseTeam({ teamId: 'team-forward', kind: 'tasks', limit: 2 })
+    await harness.readTeamAction('team-forward', 'action-forward')
+    await harness.getTeamSelection('team-forward')
     await harness.getTeam('team-forward')
     await harness.listTeamMembers('team-forward')
     await harness.listTeamTasks('team-forward')
@@ -302,6 +312,11 @@ describe('Clocky', () => {
     expect(client.initialize).toHaveBeenCalledOnce()
     expect(client.resumeTeam).toHaveBeenCalledWith({ teamId: 'team-forward', expectedCursor: 7 })
     expect(client.listTeams).toHaveBeenCalledWith({})
+    expect(client.getTeamMemberSession).toHaveBeenCalledWith({ teamId: 'team-forward', participantId: 'member-forward' })
+    expect(client.inspectTeamTask).toHaveBeenCalledWith({ teamId: 'team-forward', taskId: 'task-forward', section: 'record' })
+    expect(client.browseTeam).toHaveBeenCalledWith({ teamId: 'team-forward', kind: 'tasks', limit: 2 })
+    expect(client.readTeamAction).toHaveBeenCalledWith({ teamId: 'team-forward', actionId: 'action-forward' })
+    expect(client.getTeamSelection).toHaveBeenCalledWith({ teamId: 'team-forward' })
     expect(client.getTeam).toHaveBeenCalledWith({ teamId: 'team-forward' })
     expect(client.listTeamMembers).toHaveBeenCalledWith({ teamId: 'team-forward' })
     expect(client.listTeamTasks).toHaveBeenCalledWith({ teamId: 'team-forward' })
@@ -393,7 +408,8 @@ describe('HarnessClient', () => {
     expect(saved.value).toMatchObject({ coveredSequenceRange: input.coveredSequenceRange, idempotencyKey: input.idempotencyKey })
     await expect(harness.client.getTeamChannelCatalog({ actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
     await expect(harness.client.summarizeTeamChannel({ ...input, actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
-    await expect(harness.client.summarizeTeamChannel({ ...input, coveredSequenceRange: { from: 5, to: 3 } })).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.summarizeTeamChannel({ ...input, coveredSequenceRange: { from: 5, to: 3 } }))
+      .rejects.toThrow(SdkProtocolError)
     const team = await harness.createTeam('channel capabilities')
     expect(await team.channelCatalog()).toEqual(catalog)
     expect(await team.summarizeChannel(input)).toEqual(saved)
@@ -409,10 +425,12 @@ describe('HarnessClient', () => {
     const posted = await harness.client.inputTeamChannel(input)
     expect(posted.value.payload.content).toMatchObject([{ type: 'text', text: 'Before' }, { type: 'image', attachment: { attachmentId: 'fixture-image' } }, { type: 'text', text: 'After' }])
     const selection = { teamId: 'team-1', channelId: 'media-channel', envelopeId: posted.value.id, envelopeSequence: posted.value.sequence, attachmentId: 'fixture-image' }
-    await expect(harness.client.readTeamChannelAttachment(selection)).resolves.toMatchObject({ attachment: { attachmentId: 'fixture-image' }, data: 'cGl4' })
+    await expect(harness.client.readTeamChannelAttachment(selection))
+      .resolves.toMatchObject({ attachment: { attachmentId: 'fixture-image' }, data: 'cGl4' })
     await expect(harness.client.readTeamChannelAttachment({ ...selection, actor: 'forged' } as never)).rejects.toThrow(SdkProtocolError)
     await expect(harness.client.readTeamChannelAttachment({ ...selection, envelopeSequence: -1 })).rejects.toThrow(SdkProtocolError)
-    await expect(harness.client.readTeamChannelAttachment({ teamId: selection.teamId, channelId: selection.channelId, envelopeId: selection.envelopeId, attachmentId: selection.attachmentId } as never)).rejects.toThrow(SdkProtocolError)
+    await expect(harness.client.readTeamChannelAttachment({ teamId: selection.teamId, channelId: selection.channelId,
+      envelopeId: selection.envelopeId, attachmentId: selection.attachmentId } as never)).rejects.toThrow(SdkProtocolError)
     const team = await harness.createTeam('channel media')
     expect(await team.inputChannel(input)).toEqual(posted)
     await expect(team.channelAttachment({ channelId: 'media-channel', envelopeId: posted.value.id, envelopeSequence: posted.value.sequence, attachmentId: 'fixture-image' }))
@@ -461,6 +479,79 @@ describe('HarnessClient', () => {
     await harness.close()
   })
 
+  it('accepts offline member bindings only for the requested Team and participant', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const binding = { activation: { id: 'epoch', teamId: 'team', participantId: 'member', status: 'offline' },
+      sessionId: 'session', provider: 'test' }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ binding })
+    await expect(client.getTeamMemberSession({ teamId: 'team', participantId: 'member' })).resolves.toEqual({ binding })
+    for (const activation of [{ ...binding.activation, teamId: 'foreign' }, { ...binding.activation, participantId: 'foreign' }]) {
+      request.mockResolvedValue({ binding: { ...binding, activation } })
+      await expect(client.getTeamMemberSession({ teamId: 'team', participantId: 'member' })).rejects.toThrow(/different Team or participant/)
+    }
+  })
+
+  it('binds task inspection to the requested task, section, revision and window', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const inspection = { teamId: 'team', taskId: 'task', revision: 2, teamCursor: 3, section: 'attempts',
+      startCursor: -1, total: 0, scanned: 0, items: [] }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ inspection })
+    const params = { teamId: 'team', taskId: 'task', section: 'attempts' as const, expectedRevision: 2 }
+    await expect(client.inspectTeamTask(params)).resolves.toEqual({ inspection })
+    for (const patch of [{ teamId: 'foreign' }, { taskId: 'foreign' }, { section: 'reviews' }, { revision: 3 }, { startCursor: 0 }]) {
+      request.mockResolvedValue({ inspection: { ...inspection, ...patch } })
+      await expect(client.inspectTeamTask(params)).rejects.toThrow(/does not match its task selection/)
+    }
+  })
+
+  it('rejects a summary page for a different Team or collection even when it is empty', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const page = { teamId: 'team', kind: 'members', teamCursor: 1, scanned: 0, total: 0, items: [] }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ page })
+    await expect(client.browseTeam({ teamId: 'team', kind: 'members' })).resolves.toEqual({ page })
+    for (const changed of [{ ...page, teamId: 'foreign' }, { ...page, kind: 'tasks' }]) {
+      request.mockResolvedValue({ page: changed })
+      await expect(client.browseTeam({ teamId: 'team', kind: 'members' })).rejects.toThrow(/different Team or collection/)
+    }
+  })
+
+  it('validates exact action ownership before returning a parsed SDK action', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const action = { teamId: 'team', id: 'action', kind: 'question', phase: 'pending', sessionId: 'session',
+      participantId: 'member', sourceId: 'source', details: {}, createdAt: 1, updatedAt: 1 }
+    const request = vi.spyOn(client, 'request').mockResolvedValue(action)
+    await expect(client.readTeamAction({ teamId: 'team', actionId: 'action' })).resolves.toEqual(action)
+    for (const patch of [{ teamId: 'foreign' }, { id: 'foreign' }]) {
+      request.mockResolvedValueOnce({ ...action, ...patch })
+      await expect(client.readTeamAction({ teamId: 'team', actionId: 'action' })).rejects.toThrow(SdkProtocolError)
+    }
+  })
+
+  it('checks workflow ownership, revision and page identity across the SDK wire', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const value = { record: { id: 'plan', teamId: 'team', revision: 2, phase: 'compiling', name: 'Plan',
+      bounds: { maxTasks: 1, maxParallelism: 1, maxTotalAttempts: 1 } }, teamCursor: 2, startCursor: -1, items: [], total: 0, scanned: 0 }
+    const request = vi.spyOn(client, 'request').mockResolvedValue(value)
+    await expect(client.inspectWorkflowPlan({ teamId: 'team', planId: 'plan' })).resolves.toEqual(value)
+    for (const patch of [{ id: 'foreign' }, { teamId: 'foreign' }, { revision: 3 }]) {
+      request.mockResolvedValueOnce({ ...value, record: { ...value.record, ...patch } })
+      await expect(client.inspectWorkflowPlan({ teamId: 'team', planId: 'plan', expectedRevision: 2 })).rejects.toThrow(SdkProtocolError)
+    }
+    request.mockResolvedValueOnce({ ...value, startCursor: 1 })
+    await expect(client.inspectWorkflowPlan({ teamId: 'team', planId: 'plan' })).rejects.toThrow(SdkProtocolError)
+  })
+
+  it('checks the exact member and Team cursor on detail reads', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const detail = { record: { id: 'member', teamId: 'team', kind: 'local-agent', phase: 'active', displayName: 'Member', role: 'worker' },
+      teamCursor: 3, startCursor: -1, total: 1, scanned: 1, items: ['read'] }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ detail })
+    await expect(client.inspectTeamMember({ teamId: 'team', participantId: 'member' })).resolves.toEqual({ detail })
+    await expect(client.inspectTeamMember({ teamId: 'team', participantId: 'member', expectedTeamCursor: 2 })).rejects.toThrow(/another member/)
+    request.mockResolvedValue({ detail: { ...detail, record: { ...detail.record, id: 'foreign' } } })
+    await expect(client.inspectTeamMember({ teamId: 'team', participantId: 'member' })).rejects.toThrow(/another member/)
+  })
+
   it('rejects malformed results from every low-level Team route', async () => {
     const client = new HarnessClient(fakeLaunch())
     const request = vi.spyOn(client, 'request').mockResolvedValue({})
@@ -482,6 +573,13 @@ describe('HarnessClient', () => {
     }
 
     await malformed(client.listTeams())
+    await malformed(client.inspectTeamMember({ teamId: 'team', participantId: 'member' }))
+    await malformed(client.getTeamMemberSession({ teamId: 'team', participantId: 'member' }))
+    await malformed(client.inspectTeamTask({ teamId: 'team', taskId: 'task', section: 'record' }))
+    await malformed(client.browseTeam({ teamId: 'team', kind: 'tasks' }))
+    await malformed(client.inspectWorkflowPlan({ teamId: 'team', planId: 'plan' }))
+    await malformed(client.readTeamAction({ teamId: 'team', actionId: 'action' }))
+    await malformed(client.getTeamSelection({ teamId: 'team' }))
     await malformed(client.getTeam({ teamId: 'team' }))
     await malformed(client.updateTeamGoal({ teamId: 'team', expectedRevision: 1, objective: 'Update the objective.' }))
     await malformed(client.transitionTeamGoal({ teamId: 'team', expectedRevision: 2, phase: 'paused' }))
@@ -523,7 +621,7 @@ describe('HarnessClient', () => {
     await malformed(client.archiveTeam({ teamId: 'team', expectedCursor: 1 }))
 
     expect(request.mock.calls.map(([method]) => method)).toEqual([
-      'team/list', 'team/get', 'team/goal-update', 'team/goal-transition', 'team/quiescence', 'team/metrics', 'team/inbox-respond', 'team/inbox-read', 'team/inbox-watch', 'team/inbox-acknowledge', 'team/audit-read', 'team/artifact-read', 'team/channel-admission', 'team/channel-list', 'team/channel-input', 'team/channel-attachment', 'team/member-list',
+      'team/list', 'team/member-inspect', 'team/member-session', 'team/task-inspect', 'team/browse', 'team/workflow-plan-inspect', 'team/action-read', 'team/selection', 'team/get', 'team/goal-update', 'team/goal-transition', 'team/quiescence', 'team/metrics', 'team/inbox-respond', 'team/inbox-read', 'team/inbox-watch', 'team/inbox-acknowledge', 'team/audit-read', 'team/artifact-read', 'team/channel-admission', 'team/channel-list', 'team/channel-input', 'team/channel-attachment', 'team/member-list',
       'team/member-invite', 'team/member-activate', 'team/member-remove', 'team/member-interrupt', 'team/channel-open',
       'team/channel-post', 'team/channel-read', 'team/channel-close', 'team/channel-watch', 'team/task-list', 'team/task-create',
       'team/task-get', 'team/task-update', 'team/task-cancel', 'team/task-delete', 'team/task-review', 'team/task-watch',

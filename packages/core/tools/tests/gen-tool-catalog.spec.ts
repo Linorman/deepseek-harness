@@ -61,7 +61,7 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     const catalog = await collectToolCatalog()
     const bash = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-bash')
     expect(bash?.sources.bash).toBe('packages/shell/tool-bash/src/index.ts')
-    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-subagent-control')).toBe(false)
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-compat-tool-subagent-control')).toBe(false)
     const teamTask = catalog.find(entry => entry.pkg === '@clocky/clocky-tool-team-task')
     expect(teamTask?.sources).toEqual({
       team_task_cancel: 'packages/team/tool-team-task/src/index.ts',
@@ -101,8 +101,8 @@ describe('gen-tool-catalog collectToolCatalog', () => {
 
   it('omits private compatibility tools from the product catalog', async () => {
     const catalog = await collectToolCatalog()
-    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-subagent')).toBe(false)
-    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-tool-workflow')).toBe(false)
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-compat-tool-subagent')).toBe(false)
+    expect(catalog.some(entry => entry.pkg === '@clocky/clocky-compat-tool-workflow')).toBe(false)
     expect(catalog.flatMap(entry => entry.schemas.map(schema => schema.name))).not.toEqual(expect.arrayContaining([
       'interrupt_agent', 'list_agents', 'ralph', 'report', 'send_message', 'subagent', 'workflow',
     ]))

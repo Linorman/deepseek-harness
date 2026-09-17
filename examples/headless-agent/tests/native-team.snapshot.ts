@@ -12,7 +12,7 @@ const tsconfigPath = fileURLToPath(new URL('../../../tsconfig.json', import.meta
 const expectedOutput = fileURLToPath(new URL('./snapshots/native-team-direct-receipt/output.expected.json', import.meta.url))
 
 interface StoredLog {
-  readonly stream: { readonly name: string }
+  readonly stream: { readonly name: string; readonly tailSequence: number; readonly summary?: unknown }
   readonly entries: readonly { readonly sequence: number; readonly value: Record<string, unknown> }[]
 }
 
@@ -40,6 +40,8 @@ describe('native Team Loader snapshot', () => {
           throw new Error('native Team composition did not persist both a Team journal and a channel WAL')
         }
 
+        expect(team.stream.summary).toMatchObject({ id: team.stream.name.slice('team/'.length), cursor: team.entries.at(-1)?.sequence })
+        expect(team.stream.tailSequence).toBe(team.entries.at(-1)?.sequence)
         expect(team.entries.map(entry => entry.value['type'])).toContain('activation/changed')
         const envelope = channel.entries.find(entry => entry.value['type'] === 'channel/envelope')?.value
         const receipt = channel.entries.find(entry => entry.value['type'] === 'channel/receipt')?.value

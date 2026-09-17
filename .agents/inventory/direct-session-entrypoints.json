@@ -67,11 +67,11 @@
       "operation": "create-or-resume",
       "checks": [
         {
-          "path": "packages/subagent/subagent/src/continuation.ts",
+          "path": "packages/compat/subagent/src/continuation.ts",
           "symbol": "? await this.ownerCtx.agents.resume({"
         },
         {
-          "path": "packages/subagent/subagent/src/continuation.ts",
+          "path": "packages/compat/subagent/src/continuation.ts",
           "symbol": ": await this.ownerCtx.agents.create({"
         }
       ]

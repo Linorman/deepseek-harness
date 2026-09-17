@@ -34,7 +34,8 @@
   "peerDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-storage": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^"
   },
   "dependencies": {
     "@clocky/schemastery": "workspace:^"
@@ -42,6 +43,7 @@
   "devDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-storage": "workspace:^",
-    "@clocky/cordis": "workspace:^"
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^"
   }
 }

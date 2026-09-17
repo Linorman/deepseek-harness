@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/team/team-link-websocket/README.md
-README.md: ae845de44af39bb3ecab0e9352275ee93f5711d8
-README.zh.md: 72faa9a8af870b2c6bbf18fec9188ec83f3aaf35
+README.md: e67134179c904c0e12caa84cf36c23161245733b
+README.zh.md: f4c7cb02d8bb9277a30fb7040e8a07aa7c964dbb

@@ -4,11 +4,13 @@
 
 `ctx.teamPlacement.prepare(teamId)` 会为 ready task 启动显式路由的 active Agent participant，之后由 DAG scheduler 分配 lease。同一 Team 的调用会合并；activation controller 负责 participant/session 唯一性与持久发布。已取消或删除的 work 不会保留启动过程中发布但已无用的 activation。
 
+`ctx.teamPlacement.prepareRoles(teamId, roles)` 在任务就绪前准备已授权的 workflow 角色。每个角色必须唯一对应一个 active 成员；没有驻留 epoch 的 Agent 角色必须匹配唯一配置路由。启动前会对整个批次检查 `maxActivationsPerDrive`。stopping 或未确认停止的 epoch 返回 `TEAM_ACTIVATION_RECOVERY_CONFLICT`，断线不能充当终止证据。恢复角色复用原 Session，任务分配仍必须检查 workspace eligibility。
+
 ## Configuration
 
 `routes` 包含完整的 runtime provider、roles、preset、`modelProvider`、`modelId`、`model`（`provider/model`）、`cwd` 与 `maxTokens` 选择。Participant 必须声明匹配的 provider、preset 和 model。缺失或有歧义的 route 不会回退到 ambient Agent default。空 route list 会把 provisioning 留给其他显式 owner。`maxActivationsPerDrive` 与 `maxCursorRetries` 限制每轮 preparation。
 
-Task `placement` 限制 participant id、role、provider、preset 和 model。省略的集合不增加限制；空集合不接受任何 candidate。Child-Team task 交给 `team-delegation`，不会启动 Participant activation。挂载 workspace registry 时，可选 provider preflight 可以在 activation 前拒绝不兼容 route；placement 仍会根据 provider eligibility predicate 检查返回的 activation，并在 route 无法执行 task 时立即释放。Hub 在 assignment 时检查实际 activation selection，replay 会拒绝改变后的 task restriction 或不匹配的 attempt。未结算的旧 epoch 交给 activation recovery，不会被新 Session 静默替换。
+Task `placement` 限制 participant id、role、provider、preset 和 model。省略的集合不增加限制；空集合不接受任何 candidate。Child-Team task 交给 `team-delegation`，不会启动 Participant activation。挂载 workspace registry 时，可选 provider preflight 可以在 activation 前拒绝不兼容 route；placement 仍会根据 provider eligibility predicate 检查返回的 activation，并在 route 无法执行 task 时立即释放。Hub 在 assignment 时检查实际 activation selection，replay 会拒绝改变后的 task restriction 或不匹配的 attempt。未结算的旧 epoch 交给 activation recovery，不会被新 Session 静默替换。 已接纳的 activation 在 workspace eligibility 检查期间持续由 placement 持有。若拒绝后的清理失败，placement 卸载会重试终止并等待 controller 确认 quiescence。并发`close()`共享清理过程；失败后的再次调用只重试未结算 lease，新 preparation 仍被拒绝。
 
 ## Model Experience
 

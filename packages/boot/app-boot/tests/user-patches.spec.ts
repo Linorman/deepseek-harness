@@ -1,3 +1,4 @@
+import { observeHmrConfig } from './hmr-observation.ts'
 /**
  * User patch-layer behavior of `clocky-app-boot`: the optional patch-list loader
  * (a profile's `cordis.patch.yml`) and `boot()` applying the user layer over
@@ -28,7 +29,11 @@ const tmp = (): string => mkdtempSync(join(tmpdir(), 'clocky-user-patches-'))
 async function eventually(test: () => boolean, message: string, diagnose?: () => unknown): Promise<void> {
   const deadline = Date.now() + 30_000
   while (!test()) {
-    if (Date.now() >= deadline) throw new Error(message, { cause: diagnose?.() })
+    if (Date.now() >= deadline) {
+      const details = diagnose?.()
+      if (details !== undefined) process.stderr.write(`HMR wait diagnostics: ${JSON.stringify(details)}\n`)
+      throw new Error(message, { cause: details })
+    }
     await new Promise(resolve => setTimeout(resolve, 10))
   }
 }
@@ -329,10 +334,11 @@ describe('boot with user patches', () => {
       filename,
       compose: userPatches => [...basePatches, ...userPatches],
     })
+    const initialWatch = observeHmrConfig(ctx)
     try {
       writeFileSync(filename, '- id: noop\n  config:\n    value: live\n')
       await eventually(() => (entryConfig(ctx, 'noop') as { value?: string }).value === 'live', 'user patch addition was not applied', () => ({
-        filename, config: entryConfig(ctx, 'noop'), failures,
+        filename, config: entryConfig(ctx, 'noop'), failures, watch: initialWatch(),
       }))
 
       writeFileSync(filename, '- id: noop\n  config:\n    fail: true\n')
@@ -361,9 +367,10 @@ describe('boot with user patches', () => {
       // fresh generation replaces the app-owned layer instead of stacking on it.
       await dispose()
       const disposeDefault = await watchUserPatches(ctx, { binName: NAME, filename })
+      const diagnostics = observeHmrConfig(ctx)
       try {
         writeFileSync(filename, '- id: noop\n  config:\n    value: identity\n')
-        await eventually(() => (entryConfig(ctx, 'noop') as { value?: string }).value === 'identity', 'default-compose user patch was not applied')
+        await eventually(() => (entryConfig(ctx, 'noop') as { value?: string }).value === 'identity', 'default-compose user patch was not applied', diagnostics)
       } finally {
         await disposeDefault()
       }

@@ -39,6 +39,11 @@ declare module '@clocky/cordis' {
   }
 }
 
+/** JSON data explicitly published to a browser plugin; never inferred from Host configuration. */
+export type BrowserConfigValue = null | boolean | number | string | BrowserConfigValue[] | BrowserPluginConfig
+/** Named browser-visible plugin options. */
+export interface BrowserPluginConfig { [key: string]: BrowserConfigValue }
+
 /**
  * One composed client entry pushed by the host (a graph row). Wire
  * single source: the host node half (package root) produces this same shape.
@@ -49,6 +54,8 @@ declare module '@clocky/cordis' {
  * `require` is synchronous (see {@link WebBootGraph.entries}).
  */
 export interface WebBootEntry {
+  /** Explicit public configuration for this browser plugin. */
+  config?: BrowserPluginConfig
   /** Entry name == package name. */
   id: string
   /** Bundle endpoint, '/plugins/<id>/client.js?rev=<rev>'. */
@@ -89,6 +96,8 @@ export interface BootModuleRow {
 
 /** The cordis-plugin view of one boot row: what entry composition needs (optional wire fields normalized). */
 export interface BootPluginRow {
+  /** Validated public options, omitted when the Host supplied none. */
+  config?: BrowserPluginConfig
   /** Entry name == package name. */
   id: string
   /** Package-name dependency edges ([] when the wire omits them). */
@@ -105,6 +114,27 @@ export interface BootManifest {
   modules: BootModuleRow[]
   /** Rows as entry composition consumes them. */
   plugins: BootPluginRow[]
+}
+
+/** Validate and detach public JSON options at the boot wire boundary.
+ * @param value - untrusted configuration object from the Host manifest.
+ * @param subject - diagnostic identity of the receiving plugin.
+ * @returns detached plain JSON options; non-object roots and non-JSON values reject.
+ */
+export function parseBrowserPluginConfig(value: unknown, subject: string): BrowserPluginConfig {
+  const copy = (input: unknown): BrowserConfigValue => {
+    if (input === null || typeof input === 'boolean' || typeof input === 'string') return input
+    if (typeof input === 'number' && Number.isFinite(input)) return input
+    if (Array.isArray(input)) return Array.from(input, copy)
+    if (typeof input === 'object' && Object.getPrototypeOf(input) === Object.prototype) {
+      return Object.fromEntries(Object.entries(input).map(([key, item]) => [key, copy(item)]))
+    }
+    throw new Error(`client-modules: ${subject} config must contain only JSON data`)
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`client-modules: ${subject} config must be an object`)
+  }
+  return copy(value) as BrowserPluginConfig
 }
 
 /**
@@ -179,6 +209,7 @@ export function parseBootManifest(wire: unknown): BootManifest {
       external: external === undefined ? [] : [...external],
     })
     plugins.push({
+      ...row.config === undefined ? {} : { config: parseBrowserPluginConfig(row.config, subject) },
       id: row.id,
       inject: inject === undefined ? [] : [...inject],
       immediately: row.immediately === true,

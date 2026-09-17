@@ -214,18 +214,6 @@
     - id: command-feedback
       name: '@clocky/clocky-command-feedback'
 
-    - id: goal
-      name: '@clocky/clocky-goal'
-      disabled: true
-
-    - id: goal-round-driver
-      name: '@clocky/clocky-goal-round-driver'
-      disabled: true
-
-    - id: command-goal
-      name: '@clocky/clocky-command-goal'
-      disabled: true
-
     - id: plan-mode
       name: '@clocky/clocky-plan-mode'
       config:
@@ -281,12 +269,6 @@
       name: '@clocky/clocky-tool-todo'
       config:
         allowParallelInProgress: true
-
-    # Legacy same-session goal tools stay disabled in shipped Team profiles;
-    # Team-scoped objective controls are mounted by the product composition.
-    - id: tool-goal
-      name: '@clocky/clocky-tool-goal'
-      disabled: true
 
     - id: tool-str-replace-editor
       name: '@clocky/clocky-tool-str-replace-editor'

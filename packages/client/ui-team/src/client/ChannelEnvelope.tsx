@@ -18,7 +18,9 @@ export function ChannelEnvelope({ record, sender, richContent, renderSlot, readA
   const content = useMemo<TeamChannelMessageContent>(() => {
     if (typeof envelope.payload.text === 'string') return [{ type: 'text', text: envelope.payload.text }]
     // The Hub's direct v3/v4 adapter validates these admitted message parts before WAL publication.
-    return richContent && Array.isArray(envelope.payload.content) ? envelope.payload.content as unknown as TeamChannelMessageContent : []
+    if (!richContent || !Array.isArray(envelope.payload.content)) return []
+    const parts: readonly unknown[] = envelope.payload.content
+    return parts as TeamChannelMessageContent
   }, [envelope, richContent])
   const loadAttachment = useCallback(async (attachmentId: TeamChannelAttachmentInput['attachmentId'], signal?: AbortSignal) => {
     if (readAttachment === undefined) throw new Error(t('channel.imageUnavailable'))
@@ -29,7 +31,11 @@ export function ChannelEnvelope({ record, sender, richContent, renderSlot, readA
     {part.type === 'text' ? part.text : t('channel.imageUnavailable')}
   </p>)
   return <article className={css.channelMessage} data-channel-message={envelope.id}>
-    <strong>{sender}</strong>
+    <header className={css.channelMessageHeader}><strong>{sender}</strong>
+      <time dateTime={new Date(envelope.createdAt).toISOString()}>
+        {new Intl.DateTimeFormat(t('channel.dateLocale'), { hour: '2-digit', minute: '2-digit' }).format(envelope.createdAt)}
+      </time>
+    </header>
     {renderSlot?.('team.channel.message', { teamId: envelope.teamId, channelId: envelope.channelId,
       envelopeId: envelope.id, envelopeSequence: envelope.sequence, content, loadAttachment }, { fallback }) ?? fallback}
   </article>

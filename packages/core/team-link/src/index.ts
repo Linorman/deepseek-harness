@@ -21,7 +21,7 @@ import type {
   TeamLinkProviderRef,
 } from './types.ts'
 
-export { TeamLinkError } from './error.ts'
+export { TeamLinkConnectionError, TeamLinkError } from './error.ts'
 export type { TeamLinkErrorCode } from './error.ts'
 export {
   TEAM_LINK_FRAME_VERSION,
@@ -47,6 +47,13 @@ declare module '@clocky/cordis' {
   }
 
   interface Events {
+    /**
+     * A provider became available, including replacement after configuration changes.
+     * @param provider - named provider available for fresh connections.
+     * @mode emit
+     */
+    'team-link/provider-added'(this: TeamLinkRegistry, provider: TeamLinkProviderRef): void
+
     /**
      * An enrollment issuer became available for new remote Link credentials.
      * @param provider - registered issuer identity.
@@ -127,6 +134,7 @@ export class TeamLinkRegistry extends Service {
         )
       }
       this.providers.set(provider.name, provider)
+      this.emitProviderEvent('team-link/provider-added', { name: provider.name })
       yield () => {
         if (this.providers.get(provider.name) !== provider) return
         this.providers.delete(provider.name)
@@ -206,9 +214,9 @@ export class TeamLinkRegistry extends Service {
       yield () => {
         if (this.enrollmentProviders.get(provider.name) !== provider) return
         this.enrollmentProviders.delete(provider.name)
-        this.emitEnrollmentProviderEvent('team-link/enrollment-provider-removed', ref)
+        this.emitProviderEvent('team-link/enrollment-provider-removed', ref)
       }
-      this.emitEnrollmentProviderEvent('team-link/enrollment-provider-added', ref)
+      this.emitProviderEvent('team-link/enrollment-provider-added', ref)
     }.bind(this), 'teamLinks.registerEnrollmentProvider()')
   }
 
@@ -294,10 +302,10 @@ export class TeamLinkRegistry extends Service {
     }
   }
 
-  /** Emit one enrollment-issuer topology change without allowing observers to veto it. */
-  private emitEnrollmentProviderEvent(
-    name: 'team-link/enrollment-provider-added' | 'team-link/enrollment-provider-removed',
-    provider: TeamLinkEnrollmentProviderRef,
+  /** Emit provider topology changes without allowing observers to veto registration. */
+  private emitProviderEvent(
+    name: 'team-link/provider-added' | 'team-link/enrollment-provider-added' | 'team-link/enrollment-provider-removed',
+    provider: TeamLinkProviderRef,
   ): void {
     const args: unknown[] = [this, name, provider]
     for (const callback of this.ctx.events.dispatch('emit', args)) {

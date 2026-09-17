@@ -60,8 +60,8 @@ function crashOnIntent(ctx: Context, config: Config) {
       const stream = await open(descriptor)
       if (!descriptor.name.startsWith('team/')) return stream
       const append = stream.append.bind(stream)
-      stream.append = async (cursor, values) => {
-        const result = await append(cursor, values)
+      stream.append = async (cursor, values, options) => {
+        const result = await append(cursor, values, options)
         const selected = values.some((value) => {
           const record = object(value)
           return config.outcome === 'failure' ? record.type === 'team/closure' && object(record.closure).kind === 'fail'
@@ -126,6 +126,7 @@ async function crash(ctx: Context, config: Config, model: FaultModel): Promise<n
     assert.equal(state.team.phase, 'active')
     assert.equal(state.humanActions?.length, 1)
     const question = state.humanActions[0]!
+    assert.deepEqual(await ctx.teams.getHumanAction({ teamId: state.team.id, actionId: question.id }), question)
     assert.equal(question.phase, 'pending')
     assert.equal(question.kind, 'question')
     assert.equal(question.sourceId, frame.rpcId)
@@ -160,6 +161,7 @@ async function recover(ctx: Context, config: Config, model: FaultModel): Promise
   const state = await ctx.teams.getTeam({ teamId: teamIdSchema.parse(config.teamId) })
   assert.equal(state.humanActions?.length, 1)
   const question = state.humanActions[0]!
+  assert.deepEqual(await ctx.teams.getHumanAction({ teamId: state.team.id, actionId: question.id }), question)
   assert.equal(question.kind, 'question')
   assert.equal(question.phase, 'cancelled')
   assert.deepEqual(question.details, { questionRpcId: question.sourceId, questions: QUESTIONS })

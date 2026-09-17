@@ -8,6 +8,8 @@ import type {} from '@clocky/clocky-team-run'
 
 const MODEL = 'review-projection-model'
 const INPUT = 'VERIFY_COORDINATOR_REVIEW_FACTS'
+const REWORK_REASON = 'Include the missing failure-case evidence.'
+const REASSIGN = process.env.CLOCKY_REVIEW_REASSIGN === '1'
 type Mode = 'none' | 'review' | 'rework'
 interface Value {
   task_id: string
@@ -98,6 +100,7 @@ class ReviewProjectionModel extends LlmAdapter {
         this.observe('start', start)
         assert.equal(start.review_result, null)
         await released(this.firstReviewDecided.promise, options.signal)
+        if (REASSIGN) await released(this.secondStarted.promise, options.signal)
         yield* chunks('team_task_list', 'list-rework', {})
         return
       }
@@ -108,8 +111,8 @@ class ReviewProjectionModel extends LlmAdapter {
         if (this.mode === 'rework') {
           const previous = reworked!.tasks[0]!
           this.observe('rework', previous)
-          assert.equal(previous.phase, 'pending')
-          assert.deepEqual(previous.review_result, { attempt_id: this.attempts[0], decision: 'rework' })
+          assert.equal(previous.phase, REASSIGN ? 'running' : 'pending')
+          assert.deepEqual(previous.review_result, REASSIGN ? null : { attempt_id: this.attempts[0], decision: 'rework' })
           this.releaseFirst.resolve(undefined)
           await released(this.secondStarted.promise, options.signal)
         }
@@ -125,6 +128,15 @@ class ReviewProjectionModel extends LlmAdapter {
           assert.equal(listed.tasks[0]!.review_result, null, 'the new running attempt must not inherit its predecessor review')
         }
         yield* chunks('team_task_watch', 'watch', {})
+        return
+      }
+      if (process.env.CLOCKY_REVIEW_WAIT_MODE === 'watch') {
+        this.releaseSecond.resolve(undefined)
+        const calls = options.messages.flatMap(message => message.content)
+          .filter(block => block.type === 'tool-call' && block.id.startsWith('review-error-watch-'))
+        const last = calls.at(-1)
+        const snapshot = (last?.type === 'tool-call' ? result(options, last.id) : watched) as { cursor: number }
+        yield* chunks('team_task_watch', `review-error-watch-${String(calls.length)}`, { after_cursor: snapshot.cursor })
         return
       }
       const waited = result(options, 'wait') as Value | undefined
@@ -146,7 +158,8 @@ class ReviewProjectionModel extends LlmAdapter {
       } else yield* text()
       return
     }
-    if (input.includes('Review Team task ')) {
+    if (input.includes('Review Team task ') && !input.includes('\nTask: ')) {
+      if (process.env.CLOCKY_REVIEW_FAIL === '1') throw new Error('Injected reviewer failure')
       const taskId = [...input.matchAll(/Review Team task ([^:]+):/gu)].at(-1)?.[1]
       const attemptId = [...input.matchAll(/"attemptId":"([^"]+)"/gu)].at(-1)?.[1]
       assert(taskId !== undefined && attemptId !== undefined)
@@ -157,7 +170,7 @@ class ReviewProjectionModel extends LlmAdapter {
       }
       yield* chunks('team_task_review', id, { task_id: taskId,
         decision: this.mode === 'rework' && attemptId === this.attempts[0] ? 'rework' : 'accepted',
-        reason: 'Review the current assigned attempt.' })
+        reason: REWORK_REASON })
       return
     }
     const assignment = [...input.matchAll(/\nTask: (\S+)\nAttempt: (\S+)/gu)].at(-1)
@@ -171,6 +184,11 @@ class ReviewProjectionModel extends LlmAdapter {
     }
     if (this.mode !== 'rework') await released(this.releaseSecond.promise, options.signal)
     if (this.mode === 'rework' && this.attempts.length === 2) {
+      if (REASSIGN) {
+        assert(input.includes('Previous attempt evidence'))
+        assert(input.includes(REWORK_REASON))
+        assert(input.includes('Assigned work completed.'))
+      }
       this.secondStarted.resolve(undefined)
       await released(this.releaseSecond.promise, options.signal)
     }
@@ -198,10 +216,16 @@ export function apply(ctx: Context): void {
     const state = await ctx.teams.getTeam({ teamId: started.handle.teamId })
     assert.equal(state.team.phase, 'completed')
     const task = state.tasks[0]!
+    const summaries = await ctx.teams.browse({ teamId: state.team.id, kind: 'tasks', limit: 1 })
+    assert.equal(summaries.kind, 'tasks')
+    if (summaries.kind !== 'tasks') throw new Error('Task browse returned a different collection')
+    assert.equal(summaries.items[0]?.reviewerId, task.reviewPolicy.kind === 'participant' ? task.reviewPolicy.reviewerId : undefined)
+
     assert.deepEqual([...model.reviewerIds], task.reviewPolicy.kind === 'none' ? [] : [task.reviewPolicy.reviewerId])
     assert.equal(task.attemptHistory.length, mode === 'rework' ? 2 : 1)
     assert.deepEqual(task.reviewHistory.map(review => review.nextPhase), mode === 'none' ? [] : mode === 'rework' ? ['pending', 'completed'] : ['completed'])
     assert.deepEqual(task.attemptHistory.map(attempt => attempt.id), model.attempts)
+    if (REASSIGN) assert.equal(new Set(task.attemptHistory.map(attempt => attempt.participantId)).size, 2)
     for (const review of task.reviewHistory) assert(model.attempts.includes(review.attemptId))
     process.stdout.write(`${JSON.stringify({ mode, descriptions: model.descriptions, observations: model.observations,
       attempts: task.attemptHistory.length, reviewDecisions: task.reviewHistory.map(review => review.nextPhase), team: state.team.phase }, null, 2)}\n`)

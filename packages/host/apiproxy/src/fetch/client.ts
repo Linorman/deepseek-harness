@@ -1,3 +1,10 @@
+import { teamMemberInspectValueSchema } from '../api/teams.schema.ts'
+import { teamWorkflowInspectionValueSchema } from '../api/teams.schema.ts'
+import { teamHumanActionValueSchema } from '../api/teams.schema.ts'
+import { teamTaskInspectionValueSchema } from '../api/teams.schema.ts'
+import { teamBrowseValueSchema } from '../api/teams.schema.ts'
+import { teamMemberSessionValueSchema } from '../api/teams.schema.ts'
+import { teamSelectionValueSchema } from '../api/teams.schema.ts'
 import { teamHumanActionResponseResultSchema } from '../api/teams.schema.ts'
 import { teamHumanInboxPageSchema, teamHumanInboxAcknowledgementSchema } from '../api/teams.schema.ts'
 /**
@@ -45,14 +52,6 @@ import {
   agentPresetCopyValueSchema, agentPresetListValueSchema, agentPresetOpenDocumentValueSchema,
   agentPresetReadValueSchema, agentPresetRemoveValueSchema, agentPresetSelectValueSchema,
 } from '../api/agent-presets.schema.ts'
-import {
-  goalCreateValueSchema,
-  goalEditValueSchema,
-  goalPauseValueSchema,
-  goalResumeValueSchema,
-  goalCompleteValueSchema,
-  goalClearValueSchema,
-} from '../api/goals.schema.ts'
 import {
   settingsDescribeValueSchema, settingsMutateValueSchema, settingsOpenDocumentValueSchema,
   settingsReplaceValueSchema, settingsUpdateValueSchema,
@@ -135,12 +134,25 @@ export interface IApiClient {
     cancel(payload: RequestPayload<'session.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.cancel'>>>
   }
   teams: {
+    memberInspect(payload: RequestPayload<'team.member.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.inspect'>>>
+
+    /** Read task details or one history window without retaining other histories. */
+    actionRead(payload: RequestPayload<'team.action.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.action.read'>>>
+    taskInspect(payload: RequestPayload<'team.task.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.inspect'>>>
+
+    browse(payload: RequestPayload<'team.browse'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.browse'>>>
+
+    /** Read an exact member's latest published Session binding. */
+    memberSession(payload: RequestPayload<'team.member.session'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.session'>>>
+
     inboxRespond(payload: RequestPayload<'team.inbox.respond'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.respond'>>>
     inboxRead(payload: RequestPayload<'team.inbox.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.read'>>>
     inboxWatch(payload: RequestPayload<'team.inbox.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.watch'>>>
     inboxAcknowledge(payload: RequestPayload<'team.inbox.acknowledge'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.inbox.acknowledge'>>>
 
     list(payload: RequestPayload<'team.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.list'>>>
+    /** Read bounded identity and coordinator data without activating an Agent. */
+    selection(payload: RequestPayload<'team.selection'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.selection'>>>
     get(payload: RequestPayload<'team.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.get'>>>
     create(payload: RequestPayload<'team.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.create'>>>
     resume(payload: RequestPayload<'team.resume'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.resume'>>>
@@ -177,6 +189,7 @@ export interface IApiClient {
     taskCreate(payload: RequestPayload<'team.task.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.create'>>>
     taskGet(payload: RequestPayload<'team.task.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.get'>>>
     taskList(payload: RequestPayload<'team.task.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.list'>>>
+    workflowPlanInspect(payload: RequestPayload<'team.workflow.plan.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.workflow.plan.inspect'>>>
     workflowPlanList(payload: RequestPayload<'team.workflow.plan.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.workflow.plan.list'>>>
     taskUpdate(payload: RequestPayload<'team.task.update'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.update'>>>
     taskCancel(payload: RequestPayload<'team.task.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.cancel'>>>
@@ -215,14 +228,6 @@ export interface IApiClient {
     mux(payload: Parameters<ApiProxy['events']['mux']>[0]['payload'], signal: AbortSignal, onOpen?: () => void): AsyncIterable<RpcRequest<MuxFrame>>
     host(payload: Parameters<ApiProxy['events']['host']>[0]['payload'], signal: AbortSignal, onOpen?: () => void): AsyncIterable<RpcRequest<HostFrame>>
   }
-  goals: {
-    create(payload: RequestPayload<'goal.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.create'>>>
-    edit(payload: RequestPayload<'goal.edit'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.edit'>>>
-    pause(payload: RequestPayload<'goal.pause'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.pause'>>>
-    resume(payload: RequestPayload<'goal.resume'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.resume'>>>
-    complete(payload: RequestPayload<'goal.complete'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.complete'>>>
-    clear(payload: RequestPayload<'goal.clear'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'goal.clear'>>>
-  }
   settings: {
     describe(payload: RequestPayload<'settings.describe'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'settings.describe'>>>
     openDocument(payload: RequestPayload<'settings.openDocument'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'settings.openDocument'>>>
@@ -260,6 +265,13 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'session.updateQueue': sessionUpdateQueueValueSchema,
   'session.cancel': sessionCancelValueSchema,
   'team.list': teamListValueSchema,
+  'team.selection': teamSelectionValueSchema,
+  'team.member.inspect': teamMemberInspectValueSchema,
+  'team.member.session': teamMemberSessionValueSchema,
+  'team.workflow.plan.inspect': teamWorkflowInspectionValueSchema,
+  'team.action.read': teamHumanActionValueSchema,
+  'team.task.inspect': teamTaskInspectionValueSchema,
+  'team.browse': teamBrowseValueSchema,
   'team.get': teamStateValueSchema,
   'team.create': teamStateValueSchema,
   'team.resume': teamResumeValueSchema,
@@ -325,12 +337,6 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'agentPreset.copy': agentPresetCopyValueSchema,
   'agentPreset.openDocument': agentPresetOpenDocumentValueSchema,
   'agentPreset.remove': agentPresetRemoveValueSchema,
-  'goal.create': goalCreateValueSchema,
-  'goal.edit': goalEditValueSchema,
-  'goal.pause': goalPauseValueSchema,
-  'goal.resume': goalResumeValueSchema,
-  'goal.complete': goalCompleteValueSchema,
-  'goal.clear': goalClearValueSchema,
   'settings.describe': settingsDescribeValueSchema,
   'settings.openDocument': settingsOpenDocumentValueSchema,
   'settings.update': settingsUpdateValueSchema,
@@ -543,7 +549,36 @@ export abstract class AbstractApiClient implements IApiClient {
   }
 
   readonly teams: IApiClient['teams'] = {
+    memberInspect: (payload, signal) => this.callUnary('team.member.inspect', payload, signal),
+    actionRead: async (payload, signal) => {
+      const response = await this.callUnary('team.action.read', payload, signal)
+      if (response.result.ok && (response.result.value.teamId !== payload.teamId || response.result.value.id !== payload.actionId)) {
+        throw new Error('team.action.read response does not match its action selection')
+      }
+      return response
+    },
+    taskInspect: async (payload, signal) => {
+      const response = await this.callUnary('team.task.inspect', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.teamId !== payload.teamId || value.taskId !== payload.taskId || value.section !== payload.section
+          || payload.expectedRevision !== undefined && value.revision !== payload.expectedRevision
+          || value.section !== 'record' && payload.section !== 'record' && value.startCursor !== (payload.afterCursor ?? -1)) {
+          throw new Error('team.task.inspect response does not match its task selection')
+        }
+      }
+      return response
+    },
+    browse: async (payload, signal) => {
+      const response = await this.callUnary('team.browse', payload, signal)
+      if (response.result.ok && (response.result.value.teamId !== payload.teamId || response.result.value.kind !== payload.kind)) {
+        throw new Error('team.browse response belongs to a different Team or collection')
+      }
+      return response
+    },
+    memberSession: (payload, signal) => this.callUnary('team.member.session', payload, signal),
     list: (payload, signal) => this.callUnary('team.list', payload, signal),
+    selection: (payload, signal) => this.callUnary('team.selection', payload, signal),
     get: (payload, signal) => this.callUnary('team.get', payload, signal),
     create: (payload, signal) => this.callUnary('team.create', payload, signal),
     resume: (payload, signal) => this.callUnary('team.resume', payload, signal),
@@ -586,6 +621,18 @@ export abstract class AbstractApiClient implements IApiClient {
     taskCreate: (payload, signal) => this.callUnary('team.task.create', payload, signal),
     taskGet: (payload, signal) => this.callUnary('team.task.get', payload, signal),
     taskList: (payload, signal) => this.callUnary('team.task.list', payload, signal),
+    workflowPlanInspect: async (payload, signal) => {
+      const response = await this.callUnary('team.workflow.plan.inspect', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.record.teamId !== payload.teamId || value.record.id !== payload.planId
+          || value.startCursor !== (payload.afterCursor ?? -1)
+          || payload.expectedRevision !== undefined && value.record.revision !== payload.expectedRevision) {
+          throw new Error('Workflow inspection response does not match its selection')
+        }
+      }
+      return response
+    },
     workflowPlanList: (payload, signal) => this.callUnary('team.workflow.plan.list', payload, signal),
     taskUpdate: (payload, signal) => this.callUnary('team.task.update', payload, signal),
     taskCancel: (payload, signal) => this.callUnary('team.task.cancel', payload, signal),
@@ -632,15 +679,6 @@ export abstract class AbstractApiClient implements IApiClient {
     copy: (payload, signal) => this.callUnary('agentPreset.copy', payload, signal),
     openDocument: (payload, signal) => this.callUnary('agentPreset.openDocument', payload, signal),
     remove: (payload, signal) => this.callUnary('agentPreset.remove', payload, signal),
-  }
-
-  readonly goals: IApiClient['goals'] = {
-    create: (payload, signal) => this.callUnary('goal.create', payload, signal),
-    edit: (payload, signal) => this.callUnary('goal.edit', payload, signal),
-    pause: (payload, signal) => this.callUnary('goal.pause', payload, signal),
-    resume: (payload, signal) => this.callUnary('goal.resume', payload, signal),
-    complete: (payload, signal) => this.callUnary('goal.complete', payload, signal),
-    clear: (payload, signal) => this.callUnary('goal.clear', payload, signal),
   }
 
   readonly settings: IApiClient['settings'] = {

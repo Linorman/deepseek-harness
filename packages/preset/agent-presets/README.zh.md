@@ -36,7 +36,7 @@ subagent 的子 agent 通过 `composeFrom()` 加入其父方的常驻组装，�
 
 按 id 重新挂载父方的 preset 与认父有两处差别，且两处都要紧。父方启动后被编辑过的组装文件会把与父方历史所产出时**不同**的一个代际交给子 agent；而此后被删除的 preset 会让子 agent 直接失败，尽管其父方仍在正常运行。认父还是同步的，这正是进程内 subagent 驱动能够使用它的前提——它们在同步的创建窗口里组装子 agent。
 
-子 agent 会把所加入的 id 记在自己的持久化 header 上（见 [`clocky-subagent`](../../subagent/subagent/README.zh.md)），因此冷读子 agent 的历史时重建的是它实际运行过的组装，而不是部署默认值。
+子 agent 会把所加入的 id 记在自己的持久化 header 上（见 [`clocky-subagent`](../../compat/subagent/README.zh.md)），因此冷读子 agent 的历史时重建的是它实际运行过的组装，而不是部署默认值。
 
 ### 会话实际运行的是哪个 preset
 

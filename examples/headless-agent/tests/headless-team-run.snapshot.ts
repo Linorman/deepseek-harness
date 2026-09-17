@@ -303,7 +303,33 @@ describe('headless TeamRun snapshot', () => {
     expect(result.stderr).toBe('')
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  it('delegates one default-worker task through the assembled headless profile before final receipt', async () => {
+  it('executes the published workflow schema example with an actual dependency handoff', async () => {
+    const result = await runLoaderSmoke({
+      label: 'published workflow example', tempDirPrefix: 'headless-schema-example-',
+      binScript: clockyBinScript, configPath: teamWorkflowOverlayPath,
+      binArgs: ['--profile', 'headless', '--patch', teamWorkflowOverlayPath, 'Compile one deterministic workflow.'],
+      tsconfigPath,
+      env: { CLOCKY_TELEMETRY_DISABLED: '1', CLOCKY_TEAM_WORKFLOW_EXAMPLE: '1', CLOCKY_PERMISSION_MODE: 'danger-full-access',
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' ') },
+      prepare: prepareTeamRunFixture,
+      inspect: async (cwd) => {
+        expect(await readFile(join(cwd, 'findings.txt'), 'utf8')).toBe('SCHEMA_EXAMPLE_EVIDENCE\n')
+        const logs = await storedLogs(cwd)
+        const team = logs.find(log => log.stream.name.startsWith('team/'))
+        if (team === undefined) throw new Error('workflow example has no durable Team')
+        const tasks = taskSnapshots(team.entries.map(entry => entry.value))
+        const firstCompleted = tasks.findIndex(task => task['subject'] === 'Gather evidence' && task['phase'] === 'completed')
+        const secondAssigned = tasks.findIndex(task => task['subject'] === 'Write the report' && task['phase'] === 'assigned')
+        expect(firstCompleted).toBeGreaterThanOrEqual(0)
+        expect(secondAssigned).toBeGreaterThan(firstCompleted)
+        expect(tasks.at(-1)).toMatchObject({ subject: 'Write the report', phase: 'completed' })
+      },
+    })
+    expect(result.stdout).toBe(`${WORKFLOW_FINAL_TEXT}\n`)
+    expect(result.stderr).toBe('')
+  }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
+  it.each(['none', 'output-limit', 'missing-report'])('delegates a default-worker task with %s recovery before final receipt', async (recovery) => {
     const task = 'Delegate one deterministic Team task.'
     const result = await runLoaderSmoke({
       label: 'headless Team task delegation snapshot',
@@ -314,6 +340,7 @@ describe('headless TeamRun snapshot', () => {
       tsconfigPath,
       env: {
         CLOCKY_TELEMETRY_DISABLED: '1',
+        CLOCKY_TEAM_WORKER_RECOVERY: recovery,
         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
       },
       prepare: prepareTeamRunFixture,
@@ -416,7 +443,7 @@ describe('headless TeamRun snapshot', () => {
         if (coordinatorHeaderRecord === undefined) throw new Error('coordinator Session did not persist a model request header')
         const coordinatorHeader = valueRecord(valueRecord(coordinatorHeaderRecord['data'], 'coordinator request data')['header'], 'coordinator request header')
         expect(valueString(coordinatorHeader['system'], 'coordinator system prompt'))
-          .toContain('at least two independent worker tasks')
+          .toContain('Delegate work that can be independently delivered and verified')
         expect(valueString(coordinatorHeader['system'], 'coordinator system prompt'))
           .toContain('research, analysis, writing or editing')
         expect(workerSession.header['id']).toBe(workerBinding['sessionId'])
@@ -435,6 +462,9 @@ describe('headless TeamRun snapshot', () => {
             runningRevision: running['revision'],
           },
         })
+        const recoveries = workerSession.records.filter(record => record['type'] === 'user/message'
+          && String(valueRecord(record['data'], 'worker input')['id']).startsWith('team-task-continuation:'))
+        expect(recoveries).toHaveLength(recovery === 'output-limit' ? 2 : recovery === 'missing-report' ? 1 : 0)
         const report = sessionToolCall(workerSession, 'team_task_report')
         const reportArguments = JSON.parse(valueString(report['arguments'], 'team_task_report arguments')) as Record<string, unknown>
         expect(reportArguments).toMatchObject({ task_id: taskId, outcome: 'completed', summary: TASK_SUMMARY })
@@ -450,8 +480,12 @@ describe('headless TeamRun snapshot', () => {
         const wait = sessionToolCall(coordinatorSession, 'team_task_wait')
         expect(JSON.parse(valueString(wait['arguments'], 'team_task_wait arguments'))).toEqual({ task_id: taskId })
         expect(JSON.parse(sessionToolResultText(coordinatorSession, valueString(wait['callId'], 'team_task_wait call id'))))
-          .toEqual({ task_id: taskId, phase: 'completed', summary: TASK_SUMMARY,
+          .toMatchObject({ task_id: taskId, phase: 'completed', summary: TASK_SUMMARY,
+            evidence: ['WORKER_EVIDENCE'], verification: 'WORKER_VERIFICATION',
             review_policy: { kind: 'none' }, review_result: null, cancellation: null })
+
+        const waited = JSON.parse(sessionToolResultText(coordinatorSession, valueString(wait['callId'], 'wait call id'))) as { changed_paths?: string[] }
+        expect(waited.changed_paths ?? []).toEqual([])
 
         const directChannel = channelLog(logs, 'direct')
         const directChannelId = directChannel.stream.name.slice('channel/'.length)
@@ -479,8 +513,9 @@ describe('headless TeamRun snapshot', () => {
     expect(result.stderr).toBe('')
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 
-  for (const executionRole of ['worker', 'researcher']) {
-    it(`executes a declarative workflow through the assembled ${executionRole} template`, async () => {
+  for (const scenario of ['worker', 'researcher', 'dormant-researcher']) {
+    const executionRole = scenario === 'dormant-researcher' ? 'researcher' : scenario
+    it(`executes a declarative workflow through the assembled ${scenario} template`, async () => {
       const task = 'Compile one deterministic workflow.'
       const result = await runLoaderSmoke({
         label: 'headless Team workflow plan snapshot',
@@ -493,6 +528,7 @@ describe('headless TeamRun snapshot', () => {
         env: {
           CLOCKY_TELEMETRY_DISABLED: '1',
           CLOCKY_WORKFLOW_MEMBER_ROLE: executionRole,
+          CLOCKY_WORKFLOW_DORMANT_ROLE: scenario === 'dormant-researcher' ? '1' : '0',
           TSX_DISABLE_CACHE: '1',
           NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
         },
@@ -503,6 +539,15 @@ describe('headless TeamRun snapshot', () => {
           if (team === undefined) throw new Error('headless Team workflow run did not persist a Team journal')
           const teamId = team.stream.name.slice('team/'.length)
           const records = team.entries.map(entry => entry.value)
+          if (scenario === 'dormant-researcher') {
+            const memberId = participant(records, executionRole)['id']
+            const bindings = records.filter(record => record['type'] === 'activation/changed')
+              .map(record => valueRecord(record['binding'], 'activation binding'))
+              .filter(binding => valueRecord(binding['activation'], 'activation')['participantId'] === memberId)
+            expect(new Set(bindings.map(binding => valueRecord(binding['activation'], 'activation')['id'])).size).toBe(2)
+            expect(new Set(bindings.map(binding => binding['sessionId'])).size).toBe(1)
+            expect(bindings.some(binding => binding['quiescedAt'] !== undefined)).toBe(true)
+          }
           const planChanges = records.filter(record => record['type'] === 'workflow-plan/changed')
           expect(planChanges.map(record => valueRecord(record['plan'], 'workflow plan')['phase']))
             .toEqual(['compiling', 'compiling', 'compiling', 'ready', 'completed'])

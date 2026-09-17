@@ -1,3 +1,4 @@
+import type { ChannelId } from '@clocky/clocky-client-connection/client'
 import { Context } from '@clocky/cordis'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { TeamChannelSummary } from '../src/client/contract/team-tasks.ts'
@@ -32,11 +33,11 @@ it('refreshes active catalog registrations after reconnect and discards an older
 it('retains a newly committed summary while a prior channel read finishes', async () => {
   const { api, tasks } = setup()
   const selected = await tasks.open('summary-owner' as never)
-  const channelId = selected.state.channelIds[0]!
+  const channelId = `runtime-fk-team-channel-${selected.teamId}` as ChannelId
   await tasks.readChannel(channelId)
   const pending = deferred<Awaited<ReturnType<FakeApiClient['teams']['channelRead']>>>()
   api.onTeamChannelRead = async () => await pending.promise
-  const reading = tasks.readChannel(channelId).catch(error => error)
+  const reading = tasks.readChannel(channelId).catch((error: unknown) => error)
   const summary: TeamChannelSummary = { type: 'channel/summary', sequence: 12, createdAt: 12,
     coveredSequenceRange: { from: 10, to: 10 }, sourceEnvelopeIds: ['source-envelope' as never], sourceFingerprint: `sha256:${'b'.repeat(64)}` as never,
     text: 'Saved source summary', policy: { type: 'summarized-window', version: 1 }, idempotencyKey: 'summary-key' as never }
@@ -54,10 +55,10 @@ it('retains a newly committed summary while a prior channel read finishes', asyn
 it('preserves loaded summary sources after image rejection and after successful summary admission', async () => {
   const { api, tasks } = setup()
   const selected = await tasks.open('summary-window' as never)
-  const channelId = selected.state.channelIds[0]!
-  const senderId = selected.state.participants[0]!.id
+  const channelId = `runtime-fk-team-channel-${selected.teamId}` as ChannelId
+  const senderId = tasks.list.getSnapshot().collections!.members.items[0]!.id
   const snapshot: ChannelReadPageResult['channel'] = { manifest: { id: channelId, teamId: selected.teamId,
-    adapter: { type: 'direct', version: 4 }, participants: selected.state.participants.map(member => ({ id: member.id, role: member.role })),
+    adapter: { type: 'direct', version: 4 }, participants: tasks.list.getSnapshot().collections!.members.items.map(member => ({ id: member.id, role: member.role })),
     viewPolicy: { type: 'summarized-window', version: 1 }, limits: {} }, phase: 'closed', cursor: 13 }
   const records: ChannelReadPageResult['records'] = [
     { type: 'channel/envelope', envelope: { id: 'image-source' as never, teamId: selected.teamId, channelId, sequence: 10,

@@ -92,12 +92,6 @@ flowchart LR
   cfg --> plugin_clocky_base_commands
   plugin_clocky_base_command_feedback["command-feedback<br/>@clocky/clocky-command-feedback"]
   cfg --> plugin_clocky_base_command_feedback
-  plugin_clocky_base_goal["goal<br/>@clocky/clocky-goal"]
-  cfg --> plugin_clocky_base_goal
-  plugin_clocky_base_goal_round_driver["goal-round-driver<br/>@clocky/clocky-goal-round-driver"]
-  cfg --> plugin_clocky_base_goal_round_driver
-  plugin_clocky_base_command_goal["command-goal<br/>@clocky/clocky-command-goal"]
-  cfg --> plugin_clocky_base_command_goal
   plugin_clocky_base_plan_mode["plan-mode<br/>@clocky/clocky-plan-mode"]
   cfg --> plugin_clocky_base_plan_mode
   plugin_clocky_base_token_meter["token-meter<br/>@clocky/clocky-token-meter"]
@@ -118,8 +112,6 @@ flowchart LR
   cfg --> plugin_clocky_base_tool_result_pruner
   plugin_clocky_base_tool_todo["tool-todo<br/>@clocky/clocky-tool-todo"]
   cfg --> plugin_clocky_base_tool_todo
-  plugin_clocky_base_tool_goal["tool-goal<br/>@clocky/clocky-tool-goal"]
-  cfg --> plugin_clocky_base_tool_goal
   plugin_clocky_base_tool_str_replace_editor["tool-str-replace-editor<br/>@clocky/clocky-tool-str-replace-editor"]
   cfg --> plugin_clocky_base_tool_str_replace_editor
   plugin_clocky_base_repeat_tool_reminder["repeat-tool-reminder<br/>@clocky/clocky-repeat-tool-reminder"]
@@ -182,9 +174,6 @@ flowchart LR
 | `tool-skill` | `@clocky/clocky-tool-skill` |
 | `commands` | `@clocky/clocky-commands` |
 | `command-feedback` | `@clocky/clocky-command-feedback` |
-| `goal` | `@clocky/clocky-goal` |
-| `goal-round-driver` | `@clocky/clocky-goal-round-driver` |
-| `command-goal` | `@clocky/clocky-command-goal` |
 | `plan-mode` | `@clocky/clocky-plan-mode` |
 | `token-meter` | `@clocky/clocky-token-meter` |
 | `compaction-basic` | `@clocky/clocky-compaction-basic` |
@@ -195,7 +184,6 @@ flowchart LR
 | `session-checkpoint-policy` | `@clocky/clocky-session-checkpoint-policy` |
 | `tool-result-pruner` | `@clocky/clocky-compaction-tool-result-pruner` |
 | `tool-todo` | `@clocky/clocky-tool-todo` |
-| `tool-goal` | `@clocky/clocky-tool-goal` |
 | `tool-str-replace-editor` | `@clocky/clocky-tool-str-replace-editor` |
 | `repeat-tool-reminder` | `@clocky/clocky-repeat-tool-reminder` |
 | `web` | `@clocky/clocky-web` |

@@ -30,7 +30,7 @@ const [
 ] = await Promise.all([
   load("vendor/cordis/lib/index.js"),
   load("packages/examples/agent-spine-demo/lib/index.js"),
-  load("packages/subagent/subagent/lib/index.js"),
+  load("packages/compat/subagent/lib/index.js"),
   load("packages/session/session-persistence-jsonl/lib/index.js"),
   load("packages/sdk/server/lib/index.js"),
   load("packages/core/session/lib/index.js"),

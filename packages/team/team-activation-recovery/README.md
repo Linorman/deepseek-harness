@@ -12,8 +12,7 @@ The scan considers an active `local-agent` or `remote-agent` participant's lates
 
 ## Configuration
 
-`provider`, `profile`, and `hostId` are required non-empty values without surrounding whitespace. `kind` defaults to `sdk-local-cold-replace` and must match the provider's durable plan. `pulseIntervalMs` optionally enables bounded recurring scans. `pageSize` defaults to 128 Team identities; `supervisorHosts` adds exact remote execution hosts. Accepted pulse work settles before proof ownership is released on unload. Mount this Consumer after the matching runtime provider and activation controller during a controlled Hub-start window.
-A repeated or rewound Team-list continuation fails startup recovery with `TEAM_CURSOR_CONFLICT` instead of rescanning the same page.
+`provider`, `profile`, and `hostId` are required non-empty values without surrounding whitespace. `kind` defaults to `sdk-local-cold-replace` and must match the provider's durable plan. `pulseIntervalMs` optionally enables bounded recurring scans. `pageSize` defaults to 128 Team identities; `supervisorHosts` adds exact remote execution hosts. Accepted pulse work settles before proof ownership is released on unload. Mount this Consumer after the matching runtime provider and activation controller during a controlled Hub-start window. A repeated or rewound Team-list continuation fails startup recovery with `TEAM_CURSOR_CONFLICT` instead of rescanning the same page.
 
 ## Model Experience
 

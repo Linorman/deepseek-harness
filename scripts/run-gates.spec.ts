@@ -78,17 +78,19 @@ describe('gate graph validation', () => {
     await expect(runGates(subject, subject.length, execute)).resolves.toHaveLength(subject.length)
   })
 
-  it('keeps the public repository link policy in the documentation gate', () => {
+  it('keeps canonical links and both generated graph checks in the documentation gate', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
 
     expect(ids).toContain('public-repository-links')
+    expect(ids).toContain('doc-graphs')
+    expect(ids).toContain('module-graph')
   })
 
   it('keeps the hygiene aggregate aligned with the package script checks', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('hygiene').map(subject => subject.id))
 
     expect(ids).toEqual([
-      'rescope-vendor', 'knip', 'publint', 'constraints', 'clocky-package-licenses',
+      'source-outputs', 'rescope-vendor', 'knip', 'publint', 'constraints', 'clocky-package-licenses',
       'package-invariants', 'direct-session-entrypoints', 'built-package-invariants', 'node-next-types',
       'optional-dependency-imports', 'client-packages', 'cordis-config',
       'runtime-closure', 'vendored-links',
@@ -306,7 +308,6 @@ describe('Typert contract preparation', () => {
     })
     for (const [id, script] of [
       ['typecheck', 'typecheck:contracts-ready'],
-      ['lint', 'lint:contracts-ready'],
       ['doc-typecheck', 'doc-typecheck:contracts-ready'],
     ] as const) {
       expect(subject.find(item => item.id === id)).toMatchObject({
@@ -315,6 +316,9 @@ describe('Typert contract preparation', () => {
         needs: ['typert-contracts'],
       })
     }
+    expect(subject.find(item => item.id === 'lint')).toMatchObject({
+      displayCommand: 'pnpm run lint:contracts-ready', needs: ['typecheck'],
+    })
     expect(subject.find(item => item.id === 'build')?.needs).toEqual([
       'typecheck',
       'lint',

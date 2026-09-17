@@ -4,7 +4,7 @@ from .models import TeamHumanActionResponseRequest
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, cast
+from typing import Callable, Literal, cast
 
 from .client import HarnessClient, HarnessConfig
 from .errors import SdkProtocolError
@@ -13,6 +13,11 @@ from .models import (
     Notification,
     TeamFinalReceipt,
     TeamGetResponse,
+    TeamSelectionResponse,
+    TeamMemberInspectResponse,
+    TeamTaskInspectResponse,
+    TeamBrowseResponse,
+    TeamMemberSessionResponse,
     TeamGoalTransitionInput,
     TeamGoalTransitionRequest,
     TeamGoalTransitionResponse,
@@ -147,10 +152,53 @@ class Clocky:
         resumed = self._client.resume_team(TeamResumeRequest(teamId=team_id, expectedCursor=cursor))
         return Team(self, resumed.teamId, resumed.coordinatorSessionId)
 
-    def list_teams(self, *, after_cursor: int | None = None, limit: int | None = None):
+    def list_teams(self, *, after_cursor: str | Literal[-1] | None = None, limit: int | None = None):
         """Read one bounded page of durable Teams visible to the runtime."""
         self.start()
         return self._client.list_teams(after_cursor, limit)
+
+    def get_team_member_session(self, team_id: str, participant_id: str) -> TeamMemberSessionResponse:
+        """Resolve a member's published Session without activating it."""
+        self.start()
+        return self._client.get_team_member_session(team_id, participant_id)
+
+    def inspect_team_task(self, team_id: str, task_id: str, section: Literal["record", "attempts", "reviews"], *,
+                          expected_revision: int | None = None, after_cursor: int | None = None,
+                          limit: int | None = None) -> TeamTaskInspectResponse:
+        """Read one task section without loading the rest of its execution history."""
+        self.start()
+        return self._client.inspect_team_task(team_id, task_id, section, expected_revision=expected_revision,
+                                              after_cursor=after_cursor, limit=limit)
+
+    def browse_team(self, team_id: str, kind: Literal["tasks", "members", "workflowPlans"], *,
+                    after_cursor: int | None = None, limit: int | None = None) -> TeamBrowseResponse:
+        """Read one bounded summary window for the selected Team collection."""
+        self.start()
+        return self._client.browse_team(team_id, kind, after_cursor=after_cursor, limit=limit)
+
+    def inspect_workflow_plan(self, team_id: str, plan_id: str, *, expected_revision: int | None = None,
+                              after_cursor: int = -1, limit: int | None = None):
+        """Read a bounded workflow task/dependency window."""
+        self.start()
+        return self._client.inspect_workflow_plan(team_id, plan_id, expected_revision=expected_revision,
+                                                  after_cursor=after_cursor, limit=limit)
+
+    def read_team_action(self, team_id: str, action_id: str):
+        """Read the current durable action without the complete Team history."""
+        self.start()
+        return self._client.read_team_action(team_id, action_id)
+
+    def inspect_team_member(self, team_id: str, participant_id: str, *, after_cursor: int | None = None,
+                            limit: int | None = None, expected_team_cursor: int | None = None) -> TeamMemberInspectResponse:
+        """Read one bounded member detail page without activation."""
+        self.start()
+        return self._client.inspect_team_member(team_id, participant_id, after_cursor=after_cursor,
+                                               limit=limit, expected_team_cursor=expected_team_cursor)
+
+    def get_team_selection(self, team_id: str, *, include_metadata: bool = False) -> TeamSelectionResponse:
+        """Read bounded selection data without activating an Agent."""
+        self.start()
+        return self._client.get_team_selection(team_id, include_metadata=include_metadata)
 
     def get_team(self, team_id: str):
         """Read one complete durable Team projection."""

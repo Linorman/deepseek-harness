@@ -1,6 +1,6 @@
 /**
  * Assembled-app regression: a persisted `origin: 'subagent'` child whose log
- * carries no descriptor event is surfaced by `list_agents` as a
+ * carries no descriptor event is surfaced by `legacy_list_agents` as a
  * `[diagnostic: corrupt]` row instead of being silently dropped.
  */
 
@@ -24,7 +24,7 @@ const tsconfigPath = fileURLToPath(new URL('../../../tsconfig.json', import.meta
 const parentId = SessionId('subagent-diagnostic-parent')
 const childId = SessionId('subagent-diagnostic-child')
 const refreshing = process.env.CLOCKY_SNAPSHOT === 'refresh'
-const task = 'Call list_agents once and report what it shows.'
+const task = 'Call legacy_list_agents once and report what it shows.'
 
 /**
  * Seed a completed parent turn plus one cold child that durably classifies
@@ -67,8 +67,8 @@ async function seedDescriptorlessChild(root: string, cwd: string): Promise<void>
   }
 }
 
-describe('descriptor-less cold child diagnostic snapshot', () => {
-  it('surfaces the unreadable child as a corrupt diagnostic through the assembled headless app', async () => {
+describe('fork lineage compatibility discovery snapshot', () => {
+  it('does not classify a fork header as subagent ownership through the assembled headless app', async () => {
     let cwd = ''
     const result = await runLoaderSmoke({
       label: 'subagent diagnostic headless stream-json snapshot',
@@ -93,9 +93,8 @@ describe('descriptor-less cold child diagnostic snapshot', () => {
         const parent = logs.find(content => content.includes('"subagent-diagnostic-parent"'))
         if (parent === undefined) throw new Error('missing persisted parent log')
 
-        // THE model-visible fact: the descriptor-less child is reported, not
-        // silently dropped, and its reason is the corrupt classification.
-        expect(parent).toContain(`${childId} [diagnostic: corrupt]`)
+        expect(parent).toContain('(no subagents)')
+        expect(parent).not.toContain(`${childId} [diagnostic:`)
 
         const context: NormalizeContext = { sessionIds: [parentId, childId], cwd }
         const normalizedParent = normalizeSessionSnapshot(parent, context)
@@ -111,7 +110,7 @@ describe('descriptor-less cold child diagnostic snapshot', () => {
     expect(records.at(-1)).toMatchObject({
       type: 'result',
       sessionId: parentId,
-      output: 'The stored subagent is unreadable. PARENT_DONE',
+      output: 'No recorded subagents. PARENT_DONE',
     })
   }, LOADER_SMOKE_TEST_TIMEOUT_MS)
 })

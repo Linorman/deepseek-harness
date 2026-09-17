@@ -40,6 +40,8 @@ import type { Session } from './session.ts'
 
 /** Session list row projected from the host list RPC plus live stream increments. */
 export interface SessionSummary {
+  /** Immutable ownership reported by the Host; used for exact Team input routing. */
+  team?: import('@clocky/clocky-api-remotes/client').SessionSummary['team']
   id: SessionId
   /** Latest durable log-backed title, absent until the host projects one. */
   title?: string
@@ -502,6 +504,7 @@ export class SessionRuntime implements ISessions {
       ids.push(entry.sessionId)
       byId[entry.sessionId] = {
         id: entry.sessionId,
+        ...entry.team === undefined ? {} : { team: entry.team },
         displayTitle: displayTitleOf(entry.title, entry.cwd, entry.sessionId),
         running: entry.running,
         ...(entry.completed ? { completed: true } : {}),

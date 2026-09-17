@@ -33,7 +33,7 @@
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Team list | `ui-team` | `ctx.teamTasks.list` | wide list / collapsed rail | component + assembled slot test |
-| Team detail | `ui-team` | selected `TeamStateSnapshot` plus Team read/control methods | Environment-style upper-right floating popover; hidden, resizable, viewport-clamped | component + API-backed interaction test |
+| Team detail | `ui-team` | selected Team, bounded collections and runtime-owned task inspection | main Team workspace with a non-modal task inspector | component + API-backed interaction test |
 | Sidebar shell | `ui-sidebar` | `sidebar` slot | expanded / 56px rail | component + snapshot |
 | Coordinator transcript | `ui-conversation` | `ctx.sessions` | Team descendant only | assembled flow test |
 | Composer | `ui-conversation` | `SessionInputShell` | Team first-input draft / coordinator transcript | component + assembled flow test |
@@ -52,6 +52,9 @@
 ## Dataset navigation
 
 - Team list: one bounded initial page; explicit Load more extends the requested range, and refresh preserves that range. Channel records and audit records use the Host continuation cursor.
+- Selected-Team member, task, workflow, and artifact lists retain one page each. Next page replaces that window; Refresh rereads its starting cursor; First page returns to the beginning. Failed or cancelled reads retain the prior page. Task inspection and unsent input survive page changes.
+- Task lists read browse summaries. The inspector retains one current record, its latest attempt, and one page per attempt/review history. The latest result is independent of history navigation. Module changes preserve these bounded windows; explicit dismissal and Team changes release them. Version changes preserve readable data with a refresh notice and prevent mutations based on stale details.
+- Task status filtering uses the shared Menu, with a selected marker and keyboard handling. Search applies to loaded tasks and has an explicit clear action.
 - Empty/loading/error treatment: inline text in the fixed Team-list region; opening failure keeps the previous transcript selected.
 - Selection: one product-level `TeamId`; the Session selected after resolution is the coordinator transcript descendant.
 
@@ -60,29 +63,31 @@
 | Operation | Trigger | Pending | Success destination | Success feedback | Failure recovery | Focus outcome | Source ref |
 |---|---|---|---|---|---|---|---|
 | Start Team task | New Task + first text submit | composer submission | Team coordinator transcript | draft clears after admission | draft and retry key remain | resident textarea follows transcript | `team.start` |
-| Open Team | Team row | rows disabled | coordinator transcript | selected row | inline Team-list error | selected transcript retains focus context | `team.get` |
+| Open Team | Team row | rows disabled | Team overview | selected row | inline Team-list error | Team navigation remains available | read-only Team inspection |
 | Edit Team objective | `/goal edit <objective>` in coordinator transcript | command lifecycle | same transcript | durable objective result | command result explains stale or authorization failure | composer remains focused | `command-team-goal` |
 | Continue Team transcript | coordinator composer | existing input submission | same transcript | existing conversation feedback | current draft remains | resident textarea | transitional Session bridge |
 | Cancel / archive | Team detail or terminal row action | control pending state | Team detail/list | durable Team phase | inline error; retry uses the same Team identity | selected detail remains | `team.cancel`, `team.archive` |
 | Delete task | Lease-free task delete action | confirmation and Host actor proof | same Team detail | deleted tombstone is removed from the visible task list | confirmation stays open with an inline error | selected detail remains | `team.task.delete` |
 | Stop task | Assigned/running task stop action | confirmation and Host actor proof | same Team detail | durable cancellation intent and stopping status | confirmation stays open with an inline error | selected detail remains | `team.task.cancel` |
-| Inspect Participant | Participant detail action | Session resolution | selected descendant Session | Session transcript opens | inline error; Team selection remains | opened transcript | `team.get` + Session projection |
+| Inspect Participant | Participant detail action | Session resolution | selected descendant Session | Session transcript opens | inline error; Team selection remains | opened transcript | `team.member.session` |
 | Manage members / tasks / channels | Detail action | authenticated Host command | same detail | authoritative projection refresh | draft retained; changed task revisions require explicit review | dialog retains focus until closed | Team management APIs |
 | Inspect Channel / audit | Channel button or audit action | bounded read | detail pane | records appear in place | inline error; prior detail remains | selected button retains state | `team.channel.read`, `team.audit.read` |
 | Read artifact | Visible provider-backed artifact action | bounded byte read | detail pane | bounded text preview or download action | inline error; prior detail remains | read button retains focus context | `team.artifact.read` |
 
 ## Navigation and responsive behavior
 
-- The sidebar's Team list is the product navigation region; its selected detail popover exposes durable Team descendants without promoting a Session to a top-level task.
-- The selected Team detail opens from a compact upper-right trigger and stays outside sidebar and transcript scroll containers. Display is controlled by the trigger, Escape, and close button; outside pointer events do not dismiss it, so body-portaled confirmations cannot unmount an in-flight Team mutation. The panel starts at a compact size, can be resized from its lower-left grip or keyboard arrows, clamps to the viewport, and can be restored with the reset control.
+- The sidebar selects a Team workspace. Overview, Tasks, Channels, Members, Artifacts and the secondary modules retain their own browsing state; Session inspection remains an explicitly opened descendant.
+- Task selection opens a neighboring non-modal inspector. Closing it returns focus to the originating row or the task filter when that row is not loaded. Workflow links to off-page tasks open the inspector without adding a fabricated list row. Session inspection uses the shared dialog and returns to the retained Team view.
 - In the 56px rail, the Team control expands the sidebar instead of opening an unlabelled compact list.
 - Objective text truncates to one line; its complete value remains available through the native button text and DOM title only when a later product surface needs it.
-- The transcript remains the center-column destination; Team state is never inferred by scanning Session rows.
+- The Team workspace remains the main destination; Team state is never inferred by scanning Session rows.
+- Workflow lists contain summaries. Opening a plan retains one revision-pinned task/dependency page; navigation keeps its plan ID, failures keep the previous page, and newer revisions require explicit refresh.
+- Lists, channel history and audit retain one page. Next page replaces rows; failure keeps the current page. Team/channel lists offer First page, and inbox paging confirms before discarding typed answers. An off-page selected Team remains visible as one separate sidebar item.
 
 ## Async and resilience
 
 - First Team admission uses the Host's idempotent `team.start` operation. The client keeps a local retry key and rejects changed text after a failed admission until the draft is restarted.
-- Team selection resolves durable Team state, refreshes the Session projection, then opens the returned coordinator Session.
+- Team selection reads bounded identity, scalar metadata and aggregate counts. Collections use independent pages; Session inspection starts only through its explicit action. Member Session URLs carry the Participant identity for a bounded ownership check.
 - Selection failure is local, retryable, and does not erase a draft or change the current transcript.
 - Team list refreshes when a connection is established and on the bounded Team refresh loop. Channel and audit panes use cancellable bounded reads, and stale responses cannot replace a newer selection.
 - Artifact reads use an exact durable reference and named provider, allow only non-private visibility, cancel a replaced or unmounted request, and keep provider-less references metadata-only; stale responses cannot replace a newer read.

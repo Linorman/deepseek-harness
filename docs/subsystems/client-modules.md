@@ -21,6 +21,8 @@ The graph is the wire single source between the Node and browser halves: the hos
  * `require` is synchronous (see {@link WebBootGraph.entries}).
  */
 interface WebBootEntry {
+  /** Explicit public configuration for this browser plugin. */
+  config?: BrowserPluginConfig
   /** Entry name == package name. */
   id: string
   /** Bundle endpoint, '/plugins/<id>/client.js?rev=<rev>'. */

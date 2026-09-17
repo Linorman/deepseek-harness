@@ -25,6 +25,18 @@ export function taskConcurrencyUsage(task: TeamTaskSnapshot): number {
   return Math.max(1, ceiling)
 }
 
+/** Count lifetime descendant identities reserved by an accepted child delegation.
+ * @param task - Durable task, including terminal and deleted delegations.
+ * @returns one child identity plus its frozen descendant allowance; unaccepted tasks reserve zero.
+ */
+export function taskChildTeamReservation(task: TeamTaskSnapshot): number {
+  if (task.delegation?.childTeamId === undefined) return 0
+  const descendants = task.delegation.creation?.budgets.maxChildTeams ?? 0
+  if (typeof descendants !== 'number' || !Number.isSafeInteger(descendants) || descendants < 0
+    || descendants === Number.MAX_SAFE_INTEGER) throw new TypeError('Child Team count ceiling is invalid')
+  return 1 + descendants
+}
+
 /** Find overlapping declared shared-work mutations, including lease-free child Teams.
  * @param task - proposed task whose own reservation is excluded.
  * @param tasks - authoritative current Team task projections.

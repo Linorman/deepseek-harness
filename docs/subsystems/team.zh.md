@@ -2,7 +2,7 @@
 
 [English](team.md) | 中文
 
-`@clocky/clocky-team`定义持久 Team 词汇以及 `ctx.teams` Service Definition。[`@clocky/clocky-team-hub`](../../packages/team/team-hub/README.zh.md)是显式挂载的本地提供方：它拥有 journal、channel WAL、按 source 分离的 durable audit projection、成员／任务／activation 投影、有界 root-or-child 层级、已认证 Envelope admission、派生的 pending delivery、receipt cursor、恢复、游标 watch、临时 delivery claim、带围栏的 task attempt、带 revision 的 Team goal、持久声明式 workflow plan、进程内 metrics，以及不删除状态的终态 Team 归档。[`@clocky/clocky-team-activation-controller`](../../packages/team/team-activation-controller/README.zh.md)会在 `ctx.teamActivations`公开 bind-or-dispose owner；[`@clocky/clocky-team-channel-direct`](../../packages/team/team-channel-direct/README.zh.md)提供 direct v1、产品 direct v2 和双人 human text/image direct v3；[`@clocky/clocky-team-link-local`](../../packages/team/team-link-local/README.zh.md)拥有本地 pending-delivery replay；[`@clocky/clocky-team-agent-client`](../../packages/team/team-agent-client/README.zh.md)拥有本地 Agent inbox admission，并消费 provider-owned task workspace root；[`@clocky/clocky-team-scheduler-dag`](../../packages/team/team-scheduler-dag/README.zh.md)会使 lease 过期、保持 compiling workflow task dormant、作出确定性的 shared-work assignment，并可运行显式配置的 terminal-channel retention drive；[`@clocky/clocky-command-team-goal`](../../packages/team/command-team-goal/README.zh.md)将面向用户的 `/goal`控制限定在已绑定 Team participant 中；[`@clocky/clocky-team-run`](../../packages/team/team-run/README.zh.md)拥有本地默认 human/coordinator/worker topology、按配置启用的 reviewer routing、workspace outcome publish、声明式 workflow compilation 和显式 final-result receipt。本地及 WebSocket Link、Host Remote、TypeScript/Python SDK 和 Web Team page 都消费这条 spine。Worktree provider 提供可选的 policy/CAS integration authority；SQLite-backed Hub 会在读取前 reconciliation 外部追加的 projection。自动 leader election/failover、remote push authority 与 hard cancellation 仍是独立部署工作。[本地 Team Hub 决策](../../.agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.zh.md)记录本地提供方的理由。
+`@clocky/clocky-team`定义持久 Team 词汇以及 `ctx.teams` Service Definition。[`@clocky/clocky-team-hub`](../../packages/team/team-hub/README.zh.md)是显式挂载的本地提供方：它拥有 journal、channel WAL、按 source 分离的 durable audit projection、成员／任务／activation 投影、有界 root-or-child 层级、已认证 Envelope admission、派生的 pending delivery、receipt cursor、恢复、游标 watch、临时 delivery claim、带围栏的 task attempt、带 revision 的 Team goal、持久声明式 workflow plan、进程内 metrics，以及不删除状态的终态 Team 归档。[`@clocky/clocky-team-activation-controller`](../../packages/team/team-activation-controller/README.zh.md)会在 `ctx.teamActivations`公开 bind-or-dispose owner；[`@clocky/clocky-team-channel-direct`](../../packages/team/team-channel-direct/README.zh.md)提供 带独立 recipient receipt 的产品 direct v4 multicast；[`@clocky/clocky-team-link-local`](../../packages/team/team-link-local/README.zh.md)拥有本地 pending-delivery replay；[`@clocky/clocky-team-agent-client`](../../packages/team/team-agent-client/README.zh.md)拥有本地 Agent inbox admission，并消费 provider-owned task workspace root；[`@clocky/clocky-team-scheduler-dag`](../../packages/team/team-scheduler-dag/README.zh.md)会使 lease 过期、保持 compiling workflow task dormant、作出确定性的 shared-work assignment，并可运行显式配置的 terminal-channel retention drive；[`@clocky/clocky-command-team-goal`](../../packages/team/command-team-goal/README.zh.md)将面向用户的 `/goal`控制限定在已绑定 Team participant 中；[`@clocky/clocky-team-run`](../../packages/team/team-run/README.zh.md)拥有本地默认 human/coordinator/worker topology、按配置启用的 reviewer routing、workspace outcome publish、声明式 workflow compilation 和显式 final-result receipt。本地及 WebSocket Link、Host Remote、TypeScript/Python SDK 和 Web Team page 都消费这条 spine。Worktree provider 提供可选的 policy/CAS integration authority；SQLite-backed Hub 会在读取前 reconciliation 外部追加的 projection。自动 leader election/failover、remote push authority 与 hard cancellation 仍是独立部署工作。[本地 Team Hub 决策](../../.agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.zh.md)记录本地提供方的理由。
 
 [`@clocky/clocky-team-channel-basic`](../../packages/team/team-channel-basic/README.zh.md)提供有界 consult 和 discussion 协议，[`@clocky/clocky-team-channel-workflow`](../../packages/team/team-channel-workflow/README.zh.md)提供有界声明式 workflow 转移。这些适配器只校验 manifest、折叠状态，不执行投递或模型轮次。
 
@@ -22,9 +22,15 @@ Integration task 会在同一条 Team task record 中加入不可变的 source t
 
 `TeamTaskDependencyOutcome` 记录尚未执行的 workflow task 的终态前置任务 id、revision 及 failed/cancelled/deleted phase。`TeamRunWorkflowTaskCancelRequest` 选择所拥有的 plan/template binding；结果包含可空的 `blockedByOutcome`（null 表示不存在依赖取消）。Completed、failed 或 cancelled plan 均可保留配置选定的 task-result projection。
 
+`ActivationReservationSnapshot` 以品牌化 `ActivationReservationId` 保留一次 provider 启动 admission。`ActivationReservationRequest` 组合 JSON `ActivationReservationInput` 与仅 runtime 可用的 controller proof。`ParticipantSnapshot.activationReservation` 在 provider 启动前持久化，`ActivationBindingSnapshot.reservationId` 只能消费该身份一次。`maxLiveActivations` 根据 Team budget 与 grant 的更严格上限，统计待启动预留、未 quiesce epoch 及委派的 child 额度。未知启动以 `ACTIVATION_STARTUP_UNCONFIRMED` 阻止关闭。
+
+`TeamDiscoveryCursor` 是 opaque provider scan 位置，不同于数值 journal 和 collection cursor。`TeamListPage.scanned` 统计包括跳过名称在内的已检查条目；没有可见 item 的页也可能继续。`TEAM_DISCOVERY_CURSOR_EXPIRED` 要求从 `afterCursor: -1` 开始新扫描。
+
+`TeamTaskExecution`区分 Participant attempt 与 child-Team 工作；child 分支冻结 template、authority grant 和 budget。`TeamTaskDelegationSnapshot`保留预留的 child identity、可重放的创建 payload、cursor、failure 与已接纳 result。Parent task 不持有 Participant lease。`TeamChildRunBinding`标识 service recipient、coordinator 与 consult channel；`TeamDelegationResultAdmission`把已接纳 response 绑定到 parent task。[`@clocky/clocky-team-delegation`](../../packages/team/team-delegation/README.zh.md)是驱动这些记录的 Consumer，不提供 `ctx` service，而是向 TeamRun 注册 cancellation driver。
+
 ## 提供方注册
 
-`transitionTeamPhase()`接收只含 JSON 的 lifecycle 字段和一个由 source 持有的 `TeamSystemPhaseProof`。Hub 只允许 scheduler 的准确 active-to-stalled scope，以及 TeamRun 的准确 stalled-to-active resume scope；它会在 Team lock 内解析该 proof，并将派生出的 system identity 交给 close policy。测试所需的状态通过私有 journal helper 直接种入，而不会引入公开的通用 transition authority。
+`transitionTeamPhase()`接收只含 JSON 的 lifecycle 字段和一个由 source 持有的 `TeamSystemPhaseProof`。Hub 在 Team lock 内解析已注册 source，验证准确的 transition 与 target，并将派生出的 system identity 交给 close policy。测试所需的状态通过私有 journal helper 直接种入，而不会引入公开的通用 transition authority。
 
 `compactTeam()`与`compactChannel()`接收只含 JSON 的 prefix 字段和 `TeamSystemMaintenanceProof`。只有 `team-scheduler-dag`可以解析一段准确的终态 Team-journal 或 channel-WAL prefix；其 scope 会在任何 policy、audit repair、checkpoint 或 storage compaction 发生前固定 Team/channel、cursor 和 `throughSequence`。
 
@@ -32,7 +38,7 @@ activation lifecycle command 会携带 JSON-only field 与 `TeamSystemActivation
 
 Task 由 workflow plan 编译时会额外冻结 plan/template provenance。完整 JSON plan 会先校验 task DAG、bounds、result selection 和基于 role 的 workflow graph，再由 TeamRun 创建 task 与 workflow channel；Hub 将其保持为 `compiling`，scheduler 只会在 `ready` record 后调度，并强制 plan 的 parallelism 与 total-attempt bound。重试和 restart 会根据 durable plan/template binding 继续 compilation，而不是重新执行 model-written code。
 
-`TeamRuntime`声明通用的 Team、participant、activation、task、channel、已认证 Envelope admission、recipient receipt 和 delivery claim 操作，并提供各提供方共用的注册能力。task operation 会把 lease-free detail/cancel/review/delete action 与 assignment 及 owner-fenced attempt action 分开；provider 会在其 frozen limit 和 route 下，把已报告 outcome 映射到 direct completion 或 review、retry、failure 或 cancellation。`postChannelEnvelope()`只接收运行时 actor 以及 JSON cursor/retry/draft 字段。activation proof 派生当前 sender；TeamRun 与 scheduler source proof 只派生各自 scope 内的 human-input、assignment 或 review post。task-assignment 与 review-request draft 必须使用 scheduler source，不能使用 activation proof。`resolveTaskReview()`从 activation 或 authenticated-human runtime proof 派生配置的 reviewer，不接受 caller-selected Participant identity；scheduler 只能通过独立 source-scoped proof 修复一条准确的 closed consult response，并验证 task 和两条 Envelope record。receipt 与 delivery claim 会在 Team-to-channel lock 内从运行时 actor 派生 recipient，再执行 policy evaluation 或持久 mutation。`updateTeamGoal()`和`transitionTeamGoalPhase()`接收只含 JSON 的字段和 `TeamActorProof`；Hub 会从该 proof 解析准确当前的 Team、Participant、activation、Session 和 provider，而不是接收 caller-supplied actor identity。claim 会在一个 Hub 线性化点证明准确的 running/idle activation 与 pending recipient admission，而不会保留模型 turn 或追加 claim record。重复 receipt，或已经提交且以传入 Envelope 作为 `causationId` 的 recipient reply，都不会产生本地投递。`bindActivation()`和`updateActivationStatus()`使用 Team cursor 并返回分离的 binding；重复 activation id、Session 更换或并发 resident epoch 都会被拒绝。重复 receipt 会返回原始 record，而不会再次追加 WAL。child creation request 命名 parent Team 和 task；提供方在 parent 队列下验证该 task，并在 child journal 中快照其深度策略。channel 适配器按精确的 `(type, version)`身份注册，并由其 effect disposer 移除。channel manifest 冻结该身份及其 participant，WAL 单独记录生命周期边。策略按 Team 操作注册，并通过 `team/policy` waterfall 组合：允许操作的策略调用 `next()`，拒绝操作的策略返回结构化决定。
+`TeamRuntime`声明通用的 Team、participant、activation、task、channel、已认证 Envelope admission、recipient receipt 和 delivery claim 操作，并提供各提供方共用的注册能力。task operation 会把 lease-free detail/cancel/review/delete action 与 assignment 及 owner-fenced attempt action 分开；provider 会在其 frozen limit 和 route 下，把已报告 outcome 映射到 direct completion 或 review、retry、failure 或 cancellation。`postChannelEnvelope()`只接收运行时 actor 以及 JSON cursor/retry/draft 字段。activation proof 派生当前 sender；TeamRun、scheduler 与 delegation source proof 只派生各自 scope 内的 human-input、assignment、review 或 parent-service post。task-assignment 与 review-request draft 必须使用 scheduler source，不能使用 activation proof。`resolveTaskReview()`从 activation 或 authenticated-human runtime proof 派生配置的 reviewer，不接受 caller-selected Participant identity；scheduler 只能通过独立 source-scoped proof 修复一条准确的 closed consult response，并验证 task 和两条 Envelope record。receipt 与 delivery claim 会在 Team-to-channel lock 内从运行时 actor 派生 recipient，再执行 policy evaluation 或持久 mutation。`updateTeamGoal()`和`transitionTeamGoalPhase()`接收只含 JSON 的字段和 `TeamActorProof`；Hub 会从该 proof 解析准确当前的 Team、Participant、activation、Session 和 provider，而不是接收 caller-supplied actor identity。claim 会在一个 Hub 线性化点证明准确的 running/idle activation 与 pending recipient admission，而不会保留模型 turn 或追加 claim record。重复 receipt，或已经提交且以传入 Envelope 作为 `causationId` 的 recipient reply，都不会产生本地投递。`bindActivation()`和`updateActivationStatus()`使用 Team cursor 并返回分离的 binding；重复 activation id、Session 更换或并发 resident epoch 都会被拒绝。重复 receipt 会返回原始 record，而不会再次追加 WAL。child creation request 命名 parent Team 和 task；提供方在 parent 队列下验证该 task，并在 child journal 中快照其深度策略。channel 适配器按精确的 `(type, version)`身份注册，并由其 effect disposer 移除。channel manifest 冻结该身份及其 participant，WAL 单独记录生命周期边。策略按 Team 操作注册，并通过 `team/policy` waterfall 组合：允许操作的策略调用 `next()`，拒绝操作的策略返回结构化决定。
 
 `requestParticipantInterrupt()`只接受 TeamRun 针对其准确当前 human-to-coordinator topology 的 source proof，在 Team/channel lock 内解析当前 idle/running coordinator target，并以派生出的 human requester 应用 `interrupt` policy。只有该 target 的 activation proof 可以列出或确认请求；确认是幂等的，不会取消 Team 或结算 turn。
 
@@ -58,11 +64,13 @@ TeamRun 还拥有 current-coordinator default-worker task-control proof。owner 
 
 `ChannelSummarySelectionInput` 选择频道、预期 WAL 游标、包含两端的来源范围和幂等键。`ChannelSummarySourceRequest` 增加当前协调者或经过认证的人类证明；`ChannelSummarySource` 返回获授权的来源 Envelope 及其指纹，或已有重试结果。`ChannelSummarizeRequest` 另带规范 Consumer 输出证明。`ChannelSummaryRecord.sourceFingerprint` 绑定完整、规范、有序的来源 Envelope。[摘要 Consumer](../../packages/team/team-channel-summary/README.zh.md) 拥有抽取上限和调用者可见行为；Hub 在接纳与重放时验证来源对全频道可见。
 
-`TeamRunCreateRequest`创建一个本地默认 Team。`TeamRunHandle`保留其 human、coordinator、已 provision worker、direct v3 channel 和 coordinator lease。`TeamRunHumanInputRequest`追加可信 text/image human content；`TeamRunFinalWaitRequest`等待 coordinator 的显式 final Envelope；`TeamRunFinal`在持久 receipt 和狭窄 topology settlement 后返回已接收的面向 human text。`TeamRunCoordinatorTaskAuthority`和 `TeamRunCoordinatorGoalAuthority`是 opaque 的 exact-coordinator capability。`TeamRunCoordinatorGoalUpdateRequest`只携带已观察 revision 和替换 objective；TeamRun 只会从当前 human direct-v3 turn 签发私有、短生命周期的 activation proof 并准入。`TeamRunDefaultWorkerTaskStartRequest`携带其 branded retry key、instructions 和 read/write scope；`TeamRunDefaultWorkerTask`标识已接收 task，并继承 `TeamRunDefaultWorkerTaskReview`；其中冻结的 `reviewPolicy` 和可为 null 的 `reviewResult` 只对应 active attempt，没有 active lease 时则对应最近结算的 attempt；`TeamRunDefaultWorkerTaskWaitRequest`提供已拥有的 task id 和本地 wait cancellation；`TeamRunDefaultWorkerTaskWatchRequest`提供最近观察的 Team cursor 和本地 watch cancellation；`TeamRunDefaultWorkerTaskCancelRequest`提供 owned task id；`TeamRunDefaultWorkerTaskOwnerProposalRequest`提供 owned task id 和可选的 preferred Participant；`TeamRunDefaultWorkerTaskList`和 `TeamRunDefaultWorkerTaskWatch`返回紧凑 task phase 和审阅事实；`TeamRunDefaultWorkerTaskOwnerProposal`返回保留的 advisory hint；`TeamRunDefaultWorkerTaskTerminal`保留其终态 result 或 attempt outcome。
+`TeamRunCreateRequest`创建一个本地默认 Team。`TeamRunHandle`保留其 human、coordinator、已 provision worker、direct v4 channel 和 coordinator lease。`TeamRunHumanInputRequest`追加可信 text/image human content；`TeamRunFinalWaitRequest`等待 coordinator 的显式 final Envelope；`TeamRunFinal`在持久 receipt 和狭窄 topology settlement 后返回已接收的面向 human text。`TeamRunCoordinatorTaskAuthority`和 `TeamRunCoordinatorGoalAuthority`是 opaque 的 exact-coordinator capability。`TeamRunCoordinatorGoalUpdateRequest`只携带已观察 revision 和替换 objective；TeamRun 只会从当前 human direct-v4 turn 签发私有、短生命周期的 activation proof 并准入。`TeamRunDefaultWorkerTaskStartRequest`携带其 branded retry key、instructions 和 read/write scope；`TeamRunDefaultWorkerTask`标识已接收 task，并继承 `TeamRunDefaultWorkerTaskReview`；其中冻结的 `reviewPolicy` 和可为 null 的 `reviewResult` 只对应 active attempt，没有 active lease 时则对应最近结算的 attempt；`TeamRunDefaultWorkerTaskWaitRequest`提供已拥有的 task id 和本地 wait cancellation；`TeamRunDefaultWorkerTaskWatchRequest`提供最近观察的 Team cursor 和本地 watch cancellation；`TeamRunDefaultWorkerTaskCancelRequest`提供 owned task id；`TeamRunDefaultWorkerTaskOwnerProposalRequest`提供 owned task id 和可选的 preferred Participant；`TeamRunDefaultWorkerTaskList`和 `TeamRunDefaultWorkerTaskWatch`返回紧凑 task phase 和审阅事实；`TeamRunDefaultWorkerTaskOwnerProposal`返回保留的 advisory hint；`TeamRunDefaultWorkerTaskTerminal`保留其终态 result 或 attempt outcome。
 
 `workerCount`会在新 Team 的 rules 中快照本地 worker pool。Slot zero 使用 `worker` role；后续 slot 使用 `worker-2`、`worker-3`等，每个 slot 都有独立的 activation-bound Session。Workflow channel 可以包含这些 role name，而 task assignment 仍会应用 scheduler 的 capability、load、workspace 和 plan-parallelism 检查。
 
 `TeamRunWorkflowPlanStartRequest`接受完整 JSON `TeamWorkflowPlan` 和 lineage-derived retry key；`TeamRunWorkflowPlanWaitRequest`等待一个 owned plan；`TeamRunWorkflowPlanTerminal`包含 durable projected task result 或 terminal failure。
+
+`TeamTaskInspectRequest`由准确的 Team/任务 id、`TeamTaskInspectionSelection`及可选版本条件组成，provider 将其解析为`TeamTaskInspectSpec`。`TeamTaskInspection`包含不带历史数组的`TeamTaskRecord`及计数，或带起点、总数、扫描数和续页游标的 attempt/review 索引页。[Core 契约](../../packages/core/team/README.zh.md)规定响应上限及私有产物过滤。
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
@@ -387,7 +395,17 @@ Activation owner for tasks whose participants have an explicit deployment route.
  */
 prepare(teamId: TeamId, signal?: AbortSignal): Promise<number>
 
-/** Stop new preparation, cancel provider admission and await every owned activation release. */
+/** Prepare declared workflow roles before channel admission or task publication.
+ * @param teamId - Team whose active membership authorizes the roles.
+ * @param roles - Unique roles already resolved by the workflow compiler.
+ * @param signal - Cancellation of this compilation.
+ * @returns resolution when every agent role has a resident activation; unavailable routes reject.
+ */
+async prepareRoles(teamId: TeamId, roles: readonly string[], signal?: AbortSignal): Promise<void>
+
+/** Stop new preparation and cancel provider admission; failed releases remain available to a later close.
+ * @returns Shared in-flight cleanup; rejects with collected failures until all owned leases settle.
+ */
 close(): Promise<void>
 ```
 
@@ -541,6 +559,7 @@ async startDelegatedTask( authority: TeamRunCoordinatorTaskAuthority, request: T
  * @param authority - opaque capability minted for the exact current coordinator.
  * @param request - owned task identity and optional local wait cancellation.
  * @returns the task's terminal result or retained terminal attempt fact.
+ * @throws TeamRunError when the Team stalls or a local reviewer stops without an accepted decision.
  */
 async waitForDefaultWorkerTask( authority: TeamRunCoordinatorTaskAuthority, request: TeamRunDefaultWorkerTaskWaitRequest, ): Promise<TeamRunDefaultWorkerTaskTerminal>
 
@@ -979,6 +998,42 @@ abstract createTeam(request: TeamCreateRequest): Promise<TeamStateSnapshot>
  */
 abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
 
+/** Read one current human action without copying the Team projection.
+ * @param request - Exact Team and action identity.
+ * @returns the bounded action snapshot; unsupported providers reject.
+ */
+getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot>
+
+/** Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.
+ * @param request - Team selected for read-only inspection.
+ * @returns the lightweight selection projection; no activation is created or resumed.
+ */
+abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>
+
+/** Read bounded display summaries without materializing task/plan execution history.
+ * @param request - Team, collection, provider-order cursor and requested row limit.
+ * @returns a byte- and row-limited page, with actual scan work and optional continuation.
+ */
+abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>
+
+/** Read current task fields or one bounded attempt/review history page, without private artifact references.
+ * @param request - Exact Team/task, section, optional revision fence and history continuation.
+ * @returns detached data capped by the provider's response budget; indivisible oversized records reject.
+ */
+abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>
+
+/** Resolve the latest published Session of one retained Team member without starting an Agent.
+ * @param request - exact owning Team and member.
+ * @returns published binding, including offline history; missing members or bindings reject.
+ */
+abstract getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot>
+
+/** Read non-secret member metadata and one capability page without activating an Agent.
+ * @param request - Team/member identity and optional cursor-pinned capability continuation.
+ * @returns bounded detail; a changed Team cursor rejects continuation until refreshed.
+ */
+abstract inspectMember(request: TeamMemberInspectRequest): Promise<TeamMemberInspection>
+
 /**
  * Retain one host-mediated approval/question in the Team journal. Providers
  * that do not offer durable interaction records fail explicitly so callers
@@ -1024,8 +1079,8 @@ async inspectQuiescence(teamId: TeamId): Promise<TeamQuiescenceSnapshot>
 
 /**
  * List a bounded page of visible Team summaries for product and transport consumers.
- * @param request - provider-order cursor and page limit.
- * @returns detached Team summaries and an optional continuation cursor.
+ * @param request - opaque discovery position or -1, plus a physical scan-work limit.
+ * @returns detached summaries, scanned work and an optional continuation, including for empty pages.
  */
 abstract listTeamsPage(request: TeamListPageRequest): Promise<TeamListPage>
 
@@ -1055,7 +1110,7 @@ abstract readAudit(request: TeamAuditReadRequest): Promise<TeamAuditReadResult>
  * the caller aborts its local wait. Providers omit `request.signal` before
  * parsing the JSON-only request fields; cancellation changes no durable data.
  * @param request - Team identity, last observed journal cursor, and optional local cancellation.
- * @returns whether the cursor advanced or the provider closed the watch.
+ * @returns an advanced cursor, or closed at an immutable archived tail or provider shutdown.
  * @throws when `request.signal` aborts before the watch resolves.
  */
 abstract watchTeam(request: TeamWatchRequest): Promise<TeamWatchResult>
@@ -1179,6 +1234,18 @@ abstract transitionParticipantPhase(request: ParticipantPhaseTransitionRequest):
  */
 abstract bindActivation(request: ActivationBindRequest): Promise<ActivationBindingSnapshot>
 
+/** Reserve capacity before invoking an activation provider.
+ * @param request - Exact controller-owned startup identity and cursor.
+ * @returns the durable startup reservation.
+ */
+abstract reserveActivation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
+/** Release an unpublished startup only after its controller proves cleanup.
+ * @param request - Exact reservation, owner and current cursor.
+ * @returns the reservation carrying its durable release time.
+ */
+abstract releaseActivationReservation(request: ActivationReservationRequest): Promise<ActivationReservationSnapshot>
+
 /**
  * Persist one permitted residency-status transition for a bound activation.
  * @param request - source-owned runtime proof, Team/activation identity, observed cursor, and next status.
@@ -1260,6 +1327,12 @@ proposeTaskOwner(request: TeamTaskOwnerProposalRequest): Promise<TeamTaskSnapsho
  * @returns the accepted or idempotently replayed workflow plan.
  */
 admitWorkflowPlan(request: TeamWorkflowPlanAdmissionRequest): Promise<TeamWorkflowPlanSnapshot>
+
+/** Read current workflow metadata and one task/dependency window.
+ * @param request - Exact workflow, optional revision and page selection.
+ * @returns a bounded inspection without complete plan or result bodies.
+ */
+inspectWorkflowPlan(request: TeamWorkflowInspectRequest): Promise<TeamWorkflowInspection>
 
 /**
  * Read one durable workflow plan and its compiled task/channel bindings.

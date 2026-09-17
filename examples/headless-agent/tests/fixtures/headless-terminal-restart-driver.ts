@@ -85,8 +85,8 @@ function installCrashWindow(ctx: Context, config: Config, model: TerminalModel):
       const stream = await open(descriptor)
       if (!descriptor.name.startsWith('team/')) return stream
       const append = stream.append.bind(stream)
-      stream.append = async (expectedSequence, values) => {
-        const result = await append(expectedSequence, values)
+      stream.append = async (expectedSequence, values, options) => {
+        const result = await append(expectedSequence, values, options)
         const selected = values.some((value) => {
           const record = object(value)
           if (config.window === 'quiesced') {

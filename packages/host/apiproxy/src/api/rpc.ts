@@ -10,7 +10,7 @@ type ZodIssue = zCore.core.$ZodIssue
 import type { Branded } from '@clocky/clocky-brand'
 import type { MessageId } from '@clocky/clocky-llm/brand'
 import type { SessionId } from '@clocky/clocky-session/types'
-import type { ChannelId, TeamId } from '@clocky/clocky-team/types'
+import type { ChannelId, TeamId, TeamTaskId } from '@clocky/clocky-team/types'
 
 /**
  * Message correlation id: the initiator mints it on a request; a response
@@ -99,6 +99,10 @@ export interface RpcErrorDetailsMap {
   'team-start-conflict': {}
   /** A Team cursor moved between the caller's read and its mutation. */
   'team-cursor-conflict': { teamId?: TeamId }
+  /** A task changed after its inspection or mutation revision was selected. */
+  'team-task-stale-revision': { teamId?: TeamId; taskId?: TeamTaskId }
+  /** The selected Team has no task with this identity. */
+  'team-task-not-found': { teamId?: TeamId; taskId?: TeamTaskId }
   /** A channel cursor or invitation revision moved before its mutation. */
   'team-invalid-argument': { teamId?: TeamId }
   'team-channel-cursor-conflict': { teamId?: TeamId; channelId?: ChannelId }
@@ -110,6 +114,8 @@ export interface RpcErrorDetailsMap {
   'team-channel-compacted': { teamId?: TeamId; channelId?: ChannelId; firstCursor?: number }
   /** An audit read started before a physically compacted audit prefix. */
   'team-audit-compacted': { teamId?: TeamId; channelId?: ChannelId; firstCursor?: number }
+  /** Inbox history before firstCursor is unavailable; read after firstCursor - 1 to inspect retained history. */
+  'team-inbox-compacted': { firstCursor?: number }
   'team-artifact-not-found': { teamId: TeamId; artifactId: string }
   'team-artifact-unavailable': { teamId: TeamId; artifactId: string }
   'internal': {}

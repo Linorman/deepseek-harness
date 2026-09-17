@@ -23,7 +23,7 @@ const MODE = webSnapshotMode()
 
 /** Last AppFrame grid track in CSS pixels. */
 async function detailsTrack(page: Page): Promise<number> {
-  return await appFrame(page).evaluate((element) => {
+  return await page.locator('[data-session-columns]').evaluate((element) => {
     const tracks = getComputedStyle(element).gridTemplateColumns.split(' ')
     return Number.parseFloat(tracks.at(-1) ?? 'NaN')
   })

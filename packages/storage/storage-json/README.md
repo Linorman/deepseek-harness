@@ -4,6 +4,10 @@ English | [中文](README.zh.md)
 
 JSON backend for the [storage hub](../storage/README.md): human-readable KV-unit and append-log files under a configured root, registered as backend `json`. Design: [domain KV storage Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
 
+The log facet scans one directory entry per yield and decodes canonical stream names without reading journal bodies. Entries outside the requested prefix still consume scan work. Stream opening retains full format validation; discovery does not certify body integrity or promise a stable directory snapshot.
+
+Log summaries occupy the first UTF-8 line of the same atomically replaced journal document. A bounded summary read consumes at most its byte budget, closes its file handle, and validates the header identity and version; it does not parse entries or checkpoints. Full stream opening also checks that the header tail agrees with the entries.
+
 ## Model
 
 - The in-memory unit state is authoritative; every write primitive republishes the whole file via temp-write + fsync + atomic `rename()` replace. A unit file is always the complete current net state — legibility is this backend's reason to exist; scale is the SQLite backend's job.

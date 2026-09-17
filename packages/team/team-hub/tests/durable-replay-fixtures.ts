@@ -10,7 +10,7 @@ import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import { jsonValueSchema } from '@clocky/clocky-team'
 import type { ChannelId, TeamId } from '@clocky/clocky-team'
-import TeamHub from '../src/index.ts'
+import TeamHub, { type Config as TeamHubConfig } from '../src/index.ts'
 import { foldTeamRecord, teamProjectionData } from '../src/fold.ts'
 import { teamJournalRecordSchema } from '../src/schema.ts'
 import { CHANNEL_CHECKPOINT_FORMAT_VERSION, CHANNEL_WAL_FORMAT_VERSION, TEAM_CHECKPOINT_FORMAT_VERSION, TEAM_JOURNAL_FORMAT_VERSION } from '../src/types.ts'
@@ -58,6 +58,7 @@ async function storage(backend: 'json' | 'sqlite', root: string): Promise<Contex
  * @param channels - Channel streams attached by the Team journal.
  * @param checkpointCursor - Durable prefix represented by the optional Team checkpoint.
  * @param relatedTeams - Additional parent or child journals needed by the selected fixture.
+ * @param hubConfig - Optional deployment settings for the fresh reader.
  * @returns Fresh Context whose Hub has not loaded the persisted Team yet.
  */
 export async function recover(
@@ -68,6 +69,7 @@ export async function recover(
   channels: readonly DurableChannelFixture[] = [],
   checkpointCursor: number = records.length - 1,
   relatedTeams: readonly DurableTeamFixture[] = [],
+  hubConfig: TeamHubConfig = {},
 ): Promise<Context> {
   const directory = join(process.cwd(), '.tmp')
   await mkdir(directory, { recursive: true })
@@ -102,7 +104,7 @@ export async function recover(
   await writer.fiber.dispose()
   contexts.delete(writer)
   const reader = await storage(backend, root)
-  await reader.plugin(TeamHub)
+  await reader.plugin(TeamHub, hubConfig)
   return reader
 }
 

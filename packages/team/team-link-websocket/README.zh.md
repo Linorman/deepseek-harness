@@ -6,6 +6,8 @@
 
 V6 invitation notification 共用有界 notification 容量，并按 channel 独立派发。准确 acknowledgement result 会移除保留项，terminal invitation update 也会清除它。其他 sender 的 null-audience Envelope 可进入 claim；Hub 验证的 manifest 与固定 recipient intent 仍是最终投递依据。因此 v4 广播可被接收，同时不会授予较晚成员历史 delivery。
 
+远端明确的 `unauthorized` 拒绝、缺少 capability、无效配置、binding 不匹配、畸形 frame/result、意外或乱序协议帧属于不可重试的连接失败。传输超时和断线仍可重试。仅凭 remote request rejection 不判定永久失败，因为远端原因可能是暂时的准入状态。
+
 ## Provider 约定
 
 `providerName`默认值为 `websocket`。`endpoint`是完整的 `ws:` 或 `wss:` Hub URL，不能包含 URL credential 或 fragment。`capabilityEnv`是必填的 POSIX 环境变量名。provider 仅在 `connect()`开始时读取该变量，仅在字面量 v7 `attach` frame 中发送其值，且从不记录或存储它。`connectTimeoutMs`默认值为 `5000`，限制 socket 打开、attach 和 subscribe；`responseTimeoutMs`默认值为 `30000`，限制每个 attach、subscribe 和 operation response。`maxFrameBytes`默认值为 `1048576`；`maxPendingRequests`和 `maxBufferedNotifications`均默认 `64`。后者会限制排队的 Envelope notification 以及每条保留到 acknowledgement 成功的 interrupt delivery。

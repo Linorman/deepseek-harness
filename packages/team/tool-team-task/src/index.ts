@@ -30,6 +30,7 @@ import type {
   TeamRunWorkflowPlanTerminal,
 } from '@clocky/clocky-team-run'
 import { defineTool } from '@clocky/clocky-tools'
+import { WORKFLOW_PLAN_PARAMETER } from './workflow-schema.ts'
 import type { GenericCallView, ToolRunContext } from '@clocky/clocky-tools'
 
 /** Cordis plugin name. */
@@ -91,10 +92,19 @@ type WorkerPoolValue = {
   readonly saturated: boolean
 }
 
-/** Compact terminal default-worker task result without worker execution details. */
+/** Terminal task evidence and the exact failed attempt outcome for coordinator decisions. */
 type TaskWaitValue = TaskReviewValue & (
-  | { readonly task_id: string; readonly phase: 'completed'; readonly summary: string }
-  | { readonly task_id: string; readonly phase: 'failed'; readonly failure?: { readonly code: string; readonly message: string } }
+  | {
+    readonly task_id: string
+    readonly phase: 'completed'
+    readonly summary: string
+    readonly evidence?: string[]
+    readonly artifacts?: ToolJsonValue[]
+    readonly changed_paths?: string[]
+    readonly verification?: string
+    readonly integration?: ToolJsonValue
+  }
+  | { readonly task_id: string; readonly phase: 'failed'; readonly outcome: 'failed' | 'released' | 'lease-expired'; readonly failure?: { readonly code: string; readonly message: string } }
   | { readonly task_id: string; readonly phase: 'cancelled' | 'deleted' }
 )
 
@@ -159,6 +169,11 @@ const TASK_WAIT_VALUE_SCHEMA = {
         task_id: { type: 'string', required: true },
         phase: { type: 'string', required: true, const: 'completed' },
         summary: { type: 'string', required: true },
+        evidence: { type: 'array', items: { type: 'string' }, description: 'Evidence recorded by the worker.' },
+        artifacts: { type: 'array', items: { type: 'json' }, description: 'Provider-owned artifact references, including URI and provenance.' },
+        changed_paths: { type: 'array', items: { type: 'string' } },
+        verification: { type: 'string' },
+        integration: { type: 'json', description: 'Target, outcome, verification, and artifacts from workspace integration.' },
       },
     },
     {
@@ -168,6 +183,7 @@ const TASK_WAIT_VALUE_SCHEMA = {
         ...REVIEW_PROPERTIES,
         task_id: { type: 'string', required: true },
         phase: { type: 'string', required: true, const: 'failed' },
+        outcome: { type: 'string', required: true, enum: ['failed', 'released', 'lease-expired'] },
         failure: {
           type: 'object',
           additionalProperties: false,
@@ -375,7 +391,6 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
   const unregisterWorkerPool = agent.ctx.tools.register(defineTool({
     name: 'team_worker_pool_set',
     description: 'Set the desired number of worker agents for this Team. '
-      + 'For any non-trivial objective with multiple feasible workstreams, including research, analysis, writing, data, operations, coding, or mixed work, set at least 2 before starting independent work and increase it when the task graph has more parallel work. '
       + 'The request is capped by the deployment limit; tasks beyond currently available workers stay queued and are assigned as workers become idle, so do not wait for a slot before starting independent tasks.',
     parameters: {
       worker_count: { type: 'integer', required: true, description: 'Desired worker-pool size, including the default worker slot.' },
@@ -391,7 +406,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
     name: 'team_task_start',
     description: 'Start one independent, bounded Team task for the configured worker pool. '
       + 'Provide a concise subject, complete instructions, the expected deliverable, validation, and any filesystem regions the task may read or modify. '
-      + 'For a non-trivial objective with multiple feasible workstreams, start at least two independent tasks before waiting. Use narrow, non-overlapping workspace-relative file scopes only for concurrent shared-workspace writers; leave scopes empty for work that does not touch files, and use a read-only research, analysis, or review task when only one writer is safe. '
+      + 'Use narrow, non-overlapping workspace-relative scopes for concurrent writers; leave scopes empty for work that does not touch files. '
       + 'Use workspace-relative read_scopes and write_scopes; absolute paths under the current workspace are converted, '
       + 'while paths outside the workspace are rejected. The current workspace and permission mode are shown in runtime context. '
       + 'The coordinator may set the pool with team_worker_pool_set; the scheduler assigns this task to an eligible '
@@ -427,7 +442,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
       instructions: { type: 'string', required: true, description: 'Self-contained child Team objective and expected result.' },
       read_scopes: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative readable paths.' },
       write_scopes: { type: 'array', items: { type: 'string' }, description: 'Workspace-relative writable paths.' },
-      budget: { type: 'json', required: true, description: 'Resource ceilings: maxInputTokens, maxOutputTokens, maxTotalTokens, maxTurns, maxWallTimeMs, maxCostUnits, maxRetries, maxConcurrency, maxArtifactBytes. Values cannot exceed this Team’s allowance.' },
+      budget: { type: 'json', required: true, description: 'Resource ceilings: maxInputTokens, maxOutputTokens, maxTotalTokens, maxTurns, maxWallTimeMs, maxCostUnits, maxRetries, maxConcurrency, maxChildTeams, maxLiveActivations, maxArtifactBytes. Values cannot exceed this Team’s allowance. A bounded parent requires maxChildTeams (zero for a leaf child) and maxLiveActivations (including the child coordinator and idle workers).' },
       template_id: { type: 'string', description: 'Configured child template; supply template_version together. Omit both for this Team’s template.' },
       template_version: { type: 'integer', description: 'Exact version of template_id.' },
     },
@@ -451,6 +466,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
   const unregisterWait = agent.ctx.tools.register(defineTool({
     name: 'team_task_wait',
     description: 'Wait for a worker or child-Team task started by this coordinator, including any configured review. '
+      + 'If its reviewer stops without a decision, the call reports an error and leaves the task in review; correct the reviewer or cancel the task before rescheduling. '
       + 'The result reports its review policy and the decision for its latest attempt. Use the task_id returned by team_task_start or team_task_delegate. Cancelling this call stops only the wait, not the task.'
       + REVIEW_FACTS_DESCRIPTION,
     parameters: {
@@ -484,7 +500,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
   const unregisterWatch = agent.ctx.tools.register(defineTool({
     name: 'team_task_watch',
     description: 'Wait for a bounded Team cursor advance and return the compact state of this coordinator\'s worker and child-Team tasks. '
-      + 'Provide the cursor from the previous list or watch result; cancelling this call stops only the watch.'
+      + 'Omit after_cursor for an immediate first snapshot; thereafter use the cursor from the previous watch result; cancelling this call stops only the watch.'
       + REVIEW_FACTS_DESCRIPTION,
     parameters: {
       after_cursor: { type: 'integer', description: 'Last Team cursor already observed; omit for an immediate snapshot.' },
@@ -550,7 +566,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
       + 'Do not provide JavaScript, filesystem code, or hidden control flow; the complete plan is validated before any task can run. '
       + 'The workflow continues after this call; use team_workflow_wait for its projected result.',
     parameters: {
-      plan: { type: 'json', required: true, description: 'Complete JSON-serializable TeamWorkflowPlan.' },
+      plan: WORKFLOW_PLAN_PARAMETER,
     },
     output: WORKFLOW_START_OUTPUT,
     async execute(args, exec) {
@@ -601,6 +617,7 @@ function install(agent: Agent, ctx: Context, authority: TeamRunCoordinatorTaskAu
   const unregisterWorkflowWait = agent.ctx.tools.register(defineTool({
     name: 'team_workflow_wait',
     description: 'Wait for a declarative Team workflow started by this coordinator. '
+      + 'A stopped reviewer without a decision is reported as an error instead of an indefinite wait. '
       + 'Use the plan_id returned by team_workflow_start. Cancelling this call stops only the wait, not the workflow.',
     parameters: {
       plan_id: { type: 'string', required: true, description: 'Exact plan id returned by team_workflow_start.' },
@@ -746,15 +763,24 @@ function reviewValue(value: TeamRunDefaultWorkerTaskStatus): TaskReviewValue {
 /** Convert one retained TeamRun terminal state to the model-facing compact result. */
 function terminalValue(terminal: TeamRunDefaultWorkerTaskTerminal): TaskWaitValue {
   switch (terminal.phase) {
-    case 'completed':
-      return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal), summary: terminal.result.summary }
+    case 'completed': {
+      const result = terminal.result
+      return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal), summary: result.summary,
+        ...result.evidence === undefined ? {} : { evidence: [...result.evidence] },
+        ...result.artifacts === undefined ? {} : { artifacts: result.artifacts as unknown as ToolJsonValue[] },
+        ...result.changedPaths === undefined ? {} : { changed_paths: [...result.changedPaths] },
+        ...result.verification === undefined ? {} : { verification: result.verification },
+        ...result.integration === undefined ? {} : { integration: result.integration as unknown as ToolJsonValue },
+      }
+    }
     case 'failed':
       switch (terminal.outcome.kind) {
         case 'failed':
-          return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal), failure: terminal.outcome.failure }
+          return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal),
+            outcome: terminal.outcome.kind, failure: terminal.outcome.failure }
         case 'released':
         case 'lease-expired':
-          return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal) }
+          return { task_id: terminal.id, phase: terminal.phase, ...reviewValue(terminal), outcome: terminal.outcome.kind }
         /* v8 ignore next -- TeamRunDefaultWorkerTaskTerminal retains a closed Team task outcome union. */
         default:
           return assertNever(terminal.outcome, 'default-worker task failure outcome')

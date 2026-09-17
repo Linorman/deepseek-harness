@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write packages/team/team-closure-driver/README.md
-README.md: f3c92fdae9a21bb72eab41d686594e78814f224d
-README.zh.md: dec57f9303a13bf315eab425ab9fe7182114d923
+README.md: 58d5a058b2abe9bb1a726bd98ea5252b4db80829
+README.zh.md: b844354a683803f3a655eef1f8a4de6512e3b038

@@ -154,8 +154,8 @@ function crashOnIntent(ctx: Context, config: Config) {
       const stream = await open(descriptor)
       if (!descriptor.name.startsWith('team/')) return stream
       const append = stream.append.bind(stream)
-      stream.append = async (cursor, values) => {
-        const result = await append(cursor, values)
+      stream.append = async (cursor, values, options) => {
+        const result = await append(cursor, values, options)
         const selected = values.some((value) => {
           const record = object(value)
           return config.outcome === 'failure' ? record.type === 'team/closure' && object(record.closure).kind === 'fail'

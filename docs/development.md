@@ -87,6 +87,8 @@ If a relevant local check consumes built package output, build once first:
 pnpm run build
 ```
 
+Type-aware lint consumes referenced projects' declarations. Client projects set `disableSourceOfProjectReferenceRedirect` so Host implementation imports cannot introduce Host `Context` merges into the Client program. Public `lint` and `lint:fix` run `typecheck` first; CI lint waits for Client tsc. Direct `lint:contracts-ready` calls require both compiler faces' declarations.
+
 `pnpm run hygiene` includes `publint`, which validates package entrypoints against the built `lib/*.js` files, and `verify-node-next-types`, which validates built declarations against a temporary NodeNext consumer. A fresh worktree has no bundled JS or declarations until `pnpm run build` runs; ordinary commits and pushes do not require that build unless their selected checks consume it.
 
 ### Environment variables

@@ -14,7 +14,7 @@ export const name = 'team-channel-admission-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 
-/** No independent durable state: Team Hub owns invitations and the channel lifecycle checked by each dispatch wait. */
+/** No runtime invariant: Team Hub owns invitations and the channel lifecycle checked by each dispatch wait. */
 const install: InvariantInstaller = () => {}
 
 /**

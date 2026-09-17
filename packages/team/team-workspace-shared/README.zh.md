@@ -4,6 +4,8 @@
 
 `@clocky/clocky-team-workspace-shared`会在 `ctx.teamWorkspaces` 上注册本地 shared-root `TeamWorkspaceProvider`。它只为匹配的 local-Agent attempt 分配一个已存在的 checkout root；它既不创建 checkout，也不改变 Agent 的 working directory。
 
+`observationExcludedRoots` 显式列出已有的绝对 runtime 目录，默认空列表。扫描器跳过这些子树；配置的 shared root 不能位于排除目录内。Headless 和 Web 排除各自配置的 Clocky home，避免 Session 和 Team journal 写入变成 worker 变更证据；其他 workspace 文件仍被观察。
+
 ## 根目录配置
 
 `root`为必填项，必须是一个已存在目录的绝对路径。挂载时会通过 `fs.realpath` 解析该路径，并将其 canonical directory 作为 fallback root 保留在 provider 生命周期内。relative、missing 或 non-directory root 会在加载时拒绝。symlink 写法只会以其解析后的 target 被接受，之后的所有比较都使用同一 path identity。启用 `allowTeamWorkspacePath` 后，每个 Team 的 durable `workspacePath` 都可以为该 Team 的 allocation 选择一个 canonical existing root。

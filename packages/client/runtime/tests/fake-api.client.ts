@@ -1,3 +1,4 @@
+import { projectTeamSelection, projectTeamBrowse } from '@clocky/clocky-team/selection'
 // Test-local programmable IApiClient fake (NOT the fixture: fixture is a demo
 // data source on a real clock; behavior tests need per-case responses and
 // deferred-controlled timing). Streams are hand pumps: pushMux/pushHost.
@@ -225,7 +226,7 @@ export class FakeApiClient implements IApiClient {
   }
 
   onTeamList: (payload: RequestPayload<'team.list'>) => Promise<RpcResponse<ResponseValue<'team.list'>>>
-    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('runtime-fk-team'), 'Runtime fake Team objective').team] }))
+    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('runtime-fk-team'), 'Runtime fake Team objective').team], scanned: 1 }))
   onTeamGet: (payload: RequestPayload<'team.get'>) => Promise<RpcResponse<ResponseValue<'team.get'>>>
     = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Runtime fake Team objective')))
   onTeamCreate: (payload: RequestPayload<'team.create'>) => Promise<RpcResponse<ResponseValue<'team.create'>>>
@@ -292,7 +293,7 @@ export class FakeApiClient implements IApiClient {
   onTeamArtifactRead: (payload: RequestPayload<'team.artifact.read'>) => Promise<RpcResponse<ResponseValue<'team.artifact.read'>>>
     = () => Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team artifact reads', details: {} }))
   onTeamChannelRead: (payload: RequestPayload<'team.channel.read'>) => Promise<RpcResponse<ResponseValue<'team.channel.read'>>>
-    = payload => Promise.resolve(ok({ channel: { manifest: { id: payload.channelId, teamId: fakeTeamId('runtime-fk-team'),
+    = payload => Promise.resolve(ok({ channel: { manifest: { id: payload.channelId, teamId: fakeTeamId(payload.channelId.startsWith('runtime-fk-team-channel-') ? payload.channelId.slice('runtime-fk-team-channel-'.length) : 'runtime-fk-team'),
       adapter: { type: 'direct', version: 4 }, participants: [], limits: {} }, phase: 'closed', cursor: 0 }, records: [] }))
   onTeamChannelList: (payload: RequestPayload<'team.channel.list'>) => Promise<RpcResponse<ResponseValue<'team.channel.list'>>>
     = payload => Promise.resolve(ok({ items: [{ manifest: { id: fakeTeamChannelId(payload.teamId), teamId: payload.teamId,
@@ -322,7 +323,75 @@ export class FakeApiClient implements IApiClient {
   onTeamTaskReview: (payload: RequestPayload<'team.task.review'>) => Promise<RpcResponse<ResponseValue<'team.task.review'>>>
     = () => Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))
 
+  onTeamMemberSession: (payload: RequestPayload<'team.member.session'>) => Promise<RpcResponse<ResponseValue<'team.member.session'>>>
+    = async (payload) => {
+      const response = await this.onTeamGet({ teamId: payload.teamId })
+      if (!response.result.ok) return { ...response, result: response.result }
+      const binding = response.result.value.activations.findLast(value => value.activation.participantId === payload.participantId)
+      if (binding === undefined) throw new Error('Fake member has no Session binding')
+      return ok({ activation: binding.activation, sessionId: binding.sessionId, provider: binding.provider })
+    }
+
+  onMemberBrowsePage: (payload: RequestPayload<'team.member.list'>, signal?: AbortSignal) => Promise<RpcResponse<ResponseValue<'team.member.list'>>>
+    = async (payload) => {
+      const response = await this.onTeamGet({ teamId: payload.teamId })
+      if (!response.result.ok) return err(response.result.error)
+      const items = response.result.value.participants
+      const start = (payload.afterCursor ?? -1) + 1
+      const end = start + (payload.limit ?? 64)
+      return ok({ items: items.slice(start, end), ...end < items.length ? { nextCursor: end - 1 } : {} })
+    }
+  onWorkflowBrowsePage: IApiClient['teams']['workflowPlanList'] = async () => ok({ items: [] })
+  onTaskBrowsePage: IApiClient['teams']['browse'] = async payload => ok({
+    teamId: payload.teamId, kind: payload.kind, teamCursor: 0, total: 0, scanned: 0, items: [],
+  })
+
   readonly teams: IApiClient['teams'] = {
+    memberInspect: payload => this.record('team.member.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no member detail', details: {} }))),
+    workflowPlanInspect: payload => this.record('team.workflow.plan.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no workflow inspection', details: {} }))),
+    actionRead: payload => this.record('team.action.read', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no action response', details: {} }))),
+    taskInspect: payload => this.record('team.task.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no Team browse response', details: {} }))),
+    browse: (payload, signal) => this.record('team.browse', payload, (async () => {
+      if (payload.kind === 'workflowPlans') {
+        const response = await this.onWorkflowBrowsePage({ teamId: payload.teamId,
+          ...payload.afterCursor === undefined ? {} : { afterCursor: payload.afterCursor },
+          ...payload.limit === undefined ? {} : { limit: payload.limit } }, signal)
+        if (!response.result.ok) return err(response.result.error)
+        const value = response.result.value
+        const scanned = (payload.afterCursor ?? -1) + value.items.length + 1
+        return ok({ kind: 'workflowPlans' as const, teamId: payload.teamId, teamCursor: 0,
+          items: value.items.map(plan => ({ id: plan.id, teamId: plan.teamId, revision: plan.revision, phase: plan.phase,
+            name: { text: plan.plan.name, truncated: false }, taskCount: plan.plan.tasks.length, boundTaskCount: plan.taskBindings.length,
+            ...plan.channelId === undefined ? {} : { channelId: plan.channelId } })),
+          total: scanned + (value.nextCursor === undefined ? 0 : 1), scanned,
+          ...value.nextCursor === undefined ? {} : { nextCursor: value.nextCursor } })
+      }
+      if (payload.kind !== 'members') return await this.onTaskBrowsePage(payload, signal)
+      const response = await this.onMemberBrowsePage({ teamId: payload.teamId,
+        ...payload.afterCursor === undefined ? {} : { afterCursor: payload.afterCursor },
+        ...payload.limit === undefined ? {} : { limit: payload.limit } }, signal)
+      if (!response.result.ok) return err(response.result.error)
+      const value = response.result.value
+      const scanned = (payload.afterCursor ?? -1) + value.items.length + 1
+      return ok({ kind: 'members' as const, teamId: payload.teamId, teamCursor: 0,
+        items: value.items.map(memberSummary), total: scanned + (value.nextCursor === undefined ? 0 : 1),
+        scanned, ...value.nextCursor === undefined ? {} : { nextCursor: value.nextCursor } })
+    })()),
+    memberSession: payload => this.record('team.member.session', payload, this.onTeamMemberSession(payload)),
+    selection: payload => this.record('team.selection', payload, (async () => {
+      const result = await this.onTeamGet(payload)
+      if (!result.result.ok) return err(result.result.error)
+      const state = result.result.value
+      const selected = projectTeamSelection({ team: { ...state.team, goal: state.goal }, budgets: state.budgets,
+        ...state.usage === undefined ? {} : { usage: state.usage },
+        humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
+        participants: new Map(state.participants.map(member => [member.id, member])),
+        activations: new Map(state.activations.map(binding => [binding.activation.id, binding])),
+        tasks: new Map(state.tasks.map(task => [task.id, task])), channelIds: new Set(state.channelIds),
+        workflowPlans: { size: state.workflowPlans?.length ?? 0 },
+      }, 512, 16384, payload.includeMetadata)
+      return selected.ok ? ok(selected.value) : err({ code: 'internal', message: selected.reason, details: {} })
+    })()),
     inboxRespond: payload => this.record('team.inbox.respond', payload, Promise.resolve(err({ code: 'bad-request', message: 'Fake inbox has no action continuation', details: { issues: [] } }))),
     inboxRead: payload => this.record('team.inbox.read', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
     inboxWatch: payload => this.record('team.inbox.watch', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
@@ -343,7 +412,12 @@ export class FakeApiClient implements IApiClient {
     auditRead: payload => this.record('team.audit.read', payload, this.onTeamAuditRead(payload)),
     artifactRead: payload => this.record('team.artifact.read', payload, this.onTeamArtifactRead(payload)),
     artifactList: payload => this.record('team.artifact.list', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team artifact lists', details: {} }))),
-    memberList: payload => this.record('team.member.list', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
+    memberList: payload => this.record('team.member.list', payload, (async () => {
+      const result = await this.onTeamGet({ teamId: payload.teamId })
+      if (!result.result.ok) return err(result.result.error)
+      const start = (payload.afterCursor ?? -1) + 1
+      return ok({ items: result.result.value.participants.slice(start, start + (payload.limit ?? 64)) })
+    })()),
     memberInvite: payload => this.record('team.member.invite', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
     memberActivate: payload => this.record('team.member.activate', payload, this.onTeamMemberActivate(payload)),
     memberRemove: payload => this.record('team.member.remove', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
@@ -444,15 +518,6 @@ export class FakeApiClient implements IApiClient {
 
   readonly skills: IApiClient['skills'] = {
     list: (payload: unknown) => this.record('skill.list', payload, this.onSkillList(payload)),
-  }
-
-  readonly goals: IApiClient['goals'] = {
-    create: payload => this.record('goal.create', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    edit: payload => this.record('goal.edit', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    pause: payload => this.record('goal.pause', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    resume: payload => this.record('goal.resume', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    complete: payload => this.record('goal.complete', payload, Promise.resolve(ok({ ref: { id: 'fake-goal' as never, revision: 1 } }))),
-    clear: payload => this.record('goal.clear', payload, Promise.resolve(ok({ cleared: true as const }))),
   }
 
   readonly settings: IApiClient['settings'] = {
@@ -561,4 +626,28 @@ export class FakeApiClient implements IApiClient {
       registry.splice(registry.indexOf(conn), 1)
     }
   }
+}
+
+/** Select bounded product data from test-owned complete replay input. */
+export function selectionView(state: FakeTeamState): ResponseValue<'team.selection'> {
+  const result = projectTeamSelection({ team: { ...state.team, goal: state.goal }, budgets: state.budgets,
+    ...state.usage === undefined ? {} : { usage: state.usage },
+    humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
+    participants: new Map(state.participants.map(member => [member.id, member])),
+    activations: new Map(state.activations.map(binding => [binding.activation.id, binding])),
+    tasks: new Map(state.tasks.map(task => [task.id, task])), channelIds: new Set(state.channelIds),
+    workflowPlans: { size: state.workflowPlans?.length ?? 0 },
+  }, 512, 16384, true)
+  if (!result.ok) throw new Error('Fixture selection exceeds its byte allowance')
+  return result.value
+}
+
+/** Build a browser member row from complete test-owned replay input. */
+export function memberSummary(member: ResponseValue<'team.member.list'>['items'][number]):
+Extract<ResponseValue<'team.browse'>, { kind: 'members' }>['items'][number] {
+  const result = projectTeamBrowse({ team: fakeTeamState(member.teamId, 'Fixture').team,
+    participants: new Map([[member.id, member]]), tasks: new Map(), workflowPlans: new Map(),
+  }, { teamId: member.teamId, kind: 'members', afterCursor: -1, limit: 1 }, 512, 16384)
+  if (!result.ok || result.value.kind !== 'members' || result.value.items[0] === undefined) throw new Error('Fixture member is oversized')
+  return result.value.items[0]
 }

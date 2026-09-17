@@ -53,9 +53,9 @@ const experimentalPackageDirectory = /^packages\/experimental\/[^/]+$/
 /** npm namespace reserved for private experimental packages. */
 const experimentalPackageNamePrefix = '@clocky/clocky-experimental-'
 /** Explicit legacy compatibility packages retained only for in-repository consumers. */
-const privateCompatibilityPackageDirectory = /^packages\/(?:subagent|workflow)\/[^/]+$/
+const privateCompatibilityPackageDirectory = /^packages\/compat\/[^/]+$/
 /** Directories whose packages this repository publishes: one release member each. */
-const releaseMemberDirectory = /^(?:packages\/(?!experimental\/|subagent\/|workflow\/)[^/]+\/[^/]+|apps\/[^/]+|vendor\/[^/]+)$/
+const releaseMemberDirectory = /^(?:packages\/(?!experimental\/|compat\/)[^/]+\/[^/]+|apps\/[^/]+|vendor\/[^/]+)$/
 
 const localArtifactDirs = new Set(['node_modules', '.tmp'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {

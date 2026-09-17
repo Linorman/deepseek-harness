@@ -12,3 +12,17 @@
         model: headless-team-task-mock
         preset: standard
         maxTokens: 4096
+
+- id: team-placement-default
+  config:
+    routes:
+      - provider: in-process
+        roles: [researcher]
+        model: headless-team-task-mock/headless-team-task-mock
+        modelProvider: headless-team-task-mock
+        modelId: headless-team-task-mock
+        preset: standard
+        cwd: !!js process.cwd()
+        maxTokens: 4096
+    maxActivationsPerDrive: 8
+    maxCursorRetries: 4

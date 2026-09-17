@@ -80,7 +80,10 @@ describe('SDK protocol wire schemas', () => {
     expect(teamArchiveParamsSchema.parse({ teamId: 'team', expectedCursor: 3 })).toEqual({ teamId: 'team', expectedCursor: 3 })
     expect(teamArchiveResultSchema.parse({ teamId: 'team', archivedAt: 7 })).toEqual({ teamId: 'team', archivedAt: 7 })
     expect(teamListParamsSchema.parse({ afterCursor: -1, limit: 2 })).toEqual({ afterCursor: -1, limit: 2 })
-    expect(teamListResultSchema.parse({ items: [], nextCursor: 0 })).toEqual({ items: [], nextCursor: 0 })
+    expect(teamListResultSchema.parse({ items: [], scanned: 1, nextCursor: 'scan-next' }))
+      .toEqual({ items: [], scanned: 1, nextCursor: 'scan-next' })
+    expect(teamListParamsSchema.safeParse({ afterCursor: 0 }).success).toBe(false)
+    expect(teamListResultSchema.safeParse({ items: [], scanned: 0, nextCursor: 'scan-next' }).success).toBe(false)
     expect(teamGoalUpdateParamsSchema.parse({
       teamId: 'team', expectedRevision: 1, objective: 'Update the objective.', budgets: { turns: 4 },
     })).toMatchObject({ objective: 'Update the objective.', budgets: { turns: 4 } })

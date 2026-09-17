@@ -26,8 +26,13 @@ import { TeamInboxDialog, type TeamInboxControls } from './TeamInboxDialog.tsx'
 
 /** Browser-private actions and observable Team product state. */
 export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
+  inspectMember?: import('@clocky/clocky-client-runtime/client').ITeamTasks['inspectMember']
+  readWorkflowDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readWorkflowDetail']
+  closeWorkflowDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['closeWorkflowDetail']
   /** Read one additional Team page on explicit request. */
   loadMoreTeams?: () => Promise<void>
+  /** Return to the first Team page without discarding the selected workspace. */
+  firstTeamPage?: () => Promise<void>
   /** Resolve a Team and open its coordinator transcript. */
   openTeam: (teamId: TeamId) => Promise<void | TeamTaskSelection>
   /** Archive a terminal Team and remove it from the list. */
@@ -53,7 +58,7 @@ export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
   /** Release the runtime's current channel observation. */
   closeChannelView?: () => void
   /** Load the selected Team's explicit channel page window. */
-  readChannels?: (teamId: TeamId, more?: boolean) => Promise<void>
+  readChannels?: (teamId: TeamId, mode?: 'refresh' | 'next' | 'first') => Promise<void>
   /** Exact saved-envelope image read; no arbitrary attachment reader is exposed. */
   readChannelAttachment?: (input: TeamChannelAttachmentInput, signal?: AbortSignal) => Promise<TeamChannelAttachmentResult>
   /** Resolve registered protocol and view choices for channel creation. */
@@ -61,7 +66,11 @@ export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
   /** Read and verify one visible Team artifact. */
   readArtifact?: (teamId: TeamId, artifactId: string, signal?: AbortSignal) => Promise<TeamArtifactReadResult>
   /** Load one bounded member or task collection page for the selected Team. */
-  readCollections?: (teamId: TeamId, collection: TeamCollectionKind, more?: boolean, signal?: AbortSignal) => Promise<void>
+  readCollections?: (teamId: TeamId, collection: TeamCollectionKind, mode?: 'refresh' | 'next' | 'first', signal?: AbortSignal) => Promise<void>
+  /** Read current task data or replace one bounded history window. */
+  readTaskDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readTaskDetail']
+  /** Release task inspection reads and data. */
+  closeTaskDetail?: () => void
   hooks: {
     /** Durable Team list and local Team-selection state. */
     tasks: ObservableSnapshot<TeamTaskListState>
@@ -93,8 +102,8 @@ export function TeamBrowser({
   wide,
   expandSidebar,
   openTeam,
-  refreshInbox, loadMoreInbox, watchInbox, acknowledgeInbox, readAction, respondAction, openActionContext,
-  loadMoreTeams,
+  recoverInbox, refreshInbox, loadMoreInbox, watchInbox, acknowledgeInbox, readAction, respondAction, openActionContext,
+  loadMoreTeams, firstTeamPage,
   archiveTeam,
   cancelTeam,
   resumeTeam,
@@ -111,7 +120,7 @@ export function TeamBrowser({
   const [inboxOpen, setInboxOpen] = useState(false)
   const inboxControls = refreshInbox === undefined || loadMoreInbox === undefined || watchInbox === undefined
     || acknowledgeInbox === undefined || readAction === undefined || respondAction === undefined || openActionContext === undefined
-    ? undefined : { refreshInbox, loadMoreInbox, watchInbox, acknowledgeInbox, readAction, respondAction, openActionContext }
+    ? undefined : { recoverInbox, refreshInbox, loadMoreInbox, watchInbox, acknowledgeInbox, readAction, respondAction, openActionContext }
   const [opening, setOpening] = useState<TeamId | undefined>()
   const [archiving, setArchiving] = useState<TeamId | undefined>()
   const [error, setError] = useState<string | undefined>()
@@ -175,7 +184,15 @@ export function TeamBrowser({
     }).finally(() => { setWorkspacePicking(false) })
   }
 
-  const renderTeamRow = (team: TeamTaskListState['items'][number]) => (
+  type SidebarTeam = Pick<TeamTaskListState['items'][number], 'id' | 'phase' | 'workspacePath'> & { readonly goal: { readonly objective: string } }
+  const selected = state.selected?.teamId === state.current ? state.selected : undefined
+  const selectedRow: SidebarTeam | undefined = selected === undefined ? undefined : {
+    ...selected.state.team, goal: { objective: selected.state.metadata?.kind === 'available'
+      ? selected.state.metadata.goal.objective : selected.state.goal.objective.text },
+  }
+  const rows: readonly SidebarTeam[] = selectedRow === undefined || state.items.some(item => item.id === selectedRow.id)
+    ? state.items : [selectedRow, ...state.items]
+  const renderTeamRow = (team: SidebarTeam) => (
     <div key={team.id} className={css.item} role="listitem">
       <button
         type="button"
@@ -217,14 +234,14 @@ export function TeamBrowser({
 
   const renderTaskGroups = () => {
     if (workspaces.length === 0) {
-      return <div className={css.list} role="list">{state.items.map(renderTeamRow)}</div>
+      return <div className={css.list} role="list">{rows.map(renderTeamRow)}</div>
     }
     const workspacePaths = new Set(workspaces.map(workspace => workspace.path))
-    const loose = state.items.filter(team => team.workspacePath === undefined || !workspacePaths.has(team.workspacePath))
+    const loose = rows.filter(team => team.workspacePath === undefined || !workspacePaths.has(team.workspacePath))
     return (
       <div className={css.workspaceList}>
         {workspaces.map((workspace) => {
-          const tasks = state.items.filter(team => team.workspacePath === workspace.path)
+          const tasks = rows.filter(team => team.workspacePath === workspace.path)
           return (
             <section key={workspace.workspaceId} className={css.workspaceGroup} aria-label={workspace.title}>
               <div className={css.workspaceHead}>
@@ -281,12 +298,15 @@ export function TeamBrowser({
           </button>
         </div>
       )}
-      {state.items.length === 0 && workspaces.length === 0
+      {rows.length === 0 && workspaces.length === 0
         ? <div className={css.empty}>{t(state.phase === 'pending' ? 'empty.loading' : state.nextCursor === undefined ? 'empty.none' : 'workspace.notLoaded')}</div>
         : renderTaskGroups()}
-      {state.nextCursor !== undefined && loadMoreTeams !== undefined && <div className={css.actions}>
+      {(state.nextCursor !== undefined || state.startCursor !== undefined && state.startCursor !== -1) && <div className={css.actions}>
         <small>{t('list.loaded', { count: state.items.length })}</small>
-        <button type="button" disabled={state.loadingMore === true || state.state === 'loading'} onClick={() => { void loadMoreTeams() }}>{t('detail.loadMore')}</button>
+        {state.startCursor !== undefined && state.startCursor !== -1 && firstTeamPage !== undefined && <button type="button"
+          disabled={state.loadingMore === true || state.state === 'loading'} onClick={() => { void firstTeamPage() }}>{t('detail.firstPage')}</button>}
+        {state.nextCursor !== undefined && loadMoreTeams !== undefined && <button type="button"
+          disabled={state.loadingMore === true || state.state === 'loading'} onClick={() => { void loadMoreTeams() }}>{t('detail.loadMore')}</button>}
         {state.loadingMore === true && <p className={css.muted} role="status">{t('empty.loading')}</p>}
       </div>}
       {inboxOpen && inboxControls !== undefined && state.inbox !== undefined && <TeamInboxDialog

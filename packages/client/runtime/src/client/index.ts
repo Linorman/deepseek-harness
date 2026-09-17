@@ -57,11 +57,19 @@ export type { ISession, ProjectionsFace, SessionFace } from './contract/session.
 export type { AgentContext, ISessions } from './contract/sessions.ts'
 export type { IWorkspaces } from './contract/workspaces.ts'
 export type {
-  ITeamTasks, TeamHumanAction, TeamInboxPage, TeamInboxState, TeamActionResponseInput, TeamActionResponseResult, TeamChannelState, TeamChannelInvitation, TeamChannelAdmission, TeamChannelListPage, TeamChannelListState, TeamCollectionKind, TeamCollectionPage, TeamCollectionsState, TeamManagementCommand, TeamManagementOperation, TeamTaskDraft, TeamTaskDraftOptions, TeamTaskDraftPhase, TeamTaskListState, TeamTaskSelection,
-  TeamTaskStartInput, TeamChannelInput, TeamChannelAttachmentInput, TeamChannelAttachmentResult, TeamChannelMessageContent, TeamChannelCatalog, TeamChannelCatalogState, TeamChannelSummary,
+  TeamWorkflowSummary, TeamWorkflowInspection, TeamWorkflowDetailReadMode, TeamWorkflowDetailState,
+  TeamTaskSummary, TeamMemberSummary, TeamTaskInspection, TeamTaskRecord, TeamTaskAttempt,
+  TeamTaskDetailState, TeamTaskDetailPart, TeamTaskDetailReadMode,
+  ITeamTasks, TeamHumanAction, TeamInboxPage, TeamInboxState, TeamActionResponseInput, TeamActionResponseResult,
+  TeamChannelState, TeamChannelInvitation, TeamChannelAdmission, TeamChannelListPage, TeamChannelListState, TeamCollectionKind,
+  TeamCollectionReadMode, TeamCollectionPage, TeamCollectionsState, TeamManagementCommand, TeamManagementOperation,
+  TeamTaskDraft, TeamTaskDraftOptions, TeamTaskDraftPhase, TeamTaskListState, TeamTaskSelection,
+  TeamTaskStartInput, TeamChannelInput, TeamChannelAttachmentInput, TeamChannelAttachmentResult, TeamChannelMessageContent,
+  TeamChannelCatalog, TeamChannelCatalogState, TeamChannelSummary,
 } from './contract/team-tasks.ts'
 export type {
-  ChannelId, ChannelReadPageResult, ChannelReadResult, ChannelRecord, ParticipantId, TeamArtifactReadResult, TeamArtifactReference, TeamAuditList,
+  ChannelId, ChannelReadPageResult, ChannelReadResult, ChannelRecord, ParticipantId, TeamArtifactReadResult,
+  TeamArtifactReference, TeamAuditList,
   TeamTaskId, TeamTaskSnapshot,
 } from '@clocky/clocky-client-connection/client'
 export type {

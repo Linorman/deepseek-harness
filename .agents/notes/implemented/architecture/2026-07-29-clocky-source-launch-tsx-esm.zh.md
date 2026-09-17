@@ -20,6 +20,8 @@ Status: implemented
 
 node-compat CI 矩阵（Node 22.19 与 26）新增 `clocky-source-launch-smoke`（`apps/cli/tests/source-launch.compat.spec.ts`）：以精确的生产运行时启动向量做 keyless 管道 stdio 启动，断言进程会因 TTY 拒绝而以非零状态退出。未来 Node 对模块钩子或 TypeScript 处理的任何改动都会让该门禁变红，而不是破坏开发者的 `pnpm clocky`。
 
+共享 TypeScript base 将未另设目录的 emit 定向到 `.tmp/tsc-unscoped`；package 编译项目声明自己的输出目录。[源码输出检查](../../../../scripts/verify-source-outputs.ts) 拒绝 source tree 中的生成 JavaScript、声明和 map，为手写声明保留具名例外，并检查生产输出路径。诊断列出当前 owning config，不把历史文件归因于未观察到的命令。既有污染保留用于恢复或隔离验证。
+
 ## 备选方案
 
 **在 Node ≤25 保留原生链并按版本分叉。** 拒绝：两套转换语义（amaro 与 esbuild）在边缘语法上会分歧，启动器要加版本探测，node-compat 矩阵要覆盖两条路径——为一个已经变动过的 experimental flag 付出沉重维护。而且 amaro 也不支持 `vendor/hmr` 使用的 `@Inject` 装饰器，原生路径本来就无法启动随附的默认 TUI 配置。

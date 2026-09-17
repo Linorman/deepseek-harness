@@ -6,8 +6,7 @@ English | [中文](README.zh.md)
 
 ## Configuration
 
-`backend` names the paired Hub bridge; `maxTeamsPerDrive`, `pageSize`, `disposalTimeoutMs`, and `observerRetryAttempts` are positive deployment choices. `pulseIntervalMs` optionally retries bounded discovery after startup. Mount the `/registry` service entry and `/hub` bridge before this Consumer; `inject` enforces that barrier and a missing or retired backend fails with `TEAM_CLOSURE_DRIVE_BACKEND_UNAVAILABLE`.
-A repeated or rewound Team-list continuation fails the discovery pass with `TEAM_CURSOR_CONFLICT` rather than retaining the same cursor for another scan.
+`backend` names the paired Hub bridge; `maxTeamsPerDrive`, `pageSize`, `disposalTimeoutMs`, and `observerRetryAttempts` are positive deployment choices. `pulseIntervalMs` optionally retries bounded discovery after startup. Mount the `/registry` service entry and `/hub` bridge before this Consumer; `inject` enforces that barrier and a missing or retired backend fails with `TEAM_CLOSURE_DRIVE_BACKEND_UNAVAILABLE`. A repeated or rewound Team-list continuation fails the discovery pass with `TEAM_CURSOR_CONFLICT` rather than retaining the same cursor for another scan.
 
 ## Backend contract
 

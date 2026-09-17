@@ -6,8 +6,11 @@ import { releaseFamily } from './release/families.ts'
 
 /** Package groups retained only for explicit in-repository compatibility compositions. */
 export const PRIVATE_COMPATIBILITY_GLOBS = [
+  'packages/compat/*/package.json',
   'packages/subagent/*/package.json',
   'packages/workflow/*/package.json',
+  'packages/goal/*/package.json',
+  'packages/client/ui-goal/package.json',
 ] as const
 
 /** Default configurations whose model-visible composition is shipped or carrier-backed. */
@@ -23,7 +26,7 @@ const DEFAULT_CONFIG_FILES = [
 const COMPATIBILITY_CONFIG_FILES = [
   'examples/headless-agent/cordis.yml',
   'examples/acp-agent/legacy-subagent.cordis.yml',
-  'examples/jsonrpc-agent/tests/fixtures/subagent/subagent-clocky-sdk/cordis.yml',
+  'examples/jsonrpc-agent/tests/fixtures/compat/subagent-clocky-sdk/cordis.yml',
 ] as const
 
 /** A parsed package manifest field used by this release gate. */
@@ -33,6 +36,7 @@ interface PackageManifest {
   readonly publishConfig?: unknown
   readonly dependencies?: Record<string, unknown>
   readonly optionalDependencies?: Record<string, unknown>
+  readonly peerDependencies?: Record<string, unknown>
 }
 
 /** Results from one source/config/catalog/carrier cutover check. */
@@ -71,9 +75,9 @@ function packageReferences(manifest: PackageManifest): readonly string[] {
   ]
 }
 
-function scanText(paths: readonly string[], names: readonly string[], failures: string[], label: string): void {
+function scanText(root: string, paths: readonly string[], names: readonly string[], failures: string[], label: string): void {
   for (const relative of paths) {
-    const path = resolve(import.meta.dirname, '..', relative)
+    const path = resolve(root, relative)
     if (!existsSync(path)) {
       failures.push(`${label}: missing ${relative}`)
       continue
@@ -97,27 +101,43 @@ export function verifyLegacyCutover(root = resolve(import.meta.dirname, '..')): 
     .map(({ path, manifest }) => packageName(manifest, path))
     .filter((name): name is string => name !== undefined)
     .sort()
+  const forbiddenProductPackages = [...new Set([
+    ...compatibilityPackages,
+    ...compatibilityPackages.map(name => name.replace('@clocky/clocky-compat-', '@clocky/clocky-')),
+    '@clocky/clocky-client-ui-goal',
+  ])]
 
   if (compatibilityPackages.length === 0) failures.push('compatibility inventory is empty')
   for (const { path, manifest } of manifests) {
+    if (!path.startsWith('packages/compat/')) failures.push(`${path}: compatibility package must live under packages/compat`)
+    if (typeof manifest.name !== 'string' || !manifest.name.startsWith('@clocky/clocky-compat-')) {
+      failures.push(`${path}: compatibility package must use @clocky/clocky-compat-* naming`)
+    }
     if (manifest.private !== true) failures.push(`${path}: compatibility package must be private`)
     if (manifest.publishConfig !== undefined) failures.push(`${path}: compatibility package must omit publishConfig`)
   }
 
-  const releaseMembers = releaseFamily('clocky').members(root).map(member => member.name).sort()
+  const members = releaseFamily('clocky').members(root)
+  const releaseMembers = members.map(member => member.name).sort()
   const releaseSet = new Set(releaseMembers)
-  for (const name of compatibilityPackages) {
+  for (const name of forbiddenProductPackages) {
     if (releaseSet.has(name)) failures.push(`${name}: private compatibility package is still in the Clocky release family`)
+  }
+  for (const member of members) {
+    const manifest = member.manifest as PackageManifest
+    const references = [...packageReferences(manifest), ...Object.keys(manifest.peerDependencies ?? {})]
+    const hits = forbiddenProductPackages.filter(name => references.includes(name))
+    if (hits.length > 0) failures.push(`${member.name}: public package depends on private compatibility: ${hits.join(', ')}`)
   }
 
   const runtimeManifest = readJson(resolve(root, 'python/sdk-runtime/package.json'))
   const runtimeNames = packageReferences(runtimeManifest)
-  const runtimeHits = compatibilityPackages.filter(name => runtimeNames.includes(name))
+  const runtimeHits = forbiddenProductPackages.filter(name => runtimeNames.includes(name))
   if (runtimeHits.length > 0) failures.push(`python/sdk-runtime/package.json: carrier depends on ${runtimeHits.join(', ')}`)
 
-  const defaultToolNames = compatibilityPackages.filter(name => name.includes('/tool-'))
-  scanText(defaultConfigPaths(root), compatibilityPackages, failures, 'default composition')
-  scanText(['docs/tool-catalog.md'], defaultToolNames, failures, 'product tool catalog')
+  const defaultToolNames = forbiddenProductPackages.filter(name => /\/clocky-(?:compat-)?tool-/.test(name))
+  scanText(root, defaultConfigPaths(root), forbiddenProductPackages, failures, 'default composition')
+  scanText(root, ['docs/tool-catalog.md'], defaultToolNames, failures, 'product tool catalog')
   for (const relative of COMPATIBILITY_CONFIG_FILES) {
     const path = resolve(root, relative)
     if (!existsSync(path)) continue
@@ -125,10 +145,13 @@ export function verifyLegacyCutover(root = resolve(import.meta.dirname, '..')): 
     if (!compatibilityPackages.some(name => text.includes(name))) failures.push(`compatibility composition: ${relative} has no legacy consumer`)
   }
 
+  const retiredGoalOutputs = globSync('packages/host/apiproxy/lib/types/api/goals{,.schema}.{js,js.map,d.ts,d.ts.map}', { cwd: root })
+  if (retiredGoalOutputs.length > 0) failures.push(`built Host contains retired Goal API files: ${retiredGoalOutputs.sort().join(', ')}`)
+
   const tarballDir = resolve(root, 'dist/npm')
   if (existsSync(tarballDir)) {
     const tarballNames = globSync('*.tgz', { cwd: tarballDir }).sort()
-    const leaked = tarballNames.filter(file => compatibilityPackages.some(name => file.includes(name.replace('@', '').replace('/', '-'))))
+    const leaked = tarballNames.filter(file => forbiddenProductPackages.some(name => file.includes(name.replace('@', '').replace('/', '-'))))
     if (leaked.length > 0) failures.push(`packed release contains private compatibility tarballs: ${leaked.join(', ')}`)
   }
 

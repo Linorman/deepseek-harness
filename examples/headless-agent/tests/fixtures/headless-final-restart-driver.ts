@@ -67,8 +67,8 @@ function installCrashWindow(ctx: Context, window: Config['window']): void {
     log.open = async (descriptor) => {
       const stream = await open(descriptor)
       const append = stream.append.bind(stream)
-      stream.append = async (expectedSequence, values) => {
-        const result = await append(expectedSequence, values)
+      stream.append = async (expectedSequence, values, options) => {
+        const result = await append(expectedSequence, values, options)
         if (values.some(value => object(value).type === recordType)) {
           writeSync(1, `${JSON.stringify({ stage: 'crash', window, pid: process.pid, stream: descriptor.name, tail: result.tailSequence })}\n`)
           process.kill(process.pid, 'SIGKILL')

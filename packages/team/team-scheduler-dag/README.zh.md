@@ -10,6 +10,12 @@ Ready pending work 也会等待满足 Participant capability、load 上限、允
 
 Wake-channel 创建与恢复，以及 consult review 发送，都会通过 `teamChannelAdmission.waitUntilActive()` 等待，再进行 assignment 或 Envelope dispatch。等待不持有 Hub 锁，并随 scheduler disposal 停止。缺少 endpoint consent 时由 admission Consumer 的持久 deadline 处理；scheduler 不会把插件注册当作 acknowledgement。
 
+Wake 恢复、review 派发与新任务分配分别受每轮额度约束。`maxReviewDispatchesPerDrive` 默认 `8`，限制 review 请求或恢复的响应数。耗尽 `maxWakeDispatchesPerDrive` 只结束 wake 扫描，合格的新任务和 review 仍可推进。Review 频道按准确的 Team、task、attempt 和 reviewer 幂等创建，包括已 attached 但尚无 request Envelope 的频道。
+
+任务在频道发布期间推进时，scheduler 签发的 proof 可能失效。Scheduler 在 `maxConflictsPerDrive` 限制内重读状态并签发新 proof；持续的 proof 失败仍被抛出，未完成 assignment 的 wake 频道逐个关闭。明确的策略拒绝不会触发此重试。
+
+每次 discovery drive 消费一个配置大小的 Team page，为下一 pulse 保留 opaque cursor，空页也推进。每次 Team drive 完成一个有界轮次；期间合并的变更安排到后续事件循环。Disposal 取消这些延后轮次，并在已接纳工作结算前保留 proof source。
+
 ## 调度与失效
 
 每次 drive 检查冻结的消费与时间上限后，会使已到期的 assigned 或 running lease 失效，再按 priority 降序和 task 的 durable creation order 选择 ready 的 `pending` task。它只考虑 active 的 `local-agent` 和 `remote-agent` participant：它们必须声明全部 required capability、拥有准确的 `idle` activation，且 active attempt 数少于 `maxActiveAttemptsPerParticipant`。在对这些 candidate 排名之前，它会调用 `ctx.teamWorkspaces.eligible(task.workspaceMode, { task, binding })`，并跳过返回 `false` 的结果；provider 不可用会使 drive 拒绝。scheduler 绝不调用 `allocate()`。它使用 task revision 与已配置的 `leaseDurationMs` 调用 `assignTask()`；Team provider 仍是 membership、capability、activation identity、task phase、revision 和 lease validity 的最终 authority。Discovery 使用配置的 `teamPageSize`调用有界 `listTeamsPage()`，一个 pulse 不会请求完整 Team collection。
