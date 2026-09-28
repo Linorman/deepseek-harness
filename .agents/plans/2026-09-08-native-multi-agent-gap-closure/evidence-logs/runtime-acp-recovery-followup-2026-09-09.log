@@ -1,0 +1,26 @@
+Native multi-agent gap closure — F-RT-03 same-host ACP recovery follow-up
+Date: 2026-09-09 (Asia/Shanghai)
+Scope: explicit ACP local cold replacement only; no cross-host ACP or remote-supervisor claim.
+
+Implementation:
+- Added `acp-local-cold-replace` recovery schema with profile, workspace cwd, and exact process identity.
+- ACP provider records the descriptor only when recovery is configured and registers a matching local fencer.
+- Activation controller restores ACP cwd for persisted-resume replacement.
+- Startup recovery selects the configured recovery kind; default remains `sdk-local-cold-replace`.
+
+Command: node node_modules/typescript/bin/tsc -b packages/agent-runtime/agent-runtime-acp/tsconfig.json packages/agent-runtime/agent-runtime-sdk/tsconfig.json packages/core/team/tsconfig.json packages/team/team-scheduler-dag/tsconfig.json --pretty false
+Result: PASS (exit 0)
+
+Command: node node_modules/typescript/bin/tsc -b packages/team/team-activation-recovery/tsconfig.json --pretty false
+Result: PASS (exit 0)
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/core/team/tests/schema.spec.ts packages/team/team-scheduler-dag/tests/scheduler.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/remote-link.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts packages/team/team-activation-controller/tests/controller.spec.ts
+Result: PASS — 8 files, 120 passed, 2 skipped. The skipped cases are platform-conditional on macOS exact process identity.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/team/team-activation-recovery/tests/startup-recovery.spec.ts
+Result: PASS — 1 file, 23 passed.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm run typecheck
+Result: PASS — Host build/lib, generated package build, and client aggregate typecheck completed with exit 0.
+
+Boundary: macOS `ProcessInspector` does not expose exact process start identity, so ACP recovery fails loud when enabled on that platform. Cross-host ACP supervision and independent-host recovery remain unverified/deferred.

@@ -1,0 +1,852 @@
+$ vitest run
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+to-parent
+to-parent
+(node:6038) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+ ❯ |thread-safe| packages/session/session-persistence-sqlite/tests/differential.spec.ts (3 tests | 3 failed) 176ms
+     × preserves ignorable logical events whose names match physical storage tags 49ms
+     × matches JSONL/Zstandard for every packed kind, scalar fallback, suffix, partition, and reopen 28ms
+     × matches JSONL/Zstandard across randomized logical logs and append partitions 98ms
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+Switched to a new branch 'current'
+Switched to branch 'master'
+Switched to branch 'current'
+ ❯ |thread-safe| packages/subagent/subagent/tests/continuation.spec.ts (103 tests | 3 failed) 8882ms
+     × publishes the reserved child id and appends the pre-turn descriptor 84ms
+     × omits undeclared composition fields from the descriptor 34ms
+     × records a declared tool filter in the descriptor 67ms
+ ❯ |thread-safe| scripts/install-lefthook.spec.ts (38 tests | 1 failed) 48805ms
+     × does not publish worktree integration when the pairing driver probe fails 1187ms
+ ❯ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts (16 tests | 1 failed) 8927ms
+     × uses only the real Team Hub to assign the highest-priority task to an exact idle capability match 632ms
+ ❯ |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts (152 tests | 6 failed) 2960ms
+     × treats ENOTDIR while probing a host candidate as confirmed absence 17ms
+     × defaults clockyHome and uses cwd itself as root when no project marker exists 7ms
+     × honors CLOCKY_HOME when clockyHome is not configured explicitly 11ms
+     × labels the default Clocky home as ~/.clocky when HOME points at the configured default 12ms
+     × expands a configured ~/.clocky home to the operating-system home directory 14ms
+     × labels a custom clockyHome as CLOCKY_HOME instead of pretending it is ~/.clocky 7ms
+ ❯ |thread-safe| packages/team/team-agent-client/tests/client.spec.ts (80 tests | 5 failed) 43611ms
+     × retries workspace release intent after a real same-Team commit advances its cursor 557ms
+     × bounds same-Team CAS retries for workspace activation and preservation 682ms
+     × restores provider metadata that has no base version 527ms
+     × fails workspace settlement explicitly when its durable allocation is absent from the provider snapshot 534ms
+     × reuses a concurrent durable activation observed after provider restoration 522ms
+(node:31433) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32123) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32674) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 end listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32674) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 end listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(node:32710) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |thread-safe| packages/skill/skill-filesystem/tests/skill-filesystem.spec.ts (21 tests | 1 failed) 746ms
+     × discovers project, custom, user, and agents skill roots in priority order 94ms
+(node:33211) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 exit listeners added to [process]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ |thread-safe| packages/subagent/tool-subagent/tests/tool-subagent.spec.ts (64 tests | 1 failed) 628ms
+     × forwards an explicit tool filter unchanged instead of encoding the depth policy into it 5ms
+ ❯ |thread-safe| scripts/translation-pairing.spec.ts (57 tests | 1 failed) 606ms
+     × fails before a sidecar can reference an unavailable object 80ms
+ ❯ |thread-safe| packages/session-query/session-query/tests/session-query.spec.ts (41 tests | 1 failed) 284ms
+     × merges authoritative persistence with live precedence and detects conflicts 11ms
+ ❯ |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts (16 tests | 5 failed) 302ms
+     × preserves the subagent ownership fence for cold and live Remote lookups 69ms
+     × no longer treats a descriptor-only cold child without origin as subagent-owned 4ms
+     × rejects origin-marked and runtime-owned live children from generic controls 3ms
+     × does not classify an ordinary fork from an inherited ancestor descriptor 4ms
+     × classifies a raced cold-resume ID collision as agent-busy 14ms
+Error: renderSlot('root') before any 'root' registration (boot order)
+    at RootOutlet (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:868:11)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: renderSlot('root') before any 'root' registration (boot order)
+    at RootOutlet (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:868:11)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:336:48)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:336:48)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry A boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:395:32)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry A boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:395:32)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: inject boom
+    at inject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:935:29)
+    at runInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:110:27)
+    at cachedRootInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:179:13)
+    at RootEntry (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:615:20)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+Error: inject boom
+    at inject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:935:29)
+    at runInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:110:27)
+    at cachedRootInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:179:13)
+    at RootEntry (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:615:20)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+ ❯ |thread-safe| packages/typert/generator/tests/tsdown-plugin.spec.ts (6 tests | 1 failed) 94ms
+     × skips outputs that do not identify a Typert contributor 10ms
+Error: slot machinery rendered outside the installed renderer tree
+    at useHost (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:27:20)
+    at SessionProvider (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:151:16)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+Error: slot machinery rendered outside the installed renderer tree
+    at useHost (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:27:20)
+    at SessionProvider (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:151:16)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 29 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| scripts/install-lefthook.spec.ts > worktree-local Lefthook installer > does not publish worktree integration when the pairing driver probe fails
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ scripts/install-lefthook.spec.ts:821:27
+    819|     const result = await runInstaller(fixture, fixture.main)
+    820|
+    821|     expect(result.status).toBe(1)
+       |                           ^
+    822|     expect(result.stderr).toContain('merge-translation-pairing.ts --pr…
+    823|     expect(gitResult(fixture, fixture.main, ['config', '--get', 'core.…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/29]⎯
+
+ FAIL  |thread-safe| scripts/translation-pairing.spec.ts > translation pairing snapshots > fails before a sidecar can reference an unavailable object
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ scripts/translation-pairing.spec.ts:99:65
+     97|     const root = mkdtempSync(join(tmpdir(), 'clocky-translation-pairin…
+     98|     try {
+     99|       expect(() => storeGitBlob(root, Buffer.from('snapshot'))).toThro…
+       |                                                                 ^
+    100|     } finally {
+    101|       rmSync(root, { recursive: true, force: true })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context instruction discovery > treats ENOTDIR while probing a host candidate as confirmed absence
+AssertionError: expected [ { …(2) }, { …(2) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/AGENTS.md",
++     "displayPath": "AGENTS.md",
++   },
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/CLAUDE.md",
++     "displayPath": "CLAUDE.md",
++   },
++ ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:303:21
+    301|       const files = await discoverBaselineInstructionFiles({ cwd: root…
+    302|
+    303|       expect(files).toEqual([])
+       |                     ^
+    304|     } finally {
+    305|       await rm(root, { recursive: true, force: true })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context instruction discovery > defaults clockyHome and uses cwd itself as root when no project marker exists
+AssertionError: expected [ 'AGENTS.md', 'CLAUDE.md', …(2) ] to deeply equal [ 'AGENTS.md' ]
+
+- Expected
++ Received
+
+  [
+    "AGENTS.md",
++   "CLAUDE.md",
++   ".tmp/verification-runtime/clocky-workspace-context-bGgpqa/AGENTS.md",
++   ".tmp/verification-runtime/clocky-workspace-context-bGgpqa/child/AGENTS.md",
+  ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:596:51
+    594|       const files = await discoverBaselineInstructionFiles({ cwd })
+    595|
+    596|       expect(files.map(file => file.displayPath)).toEqual(['AGENTS.md'…
+       |                                                   ^
+    597|       expect(files.map(file => file.absolutePath)).toEqual([join(cwd, …
+    598|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context instruction discovery > honors CLOCKY_HOME when clockyHome is not configured explicitly
+AssertionError: expected [ { …(2) }, { …(2) }, { …(2) } ] to deeply equal [ { …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "absolutePath": "/Volumes/projects-mac/deepseek-harness/.tmp/verification-runtime/clocky-workspace-context-5KJdeQ/AGENTS.md",
+      "displayPath": "$CLOCKY_HOME/AGENTS.md",
+    },
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/AGENTS.md",
++     "displayPath": "AGENTS.md",
++   },
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/CLAUDE.md",
++     "displayPath": "CLAUDE.md",
++   },
+  ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:614:21
+    612|       const files = await discoverBaselineInstructionFiles({ cwd: root…
+    613|
+    614|       expect(files).toEqual([{ absolutePath: join(envHome, 'AGENTS.md'…
+       |                     ^
+    615|     } finally {
+    616|       vi.unstubAllEnvs()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context instruction discovery > labels the default Clocky home as ~/.clocky when HOME points at the configured default
+AssertionError: expected [ '~/.clocky/AGENTS.md', …(2) ] to deeply equal [ '~/.clocky/AGENTS.md' ]
+
+- Expected
++ Received
+
+  [
+    "~/.clocky/AGENTS.md",
++   "AGENTS.md",
++   "CLAUDE.md",
+  ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:635:51
+    633|       const files = await isolated.discoverBaselineInstructionFiles({ …
+    634|
+    635|       expect(files.map(file => file.displayPath)).toEqual(['~/.clocky/…
+       |                                                   ^
+    636|     } finally {
+    637|       vi.unstubAllEnvs()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context instruction discovery > expands a configured ~/.clocky home to the operating-system home directory
+AssertionError: expected [ { …(2) }, { …(2) }, { …(2) } ] to deeply equal [ { …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+      "absolutePath": "/Volumes/projects-mac/deepseek-harness/.tmp/verification-runtime/clocky-workspace-context-KfxhiY/.clocky/AGENTS.md",
+      "displayPath": "~/.clocky/AGENTS.md",
+    },
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/AGENTS.md",
++     "displayPath": "AGENTS.md",
++   },
++   {
++     "absolutePath": "/Volumes/projects-mac/deepseek-harness/CLAUDE.md",
++     "displayPath": "CLAUDE.md",
++   },
+  ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:656:21
+    654|       const files = await isolated.discoverBaselineInstructionFiles({ …
+    655|
+    656|       expect(files).toEqual([{ absolutePath: join(home, '.clocky/AGENT…
+       |                     ^
+    657|     } finally {
+    658|       vi.doUnmock('node:os')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/29]⎯
+
+ FAIL  |thread-safe| packages/context/agent-instructions/tests/agent-instructions.spec.ts > workspace context request injection > labels a custom clockyHome as CLOCKY_HOME instead of pretending it is ~/.clocky
+AssertionError: expected [ '$CLOCKY_HOME/AGENTS.md', …(2) ] to deeply equal [ '$CLOCKY_HOME/AGENTS.md' ]
+
+- Expected
++ Received
+
+  [
+    "$CLOCKY_HOME/AGENTS.md",
++   "AGENTS.md",
++   "CLAUDE.md",
+  ]
+
+ ❯ packages/context/agent-instructions/tests/agent-instructions.spec.ts:2417:51
+    2415|       const files = await discoverBaselineInstructionFiles({ cwd: root…
+    2416|
+    2417|       expect(files.map(file => file.displayPath)).toEqual(['$CLOCKY_HO…
+       |                                                   ^
+    2418|     } finally {
+    2419|       await rm(root, { recursive: true, force: true })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/29]⎯
+
+ FAIL  |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts > Remote Agent and Session lookup policy > preserves the subagent ownership fence for cold and live Remote lookups
+AssertionError: expected TypertLookupFailure: Typert lookup policy… { failure: { …(3) } } to match object { failure: { …(2) } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+- {
++ TypertLookupFailure {
+    "failure": {
+-     "code": "agent-busy",
+-     "details": {
+-       "reason": "use subagent delivery for this child session",
+-     },
++     "code": "internal",
++     "details": {},
+    },
+  }
+
+ ❯ packages/host/apiproxy/tests/api-proxy-cold.spec.ts:409:29
+    407|     const liveFailure = Promise.resolve(sessionLookup.resolve(liveSess…
+    408|     await expect(coldFailure).rejects.toBeInstanceOf(TypertLookupFailu…
+    409|     await expect(coldFailure).rejects.toMatchObject(ownershipFailure)
+       |                             ^
+    410|     await expect(liveFailure).rejects.toBeInstanceOf(TypertLookupFailu…
+    411|     await expect(liveFailure).rejects.toMatchObject(ownershipFailure)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/29]⎯
+
+ FAIL  |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts > subagent ownership fence > no longer treats a descriptor-only cold child without origin as subagent-owned
+AssertionError: expected "resume" to be called 1 times, but got 0 times
+ ❯ packages/host/apiproxy/tests/api-proxy-cold.spec.ts:515:20
+    513|       content: [{ type: 'text', text: 'follow up' }],
+    514|     }))
+    515|     expect(resume).toHaveBeenCalledTimes(1)
+       |                    ^
+    516|     expect(prompt.result.ok).toBe(false)
+    517|     if (!prompt.result.ok) expect(prompt.result.error.code).toBe('inte…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/29]⎯
+
+ FAIL  |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts > subagent ownership fence > rejects origin-marked and runtime-owned live children from generic controls
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ packages/host/apiproxy/tests/api-proxy-cold.spec.ts:552:31
+    550|
+    551|     const stopped = await api.sessions.cancel(request({ sessionId: ori…
+    552|     expect(stopped.result.ok).toBe(false)
+       |                               ^
+    553|     if (!stopped.result.ok) expect(stopped.result.error.code).toBe('ag…
+    554|     expect(cancel).not.toHaveBeenCalled()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/29]⎯
+
+ FAIL  |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts > subagent ownership fence > does not classify an ordinary fork from an inherited ancestor descriptor
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ packages/host/apiproxy/tests/api-proxy-cold.spec.ts:598:32
+    596|       content: [{ type: 'text', text: 'ordinary work' }],
+    597|     }))
+    598|     expect(response.result.ok).toBe(true)
+       |                                ^
+    599|     expect(followup).toHaveBeenCalledOnce()
+    600|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/29]⎯
+
+ FAIL  |thread-safe| packages/host/apiproxy/tests/api-proxy-cold.spec.ts > sessions.prompt synchronous rejection > classifies a raced cold-resume ID collision as agent-busy
+TypeError: Cannot read properties of undefined (reading 'listProviders')
+ ❯ buildModelCatalog packages/host/apiproxy/src/api-proxy.ts:382:45
+    380|   failures: ModelCatalogFailure[]
+    381| }> {
+    382|   const catalog = await Promise.all(ctx.llm.listProviders().map(async …
+       |                                             ^
+    383|     try {
+    384|       const models = await ctx.llm.listModels(provider.id)
+ ❯ Object.models packages/host/apiproxy/src/api-proxy.ts:3084:44
+ ❯ packages/host/apiproxy/tests/api-proxy-cold.spec.ts:780:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/29]⎯
+
+ FAIL  |thread-safe| packages/session/session-persistence-sqlite/tests/differential.spec.ts > SQLite cross-backend differential behavior > preserves ignorable logical events whose names match physical storage tags
+AssertionError: sqlite: expected { meta: { version: +0, …(3) }, …(1) } to deeply equal { meta: { version: +0, …(4) }, …(1) }
+
+- Expected
++ Received
+
+@@ -48,10 +48,9 @@
+      },
+    ],
+    "meta": {
+      "createdAt": 1000,
+      "cwd": "/work",
+-     "delegationDepth": 0,
+      "id": "differential",
+      "version": 0,
+    },
+  }
+
+ ❯ verifyBackend packages/session/session-persistence-sqlite/tests/differential.spec.ts:153:64
+    151|       await mounted.persistence.append(header.id, batch)
+    152|     }
+    153|     expect(await mounted.persistence.inspect(header.id), name).toEqual…
+       |                                                                ^
+    154|     expect(await mounted.persistence.list(), name).toEqual([header])
+    155|     const revision = (await mounted.persistence.listSnapshots())[0]?.r…
+ ❯ packages/session/session-persistence-sqlite/tests/differential.spec.ts:221:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/29]⎯
+
+ FAIL  |thread-safe| packages/session/session-persistence-sqlite/tests/differential.spec.ts > SQLite cross-backend differential behavior > matches JSONL/Zstandard for every packed kind, scalar fallback, suffix, partition, and reopen
+AssertionError: jsonl-zstd: expected { meta: { version: +0, …(3) }, …(1) } to deeply equal { meta: { version: +0, …(4) }, …(1) }
+
+- Expected
++ Received
+
+@@ -346,10 +346,9 @@
+      },
+    ],
+    "meta": {
+      "createdAt": 1000,
+      "cwd": "/work",
+-     "delegationDepth": 0,
+      "id": "differential",
+      "version": 0,
+    },
+  }
+
+ ❯ verifyBackend packages/session/session-persistence-sqlite/tests/differential.spec.ts:153:64
+    151|       await mounted.persistence.append(header.id, batch)
+    152|     }
+    153|     expect(await mounted.persistence.inspect(header.id), name).toEqual…
+       |                                                                ^
+    154|     expect(await mounted.persistence.list(), name).toEqual([header])
+    155|     const revision = (await mounted.persistence.listSnapshots())[0]?.r…
+ ❯ packages/session/session-persistence-sqlite/tests/differential.spec.ts:237:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/29]⎯
+
+ FAIL  |thread-safe| packages/session/session-persistence-sqlite/tests/differential.spec.ts > SQLite cross-backend differential behavior > matches JSONL/Zstandard across randomized logical logs and append partitions
+Error: Property failed after 1 tests
+{ seed: 369022, path: "0:0:0:0", endOnFailure: true }
+Counterexample: [{"events":[{"type":"turn/start","seq":0,"time":1,"data":{"turn":1}},{"type":"step/start","seq":1,"time":2,"data":{"turn":1,"step":1}},{"type":"step/end","seq":2,"time":3,"data":{"turn":1,"step":1}},{"type":"turn/end","seq":3,"time":4,"data":{"turn":1,"reason":{"kind":"completed"}}}],"batchSizes":[1]}]
+Shrunk 3 time(s)
+
+Hint: Enable verbose mode in order to have the list of all failing values encountered during the run
+ ❯ buildError node_modules/.pnpm/fast-check@4.8.0/node_modules/fast-check/lib/fast-check.js:2441:16
+ ❯ asyncThrowIfFailed node_modules/.pnpm/fast-check@4.8.0/node_modules/fast-check/lib/fast-check.js:2453:8
+
+Caused by: AssertionError: jsonl-zstd: expected { meta: { version: +0, …(3) }, …(1) } to deeply equal { meta: { version: +0, …(4) }, …(1) }
+
+- Expected
++ Received
+
+@@ -39,10 +39,9 @@
+      },
+    ],
+    "meta": {
+      "createdAt": 1000,
+      "cwd": "/work",
+-     "delegationDepth": 0,
+      "id": "differential",
+      "version": 0,
+    },
+  }
+
+ ❯ verifyBackend packages/session/session-persistence-sqlite/tests/differential.spec.ts:153:64
+ ❯ packages/session/session-persistence-sqlite/tests/differential.spec.ts:268:9
+ ❯ AsyncProperty.run node_modules/.pnpm/fast-check@4.8.0/node_modules/fast-check/lib/fast-check.js:1197:19
+ ❯ asyncRunIt node_modules/.pnpm/fast-check@4.8.0/node_modules/fast-check/lib/fast-check.js:2495:15
+ ❯ packages/session/session-persistence-sqlite/tests/differential.spec.ts:265:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/29]⎯
+
+ FAIL  |thread-safe| packages/session-query/session-query/tests/session-query.spec.ts > session-query exact reads > merges authoritative persistence with live precedence and detects conflicts
+AssertionError: promise resolved "[ { header: { …(4) }, …(2) }, …(1) ]" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+[
+  {
+    "header": {
+      "createdAt": 3,
+      "cwd": "/same",
+      "id": "shared",
+      "version": 0,
+    },
+    "live": true,
+    "persisted": true,
+  },
+  {
+    "header": {
+      "createdAt": 2,
+      "id": "durable",
+      "version": 0,
+    },
+    "live": false,
+    "persisted": true,
+  },
+]
+
+ ❯ packages/session-query/session-query/tests/session-query.spec.ts:1083:49
+    1081|     await expect(ctx.sessionQuery.listSessions()).rejects.toThrow(expe…
+    1082|     sharedEntry.meta = { ...sharedEntry.meta, cwd: '/same', agentPrese…
+    1083|     await expect(ctx.sessionQuery.listSessions()).rejects.toThrow(expe…
+       |                                                 ^
+    1084|     await persistence.dispose()
+    1085|     await expect(ctx.sessionQuery.listSessions()).resolves.toEqual([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/29]⎯
+
+ FAIL  |thread-safe| packages/skill/skill-filesystem/tests/skill-filesystem.spec.ts > FileSystemSkillProvider > discovers project, custom, user, and agents skill roots in priority order
+AssertionError: expected [ 'animate', 'animate-expo', …(24) ] to include 'fallback-root'
+ ❯ packages/skill/skill-filesystem/tests/skill-filesystem.spec.ts:205:78
+    203|     const noGit = await tempDir('skill-no-git')
+    204|     await writeSkill(join(noGit, '.clocky/skills'), 'fallback-root', '…
+    205|     expect((await ctx.skills.list({ cwd: noGit })).map(skill => skill.…
+       |                                                                              ^
+    206|   })
+    207|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/29]⎯
+
+ FAIL  |thread-safe| packages/subagent/subagent/tests/continuation.spec.ts > SubagentRuntime.startContinuable > publishes the reserved child id and appends the pre-turn descriptor
+AssertionError: expected { version: 3, …(6) } to deeply equal { version: 3, …(5) }
+
+- Expected
++ Received
+
+  {
+    "agentModel": "mock",
+    "agentProvider": "mock",
++   "depth": 1,
+    "label": "child task",
+    "mode": "continuable",
+    "provider": "spawn",
+    "version": 3,
+  }
+
+ ❯ packages/subagent/subagent/tests/continuation.spec.ts:271:29
+    269|     expect(descriptorIndex).toBeLessThan(turnStartIndex)
+    270|     const descriptor = loaded.events[descriptorIndex] as SessionEvent<…
+    271|     expect(descriptor.data).toEqual({
+       |                             ^
+    272|       version: SUBAGENT_DESCRIPTOR_VERSION,
+    273|       mode: 'continuable',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/29]⎯
+
+ FAIL  |thread-safe| packages/subagent/subagent/tests/continuation.spec.ts > SubagentRuntime.startContinuable > omits undeclared composition fields from the descriptor
+AssertionError: expected { version: 3, …(4) } to deeply equal { version: 3, …(3) }
+
+- Expected
++ Received
+
+  {
++   "depth": 1,
+    "label": "child task",
+    "mode": "continuable",
+    "provider": "spawn",
+    "version": 3,
+  }
+
+ ❯ packages/subagent/subagent/tests/continuation.spec.ts:366:30
+    364|     const descriptor = child.session.events.find(event => event.type =…
+    365|
+    366|     expect(descriptor?.data).toEqual({
+       |                              ^
+    367|       version: SUBAGENT_DESCRIPTOR_VERSION,
+    368|       mode: 'continuable',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/29]⎯
+
+ FAIL  |thread-safe| packages/subagent/subagent/tests/continuation.spec.ts > SubagentRuntime.startContinuable > records a declared tool filter in the descriptor
+AssertionError: expected { version: 3, …(5) } to deeply equal { version: 3, …(4) }
+
+- Expected
++ Received
+
+@@ -1,6 +1,7 @@
+  {
++   "depth": 1,
+    "label": "child task",
+    "mode": "continuable",
+    "provider": "spawn",
+    "toolFilter": {
+      "deny": [
+
+ ❯ packages/subagent/subagent/tests/continuation.spec.ts:400:8
+    398|
+    399|     expect(child.session.events.find(event => event.type === 'subagent…
+    400|       .toEqual({
+       |        ^
+    401|         version: SUBAGENT_DESCRIPTOR_VERSION,
+    402|         mode: 'continuable',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/29]⎯
+
+ FAIL  |thread-safe| packages/subagent/tool-subagent/tests/tool-subagent.spec.ts > depth budget configuration > forwards an explicit tool filter unchanged instead of encoding the depth policy into it
+AssertionError: expected undefined to be +0 // Object.is equality
+
+- Expected:
+0
+
++ Received:
+undefined
+
+ ❯ packages/subagent/tool-subagent/tests/tool-subagent.spec.ts:1325:35
+    1323|     const { ctx, requests } = await captureSetup({ toolFilter: { deny:…
+    1324|     await callSubagent(ctx, { description: 'd', prompt: 'p' })
+    1325|     expect(requests[0]?.maxDepth).toBe(0)
+       |                                   ^
+    1326|     expect(requests[0]?.toolFilter).toEqual({ deny: ['dangerous'] })
+    1327|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/29]⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > retries workspace release intent after a real same-Team commit advances its cursor
+AssertionError: promise rejected "AggregateError: Team Agent Client disposa… { errors: [ TeamError: … { …(2) } ] }" instead of resolving
+ ❯ packages/team/team-agent-client/tests/client.spec.ts:2144:44
+    2142|           return await request(input)
+    2143|         })
+    2144|       await expect(mounted.delivery.close()).resolves.toBeUndefined()
+       |                                            ^
+    2145|       expect(admission).toHaveBeenCalledTimes(2)
+    2146|       expect(release).toHaveBeenCalledTimes(1)
+
+Caused by: AggregateError: Team Agent Client disposal failed
+ ❯ packages/team/team-agent-client/src/index.ts:1908:38
+ ❯ withTimeout packages/team/team-agent-client/src/index.ts:2681:12
+ ❯ FixedBindingTeamAgentLinkDelivery.dispose packages/team/team-agent-client/src/index.ts:1912:5
+ ❯ packages/team/team-agent-client/tests/client.spec.ts:2144:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errors: [ { stack: 'TeamError: Team actor proof is invalid or revoked\n    at Proxy.requireActivationActorProof (/Volumes/projects-mac/deepseek-harness/packages/core/team/src/runtime.ts:733:13)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at Proxy.requireCurrentActivationActorBinding (/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:10851:25)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at Proxy.resolveChannelDeliveryClaimAuthority (/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:11951:26)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at /Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:8446:32', message: 'Team actor proof is invalid or revoked', code: 'TEAM_ACTOR_PROOF_INVALID', details: undefined, name: 'TeamError', constructor: 'Function<TeamError>', toString: 'Function<toString>' } ] }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/29]⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > bounds same-Team CAS retries for workspace activation and preservation
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > reuses a concurrent durable activation observed after provider restoration
+TeamError: Team actor proof is invalid or revoked
+ ❯ Proxy.requireActivationActorProof packages/core/team/src/runtime.ts:733:13
+    731|     const record = this.activationActorProofs.get(proof)
+    732|     if (record === undefined || !record.active) {
+    733|       throw new TeamError('Team actor proof is invalid or revoked', 'T…
+       |             ^
+    734|     }
+    735|     return record.binding
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ Proxy.requireCurrentActivationActorBinding packages/team/team-hub/src/index.ts:10851:25
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ Proxy.resolveChannelDeliveryClaimAuthority packages/team/team-hub/src/index.ts:11951:26
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ packages/team/team-hub/src/index.ts:8446:32
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/29]⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > restores provider metadata that has no base version
+TeamLinkLocalError: local Team Link is closed
+ ❯ LocalTeamLink.assertUsable packages/team/team-link-local/src/index.ts:928:13
+    926|   private assertUsable(): void {
+    927|     if (this.closing) {
+    928|       throw new TeamLinkLocalError('local Team Link is closed', 'TEAM_…
+       |             ^
+    929|     }
+    930|     if (this.failure !== undefined) {
+ ❯ LocalTeamLink.acknowledge packages/team/team-link-local/src/index.ts:498:10
+ ❯ FixedBindingTeamAgentLinkDelivery.admitEnvelope packages/team/team-agent-client/src/index.ts:1079:16
+ ❯ FixedBindingTeamAgentLinkDelivery.deliver packages/team/team-agent-client/src/index.ts:967:7
+ ❯ packages/team/team-agent-client/src/index.ts:627:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/29]⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > fails workspace settlement explicitly when its durable allocation is absent from the provider snapshot
+TeamError: Team actor proof is invalid or revoked
+ ❯ Proxy.requireActivationActorProof packages/core/team/src/runtime.ts:733:13
+    731|     const record = this.activationActorProofs.get(proof)
+    732|     if (record === undefined || !record.active) {
+    733|       throw new TeamError('Team actor proof is invalid or revoked', 'T…
+       |             ^
+    734|     }
+    735|     return record.binding
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ Proxy.requireCurrentActivationActorBinding packages/team/team-hub/src/index.ts:10851:25
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ packages/team/team-hub/src/index.ts:5992:30
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/29]⎯
+
+ FAIL  |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > uses only the real Team Hub to assign the highest-priority task to an exact idle capability match
+Error: scheduler did not append the assignment Envelope
+ ❯ packages/team/team-scheduler-dag/tests/composition.spec.ts:710:54
+    708|     const read = await ctx.teams.readChannel({ channelId: channel.mani…
+    709|     const envelope = read.records.find(record => record.type === 'chan…
+    710|     if (envelope?.type !== 'channel/envelope') throw new Error('schedu…
+       |                                                      ^
+    711|     expect(TeamChannelTaskAssignment.parseTaskAssignmentEnvelope(chann…
+    712|       taskId: high.id,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/29]⎯
+
+ FAIL  |thread-safe| packages/typert/generator/tests/tsdown-plugin.spec.ts > typertPlugin > skips outputs that do not identify a Typert contributor
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ packages/typert/generator/tests/tsdown-plugin.spec.ts:92:8
+     90|     expect(generated).not.toHaveBeenCalled()
+     91|     expect(() => { plugin.writeBundle({ dir: join(root, '..', 'outside…
+     92|       .toThrow('cannot find workspace root')
+       |        ^
+     93|   })
+     94|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/29]⎯
+
+
+ Test Files  12 failed | 992 passed | 9 skipped (1013)
+      Tests  29 failed | 16064 passed | 117 skipped (16210)
+   Start at  01:06:38
+   Duration  138.81s (transform 86.17s, setup 60.98s, import 261.03s, tests 935.64s, environment 83.81s)
+
+[ELIFECYCLE] Test failed. See above for more details.

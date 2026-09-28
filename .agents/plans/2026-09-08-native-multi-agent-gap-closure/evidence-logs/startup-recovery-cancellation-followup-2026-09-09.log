@@ -1,0 +1,16 @@
+Startup recovery cancellation follow-up (2026-09-09)
+
+Scope: stop the activation-recovery Consumer immediately after a cancelled cold replacement instead of rereading Team state to classify a cancellation as a durable stall.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 26 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-activation-recovery/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-activation-recovery/src/index.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: an aborted startup/repeating recovery scan propagates cancellation from `coldReplace()` without issuing the post-failure Team reread used for durable `SUPERVISOR_*`/`AGENT_RUNTIME_*` stall classification.

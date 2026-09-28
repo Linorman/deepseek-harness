@@ -1,0 +1,12 @@
+Authenticated invitation Agent Note format follow-up (2026-09-09)
+
+Scope: bring the shipped authenticated human-channel invitation Agent Note into the implemented-note skeleton without changing its decision or runtime behavior.
+
+Commands:
+
+1. `pnpm run verify-agent-note-format`
+   Result: 626 Agent Notes checked; all conform to the required format.
+2. `pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-06-authenticated-human-channel-invitations.md`
+   Result: exit 0; one English/Chinese pair record refreshed.
+3. `git diff --check`
+   Result: exit 0.

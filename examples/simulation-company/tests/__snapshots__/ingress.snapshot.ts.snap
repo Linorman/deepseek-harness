@@ -1,0 +1,843 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json external ingress > preserves ordered model delivery with crash=accepted 1`] = `
+{
+  "cancelledDecisions": [],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`json external ingress > preserves ordered model delivery with crash=claimed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`json external ingress > preserves ordered model delivery with crash=consumed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`json external ingress > preserves ordered model delivery with crash=flushed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`json external ingress > preserves ordered model delivery with crash=received 1`] = `
+{
+  "cancelledDecisions": [
+    "initial",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`json external ingress > preserves ordered model delivery with crash=undefined 1`] = `
+{
+  "cancelledDecisions": [],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=accepted 1`] = `
+{
+  "cancelledDecisions": [],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=claimed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=consumed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=flushed 1`] = `
+{
+  "cancelledDecisions": [
+    "input-0-1",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=received 1`] = `
+{
+  "cancelledDecisions": [
+    "initial",
+  ],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-2",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-2",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;
+
+exports[`sqlite external ingress > preserves ordered model delivery with crash=undefined 1`] = `
+{
+  "cancelledDecisions": [],
+  "ingresses": [
+    {
+      "acceptedDecisions": 1,
+      "id": "0",
+      "microstep": "1",
+      "ordinal": "0",
+      "time": "0",
+    },
+    {
+      "acceptedDecisions": 1,
+      "id": "1",
+      "microstep": "1",
+      "ordinal": "1",
+      "time": "0",
+    },
+  ],
+  "modelViews": [
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "initial",
+      "first": false,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 0,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 1,
+      "second": false,
+    },
+    {
+      "decision": "input-0-1",
+      "first": true,
+      "request": 2,
+      "second": false,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 0,
+      "second": true,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 1,
+      "second": true,
+    },
+    {
+      "decision": "input-1-1",
+      "first": true,
+      "request": 2,
+      "second": true,
+    },
+  ],
+  "observations": [
+    "FIRST_INGRESS",
+    "SECOND_INGRESS",
+  ],
+  "time": "0",
+  "wakes": [
+    "completed",
+    "completed",
+  ],
+}
+`;

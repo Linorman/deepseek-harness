@@ -1,0 +1,12 @@
+Supervisor generation-mismatch recovery follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/team/team-activation-recovery/tsconfig.json packages/team/team-activation-controller/tsconfig.json packages/core/team/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts --pool=forks --maxWorkers=1`
+   Result: 1 file passed; 24 tests passed.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts packages/team/team-activation-controller/src/index.ts packages/core/team/src/schema.ts packages/team/team-hub/src/index.ts`
+   Result: exit 0.
+
+Behavior proved: a supervisor provider that raises `SUPERVISOR_GENERATION_MISMATCH` leaves the Team durably stalled with the same typed code, does not invoke fence, does not publish a replacement, and retains the old activation status.

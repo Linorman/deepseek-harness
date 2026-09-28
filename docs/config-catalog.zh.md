@@ -1960,6 +1960,52 @@ export interface Config {
 
 Source: [`packages/shell/shell-env/src/index.ts:29`](../packages/shell/shell-env/src/index.ts)
 
+<a id="clockyclocky-simulation-local"></a>
+
+## `@clocky/clocky-simulation-local`
+
+Requires: `simulations`
+
+```ts config-catalog
+/** Explicit local storage and replay bounds. */
+export interface Config {
+  /** Registry identity selected by run requests. */
+  readonly name: string
+  /** Dedicated local storage root shared by all coordinators for these runs. */
+  readonly root: string
+  /** Durable journal medium; changing it for an existing run rejects. */
+  readonly backend: 'json' | 'sqlite'
+  /** Positive maximum journal entries read per recovery page. */
+  readonly replayPageSize: number
+}
+```
+
+Source: [`packages/simulation/simulation-local/src/index.ts:21`](../packages/simulation/simulation-local/src/index.ts)
+
+<a id="clockyclocky-simulation-team"></a>
+
+## `@clocky/clocky-simulation-team`
+
+Requires: `simulations` · `teams` · `teamActivations` · `agentRuntimes` · `agents` · `sessions` · `sessionPersistence` · `llm` · `tools`
+
+```ts config-catalog
+/** Context budget and bounded recipient discovery for Simulation cognition. */
+export interface Config {
+  /** Maximum simultaneously reserved or executing Simulation model streams across this service. */
+  readonly maxConcurrentModels: number
+  /** Maximum model requests waiting for a permit; zero rejects when all permits are held. */
+  readonly maxQueuedModels: number
+  /** Positive bound on the JSON-encoded content-block array; the model route still owns its total token limit. */
+  readonly maxContextBytes: number
+  /** Maximum pending channel deliveries read per discovery page. */
+  readonly deliveryPageSize: number
+  /** Maximum local-drive/Team-IO rounds in one coordinator call. */
+  readonly maxCoordinationRounds: number
+}
+```
+
+Source: [`packages/simulation/simulation-team/src/index.ts:50`](../packages/simulation/simulation-team/src/index.ts)
+
 <a id="clockyclocky-skill"></a>
 
 ## `@clocky/clocky-skill`
@@ -2223,7 +2269,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-controller/src/index.ts:67`](../packages/team/team-activation-controller/src/index.ts)
+Source: [`packages/team/team-activation-controller/src/index.ts:70`](../packages/team/team-activation-controller/src/index.ts)
 
 <a id="clockyclocky-team-activation-recovery"></a>
 
@@ -2489,7 +2535,7 @@ export interface Config {
 
 Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
 
-Source: [`packages/team/team-hub/src/index.ts:989`](../packages/team/team-hub/src/index.ts)
+Source: [`packages/team/team-hub/src/index.ts:995`](../packages/team/team-hub/src/index.ts)
 
 <a id="clockyclocky-team-human-client"></a>
 
@@ -3699,6 +3745,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-session-log-export` — requires `commands` ([`packages/session-query/session-log-export/src/index.ts`](../packages/session-query/session-log-export/src/index.ts))
 - `@clocky/clocky-session-projection` ([`packages/session/session-projection/src/index.ts`](../packages/session/session-projection/src/index.ts))
 - `@clocky/clocky-session-stats` — requires `sessionProjections` ([`packages/session/session-stats/src/index.ts`](../packages/session/session-stats/src/index.ts))
+- `@clocky/clocky-simulation` ([`packages/simulation/simulation/src/index.ts`](../packages/simulation/simulation/src/index.ts))
 - `@clocky/clocky-storage` ([`packages/storage/storage/src/index.ts`](../packages/storage/storage/src/index.ts))
 - `@clocky/clocky-subprocess-local` ([`packages/subprocess/subprocess-local/src/index.ts`](../packages/subprocess/subprocess-local/src/index.ts))
 - `@clocky/clocky-team-artifact` ([`packages/core/team-artifact/src/index.ts`](../packages/core/team-artifact/src/index.ts))
@@ -3712,6 +3759,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-tool-ask-user` — requires `tools` · `userQuestions` ([`packages/interaction/tool-ask-user/src/index.ts`](../packages/interaction/tool-ask-user/src/index.ts))
 - `@clocky/clocky-tool-call-timeout-policy` — requires `tools` ([`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts))
 - `@clocky/clocky-tool-cordis` — requires `tools` · `systemPrompt` · `dynamicCordisRunner` · `cordisInspect` ([`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts))
+- `@clocky/clocky-tool-simulation` — requires `tools` · `simulationTeams` ([`packages/simulation/tool-simulation/src/index.ts`](../packages/simulation/tool-simulation/src/index.ts))
 - `@clocky/clocky-tool-team-goal` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-goal/src/index.ts`](../packages/team/tool-team-goal/src/index.ts))
 - `@clocky/clocky-tool-team-task` — requires `teamRuns` · `agents` · `tools` ([`packages/team/tool-team-task/src/index.ts`](../packages/team/tool-team-task/src/index.ts))
 - `@clocky/clocky-user-questions` ([`packages/interaction/user-questions/src/index.ts`](../packages/interaction/user-questions/src/index.ts))

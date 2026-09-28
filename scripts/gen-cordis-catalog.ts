@@ -54,6 +54,8 @@ export { REGION_BEGIN, REGION_END }
  * errors, so the partition can never silently drift from the service API.
  */
 export const SERVICE_PAGE: Record<string, string> = {
+  simulations: 'simulation.md',
+  simulationTeams: 'simulation.md',
   agentLoop: 'core.md',
   agentRuntimes: 'agent-runtime.md',
   activationSupervisors: 'agent-runtime.md',
@@ -191,6 +193,7 @@ export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
  * {@link EVENT_WALK_EXEMPTIONS} names each one with its documentation owner.
  */
 export const EVENT_SCOPE_PAGE: Record<string, string> = {
+  'simulation': 'simulation.md',
   'agent': 'core.md',
   'agent-loop': 'core.md',
   'agent-runtime': 'agent-runtime.md',
@@ -250,6 +253,20 @@ export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
  * appear on more than one page.
  */
 export const LINK_MAP: Readonly<Record<string, string>> = {
+  SimulationTeamConnection: 'simulation.md',
+  SimulationModelRequest: 'simulation.md',
+  SimulationModelResult: 'simulation.md',
+  TeamActivationLifecycleOwner: 'team.md',
+  TeamActivationCoordinationLease: 'team.md',
+  SimulationSnapshot: 'simulation.md',
+  SimulationRunSpec: 'simulation.md',
+  SimulationRunId: 'simulation.md',
+  SimTime: 'simulation.md',
+  SimulationProvider: 'simulation.md',
+  SimulationRunRequest: 'simulation.md',
+  SimulationRunSelection: 'simulation.md',
+  SimulationRun: 'simulation.md',
+
   Agent: 'core.md',
   AgentCancelCause: 'core.md',
   AgentFactory: 'core.md',
@@ -386,6 +403,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   SessionLocation: 'persistence.md',
   SessionPreparation: 'persistence.md',
   SessionPersistenceSnapshot: 'persistence.md',
+  SessionPersistenceReference: 'persistence.md',
   SessionRawArtifact: 'persistence.md',
   ConfinedArgv: 'sandbox.md',
   SandboxExecutionPolicy: 'sandbox.md',
@@ -907,6 +925,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   TeamSystemFinalizationCleanupScope: 'team.md',
   TeamSystemFinalReceiptProofSource: 'team.md',
   TeamSystemEnvelopePostProofSource: 'team.md',
+  TeamDeliveryOwnerProofSource: 'team.md',
   TeamSystemClosureProof: 'team.md',
   TeamSystemClosureProofResolution: 'team.md',
   TeamSystemClosureProofSource: 'team.md',

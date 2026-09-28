@@ -168,6 +168,8 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@clocky/clocky-subprocess-local': ['scripts/ensure-spawn-helper.mjs'],
   // The closure driver exposes its registry and Hub bridge as runtime subpaths.
   '@clocky/clocky-team-closure-driver': ['lib/registry.js', 'lib/hub.js'],
+  // The scoped Simulation preset row loads separately from global tool registration.
+  '@clocky/clocky-tool-simulation': ['lib/role.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {

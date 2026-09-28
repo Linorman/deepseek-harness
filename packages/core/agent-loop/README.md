@@ -25,6 +25,8 @@ Each agent and its session share one caller-chosen `SessionId`, assumed globally
 
 The config-driven `ctx.agentLoop.create()` path keeps its agent owned by the loop fiber (it discards the handle). For a programmatic agent, the handle holder is the only consumer-facing teardown capability; AgentLoop provider unload is the independent structural teardown edge, not another handle exposed to application code.
 
+`Agent.wakePending(id)` signals an existing queued input without writing another splice and uses the same wake latch as `send()`. Delivery plugins own any persistence barrier before that call.
+
 ### Injected services
 
 `agents`, `sessions`, `llm`, `tools`, `systemPrompt` — all five interface services.

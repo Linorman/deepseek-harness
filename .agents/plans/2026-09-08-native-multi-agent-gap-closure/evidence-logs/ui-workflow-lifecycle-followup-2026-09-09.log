@@ -1,0 +1,12 @@
+UI workflow-plan lifecycle follow-up (2026-09-09)
+
+Commands:
+
+1. `pnpm exec vitest run packages/client/ui-team/tests/team-browser.client.spec.tsx --pool=forks --maxWorkers=1`
+   Result: 1 file passed; 37 tests passed.
+2. `node node_modules/typescript/bin/tsc -b packages/client/ui-team/tsconfig.json packages/client/runtime/tsconfig.json --pretty false`
+   Result: exit 0.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/client/ui-team/tests/team-browser.client.spec.tsx`
+   Result: existing pre-change findings remain at lines 31, 41, 47, 50, 972, and 1035; no new finding was introduced by the lifecycle test.
+
+Behavior proved: the read-only TeamPage workflow projection renders compiling, ready, completed, and cancelled durable phases, and renders a completed plan's result task count. This is focused UI evidence only; browser/GIF, restart transport, and multi-host UI acceptance remain open under T-06/F-UI-03.

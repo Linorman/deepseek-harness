@@ -1,0 +1,27 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes a temporarily busy owner from unavailable work (capable)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes a temporarily busy owner from unavailable work (wrong-capability)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes a temporarily busy owner from unavailable work (unavailable-workspace)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes a temporarily busy owner from unavailable work (closing)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > advances bounded channel retention past a prefix compacted by an earlier drive
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > assigns active Team work without requesting Team-journal compaction
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > starts a new unassignable-work interval after a running task settles
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes live prerequisite work from an unavailable owner or failed dependency (running)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes live prerequisite work from an unavailable owner or failed dependency (review)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes live prerequisite work from an unavailable owner or failed dependency (missing-reviewer)
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > distinguishes live prerequisite work from an unavailable owner or failed dependency (failed)
+ ✓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > opens a real review consult and settles the completed attempt from a accepted response 311ms
+ ✓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > opens a real review consult and settles the completed attempt from a rework response 407ms
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > uses only the real Team Hub to assign the highest-priority task to an exact idle capability match
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > repairs an assigned wake channel with no assignment Envelope without creating another channel or Envelope
+ ↓ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > records real lease expiry before any later scheduler retry and never wakes an Agent directly
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 14 skipped (16)
+   Start at  17:22:54
+   Duration  1.44s (transform 487ms, setup 139ms, import 476ms, tests 718ms, environment 0ms)

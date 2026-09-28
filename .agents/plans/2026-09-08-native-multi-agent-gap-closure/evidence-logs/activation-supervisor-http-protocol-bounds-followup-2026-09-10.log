@@ -1,0 +1,19 @@
+Scope: activation-supervisor HTTP protocol boundary coverage.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test addition:
+- Added a focused protocol suite for mixed string/Buffer body reassembly, byte-limit rejection, malformed JSON, and closed request/observation/error schemas.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts --coverage --coverage.include=packages/agent-runtime/activation-supervisor-http/src/protocol.ts --coverage.reporter=text --reporter=dot --no-file-parallelism`: 2 files, 11 tests passed, 1 platform skip; protocol.ts statements/branches/functions/lines all 100%.
+- `pnpm exec tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/activation-supervisor-http/src/protocol.ts`: `d106fcfbc512517e05ca17abd6db252ef177170d9b6a626aed2292abc3357dbe`
+- `packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts`: `0f67971f4ac5aeacf200424a7fa42cb1853c234d162f1842afde9b389a6a2057`
+- `packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts`: `688ab85d4ca0ac052ea6330bf5d7a11aac2e2e194e618798d74125165ec30ef8`
+
+Boundary: this closes the supervisor HTTP protocol file's bounded-read/schema coverage only. Endpoint provider coverage, ACP coverage, and separate-host recovery remain open.

@@ -14,6 +14,8 @@ An `AgentRuntimeFencer` registers separately for one provider name. `validate()`
 
 [`clocky-agent-runtime-in-process`](../../agent-runtime/agent-runtime-in-process/README.md) supplies the first local provider. It materializes fresh and fork Session headers with their opaque Team/Participant provenance before Agent publication, preserves fork lineage, verifies provenance on cold resume, and keeps accepted handles independent of provider reload.
 
+`AgentRuntime.activate(request, expectedProvider)` can pin an exact registered implementation. A replacement rejects with `AGENT_RUNTIME_PROVIDER_CHANGED` before invoking either provider.
+
 ## Model Experience
 
 ### Activation registry

@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-09-10T09:19:33.051269+00:00",
+  "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "plane": "source",
+  "scope": "Changed runtime/channel behavior and directly exercised owners; not a full release candidate. Shared dirty worktree preserved.",
+  "environment": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "node": "v25.9.0",
+    "pnpm": "11.19.0",
+    "credentials": "Keyless fixtures only; no real model credential loaded."
+  },
+  "sha256": {
+    "packages/agent-runtime/agent-runtime-acp/src/index.ts": "dd0326a840ab2b29f720a30294086ffa4c698feacdf888977ac4011bf7838b74",
+    "packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts": "f042e2e6714ca9c40d282574f566ec5d626246dcf1ea1a3cb3f53f38ef39ec75",
+    "packages/agent-runtime/agent-runtime-acp/package.json": "c604a8e401c1cd2ff5b8f15ee38969b591991bc3bf486a6e82703067c4bee940",
+    "packages/agent-runtime/agent-runtime-acp/tsconfig.json": "467da09766bcfce7dee1a59a9ff1a765b4248dce28ab4feec9dd04b0e6806206",
+    "packages/core/activation-supervisor/src/index.ts": "6afcbe18f0ed062837ece511435f30b1df70d550c6d8b6813896758a1e46fbef",
+    "packages/agent-runtime/activation-supervisor-http/src/endpoint.ts": "3d5e825ac29200c0db4c88a9957a5a10401da4cb6a9e89ae9adb150f4a171307",
+    "packages/agent-runtime/agent-runtime-sdk/src/index.ts": "bf495c1e2b8cf547548e350dad9f91624ed30cfe43f5f80ef6458004f1e96ce2",
+    "packages/team/team-channel-admission/src/principal.ts": "dd30c99ec46d9902d24ab96e13d5548dd0b5323ed8498e9e6173f3fe1f5077df",
+    "packages/team/team-channel-basic/src/basic.ts": "49f7d42dda58a6a1fcd77b882092df1e79879886b7d78d19d76f4fb2263295e6",
+    "packages/team/team-hub/src/index.ts": "a3acb2dada11ffa9fcebb358dcc77b0ed435d42edefbc5f25c38189224e59af1",
+    "packages/host/apiproxy/tests/api-proxy-teams.spec.ts": "2ca1e0fe0986df1947c9e4937a5c7c695063b7c850107c592cfe6b6a84bd9455",
+    "packages/host/apiproxy/src/api-proxy.ts": "50850c7a5125f24e9fb885bc420db3cacee4144f481c2886360542db1c1a476c",
+    "packages/sdk/server/tests/channel-media.spec.ts": "333dabd683a32facfe3328d7a552a08e829cca685282e5c6606f652420e73256",
+    "packages/sdk/server/src/server.ts": "cd476a3e4501825ec70b180cee4e71a6e6456392379d3c076f039245d7e78985",
+    "examples/headless-agent/tests/channel-task-input.snapshot.ts": "3f2e16e24617ee0c67edb2afd7bcd8c5dd287dce58c8bf97279793cd1a41b6e9",
+    "examples/headless-agent/tests/fixtures/channel-task-input-driver.ts": "7c1da244fb4858a83c938f6103933f63b609bc0780a7c555ad7e44785fd0ba4b",
+    "examples/headless-agent/tests/fixtures/channel-task-input.cordis.yml": "0e42c69ba29cce43822c3983b074db87f781f9bef302082057cd4944ab00e91c",
+    "examples/headless-agent/tests/fixtures/human-inbox-question.cordis.yml": "3be0c979fb9b633fda59325e9e439d5e988e622c05b3ead6293ea2499841537e"
+  }
+}

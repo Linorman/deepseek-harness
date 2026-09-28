@@ -282,9 +282,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'detached provider references.',
       },
       {
-        signature: 'async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>',
+        signature: 'async activate(request: AgentRuntimeActivationRequest, expectedProvider?: AgentRuntimeProvider): Promise<ActivationHandle>',
         description: 'Resolve a provider, require its returned activation to match the requested Team/Participant/Session binding, then publish its first observation. A handle that fails post-return validation is disposed before rejection.',
-        parameters: [{ name: 'request', description: 'provider name and already-resolved activation inputs.' }],
+        parameters: [{ name: 'request', description: 'provider name and already-resolved activation inputs.' }, { name: 'expectedProvider', description: 'Optional exact implementation selected by a coordinating owner; replacement rejects before startup.' }],
         returns: 'the provider-owned published activation handle.',
       },
     ],
@@ -1209,6 +1209,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the validated header and current logical event log.',
       },
       {
+        signature: 'isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean>',
+        description: 'Check that an identity has no live, tracked, prepared or stored Session owner.',
+        parameters: [{ name: 'id', description: 'Reserved Session identity.' }, { name: 'signal', description: 'Optional cancellation of queued storage work.' }],
+        returns: 'true only for absence; backend read failures reject.',
+      },
+      {
+        signature: 'getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference>',
+        description: 'Capture a complete physical prefix and source-qualified revision without performing recovery.',
+        parameters: [{ name: 'id', description: 'Exact persisted Session identity.' }, { name: 'expectedSequence', description: 'Expected last event seq, or -1 for a header-only Session.' }, { name: 'signal', description: 'Optional cancellation of queued storage work.' }],
+        returns: 'immutable reference; torn or moving sources and cursor mismatches reject.',
+      },
+      {
+        signature: 'getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference>',
+        description: 'Read a retained physical prefix and validate the whole stored suffix without repair.',
+        parameters: [{ name: 'id', description: 'Exact persisted Session identity.' }, { name: 'throughSequence', description: 'Included last prefix seq, or -1 for the header only.' }, { name: 'signal', description: 'Optional cancellation of queued storage work.' }],
+        returns: 'prefix fingerprint and current whole-source revision; missing or torn history rejects.',
+      },
+      {
         signature: 'abstract readFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<{ meta: SessionHeader; events: SessionEvent[] }>',
         description: 'Read the stored events from `fromSeq` onward — the read-from-seq primitive for read models that resume from a watermark (e.g. a persisted projection cache folding only the tail past its checkpoint). Unlike inspect, it is a detached physical suffix read: no preparation cache, torn-tail truncation, synthetic closers, or coordinator-state publication. Only events from the valid contiguous stored prefix are returned, so a torn fragment never reaches the caller. `fromSeq` at or beyond the stored prefix returns an empty event list (never an error). Backends whose medium can seek by seq (SQLite) read only the suffix; sequential media (JSONL, both encodings) still parse the whole artifact and skip forward — the primitive bounds what is RETURNED and refolded, not every backend\'s physical read.',
         parameters: [{ name: 'id', description: 'the persisted session to read.' }, { name: 'fromSeq', description: 'first event seq to include; a non-negative safe integer.' }, { name: 'signal', description: 'optional cancellation for queued and backend read work.' }],
@@ -1655,6 +1673,80 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'simulations',
+    summary: 'Registry whose providers own run IO and exclusive coordinator lifetimes.',
+    description: 'Registry whose providers own run IO and exclusive coordinator lifetimes.',
+    methods: [
+      {
+        signature: 'registerProvider(provider: SimulationProvider): () => void',
+        description: 'Register an implementation.',
+        parameters: [{ name: 'provider', description: 'Named implementation.' }],
+        returns: 'effect-scoped disposer.',
+      },
+      {
+        signature: 'resolve(request: SimulationRunRequest): SimulationRunSelection',
+        description: 'Validate explicit selection before IO.',
+        parameters: [{ name: 'request', description: 'Run request.' }],
+        returns: 'resolved selection.',
+      },
+      {
+        signature: 'open(selection: SimulationRunSelection): Promise<SimulationRun>',
+        description: 'Open a resolved run.',
+        parameters: [{ name: 'selection', description: 'Explicit provider and run configuration.' }],
+        returns: 'caller-owned run.',
+      },
+    ],
+  },
+  {
+    key: 'simulationTeams',
+    summary: 'Named run attachments using durable Team rules to prevent controller bypass.',
+    description: 'Named run attachments using durable Team rules to prevent controller bypass.',
+    methods: [
+      {
+        signature: 'restore(selection: import(\'@clocky/clocky-simulation\').SimulationRunSelection, request: import(\'@clocky/clocky-simulation\').SimulationCheckpointRestoreRequest, signal?: AbortSignal): Promise<import(\'./types.ts\').SimulationCheckpointRestoration>',
+        description: 'Open an existing run, verify a completed manifest and every retained owner suffix, then retire old writers.',
+        parameters: [{ name: 'selection', description: 'Exact existing run configuration; create mode rejects.' }, { name: 'request', description: 'Completed checkpoint id, required implementation version and owner-movement retry bound.' }, { name: 'signal', description: 'Optional cancellation; admitted controller cleanup is still drained.' }],
+        returns: 'caller-owned run and connection, paused without model calls or outbox effects. Repeated restores revalidate current retained suffixes; they never roll state back to the checkpoint. Retired decision windows close only after every slot is accepted or cancelled; restoration never accepts a submitted proposal.',
+      },
+      {
+        signature: 'modelUsage(): { readonly active: number; readonly queued: number; readonly limit: number; readonly queueLimit: number }',
+        description: 'Inspect host-local Simulation model admission across all attached runs.',
+        parameters: [],
+        returns: 'reserved/executing permits, queued requests and their configured limits.',
+      },
+      {
+        signature: 'ensureTeam(run: SimulationRun, creation: Omit<import(\'@clocky/clocky-team\').TeamRootCreateInput, \'rules\'>, ownerName: string): Promise<import(\'@clocky/clocky-team\').TeamStateSnapshot>',
+        description: 'Create or reconcile the run\'s canonical execution Team before attaching its lifecycle owner.',
+        parameters: [{ name: 'run', description: 'Open, unattached run whose root identity is journal-owned.' }, { name: 'creation', description: 'Explicit Team goal, budgets and optional authority grant.' }, { name: 'ownerName', description: 'Immutable lifecycle owner used by the subsequent attachment.' }],
+        returns: 'the confirmed Team; target response loss reuses the reserved identity.',
+      },
+      {
+        signature: 'registerSummaryPolicy(policy: import(\'@clocky/clocky-simulation\').SimulationSummaryPolicy): () => void',
+        description: 'Register a versioned pure summary policy over explicitly selected authorized knowledge.',
+        parameters: [{ name: 'policy', description: 'Bounded synchronous, IO-free transformation; ambient histories must not be read.' }],
+        returns: 'effect-scoped disposer; retained summaries do not depend on the implementation remaining loaded.',
+      },
+      {
+        signature: 'registerDeterministicPolicy(policy: import(\'@clocky/clocky-simulation\').SimulationDeterministicPolicy): () => void',
+        description: 'Register an effect-scoped pure computation policy; duplicate ids reject even across versions.',
+        parameters: [{ name: 'policy', description: 'Explicit identity/version and bounded synchronous computation over a frozen authorized view.' }],
+        returns: 'disposer stopping new computation; already recorded outputs remain durable.',
+      },
+      {
+        signature: 'modelRequest(agent: Agent, request: SimulationModelRequest, signal: AbortSignal): Promise<SimulationModelResult>',
+        description: 'Execute a model operation using its actual current Agent identity.',
+        parameters: [{ name: 'agent', description: 'Registry-owned local caller, supplied by tool execution.' }, { name: 'request', description: 'Observation, replacement proposals or submission without caller-selected identities.' }, { name: 'signal', description: 'Calling tool cancellation.' }],
+        returns: 'authorized observations or proposal acknowledgement, never fabricated world results.',
+      },
+      {
+        signature: 'async attach(run: SimulationRun, teamId: TeamId, ownerName: string): Promise<SimulationTeamConnection>',
+        description: 'Attach one run to a dedicated Team whose immutable activationLifecycleOwner rule names this owner.',
+        parameters: [{ name: 'run', description: 'Caller-owned open run.' }, { name: 'teamId', description: 'Canonical Team selected by the deployment.' }, { name: 'ownerName', description: 'Exact durable rule value, unique in this controller.' }],
+        returns: 'a connection that derives entity identity and drains activation ownership on close.',
+      },
+    ],
+  },
+  {
     key: 'skills',
     summary: 'Layered registry of skill providers, the host+per-scope shape the tools registry established.',
     description: 'Layered registry of skill providers, the host+per-scope shape the tools registry established. A registration files into the layer of its calling context\'s scope (scopeOf): host rows and repository plugins land in the global layer, while a plugin mounted by an agent preset\'s standing composition lands in that preset\'s layer. A read merges the global layer with the viewing scope\'s chain — the nearest layer\'s entry wins a duplicate name outright, and the rank order decides duplicates only within one layer. It exposes sorted invocation-neutral summaries and loads full skill bodies on demand.',
@@ -1876,6 +1968,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Team Consumer that owns the small two-system transaction from a published AgentRuntime handle to a durable Team binding. Each provider owns the execution-specific mechanism behind its handle status stream.',
     methods: [
       {
+        signature: 'registerLifecycleOwner(owner: TeamActivationLifecycleOwner): () => Promise<void>',
+        description: 'Register the owner required by Team rules.activationLifecycleOwner. Unregister closes starts and drains its handles.',
+        parameters: [{ name: 'owner', description: 'Durable domain coordination owner.' }],
+        returns: 'retryable asynchronous disposer; unconfirmed termination rejects without dropping ownership.',
+      },
+      {
         signature: 'start(): void',
         description: 'Begin terminal-intent-driven release of every exact activation handle currently owned by this controller.',
         parameters: [],
@@ -1893,6 +1991,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'a controller-owned durable activation lease.',
       },
       {
+        signature: 'async stopOwnedActivation( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId }, ): Promise<void>',
+        description: 'Stop one exact activation retained by this controller, with ordinary domain revocation and quiescence.',
+        parameters: [{ name: 'request', description: 'Exact owned Team, participant and activation identity; no replacement is started.' }],
+        returns: 'confirmed disposal; failed cleanup retains the owned entry for retry.',
+      },
+      {
         signature: 'async coldReplace(input: TeamActivationColdReplaceRequest): Promise<TeamActivationLease>',
         description: 'Fence one stale external epoch, atomically release its current task leases and persist it offline, then publish a new activation with the same Team participant and Session under a new id.',
         parameters: [{ name: 'input', description: 'exact old binding plus replacement composition selected by the recovery owner.' }],
@@ -1902,6 +2006,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         signature: 'async fenceStale(input: TeamActivationStaleFenceRequest): Promise<void>',
         description: 'Fence one activation left running after a Host restart before a Team can be resumed.',
         parameters: [{ name: 'input', description: 'Exact stale activation and recovery authorization selected by the recovery owner.' }],
+      },
+      {
+        signature: 'async recoverCoordinatedLocal( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId }, ): Promise<void>',
+        description: 'Retire a recovered local epoch only when its registered domain owner proves the prior Host cannot execute it.',
+        parameters: [{ name: 'request', description: 'Exact durable Team/Participant/activation identity.' }],
+        returns: 'completion after domain revocation and durable Team quiescence.',
+      },
+      {
+        signature: 'async recoverCoordinatedReservation( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly reservationId: ActivationReservationId }, ): Promise<void>',
+        description: 'Settle a coordinated startup with no published epoch only after the owner proves no execution remains.',
+        parameters: [{ name: 'request', description: 'Exact durable Team participant and startup reservation.' }],
+        returns: 'durable Team reservation and domain-writer release.',
       },
       {
         signature: 'async preflightResume(input: TeamActivationResumePreflightRequest): Promise<void>',
@@ -2430,7 +2546,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'close(): Promise<void>',
-        description: 'Release current local coordinator leases without mutating durable Team phase on plugin disposal.',
+        description: 'Abort and drain accepted resumes, then release local leases; unconfirmed cleanup rejects closure without changing Team phase.',
         parameters: [],
       },
     ],
@@ -2537,7 +2653,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'registerSystemTaskControlProofSource(source: TeamSystemTaskControlProofSource): () => void',
-        description: 'Register one TeamRun owner that privately resolves opaque proofs for exact default-worker owner proposals and current-coordinator cancellations. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
+        description: 'Register a task-control owner that privately resolves exact mutation proofs for coordinator controls or accepted Simulation task creation. Registration is effect-scoped: disposing the contributing fiber immediately invalidates every proof retained by it.',
         parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
         returns: 'an HMR-safe disposer that removes exactly this source.',
         throws: ['{@link TeamError} when the source name is invalid or already registered.'],
@@ -2620,6 +2736,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['{@link TeamError} when the source name is invalid or already registered.'],
       },
       {
+        signature: 'registerDeliveryOwnerProofSource(source: TeamDeliveryOwnerProofSource): () => void',
+        description: 'Register one named consumer that owns exact delivery claim and receipt capabilities.',
+        parameters: [{ name: 'source', description: 'Resolver whose tokens are invalidated on owner unload.' }],
+        returns: 'the effect-scoped registration disposer.',
+      },
+      {
         signature: 'registerSystemEnvelopePostProofSource(source: TeamSystemEnvelopePostProofSource): () => void',
         description: 'Register one system owner that privately resolves opaque proofs for exact ordinary Envelope admissions. Registration is effect-scoped: disposing the contributing fiber immediately makes all of its proofs invalid.',
         parameters: [{ name: 'source', description: 'named resolver that owns proof construction and lifetime.' }],
@@ -2686,6 +2808,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read the complete detached state of one Team.',
         parameters: [{ name: 'request', description: 'Team identity to read.' }],
         returns: 'the current Team state and its journal cursor.',
+      },
+      {
+        signature: 'getPersistenceReference(request: import(\'./persistence-reference.ts\').TeamPersistenceReferenceRequest): Promise<import(\'./persistence-reference.ts\').TeamPersistenceReference>',
+        description: 'Read actual stream identity and full-projection fingerprint at a caller-observed cursor. This does not pin history or prevent later writes; collectors must revalidate before publication.',
+        parameters: [{ name: 'request', description: 'Exact Team/channel owner, expected current cursor and optional retained prefix cursor.' }],
+        returns: 'owner-issued prefix reference; moved current cursors or missing prefixes reject.',
       },
       {
         signature: 'getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot>',
@@ -2992,6 +3120,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read one detached Team task projection, including a deleted tombstone.',
         parameters: [{ name: 'request', description: 'Team and task identities to read.' }],
         returns: 'the current task projection.',
+      },
+      {
+        signature: 'createSimulationTask(request: import(\'./types.ts\').TeamSimulationTaskCreateRequest): Promise<TeamTaskSnapshot>',
+        description: 'Create or reconcile one exact task authorized by a durable Simulation operation.',
+        parameters: [{ name: 'request', description: 'Runtime-only system proof and its exact task input.' }],
+        returns: 'the original task for retries, or a newly persisted task.',
       },
       {
         signature: 'abstract beginTaskDelegation(request: TeamTaskDelegationBeginRequest): Promise<TeamTaskSnapshot>',
@@ -4346,6 +4480,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'ns', description: 'the namespace whose resolved value changed.' }, { name: 'next', description: 'the new resolved value.' }, { name: 'prev', description: 'the previous resolved value.' }, { name: 'source', description: 'whether the change entered through `update()` or the provider.' }],
   },
   {
+    name: 'simulation/committed',
+    mode: 'emit',
+    signature: '\'simulation/committed\'(snapshot: SimulationSnapshot, durableTail: number, previousRevision?: number): void',
+    summary: 'Projection published after the matching journal append or replay.',
+    description: 'Projection published after the matching journal append or replay. The run may contain several independently bound Sessions.',
+    parameters: [{ name: 'snapshot', description: 'Committed detached projection.' }, { name: 'durableTail', description: 'Tail returned by storage.' }, { name: 'previousRevision', description: 'Tail before this append; absent for initial replay publication.' }],
+  },
+  {
     name: 'skills/change',
     mode: 'emit',
     signature: '\'skills/change\'(): void',
@@ -4699,7 +4841,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'Agent',
-    declaration: 'export interface Agent {\n    readonly id: SessionId;\n    readonly options: AgentOptions;\n    readonly session: Session;\n    readonly inbox: Inbox;\n    readonly status: AgentStatus;\n    readonly ctx: Context;\n    cancel(cause: AgentCancelCause, options?: CancelOptions): void;\n    whenIdle(): Promise<void>;\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n    send(message: UserMessage, target: InboxTarget, wakeup: boolean): void;\n    followup(message: UserMessage): void;\n    steer(message: UserMessage): void;\n    inject(message: UserMessage): void;\n}',
+    declaration: 'export interface Agent {\n    readonly id: SessionId;\n    readonly options: AgentOptions;\n    readonly session: Session;\n    readonly inbox: Inbox;\n    readonly status: AgentStatus;\n    readonly ctx: Context;\n    cancel(cause: AgentCancelCause, options?: CancelOptions): void;\n    whenIdle(): Promise<void>;\n    runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T>;\n    send(message: UserMessage, target: InboxTarget, wakeup: boolean): void;\n    wakePending(messageId: UserMessage[\'id\']): boolean;\n    followup(message: UserMessage): void;\n    steer(message: UserMessage): void;\n    inject(message: UserMessage): void;\n}',
   },
   {
     name: 'AgentCancelCause',
@@ -4723,7 +4865,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentRuntime',
-    declaration: 'export class AgentRuntime extends Service {\n    constructor(ctx: Context);\n    registerProvider(provider: AgentRuntimeProvider): () => void;\n    getProvider(name: string): AgentRuntimeProvider | undefined;\n    registerFencer(fencer: AgentRuntimeFencer): () => void;\n    getFencer(provider: string): AgentRuntimeFencer | undefined;\n    listProviders(): AgentRuntimeProviderRef[];\n    async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>;\n}',
+    declaration: 'export class AgentRuntime extends Service {\n    constructor(ctx: Context);\n    registerProvider(provider: AgentRuntimeProvider): () => void;\n    getProvider(name: string): AgentRuntimeProvider | undefined;\n    registerFencer(fencer: AgentRuntimeFencer): () => void;\n    getFencer(provider: string): AgentRuntimeFencer | undefined;\n    listProviders(): AgentRuntimeProviderRef[];\n    async activate(request: AgentRuntimeActivationRequest, expectedProvider?: AgentRuntimeProvider): Promise<ActivationHandle>;\n}',
   },
   {
     name: 'AgentRuntimeActivationRequest',
@@ -4963,7 +5105,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ChannelDeliveryClaimRequest',
-    declaration: 'export interface ChannelDeliveryClaimRequest extends ChannelDeliveryClaimInput {\n    readonly actor: TeamActorProof;\n}',
+    declaration: 'export interface ChannelDeliveryClaimRequest extends ChannelDeliveryClaimInput {\n    readonly deliveryOwner?: TeamDeliveryOwnerProof;\n    readonly actor: TeamActorProof;\n}',
   },
   {
     name: 'ChannelDeliveryExpiredRecord',
@@ -4995,7 +5137,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ChannelEnvelopeReceiptRequest',
-    declaration: 'export interface ChannelEnvelopeReceiptRequest extends ChannelEnvelopeReceiptInput {\n    readonly actor: ChannelEnvelopeReceiptActor;\n}',
+    declaration: 'export interface ChannelEnvelopeReceiptRequest extends ChannelEnvelopeReceiptInput {\n    readonly deliveryOwner?: TeamDeliveryOwnerProof;\n    readonly actor: ChannelEnvelopeReceiptActor;\n}',
   },
   {
     name: 'ChannelEnvelopeRecord',
@@ -5075,7 +5217,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ChannelInvitationOptions',
-    declaration: 'export interface ChannelInvitationOptions {\n    readonly participantId: ParticipantId;\n    readonly required: boolean;\n}',
+    declaration: 'export interface ChannelInvitationOptions {\n    readonly participantId: ParticipantId;\n    readonly required: boolean;\n    readonly sessionId?: SessionId | undefined;\n}',
   },
   {
     name: 'ChannelInvitationRecord',
@@ -6479,11 +6621,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SessionEvent',
-    declaration: 'export type SessionEvent<T extends SessionEventType = SessionEventType> = {\n    [K in SessionEventType]: {\n        type: K;\n        seq: number;\n        time: number;\n        data: SessionEventMap[K];\n        ignorable?: K extends \'team/channel-view\' ? never : true;\n    } & (K extends SurfaceEventType ? {\n        sourceEventSeqs?: number[];\n        surfaceOp?: SurfaceOp;\n    } : object);\n}[T];',
+    declaration: 'export type SessionEvent<T extends SessionEventType = SessionEventType> = {\n    [K in SessionEventType]: {\n        type: K;\n        seq: number;\n        time: number;\n        data: SessionEventMap[K];\n        ignorable?: K extends \'team/channel-view\' | \'simulation/context-view\' ? never : true;\n    } & (K extends SurfaceEventType ? {\n        sourceEventSeqs?: number[];\n        surfaceOp?: SurfaceOp;\n    } : object);\n}[T];',
   },
   {
     name: 'SessionEventMap',
-    declaration: 'export interface SessionEventMap {\n    \'turn/start\': {\n        turn: number;\n    };\n    \'turn/end\': {\n        turn: number;\n        reason: TurnEndReason;\n    };\n    \'step/start\': {\n        turn: number;\n        step: number;\n    };\n    \'step/end\': {\n        turn: number;\n        step: number;\n    };\n    \'user/message\': UserMessage;\n    \'team/channel-view\': TeamChannelViewEventData;\n    \'assistant/chunk\': {\n        turn: number;\n        step: number;\n        chunk: StreamChunk;\n    };\n    \'assistant/message\': {\n        turn: number;\n        step: number;\n        message: AssistantMessage;\n        usage?: TokenUsage;\n        interrupted?: true;\n    };\n    \'tool/call\': {\n        turn: number;\n        step: number;\n        callId: CallId;\n        name: string;\n        arguments: string;\n    };\n    \'tool/result\': {\n        turn: number;\n        step: number;\n        message: ToolResultMessage;\n        error?: {\n            name: string;\n            code: string;\n        };\n        meta?: JsonValue;\n    };\n    \'todo/write\': {\n        todos: TodoItem[];\n    };\n    \'request/header\': {\n        header: EpochHeader;\n        reason: RequestHeaderReason;\n    };\n    \'request/context\': RequestContext;\n    \'session/end-seed\': Record<string, never>;\n}',
+    declaration: 'export interface SessionEventMap {\n    \'turn/start\': {\n        turn: number;\n    };\n    \'turn/end\': {\n        turn: number;\n        reason: TurnEndReason;\n    };\n    \'step/start\': {\n        turn: number;\n        step: number;\n    };\n    \'step/end\': {\n        turn: number;\n        step: number;\n    };\n    \'user/message\': UserMessage;\n    \'team/channel-view\': TeamChannelViewEventData;\n    \'simulation/context-view\': SimulationContextViewEventData;\n    \'assistant/chunk\': {\n        turn: number;\n        step: number;\n        chunk: StreamChunk;\n    };\n    \'assistant/message\': {\n        turn: number;\n        step: number;\n        message: AssistantMessage;\n        usage?: TokenUsage;\n        interrupted?: true;\n    };\n    \'tool/call\': {\n        turn: number;\n        step: number;\n        callId: CallId;\n        name: string;\n        arguments: string;\n    };\n    \'tool/result\': {\n        turn: number;\n        step: number;\n        message: ToolResultMessage;\n        error?: {\n            name: string;\n            code: string;\n        };\n        meta?: JsonValue;\n    };\n    \'todo/write\': {\n        todos: TodoItem[];\n    };\n    \'request/header\': {\n        header: EpochHeader;\n        reason: RequestHeaderReason;\n    };\n    \'request/context\': RequestContext;\n    \'session/end-seed\': Record<string, never>;\n}',
   },
   {
     name: 'SessionEventMetadataFilter',
@@ -6572,6 +6714,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionLogSnapshot',
     declaration: 'export interface SessionLogSnapshot {\n    session: SessionHeader;\n    events: SessionEvent[];\n}',
+  },
+  {
+    name: 'SessionPersistenceReference',
+    declaration: 'export interface SessionPersistenceReference {\n    readonly retention: \'full\' | \'unprotected\';\n    readonly header: SessionHeader;\n    readonly revision: SessionPersistenceRevision;\n    readonly sequence: number;\n    readonly fingerprint: import(\'@clocky/clocky-brand\').Branded<\'SessionPersistenceFingerprint\'>;\n}',
   },
   {
     name: 'SessionPersistenceRevision',
@@ -6770,6 +6916,318 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ShellSandboxInfo {\n    mode: SandboxMode;\n    denied: boolean;\n    enforcement?: SandboxEnforcement;\n    runnerFailed?: boolean;\n}',
   },
   {
+    name: 'SimTime',
+    declaration: 'export type SimTime = Branded<\'SimTime\'>;',
+  },
+  {
+    name: 'SimulationActivationRequest',
+    declaration: 'export type SimulationActivationRequest = Pick<TeamActivationRequest, \'provider\' | \'agent\' | \'signal\'> & {\n    readonly seed: {\n        readonly kind: \'fresh\';\n    } | {\n        readonly kind: \'resume\';\n    };\n};',
+  },
+  {
+    name: 'SimulationBudgetGrantId',
+    declaration: 'export type SimulationBudgetGrantId = z.infer<typeof simulationBudgetGrantIdSchema>;',
+  },
+  {
+    name: 'SimulationBudgetGrantRequest',
+    declaration: 'export type SimulationBudgetGrantRequest = z.infer<typeof simulationBudgetGrantRequestSchema>;',
+  },
+  {
+    name: 'SimulationCapacityGrantId',
+    declaration: 'export type SimulationCapacityGrantId = z.infer<typeof simulationCapacityGrantIdSchema>;',
+  },
+  {
+    name: 'SimulationCapacityGrantRequest',
+    declaration: 'export type SimulationCapacityGrantRequest = z.infer<typeof simulationCapacityGrantRequestSchema>;',
+  },
+  {
+    name: 'SimulationChannelInvitationAcknowledgeScope',
+    declaration: 'export interface SimulationChannelInvitationAcknowledgeScope extends ChannelInvitationAcknowledgeInput {\n    readonly kind: \'simulation-invitation-acknowledge\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly lifecycleOwner: string;\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n}',
+  },
+  {
+    name: 'SimulationChannelOpenScope',
+    declaration: 'export interface SimulationChannelOpenScope extends Omit<TeamChannelOpenScope, \'kind\'> {\n    readonly kind: \'simulation-channel-open\';\n    readonly runId: string;\n    readonly lifecycleOwner: string;\n    readonly channelId: ChannelId;\n}',
+  },
+  {
+    name: 'SimulationCheckpointCollection',
+    declaration: 'export interface SimulationCheckpointCollection {\n    readonly snapshot: import(\'@clocky/clocky-simulation\').SimulationSnapshot;\n    readonly run: import(\'@clocky/clocky-simulation\').SimulationRunPersistenceReference;\n    readonly team: import(\'@clocky/clocky-team\').TeamPersistenceReference;\n    readonly channels: readonly import(\'@clocky/clocky-team\').TeamPersistenceReference[];\n    readonly sessions: readonly ((import(\'@clocky/clocky-session-persistence\').SessionPersistenceReference & {\n        readonly kind: \'materialized\';\n    }) | Extract<import(\'@clocky/clocky-simulation\').SimulationCheckpointManifest[\'sessions\'][number], {\n        kind: \'unmaterialized\';\n    }>)[];\n    publish(id: import(\'@clocky/clocky-simulation\').SimulationCheckpointId): Promise<import(\'@clocky/clocky-simulation\').SimulationCheckpointOperation>;\n    validate(): Promise<void>;\n    release(): void;\n}',
+  },
+  {
+    name: 'SimulationCheckpointCut',
+    declaration: 'export interface SimulationCheckpointCut {\n    readonly snapshot: import(\'./types.ts\').SimulationSnapshot;\n    readonly reference: SimulationRunPersistenceReference;\n    publish(manifest: import(\'./checkpoint.ts\').SimulationCheckpointManifest): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    release(): void;\n}',
+  },
+  {
+    name: 'SimulationCheckpointId',
+    declaration: 'export type SimulationCheckpointId = z.infer<typeof simulationCheckpointIdSchema>;',
+  },
+  {
+    name: 'SimulationCheckpointManifest',
+    declaration: 'export type SimulationCheckpointManifest = z.infer<typeof simulationCheckpointManifestSchema>;',
+  },
+  {
+    name: 'SimulationCheckpointOperation',
+    declaration: 'export type SimulationCheckpointOperation = {\n    readonly request: SimulationCheckpointRequest;\n    readonly startedSequence: number;\n} & ({\n    readonly status: \'in-progress\';\n} | {\n    readonly status: \'failed\';\n    readonly finishedSequence: number;\n    readonly error: string;\n} | {\n    readonly status: \'completed\';\n    readonly finishedSequence: number;\n    readonly manifest: SimulationCheckpointManifest;\n});',
+  },
+  {
+    name: 'SimulationCheckpointRequest',
+    declaration: 'export type SimulationCheckpointRequest = z.infer<typeof simulationCheckpointRequestSchema>;',
+  },
+  {
+    name: 'SimulationCheckpointRestoration',
+    declaration: 'export interface SimulationCheckpointRestoration {\n    readonly run: import(\'@clocky/clocky-simulation\').SimulationRun;\n    readonly connection: SimulationTeamConnection;\n    readonly manifest: import(\'@clocky/clocky-simulation\').SimulationCheckpointManifest;\n}',
+  },
+  {
+    name: 'SimulationCheckpointRestoreRequest',
+    declaration: 'export type SimulationCheckpointRestoreRequest = z.infer<typeof simulationCheckpointRestoreRequestSchema>;',
+  },
+  {
+    name: 'SimulationContextReference',
+    declaration: 'export type SimulationContextReference = {\n    readonly kind: \'run-event\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly sequence: number;\n} | {\n    readonly kind: \'team-envelope\';\n    readonly teamId: Branded<\'TeamId\'>;\n    readonly channelId: Branded<\'ChannelId\'>;\n    readonly envelopeId: Branded<\'EnvelopeId\'>;\n};',
+  },
+  {
+    name: 'SimulationContextRequest',
+    declaration: 'export type SimulationContextRequest = z.infer<typeof simulationContextRequestSchema>;',
+  },
+  {
+    name: 'SimulationContextSection',
+    declaration: 'export interface SimulationContextSection {\n    readonly kind: typeof SIMULATION_CONTEXT_SECTIONS[number];\n    readonly blocks: ContentBlock[];\n}',
+  },
+  {
+    name: 'SimulationContextViewEventData',
+    declaration: 'export interface SimulationContextViewEventData {\n    readonly version: 1;\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly entityId: Branded<\'SimulationEntityId\'>;\n    readonly windowId: Branded<\'SimulationWindowId\'>;\n    readonly slot: Branded<\'SimulationDecisionSlot\'>;\n    readonly epoch: Branded<\'SimulationWriterEpoch\'>;\n    readonly time: Branded<\'SimTime\'>;\n    readonly inputId: Branded<\'SimulationInputId\'>;\n    readonly projections: {\n        readonly run: number;\n        readonly entity: number;\n        readonly team: number;\n    };\n    readonly versions: {\n        readonly rules: string;\n        readonly policy: string;\n        readonly persona: string;\n        readonly model: string;\n    };\n    readonly sources: SimulationContextReference[];\n    readonly content: SimulationContextSection[];\n}',
+  },
+  {
+    name: 'SimulationDecisionDispatch',
+    declaration: 'export interface SimulationDecisionDispatch {\n    readonly round: z.infer<typeof simulationEventSlotSchema>;\n    readonly nextOrdinal: z.infer<typeof simulationEventSlotSchema>;\n    readonly tickets: Readonly<Record<z.infer<typeof simulationDecisionIdSchema>, SimulationDispatchTicket>>;\n    readonly selections: Readonly<Record<z.infer<typeof simulationWindowIdSchema>, SimulationDispatchSelection>>;\n    readonly active?: z.infer<typeof simulationWindowIdSchema>;\n}',
+  },
+  {
+    name: 'SimulationDecisionId',
+    declaration: 'export type SimulationDecisionId = z.infer<typeof simulationDecisionIdSchema>;',
+  },
+  {
+    name: 'SimulationDecisionSlot',
+    declaration: 'export type SimulationDecisionSlot = z.infer<typeof simulationDecisionSlotSchema>;',
+  },
+  {
+    name: 'SimulationDeterministicPolicy',
+    declaration: 'export interface SimulationDeterministicPolicy extends SimulationPolicyRef {\n    decide(this: void, view: Readonly<SimulationContextViewEventData>): readonly SimulationProposal[];\n}',
+  },
+  {
+    name: 'SimulationDispatchCandidate',
+    declaration: 'export type SimulationDispatchCandidate = z.infer<typeof simulationDispatchCandidateSchema>;',
+  },
+  {
+    name: 'SimulationDispatchSelection',
+    declaration: 'export interface SimulationDispatchSelection {\n    readonly request: SimulationDispatchSelectionRequest;\n    readonly round: z.infer<typeof simulationEventSlotSchema>;\n    readonly decisions: readonly z.infer<typeof simulationDecisionIdSchema>[];\n    readonly status: \'reserved\' | \'opened\' | \'cancelled\';\n}',
+  },
+  {
+    name: 'SimulationDispatchSelectionRequest',
+    declaration: 'export type SimulationDispatchSelectionRequest = z.infer<typeof simulationDispatchSelectionRequestSchema>;',
+  },
+  {
+    name: 'SimulationDispatchTicket',
+    declaration: 'export interface SimulationDispatchTicket {\n    readonly candidate: SimulationDispatchCandidate;\n    readonly ordinal: z.infer<typeof simulationEventSlotSchema>;\n    readonly queuedRound: z.infer<typeof simulationEventSlotSchema>;\n    readonly status: \'queued\' | \'reserved\' | \'opened\' | \'cancelled\';\n}',
+  },
+  {
+    name: 'SimulationDriveRequest',
+    declaration: 'export type SimulationDriveRequest = z.infer<typeof simulationDriveRequestSchema>;',
+  },
+  {
+    name: 'SimulationDriveResult',
+    declaration: 'export interface SimulationDriveResult {\n    readonly steps: number;\n    readonly reason: \'until\' | \'work-limit\' | \'decision-required\' | \'dispatch-required\' | \'delivery-required\' | \'paused\' | \'stalled\';\n    readonly operationId?: SimulationOperationId;\n    readonly revision: number;\n}',
+  },
+  {
+    name: 'SimulationEntityId',
+    declaration: 'export type SimulationEntityId = Branded<\'SimulationEntityId\'>;',
+  },
+  {
+    name: 'SimulationEventId',
+    declaration: 'export type SimulationEventId = z.infer<typeof simulationEventIdSchema>;',
+  },
+  {
+    name: 'SimulationEventKey',
+    declaration: 'export type SimulationEventKey = z.infer<typeof simulationEventKeySchema>;',
+  },
+  {
+    name: 'SimulationEventPhase',
+    declaration: 'export type SimulationEventPhase = z.infer<typeof simulationEventPhaseSchema>;',
+  },
+  {
+    name: 'SimulationEventSlot',
+    declaration: 'export type SimulationEventSlot = z.infer<typeof simulationEventSlotSchema>;',
+  },
+  {
+    name: 'SimulationIngress',
+    declaration: 'export interface SimulationIngress {\n    readonly request: import(\'./ingress.ts\').SimulationIngressRequest;\n    readonly ordinal: SimulationEventSlot;\n    readonly eventId: SimulationEventId;\n    readonly key: SimulationEventKey;\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'SimulationIngressId',
+    declaration: 'export type SimulationIngressId = z.infer<typeof simulationIngressIdSchema>;',
+  },
+  {
+    name: 'SimulationIngressRequest',
+    declaration: 'export type SimulationIngressRequest = z.infer<typeof simulationIngressRequestSchema>;',
+  },
+  {
+    name: 'SimulationKnowledge',
+    declaration: 'export interface SimulationKnowledge extends Omit<SimulationKnowledgeRequest, \'expectedRevision\'> {\n    readonly revision: number;\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'SimulationKnowledgeId',
+    declaration: 'export type SimulationKnowledgeId = z.infer<typeof simulationKnowledgeIdSchema>;',
+  },
+  {
+    name: 'SimulationKnowledgeRequest',
+    declaration: 'export type SimulationKnowledgeRequest = z.infer<typeof simulationKnowledgeRequestSchema>;',
+  },
+  {
+    name: 'SimulationManagementId',
+    declaration: 'export type SimulationManagementId = z.infer<typeof simulationManagementIdSchema>;',
+  },
+  {
+    name: 'SimulationManagementOperation',
+    declaration: 'export type SimulationManagementOperation = {\n    readonly request: SimulationPhaseManagementRequest;\n    readonly startedSequence: number;\n} & ({\n    readonly status: \'in-progress\';\n} | {\n    readonly status: \'completed\';\n    readonly finishedSequence: number;\n} | {\n    readonly status: \'failed\';\n    readonly finishedSequence: number;\n    readonly error: string;\n});',
+  },
+  {
+    name: 'SimulationModelRequest',
+    declaration: 'export type SimulationModelRequest = {\n    readonly kind: \'observe\' | \'submit\';\n} | {\n    readonly kind: \'stage\';\n    readonly proposals: readonly SimulationProposal[];\n};',
+  },
+  {
+    name: 'SimulationModelResult',
+    declaration: 'export type SimulationModelResult = {\n    readonly status: \'observed\';\n    readonly time: string;\n    readonly sections: import(\'@clocky/clocky-session\').SimulationContextSection[];\n} | {\n    readonly status: \'staged\';\n    readonly count: number;\n    readonly effects: \'none\';\n} | {\n    readonly status: \'accepted\' | \'submitted\';\n    readonly operationIds: import(\'@clocky/clocky-simulation\').SimulationOperationId[];\n    readonly effects: \'pending\';\n};',
+  },
+  {
+    name: 'SimulationOperationEnvelopePostScope',
+    declaration: 'export interface SimulationOperationEnvelopePostScope {\n    readonly kind: \'simulation-operation\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly decisionId: Branded<\'SimulationDecisionId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly acceptedRevision: number;\n    readonly fingerprint: string;\n    readonly lifecycleOwner: string;\n    readonly teamId: TeamId;\n    readonly senderId: ParticipantId;\n    readonly recipientId: ParticipantId;\n    readonly idempotencyKey: ChannelPostIdempotencyKey;\n    readonly draft: TeamEnvelopeDraft;\n    readonly publishAllowed: boolean;\n}',
+  },
+  {
+    name: 'SimulationOperationId',
+    declaration: 'export type SimulationOperationId = z.infer<typeof simulationOperationIdSchema>;',
+  },
+  {
+    name: 'SimulationParticipantInviteScope',
+    declaration: 'export interface SimulationParticipantInviteScope extends Omit<TeamRunBootstrapParticipantInviteScope, \'kind\'> {\n    readonly kind: \'simulation-participant-invite\';\n    readonly runId: string;\n    readonly lifecycleOwner: string;\n    readonly participantId: ParticipantId;\n}',
+  },
+  {
+    name: 'SimulationParticipantPhaseScope',
+    declaration: 'export interface SimulationParticipantPhaseScope extends Omit<TeamRunBootstrapParticipantPhaseScope, \'kind\'> {\n    readonly kind: \'simulation-participant-phase\';\n    readonly runId: string;\n    readonly lifecycleOwner: string;\n}',
+  },
+  {
+    name: 'SimulationPhaseManagementRequest',
+    declaration: 'export type SimulationPhaseManagementRequest = z.infer<typeof simulationPhaseManagementRequestSchema>;',
+  },
+  {
+    name: 'SimulationPolicyRef',
+    declaration: 'export type SimulationPolicyRef = z.infer<typeof simulationPolicyRefSchema>;',
+  },
+  {
+    name: 'SimulationProposal',
+    declaration: 'export type SimulationProposal = z.infer<typeof simulationProposalSchema>;',
+  },
+  {
+    name: 'SimulationProvider',
+    declaration: 'export interface SimulationProvider {\n    readonly name: string;\n    open(selection: SimulationRunSelection): Promise<SimulationRun>;\n}',
+  },
+  {
+    name: 'SimulationQuantity',
+    declaration: 'export type SimulationQuantity = z.infer<typeof simulationQuantitySchema>;',
+  },
+  {
+    name: 'SimulationQueueUsage',
+    declaration: 'export interface SimulationQueueUsage {\n    readonly events: {\n        readonly used: number;\n        readonly limit: number;\n    };\n    readonly interactions: {\n        readonly used: number;\n        readonly limit: number;\n    };\n}',
+  },
+  {
+    name: 'SimulationRelationRule',
+    declaration: 'export type SimulationRelationRule = z.infer<typeof simulationRelationRuleSchema>;',
+  },
+  {
+    name: 'SimulationResidencyChoice',
+    declaration: 'export interface SimulationResidencyChoice {\n    readonly activation: SimulationActivationRequest;\n    readonly evict: readonly SimulationEntityId[];\n}',
+  },
+  {
+    name: 'SimulationResidencyResult',
+    declaration: 'export type SimulationResidencyResult = {\n    readonly status: \'resident\';\n    readonly lease: TeamActivationLease;\n} | {\n    readonly status: \'capacity\' | \'recovery-required\';\n    readonly entityId: SimulationEntityId;\n};',
+  },
+  {
+    name: 'SimulationRootCreationScope',
+    declaration: 'export interface SimulationRootCreationScope extends TeamRootCreateInput {\n    readonly kind: \'simulation-root-create\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly lifecycleOwner: string;\n    readonly teamId: TeamId;\n}',
+  },
+  {
+    name: 'SimulationRun',
+    declaration: 'export interface SimulationRun {\n    beginCheckpoint(request: import(\'./checkpoint.ts\').SimulationCheckpointRequest): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    failCheckpoint(id: import(\'./checkpoint.ts\').SimulationCheckpointId, error: string): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    acquireCheckpointCut(maxDrainRounds: number, signal?: AbortSignal): Promise<import(\'./checkpoint-reference.ts\').SimulationCheckpointCut>;\n    getPersistenceReference(expectedRevision: number): Promise<import(\'./checkpoint-reference.ts\').SimulationRunPersistenceReference>;\n    managePhase(request: import(\'./management.ts\').SimulationPhaseManagementRequest): Promise<import(\'./management.ts\').SimulationManagementOperation>;\n    population(): {\n        readonly entities: number;\n        readonly chargedActors: number;\n    };\n    ingest(request: import(\'./ingress.ts\').SimulationIngressRequest): Promise<SimulationIngress>;\n    acknowledgeConflict(id: SimulationOperationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    reconcileTokenUsage(id: import(\'./tokens.ts\').SimulationTokenReservationId, usage: import(\'./tokens.ts\').SimulationTokenUsage): Promise<import(\'./tokens.ts\').SimulationTokenReservation>;\n    acknowledgeTokenOverrun(id: import(\'./tokens.ts\').SimulationTokenReservationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    queueUsage(): import(\'./capacity.ts\').SimulationQueueUsage;\n    extendCapacity(request: im /* …truncated — full shape in source */',
+  },
+  {
+    name: 'SimulationRunId',
+    declaration: 'export type SimulationRunId = Branded<\'SimulationRunId\'>;',
+  },
+  {
+    name: 'SimulationRunPersistenceReference',
+    declaration: 'export interface SimulationRunPersistenceReference {\n    readonly retention: \'full\';\n    readonly runId: SimulationRunId;\n    readonly backend: \'json\' | \'sqlite\';\n    readonly stream: {\n        readonly name: string;\n        readonly version: number;\n    };\n    readonly cursor: number;\n    readonly firstSequence: number;\n    readonly fingerprint: Branded<\'SimulationRunFingerprint\'>;\n}',
+  },
+  {
+    name: 'SimulationRunRequest',
+    declaration: 'export interface SimulationRunRequest {\n    readonly provider: string;\n    readonly spec: SimulationRunSpec;\n    readonly mode: \'create\' | \'open\';\n}',
+  },
+  {
+    name: 'SimulationRunSelection',
+    declaration: 'export type SimulationRunSelection = SimulationRunRequest;',
+  },
+  {
+    name: 'SimulationRunSpec',
+    declaration: 'export interface SimulationRunSpec {\n    readonly maxQueuedDecisions: number;\n    readonly maxDispatchWaitRounds: number;\n    readonly maxTokensPerInterval: number;\n    readonly tokensPerModelRequest: number;\n    readonly budgetInterval: SimTime;\n    readonly maxDecisionsPerInterval: number;\n    readonly maxMessagesPerInterval: number;\n    readonly maxPendingEvents: number;\n    readonly maxPendingInteractions: number;\n    readonly maxKnowledgeBytes: number;\n    readonly maxKnowledgePerQuery: number;\n    readonly maxEntities: number;\n    readonly maxResidentActors: number;\n    readonly maxIngressBytes: number;\n    readonly maxConflictRetries: number;\n    readonly decisionTimeoutMs: number;\n    readonly maxDecisionsPerWindow: number;\n    readonly runId: SimulationRunId;\n    readonly tickUnit: string;\n    readonly origin: string;\n    readonly maxTime: SimTime;\n    readonly rulesVersion: string;\n    readonly policyVersion: string;\n    readonly outboxMaxAttempts: number;\n    readonly outboxRetryDelayMs: number;\n    readonly maxDriveSteps: number;\n    readonly maxMicrostepsPerTime: number;\n    readonly phaseOrder: readonly SimulationEventPhase[];\n    readonly maxOperationsPerDecision: number;\n    readonly maxResourceQuantity: import(\'./business-types.ts\').SimulationQuantity;\n    readonly relationRules: readonly SimulationRelationRule[];\n}',
+  },
+  {
+    name: 'SimulationSnapshot',
+    declaration: 'export interface SimulationSnapshot {\n    readonly checkpoints?: Readonly<Record<import(\'./checkpoint.ts\').SimulationCheckpointId, import(\'./checkpoint.ts\').SimulationCheckpointOperation>>;\n    readonly latestCheckpointId?: import(\'./checkpoint.ts\').SimulationCheckpointId;\n    readonly management?: Readonly<Record<import(\'./management.ts\').SimulationManagementId, import(\'./management.ts\').SimulationManagementOperation>>;\n    readonly knowledge?: Readonly<Record<import(\'./knowledge.ts\').SimulationKnowledgeId, readonly import(\'./knowledge.ts\').SimulationKnowledge[]>>;\n    readonly capacityGrants?: Readonly<Record<import(\'./capacity.ts\').SimulationCapacityGrantId, import(\'./capacity.ts\').SimulationCapacityGrantRequest>>;\n    readonly tokenReservations?: Readonly<Record<import(\'./tokens.ts\').SimulationTokenReservationId, import(\'./tokens.ts\').SimulationTokenReservation>>;\n    readonly nextTokenSlot?: import(\'./scheduler-types.ts\').SimulationEventSlot;\n    readonly budgetGrants?: Readonly<Record<import(\'./budget.ts\').SimulationBudgetGrantId, import(\'./budget.ts\').SimulationBudgetGrantRequest>>;\n    readonly decisionDispatch?: import(\'./dispatch.ts\').SimulationDecisionDispatch;\n    readonly nextIngressSlot?: SimulationEventSlot;\n    readonly ingresses?: Readonly<Record<import(\'./ingress.ts\').SimulationIngressId, SimulationIngress>>;\n    readonly activeWindowId?: import(\'./window.ts\').SimulationWindowId;\n    readonly windows?: Readonly<Record<import(\'./window.ts\').SimulationWindowId /* …truncated — full shape in source */',
+  },
+  {
+    name: 'SimulationSummaryPolicy',
+    declaration: 'export interface SimulationSummaryPolicy extends SimulationPolicyRef {\n    summarize(this: void, items: readonly Readonly<Omit<SimulationKnowledge, \'readers\'>>[]): string;\n}',
+  },
+  {
+    name: 'SimulationTaskCreateScope',
+    declaration: 'export interface SimulationTaskCreateScope {\n    readonly kind: \'simulation-task-create\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly lifecycleOwner: string;\n    readonly participantId: ParticipantId;\n    readonly publishAllowed: boolean;\n    readonly input: Omit<TeamTaskCreateInput, \'expectedCursor\'>;\n}',
+  },
+  {
+    name: 'SimulationTeamConnection',
+    declaration: 'export interface SimulationTeamConnection {\n    checkpoint(request: import(\'@clocky/clocky-simulation\').SimulationCheckpointRequest, signal?: AbortSignal): Promise<import(\'@clocky/clocky-simulation\').SimulationCheckpointOperation>;\n    collectCheckpointCandidate(maxDrainRounds: number, maxAttempts: number, signal?: AbortSignal): Promise<SimulationCheckpointCollection>;\n    ensureResident(entityId: SimulationEntityId, choice: SimulationResidencyChoice): Promise<SimulationResidencyResult>;\n    driveResident(request: import(\'@clocky/clocky-simulation\').SimulationDriveRequest, clock: () => number, choose: (entityId: SimulationEntityId) => SimulationResidencyChoice): Promise<SimulationTeamDriveResult>;\n    hibernate(entityId: SimulationEntityId): Promise<void>;\n    resume(entityId: SimulationEntityId, request: Omit<SimulationActivationRequest, \'seed\'>): Promise<TeamActivationLease>;\n    openWindow(request: {\n        readonly id: import(\'@clocky/clocky-simulation\').SimulationWindowId;\n        readonly decisions: readonly {\n            readonly id: SimulationDecisionId;\n            readonly entityId: SimulationEntityId;\n            readonly wakeId?: SimulationEventId;\n            readonly policy?: import(\'@clocky/clocky-simulation\').SimulationPolicyRef;\n            readonly context: Omit<SimulationContextRequest, \'maxBytes\' | \'teamCursor\'>;\n        }[];\n    }): Promise<import(\'@clocky/clocky-simulation\').SimulationWindow>;\n    cancelDecision(entityId: SimulationEntityId, id: Simulat /* …truncated — full shape in source */',
+  },
+  {
+    name: 'SimulationTeamDriveResult',
+    declaration: 'export interface SimulationTeamDriveResult {\n    readonly reason: Exclude<import(\'@clocky/clocky-simulation\').SimulationDriveResult[\'reason\'], \'dispatch-required\' | \'delivery-required\'> | \'retry\' | \'outcome-unknown\' | \'recipient-required\' | \'recipient-busy\' | \'coordination-limit\' | \'resident-capacity\' | \'residency-recovery-required\';\n    readonly rounds: number;\n    readonly steps: number;\n    readonly revision: number;\n    readonly operationId?: import(\'@clocky/clocky-simulation\').SimulationOperationId;\n    readonly entityId?: SimulationEntityId;\n    readonly nextAttemptAt?: number;\n}',
+  },
+  {
+    name: 'SimulationTokenRequest',
+    declaration: 'export type SimulationTokenRequest = z.infer<typeof simulationTokenRequestSchema>;',
+  },
+  {
+    name: 'SimulationTokenReservation',
+    declaration: 'export interface SimulationTokenReservation {\n    readonly id: SimulationTokenReservationId;\n    readonly decisionId?: SimulationDecisionId;\n    readonly compactionId?: Branded<\'CompactionId\'>;\n    readonly entityId: SimulationEntityId;\n    readonly epoch: SimulationWriterEpoch;\n    readonly sessionId: SessionId;\n    readonly request: SimulationTokenRequest;\n    readonly interval: SimTime;\n    readonly reserved: number;\n    readonly status: \'reserved\' | \'unknown\' | \'settled\' | \'not-dispatched\';\n    readonly observedUsage?: SimulationTokenUsage;\n    readonly usage?: SimulationTokenUsage;\n    readonly overrunAcknowledged?: boolean;\n}',
+  },
+  {
+    name: 'SimulationTokenReservationId',
+    declaration: 'export type SimulationTokenReservationId = z.infer<typeof simulationTokenReservationIdSchema>;',
+  },
+  {
+    name: 'SimulationTokenUsage',
+    declaration: 'export type SimulationTokenUsage = z.infer<typeof simulationTokenUsageSchema>;',
+  },
+  {
+    name: 'SimulationWindow',
+    declaration: 'export interface SimulationWindow {\n    readonly id: import(\'./window.ts\').SimulationWindowId;\n    readonly request: import(\'./window.ts\').SimulationWindowRequest;\n    readonly snapshotRevision: number;\n    readonly time: SimTime;\n    readonly status: \'collecting\' | \'closed\';\n}',
+  },
+  {
+    name: 'SimulationWindowId',
+    declaration: 'export type SimulationWindowId = z.infer<typeof simulationWindowIdSchema>;',
+  },
+  {
+    name: 'SimulationWindowRequest',
+    declaration: 'export type SimulationWindowRequest = z.infer<typeof simulationWindowRequestSchema>;',
+  },
+  {
+    name: 'SimulationWriterEpoch',
+    declaration: 'export type SimulationWriterEpoch = Branded<\'SimulationWriterEpoch\'>;',
+  },
+  {
     name: 'SkillCandidate',
     declaration: 'export interface SkillCandidate extends SkillSummary {\n    readonly rank: number;\n    readonly locator: unknown;\n    readonly path?: string;\n    readonly metadata?: Readonly<Record<string, unknown>>;\n}',
   },
@@ -6915,7 +7373,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SurfaceEventType',
-    declaration: 'export type SurfaceEventType = \'user/message\' | \'team/channel-view\' | \'assistant/message\' | \'tool/result\';',
+    declaration: 'export type SurfaceEventType = \'user/message\' | \'team/channel-view\' | \'simulation/context-view\' | \'assistant/message\' | \'tool/result\';',
   },
   {
     name: 'SurfaceOp',
@@ -6986,8 +7444,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamActivationColdReplaceRequest {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly signal: AbortSignal;\n    readonly authorization?: TeamHumanResumeAuthorization;\n}',
   },
   {
+    name: 'TeamActivationCoordinationLease',
+    declaration: 'export interface TeamActivationCoordinationLease {\n    readonly runtimeProvider?: AgentRuntimeProvider;\n    readonly localTerminationConfirmed: boolean;\n    bind(binding: ActivationBindingSnapshot, agent: Agent | undefined): Promise<void>;\n    revoke(): Promise<void>;\n    checkpoint?(): Promise<void>;\n    release(): Promise<void>;\n}',
+  },
+  {
     name: 'TeamActivationLease',
     declaration: 'export interface TeamActivationLease {\n    readonly binding: ActivationBindingSnapshot;\n    readonly localAgent: Agent | undefined;\n    health(): Promise<ActivationBindingSnapshot>;\n    interrupt(cause: AgentCancelCause): void;\n    dispose(): Promise<void>;\n}',
+  },
+  {
+    name: 'TeamActivationLifecycleOwner',
+    declaration: 'export interface TeamActivationLifecycleOwner {\n    readonly name: string;\n    reserve(request: TeamActivationRequest, reservation: ActivationReservationInput): Promise<TeamActivationCoordinationLease>;\n    recover(binding: ActivationBindingSnapshot): Promise<TeamActivationCoordinationLease>;\n    recoverReservation(reservation: ActivationReservationInput): Promise<TeamActivationCoordinationLease>;\n}',
   },
   {
     name: 'TeamActivationRequest',
@@ -7356,6 +7822,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamDelegationResultAdmission',
     declaration: 'export interface TeamDelegationResultAdmission {\n    readonly binding: TeamChildRunBinding;\n    readonly requestEnvelopeId: EnvelopeId;\n    readonly requestSequence: number;\n    readonly responseEnvelopeId: EnvelopeId;\n    readonly responseSequence: number;\n    readonly contentFingerprint: TeamChildResultFingerprint;\n    readonly text: string;\n    readonly artifacts: readonly TeamArtifactReference[];\n    readonly parentTaskRevision: number;\n    readonly parentCursor: number;\n    readonly admittedAt: number;\n}',
+  },
+  {
+    name: 'TeamDeliveryOwnerProof',
+    declaration: 'export interface TeamDeliveryOwnerProof {\n    readonly [teamDeliveryOwnerProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamDeliveryOwnerProofSource',
+    declaration: 'export interface TeamDeliveryOwnerProofSource {\n    readonly name: string;\n    resolveDeliveryOwnerProof(proof: TeamDeliveryOwnerProof): TeamDeliveryOwnerScope | undefined;\n}',
+  },
+  {
+    name: 'TeamDeliveryOwnerScope',
+    declaration: 'export interface TeamDeliveryOwnerScope {\n    readonly kind: \'simulation-delivery\';\n    readonly operation: \'claim\' | \'receipt\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly lifecycleOwner: string;\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly sessionId: SessionId;\n    readonly cursor: number | null;\n}',
   },
   {
     name: 'TeamDiscoveryCursor',
@@ -7770,6 +8248,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TeamParticipantOwner = {\n    readonly kind: \'product-principal\';\n    readonly principalId: Branded<\'ProductPrincipalId\'>;\n} | {\n    readonly kind: \'system\';\n};',
   },
   {
+    name: 'TeamPersistenceFingerprint',
+    declaration: 'export type TeamPersistenceFingerprint = Branded<\'TeamPersistenceFingerprint\'>;',
+  },
+  {
+    name: 'TeamPersistenceReference',
+    declaration: 'export interface TeamPersistenceReference {\n    readonly owner: Omit<Extract<TeamPersistenceReferenceRequest, {\n        kind: \'team\';\n    }>, \'expectedCursor\' | \'prefixCursor\'> | Omit<Extract<TeamPersistenceReferenceRequest, {\n        kind: \'channel\';\n    }>, \'expectedCursor\' | \'prefixCursor\'>;\n    readonly stream: {\n        readonly name: string;\n        readonly version: number;\n    };\n    readonly retention: \'full\' | \'compactable\';\n    readonly cursor: number;\n    readonly firstSequence: number;\n    readonly projectionVersion: number;\n    readonly fingerprint: TeamPersistenceFingerprint;\n}',
+  },
+  {
+    name: 'TeamPersistenceReferenceRequest',
+    declaration: 'export type TeamPersistenceReferenceRequest = z.infer<typeof teamPersistenceReferenceRequestSchema>;',
+  },
+  {
     name: 'TeamPhase',
     declaration: 'export type TeamPhase = \'provisioning\' | \'active\' | \'quiescing\' | \'stalled\' | \'completed\' | \'failed\' | \'cancelled\';',
   },
@@ -8094,6 +8584,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamSelectionText {\n    readonly text: string;\n    readonly truncated: boolean;\n}',
   },
   {
+    name: 'TeamSimulationTaskCreateRequest',
+    declaration: 'export interface TeamSimulationTaskCreateRequest extends TeamTaskCreateInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskCreator',
+    declaration: 'export interface TeamSimulationTaskCreator extends TeamHumanTaskCreator {\n    readonly kind: \'simulation\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n}',
+  },
+  {
     name: 'TeamSnapshot',
     declaration: 'export interface TeamSnapshot {\n    readonly id: TeamId;\n    readonly parentTeamId?: TeamId;\n    readonly parentTaskId?: TeamTaskId;\n    readonly childRun?: TeamChildRunBinding | undefined;\n    readonly childResultAdmission?: import(\'./child-result-types.ts\').TeamChildResultAdmission | undefined;\n    readonly depth: number;\n    readonly maxTeamDepth: number;\n    readonly goal: TeamGoalSnapshot;\n    readonly workspacePath?: string | undefined;\n    readonly phase: TeamPhase;\n    readonly stallReason?: TeamStallReason | undefined;\n    readonly closure?: TeamClosureSnapshot | undefined;\n    readonly cancellation?: TeamCancellationSnapshot | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n    readonly createdBy?: TeamCreationActor | undefined;\n    readonly cursor: number;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n    readonly archivedAt?: number;\n}',
   },
@@ -8151,7 +8649,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemChannelAdmissionScope',
-    declaration: 'export type TeamSystemChannelAdmissionScope = SystemChannelInvitationAcknowledgeScope | SystemChannelInvitationExpireScope;',
+    declaration: 'export type TeamSystemChannelAdmissionScope = SystemChannelInvitationAcknowledgeScope | SimulationChannelInvitationAcknowledgeScope | SystemChannelInvitationExpireScope;',
   },
   {
     name: 'TeamSystemChannelLifecycleProof',
@@ -8163,7 +8661,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemChannelLifecycleScope',
-    declaration: 'export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | TeamChannelCloseScope;',
+    declaration: 'export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | SimulationChannelOpenScope | TeamChannelCloseScope;',
   },
   {
     name: 'TeamSystemChannelSummaryProof',
@@ -8251,7 +8749,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemEnvelopePostScope',
-    declaration: 'export type TeamSystemEnvelopePostScope = TeamDelegationEnvelopePostScope | TeamRunHumanInputEnvelopePostScope | SchedulerAssignmentEnvelopePostScope | SchedulerReviewRequestEnvelopePostScope;',
+    declaration: 'export type TeamSystemEnvelopePostScope = SimulationOperationEnvelopePostScope | TeamDelegationEnvelopePostScope | TeamRunHumanInputEnvelopePostScope | SchedulerAssignmentEnvelopePostScope | SchedulerReviewRequestEnvelopePostScope;',
   },
   {
     name: 'TeamSystemFinalizationCleanupProof',
@@ -8347,7 +8845,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemRootCreationScope',
-    declaration: 'export type TeamSystemRootCreationScope = TeamRunRootCreationScope;',
+    declaration: 'export type TeamSystemRootCreationScope = TeamRunRootCreationScope | SimulationRootCreationScope;',
   },
   {
     name: 'TeamSystemSchedulerChannelProof',
@@ -8371,7 +8869,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemTaskControlScope',
-    declaration: 'export type TeamSystemTaskControlScope = TeamRunDefaultWorkerOwnerProposalScope | TeamRunDefaultWorkerCancelScope | TeamRunWorkflowTaskCancelScope;',
+    declaration: 'export type TeamSystemTaskControlScope = SimulationTaskCreateScope | TeamRunDefaultWorkerOwnerProposalScope | TeamRunDefaultWorkerCancelScope | TeamRunWorkflowTaskCancelScope;',
   },
   {
     name: 'TeamSystemTaskLeaseProof',
@@ -8407,7 +8905,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemTopologyScope',
-    declaration: 'export type TeamSystemTopologyScope = TeamRunBootstrapParticipantInviteScope | TeamRunBootstrapParticipantPhaseScope | TeamRunBootstrapChannelOpenScope | TeamRunWorkerInviteScope | TeamRunWorkerActivateScope | TeamRunWorkerRetireScope | TeamRunReviewerInviteScope | TeamRunReviewerPhaseScope;',
+    declaration: 'export type TeamSystemTopologyScope = SimulationParticipantInviteScope | SimulationParticipantPhaseScope | TeamRunBootstrapParticipantInviteScope | TeamRunBootstrapParticipantPhaseScope | TeamRunBootstrapChannelOpenScope | TeamRunWorkerInviteScope | TeamRunWorkerActivateScope | TeamRunWorkerRetireScope | TeamRunReviewerInviteScope | TeamRunReviewerPhaseScope;',
   },
   {
     name: 'TeamSystemWorkflowProof',
@@ -8515,7 +9013,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamTaskCommandCreator',
-    declaration: 'export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator;',
+    declaration: 'export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator | TeamSimulationTaskCreator;',
   },
   {
     name: 'TeamTaskCreateCommand',

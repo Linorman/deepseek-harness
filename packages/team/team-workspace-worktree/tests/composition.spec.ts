@@ -171,6 +171,7 @@ function localAgent(id: SessionId, cwd: string): Agent {
     inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
     status: 'idle',
     ctx: new Context(),
+    wakePending: () => false,
     send: () => {},
     followup: () => {},
     steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),

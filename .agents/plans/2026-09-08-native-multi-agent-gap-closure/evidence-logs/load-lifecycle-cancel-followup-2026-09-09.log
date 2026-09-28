@@ -1,0 +1,35 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests/load-lifecycle.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 2 tests passed; 0 failed; 0 skipped.
+  The existing real-ACK lifecycle reference emitted startup, first-page,
+  enumeration, RSS, and shutdown metrics. The new scenario cancelled an idle
+  channel watch through AbortSignal before disposing the Hub fiber.
+
+Metrics sample:
+  CLOCKY_TEAM_HUB_LIFECYCLE_METRICS {"startupMs":8.58791599999995,"first32Ms":26.886167,"enumerationMs":1.9545420000000604,"shutdownMs":2.480790999999954,"rssBytes":159186944,"pages":2,"records":39}
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-hub/tests/load-lifecycle.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-hub/tests/load-lifecycle.spec.ts 5021da504cf6d0d37041cc115c98fbeb975b82c068bff99c94e3da29d0deefef
+
+Boundary:
+  This is macOS same-process lifecycle/cancellation evidence. It does not
+  provide fresh-process, Linux, CI-budget, or release performance evidence.
+
+Fresh-process reference:
+  env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 /usr/bin/time -l pnpm exec vitest run packages/team/team-hub/tests/load-lifecycle.spec.ts --reporter=dot --maxWorkers=1
+  Three same-command macOS samples, each 1 test file/2 tests passed:
+  1. 1.40s real; 456,294,400 bytes max RSS; startup 8.509ms; first32 27.577ms; enumeration 1.949ms; shutdown 2.989ms; lifecycle RSS 156,450,816 bytes.
+  2. 1.46s real; 452,116,480 bytes max RSS; startup 9.289ms; first32 30.270ms; enumeration 2.952ms; shutdown 2.884ms; lifecycle RSS 159,776,768 bytes.
+  3. 1.45s real; 450,068,480 bytes max RSS; startup 8.981ms; first32 31.021ms; enumeration 2.018ms; shutdown 2.923ms; lifecycle RSS 156,762,112 bytes.
+  Median: 1.45s real; 452,116,480 bytes max RSS; startup 8.981ms; first32 30.270ms; enumeration 2.018ms; shutdown 2.923ms; lifecycle RSS 156,762,112 bytes.
+  These are macOS references and not a CI or Linux budget result.

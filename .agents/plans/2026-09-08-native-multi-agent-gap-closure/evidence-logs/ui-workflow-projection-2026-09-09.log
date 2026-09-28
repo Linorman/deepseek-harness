@@ -1,0 +1,40 @@
+# F-UI-03 workflow plan projection evidence
+
+- Date: 2026-09-09 (Asia/Shanghai)
+- Source plane: `/Volumes/projects-mac/deepseek-harness`
+- Scope: read-only workflow plan, task binding, dependency, phase, result, and failure projection.
+
+```text
+pnpm exec tsc -p packages/client/ui-team/tsconfig.json --pretty false --noEmit
+```
+
+PASS.
+
+```text
+pnpm exec tsc -p packages/host/apiproxy/tsconfig.json --pretty false --noEmit
+pnpm exec vitest run packages/host/apiproxy/tests/api-proxy-teams.spec.ts --reporter=dot --maxWorkers=1
+```
+
+PASS: Host API source compiles; 1 file, 50 tests passed, including the bounded `team.workflow.plan.list` route.
+
+```text
+pnpm exec vitest run packages/client/ui-team/tests --reporter=dot --maxWorkers=1
+```
+
+PASS: 7 files, 61 tests passed. The added workflow case verifies plan phase, ordered template rows, task binding links, dependency labels, and terminal failure text.
+
+The current combined rebind across runtime Team-task tests, all Team UI tests, and the Host Team API suite passes 9 files / 142 tests.
+
+```text
+pnpm exec tsc -p packages/sdk/protocol/tsconfig.json --pretty false --noEmit
+pnpm exec tsc -p packages/sdk/client/tsconfig.json --pretty false --noEmit
+pnpm exec tsc -p packages/sdk/server/tsconfig.json --pretty false --noEmit
+pnpm exec vitest run packages/sdk/protocol/tests/schema.spec.ts packages/sdk/client/tests/sdk-client.spec.ts packages/sdk/server/tests/server.spec.ts --reporter=dot --maxWorkers=1
+PYTHONPATH=python/sdk/src python -m pytest python/sdk/tests/test_client.py -q
+```
+
+PASS: TypeScript SDK faces compile; SDK protocol/client/server tests pass 3 files / 98 tests; Python SDK client tests pass 25 tests. The new bounded `team/workflow-plan-list` method is available through TypeScript SDK and Python `HarnessClient`/`Team` helpers.
+
+## Implemented boundary
+
+TeamPage now renders the durable `workflowPlans` projection and the client runtime owns a bounded `workflowPlans` collection cursor loaded through Host `team.workflow.plan.list`. The surface is read-only: it does not create/edit plans, and `team_workflow_*` tool authoring remains unchanged. Unbound templates remain visible without fabricated task links; bound templates link to their task detail; completed result count and failure reason are shown. SDK/Python wire parity, stale-read race coverage, and full browser/GIF coverage remain open, so F-UI-03 stays partial.

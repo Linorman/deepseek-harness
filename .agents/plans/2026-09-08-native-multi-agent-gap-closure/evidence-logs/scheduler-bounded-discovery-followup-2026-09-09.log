@@ -1,0 +1,14 @@
+Scheduler bounded Team-discovery follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/team/team-scheduler-dag/tsconfig.json packages/core/team/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-scheduler-dag/tests/scheduler.spec.ts packages/team/team-scheduler-dag/tests/composition.spec.ts --pool=forks --maxWorkers=1`
+   Result: 2 files passed; 60 tests passed.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/team/team-scheduler-dag/src/index.ts packages/team/team-scheduler-dag/tests/scheduler.spec.ts packages/team/team-scheduler-dag/tests/composition.spec.ts`
+   Result: exit 0.
+4. `pnpm run verify-translation-pairing --write packages/team/team-scheduler-dag/README.md`
+   Result: paired scheduler README record refreshed.
+
+Behavior proved: scheduler discovery uses bounded `listTeamsPage()` continuation pages with a configured `teamPageSize`; it stops after disposal and rejects non-advancing discovery cursors instead of calling the old unbounded `listTeams()` seam.

@@ -1,0 +1,35 @@
+{
+  "capturedOn": "2026-09-11",
+  "sourceHead": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "sourceState": "Existing working tree with pre-existing changes; browser renders existing built assets, not a new build for this proposal.",
+  "browser": "Playwright Chromium; Browser/IAB tools unavailable in this session.",
+  "desktopViewport": [
+    1440,
+    1000
+  ],
+  "narrowViewport": [
+    390,
+    844
+  ],
+  "command": "pnpm exec vitest run --config vitest.web.config.ts apps/web/tests/team-collections.snapshot.ts apps/web/tests/team-channel.snapshot.ts",
+  "result": {
+    "files": 2,
+    "tests": 5,
+    "passed": true
+  },
+  "evidence": {
+    "evidence/current-team.png": {
+      "source": ".tmp/gap-collections-2026-09-10/collections-initial.png",
+      "sourceModified": "2026-09-11T15:36:22.379935+08:00"
+    },
+    "evidence/current-channel.png": {
+      "source": ".tmp/team-channel-browser-evidence/03-watched-record.png",
+      "sourceModified": "2026-09-11T15:36:13.962020+08:00"
+    },
+    "evidence/current-narrow.png": {
+      "source": ".tmp/gap-collections-2026-09-10/collections-narrow.png",
+      "sourceModified": "2026-09-11T15:36:23.855729+08:00"
+    }
+  },
+  "images": "Generated concept images are illustrative sample data; no product UI has been implemented."
+}

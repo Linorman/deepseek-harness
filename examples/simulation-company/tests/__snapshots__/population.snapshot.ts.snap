@@ -1,0 +1,163 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json population capacity > retains charged capacity with crash=bound 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`json population capacity > retains charged capacity with crash=reserved 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`json population capacity > retains charged capacity with crash=revoked 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`json population capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 5,
+}
+`;
+
+exports[`sqlite population capacity > retains charged capacity with crash=bound 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`sqlite population capacity > retains charged capacity with crash=reserved 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`sqlite population capacity > retains charged capacity with crash=revoked 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 4,
+}
+`;
+
+exports[`sqlite population capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "acceptedWriterIntervals": 1,
+  "afterClose": {
+    "chargedActors": 0,
+    "entities": 2,
+  },
+  "beforeClose": {
+    "chargedActors": 1,
+    "entities": 2,
+  },
+  "canonicalSessionPreserved": true,
+  "charges": [
+    1,
+    1,
+  ],
+  "retainedEntities": 3,
+  "starts": 5,
+}
+`;

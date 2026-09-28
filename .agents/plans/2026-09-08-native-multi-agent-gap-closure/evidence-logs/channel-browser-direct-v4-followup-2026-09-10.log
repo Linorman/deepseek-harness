@@ -1,0 +1,13 @@
+# Direct-v4 channel browser follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay. Browser plugin was not available, so the repository's Playwright/Vitest runner was used.
+
+Flow: shipped Chinese Web UI → create direct-v4 channel → inspect invitations and ACK → cancel a pending opening → observe another-client WAL update → create a durable summary → send ordered text/image content → read the model response → check narrow viewport overflow.
+
+Command:
+
+    env CLOCKY_SNAPSHOT=replay CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts apps/web/tests/team-channel.snapshot.ts --no-file-parallelism
+
+Result: exit 0; 1 test file and 1 test passed in 4.70s; committed golden was not refreshed. Evidence artifacts remain under `.tmp/team-channel-browser-evidence/`.
+
+Scope boundary: this proves the current direct-v4 browser path only. Consult/discussion browser flows, full GUI matrix, GIF, and multi-host UI transport remain open.

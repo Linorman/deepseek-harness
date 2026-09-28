@@ -1,0 +1,1 @@
+验收者检查：output/vitest.log 包含 1 passed 且无失败；报告识别请求时间 0、转移时间 5、最终报告时间 6；stock 从 2 变 1，received 从 0 变 1，承诺为 fulfilled，taskCreation.count=1。报告应说明快照匹配只能证明本地脚本模型的真实 Simulation 路径，不代表外部模型推理质量。

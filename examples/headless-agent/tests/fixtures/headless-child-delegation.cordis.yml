@@ -22,9 +22,13 @@
     workerCount: 0
     maxWorkerCount: 0
 - id: team-delegation
+  inject: [childAuthorityProbe]
   config:
     maxOperationsPerDrive: 1
 - insert:
+    - id: child-authority-probe
+      name: './snapshot-fixtures/headless-child-authority-probe.ts'
+
     - id: child-delegation-json-storage
       name: '@clocky/clocky-storage-json'
       disabled: !!js process.env.CLOCKY_CHILD_RESTART_BACKEND !== 'json'

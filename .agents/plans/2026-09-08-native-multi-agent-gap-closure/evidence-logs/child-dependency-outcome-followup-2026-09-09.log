@@ -1,0 +1,31 @@
+Native multi-agent gap closure — ordinary child dependency outcome follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane tests; no credential values or .env contents were read.
+TMPDIR: .tmp/verification-runtime
+
+Changed-source hashes:
+1759f7a97708352b60539056b91591f5ba014e28fe1e455c77203a8cc49b2ecc  packages/core/team/src/types.ts
+bfa8f09f1a866622cd144706434c013e11f4af7756e56107dd702ffcbd63c483  packages/core/team/src/schema.ts
+e87418c79ec0c14f5d804962f3f34d93d9dea1a419dc2c6ab4598b4e57fd8a90  packages/team/team-hub/src/fold.ts
+ff58d24eea2740b2413931ad1a27dbb749cc117de27d5f6ad17e06bb797ae3cb  packages/team/team-hub/src/workflow-outcomes.ts
+6dd2c3421c9cc69fa518288e21c6a470f141d53750ff1c4d5202519c250d583e  packages/team/team-hub/tests/edge-cases.spec.ts
+
+Behavior: unstarted `execution.kind: 'child-team'` tasks whose direct blocker reaches failed, cancelled, or deleted are durably cancelled in the Hub outcome batch. The real edge matrix exercises all three blocker phases. The task retains `blockedByOutcome` with blocker id/revision/phase, and its requested child reservation changes to `cancelled` without minting a child Team or Participant lease. Deleted blockers are permitted only for the terminal dependent state or the transient fold immediately before the generated dependent cancellation; an incomplete journal/checkpoint remains malformed.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/edge-cases.spec.ts --reporter=dot
+Result: PASS — 1 file, 40 tests passed, 0 failed, 0 skipped. Includes the real SQLite failed/cancelled/deleted blocker matrix and restart checkpoint coverage already present in the file.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests --bail=1 --reporter=dot
+Result: PASS — 50 files, 781 tests passed, 0 failed, 0 skipped.
+
+Command: pnpm exec tsc -b packages/core/team/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec tsc -b packages/team/team-hub/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-run/tests/team-run.spec.ts packages/team/tool-team-task/tests/tool-team-task.spec.ts --reporter=dot
+Result: PASS — 2 files, 104 tests passed, 0 failed, 0 skipped. Existing TeamRun and model-tool workflow/task projections remain compatible with the generalized dependency outcome field.
+
+Scope boundary: this closes the ordinary child dependency-terminal behavior within F-CT-02's current shared-workspace slice. It does not decide nonshared child workspaces, workflow child nodes, multiple child generations, parent review, parent placement, child-owned integration, hierarchy-wide ceilings, or the independent T-03/T-04/T-05/T-06/T-08 release evidence.

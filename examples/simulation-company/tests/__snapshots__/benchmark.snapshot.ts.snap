@@ -1,0 +1,177 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json Team delivery benchmark > counts authoritative effects with lost response=false 1`] = `
+{
+  "completed": 8,
+  "completion": "target-complete",
+  "duplicateRetriesVerified": 8,
+  "durableInputs": 8,
+  "modelCalls": 48,
+  "modelReadMessages": 8,
+  "replayEqual": true,
+  "teamMessages": 8,
+  "uniqueEnvelopes": 8,
+  "walEnvelopes": 8,
+  "walReceipts": 8,
+}
+`;
+
+exports[`json Team delivery benchmark > counts authoritative effects with lost response=true 1`] = `
+{
+  "completed": 8,
+  "completion": "target-complete",
+  "duplicateRetriesVerified": 8,
+  "durableInputs": 8,
+  "modelCalls": 48,
+  "modelReadMessages": 8,
+  "replayEqual": true,
+  "teamMessages": 8,
+  "uniqueEnvelopes": 8,
+  "walEnvelopes": 8,
+  "walReceipts": 8,
+}
+`;
+
+exports[`json cognition benchmark > rotates canonical Sessions with 1 model permits 1`] = `
+{
+  "canonicalSessionsPreserved": true,
+  "completed": 8,
+  "completion": "target-complete",
+  "modelCalls": 24,
+  "neverServed": 0,
+  "replayEqual": true,
+  "reportedTokens": 360,
+  "resumes": 4,
+  "starts": 8,
+  "uniqueServed": 4,
+}
+`;
+
+exports[`json cognition benchmark > rotates canonical Sessions with 2 model permits 1`] = `
+{
+  "canonicalSessionsPreserved": true,
+  "completed": 8,
+  "completion": "target-complete",
+  "modelCalls": 24,
+  "neverServed": 0,
+  "replayEqual": true,
+  "reportedTokens": 360,
+  "resumes": 4,
+  "starts": 8,
+  "uniqueServed": 4,
+}
+`;
+
+exports[`json storage benchmark > measures and restores the ingress workload without model calls 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 16,
+  "completion": "target-complete",
+  "consumed": 16,
+  "modelCalls": 0,
+  "replayEqual": true,
+  "residents": 0,
+  "teamMessages": 0,
+}
+`;
+
+exports[`json storage benchmark > measures and restores the world workload without model calls 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 16,
+  "completion": "target-complete",
+  "consumed": 0,
+  "modelCalls": 0,
+  "replayEqual": true,
+  "residents": 0,
+  "teamMessages": 0,
+}
+`;
+
+exports[`sqlite Team delivery benchmark > counts authoritative effects with lost response=false 1`] = `
+{
+  "completed": 8,
+  "completion": "target-complete",
+  "duplicateRetriesVerified": 8,
+  "durableInputs": 8,
+  "modelCalls": 48,
+  "modelReadMessages": 8,
+  "replayEqual": true,
+  "teamMessages": 8,
+  "uniqueEnvelopes": 8,
+  "walEnvelopes": 8,
+  "walReceipts": 8,
+}
+`;
+
+exports[`sqlite Team delivery benchmark > counts authoritative effects with lost response=true 1`] = `
+{
+  "completed": 8,
+  "completion": "target-complete",
+  "duplicateRetriesVerified": 8,
+  "durableInputs": 8,
+  "modelCalls": 48,
+  "modelReadMessages": 8,
+  "replayEqual": true,
+  "teamMessages": 8,
+  "uniqueEnvelopes": 8,
+  "walEnvelopes": 8,
+  "walReceipts": 8,
+}
+`;
+
+exports[`sqlite cognition benchmark > rotates canonical Sessions with 1 model permits 1`] = `
+{
+  "canonicalSessionsPreserved": true,
+  "completed": 8,
+  "completion": "target-complete",
+  "modelCalls": 24,
+  "neverServed": 0,
+  "replayEqual": true,
+  "reportedTokens": 360,
+  "resumes": 4,
+  "starts": 8,
+  "uniqueServed": 4,
+}
+`;
+
+exports[`sqlite cognition benchmark > rotates canonical Sessions with 2 model permits 1`] = `
+{
+  "canonicalSessionsPreserved": true,
+  "completed": 8,
+  "completion": "target-complete",
+  "modelCalls": 24,
+  "neverServed": 0,
+  "replayEqual": true,
+  "reportedTokens": 360,
+  "resumes": 4,
+  "starts": 8,
+  "uniqueServed": 4,
+}
+`;
+
+exports[`sqlite storage benchmark > measures and restores the ingress workload without model calls 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 16,
+  "completion": "target-complete",
+  "consumed": 16,
+  "modelCalls": 0,
+  "replayEqual": true,
+  "residents": 0,
+  "teamMessages": 0,
+}
+`;
+
+exports[`sqlite storage benchmark > measures and restores the world workload without model calls 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 16,
+  "completion": "target-complete",
+  "consumed": 0,
+  "modelCalls": 0,
+  "replayEqual": true,
+  "residents": 0,
+  "teamMessages": 0,
+}
+`;

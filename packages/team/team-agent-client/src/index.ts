@@ -451,7 +451,7 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     this.accepted.add(settled)
     void settled.then(() => {
       this.accepted.delete(settled)
-      if (this.workspacePublications.get(key) === operation) this.workspacePublications.delete(key)
+      this.workspacePublications.delete(key)
     })
     return await operation
   }
@@ -868,7 +868,7 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     let turnEnd: Promise<void> | undefined
     let disposeTurnWait = (): void => {}
     try {
-      await this.serialize(binding.agent, () => {
+      const stop = (): void => {
         if (!isCurrent()) return
         const evidence = taskTurnEvidence(binding.agent.session.events, binding.teamId, binding.activationId, taskId, attemptId)
         let removedQueued = false
@@ -884,12 +884,12 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
         }
         if (evidence.kind === 'open') {
           const ended = Promise.withResolvers<void>()
-          const stop = this.ctx.on('session/event', (session, event) => {
+          const stopListening = this.ctx.on('session/event', (session, event) => {
             if (session === binding.agent.session && event.type === 'turn/end' && event.data.turn === evidence.turn) ended.resolve()
           })
           const abort = (): void => { ended.reject(new Error('task cancellation lost its active Link before target-turn settlement')) }
           signal.addEventListener('abort', abort, { once: true })
-          disposeTurnWait = () => { stop(); signal.removeEventListener('abort', abort) }
+          disposeTurnWait = () => { stopListening(); signal.removeEventListener('abort', abort) }
           turnEnd = ended.promise
           void turnEnd.catch(() => {})
           signal.throwIfAborted()
@@ -897,7 +897,10 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
         } else if (!removedQueued && evidence.kind !== 'closed' && phase !== 'assigned' && !unadmitted) {
           throw new Error('task cancellation has no exact Session evidence that the running attempt stopped')
         }
-      })
+      }
+      // Materialization failure already owns this Agent's delivery queue before input admission.
+      if (unadmitted) stop()
+      else await this.serialize(binding.agent, stop)
       await turnEnd
       if (isCurrent()) await this.ctx.sessions.flush(binding.agent.session)
     } finally { disposeTurnWait() }
@@ -932,7 +935,6 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
           throw new TeamError('Delivery endpoint does not support the invited channel protocol', 'TEAM_INVALID_ARGUMENT')
         }
     }
-    if (!this.isCurrentConnection(connection)) return
     await link.acknowledgeChannelInvitation({ channelId: manifest.id, revision: invitation.revision,
       manifestFingerprint: invitation.manifestFingerprint,
       idempotencyKey: channelInvitationIdempotencyKeySchema.parse(`agent-client:${String(manifest.id)}:${invitation.revision}`) })
@@ -1431,7 +1433,8 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     state = await teams.getTeam({ teamId: snapshot.teamId })
     const remaining = state.tasks.find(candidate => candidate.id === snapshot.taskId)
     const binding = state.activations.find(candidate => candidate.activation.id === snapshot.activationId)
-    if (remaining?.lease?.attemptId !== snapshot.attemptId || binding === undefined || remaining.cancellation !== undefined) return
+    if (remaining?.lease?.attemptId !== snapshot.attemptId || binding === undefined
+      || !isDeliverableActivation(binding.activation.status) || remaining.cancellation !== undefined) return
     const issuer = teams.openActivationActorProofIssuer()
     const actor = issuer.issue(binding)
     try {
@@ -1460,8 +1463,9 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     return operation
   }
 
-  /** Await release or preservation of every allocation currently scoped to this Agent. */
+  /** Drain admitted delivery setup, then await release or preservation of each scoped allocation. */
   private async settleWorkspaceAllocations(): Promise<void> {
+    await this.deliveryTails.get(this.binding.agent.id)
     const operations = new Set<Promise<void>>()
     for (const [key, allocation] of this.workspaceAllocations) {
       operations.add(this.startWorkspaceRelease(key, allocation))
@@ -1745,6 +1749,7 @@ export class FixedBindingTeamAgentLinkDelivery implements TeamLinkBoundLinkBorro
     for (const snapshot of allocations) {
       if (snapshot.loss !== undefined && (snapshot.lifecycle === 'unavailable' || snapshot.loss.terminationProven)) {
         await this.settleWorkspaceLoss(snapshot, snapshot.loss)
+        retainsUnavailableScope ||= !snapshot.loss.terminationProven
         continue
       }
       if (snapshot.lifecycle === 'preserved') {
@@ -1996,8 +2001,7 @@ export class TeamAgentClient {
     this.listeners.push(this.ctx.on('session/event', (session, event) => {
       const binding = [...this.bindings.values()].find(candidate => candidate.sessionId === session.id)
       if (binding === undefined) return
-      const delivery = this.deliveries.get(bindingKey(binding.teamId, binding.participantId))
-      if (delivery === undefined) return
+      const delivery = this.deliveries.get(bindingKey(binding.teamId, binding.participantId)) as FixedBindingTeamAgentLinkDelivery
       if (event.type === 'turn/end') delivery.observeTurnEnd(event)
       if (event.type !== 'assistant/message' || event.data.usage === undefined) return
       const usage = event.data.usage
@@ -2053,6 +2057,10 @@ export class TeamAgentClient {
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- close() can run while getTeam() is pending.
       this.closing || this.ctx.agents.get(agent.id) !== agent
     ) {
+      this.unbind(agent)
+      return
+    }
+    if (team.rules['simulationRunId'] !== undefined) {
       this.unbind(agent)
       return
     }
@@ -2486,7 +2494,7 @@ function directMessage(channel: ChannelSnapshot, envelope: TeamEnvelope): UserMe
       }
     case DIRECT_CHANNEL_V4_KEY:
       try {
-        return directV3EnvelopeMessage(envelope, parseDirectChannelV4MessagePayload(envelope.payload).content)
+        return renderDirectV4EnvelopeInput(envelope)
       } catch {
         return undefined
       }
@@ -2496,8 +2504,19 @@ function directMessage(channel: ChannelSnapshot, envelope: TeamEnvelope): UserMe
   }
 }
 
+/** Model-input fields retained from an accepted direct Envelope. */
+export type DirectEnvelopeInput = Pick<TeamEnvelope, 'id' | 'teamId' | 'channelId' | 'senderId' | 'delivery' | 'payload' | 'causationId'>
+/**
+ * Render exact direct-v4 content with the standard durable Team provenance.
+ * @param envelope - Accepted Envelope fields used by the model projection.
+ * @returns one identified, immutable user message.
+ */
+export function renderDirectV4EnvelopeInput(envelope: DirectEnvelopeInput): UserMessage {
+  return directV3EnvelopeMessage(envelope, parseDirectChannelV4MessagePayload(envelope.payload).content)
+}
+
 /** Build the exact durable message the direct recipient sees in its Agent inbox. */
-function envelopeMessage(envelope: TeamEnvelope, text: string): UserMessage {
+function envelopeMessage(envelope: DirectEnvelopeInput, text: string): UserMessage {
   return envelopeContentMessage(envelope, [{
     type: 'text',
     text: `Direct message from ${envelope.senderId}:\n${text}`,
@@ -2506,7 +2525,7 @@ function envelopeMessage(envelope: TeamEnvelope, text: string): UserMessage {
 
 /** Build one direct v3 message whose ordered human content follows its durable sender prefix. */
 function directV3EnvelopeMessage(
-  envelope: TeamEnvelope,
+  envelope: DirectEnvelopeInput,
   content: ReturnType<typeof parseDirectChannelV3MessagePayload>['content'],
 ): UserMessage {
   return envelopeContentMessage(envelope, [
@@ -2516,7 +2535,7 @@ function directV3EnvelopeMessage(
 }
 
 /** Attach immutable Team provenance to one complete direct message content sequence. */
-function envelopeContentMessage(envelope: TeamEnvelope, content: UserMessage['content']): UserMessage {
+function envelopeContentMessage(envelope: DirectEnvelopeInput, content: UserMessage['content']): UserMessage {
   return freezeMessage({
     id: MessageId(`team-envelope:${envelope.id}`),
     role: 'user',

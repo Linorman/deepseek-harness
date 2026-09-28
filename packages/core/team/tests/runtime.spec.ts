@@ -209,6 +209,18 @@ import type {
 } from '../src/index.ts'
 
 class FakeTeamRuntime extends TeamRuntime {
+  childAuthorization(scope: import('../src/types.ts').TeamChildRunScope,
+    current: () => Promise<import('../src/types.ts').TeamChildRunScope>, live: () => boolean) {
+    return this.createChildRunAuthorization(scope, current, live)
+  }
+  delegationProof(proof: import('../src/types.ts').TeamSystemDelegationProof) { return this.requireSystemDelegationProof(proof) }
+  delegationSource(name: string) { return this.getSystemDelegationProofSource(name) }
+  childResultProof(proof: import('../src/types.ts').TeamSystemChildResultProof) { return this.requireSystemChildResultProof(proof) }
+  admissionProof(proof: import('../src/types.ts').TeamSystemChannelAdmissionProof) { return this.requireSystemChannelAdmissionProof(proof) }
+  deliveryProof(proof: import('../src/types.ts').TeamDeliveryOwnerProof) { return this.requireDeliveryOwnerProof(proof) }
+  humanDeliveryProof(proof: import('../src/types.ts').TeamSystemHumanDeliveryProof) { return this.requireSystemHumanDeliveryProof(proof) }
+  humanSink<T>(scope: import('../src/types.ts').TeamHumanSinkScope,
+    action: (proof: import('../src/types.ts').TeamHumanSinkProof) => Promise<T>) { return this.withHumanSinkProof(scope, action) }
   override inspectTask(): Promise<never> { return Promise.reject(new Error('Fake runtime has no task inspection')) }
   createTeam(_request: TeamCreateRequest): Promise<TeamStateSnapshot> {
     throw new Error('FakeTeamRuntime does not persist Teams')
@@ -925,7 +937,27 @@ describe('TeamRuntime service definition', () => {
     const humanToken: object = {}
     Object.defineProperty(humanToken, 'toJSON', { enumerable: true, value(): never { throw new TypeError('Human proof is runtime-only') } })
     const humanActor = Object.freeze(humanToken) as TeamHumanActorProof
+    const { teamHumanActionIdSchema, channelManifestFingerprintSchema, channelInvitationIdempotencyKeySchema } = await import('../src/index.ts')
+    const admissionActor = retainedProof() as import('../src/types.ts').TeamSystemChannelAdmissionProof
     const unsupported: Array<() => Promise<unknown>> = [
+      () => ctx.teams.getPersistenceReference({ kind: 'team', teamId, expectedCursor: 1 }),
+      () => ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('action-1') }),
+      () => ctx.teams.acceptHumanActionResponse({ ...cursor, actor: systemHumanActionProof() }),
+      () => ctx.teams.unavailableHumanAction({ ...cursor, actor: systemHumanActionProof() }),
+      () => ctx.teams.inspectWorkflowPlan({ teamId, planId }),
+      () => ctx.teams.getArtifact({ teamId, artifactId: 'artifact-1' }),
+      () => ctx.teams.listArtifactsPage({ teamId, afterCursor: -1, limit: 1 }),
+      () => ctx.teams.getChannelAdmission({ channelId }),
+      () => ctx.teams.listTeamChannels({ teamId, actor: humanActor }),
+      () => ctx.teams.getHumanChannelEnvelope({ teamId, channelId, envelopeId, envelopeSequence: 1, actor: humanActor }),
+      () => ctx.teams.getHumanChannelAdmission({ teamId, channelId, actor: humanActor }),
+      () => ctx.teams.getHumanChannelInvitation({ channelId, actor: humanActor }),
+      () => ctx.teams.acknowledgeChannelInvitation({ actor, channelId, revision: 1,
+        manifestFingerprint: channelManifestFingerprintSchema.parse(`sha256:${'0'.repeat(64)}`),
+        idempotencyKey: channelInvitationIdempotencyKeySchema.parse('ack-1') }),
+      () => ctx.teams.expireChannelInvitations({ actor: admissionActor, teamId, channelId,
+        expectedTeamCursor: 1, expectedChannelCursor: 1 }),
+      () => ctx.teams.getChannelForActor({ channelId, actor }),
       () => ctx.teams.upsertHumanAction({ ...cursor, actor: systemHumanActionProof() }),
       () => ctx.teams.resolveHumanAction({ ...cursor, actor: systemHumanActionProof() }),
       () => ctx.teams.recordUsage({ actor, expectedCursor: 1,
@@ -3505,4 +3537,189 @@ describe('TeamRuntime service definition', () => {
     await runtimeFiber.dispose()
     await ctx.fiber.dispose()
   })
+})
+
+/** Mint a test Consumer-owned identity that cannot be serialized into durable authority. */
+function retainedProof(): object {
+  const value: object = Object.freeze({ toJSON(): never { throw new TypeError('runtime-only proof') } })
+  return value
+}
+
+describe('retained cross-owner authority', () => {
+  it('revalidates child operation identity and lifetime after asynchronous parent checks', async () => {
+    const { ctx } = await setup()
+    const runtime = ctx.teams as FakeTeamRuntime
+    const { teamDelegationIdSchema } = await import('../src/index.ts')
+    const scope: import('../src/types.ts').TeamChildRunScope = { parentTeamId: teamIdSchema.parse('parent'),
+      parentTaskId: teamTaskIdSchema.parse('task'), childTeamId: teamIdSchema.parse('child'),
+      delegationId: teamDelegationIdSchema.parse('delegation'), operation: 'start', workspacePath: '/shared' }
+    let current = scope, live = true
+    const token = runtime.childAuthorization(scope, async () => current, () => live)
+    try {
+      expect(() => JSON.stringify(token)).toThrow(/runtime-only/)
+      expect(await token.assertCurrent()).toEqual(scope)
+      current = { ...scope, workspacePath: '/changed' }
+      await expect(token.assertCurrent()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      current = scope
+      live = false
+      await expect(token.assertCurrent()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      live = true
+      token.close()
+      await expect(token.assertCurrent()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      const pending = Promise.withResolvers<import('../src/types.ts').TeamChildRunScope>()
+      const waiting = runtime.childAuthorization(scope, () => pending.promise, () => true)
+      const checked = waiting.assertCurrent()
+      waiting.close(); pending.resolve(scope)
+      await expect(checked).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    } finally { token.close(); await ctx.fiber.dispose() }
+  })
+
+  it('owns delegation registration, rejects resolver failures and revokes proofs on disposal', async () => {
+    const { ctx } = await setup()
+    const runtime = ctx.teams as FakeTeamRuntime
+    const { teamSystemDelegationScopeSchema } = await import('../src/index.ts')
+    const token = retainedProof() as import('../src/types.ts').TeamSystemDelegationProof
+    const scope = teamSystemDelegationScopeSchema.parse({ kind: 'delegation-authorize-run', teamId: 'parent', taskId: 'task',
+      expectedCursor: 1, expectedRevision: 1, delegationId: 'delegation', operation: 'start' })
+    let mode: 'valid' | 'absent' | 'invalid' | 'throw' = 'valid'
+    const source: import('../src/types.ts').TeamSystemDelegationProofSource = { name: 'team-delegation',
+      resolveDelegationProof: (value) => {
+        if (mode === 'throw') throw new Error('Owner unavailable')
+        if (mode === 'invalid') return { kind: 'unknown' } as never
+        return value === token && mode === 'valid' ? scope : undefined
+      }, resolveChildWorkspace: async () => '/shared' }
+    try {
+      expect(() => runtime.registerSystemDelegationProofSource({ ...source, name: 'foreign' })).toThrow(/canonical/)
+      const dispose = runtime.registerSystemDelegationProofSource(source)
+      expect(runtime.delegationSource(source.name)).toBe(source)
+      expect(() => runtime.registerSystemDelegationProofSource(source)).toThrow(/already registered/)
+      expect(runtime.delegationProof(token)).toEqual({ sourceName: source.name, scope })
+      for (const failure of ['absent', 'invalid', 'throw'] as const) {
+        mode = failure
+        expect(() => runtime.delegationProof(token)).toThrow(expect.objectContaining({ code: 'TEAM_ACTOR_PROOF_INVALID' }))
+      }
+      mode = 'valid'; dispose()
+      expect(runtime.delegationSource(source.name)).toBeUndefined()
+      expect(() => runtime.delegationProof(token)).toThrow(/absent, expired, or foreign/)
+      const replacement = runtime.registerSystemDelegationProofSource(source)
+      dispose()
+      expect(runtime.delegationProof(token).scope).toEqual(scope)
+      replacement()
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('restricts missing child results to the current TeamRun owner', async () => {
+    const { ctx } = await setup()
+    const runtime = ctx.teams as FakeTeamRuntime
+    const { teamSystemChildResultScopeSchema } = await import('../src/index.ts')
+    const token = retainedProof() as import('../src/types.ts').TeamSystemChildResultProof
+    const scope = teamSystemChildResultScopeSchema.parse({ kind: 'child-result-missing', expectedCursor: 1,
+      activationId: 'activation', sessionId: 'session', provider: 'local', turn: 1,
+      binding: { parentTeamId: 'parent', parentTaskId: 'task', childTeamId: 'child', delegationId: 'delegation',
+        parentServiceId: 'service', coordinatorId: 'coordinator', channelId: 'channel' } })
+    try {
+      const source = { name: 'team-delegation' as const, resolveChildResultProof: () => scope }
+      const dispose = runtime.registerSystemChildResultProofSource(source)
+      expect(() => runtime.registerSystemChildResultProofSource(source)).toThrow(/already registered/)
+      expect(() => runtime.childResultProof(token)).toThrow(/unavailable/)
+      await dispose()
+      const accepted = runtime.registerSystemChildResultProofSource({ ...source, name: 'team-run' })
+      expect(runtime.childResultProof(token)).toEqual({ sourceName: 'team-run', scope })
+      await accepted()
+      const failed = runtime.registerSystemChildResultProofSource({ name: 'team-run', resolveChildResultProof: () => { throw new Error('Unavailable') } })
+      expect(() => runtime.childResultProof(token)).toThrow(expect.objectContaining({ code: 'TEAM_ACTOR_PROOF_INVALID' }))
+      await failed()
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('validates channel admission and delivery owner output before retaining authority', async () => {
+    const { ctx } = await setup()
+    const runtime = ctx.teams as FakeTeamRuntime
+    const token = retainedProof() as import('../src/types.ts').TeamSystemChannelAdmissionProof
+    const resolver = { name: 'admission', resolveChannelAdmissionProof: () => undefined }
+    try {
+      expect(() => runtime.registerSystemChannelAdmissionProofSource({ ...resolver, name: ' ' })).toThrow(/source name/)
+      const dispose = runtime.registerSystemChannelAdmissionProofSource(resolver)
+      expect(() => runtime.registerSystemChannelAdmissionProofSource(resolver)).toThrow(/already registered/)
+      dispose()
+      for (const mode of ['invalid', 'throw'] as const) {
+        const release = runtime.registerSystemChannelAdmissionProofSource({ name: 'admission', resolveChannelAdmissionProof: () => {
+          if (mode === 'throw') throw new Error('Admission unavailable')
+          return { kind: 'invalid' } as never
+        } })
+        expect(() => runtime.admissionProof(token)).toThrow(expect.objectContaining({ code: 'TEAM_ACTOR_PROOF_INVALID' }))
+        release()
+      }
+      const delivery = retainedProof() as import('../src/types.ts').TeamDeliveryOwnerProof
+      for (const mode of ['invalid', 'throw'] as const) {
+        const owner = { name: 'simulation-owner', resolveDeliveryOwnerProof: () => {
+          if (mode === 'throw') throw new Error('Delivery unavailable')
+          return { kind: 'invalid' } as never
+        } }
+        const release = runtime.registerDeliveryOwnerProofSource(owner)
+        expect(() => runtime.registerDeliveryOwnerProofSource(owner)).toThrow(/already registered/)
+        expect(() => runtime.deliveryProof(delivery)).toThrow(expect.objectContaining({ code: 'TEAM_ACTOR_PROOF_INVALID' }))
+        release()
+      }
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('revokes human sink tokens after the consumer completes and contains invalid delivery owners', async () => {
+    const { ctx } = await setup()
+    const runtime = ctx.teams as FakeTeamRuntime
+    const { teamSystemHumanDeliveryScopeSchema } = await import('../src/index.ts')
+    const delivery = teamSystemHumanDeliveryScopeSchema.parse({ principalId: 'principal', teamId: 'team', recipientId: 'human',
+      channelId: 'channel', envelopeId: 'envelope', expectedCursor: 1 })
+    const scope: import('../src/types.ts').TeamHumanSinkScope = { kind: 'message-read', input: {
+      principalId: delivery.principalId, teamId: delivery.teamId, envelopeId: delivery.envelopeId,
+    } }
+    let retained: import('../src/types.ts').TeamHumanSinkProof | undefined
+    try {
+      await runtime.humanSink(scope, async (proof) => {
+        retained = proof
+        expect(() => JSON.stringify(proof)).toThrow(/runtime-only/)
+        runtime.validateHumanSinkProof(proof, scope)
+      })
+      expect(retained).toBeDefined()
+      expect(() => { runtime.validateHumanSinkProof(retained!, scope) }).toThrow(/invalid/)
+      const token = retainedProof() as import('../src/types.ts').TeamSystemHumanDeliveryProof
+      const source = { name: 'team-human-client' as const, resolveHumanDeliveryProof: () => { throw new Error('Unavailable') } }
+      const dispose = runtime.registerSystemHumanDeliveryProofSource(source)
+      expect(() => runtime.registerSystemHumanDeliveryProofSource(source)).toThrow(/already registered/)
+      expect(() => runtime.humanDeliveryProof(token)).toThrow(expect.objectContaining({ code: 'TEAM_ACTOR_PROOF_INVALID' }))
+      await dispose()
+      expect(() => runtime.humanDeliveryProof(token)).toThrow(/unavailable/)
+      await expect(runtime.admitHumanChannelDelivery({ ...delivery, actor: token })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    } finally { await ctx.fiber.dispose() }
+  })
+})
+
+it('refuses child and Simulation creation effects on a provider without those capabilities', async () => {
+  const { ctx } = await setup()
+  const runtime = ctx.teams as FakeTeamRuntime
+  const { teamChildRunBindingSchema, teamTaskDelegationResultAdmitInputSchema, teamTaskCreateInputSchema } = await import('../src/index.ts')
+  const binding = teamChildRunBindingSchema.parse({ parentTeamId: 'parent', parentTaskId: 'task', childTeamId: 'child',
+    delegationId: 'delegation', parentServiceId: 'service', coordinatorId: 'coordinator', channelId: 'channel' })
+  const scope: import('../src/types.ts').TeamChildRunScope = { parentTeamId: binding.parentTeamId,
+    parentTaskId: binding.parentTaskId, childTeamId: binding.childTeamId, delegationId: binding.delegationId, operation: 'cancel' }
+  const authorization = runtime.childAuthorization(scope, async () => scope, () => true)
+  const actor = retainedProof() as import('../src/types.ts').TeamSystemChildResultProof
+  const command = { actor, childTeamId: binding.childTeamId, expectedCursor: 1 }
+  try {
+    await expect(runtime.bindChildRun({ authorization, expectedCursor: 1, binding })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.completeChildTeam(command)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.recordChildResultMissing(command)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.cancelChildTeam({ authorization, childTeamId: binding.childTeamId, expectedCursor: 1,
+      idempotencyKey: teamClosureIdempotencyKeySchema.parse('cancel'), reason: { code: 'CANCELLED', message: 'Owner cancelled' } }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.admitTaskDelegationResult({ ...teamTaskDelegationResultAdmitInputSchema.parse({
+      teamId: binding.parentTeamId, taskId: binding.parentTaskId, childTeamId: binding.childTeamId,
+      delegationId: binding.delegationId, expectedCursor: 1, expectedRevision: 1, responseEnvelopeId: 'result',
+    }), actor: retainedProof() as import('../src/types.ts').TeamSystemDelegationProof })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.createSimulationTask({ ...teamTaskCreateInputSchema.parse({ teamId: binding.parentTeamId,
+      expectedCursor: 1, createCommand: { idempotencyKey: 'create' }, subject: 'Task', description: 'Requested task',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+      reviewPolicy: { kind: 'none' }, budget: {}, maxAttempts: 1 }),
+    actor: retainedProof() as import('../src/types.ts').TeamSystemTaskControlProof })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  } finally { authorization.close(); await ctx.fiber.dispose() }
 })

@@ -1,0 +1,14 @@
+UI reconnect collection-generation fence follow-up (2026-09-09)
+
+Scope: invalidate collection page requests from a disconnected connection generation before bounded collections refresh after reconnect.
+
+Commands:
+
+1. `pnpm exec vitest run packages/client/runtime/tests/team-tasks.client.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 38 tests passed.
+2. `pnpm exec tsc -p packages/client/runtime/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: `handleDisconnected()` increments the selection generation and invalidates collection operation keys; a late old member page cannot overwrite the refreshed selected Team collection after reconnect. This supplements the reconnect collection refresh evidence and does not claim browser/GIF or multi-host coverage.

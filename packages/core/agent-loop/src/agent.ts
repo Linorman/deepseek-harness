@@ -126,6 +126,16 @@ export class ReactLoopAgent implements Agent {
     if (wakeup) this.wakeDriver(wakingAfterAbort)
   }
 
+  wakePending(messageId: UserMessage['id']): boolean {
+    if (this.loopCtx.agents.get(this.id) !== this) return false
+    if (this.phase.kind !== 'idle' && (this.phase.abort.signal.reason as AgentCancelCause | undefined)?.kind === 'disposed') return false
+    if (![...this.inbox.nextTurn, ...this.inbox.nextStep].some(message => message.id === messageId)) return false
+    const wakingAfterAbort = this.phase.kind !== 'idle' && this.phase.abort.signal.aborted
+    this.pendingWakes.add(messageId)
+    this.wakeDriver(wakingAfterAbort)
+    return true
+  }
+
   followup(input: UserMessage): void {
     this.send(input, 'next-turn', true)
   }
@@ -532,8 +542,7 @@ export class ReactLoopAgent implements Agent {
 
 /** Return whether a queued Team channel view is already the exact Session-derived message. */
 function isPersistedTeamChannelViewMessage(session: Session, message: UserMessage): boolean {
-  if (message.source.kind !== 'team-channel-view') return false
-  const source = message.source
+  const source = message.source as Extract<UserMessage['source'], { kind: 'team-channel-view' }>
   return session.events.some((event) => {
     if (event.type !== 'team/channel-view'
       || event.data.teamId !== source.teamId

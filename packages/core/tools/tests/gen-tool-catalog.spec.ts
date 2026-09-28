@@ -28,15 +28,15 @@ describe('gen-tool-catalog collectToolCatalog', () => {
     expect(names).toEqual([
       'ask_user_question', 'bash', 'bash', 'cordis_define', 'cordis_inspect_list',
       'cordis_inspect_query', 'cordis_inspect_self', 'cordis_run', 'cordis_stop',
-      'cordis_undefine', 'create_goal', 'edit', 'exit_plan_mode', 'get_goal', 'get_goal', 'glob', 'grep',
+      'cordis_undefine', 'edit', 'exit_plan_mode', 'get_goal', 'glob', 'grep',
       'job_kill', 'job_list', 'job_output',
       'lsp', 'pwsh', 'pwsh',
       'read', 'read_image', 'run_code', 'schedule_create', 'schedule_delete',
       'schedule_list', 'session_event_read', 'session_event_search',
-      'session_event_trace', 'session_search', 'session_trace', 'skill',
+      'session_event_trace', 'session_search', 'session_trace', 'simulation_observe', 'simulation_stage', 'simulation_submit', 'skill',
       'str_replace_editor', 'team_channel_summarize', 'team_final', 'team_goal_phase', 'team_message', 'team_task_cancel', 'team_task_delegate', 'team_task_heartbeat', 'team_task_integrate', 'team_task_list', 'team_task_propose_owner', 'team_task_report', 'team_task_review', 'team_task_start', 'team_task_wait', 'team_task_watch', 'team_worker_pool_set', 'team_workflow_start', 'team_workflow_task_cancel', 'team_workflow_wait', 'terminal_close', 'terminal_list',
       'terminal_open', 'terminal_read', 'terminal_send', 'terminal_signal', 'todo_write',
-      'update_goal', 'update_goal', 'web_fetch', 'web_search', 'write',
+      'update_goal', 'web_fetch', 'web_search', 'write',
     ])
     // Every tool carries a JSON-Schema `parameters` object (what the model sees).
     for (const entry of catalog) {

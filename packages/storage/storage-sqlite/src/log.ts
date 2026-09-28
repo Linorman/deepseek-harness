@@ -132,7 +132,7 @@ class SqliteLogStream implements LogStream {
       assertSequence('expectedSequence', expectedSequence)
       if (values.length === 0) throw new Error(`log stream '${this.name}' append values must be non-empty`)
       const summary = options === undefined ? null : serializeValue(this.name, 'summary', options.summary)
-      const serialized = values.map(value => serializeValue(this.name, 'append value', value))
+      const serialized = Array.from(values, value => serializeValue(this.name, 'append value', value))
       const result = this.transaction(() => {
         const tail = this.currentTail()
         if (tail !== expectedSequence) {

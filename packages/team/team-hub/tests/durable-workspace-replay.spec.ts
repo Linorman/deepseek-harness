@@ -1,6 +1,8 @@
 /** Workspace allocation ownership and lifecycle validation from durable records. @module */
 
 import { describe, expect, it } from 'vitest'
+import { teamProjectionFromData } from '../src/fold.ts'
+import { teamProjectionDataSchema } from '../src/schema.ts'
 import type { TeamTaskSnapshot } from '@clocky/clocky-team'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import { createdTeam, otherTaskId, participant, participantChanged, task, taskChanged, taskCreatorActivationId, taskCreatorId,
@@ -274,3 +276,178 @@ for (const backend of ['json', 'sqlite'] as const) {
     })
   })
 }
+
+for (const backend of ['json', 'sqlite'] as const) {
+  describe(`durable workspace loss and observations (${backend})`, () => {
+    it('rejects a second allocation for the same retained task attempt', async () => {
+      const { records, allocation } = runningTaskPrefix()
+      const next = { ...allocation, id: 'allocation-duplicate', reservedAt: 20, updatedAt: 20 }
+      const ctx = await recover(backend, [...records, changed(allocation, 19), changed(next, 20)])
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('repeats task attempt')
+    })
+
+    it.each(['loss removed', 'confirmed loss changed', 'lost world reactivated', 'release time outside transition'])('rejects %s', async (variant) => {
+      const { records, allocation } = runningTaskPrefix()
+      const executionWorld = { kind: 'e2b', id: 'sandbox' }
+      const reserved = { ...allocation, executionWorld }
+      const loss = { executionWorld, reason: 'sandbox-expired', terminationProven: true, artifacts: [], observedAt: 20 }
+      const unavailable = { ...reserved, revision: 2, lifecycle: 'unavailable', loss, updatedAt: 20 }
+      const baseline = [...records, changed(reserved, 19), changed(unavailable, 20)]
+      checkpointFor(baseline)
+      const next = { ...unavailable, revision: 3, lifecycle: 'release-requested', releaseRequestedAt: 21, updatedAt: 21 }
+      const damaged = variant === 'loss removed' ? { ...next, loss: undefined }
+        : variant === 'confirmed loss changed' ? { ...next, loss: { ...loss, observedAt: 21 } }
+          : variant === 'lost world reactivated' ? { ...next, lifecycle: 'active', activatedAt: 21 }
+            : { ...next, lifecycle: 'preserved', preservedAt: 21, preservationReason: { code: 'preserve', message: 'Keep artifacts' } }
+      const ctx = await recover(backend, [...baseline, changed(damaged, 21)])
+      const message = variant === 'loss removed' || variant === 'confirmed loss changed' ? 'discarded its confirmed loss'
+        : variant === 'lost world reactivated' ? 'cannot reactivate a lost execution world' : 'changed release intent'
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow(message)
+    })
+
+    it('keeps provider-retained loss artifacts through later loss observations', async () => {
+      const { records, allocation } = runningTaskPrefix()
+      const executionWorld = { kind: 'e2b', id: 'sandbox' }
+      const reserved = { ...allocation, executionWorld }
+      const loss = { executionWorld, reason: 'manifest-missing', terminationProven: false,
+        artifacts: [{ id: 'log', provider: 'workspace-local', kind: 'log', uri: 'log:1', sourceAttemptId: allocation.attemptId, visibility: 'team' }],
+        observedAt: 20 }
+      const unavailable = { ...reserved, revision: 2, lifecycle: 'unavailable', loss, updatedAt: 20 }
+      const baseline = [...records, changed(reserved, 19), changed(unavailable, 20)]
+      checkpointFor(baseline)
+      const ctx = await recover(backend, [...baseline, changed({ ...unavailable, revision: 3,
+        loss: { ...loss, artifacts: [], observedAt: 21 }, updatedAt: 21 }, 21)])
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('discarded its confirmed loss or retained artifacts')
+    })
+
+    it('replays exact observation facts and refuses missing allocation or forged projection fields', async () => {
+      const { records, allocation } = runningTaskPrefix()
+      const observation = baselineObservation(allocation)
+      const row = { type: 'workspace/observed', observation, createdAt: 20 }
+      const baseline = [...records, changed(allocation, 19)]
+      checkpointFor([...baseline, row])
+      for (const patch of [{ allocationId: 'missing' }, { truncated: true }, { taskId: otherTaskId }]) {
+        const ctx = await recover(backend, [...baseline, { ...row, observation: { ...observation, ...patch } }])
+        await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('allocationId' in patch
+          ? 'Workspace observation has no owning allocation or task' : 'Workspace observation does not match its allocation, window or scope')
+      }
+      const valid = await recover(backend, [...baseline, row])
+      expect((await valid.teams.getTeam({ teamId })).workspaceAllocations[0]?.observation).toEqual(observation)
+    })
+  })
+}
+
+/** Complete provider baseline with Hub-derived attempt provenance. */
+function baselineObservation(allocation: ReturnType<typeof runningTaskPrefix>['allocation']) {
+  return { teamId, allocationId: allocation.id, expectedRevision: 1, id: 'scan', stage: 'baseline', base: null,
+    baselineAvailable: true, final: { digest: `sha256:${'a'.repeat(64)}`, complete: true, startedAt: 19, finishedAt: 20,
+      scannedEntries: 0, hashedBytes: 0, knownOmittedEntries: 0, incompleteReasons: [] },
+    paths: [], omittedPaths: 0, taskId, attemptId: allocation.attemptId, truncated: false, observedAt: 20 }
+}
+
+it.each(['json', 'sqlite'] as const)('admits only release observations during closure and preserves observation identity (%s)', async (backend) => {
+  const { records, allocation } = runningTaskPrefix()
+  const observation = baselineObservation(allocation)
+  const observed = [...records, changed(allocation, 19), { type: 'workspace/observed', observation, createdAt: 20 }]
+  checkpointFor(observed)
+  const rewritten = { ...allocation, revision: 2, lifecycle: 'active', activatedAt: 21, updatedAt: 21,
+    observation: { ...observation, truncated: true } }
+  const invalidLifecycle = await recover(backend, [...observed, changed(rewritten, 21)])
+  await expect(invalidLifecycle.teams.getTeam({ teamId })).rejects.toThrow('Workspace lifecycle cannot rewrite its observation')
+  const closing = [...observed, { type: 'team/closure', createdAt: 21, closure: { teamId, kind: 'fail', idempotencyKey: 'close',
+    actor: { kind: 'system', name: 'owner' }, reason: { code: 'failed', message: 'Run failed' }, requestedAt: 21 } },
+  { type: 'team/phase', phase: 'quiescing', createdAt: 21 }]
+  const next = { ...observation, id: 'scan-2', previousObservationId: observation.id, base: observation.final,
+    final: { ...observation.final, startedAt: 21, finishedAt: 22 }, observedAt: 22 }
+  const periodic = await recover(backend, [...closing, { type: 'workspace/observed', observation: { ...next, stage: 'periodic' }, createdAt: 22 }])
+  await expect(periodic.teams.getTeam({ teamId })).rejects.toThrow('Closure cleanup only admits release workspace observations')
+  const release = { ...next, stage: 'release' }
+  const valid = await recover(backend, [...closing, { type: 'workspace/observed', observation: release, createdAt: 22 }])
+  expect((await valid.teams.getTeam({ teamId })).workspaceAllocations[0]?.observation).toEqual(release)
+})
+
+it.each(['json', 'sqlite'] as const)('settles task cancellation only after workspace and pending human responsibility (%s)', async (backend) => {
+  const { records, allocation, running, binding } = runningTaskPrefix()
+  const cancellation = { requestedRevision: running.revision, requestedBy: taskCreatorId, requestedAt: 20,
+    target: { kind: 'attempt', attemptId: allocation.attemptId, participantId: taskCreatorId, activationId: taskCreatorActivationId } }
+  const cancelling = task({ ...running, revision: 4, cancellation })
+  const initialAction = { id: 'cancel-question', teamId, kind: 'question', phase: 'pending', participantId: taskCreatorId,
+    sessionId: taskCreatorSessionId, sourceId: 'rpc-cancel', details: {}, createdAt: 19, updatedAt: 19,
+    taskId, attemptId: allocation.attemptId }
+  const prefix = [...records, changed(allocation, 19), { type: 'human-action/changed', action: initialAction, createdAt: 19 },
+    taskChanged({ task: cancelling, createdAt: 20 })]
+  checkpointFor(prefix)
+  const released = { ...allocation, revision: 3, lifecycle: 'released', releaseRequestedAt: 20, releasedAt: 21, updatedAt: 21 }
+  const workspaceRows = [changed({ ...allocation, revision: 2, lifecycle: 'release-requested', releaseRequestedAt: 20, updatedAt: 20 }, 20),
+    changed(released, 21)]
+  const settled = task({ ...settledTask(running), revision: 5, phase: 'cancelled', cancellation,
+    attemptHistory: settledTask(running).attemptHistory.map(attempt => ({ ...attempt, settledAt: 21 })) })
+  const settlement = taskChanged({ task: settled, createdAt: 21 })
+  const offline = { type: 'activation/changed', createdAt: 21, binding: { ...binding,
+    activation: { ...binding.activation, status: 'offline' }, quiescedAt: 21, quiescenceSource: 'quiesced', quiescedWakeChannelIds: [] } }
+  const early = await recover(backend, [...prefix, settlement, offline])
+  await expect(early.teams.getTeam({ teamId })).rejects.toThrow('settled cancellation before workspace release')
+  const unanswered = await recover(backend, [...prefix, ...workspaceRows, settlement, offline])
+  await expect(unanswered.teams.getTeam({ teamId })).rejects.toThrow('cancelled with a pending human action')
+  const answered = { ...initialAction, phase: 'cancelled', outcome: { reason: 'Task cancelled' }, updatedAt: 21 }
+  const rows = [...prefix, ...workspaceRows, { type: 'human-action/changed', action: answered, createdAt: 21 }, settlement, offline]
+  const checkpoint = checkpointFor(rows)
+  const valid = await recover(backend, rows, checkpoint)
+  expect((await valid.teams.getTeam({ teamId })).tasks[0]?.phase).toBe('cancelled')
+  const missingRequester = teamProjectionDataSchema.parse({ ...checkpoint,
+    tasks: [{ ...settled, cancellation: { ...cancellation, requestedBy: 'unknown' } }] })
+  expect(() => teamProjectionFromData(missingRequester)).toThrow('cancellation references an unknown requesting participant')
+  const heldWorkspace = teamProjectionDataSchema.parse({ ...checkpoint,
+    workspaceAllocations: [{ ...released, lifecycle: 'release-requested', releasedAt: undefined }] })
+  expect(() => teamProjectionFromData(heldWorkspace)).toThrow('cancelled before workspace release')
+})
+
+it.each(['json', 'sqlite'] as const)('retains cancellation and exact quiescence when its attempt lease expires (%s)', async (backend) => {
+  const { records, running, binding } = runningTaskPrefix()
+  const lease = running.lease!
+  const cancellation = { requestedRevision: running.revision, requestedBy: taskCreatorId, requestedAt: 20,
+    target: { kind: 'attempt', attemptId: lease.attemptId, participantId: taskCreatorId, activationId: taskCreatorActivationId } }
+  const cancelling = task({ ...running, revision: 4, cancellation })
+  const settled = task({ ...settledTask(running), revision: 5, phase: 'cancelled', cancellation,
+    attemptHistory: settledTask(running).attemptHistory.map(attempt => ({
+      ...attempt, settledAt: lease.expiresAt, outcome: { kind: 'lease-expired' },
+    })) })
+  const offline = { type: 'activation/changed', createdAt: lease.expiresAt, binding: { ...binding,
+    activation: { ...binding.activation, status: 'offline' }, quiescedAt: lease.expiresAt, quiescenceSource: 'quiesced', quiescedWakeChannelIds: [] } }
+  const rows = [...records, taskChanged({ task: cancelling, createdAt: 20 }),
+    taskChanged({ task: settled, createdAt: lease.expiresAt }), offline]
+  const checkpoint = checkpointFor(rows)
+  const ctx = await recover(backend, rows, checkpoint)
+  expect((await ctx.teams.getTeam({ teamId })).tasks[0]).toMatchObject({ phase: 'cancelled',
+    attemptHistory: [{ outcome: { kind: 'lease-expired' } }] })
+})
+
+it.each(['json', 'sqlite'] as const)('preserves a lost workspace without inventing release intent (%s)', async (backend) => {
+  const { records, allocation } = runningTaskPrefix()
+  const executionWorld = { kind: 'e2b', id: 'sandbox' }
+  const reserved = { ...allocation, executionWorld }
+  const unavailable = { ...reserved, revision: 2, lifecycle: 'unavailable', updatedAt: 20,
+    loss: { executionWorld, reason: 'manifest-missing', terminationProven: false, artifacts: [], observedAt: 20 } }
+  const preserved = { ...unavailable, revision: 3, lifecycle: 'preserved', updatedAt: 21, preservedAt: 21,
+    preservationReason: { code: 'lost', message: 'Retain provider recovery facts' } }
+  const rows = [...records, changed(reserved, 19), changed(unavailable, 20), changed(preserved, 21)]
+  const ctx = await recover(backend, rows, checkpointFor(rows))
+  expect((await ctx.teams.getTeam({ teamId })).workspaceAllocations).toEqual([preserved])
+})
+
+it.each(['json', 'sqlite'] as const)('accepts loss of an existing workspace after closure but refuses a new lost allocation (%s)', async (backend) => {
+  const { records, allocation } = runningTaskPrefix()
+  const executionWorld = { kind: 'e2b', id: 'closure-loss-world' }
+  const reserved = { ...allocation, executionWorld }
+  const closing = [...records, changed(reserved, 19), { type: 'team/closure', createdAt: 20,
+    closure: { teamId, kind: 'fail', idempotencyKey: 'close-before-loss', actor: { kind: 'system', name: 'owner' },
+      reason: { code: 'RUN_FAILED', message: 'Close the Team' }, requestedAt: 20 } },
+  { type: 'team/phase', phase: 'quiescing', createdAt: 20 }]
+  const unavailable = { ...reserved, revision: 2, lifecycle: 'unavailable', updatedAt: 21,
+    loss: { executionWorld, reason: 'sandbox-expired', terminationProven: true, artifacts: [], observedAt: 21 } }
+  const rows = [...closing, changed(unavailable, 21)]
+  const ctx = await recover(backend, rows, checkpointFor(rows))
+  expect((await ctx.teams.getTeam({ teamId })).workspaceAllocations).toEqual([unavailable])
+  const invalid = await recover(backend, [...closing, changed({ ...unavailable, id: 'new-allocation', revision: 1 }, 21)])
+  await expect(invalid.teams.getTeam({ teamId })).rejects.toThrow('closure cleanup cannot create or reactivate workspace allocation')
+})

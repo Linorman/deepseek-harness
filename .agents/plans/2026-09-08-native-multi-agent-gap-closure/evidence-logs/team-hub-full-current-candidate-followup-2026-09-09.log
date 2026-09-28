@@ -1,0 +1,9 @@
+Current-candidate Team Hub full suite follow-up (2026-09-09)
+
+Scope: full Team Hub test directory after artifact lookup, recovery-stall continuation, channel bounded-source, scheduler, ranking, and workflow changes.
+
+Command:
+
+`pnpm exec vitest run packages/team/team-hub/tests --no-file-parallelism`
+
+Result: 52 files passed; 799 tests passed; 0 failed. This current-candidate Hub suite does not replace separate-host, browser, real-model, or full release gates.

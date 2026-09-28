@@ -10,7 +10,7 @@ const overlay = join(fixtures, 'headless-child-delegation.cordis.yml')
 const repository = fileURLToPath(new URL('../../../', import.meta.url))
 
 describe('native child Team delegation', () => {
-  for (const backend of ['sqlite', 'json']) for (const scenario of ['complete', 'cancel']) {
+  for (const backend of ['sqlite', 'json']) for (const scenario of ['complete', 'cancel', 'retarget', 'failure']) {
     it(`runs the real Loader ${scenario} flow with durable parent settlement (${backend})`, async () => {
       const result = await runLoaderSmoke({ label: `child delegation ${scenario}`,
         tempDirPrefix: `headless-child-${scenario}-`, binScript: join(repository, 'apps/cli/src/bin.ts'), configPath: overlay,
@@ -22,6 +22,7 @@ describe('native child Team delegation', () => {
           const directory = join(cwd, '.clocky/profiles/headless/snapshot-fixtures')
           await mkdir(directory, { recursive: true })
           await copyFile(join(fixtures, 'headless-child-delegation-driver.ts'), join(directory, 'headless-child-delegation-driver.ts'))
+          await copyFile(join(fixtures, 'headless-child-authority-probe.ts'), join(directory, 'headless-child-authority-probe.ts'))
           await writeFile(join(directory, 'package.json'), '{"type":"module"}\n')
         },
       })

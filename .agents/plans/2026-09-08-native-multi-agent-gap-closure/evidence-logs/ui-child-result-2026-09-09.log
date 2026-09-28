@@ -1,0 +1,47 @@
+# F-UI-02 child result projection evidence
+
+- Date: 2026-09-09 (Asia/Shanghai)
+- Source plane: `/Volumes/projects-mac/deepseek-harness`
+- Scope: `packages/client/ui-team` child-Team result projection and read-only navigation.
+
+## Commands
+
+```text
+pnpm exec tsc -p packages/client/ui-team/tsconfig.json --pretty false --noEmit
+```
+
+PASS. The Team UI source face type-checks with the child execution/delegation projection and the complete zh/en locale key set.
+
+```text
+pnpm exec vitest run packages/client/ui-team/tests/team-browser.client.spec.tsx --reporter=dot --maxWorkers=1
+```
+
+PASS: the focused TeamBrowser file has 33 tests, and the complete `packages/client/ui-team/tests` directory passes 7 files / 59 tests. The added child case verifies retained child phase/result text, child artifact projection, and the read-only `openTeam(childTeamId)` callback. Existing partial task fixtures remain renderable.
+
+```text
+pnpm exec vitest run packages/client/ui-team/tests --reporter=dot --maxWorkers=1
+```
+
+PASS: 7 files, 59 tests passed, including inbox, slot injection, channel protocols, and Team detail overlay paths.
+
+```text
+python /Users/linorman/.codex/plugins/cache/openai-curated-remote/frontend-design-premium/1.4.0/skills/frontend-design-premium/scripts/audit_project.py /Volumes/projects-mac/deepseek-harness --mode strict
+```
+
+PASS: 0 findings. The audit's textarea rule is made explicit with the shared `clocky-resize-none` class; the existing `managementText` rule remains the visual owner.
+
+```text
+git diff --check
+```
+
+PASS.
+
+```text
+pnpm run doc-typecheck
+```
+
+PASS: 82 documentation blocks compiled; the current source/catalog surface remains type-equivalent.
+
+## Implemented boundary
+
+`TeamPage` now projects child execution phase, failure, admitted result text, and non-private result artifact references. `TeamDetailOverlay` and the shell owner route `openTeam` to the selected child and dismiss the parent detail surface; this path does not resume the child. Private artifact filtering continues through the existing artifact projection. Full browser/GIF and collection pagination gates remain tracked separately by T-06/F-UI-01.

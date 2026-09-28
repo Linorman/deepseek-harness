@@ -5,4 +5,4 @@
 
 - insert:
     - id: headless-team-run-mock-llm
-      name: './snapshot-fixtures/headless-team-run-llm.ts'
+      name: './snapshot-fixtures/headless-team-run-llm.mjs'

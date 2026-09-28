@@ -1,5 +1,7 @@
 # Native multi-agent gap closure development plan
 
+> 历史执行计划。新的工作包、依赖与发布条件见 [2026-09-13 development plan](../2026-09-13-native-multi-agent-gap-closure/development-plan.md)，当前状态以 [gap design](../2026-09-13-native-multi-agent-gap-closure/gap-design.md) 为准；不按下文旧勾选继续开发。
+
 本计划执行[gap design](gap-design.md)中的当前边界，服务于共享 dirty worktree 的下一轮功能开发、测试执行、文档收敛和发行验收。
 
 本计划不改变原始主提案、P0/P1 Note或既有 2026-09-05 计划的 owner；旧计划只作为历史证据，新的当前入口由本目录提供。

@@ -1,0 +1,11 @@
+Command:
+  pnpm exec vitest run packages/team/team-artifact-local/tests packages/team/team-human-client/tests packages/team/team-closure-driver/tests packages/team/team-channel-admission/tests --reporter=dot --maxWorkers=1
+
+Result:
+  9 test files passed; 123 tests passed; 0 failed; 0 skipped.
+  The consolidated source-plane slice covers artifact retention, principal
+  inbox delivery, closure discovery, and channel admission continuation guards.
+
+Boundary:
+  This is a local recovery-consumer regression slice. It does not expand
+  separate-host, browser, coverage, performance, or release evidence.

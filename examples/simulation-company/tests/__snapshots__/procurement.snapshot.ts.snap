@@ -1,0 +1,1959 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`'json' five-role procurement 'duplicate-reply' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 57,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "duplicate-reply",
+}
+`;
+
+exports[`'json' five-role procurement 'finance-reject' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "cancelled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [],
+  "interactions": [
+    {
+      "execution": "cancelled",
+      "id": "restock",
+      "reason": "FINANCE_INSUFFICIENT_FUNDS",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "pending",
+      "id": "funding",
+      "reason": "FINANCE_INSUFFICIENT_FUNDS",
+      "reply": "rejected",
+    },
+  ],
+  "modelCalls": 30,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "funding",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:85a7f88860cee73e52607893b2d785426d4ac6d4b9961b7fc29fd2e365b7a2bd",
+      "simulation-operation:f69550c1a7db36038663dafd83b5c01d4c4cb7df41dd852a040c8e11523a0d8b",
+    ],
+    "nextUpdateAt": "33",
+    "risks": [
+      "FINANCE_INSUFFICIENT_FUNDS",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "10",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "10",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "17",
+  "variant": "finance-reject",
+}
+`;
+
+exports[`'json' five-role procurement 'happy' crash='reserved' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 21,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "happy",
+}
+`;
+
+exports[`'json' five-role procurement 'happy' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "happy",
+}
+`;
+
+exports[`'json' five-role procurement 'manager-reassigned' crash='reassigned' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "ceo",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "routing",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 33,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "37",
+  "variant": "manager-reassigned",
+}
+`;
+
+exports[`'json' five-role procurement 'manager-reassigned' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "ceo",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "routing",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 63,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "37",
+  "variant": "manager-reassigned",
+}
+`;
+
+exports[`'json' five-role procurement 'overdue' crash='reserved' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "open",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "available",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "pending",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 12,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "restock",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:38aa46dbdc07995688c8ad566e9bad5b27b7081877f222074411b4a957e1e4d2",
+    ],
+    "nextUpdateAt": "38",
+    "risks": [
+      "FULFILLMENT_OVERDUE",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "2",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "20",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "37",
+  "variant": "overdue",
+}
+`;
+
+exports[`'json' five-role procurement 'overdue' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "open",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "available",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "pending",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 42,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "restock",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:38aa46dbdc07995688c8ad566e9bad5b27b7081877f222074411b4a957e1e4d2",
+    ],
+    "nextUpdateAt": "38",
+    "risks": [
+      "FULFILLMENT_OVERDUE",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "2",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "20",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "37",
+  "variant": "overdue",
+}
+`;
+
+exports[`'json' five-role procurement 'purchasing-sleep' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "purchasing-sleep",
+}
+`;
+
+exports[`'json' five-role procurement 'supplier-late' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [
+      "LATE_DELIVERY",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "41",
+  "variant": "supplier-late",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'duplicate-reply' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 57,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "duplicate-reply",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'finance-reject' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "cancelled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [],
+  "interactions": [
+    {
+      "execution": "cancelled",
+      "id": "restock",
+      "reason": "FINANCE_INSUFFICIENT_FUNDS",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "pending",
+      "id": "funding",
+      "reason": "FINANCE_INSUFFICIENT_FUNDS",
+      "reply": "rejected",
+    },
+  ],
+  "modelCalls": 30,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "funding",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:85a7f88860cee73e52607893b2d785426d4ac6d4b9961b7fc29fd2e365b7a2bd",
+      "simulation-operation:f69550c1a7db36038663dafd83b5c01d4c4cb7df41dd852a040c8e11523a0d8b",
+    ],
+    "nextUpdateAt": "33",
+    "risks": [
+      "FINANCE_INSUFFICIENT_FUNDS",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "10",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "10",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "17",
+  "variant": "finance-reject",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'happy' crash='reserved' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 21,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "happy",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'happy' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "happy",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'manager-reassigned' crash='reassigned' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "ceo",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "routing",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 33,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "37",
+  "variant": "manager-reassigned",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'manager-reassigned' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "ceo",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "routing",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 63,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "37",
+  "variant": "manager-reassigned",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'overdue' crash='reserved' > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "open",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "available",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "pending",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 12,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "restock",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:38aa46dbdc07995688c8ad566e9bad5b27b7081877f222074411b4a957e1e4d2",
+    ],
+    "nextUpdateAt": "38",
+    "risks": [
+      "FULFILLMENT_OVERDUE",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "2",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "20",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "37",
+  "variant": "overdue",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'overdue' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "open",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "available",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "pending",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 42,
+  "report": {
+    "blockedBy": [
+      {
+        "interactionId": "restock",
+        "revision": 2,
+        "runId": "procurement",
+      },
+    ],
+    "changes": {
+      "inventory": 0,
+      "spentFunds": 0,
+    },
+    "decisionsNeeded": true,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:38aa46dbdc07995688c8ad566e9bad5b27b7081877f222074411b4a957e1e4d2",
+    ],
+    "nextUpdateAt": "38",
+    "risks": [
+      "FULFILLMENT_OVERDUE",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "2",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "20",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "0",
+    },
+  ],
+  "time": "37",
+  "variant": "overdue",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'purchasing-sleep' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "34",
+  "variant": "purchasing-sleep",
+}
+`;
+
+exports[`'sqlite' five-role procurement 'supplier-late' crash=undefined > settles real funds, stock and obligations 1`] = `
+{
+  "chargedActors": 2,
+  "commitments": [
+    {
+      "breached": true,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+    {
+      "breached": false,
+      "phase": "fulfilled",
+    },
+  ],
+  "currentPurchasingManager": "purchasing",
+  "grants": [
+    {
+      "id": "funds-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "stock-approval",
+      "phase": "consumed",
+    },
+    {
+      "id": "delivery-approval",
+      "phase": "consumed",
+    },
+  ],
+  "interactions": [
+    {
+      "execution": "completed",
+      "id": "restock",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "quote",
+      "reply": "accepted",
+    },
+    {
+      "execution": "completed",
+      "id": "funding",
+      "reply": "accepted",
+    },
+  ],
+  "modelCalls": 51,
+  "report": {
+    "blockedBy": [],
+    "changes": {
+      "inventory": 2,
+      "spentFunds": 20,
+    },
+    "decisionsNeeded": false,
+    "evidence": [
+      "simulation-operation:da4007e5e50ba4e8983d3047d9c008c2dbe38aa3e07a1b55e25389839465067d",
+      "simulation-operation:a7ae9abb9691c132f80296d4c9f6ebe8d3c725a1fac0fad8bcef46543148c8ed",
+    ],
+    "nextUpdateAt": null,
+    "risks": [
+      "LATE_DELIVERY",
+    ],
+  },
+  "resources": [
+    {
+      "id": "warehouse-stock",
+      "quantity": "2",
+    },
+    {
+      "id": "supplier-stock",
+      "quantity": "8",
+    },
+    {
+      "id": "in-transit",
+      "quantity": "0",
+    },
+    {
+      "id": "cash",
+      "quantity": "80",
+    },
+    {
+      "id": "escrow",
+      "quantity": "0",
+    },
+    {
+      "id": "supplier-cash",
+      "quantity": "20",
+    },
+  ],
+  "time": "41",
+  "variant": "supplier-late",
+}
+`;

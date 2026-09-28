@@ -98,7 +98,7 @@
 
 #### 模型看到的内容
 
-模型会接收 `user/message`、`team/channel-view`、`assistant/message` 和 `tool/result` surface 条目中的完整消息。`team/channel-view` 只从存储的 content 与 provenance 派生一条 user-role 消息，不会重新渲染实时 Team channel；其余条目保留既有消息值。直接提示词与注入上下文仍是彼此独立的 `user/message` 事件，各事件的来源会保留其出处。提示词封装只改变面向人的呈现；其前缀上下文和请求分隔符已经位于事件内容中。工具调用包含在 assistant 消息内。分片、边界、用量、钩子记录、todo 记录以及其他仅日志事件不会添加消息。
+模型会接收 `user/message`、`team/channel-view`、`simulation/context-view`、`assistant/message` 和 `tool/result` surface 条目中的完整消息。`simulation/context-view` 保存有序的补充上下文分节与带作用域的证据引用；重放只展开已存分节，不读取世界状态，也不重复渲染所引用的 Team 消息。该事件必读，替换只能指向同一 run/entity 的一个旧 view。`team/channel-view` 只从存储的 content 与 provenance 派生一条 user-role 消息，不会重新渲染实时 Team channel；其余条目保留既有消息值。直接提示词与注入上下文仍是彼此独立的 `user/message` 事件，各事件的来源会保留其出处。提示词封装只改变面向人的呈现；其前缀上下文和请求分隔符已经位于事件内容中。工具调用包含在 assistant 消息内。分片、边界、用量、钩子记录、todo 记录以及其他仅日志事件不会添加消息。
 
 #### Token 影响
 

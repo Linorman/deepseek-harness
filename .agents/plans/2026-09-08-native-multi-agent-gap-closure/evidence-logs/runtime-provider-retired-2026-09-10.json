@@ -1,0 +1,9 @@
+{
+  "qualification": "Scoped file hashes only; shared dirty working tree, not a full repository candidate or independent-host evidence.",
+  "files": {
+    "packages/team/team-activation-controller/src/index.ts": "e14dfe66b2f0ac26916b1fbe8b5b3f5ba5e4a82ae26d655ddd0c9668a62c113d",
+    "packages/team/team-activation-controller/tests/edges.spec.ts": "193e7a237b315a79b05287e21969f8cb42e24db53ff2f7259bfddf552e9dbb52",
+    "packages/team/team-activation-controller/tests/closure-recovery.spec.ts": "82373f0537ee858f5770e6ad39a37669294d0f506df721e16af48b10ebb49fbb",
+    "packages/team/team-activation-recovery/tests/startup-recovery.spec.ts": "1edd7fdded9a10dde110657ae9b7b6f9b4c00ecf1fafa7084bc0fa458294ec2b"
+  }
+}

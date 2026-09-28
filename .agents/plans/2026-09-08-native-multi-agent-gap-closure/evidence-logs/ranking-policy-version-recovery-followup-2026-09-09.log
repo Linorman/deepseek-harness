@@ -1,0 +1,16 @@
+Ranking policy version recovery follow-up (2026-09-09)
+
+Scope: durable JSON/SQLite ranking replay rejects an unsupported frozen policy version and retains no fallback policy, while the existing unknown-cost/no-recovery-route tuple remains deterministic.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-hub/tests/durable-task-ranking.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 6 tests passed across JSON and SQLite fixtures.
+2. `pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-hub/tests/durable-task-ranking.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: a checkpoint carrying ranking policy version `2` is rejected during projection recovery rather than silently selecting version `1` or another fallback; valid JSON/SQLite replay still produces the same ranking tuple, and missing retained recovery route remains in the explicit unknown-cost bucket. This is supporting T-08 evidence and does not close the full ranking restart/no-provider/property matrix.

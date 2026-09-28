@@ -1,0 +1,42 @@
+Native multi-agent gap closure — runtime/channel follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree; source hashes below)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane tests; no credential values or .env contents were read.
+TMPDIR: .tmp/verification-runtime
+
+Changed-source hashes:
+4e2fcc3ee3da40ad0d6cb90a45f87296c6038f9d45569bbb62d3766741a3f290  packages/team/team-delegation/src/index.ts
+5ef8f5c86db0a63a993e6ed1f10252519f946dccaf5f3c030d04220b04da945f  packages/team/team-delegation/tests/delegation.spec.ts
+2254de5d87dfd186c95a98853c980a4f2303d8521fc309eabb29d98d9f1af606  packages/team/team-channel-admission/src/index.ts
+0946896f60aafd734162f22d1a48e84580ed53881375a3c44d8807e80416c81e  packages/client/runtime/src/client/teams/service.ts
+f75943b7efe78f81dbc88cb1aade9a49fc0f6bd486f822066752d89448f1b0ac  packages/client/runtime/tests/team-tasks.client.spec.ts
+9401684f848f6e7eda5e64f5b352064aeadafe551189cfe985cedd2cd8479254  packages/client/runtime/src/client/contract/team-tasks.ts
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/client/runtime/tests/team-tasks.client.spec.ts --reporter=dot
+Result: PASS — 1 file, 34 tests passed, 0 failed, 0 skipped.
+Coverage of changed behavior: reversed task/artifact page completion; workflow-plan hasNewer marking; selection-generation and bounded collection regressions.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-delegation/tests/delegation.spec.ts --reporter=dot
+Result: PASS — 1 file, 9 tests passed, 0 failed, 0 skipped.
+Coverage of changed behavior: child channel non-advancing continuation fails closed; Team discovery non-advancing cursor reports a named conflict; existing child result, stall, cancellation, and proof cleanup tests remain green.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/channel-invitation-admission.spec.ts packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/tests/server.spec.ts --reporter=dot
+Result: PASS — 3 files, 71 tests passed, 0 failed, 0 skipped.
+Coverage of unchanged consumer compatibility: invitation revision/ack, local Link pending-delivery replay, WebSocket Hub channel transport and fence paths.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-scheduler-dag/tests/composition.spec.ts packages/team/team-scheduler-dag/tests/budget-boundaries.spec.ts --reporter=dot
+Result: PASS — 2 files, 64 tests passed, 0 failed, 0 skipped.
+Coverage of composition compatibility: TeamChannelAdmission mounting, scheduler composition, budget boundaries, and bounded lifecycle behavior.
+
+Command: pnpm exec tsc -b tsconfig.client.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec tsc -b packages/team/team-delegation/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec tsc -b packages/team/team-channel-admission/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/remote-link.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts --reporter=dot
+Result: PASS — 3 files, 40 tests passed, 1 platform-conditional test skipped, 0 failed. This is a current AgentRuntime SDK/ACP recovery and lifecycle compatibility slice; it does not claim ACP independent-host recovery.
+
+Scope boundary: this follow-up does not close T-03/T-04/T-05/T-06, changed-source coverage, multi-host, real-model, browser/GIF, performance, or canonical release rows. It is additional same-candidate focused evidence for F-SC-01, F-UI-01/F-UI-03, and channel/runtime recovery safety.

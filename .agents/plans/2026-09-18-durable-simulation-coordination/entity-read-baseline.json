@@ -1,0 +1,156 @@
+{
+  "recordedAt": "2026-09-21T17:01:40.494099+00:00",
+  "scope": "entity-scoped reads and contiguous JSON log pagination",
+  "cases": [
+    {
+      "label": "json-after",
+      "report": ".tmp-simulation-development/benchmarks/json-actors-wzq6BJ/report.json",
+      "reportSha256": "a43bd02a6425c4926feba234c81939899faad9affac85d61a11ed8d9b116d3b7",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-actors-wzq6BJ/measurements.jsonl",
+      "rawSha256": "acc1b6d239028e205fe8cda2ac09b1388ba4743b4c5a6c03f4401bda6ff87ace",
+      "sourceDigest": "ae25e0e075276a63898ab03fbfc9c5b426d326ddacb4de034d545c3aced27929",
+      "options": {
+        "backend": "json",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 180000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "timeout",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "nominations",
+        "queued": 500,
+        "peakRssBytes": 783482880
+      },
+      "result": null,
+      "coldRecovery": null,
+      "coldProcessMs": null
+    },
+    {
+      "label": "sqlite-after",
+      "report": ".tmp-simulation-development/benchmarks/sqlite-actors-ajCUQC/report.json",
+      "reportSha256": "8c4836fdfb5eb5089488cfb3a1c0fdd6be8f72d8fd1375e26f07ad016cd0b8c1",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-actors-ajCUQC/measurements.jsonl",
+      "rawSha256": "79f3e5adf89462c219d7b2ea5cf3f6199ef1f285afe025e1dd5b31a976d98d00",
+      "sourceDigest": "499d62845cab496932ef9c8971b2e0a68118310124b5cd03250d02976df2c6a7",
+      "options": {
+        "backend": "sqlite",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 180000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "measured",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 20,
+        "windows": 1,
+        "peakRssBytes": 580403200
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "scripted-cognition",
+        "completion": "time-budget",
+        "setupMs": 40257.20925,
+        "entitySetupMs": 72.19995799999992,
+        "participantSetupMs": 36876.382083000004,
+        "nominationSetupMs": 3283.500165999998,
+        "workMs": 15793.196917000001,
+        "completed": 20,
+        "requested": 100000,
+        "modelCalls": 60,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 1.2663680510734177,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 9,
+        "starts": 20,
+        "resumes": 0,
+        "uniqueServed": 20,
+        "neverServed": 980,
+        "maxSelectedWaitRounds": 0,
+        "queuedDecisions": 1000,
+        "syntheticUsage": true,
+        "reportedTokens": 900,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 20,
+            "elapsedMs": 15793.196917000001,
+            "p50Ms": 12307.922790999997,
+            "p95Ms": 12495.765207999997,
+            "p99Ms": 12504.746583
+          },
+          "window": {
+            "count": 1,
+            "elapsedMs": 15793.196917000001,
+            "p50Ms": 15792.894542000002,
+            "p95Ms": 15792.894542000002,
+            "p99Ms": 15792.894542000002
+          },
+          "placement": {
+            "count": 20,
+            "elapsedMs": 2122.7850400000025,
+            "p50Ms": 102.48441699999967,
+            "p95Ms": 139.9092079999973,
+            "p99Ms": 146.437791999997
+          }
+        },
+        "checkpointMs": 1911.5082089999996,
+        "restoreMs": 848.2755829999951,
+        "peakRssBytes": 591298560,
+        "diskBytes": 14878612,
+        "bytesBeforeClose": 19188484,
+        "cpuMicros": {
+          "user": 60316464,
+          "system": 3708062
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 2144.2085,
+        "peakRssBytes": 318308352,
+        "cpuMicros": {
+          "user": 2491191,
+          "system": 470932
+        }
+      },
+      "coldProcessMs": 2539.017374999996
+    }
+  ],
+  "comparison": {
+    "sqlitePriorSetupMs": 76935.698458,
+    "sqliteAfterSetupMs": 40257.20925,
+    "priorReference": ".agents/plans/2026-09-18-durable-simulation-coordination/cognition-baseline.json"
+  },
+  "conclusions": [
+    "SQLite 1,000-entity setup decreased from approximately 76.94 to 40.26 seconds in these local single trials. The new run completes 20 decisions and verifies fresh-process replay.",
+    "JSON still reaches its 180-second hard deadline, but completes participant provisioning and reaches a last sample of 500 decision nominations; the prior sample stopped at 900 participants. No completed JSON workload or replay result is claimed.",
+    "The JSON backend retains its deliberate complete-document atomic rewrite design. These local measurements do not certify the full requested large workload."
+  ]
+}

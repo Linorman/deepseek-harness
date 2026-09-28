@@ -1,0 +1,12 @@
+{
+  "qualification": "Scoped source and snapshot hashes for this turn, not a full immutable repository candidate.",
+  "files": {
+    "examples/headless-agent/tests/fixtures/headless-child-delegation-driver.ts": "05a1caea50a987eb4abcc0aaa3c4b40f00354ed73a68738e202b3bdc6c65124c",
+    "examples/headless-agent/tests/child-delegation.snapshot.ts": "681d516b15f41237a8b9dc94f0d9e5c33161c46bdf770eeb4b57d422d842f7bb",
+    "examples/headless-agent/tests/snapshots/child-delegation-complete.expected.json": "72e71c4f46f8fad04e2de9596e12070da3c57619f57a01a018e90881cae358bc",
+    "examples/headless-agent/tests/snapshots/child-delegation-cancel.expected.json": "90759a29aed899ba6a5b436d54d971d626641b2e7ffb81c5d089b336a1bcbd32",
+    "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts": "633d565548e7b53d01043aa66c3f3a7004445dfdfebf158eda3acbb3cd43daac",
+    "packages/agent-runtime/activation-supervisor-http/src/client.ts": "1ada13c54126ec34312860ac6f2aa07bb2349e27cf130767cde3031ba602b927",
+    "packages/agent-runtime/activation-supervisor-http/src/endpoint.ts": "3d5e825ac29200c0db4c88a9957a5a10401da4cb6a9e89ae9adb150f4a171307"
+  }
+}

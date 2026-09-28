@@ -1,0 +1,2513 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json coordinated local writer recovery > bound: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > business-accepted: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > business-applied: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > business-written: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-admitted: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-attached: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-confirmed: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-consent: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-reserved: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > channel-wal: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > checkpoint-bound: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > checkpoint-revoked: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > checkpoint-team-reserved: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "1",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > checkpoint-unpublished: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > context-consumed: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": true,
+    "viewPersisted": true,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > context-flushed: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": true,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > context-prepared: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": false,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > context-queued: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": false,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > model-role: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "1",
+      "1",
+    ],
+  },
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "accepted",
+    "operationCount": 1,
+    "preset": "simulation",
+    "quantities": [
+      "1",
+      "1",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"accepted","operationIds":["simulation-operation:3ccfb07786b320035567bca871c0776cf0f0f53bc2ce6019677e87164ee77964"],"effects":"pending"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-2",
+          "type": "tool-result",
+        },
+      ],
+    ],
+    "visibleTools": [
+      "simulation_observe",
+      "simulation_stage",
+      "simulation_submit",
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > model-staged: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "cancelled",
+    "operationCount": 0,
+    "quantities": [
+      "2",
+      "0",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > model-submitted: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "1",
+      "1",
+    ],
+  },
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "accepted",
+    "operationCount": 1,
+    "quantities": [
+      "1",
+      "1",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"accepted","operationIds":["simulation-operation:3ccfb07786b320035567bca871c0776cf0f0f53bc2ce6019677e87164ee77964"],"effects":"pending"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-2",
+          "type": "tool-result",
+        },
+      ],
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > outbox-published: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > outbox-started: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > outbox-uncertain: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > participant-active: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > participant-bound: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > participant-invited: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > participant-provisioning: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > participant-reserved: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > restore-bound: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > restore-revoked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > restore-team-reserved: proves termination before Session takeover 1`] = `
+{
+  "epoch": "1",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > restore-unpublished: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > revoked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > root-confirmed: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > root-created: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > root-reserved: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > scheduler-claimed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > scheduler-consumed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > scheduler-queued: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > team-delivery-abandoned: proves termination before Session takeover 1`] = `
+{
+  "terminalDelivery": {
+    "failureReason": "cancellation",
+    "publicationApplied": true,
+    "recipientReceipt": false,
+    "resolution": "entity-terminated",
+    "resumed": "until",
+    "time": "10",
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-delivery-failed: proves termination before Session takeover 1`] = `
+{
+  "terminalDelivery": {
+    "failureReason": "cancellation",
+    "publicationApplied": true,
+    "recipientReceipt": false,
+    "resolution": "entity-terminated",
+    "resumed": "until",
+    "time": "10",
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-invitation-acked: proves termination before Session takeover 1`] = `
+{
+  "dormantInvitation": {
+    "canonicalSessionPreserved": true,
+    "invitationCount": 2,
+    "neverActivatedBeforeRecovery": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > team-invitation-closing: proves termination before Session takeover 1`] = `
+{
+  "dormantInvitation": {
+    "canonicalSessionPreserved": true,
+    "invitationCount": 2,
+    "neverActivatedBeforeRecovery": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > team-post-published: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-post-scheduled: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-receive-acked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-receive-claimed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-receive-flushed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-receive-recorded: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`json coordinated local writer recovery > team-reserved: proves termination before Session takeover 1`] = `
+{
+  "epoch": "1",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`json coordinated local writer recovery > unpublished: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > bound: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > business-accepted: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > business-applied: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > business-written: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "75",
+      "25",
+    ],
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-admitted: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-attached: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-confirmed: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-consent: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-reserved: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > channel-wal: proves termination before Session takeover 1`] = `
+{
+  "channelBootstrap": {
+    "activationCount": 0,
+    "channelCount": 1,
+    "confirmed": true,
+    "identityPreserved": true,
+    "invitations": [
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+      {
+        "canonicalSession": true,
+        "required": true,
+        "status": "acknowledged",
+      },
+    ],
+    "phase": "active",
+    "retryPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > checkpoint-bound: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > checkpoint-revoked: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > checkpoint-team-reserved: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "1",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > checkpoint-unpublished: proves termination before Session takeover 1`] = `
+{
+  "checkpointRecovery": {
+    "modelCalls": 0,
+    "paused": true,
+    "released": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > context-consumed: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": true,
+    "viewPersisted": true,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > context-flushed: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": true,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > context-prepared: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": false,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > context-queued: proves termination before Session takeover 1`] = `
+{
+  "context": {
+    "contextRetained": [
+      "identity",
+      "authority",
+      "input",
+      "goals",
+      "commitments",
+    ],
+    "decisionCancelled": true,
+    "inputConsumed": false,
+    "viewPersisted": false,
+    "wakeBeforeResumption": "pending",
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "resumed": {
+    "inputEntries": 1,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "identity",
+            "type": "text",
+          },
+          {
+            "text": "authority",
+            "type": "text",
+          },
+          {
+            "text": "input",
+            "type": "text",
+          },
+          {
+            "text": "goals",
+            "type": "text",
+          },
+          {
+            "text": "commitments",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+      {
+        "content": [
+          {
+            "text": "Process the prepared simulation decision.",
+            "type": "text",
+          },
+        ],
+        "role": "user",
+      },
+    ],
+    "modelCalls": 1,
+    "retryStatus": "consumed",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > model-role: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "1",
+      "1",
+    ],
+  },
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "accepted",
+    "operationCount": 1,
+    "preset": "simulation",
+    "quantities": [
+      "1",
+      "1",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"accepted","operationIds":["simulation-operation:3ccfb07786b320035567bca871c0776cf0f0f53bc2ce6019677e87164ee77964"],"effects":"pending"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-2",
+          "type": "tool-result",
+        },
+      ],
+    ],
+    "visibleTools": [
+      "simulation_observe",
+      "simulation_stage",
+      "simulation_submit",
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > model-staged: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "cancelled",
+    "operationCount": 0,
+    "quantities": [
+      "2",
+      "0",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > model-submitted: proves termination before Session takeover 1`] = `
+{
+  "business": {
+    "idempotentResult": true,
+    "quantities": [
+      "1",
+      "1",
+    ],
+  },
+  "epoch": "2",
+  "modelProposals": {
+    "decisionStatus": "accepted",
+    "operationCount": 1,
+    "quantities": [
+      "1",
+      "1",
+    ],
+    "staleResultRejected": true,
+    "toolResults": [
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"observed","time":"0","sections":[{"kind":"identity","blocks":[{"type":"text","text":"identity"}]},{"kind":"authority","blocks":[{"type":"text","text":"authority"}]},{"kind":"input","blocks":[{"type":"text","text":"input"}]},{"kind":"goals","blocks":[{"type":"text","text":"goals"}]},{"kind":"commitments","blocks":[{"type":"text","text":"commitments"}]}]}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-0",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"staged","count":1,"effects":"none"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-1",
+          "type": "tool-result",
+        },
+      ],
+      [
+        {
+          "content": [
+            {
+              "text": "{"status":"accepted","operationIds":["simulation-operation:3ccfb07786b320035567bca871c0776cf0f0f53bc2ce6019677e87164ee77964"],"effects":"pending"}",
+              "type": "text",
+            },
+          ],
+          "isError": false,
+          "toolCallId": "model-proposal-2",
+          "type": "tool-result",
+        },
+      ],
+    ],
+  },
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > outbox-published: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > outbox-started: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > outbox-uncertain: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "outbox": {
+    "sameReceipt": true,
+    "targetRecords": 1,
+  },
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > participant-active: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > participant-bound: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > participant-invited: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > participant-provisioning: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > participant-reserved: proves termination before Session takeover 1`] = `
+{
+  "participantBootstrap": {
+    "activationCount": 0,
+    "bound": true,
+    "participantCount": 1,
+    "participantPreserved": true,
+    "phase": "active",
+    "preset": "simulation",
+    "retryPreserved": true,
+    "sessionPreserved": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > restore-bound: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > restore-revoked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > restore-team-reserved: proves termination before Session takeover 1`] = `
+{
+  "epoch": "1",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > restore-unpublished: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "manifestRestored": true,
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > revoked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > root-confirmed: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > root-created: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > root-reserved: proves termination before Session takeover 1`] = `
+{
+  "bootstrap": {
+    "confirmed": true,
+    "creator": {
+      "kind": "system",
+      "name": "simulation-team",
+    },
+    "identityPreserved": true,
+    "objective": "Company bootstrap",
+    "teamCount": 1,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > scheduler-claimed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > scheduler-consumed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > scheduler-queued: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "scheduler": {
+    "event": "consumed",
+    "time": "20",
+    "wake": "completed",
+  },
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-delivery-abandoned: proves termination before Session takeover 1`] = `
+{
+  "terminalDelivery": {
+    "failureReason": "cancellation",
+    "publicationApplied": true,
+    "recipientReceipt": false,
+    "resolution": "entity-terminated",
+    "resumed": "until",
+    "time": "10",
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-delivery-failed: proves termination before Session takeover 1`] = `
+{
+  "terminalDelivery": {
+    "failureReason": "cancellation",
+    "publicationApplied": true,
+    "recipientReceipt": false,
+    "resolution": "entity-terminated",
+    "resumed": "until",
+    "time": "10",
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-invitation-acked: proves termination before Session takeover 1`] = `
+{
+  "dormantInvitation": {
+    "canonicalSessionPreserved": true,
+    "invitationCount": 2,
+    "neverActivatedBeforeRecovery": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-invitation-closing: proves termination before Session takeover 1`] = `
+{
+  "dormantInvitation": {
+    "canonicalSessionPreserved": true,
+    "invitationCount": 2,
+    "neverActivatedBeforeRecovery": true,
+  },
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-post-published: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-post-scheduled: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-receive-acked: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-receive-claimed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-receive-flushed: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-receive-recorded: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+  "teamPost": {
+    "canonicalInvitationEndpoints": true,
+    "coordinatorStop": "decision-required",
+    "defaultClaimRejected": true,
+    "envelopeCount": 1,
+    "modelCalls": 1,
+    "payload": {
+      "content": [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    },
+    "queuedBeforeInference": 1,
+    "receiptCount": 1,
+    "receiptMatches": true,
+    "receivedPayloads": [
+      [
+        {
+          "text": "Scheduled message",
+          "type": "text",
+        },
+      ],
+    ],
+    "wakeCompleted": true,
+    "wakeRecorded": true,
+  },
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > team-reserved: proves termination before Session takeover 1`] = `
+{
+  "epoch": "1",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;
+
+exports[`sqlite coordinated local writer recovery > unpublished: proves termination before Session takeover 1`] = `
+{
+  "epoch": "2",
+  "newActivationCreated": true,
+  "previousExecutionStopped": true,
+  "sessionPreserved": true,
+}
+`;

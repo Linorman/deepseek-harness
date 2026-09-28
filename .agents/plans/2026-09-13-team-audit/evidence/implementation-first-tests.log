@@ -1,0 +1,76 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/team/team-agent-client/tests/channel-view.spec.ts (41 tests | 2 failed) 3435ms
+     × continues a running task after a worker turn reaches the output limit 109ms
+     × settles a running task after its continuation budget is exhausted 1106ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/channel-view.spec.ts > Team channel-view delivery recovery > continues a running task after a worker turn reaches the output limit
+AssertionError: expected "vi.fn()" to be called with arguments: [ ObjectContaining{…} ]
+
+Received:
+
+  1st vi.fn() call:
+
+  [
+-   ObjectContaining {
++   {
++     "content": [
++       {
++         "text": "The assigned Team task reached the model output limit before it was reported. Continue the same task from the existing context; do not restart or delegate it. When finished, call team_task_report with task_id task-output-limit and attempt_id attempt-output-limit. If the task cannot be completed, report the failure or release the attempt instead of ending with text only.",
++         "type": "text",
++       },
++     ],
++     "id": "team-task-continuation:envelope-task:1",
++     "role": "user",
+      "source": {
+-       "kind": "plugin",
+-       "plugin": "team-agent-client",
++       "activationId": "activation-view",
++       "assignedRevision": 1,
++       "attemptId": "attempt-output-limit",
++       "channelId": "channel-task",
++       "envelopeId": "envelope-task",
++       "kind": "team-task-assignment",
++       "runningRevision": 2,
++       "taskId": "task-output-limit",
++       "teamId": "team-channel-view",
+      },
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ packages/team/team-agent-client/tests/channel-view.spec.ts:193:30
+    191|     mounted.client.observeTurnEnd(ended)
+    192|     await vi.waitFor(() => { expect(mounted.followup).toHaveBeenCalled…
+    193|     expect(mounted.followup).toHaveBeenCalledWith(expect.objectContain…
+       |                              ^
+    194|       source: { kind: 'plugin', plugin: 'team-agent-client' },
+    195|     }))
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/channel-view.spec.ts > Team channel-view delivery recovery > settles a running task after its continuation budget is exhausted
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ packages/team/team-agent-client/tests/channel-view.spec.ts:226:64
+    224|     await vi.waitFor(() => { expect(mounted.followup).toHaveBeenCalled…
+    225|     mounted.client.observeTurnEnd(ended)
+    226|     await vi.waitFor(() => { expect(mounted.settleTaskAttempt).toHaveB…
+       |                                                                ^
+    227|     expect(mounted.settleTaskAttempt).toHaveBeenCalledWith(expect.obje…
+    228|       taskId: 'task-output-limit', attemptId: 'attempt-output-limit', …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  2 failed | 99 passed (101)
+   Start at  17:37:20
+   Duration  4.06s (transform 747ms, setup 273ms, import 907ms, tests 6.43s, environment 0ms)

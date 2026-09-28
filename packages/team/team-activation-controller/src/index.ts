@@ -45,6 +45,9 @@ import type {
   TeamStallReason,
 } from '@clocky/clocky-team'
 import type { SessionId } from '@clocky/clocky-session'
+import { LifecycleOwners } from './lifecycle.ts'
+import type { TeamActivationLifecycleOwner } from './lifecycle.ts'
+export type { TeamActivationLifecycleOwner, TeamActivationCoordinationLease } from './lifecycle.ts'
 
 /** Cordis plugin name. */
 export const name = 'team-activation-controller'
@@ -160,6 +163,8 @@ export interface TeamActivationLease {
 }
 
 interface ActivationEntry {
+  /** Completed owner checkpoint remains valid across retries after the runtime detaches its Session. */
+  checkpointed?: boolean
   readonly key: string
   readonly raw: ActivationHandle
   rawTerminated: boolean
@@ -249,10 +254,11 @@ class ManagedTeamActivationLease implements TeamActivationLease {
  */
 export class TeamActivationController extends Service {
   private readonly entries = new Map<string, ActivationEntry>()
+  private readonly lifecycle: LifecycleOwners
   private readonly pending = new Map<string, PendingActivation>()
-  private readonly recoveries = new Map<string, Promise<TeamActivationLease>>()
+  private readonly recoveries = new Map<string, Promise<unknown>>()
   private readonly staleFences = new Map<string, {
-    readonly request: TeamActivationStaleFenceRequest
+    readonly request: Omit<TeamActivationStaleFenceRequest, 'authorization'>
     readonly operation: Promise<void>
   }>()
   private readonly accepted = new Set<Promise<unknown>>()
@@ -284,6 +290,7 @@ export class TeamActivationController extends Service {
     }
     const statusSyncAttempts = positiveSafeInteger('statusSyncAttempts', config.statusSyncAttempts ?? DEFAULT_STATUS_SYNC_ATTEMPTS)
     super(ctx, 'teamActivations')
+    this.lifecycle = new LifecycleOwners((keys, teamIds) => withTimeout(this.drainLifecycleOwner(keys, teamIds), this.disposalTimeoutMs))
     this.disposalTimeoutMs = disposalTimeoutMs
     this.statusSyncAttempts = statusSyncAttempts
     teamActivationControllerProofSources.set(this, Object.freeze({
@@ -296,6 +303,35 @@ export class TeamActivationController extends Service {
       resolvePhaseProof: (proof: TeamSystemPhaseProof): TeamSystemPhaseScope | undefined =>
         this.resolveClosureStallProof(proof) ?? this.resolveCancellationStallProof(proof) ?? this.recoveryStallProofs.get(proof),
     } satisfies TeamSystemPhaseProofSource))
+  }
+
+  /**
+   * Register the owner required by Team rules.activationLifecycleOwner. Unregister closes starts and drains its handles.
+   * @param owner - Durable domain coordination owner.
+   * @returns retryable asynchronous disposer; unconfirmed termination rejects without dropping ownership.
+   */
+  registerLifecycleOwner(owner: TeamActivationLifecycleOwner): () => Promise<void> {
+    this.assertOpen()
+    return this.lifecycle.register(this.ctx, owner)
+  }
+
+  private async drainLifecycleOwner(keys: readonly string[], teamIds: readonly TeamId[]): Promise<void> {
+    const pending = keys.flatMap((key) => {
+      const start = this.pending.get(key)?.operation
+      const recovery = this.recoveries.get(key)
+      const fence = this.staleFences.get(key)?.operation
+      return [start, recovery, fence].filter(value => value !== undefined)
+    })
+    pending.push(...teamIds.map(teamId => this.closureRecoveries.get(teamId)).filter(value => value !== undefined))
+    await Promise.allSettled(pending)
+    const results = await Promise.allSettled(keys.map(async (key) => {
+      const unpublished = this.unpublishedStarts.get(key)
+      if (unpublished !== undefined) await this.disposeUnpublishedStart(unpublished)
+      const entry = this.entries.get(key)
+      if (entry !== undefined) await this.disposeEntry(entry)
+    }))
+    const failures = results.filter(result => result.status === 'rejected').map((result): unknown => result.reason)
+    if (failures.length > 0) throw new AggregateError(failures, 'Activation lifecycle owner cleanup failed')
   }
 
   /** Begin terminal-intent-driven release of every exact activation handle currently owned by this controller. */
@@ -393,6 +429,13 @@ export class TeamActivationController extends Service {
         try { await this.disposeUnpublishedStart(owned); return }
         catch (error: unknown) { detail = renderError(error) }
       }
+      if (state.rules['activationLifecycleOwner'] !== undefined) {
+        try {
+          this.closureRecoveryScope(request)
+          await this.settleCoordinatedReservation(state, participant.id, reservation)
+          return
+        } catch (error: unknown) { detail = renderError(error) }
+      }
       await this.recordClosureResourceStall(request, { reservation, participantId: participant.id }, {
         code: 'ACTIVATION_STARTUP_UNCONFIRMED', message: `Startup '${reservation.id}' remains reserved. ${detail}`,
       })
@@ -423,7 +466,9 @@ export class TeamActivationController extends Service {
       })
       return
     }
-    if (binding.fencedAt === undefined) {
+    const coordination = await this.lifecycle.recover(state.rules, key, binding)
+    await this.lifecycle.revoke(key)
+    if (binding.fencedAt === undefined && coordination?.localTerminationConfirmed !== true) {
       const fencer = binding.recovery === undefined ? undefined : this.recoveryFencer(binding)
       if (fencer === undefined) {
         await this.recordClosureTerminationUnconfirmed(request, binding)
@@ -545,6 +590,22 @@ export class TeamActivationController extends Service {
   }
 
   /**
+   * Stop one exact activation retained by this controller, with ordinary domain revocation and quiescence.
+   * @param request - Exact owned Team, participant and activation identity; no replacement is started.
+   * @returns confirmed disposal; failed cleanup retains the owned entry for retry.
+   */
+  async stopOwnedActivation(
+    request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId },
+  ): Promise<void> {
+    this.assertOpen()
+    const entry = this.entries.get(activationKey(request.teamId, request.participantId))
+    if (entry === undefined || entry.binding.activation.id !== request.activationId) {
+      throw new TeamError('Activation is not the exact controller-owned epoch', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+    }
+    await this.disposeEntry(entry)
+  }
+
+  /**
    * Fence one stale external epoch, atomically release its current task leases
    * and persist it offline, then publish a new activation with the same Team
    * participant and Session under a new id.
@@ -587,6 +648,78 @@ export class TeamActivationController extends Service {
     finally { this.staleFences.delete(key) }
   }
 
+  /**
+   * Retire a recovered local epoch only when its registered domain owner proves the prior Host cannot execute it.
+   * @param request - Exact durable Team/Participant/activation identity.
+   * @returns completion after domain revocation and durable Team quiescence.
+   */
+  async recoverCoordinatedLocal(
+    request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId },
+  ): Promise<void> {
+    this.assertOpen()
+    const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
+    this.assertOpen()
+    const binding = requireMatchingBinding(state, request)
+    const key = activationKey(request.teamId, request.participantId)
+    if (this.entries.has(key) || this.pending.has(key) || this.recoveries.has(key) || this.staleFences.has(key)) {
+      throw new TeamError('Local recovery conflicts with a controller-owned epoch', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+    }
+    const operation = (async () => {
+      const coordination = await this.lifecycle.recover(state.rules, key, binding)
+      const alreadyStopped = hasQuiescence(binding) && binding.quiescedWakeChannelIds.length === 0
+      if (coordination === undefined || !alreadyStopped && !coordination.localTerminationConfirmed) {
+        throw new TeamError('Domain owner has no local termination proof', 'TEAM_ACTIVATION_FENCE_UNAVAILABLE')
+      }
+      await this.lifecycle.revoke(key)
+      if (alreadyStopped) await this.lifecycle.release(key)
+      else await this.fenceDurableActivation(binding)
+    })()
+    this.staleFences.set(key, { request: { ...request, sessionId: binding.sessionId, provider: binding.provider }, operation })
+    try { await operation }
+    finally { this.staleFences.delete(key) }
+  }
+
+  /**
+   * Settle a coordinated startup with no published epoch only after the owner proves no execution remains.
+   * @param request - Exact durable Team participant and startup reservation.
+   * @returns durable Team reservation and domain-writer release.
+   */
+  async recoverCoordinatedReservation(
+    request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly reservationId: ActivationReservationId },
+  ): Promise<void> {
+    this.assertOpen()
+    const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
+    this.assertOpen()
+    const saved = state.participants.find(value => value.id === request.participantId)?.activationReservation
+    if (saved?.id !== request.reservationId || state.activations.some(value => value.reservationId === request.reservationId)) {
+      throw new TeamError('Startup recovery must select an exact unpublished reservation', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+    }
+    const key = activationKey(request.teamId, request.participantId)
+    if (this.entries.has(key) || this.pending.has(key) || this.recoveries.has(key) || this.staleFences.has(key)) {
+      throw new TeamError('Startup recovery conflicts with an owned activation', 'TEAM_ACTIVATION_RECOVERY_CONFLICT')
+    }
+    const operation = this.settleCoordinatedReservation(state, request.participantId, saved)
+    this.recoveries.set(key, operation)
+    try { await operation }
+    finally { this.recoveries.delete(key) }
+  }
+
+  private async settleCoordinatedReservation(
+    state: TeamStateSnapshot, participantId: ParticipantId, saved: ActivationReservationSnapshot,
+  ): Promise<void> {
+    const key = activationKey(state.team.id, participantId)
+    const reservation: ActivationReservationInput = { teamId: state.team.id, participantId,
+      reservationId: saved.id, sessionId: saved.sessionId, provider: saved.provider, expectedCursor: state.team.cursor }
+    const coordination = await this.lifecycle.recoverReservation(state.rules, key, reservation)
+    if (coordination === undefined || saved.releasedAt === undefined && !coordination.localTerminationConfirmed) {
+      throw new TeamError('Domain owner has no startup termination proof', 'TEAM_ACTIVATION_FENCE_UNAVAILABLE')
+    }
+    await this.lifecycle.revoke(key)
+    this.startupReservations.set(reservation.reservationId, reservation)
+    await this.releaseStartupReservation(reservation)
+    await this.lifecycle.release(key)
+  }
+
   /** Keep one admitted provider fence and its exact durable writeback under controller ownership. */
   private async fenceStaleOwned(request: TeamActivationStaleFenceRequest): Promise<void> {
     await assertRecoveryAuthorization(request.authorization, request.teamId)
@@ -603,8 +736,13 @@ export class TeamActivationController extends Service {
     }
     const state = await this.ctx.teams.getTeam({ teamId: request.teamId })
     const binding = requireMatchingBinding(state, selection)
-    if (hasQuiescence(binding) && binding.quiescedWakeChannelIds.length === 0) return
-    if (binding.fencedAt === undefined) {
+    const coordination = await this.lifecycle.recover(state.rules, key, binding)
+    await this.lifecycle.revoke(key)
+    if (hasQuiescence(binding) && binding.quiescedWakeChannelIds.length === 0) {
+      await this.lifecycle.release(key)
+      return
+    }
+    if (binding.fencedAt === undefined && coordination?.localTerminationConfirmed !== true) {
       const fencer = binding.recovery === undefined ? undefined : this.recoveryFencer(binding)
       if (fencer === undefined) {
         throw new TeamError('Stale activation has no provider termination proof', 'TEAM_ACTIVATION_FENCE_UNAVAILABLE')
@@ -656,6 +794,9 @@ export class TeamActivationController extends Service {
   private async coldReplaceOwned(request: TeamActivationColdReplaceRequest): Promise<TeamActivationLease> {
     await assertRecoveryAuthorization(request.authorization, request.teamId)
     const binding = await this.currentColdReplaceBinding(request)
+    const lifecycleState = await this.ctx.teams.getTeam({ teamId: request.teamId })
+    await this.lifecycle.recover(lifecycleState.rules, activationKey(request.teamId, request.participantId), binding)
+    await this.lifecycle.revoke(activationKey(request.teamId, request.participantId))
     const recovery = binding.recovery
     if (recovery === undefined) {
       throw new TeamError(
@@ -685,8 +826,7 @@ export class TeamActivationController extends Service {
     }
     try {
       if (recovery.supervisor !== undefined) {
-        const supervisors = this.ctx.get('activationSupervisors')
-        if (supervisors === undefined) throw new ActivationSupervisorError('Supervisor registry is unavailable', 'SUPERVISOR_UNAVAILABLE')
+        const supervisors = this.ctx.get('activationSupervisors') as Context['activationSupervisors']
         const health = await supervisors.health(binding, request.signal)
         if (health.status === 'unreachable' || health.status === 'unknown') {
           await this.recordRecoveryStall(binding, health.status === 'unreachable' ? 'SUPERVISOR_UNREACHABLE' : 'SUPERVISOR_UNKNOWN')
@@ -770,7 +910,7 @@ export class TeamActivationController extends Service {
     if (this.disposal !== undefined) return this.disposal
     const disposal = this.dispose()
     this.disposal = disposal
-    void disposal.catch(() => { if (this.disposal === disposal) this.disposal = undefined })
+    void disposal.catch(() => { this.disposal = undefined })
     return disposal
   }
 
@@ -819,8 +959,9 @@ export class TeamActivationController extends Service {
       }
     }
     request.signal.throwIfAborted()
+    const lifecycleOwner = this.lifecycle.resolve(state.rules)
     let reservation: ActivationReservationInput | undefined
-    if (liveActivationLimit(state.budgets, state.team.authorityGrant) !== undefined
+    if (lifecycleOwner !== undefined || liveActivationLimit(state.budgets, state.team.authorityGrant) !== undefined
       || participant.authorityGrant?.budgets.maxLiveActivations !== undefined) {
       reservation = { teamId: request.teamId, participantId: request.participantId, provider: request.provider,
         sessionId: request.sessionId, expectedCursor: state.team.cursor,
@@ -830,6 +971,7 @@ export class TeamActivationController extends Service {
         const input = reservation
         await this.withActivationProof({ kind: 'activation-controller-reserve', ...input },
           async actor => await this.ctx.teams.reserveActivation({ ...input, actor }), undefined, request.authorization)
+        if (lifecycleOwner !== undefined) await this.lifecycle.reserve(lifecycleOwner, key, request, reservation)
       } catch (error: unknown) {
         try { await this.cleanupUnstartedReservation(reservation, key) }
         catch (cleanupError: unknown) { throw new AggregateError([error, cleanupError], 'Activation startup reservation cleanup failed') }
@@ -852,12 +994,18 @@ export class TeamActivationController extends Service {
       throw error
     }
     try {
+      const expectedProvider = await this.lifecycle.provider(key)
       raw = await this.ctx.agentRuntimes.activate({
         provider: request.provider, teamId: request.teamId, participant, sessionId: request.sessionId,
         seed: request.seed, agent: request.agent, signal: request.signal,
-      } satisfies AgentRuntimeActivationRequest)
+      } satisfies AgentRuntimeActivationRequest, expectedProvider)
     } catch (error: unknown) {
+      if (error instanceof AgentRuntimeError && (error.code === 'AGENT_RUNTIME_PROVIDER_CHANGED' || error.code === 'AGENT_RUNTIME_PROVIDER_NOT_FOUND')) {
+        if (reservation !== undefined) await this.cleanupUnstartedReservation(reservation, key)
+        throw error
+      }
       // A provider that publishes no handle supplies no epoch termination evidence.
+      await this.lifecycle.revoke(key)
       if (reservation !== undefined) this.startupReservations.delete(reservation.reservationId)
       throw error
     }
@@ -900,6 +1048,7 @@ export class TeamActivationController extends Service {
       }, async actor => await this.ctx.teams.bindActivation({ actor, ...bindInput }), undefined, request.authorization)
       const { entry, lease } = this.retainBoundEntry(key, raw, binding, false)
       boundEntry = entry
+      await this.lifecycle.bind(key, binding, raw.localAgent)
       this.unpublishedStarts.delete(key)
       entry.statusUnsubscribe = raw.onStatus((status) => { this.observeHandleStatus(entry, status) })
       this.track(this.syncRawHealth(entry), `Activation '${binding.activation.id}' initial status sync`)
@@ -953,9 +1102,9 @@ export class TeamActivationController extends Service {
 
   /** Retain a rejected raw handle through cleanup failures so disposal can be retried. */
   private async disposeUnpublishedStart(start: UnpublishedActivationStart): Promise<void> {
-    if (this.unpublishedStarts.get(start.key) !== start) return
     start.cleanup ??= (async () => {
       if (start.reservation !== undefined) this.startupReservations.set(start.reservation.reservationId, start.reservation)
+      await this.lifecycle.revoke(start.key)
       if (start.raw !== undefined && !start.terminated) {
         await start.raw.dispose()
         start.terminated = true
@@ -976,6 +1125,7 @@ export class TeamActivationController extends Service {
         }
       }
       if (start.reservation !== undefined) await this.releaseStartupReservation(start.reservation)
+      await this.lifecycle.release(start.key)
       this.unpublishedStarts.delete(start.key)
     })().finally(() => { start.cleanup = undefined })
     await start.cleanup
@@ -1022,7 +1172,10 @@ export class TeamActivationController extends Service {
       assertColdReplaceableQuiescence(current)
       if (current.activation.status === 'offline'
         && hasQuiescence(current)
-        && current.quiescedWakeChannelIds.length === 0) return
+        && current.quiescedWakeChannelIds.length === 0) {
+        await this.lifecycle.release(activationKey(binding.activation.teamId, binding.activation.participantId))
+        return
+      }
       try {
         const input = {
           teamId: binding.activation.teamId,
@@ -1037,6 +1190,7 @@ export class TeamActivationController extends Service {
           kind: 'activation-controller-fence',
           ...input,
         }, async actor => await this.ctx.teams.fenceActivation({ actor, ...input }), undefined, authorization, closureRecovery)
+        await this.lifecycle.release(activationKey(binding.activation.teamId, binding.activation.participantId))
         return
       } catch (error: unknown) {
         if (isTeamCursorConflict(error) && attempt + 1 < this.statusSyncAttempts) continue
@@ -1134,9 +1288,14 @@ export class TeamActivationController extends Service {
    */
   private async disposeOwnedEntry(entry: ActivationEntry): Promise<void> {
     entry.stopping = true
+    await this.lifecycle.revoke(entry.key)
     await this.syncStatus(entry, 'stopping')
     await this.stopLocalAgent(entry)
     await this.settleWorkspaceAllocations(entry)
+    if (!entry.rawTerminated && !entry.checkpointed) {
+      await this.lifecycle.checkpoint(entry.key)
+      entry.checkpointed = true
+    }
     try {
       if (!entry.rawTerminated) {
         await entry.raw.dispose()
@@ -1154,6 +1313,7 @@ export class TeamActivationController extends Service {
       throw error
     }
     await this.quiesce(entry)
+    await this.lifecycle.release(entry.key)
     this.release(entry)
   }
 
@@ -1446,6 +1606,7 @@ export class TeamActivationController extends Service {
         ...rejected(results),
       ]
       if (failures.length > 0) throw new AggregateError(failures, 'Team activation controller disposal failed')
+      this.lifecycle.assertSettled()
     }
     await withTimeout(settle(), this.disposalTimeoutMs)
   }

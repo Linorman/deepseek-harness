@@ -1,0 +1,9 @@
+Current documentation sync after export-JSDoc follow-up (2026-09-10)
+
+Command:
+
+`pnpm run doc-sync`
+
+Result: exit 1; 26 gates passed, 2 gates failed, and 0 were skipped in 39.47 seconds.
+
+Remaining failures are the pre-existing translation-pairing drift and hard-wrapped prose paragraphs. Export-JSDoc and persistence catalog now pass, along with graph, Markdown-link, type-equivalence, catalog, README, and site gates.

@@ -1,0 +1,15 @@
+Current-candidate channel Loader composition regression (2026-09-10)
+
+Scope: current working-tree re-run and repair of the real headless channel Loader matrix. This supersedes any earlier channel fixture snapshot for the same files because the current worktree had composition/protocol-version drift. It covers JSON/SQLite admission, WebSocket admission, channel-open cleanup, summary, view capacity, closed outbox, direct v4, and durable channel-view snapshots; it does not claim browser, multi-host, coverage, real-model, or release closure.
+
+Fixes applied:
+
+1. Custom-topology fixtures disable both `team-run` and the default `team-delegation` Consumer when they own root/topology proofs directly.
+2. The TeamRun channel-open failure fixture registers direct v4, matching the current TeamRun channel, and its orphan-WAL assertions derive invitation records from the manifest.
+3. The direct-v4 fixture admits all endpoints before dispatch and checks context receipt after the slow endpoint's durable receipt is observed.
+
+Command:
+
+`CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/headless-agent/tests/channel-admission-websocket.snapshot.ts examples/headless-agent/tests/channel-admission.snapshot.ts examples/headless-agent/tests/channel-open-failure.snapshot.ts examples/headless-agent/tests/channel-summary.snapshot.ts examples/headless-agent/tests/channel-view-capacity.snapshot.ts examples/headless-agent/tests/closed-channel-outbox.snapshot.ts examples/headless-agent/tests/direct-v4.snapshot.ts examples/headless-agent/tests/team-channel-view.snapshot.ts --no-file-parallelism`
+
+Result: exit 0; 8 files and 14 snapshot tests passed across JSON/SQLite. `git diff --check` also passed.

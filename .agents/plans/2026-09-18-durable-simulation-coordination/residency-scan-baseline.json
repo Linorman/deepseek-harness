@@ -1,0 +1,187 @@
+{
+  "date": "2026-09-23",
+  "scope": "P13 residency scan snapshot reuse; 50 employees / 5 managers / 2 departments, SQLite, 20 residents, 20 second work budget.",
+  "hardware": {
+    "platform": "darwin",
+    "release": "27.0.0",
+    "arch": "arm64",
+    "node": "v25.9.0",
+    "cpus": 12,
+    "cpuModel": "Apple M4 Pro",
+    "memoryBytes": 25769803776
+  },
+  "launch": {
+    "nodeArgs": [
+      "--cpu-prof",
+      "--cpu-prof-dir=<output>",
+      "--import",
+      "tsx",
+      "examples/simulation-company/tests/organization-benchmark-scenario.ts",
+      "examples/simulation-company/cordis.yml",
+      "--backend",
+      "sqlite",
+      "--workload",
+      "organization",
+      "--entities",
+      "57",
+      "--departments",
+      "2",
+      "--managers",
+      "5",
+      "--days",
+      "30",
+      "--operations",
+      "1500",
+      "--residents",
+      "20",
+      "--duration-ms",
+      "20000",
+      "--timeout-ms",
+      "120000",
+      "--sample-every",
+      "100",
+      "--entity-batch-size",
+      "100",
+      "--replay-page-size",
+      "1000",
+      "--output",
+      "<output>"
+    ],
+    "env": {
+      "SIMULATION_COMPANY_ROOT": "<output>/data",
+      "SIMULATION_COMPANY_BACKEND": "sqlite",
+      "SIMULATION_REPLAY_PAGE_SIZE": "1000",
+      "SIMULATION_BENCHMARK_TEAM_LIMITS": "{\"maxParticipantsPerTeam\":55,\"maxActivationsPerTeam\":4500}",
+      "TSX_TSCONFIG_PATH": "<repo>/tsconfig.base.json"
+    }
+  },
+  "profiles": [
+    {
+      "profile": ".tmp-simulation-development/p13-organization-profile/CPU.20260923.101803.46387.0.001.cpuprofile",
+      "profileSha256": "2b83c9caa98c72d700281180d835ea75c1ba06e9904440eecfac2f3bf4bba344",
+      "raw": ".tmp-simulation-development/p13-organization-profile/output.log",
+      "rawSha256": "d3e3bdaa8e549f64009777445086ac7ee89fc38fa3b7393d5466f02f8b98b5f4",
+      "sampledCpuMs": {
+        "structuredClone": 16836.501,
+        "structuredCloneUnderEnsureResident": 5911.705
+      },
+      "result": {
+        "kind": "result",
+        "layer": "deterministic-organization",
+        "recoveryMode": "same-process-owner-services",
+        "completion": "time-budget",
+        "employees": 50,
+        "managers": 5,
+        "departments": 2,
+        "requestedDays": 30,
+        "simulatedDays": 1,
+        "requested": 1500,
+        "issued": 72,
+        "completed": 50,
+        "pending": 22,
+        "decisions": 194,
+        "handoffs": 2,
+        "retainedDebtors": 50,
+        "policyCalls": 194,
+        "modelCalls": 0,
+        "publications": 0,
+        "reportedTokens": 0,
+        "modelCost": 0,
+        "peakResidents": 20,
+        "peakModels": 0,
+        "peakContextBytes": 641,
+        "peakPending": 50,
+        "setupMs": 732.363042,
+        "workMs": 20027.701625,
+        "throughputPerSecond": 2.496542086366338,
+        "phases": {
+          "decision": {
+            "count": 194,
+            "elapsedMs": 20027.701625,
+            "p50Ms": 74.1195000000007,
+            "p95Ms": 282.4749159999992,
+            "p99Ms": 379.40512500000114
+          }
+        },
+        "checkpointMs": 466.8886249999996,
+        "restoreMs": 216.95137500000055,
+        "peakRssBytes": 464928768,
+        "diskBytes": 6227922,
+        "bytesBeforeClose": 10229730,
+        "cpuMicros": {
+          "user": 22667061,
+          "system": 1250822
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null,
+        "teamMessages": 0
+      }
+    },
+    {
+      "profile": ".tmp-simulation-development/p13-organization-profile-after/CPU.20260923.101945.48050.0.001.cpuprofile",
+      "profileSha256": "887a643c3d235438dc5f712a224e41bb396fcc48e788a734d1a9f97be6dab953",
+      "raw": ".tmp-simulation-development/p13-organization-profile-after/output.log",
+      "rawSha256": "e3de1a52db6f19c9bc6b001684aff8a9ece09c581bb64da67eaad8c253e28360",
+      "sampledCpuMs": {
+        "structuredClone": 16415.997,
+        "structuredCloneUnderEnsureResident": 3600.503
+      },
+      "result": {
+        "kind": "result",
+        "layer": "deterministic-organization",
+        "recoveryMode": "same-process-owner-services",
+        "completion": "time-budget",
+        "employees": 50,
+        "managers": 5,
+        "departments": 2,
+        "requestedDays": 30,
+        "simulatedDays": 1,
+        "requested": 1500,
+        "issued": 80,
+        "completed": 50,
+        "pending": 30,
+        "decisions": 210,
+        "handoffs": 2,
+        "retainedDebtors": 50,
+        "policyCalls": 210,
+        "modelCalls": 0,
+        "publications": 0,
+        "reportedTokens": 0,
+        "modelCost": 0,
+        "peakResidents": 20,
+        "peakModels": 0,
+        "peakContextBytes": 641,
+        "peakPending": 50,
+        "setupMs": 510.10574999999994,
+        "workMs": 20099.748291,
+        "throughputPerSecond": 2.487593340777722,
+        "phases": {
+          "decision": {
+            "count": 210,
+            "elapsedMs": 20099.748291,
+            "p50Ms": 77.31116699999984,
+            "p95Ms": 233.18375000000015,
+            "p99Ms": 269.4011250000003
+          }
+        },
+        "checkpointMs": 497.0283339999987,
+        "restoreMs": 220.45887500000026,
+        "peakRssBytes": 477511680,
+        "diskBytes": 6380010,
+        "bytesBeforeClose": 10471930,
+        "cpuMicros": {
+          "user": 22791139,
+          "system": 1314267
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null,
+        "teamMessages": 0
+      }
+    }
+  ],
+  "conclusion": "Single profiled samples show less copying under ensureResident; they do not establish stable throughput or full scenario C capacity. Both preserve same-process recovery; separate keyless composition tests own independent cold recovery."
+}

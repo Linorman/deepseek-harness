@@ -190,6 +190,7 @@ function stubAgent(cwd?: string, seed: SessionEvent[] = []): Agent {
     session,
     inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
     status: 'idle',
+    wakePending: () => false,
     send: () => {},
     followup: () => {},
     steer: () => {},

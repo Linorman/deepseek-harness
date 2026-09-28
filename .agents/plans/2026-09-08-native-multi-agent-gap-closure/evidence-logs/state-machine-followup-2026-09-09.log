@@ -1,0 +1,18 @@
+T-08 state-machine follow-up — channel invitation revisions
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Source plane: /Volumes/projects-mac/deepseek-harness
+Credential policy: keyless source-plane property test; no credential values or .env contents were read.
+
+Changed test hash:
+2bcc2dfbc74f1812b90261e977a8c0c36cccb569ba8b7867f636aaf1d4e3e12c  packages/team/team-hub/tests/replay-properties.spec.ts
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/replay-properties.spec.ts --reporter=dot
+Result: PASS — 1 file, 3 tests passed, 0 failed, 0 skipped.
+
+Model coverage: generates arbitrary subsets and ack orders for all immutable channel invitations; accepts only revision 1; rejects revision drift; derives pending versus active phase from the acknowledged set; and asserts channel projection checkpoint round-trip equality. The invitation property runs 100 cases with fixed seed `20260911`; the existing receipt-watermark property uses fixed seed `20260909`.
+
+Scope boundary: this is supporting T-08 evidence only. Child reservation interleavings, ranking-version/restart/no-provider matrix, JSON/SQLite agreement for the new model, and reproducible minimized counterexample artifacts remain open.
+
+Failure reporting: the invitation property uses `fc.check` and serializes the complete fast-check run details, including seed, counterexample path, and minimized counterexample, if a future run fails.

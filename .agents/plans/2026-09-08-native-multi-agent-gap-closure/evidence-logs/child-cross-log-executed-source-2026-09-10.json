@@ -1,0 +1,8 @@
+{
+  "qualification": "Full crash matrix source at execution; scoped hashes only.",
+  "files": {
+    "examples/headless-agent/tests/fixtures/headless-child-delegation-driver.ts": "e1e1da6044ca4d14630121e3aa43c0bea952ca52108e45e0718375831d3fa1a4",
+    "examples/headless-agent/tests/child-delegation-restart.snapshot.ts": "7b3708074b951ffe78e1de6caeadd2929ba721afc02aea5b7d36e34f6669f36f",
+    "examples/headless-agent/tests/fixtures/headless-child-delegation.cordis.yml": "c34b5581f0059d1a4a51bb5bf4fbeb83cf003d936a186b066f70c3e55712fad8"
+  }
+}

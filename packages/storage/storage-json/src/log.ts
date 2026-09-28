@@ -89,7 +89,7 @@ class JsonLogStream implements LogStream {
     assertSequence('expectedSequence', expectedSequence)
     if (values.length === 0) throw new Error(`log stream '${this.name}' append values must be non-empty`)
     const summary = options === undefined ? undefined : jsonSnapshot(options.summary, `log stream '${this.name}' summary`)
-    const snapshots = values.map(value => jsonSnapshot(value, `log stream '${this.name}' append value`))
+    const snapshots = Array.from(values, value => jsonSnapshot(value, `log stream '${this.name}' append value`))
     return await this.enqueue(async () => {
       const tail = tailOf(this.state)
       if (tail !== expectedSequence) {
@@ -121,9 +121,9 @@ class JsonLogStream implements LogStream {
           `log stream '${this.name}' compacted through ${firstSequence - 1}; cursor ${afterSequence} is no longer readable`,
         )
       }
+      const offset = Math.max(0, afterSequence - firstSequence + 1)
       return Promise.resolve(this.state.entries
-        .filter(entry => entry.sequence > afterSequence)
-        .slice(0, limit)
+        .slice(offset, offset + limit)
         .map(entry => ({ sequence: entry.sequence, value: jsonSnapshot(entry.value, `log stream '${this.name}' entry`) })))
     } catch (error) {
       /* v8 ignore next -- validated in-memory JSON state cannot fail a read without private-state corruption. */
@@ -168,9 +168,6 @@ class JsonLogStream implements LogStream {
       const firstSequence = this.state.firstSequence ?? 0
       if (request.throughSequence < firstSequence) return
       const entries = this.state.entries.filter(entry => entry.sequence > request.throughSequence)
-      if (entries.length === 0) {
-        throw new StorageError('checkpoint-conflict', `log stream '${this.name}' compaction would remove its complete retained history`)
-      }
       const next: LogState = {
         ...this.state,
         firstSequence: Math.max(firstSequence, request.throughSequence + 1),

@@ -1,5 +1,7 @@
 # Native multi-agent gap design
 
+> 历史设计与证据索引。当前开发入口为 [2026-09-13 gap design](../2026-09-13-native-multi-agent-gap-closure/gap-design.md) 与 [development plan](../2026-09-13-native-multi-agent-gap-closure/development-plan.md)；下文状态保留原审计时点，不代表当前工作区。
+
 本文件是 2026-09-08 的内部 gap 设计参考，描述当前共享工作区中的功能边界、测试边界、文档缺口和发行前置条件。
 
 开发执行顺序、独占文件责任、阶段入口与出口、命令和证据栏见[development-plan.md](development-plan.md)。

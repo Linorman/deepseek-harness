@@ -1,0 +1,19 @@
+Native multi-agent gap closure — ACP supervisor descriptor follow-up
+Date: 2026-09-09 (Asia/Shanghai)
+Scope: ACP recovery descriptor may select the existing authenticated HTTP supervisor seam; no separate-host execution claim.
+
+Implementation:
+- ACP config now accepts the non-secret supervisor name/version/endpoint identity.
+- ACP recovery descriptors retain the exact supervisor generation, host, and owned-process termination mode.
+- The existing HTTP supervisor endpoint accepts the ACP recovery kind through the same exact process identity and authenticated fence path.
+
+Command: node node_modules/typescript/bin/tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false
+Result: PASS (exit 0)
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts
+Result: PASS — 1 file, 6 passed, 1 Linux-only platform skip; ACP recovery descriptor supervisor route included.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node --import tsx/esm scripts/run-oxlint.ts packages/agent-runtime/agent-runtime-acp/src/index.ts packages/agent-runtime/activation-supervisor-http/src/protocol.ts packages/agent-runtime/activation-supervisor-http/src/client.ts packages/agent-runtime/activation-supervisor-http/src/endpoint.ts packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts
+Result: PASS (exit 0)
+
+Boundary: this proves the provider-neutral same-host supervisor seam and descriptor validation. It does not prove separate-host process execution, credential rotation, provider loss, or independent-host recovery.

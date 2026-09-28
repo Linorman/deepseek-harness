@@ -1,0 +1,26 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+      Coverage enabled with v8
+
+····················
+
+ Test Files  2 passed (2)
+      Tests  20 passed (20)
+   Start at  21:55:58
+   Duration  979ms (transform 522ms, setup 283ms, import 484ms, tests 314ms, environment 0ms)
+
+ % Coverage report from v8
+-----------|---------|----------|---------|---------|-------------------
+File       | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-----------|---------|----------|---------|---------|-------------------
+-----------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 43/43 )
+Branches     : 100% ( 30/30 )
+Functions    : 100% ( 6/6 )
+Lines        : 100% ( 35/35 )
+================================================================================

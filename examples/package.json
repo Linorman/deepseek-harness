@@ -146,6 +146,15 @@
     "@clocky/cordis": "workspace:*",
     "@clocky/clocky-team-human-client": "workspace:^",
     "@clocky/clocky-team-placement-default": "workspace:^",
-    "@clocky/clocky-host-product-principal-digest": "workspace:^"
+    "@clocky/clocky-host-product-principal-digest": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-local": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^",
+    "@clocky/clocky-storage-sqlite": "workspace:^",
+    "@clocky/clocky-tool-simulation": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }

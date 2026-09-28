@@ -1,0 +1,26 @@
+Scope: close the local parent-cancellation/child-saga timing gap without changing Hub authority.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation:
+- `team-run` defines the optional `TeamDelegationDriver` capability and, after durable parent cancellation intent is accepted, awaits the selected coalesced delegation drive before releasing local ownership or reporting cancellation.
+- `team-delegation` implements and registers that capability through an effect-scoped owner registry; the existing event-driven drive remains the source of work and duplicate drives coalesce. The seam is not a new public `Context` service.
+- A TeamRun regression holds the driver open and proves the coordinator lease is not disposed before the child-saga drive settles.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-run/tests/team-run.spec.ts packages/team/team-delegation/tests/delegation.spec.ts --bail=1 --reporter=dot`: 2 files, 104 tests passed, 0 failed.
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 CLOCKY_SNAPSHOT=replay node node_modules/vitest/vitest.mjs run --config vitest.snapshot.config.ts examples/headless-agent/tests/child-delegation.snapshot.ts -t 'cancel' --bail=1 --reporter=dot`: 1 test passed, 1 sibling scenario skipped, 0 failed; real Loader child cancellation remains green.
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 CLOCKY_SNAPSHOT=replay node node_modules/vitest/vitest.mjs run --config vitest.web.config.ts apps/web/tests/team-channel.snapshot.ts --bail=1 --reporter=verbose`: 1 file, 4 browser tests passed, 0 failed.
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm run build`: exit 0; build recorded 197 client artifacts.
+- `pnpm exec tsc -b packages/team/team-run/tsconfig.json packages/team/team-delegation/tsconfig.json --pretty false`: exit 0.
+- `pnpm run verify-translation-pairing .agents/notes/implemented/architecture/2026-09-08-bounded-channel-retry-and-child-runtime-admission.md`: 1 named pair consistent.
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm run doc-sync`: exit 1 after 25 gates passed and 3 known corpus/config drift gates failed (translation pairing, Markdown wrap, and stale config catalog); the named Note pair, Cordis catalog, and doc graphs pass separately.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/team/team-run/src/index.ts`: `ce737982765fae50a173b6632f8b020c88e8872a9f7212b5a0093577792a7e81`
+- `packages/team/team-run/tests/team-run.spec.ts`: `cb7b9dd75973256bc96ce9300ec1d3b6df20c16b261ff9daf2da2c9016143f29`
+- `packages/team/team-delegation/src/index.ts`: `0e5a4128af417774325c66a7cdaace3ca7c25df9f96a30306d5f9796a178087a`
+
+Boundary: this confirms same-process/local parent cancellation ordering and current Loader composition. It does not claim separate-host recovery, remote provider loss, active-child browser navigation, GIF, or the complete T-06 matrix.

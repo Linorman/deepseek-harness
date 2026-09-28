@@ -1,0 +1,26 @@
+- id: headless-runner
+  disabled: true
+- id: headless-startup
+  disabled: true
+- id: team-storage-sqlite
+  disabled: !!js process.env.CLOCKY_RESUME_BACKEND === 'json'
+- id: team-storage-log
+  config:
+    backend: !!js process.env.CLOCKY_RESUME_BACKEND
+    routes: {}
+- id: agent-default-model
+  config:
+    provider: resume-lifecycle
+    model: scripted
+- id: team-run
+  config:
+    workerCount: 0
+    maxWorkerCount: 0
+- insert:
+    - id: resume-json-storage
+      name: '@clocky/clocky-storage-json'
+      disabled: !!js process.env.CLOCKY_RESUME_BACKEND !== 'json'
+      config:
+        root: !!js clockyHomePath('resume-json')
+    - id: resume-lifecycle-driver
+      name: './snapshot-fixtures/headless-team-resume-lifecycle.ts'

@@ -1,0 +1,11 @@
+Command:
+  node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/edge-cases.spec.ts -t "child-Team lineage|child links with missing" --reporter=dot
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0.
+
+Summary:
+  Child reservation lineage edge cases: 2/2 passed.
+  Team Hub restart/nested-usage/pending-charge child slice: 5/5 passed.
+  The fixture now calls the public delegation reservation path and reuses its
+  retained child creation payload for child-Team creation and depth checks.

@@ -1,0 +1,18 @@
+AgentRuntime initial-status and artifact-page follow-up (2026-09-09)
+
+Scope: reject terminal/stopping AgentRuntime publication, validate later lifecycle edges, and keep Host/SDK artifact collection on the provider-bounded page source.
+
+Commands:
+
+1. `pnpm exec vitest run packages/core/agent-runtime/tests/runtime.spec.ts packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/sdk/server/tests/server.spec.ts --no-file-parallelism`
+   Result: 3 files passed; 107 tests passed.
+2. `pnpm exec tsc -p packages/core/agent-runtime/tsconfig.json --noEmit && pnpm exec tsc -p packages/host/apiproxy/tsconfig.json --noEmit && pnpm exec tsc -p packages/sdk/server/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/core/agent-runtime/src/error.ts packages/core/agent-runtime/src/index.ts packages/core/agent-runtime/tests/runtime.spec.ts`
+   Result: exit 0.
+4. `pnpm run verify-translation-pairing --write packages/core/agent-runtime/README.md && pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-27-agent-runtime-service-definition.md`
+   Result: English/Chinese README and Agent Note pair records refreshed.
+5. `git diff --check -- packages/core/agent-runtime packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/sdk/server/tests/server.spec.ts .agents/notes/implemented/architecture/2026-08-27-agent-runtime-service-definition.md packages/core/agent-runtime/README.md`
+   Result: exit 0.
+
+Behavior proved: the AgentRuntime registry rejects provider handles whose initial status is `stopping` or `offline`, disposes the rejected handle, and does not publish an invalid activation event. It also suppresses duplicate status edges and rejects invalid later lifecycle transitions without emitting them. Host and SDK artifact-list routes forward `afterCursor` and `limit` to `listArtifactsPage()`; artifact visibility and ambiguity filtering remain provider-owned, while artifact byte reads retain their exact-reference lookup path. Browser, separate-host, and independent ACP recovery scope remains open.

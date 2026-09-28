@@ -74,6 +74,18 @@ async function tempDir(prefix: string): Promise<string> {
 }
 
 describe('Clocky', () => {
+  it('retains every coordinator notification preceding a batched final response', async () => {
+    const harness = harnessWith({ FAKE_FINAL_NOTIFICATIONS: '1' })
+    const observed: unknown[] = []
+    const result = await harness.run('complete', { onNotification: (notification) => {
+      if (notification.method === 'session.status') observed.push(notification.params.status)
+    } })
+    expect(observed).toEqual(['running', 'idle', 'running', 'idle'])
+    expect(result.notifications.filter(value => value.method === 'session.status').map(value => value.params.status))
+      .toEqual(observed)
+    expect(result.notifications.some(value => value.params.sessionId === 'foreign-coordinator')).toBe(false)
+  })
+
   it('requires an explicit objective for image-only Team input', () => {
     const image = [{
       type: 'image' as const,
@@ -282,6 +294,11 @@ describe('Clocky', () => {
       readTeamAction: vi.fn(async () => ({})),
       getTeamSelection: vi.fn(async () => ({ selection: {} })),
       inspectTeamTask: vi.fn(async () => ({ inspection: {} })),
+      inspectWorkflowPlan: vi.fn(async () => ({})),
+      inspectTeamMember: vi.fn(async () => ({})),
+      listWorkflowPlans: vi.fn(async () => ({ items: [] })),
+      listTeamArtifacts: vi.fn(async () => ({ items: [] })),
+      inboxRespond: vi.fn(async () => ({})),
       browseTeam: vi.fn(async () => ({ page: {} })),
       getTeamMemberSession: vi.fn(async () => ({ binding: {} })),
       listTeamMembers: vi.fn(async () => ({ items: [] })),
@@ -298,6 +315,14 @@ describe('Clocky', () => {
     await harness.getTeamMemberSession('team-forward', 'member-forward')
     await harness.inspectTeamTask({ teamId: 'team-forward', taskId: 'task-forward', section: 'record' })
     await harness.browseTeam({ teamId: 'team-forward', kind: 'tasks', limit: 2 })
+    await harness.inspectWorkflowPlan({ teamId: 'team-forward', planId: 'plan', expectedRevision: 2 })
+    await harness.inspectTeamMember({ teamId: 'team-forward', participantId: 'member', limit: 3 })
+    await harness.listWorkflowPlans('team-forward')
+    await harness.listWorkflowPlans('team-forward', { afterCursor: 3, limit: 4 })
+    await harness.listTeamArtifacts('team-forward')
+    await harness.listTeamArtifacts('team-forward', { afterCursor: 3, limit: 4 })
+    await harness.inboxRespond({ teamId: 'team-forward', actionId: 'action', expectedUpdatedAt: 1, idempotencyKey: 'reply',
+      answer: { kind: 'approval', outcome: 'rejected' } })
     await harness.readTeamAction('team-forward', 'action-forward')
     await harness.getTeamSelection('team-forward')
     await harness.getTeam('team-forward')
@@ -316,6 +341,12 @@ describe('Clocky', () => {
     expect(client.inspectTeamTask).toHaveBeenCalledWith({ teamId: 'team-forward', taskId: 'task-forward', section: 'record' })
     expect(client.browseTeam).toHaveBeenCalledWith({ teamId: 'team-forward', kind: 'tasks', limit: 2 })
     expect(client.readTeamAction).toHaveBeenCalledWith({ teamId: 'team-forward', actionId: 'action-forward' })
+    expect(client.inspectWorkflowPlan).toHaveBeenCalledWith({ teamId: 'team-forward', planId: 'plan', expectedRevision: 2 })
+    expect(client.inspectTeamMember).toHaveBeenCalledWith({ teamId: 'team-forward', participantId: 'member', limit: 3 })
+    expect(client.listWorkflowPlans).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 3, limit: 4 })
+    expect(client.listTeamArtifacts).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 3, limit: 4 })
+    expect(client.inboxRespond).toHaveBeenCalledWith({ teamId: 'team-forward', actionId: 'action', expectedUpdatedAt: 1,
+      idempotencyKey: 'reply', answer: { kind: 'approval', outcome: 'rejected' } })
     expect(client.getTeamSelection).toHaveBeenCalledWith({ teamId: 'team-forward' })
     expect(client.getTeam).toHaveBeenCalledWith({ teamId: 'team-forward' })
     expect(client.listTeamMembers).toHaveBeenCalledWith({ teamId: 'team-forward' })
@@ -887,6 +918,10 @@ describe('HarnessTeam forwarding', () => {
       getTeamMetrics: vi.fn(async () => ({})),
       readTeamAudit: vi.fn(async () => ({ teamId: 'team-forward', items: [] })),
       readTeamArtifact: vi.fn(async () => ({ artifact: {}, bytes: 0, data: '' })),
+      listWorkflowPlans: vi.fn(async () => ({ items: [] })),
+      listTeamArtifacts: vi.fn(async () => ({ items: [] })),
+      getTeamChannelInvitation: vi.fn(async () => ({ value: {} })),
+      acknowledgeTeamChannelInvitation: vi.fn(async () => ({ value: {} })),
       inviteTeamMember: vi.fn(async () => ({ value: {} })),
       activateTeamMember: vi.fn(async () => ({ value: {} })),
       removeTeamMember: vi.fn(async () => ({ value: {} })),
@@ -911,6 +946,9 @@ describe('HarnessTeam forwarding', () => {
     const team = new HarnessTeam(harness, 'team-forward', 'coordinator-forward')
 
     await team.resume({ expectedCursor: 12 })
+    client.resumeTeam.mockResolvedValueOnce({ teamId: 'foreign-team', coordinatorSessionId: 'foreign-coordinator' })
+    await expect(team.resume({ expectedCursor: 13 })).rejects.toThrow(/returned another Team/)
+    expect(team.id).toBe('team-forward')
     await team.state()
     await team.updateGoal({ teamId: 'forged-goal-team', expectedRevision: 1, objective: 'Update the objective.' } as never)
     await team.transitionGoal({ teamId: 'forged-transition-team', expectedRevision: 2, phase: 'paused' } as never)
@@ -922,6 +960,12 @@ describe('HarnessTeam forwarding', () => {
     await team.metrics()
     await team.audit({ channelId: 'channel', afterCursor: 6, limit: 7, teamId: 'forged-audit-team' } as never)
     await team.readArtifact('artifact')
+    await team.workflowPlans()
+    await team.workflowPlans({ afterCursor: 3, limit: 4 })
+    await team.artifacts()
+    await team.artifacts({ afterCursor: 3, limit: 4 })
+    await team.invitation({ channelId: 'channel' })
+    await team.acknowledgeInvitation({ channelId: 'channel', revision: 1, manifestFingerprint: 'sha256:' + '0'.repeat(64), idempotencyKey: 'ack' })
     await team.inviteMember({ teamId: 'forged-invite-team', expectedCursor: 1, kind: 'local-agent', displayName: 'Worker', role: 'reviewer', capabilities: [] } as never)
     await team.activateMember({ teamId: 'forged-activate-team', participantId: 'participant', expectedCursor: 1 } as never)
     await team.removeMember({ teamId: 'forged-remove-team', participantId: 'participant', expectedCursor: 1 } as never)
@@ -950,6 +994,11 @@ describe('HarnessTeam forwarding', () => {
 
     expect(client.listTeamMembers).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 2, limit: 3 })
     expect(client.listTeamTasks).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 4, limit: 5 })
+    expect(client.listWorkflowPlans).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 3, limit: 4 })
+    expect(client.listTeamArtifacts).toHaveBeenCalledWith({ teamId: 'team-forward', afterCursor: 3, limit: 4 })
+    expect(client.getTeamChannelInvitation).toHaveBeenCalledWith({ channelId: 'channel' })
+    expect(client.acknowledgeTeamChannelInvitation).toHaveBeenCalledWith({ channelId: 'channel', revision: 1,
+      manifestFingerprint: 'sha256:' + '0'.repeat(64), idempotencyKey: 'ack' })
     expect(client.updateTeamGoal).toHaveBeenCalledWith({ teamId: 'team-forward', expectedRevision: 1, objective: 'Update the objective.' })
     expect(client.transitionTeamGoal).toHaveBeenCalledWith({ teamId: 'team-forward', expectedRevision: 2, phase: 'paused' })
     expect(client.readTeamAudit).toHaveBeenCalledWith({ teamId: 'team-forward', channelId: 'channel', afterCursor: 6, limit: 7 })
@@ -989,24 +1038,27 @@ describe('HarnessTeam forwarding', () => {
   })
 })
 
+const viewWireCases = (await Promise.all(['team-channel-view-cases', 'simulation-context-cases'].map(async (name) => {
+  const corpus = JSON.parse(await readFile(new URL(`../../protocol/tests/fixtures/${name}.json`, import.meta.url), 'utf8')) as {
+    readonly name: string
+    readonly valid: boolean
+    readonly event: Record<string, unknown>
+  }[]
+  return corpus.map(entry => ({ ...entry, corpus: name }))
+}))).flat()
+
 describe('wire payload validation', () => {
-  it('preserves valid channel views and rejects the shared invalid wire corpus', async () => {
-    const corpus = JSON.parse(await readFile(
-      new URL('../../protocol/tests/fixtures/team-channel-view-cases.json', import.meta.url),
-      'utf8',
-    )) as { readonly name: string; readonly valid: boolean; readonly event: Record<string, unknown> }[]
-    for (const entry of corpus) {
-      const harness = harnessWith({ FAKE_SESSION_EVENT_JSON: JSON.stringify(entry.event) })
-      try {
-        if (entry.valid) {
-          const result = await harness.run(entry.name)
-          expect(result.events.find(event => event.type === 'team/channel-view'), entry.name).toEqual(entry.event)
-        } else {
-          await expect(harness.run(entry.name), entry.name).rejects.toThrow(SdkProtocolError)
-        }
-      } finally {
-        await harness.close()
+  it.each(viewWireCases)('validates $corpus: $name', async (entry) => {
+    const harness = harnessWith({ FAKE_SESSION_EVENT_JSON: JSON.stringify(entry.event) })
+    try {
+      if (entry.valid) {
+        const result = await harness.run(entry.name)
+        expect(result.events.find(event => event.type === entry.event['type']), entry.name).toEqual(entry.event)
+      } else {
+        await expect(harness.run(entry.name), entry.name).rejects.toThrow(SdkProtocolError)
       }
+    } finally {
+      await harness.close()
     }
   })
 

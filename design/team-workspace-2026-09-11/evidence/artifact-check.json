@@ -1,0 +1,23 @@
+{
+  "textFiles": 6,
+  "issues": [],
+  "conceptImageDimensions": {
+    "concept-channel.png": [
+      1536,
+      1024
+    ],
+    "concept-task.png": [
+      1536,
+      1024
+    ],
+    "concept-overview.png": [
+      1536,
+      1024
+    ],
+    "concept-session.png": [
+      1536,
+      1024
+    ]
+  },
+  "scope": "Proposal artifacts only; no new product implementation tested."
+}

@@ -3,13 +3,25 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
+import z from '@clocky/schemastery'
 import { CallId, LlmAdapter } from '@clocky/clocky-llm'
 import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@clocky/clocky-llm'
-import { teamWorkspaceObservationSchema } from '@clocky/clocky-team'
+import { teamWorkspaceObservationSchema, teamWorkspaceAllocationIdSchema, teamWorkspaceExecutionWorldSchema,
+  teamClosureIdempotencyKeySchema } from '@clocky/clocky-team'
+import { TeamWorkspaceLostError } from '@clocky/clocky-team-workspace'
+import * as TeamAgentClient from '@clocky/clocky-team-agent-client'
+import { AgentWorkspaceUnavailableError, resolveAgentWorkspaceRoot } from '@clocky/clocky-agent'
 import type {} from '@clocky/clocky-team-run'
 
 const MODEL = 'workspace-observation-model'
 const finishCoordinator = Promise.withResolvers<undefined>()
+/** Select an external execution-world failure before the worker receives its input. */
+export interface Config { readonly materializationLoss: boolean; readonly unconfirmedRecovery: boolean; readonly closureLoss: boolean }
+/** Keep the normal observation scenario as the default. */
+export const Config: z<Config> = z.object({
+  materializationLoss: z.boolean().default(false), unconfirmedRecovery: z.boolean().default(false),
+  closureLoss: z.boolean().default(false),
+})
 function calls(messages: GenerateOptions['messages'], name: string): boolean {
   return messages.some(message => message.role === 'assistant' && message.content.some(block => block.type === 'tool-call' && block.name === name))
 }
@@ -36,6 +48,7 @@ function tool(name: string, args: Record<string, unknown>): StreamChunk[] {
   ]
 }
 class ObservationModel extends LlmAdapter {
+  workerRequests = 0
   override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return { provider, id: model, name: model }
   }
@@ -43,6 +56,7 @@ class ObservationModel extends LlmAdapter {
     if (options.purpose !== 'session-title') {
       const task = assignment(options.messages)
       if (task !== undefined) {
+        this.workerRequests += 1
         const next = !calls(options.messages, 'write')
           ? tool('write', { file_path: 'declared/from-fs.txt', content: 'Written by the actual FS tool.\n' })
           : !calls(options.messages, 'bash')
@@ -70,15 +84,36 @@ class ObservationModel extends LlmAdapter {
     yield { type: 'finish', reason: { kind: 'stop' } }
   }
 }
-async function run(ctx: Context, exit: (code: number) => void): Promise<void> {
+async function run(ctx: Context, exit: (code: number) => void, config: Config, model: ObservationModel,
+  probe: { preparations: number; abandoned: number }, cleanup: Promise<undefined>,
+  closure: PromiseWithResolvers<undefined>): Promise<void> {
   await ctx.get('loader')?.await()
   const handle = await ctx.teamRuns.create({ objective: 'Observe shared workspace changes.', cwd: process.cwd(),
     selection: { provider: MODEL, model: MODEL } })
   await ctx.teamRuns.postHumanInput({ teamId: handle.teamId, content: [{ type: 'text', text: 'Start workspace observation.' }] })
   let state = await ctx.teams.getTeam({ teamId: handle.teamId })
   for (;;) {
-    if (state.workspaceAllocations.some(allocation => allocation.lifecycle === 'released')) break
-    assert.equal(state.team.phase, 'active', JSON.stringify(state))
+    if (config.closureLoss && state.workspaceAllocations.length > 0 && state.team.closure === undefined) {
+      const issuer = ctx.teams.openActivationActorProofIssuer()
+      const actor = issuer.issue(handle.coordinatorLease.binding)
+      try {
+        await ctx.teams.failTeam({ actor: actor.proof, teamId: state.team.id, expectedCursor: state.team.cursor,
+          idempotencyKey: teamClosureIdempotencyKeySchema.parse('materialization-closure'),
+          reason: { code: 'FIXTURE_FAILURE', message: 'Close while provider materialization is pending.' } })
+      } finally { actor.revoke(); issuer.close() }
+      const workerActivationId = state.workspaceAllocations[0]!.activationId
+      for (;;) {
+        const stopping = await ctx.teams.getTeam({ teamId: state.team.id })
+        if (stopping.activations.every(binding => binding.activation.id === workerActivationId
+          ? binding.activation.status === 'stopping' : binding.quiescedAt !== undefined)) break
+        await ctx.teams.watchTeam({ teamId: state.team.id, afterCursor: stopping.team.cursor })
+      }
+      closure.resolve(undefined)
+    }
+    if (state.workspaceAllocations.some(allocation => allocation.lifecycle === (config.unconfirmedRecovery ? 'unavailable' : 'released'))
+      && (!config.materializationLoss || state.tasks.some(task => task.attemptHistory.length > 0))) break
+    assert(state.team.phase === 'active' || config.closureLoss && state.team.phase === 'quiescing'
+      || config.unconfirmedRecovery && state.team.phase === 'stalled', JSON.stringify(state))
     await ctx.teams.watchTeam({ teamId: handle.teamId, afterCursor: state.team.cursor })
     state = await ctx.teams.getTeam({ teamId: handle.teamId })
   }
@@ -86,6 +121,45 @@ async function run(ctx: Context, exit: (code: number) => void): Promise<void> {
   assert(allocation !== undefined)
   const task = state.tasks.find(value => value.id === allocation.taskId)
   const outcome = task?.attemptHistory.find(value => value.id === allocation.attemptId)?.outcome
+  if (config.materializationLoss) {
+    await cleanup
+    assert(outcome?.kind === 'failed' || outcome?.kind === 'released')
+    assert.equal(outcome.kind, config.closureLoss ? 'released' : 'failed')
+    if (outcome.kind === 'failed') assert.equal(outcome.failure.code, 'WORKSPACE_LOST')
+    assert.equal(model.workerRequests, 0)
+    assert.equal(probe.preparations, 1)
+    assert.equal(probe.abandoned, 1)
+    if (config.unconfirmedRecovery) {
+      const worker = ctx.agents.get(allocation.sessionId)
+      assert(worker !== undefined)
+      const original = ctx.teamLinks.getBoundLinkBorrower(worker)
+      assert(original instanceof TeamAgentClient.FixedBindingTeamAgentLinkDelivery)
+      await original.close()
+      const binding = state.activations.find(candidate => candidate.activation.id === allocation.activationId)
+      assert(binding !== undefined)
+      const delivery = new TeamAgentClient.FixedBindingTeamAgentLinkDelivery(ctx, { agent: worker, binding }, { consumeWorkspace: true })
+      const recovered = Promise.withResolvers<undefined>()
+      const connect = ctx.teamLinks.connect.bind(ctx.teamLinks)
+      ctx.teamLinks.connect = async (request) => {
+        if (request.binding.sessionId === worker.session.id) recovered.resolve(undefined)
+        return await connect(request)
+      }
+      try {
+        ctx.effect(() => { delivery.start(); return () => delivery.close() }, 'observationFixture.recoveredDelivery()')
+        await recovered.promise
+      } finally { ctx.teamLinks.connect = connect }
+      assert.throws(() => resolveAgentWorkspaceRoot(worker), AgentWorkspaceUnavailableError)
+      assert.equal(model.workerRequests, 0)
+    }
+    finishCoordinator.resolve(undefined)
+    await handle.coordinatorLease.localAgent?.whenIdle()
+    process.stdout.write(`${JSON.stringify({ provider: allocation.provider, allocation: allocation.lifecycle,
+      task: task?.phase, ...outcome.kind === 'failed' ? { failure: outcome.failure.code } : {},
+      workerRequests: model.workerRequests, ...probe,
+      ...config.unconfirmedRecovery ? { recoveredRootUnavailable: true } : {} })}\n`)
+    exit(0)
+    return
+  }
   assert(outcome?.kind === 'completed')
   assert.deepEqual(outcome.result.changedPaths, ['declared/from-fs.txt', 'undeclared-from-shell.txt'])
   assert.equal(outcome.result.artifacts?.length ?? 0, 0)
@@ -112,10 +186,37 @@ async function run(ctx: Context, exit: (code: number) => void): Promise<void> {
   exit(0)
 }
 export const name = 'headless-workspace-observation-driver'
-export const inject = ['llm', 'teamRuns', 'teams', 'agents']
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.llm.registerAdapter([MODEL], new ObservationModel()), 'observationFixture.model()')
+export const inject = ['llm', 'teamRuns', 'teams', 'agents', 'teamWorkspaces', 'teamLinks', 'sessions']
+export function apply(ctx: Context, config: Config): void {
+  const model = new ObservationModel()
+  const probe = { preparations: 0, abandoned: 0 }
+  const cleanup = Promise.withResolvers<undefined>()
+  const closure = Promise.withResolvers<undefined>()
+  ctx.effect(() => ctx.llm.registerAdapter([MODEL], model), 'observationFixture.model()')
+  if (config.materializationLoss) {
+    const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'materialization-loss-world' })
+    ctx.effect(() => ctx.teamWorkspaces.registerProvider({
+      name: 'materialization-loss', modes: ['shared'], async eligible() { return true },
+      async prepare(request) {
+        probe.preparations += 1
+        return { ...request, id: teamWorkspaceAllocationIdSchema.parse(`loss:${request.attemptId}`),
+          provider: 'materialization-loss', mode: 'shared', executionWorld: world,
+          async materialize() {
+            if (config.closureLoss) await closure.promise
+            throw new TeamWorkspaceLostError({ executionWorld: world,
+              reason: config.unconfirmedRecovery ? 'manifest-missing' : 'sandbox-expired',
+              terminationProven: !config.unconfirmedRecovery, artifacts: [] })
+          },
+          async abandon() { probe.abandoned += 1; cleanup.resolve(undefined) },
+        }
+      },
+      async restore() { throw new Error('Lost materialization has no restorable handle') },
+      async reconcileRelease() { throw new Error('Lost materialization has no materialized handle') },
+    }), 'observationFixture.workspaceLoss()')
+  }
   const exit = ctx.get('appExit')
   if (exit === undefined) throw new Error('Workspace observation fixture requires appExit')
-  void run(ctx, exit).catch((error: unknown) => { process.stderr.write(`${String(error)}\n`); exit(1) })
+  void run(ctx, exit, config, model, probe, cleanup.promise, closure).catch((error: unknown) => {
+    process.stderr.write(`${String(error)}\n`); exit(1)
+  })
 }

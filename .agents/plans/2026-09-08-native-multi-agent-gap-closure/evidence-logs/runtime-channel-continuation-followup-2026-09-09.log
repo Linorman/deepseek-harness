@@ -1,0 +1,13 @@
+Command:
+  pnpm exec vitest run packages/team/team-channel-admission/tests/admission.spec.ts packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/tests/edges.spec.ts packages/team/team-delegation/tests/delegation.spec.ts packages/team/team-run/tests/team-run.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  5 test files passed; 171 tests passed; 0 failed; 0 skipped.
+  The slice covers channel-admission wait cursor safety, local/WebSocket Team
+  watch safety, delegation discovery/channel continuation, and TeamRun
+  Team/channel wait safety.
+
+Boundary:
+  This is a focused source-plane continuation slice. It does not expand
+  separate-host, ACP independent-host, browser/GIF, coverage, performance,
+  or release evidence.

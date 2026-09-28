@@ -1,0 +1,17 @@
+# UI child-row authority follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay for browser artifacts.
+
+Commands:
+
+    env TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/client/ui-team/tests/team-browser.client.spec.tsx --no-file-parallelism --reporter=dot
+    env TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/client/runtime/tests/team-tasks.client.spec.ts packages/client/runtime/tests/team-channel.client.spec.ts packages/client/runtime/tests/team-channel-list.client.spec.ts --no-file-parallelism --reporter=dot
+    pnpm exec tsc -b packages/client/runtime/tsconfig.json packages/client/ui-team/tsconfig.json --pretty false
+    pnpm run build
+    git diff --check
+
+Result: UI Team browser suite 1 file/39 tests passed; Team runtime and channel suites 3 files/58 tests passed; both client TypeScript faces passed; full current build passed and recorded 197 client artifacts; diff check passed.
+
+The shipped UI now overlays a selected Team's newer task snapshot onto the same task id already present in a bounded task page when its revision is not older. This preserves page bounds while keeping child-Team navigation and current child result facts visible after a stale collection response. The runtime also performs a targeted selected-Team refresh when a task-changed event arrives.
+
+Scope boundary: active-child browser navigation remains unverified because the current browser cleanup path retains active child resources; the selected direct-v4/consult/discussion/reconnect browser scenarios and remote/multi-host matrix remain separate evidence.

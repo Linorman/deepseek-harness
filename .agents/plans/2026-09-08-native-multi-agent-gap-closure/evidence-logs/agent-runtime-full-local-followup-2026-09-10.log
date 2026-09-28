@@ -1,0 +1,9 @@
+AgentRuntime full local lifecycle follow-up (2026-09-10)
+
+Scope: run the complete locally runnable AgentRuntime/provider/controller/recovery test set after the current runtime/channel work. This covers local/in-process, SDK, ACP, HTTP supervisor, activation controller, and startup recovery behavior; Linux-only detached-process and separate-host semantics remain independent boundaries.
+
+Command:
+
+`pnpm exec vitest run packages/agent-runtime packages/core/agent-runtime packages/team/team-activation-controller packages/team/team-activation-recovery --no-file-parallelism`
+
+Result: exit 0; 16 test files passed, 211 tests passed, and 3 tests skipped by platform policy (214 total). No test failed.

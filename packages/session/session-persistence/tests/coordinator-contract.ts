@@ -215,6 +215,69 @@ async function liveSessionInFiber(
  */
 export function runCoordinatorContract(name: string, makeFixture: () => Promise<CoordinatorFixture>): void {
   describe(`PersistenceCoordinator orchestration: ${name}`, () => {
+    it('distinguishes absent Session identities from live and header-only owners', async () => {
+      const fix = await makeFixture()
+      const first = await freshCtx(fix)
+      const header = meta('unmaterialized-reference', WORK)
+      try {
+        expect(await first.ctx.sessionPersistence.isUnmaterialized(header.id)).toBe(true)
+        await first.ctx.sessionPersistence.create(header)
+        expect(await first.ctx.sessionPersistence.isUnmaterialized(header.id)).toBe(false)
+        const live = first.ctx.sessions.create(SessionId('live-reference'))
+        expect(await first.ctx.sessionPersistence.isUnmaterialized(live.id)).toBe(false)
+        const abort = new AbortController()
+        abort.abort(new Error('Cancelled absence read'))
+        await expect(first.ctx.sessionPersistence.isUnmaterialized(SessionId('cancelled'), abort.signal)).rejects.toThrow(/Cancelled/)
+      } finally { await first.fiber.dispose(); await fix.cleanup() }
+    })
+
+    it('validates a retained physical prefix after append without including its suffix in the fingerprint', async () => {
+      const fix = await makeFixture()
+      const first = await freshCtx(fix)
+      const header = meta('retained-reference', WORK)
+      try {
+        await first.ctx.sessionPersistence.create(header)
+        const events = oneTurnLog()
+        await first.ctx.sessionPersistence.append(header.id, events.slice(0, 3))
+        const prefix = await first.ctx.sessionPersistence.getPersistenceReference(header.id, 2)
+        await first.ctx.sessionPersistence.append(header.id, events.slice(3))
+        const retained = await first.ctx.sessionPersistence.getPersistencePrefix(header.id, 2)
+        expect(retained.fingerprint).toBe(prefix.fingerprint)
+        expect(retained.revision).not.toBe(prefix.revision)
+        expect(retained.sequence).toBe(2)
+        expect((await first.ctx.sessionPersistence.readFrom(header.id, 0)).events).toHaveLength(6)
+        expect((await first.ctx.sessionPersistence.getPersistencePrefix(header.id, -1)).sequence).toBe(-1)
+        await expect(first.ctx.sessionPersistence.getPersistencePrefix(header.id, 6)).rejects.toThrow(/not retained/)
+        await expect(first.ctx.sessionPersistence.getPersistencePrefix(header.id, -2)).rejects.toThrow(/safe integer/)
+      } finally { await first.fiber.dispose(); await fix.cleanup() }
+    })
+
+    it('captures durable checkpoint references without repair and preserves them across reopen', async () => {
+      const fix = await makeFixture()
+      const first = await freshCtx(fix)
+      const header = meta('checkpoint-reference', WORK)
+      try {
+        await first.ctx.sessionPersistence.create(header)
+        await first.ctx.sessionPersistence.append(header.id, oneTurnLog())
+        const reference = await first.ctx.sessionPersistence.getPersistenceReference(header.id, 5)
+        expect(reference.sequence).toBe(5)
+        expect(reference.header).toEqual(header)
+        await expect(first.ctx.sessionPersistence.getPersistenceReference(header.id, 4)).rejects.toThrow(/cursor moved/)
+        await first.fiber.dispose()
+        const second = await freshCtx(fix)
+        try {
+          expect(await second.ctx.sessionPersistence.getPersistenceReference(header.id, 5)).toEqual(reference)
+        } finally { await second.fiber.dispose() }
+        if (fix.corruptTail !== undefined) {
+          await fix.corruptTail(header.id, WORK)
+          const torn = await freshCtx(fix)
+          try {
+            await expect(torn.ctx.sessionPersistence.getPersistenceReference(header.id, 5)).rejects.toThrow(/complete physical prefix/)
+          } finally { await torn.fiber.dispose() }
+        }
+      } finally { await first.fiber.dispose(); await fix.cleanup() }
+    })
+
     /** Mount SessionStore + a backend instance on a fresh context over the fixture's storage. */
     async function freshCtx(fix: CoordinatorFixture): Promise<{ ctx: Context; fiber: Fiber }> {
       const ctx = new Context()

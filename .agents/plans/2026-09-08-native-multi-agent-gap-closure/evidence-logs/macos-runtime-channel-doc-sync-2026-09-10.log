@@ -1,0 +1,143 @@
+=== doc-sync-final.log ===
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 28 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+run-gates: PASS markdown links (10.00s)
+run-gates: start type equivalence
+run-gates: PASS type equivalence (11.96s)
+run-gates: start cordis catalog
+run-gates: PASS doc-typecheck (29.32s)
+run-gates: start verify-mermaid
+run-gates: PASS documentation build (38.06s)
+run-gates: start scoped events
+run-gates: PASS doc graphs (40.15s)
+run-gates: start translation pairing
+run-gates: PASS verify-mermaid (12.07s)
+run-gates: start markdown wrap
+
+== FAILED markdown wrap (10.03s) ==
+command: pnpm run verify-md-wrap
+outcome: exit 1
+$ tsx scripts/verify-md-wrap.ts
+verify-md-wrap: hard-wrapped prose paragraphs found (write one physical line per paragraph):
+  packages/team/team-workspace-recovery/README.md:17  Durable `release-requested` events trigger a coalesced, single-flight drive even…
+  packages/team/team-workspace-recovery/README.zh.md:17  即使未配置 pulse，持久的 `release-requested` 事件也会触发合并后的 single-flight drive。每轮遵守已配置的 Team…
+  packages/team/team-run/README.md:9  The service is not an Agent loop. `@clocky/clocky-team-agent-client` delivers th…
+  packages/team/team-run/README.md:43  `listDefaultWorkerTasks()` returns the compact phase of every non-workflow task …
+  packages/team/team-run/README.zh.md:9  该 service 不是 Agent loop。`@clocky/clocky-team-agent-client`会将 human Envelope 投递到 …
+  packages/team/team-run/README.zh.md:43  `listDefaultWorkerTasks()`会返回通过该 coordinator authority 准入的每个非 workflow task 的紧凑 …
+  packages/team/team-link-websocket-hub/README.md:19  `post` requires a nonempty opaque `idempotencyKey` beside its cursor and draft. …
+  packages/team/team-link-websocket-hub/README.zh.md:19  `post`要求在 cursor 和 draft 之外提供非空、不透明的 `idempotencyKey`。Hub 会将 sender/key pair 与已接…
+  packages/team/team-link-local/README.md:25  The first pending-delivery scan uses the channel's durable `replayWatermark` whe…
+  packages/team/team-link-local/README.zh.md:25  首个 pending-delivery scan 会在 provider 提供时使用 channel 的 durable `replayWatermark`。这…
+  packages/team/team-closure-driver/README.md:9  `backend` names the paired Hub bridge; `maxTeamsPerDrive`, `pageSize`, `disposal…
+  packages/team/team-closure-driver/README.zh.md:9  `backend`指定配对的 Hub bridge；`maxTeamsPerDrive`、`pageSize`、`disposalTimeoutMs`和`obs…
+  packages/team/team-activation-recovery/README.md:15  `provider`, `profile`, and `hostId` are required non-empty values without surrou…
+  packages/team/team-activation-recovery/README.zh.md:15  `provider`、`profile`和 `hostId`均为必填，且必须是没有首尾空白的非空值。`kind`默认为 `sdk-local-cold-repl…
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start client catalog
+run-gates: PASS client catalog (4.03s)
+run-gates: start export jsdoc
+run-gates: PASS cordis catalog (34.21s)
+run-gates: start tool catalog
+run-gates: PASS scoped events (21.16s)
+run-gates: start config catalog
+
+== FAILED translation pairing (20.26s) ==
+command: pnpm run verify-translation-pairing
+outcome: exit 1
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md: out of sync — content no longer matches the pair's last confirmed-consistent state in .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.i18n.yaml (bring the other side along, then re-record with --write)
+  .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/capability-seams.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/capability-seams.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/config-catalog.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/config-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/config-catalog.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/config-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/event-producer-consumer.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/event-producer-consumer.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/event-producer-consumer.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/event-producer-consumer.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/persistence-catalog.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/persistence-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/subagent.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/subagent.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/subagent.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/subagent.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/team.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/team.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/team.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/team.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/tool-catalog.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/tool-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/core/team-link/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team-link/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/core/team-link/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team-link/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/core/team/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/core/team/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/client/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/client/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/client/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/client/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/protocol/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/protocol/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/protocol/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/protocol/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/server/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/server/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/sdk/server/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/sdk/server/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-channel-direct/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-channel-direct/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-channel-direct/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-channel-direct/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-hub/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-hub/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-local/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-local/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-local/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-local/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-websocket-hub/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-websocket-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-websocket-hub/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-websocket-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-websocket/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-websocket/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-link-websocket/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-link-websocket/README.i18n.yaml (bring the other side along, then re-record with --write)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start persistence catalog
+run-gates: PASS tool catalog (4.63s)
+run-gates: start public repository links
+
+== FAILED config catalog (2.69s) ==
+command: pnpm run verify-config-catalog
+outcome: exit 1
+$ tsx scripts/gen-config-catalog.ts --check
+gen-config-catalog: docs/config-catalog.md is stale. Run `pnpm run gen-config-catalog` and commit docs/config-catalog.md.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start doc refs
+run-gates: PASS export jsdoc (7.06s)
+run-gates: start package paths
+
+== FAILED persistence catalog (2.38s) ==
+command: pnpm run verify-persistence-catalog
+outcome: exit 1
+$ tsx scripts/gen-persistence-catalog.ts --check
+gen-persistence-catalog: docs/persistence-catalog.md stale. Run `pnpm run gen-persistence-catalog` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start config source ownership
+run-gates: PASS doc refs (1.86s)
+run-gates: start package README model experience
+run-gates: PASS package paths (1.62s)
+run-gates: start agent note classification
+run-gates: PASS config source ownership (1.53s)
+run-gates: start agent note format
+run-gates: PASS public repository links (3.67s)
+run-gates: start archived agent notes
+run-gates: PASS agent note classification (0.84s)
+run-gates: start skill invocation metadata
+run-gates: PASS agent note format (0.93s)
+run-gates: start translation prompt
+run-gates: PASS archived agent notes (0.96s)
+run-gates: start doc budgets
+run-gates: PASS skill invocation metadata (0.89s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.87s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.93s)
+run-gates: PASS package README model experience (4.04s)
+run-gates: PASS package README limitations (3.90s)
+run-gates: PASS documentation site checks (6.39s)
+
+run-gates: 24 passed, 4 failed, 0 skipped in 72.24s.
+run-gates: unsuccessful gates:
+  - FAILED translation pairing (20.26s, exit 1)
+    pnpm run verify-translation-pairing
+  - FAILED markdown wrap (10.03s, exit 1)
+    pnpm run verify-md-wrap
+  - FAILED config catalog (2.69s, exit 1)
+    pnpm run verify-config-catalog
+  - FAILED persistence catalog (2.38s, exit 1)
+    pnpm run verify-persistence-catalog
+[ELIFECYCLE] Command failed with exit code 1.

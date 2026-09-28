@@ -18,7 +18,7 @@ const CONDITION_PATH = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*$/u
  * durable task sequence after a retry or restart.
  * @param plan - parsed JSON workflow plan.
  * @returns task templates in deterministic dependency order.
- * @throws when the plan contains an invalid graph, bound, extension reference, or result projection.
+ * @throws {Error} when the plan contains an invalid graph, bound, extension reference, or result projection.
  */
 export function validateTeamWorkflowPlan(plan: TeamWorkflowPlan): readonly TeamWorkflowTaskTemplate[] {
   requireText(plan.name, 'workflow plan name')

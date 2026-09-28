@@ -1,0 +1,154 @@
+=== native-coverage.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+      Coverage enabled with v8
+
+·················
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  17:30:53
+   Duration  584ms (transform 282ms, setup 304ms, import 44ms, tests 253ms, environment 0ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+-------------------|---------|----------|---------|---------|-------------------
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 100% ( 175/175 )
+Branches     : 100% ( 125/125 )
+Functions    : 100% ( 38/38 )
+Lines        : 100% ( 146/146 )
+================================================================================
+
+=== source-resolution.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:30:52
+   Duration  593ms (transform 184ms, setup 137ms, import 299ms, tests 52ms, environment 0ms)
+
+
+=== claim-race-before.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+--------------------------------------x------------------------------------------
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/client.spec.ts > Team Agent Client > retires an in-flight channel claim without failing disposal and replays it through the next Link
+AssertionError: promise rejected "AggregateError: Team Agent Client disposa… { errors: [ TeamError: … { …(2) } ] }" instead of resolving
+ ❯ packages/team/team-agent-client/tests/client.spec.ts:2329:25
+    2327|     const closing = delivery.close()
+    2328|     proceed.resolve(undefined)
+    2329|     await expect(closing).resolves.toBeUndefined()
+       |                         ^
+    2330|     expect(acceptanceCount(receiver.agent.session.events, envelope.id)…
+    2331|     const replay = new TeamAgentClientPlugin.FixedBindingTeamAgentLink…
+
+Caused by: AggregateError: Team Agent Client disposal failed
+ ❯ packages/team/team-agent-client/src/index.ts:1908:38
+ ❯ withTimeout packages/team/team-agent-client/src/index.ts:2681:12
+ ❯ FixedBindingTeamAgentLinkDelivery.dispose packages/team/team-agent-client/src/index.ts:1912:5
+ ❯ packages/team/team-agent-client/tests/client.spec.ts:2329:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { errors: [ { stack: 'TeamError: Team actor proof is invalid or revoked\n    at Proxy.requireActivationActorProof (/Volumes/projects-mac/deepseek-harness/packages/core/team/src/runtime.ts:733:13)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at Proxy.requireCurrentActivationActorBinding (/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:10851:25)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at Proxy.resolveChannelDeliveryClaimAuthority (/Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:11951:26)\n    at Object.apply (/Volumes/projects-mac/deepseek-harness/vendor/cordis/src/utils.ts:160:40)\n    at /Volumes/projects-mac/deepseek-harness/packages/team/team-hub/src/index.ts:8446:32', message: 'Team actor proof is invalid or revoked', code: 'TEAM_ACTOR_PROOF_INVALID', details: undefined, name: 'TeamError', constructor: 'Function<TeamError>', toString: 'Function<toString>' } ] }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 80 skipped (81)
+   Start at  17:41:31
+   Duration  1.33s (transform 689ms, setup 137ms, import 727ms, tests 351ms, environment 0ms)
+
+
+=== claim-race-matrix.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+--------------------------------------··------------------------------------------
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 80 skipped (82)
+   Start at  17:43:01
+   Duration  1.43s (transform 690ms, setup 139ms, import 732ms, tests 448ms, environment 0ms)
+
+
+=== fixture-followup.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+··································································································································································································································································································
+
+ Test Files  6 passed (6)
+      Tests  290 passed (290)
+   Start at  17:39:33
+   Duration  27.09s (transform 1.93s, setup 619ms, import 2.03s, tests 28.69s, environment 0ms)
+
+
+=== scheduler-followup.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+················
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  17:52:23
+   Duration  4.70s (transform 498ms, setup 138ms, import 491ms, tests 3.97s, environment 0ms)
+
+
+=== source-lint-final.log ===
+
+=== changed-lint.log ===
+
+=== cordis-config.log ===
+$ tsx scripts/verify-cordis-config.ts
+verify-cordis-config: 164 config files passed.
+
+=== node-next.log ===
+$ tsx scripts/verify-node-next-types.ts
+verify-node-next-types: 269 workspace package declaration API(s) compile under NodeNext.
+
+=== publint-subprocess.log ===
+Running publint v0.3.21 for @clocky/clocky-subprocess-local...
+Packing files with `pnpm pack`...
+Linting...
+Warnings:
+1. pkg.exports["./src/*"] is ./src/* but does not match any files.
+
+=== publint-acp.log ===
+Running publint v0.3.21 for @clocky/clocky-agent-runtime-acp...
+Packing files with `pnpm pack`...
+Linting...
+Warnings:
+1. pkg.exports["./src/*"] is ./src/* but does not match any files.
+
+=== artifact-native.log ===
+{"platform":"darwin","architecture":"arm64","exactIdentity":true,"rootObserved":true,"staleIdentityRejected":true}

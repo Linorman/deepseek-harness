@@ -1,0 +1,35 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests/child-reservation-properties.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 1 property test passed; 100 generated cases; 0 failed.
+  Fixed seed: 20260912.
+
+Model coverage:
+  The model generates create, create-retry, bind, stall, cancel, child-complete,
+  child-fail, and settle actions. It asserts one immutable child identity,
+  no child identity after cancellation before creation, parent concurrency usage
+  of two while creating/active/stalled/settling, zero usage after terminal
+  settlement, and schema/checkpoint round-trip equality after every step.
+  A future failure includes fast-check's seed and counterexample in the thrown
+  error.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-hub/tests/child-reservation-properties.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-hub/tests/child-reservation-properties.spec.ts f75c059d6a1772b4da6db1eb9cc8ed8d81f0e1f1e79a737d840970fa8ac26a4d
+
+Boundary:
+  This is a pure child-reservation model companion to the live JSON/SQLite
+  reservation tests. It does not close T-08's live cross-backend interleavings,
+  ranking restart/no-provider matrix, or minimized counterexample artifact.
+
+Combined reservation check:
+  pnpm exec vitest run packages/team/team-hub/tests/child-reservation-properties.spec.ts packages/team/team-hub/tests/task-delegation.spec.ts --reporter=dot --maxWorkers=1
+  Result: 2 test files passed; 6 tests passed; 0 failed; 0 skipped.

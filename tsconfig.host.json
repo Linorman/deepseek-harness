@@ -107,6 +107,10 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
+    { "path": "./packages/simulation/simulation" },
+    { "path": "./packages/simulation/simulation-local" },
+    { "path": "./packages/simulation/simulation-team" },
+    { "path": "./packages/simulation/tool-simulation" },
     { "path": "./packages/agent-runtime/activation-supervisor-http" },
     { "path": "./packages/core/activation-supervisor" },
     { "path": "./packages/team/team-human-client" },

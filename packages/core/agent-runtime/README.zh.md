@@ -14,6 +14,8 @@
 
 [`clocky-agent-runtime-in-process`](../../agent-runtime/agent-runtime-in-process/README.zh.md)提供第一个本地 provider。它会在 Agent 发布前物化 fresh 和 fork Session header 及其 opaque Team／Participant provenance、保留 fork 谱系、在 cold resume 时验证 provenance，并让已接收的 handle 独立于 provider reload。
 
+`AgentRuntime.activate(request, expectedProvider)` 可固定一个精确的已注册实现。实现被替换时，在调用任何提供方之前以 `AGENT_RUNTIME_PROVIDER_CHANGED` 拒绝。
+
 ## 模型体验
 
 ### 激活注册表

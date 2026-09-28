@@ -28,6 +28,8 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
   start?: (request: AgentRuntimeActivationRequest) => Promise<void>
   dispose?: () => Promise<void>
   grantLimit?: number
+  rules?: import('@clocky/clocky-team').JsonObject
+  statusSyncAttempts?: number
 } = {}) {
   await mkdir(join(process.cwd(), '.tmp'), { recursive: true })
   const root = await mkdtemp(join(process.cwd(), '.tmp/live-capacity-'))
@@ -56,10 +58,11 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
       }
     },
   })
-  const controller = await ctx.plugin(Controller)
+  const controller = await ctx.plugin(Controller,
+    hooks.statusSyncAttempts === undefined ? {} : { statusSyncAttempts: hooks.statusSyncAttempts })
   cleanups.push(async () => { await controller.dispose() })
   const team = await createTestRootTeam(ctx, { goal: { objective: 'Bound startup capacity', budgets: {} },
-    rules: {}, budgets: ceiling === undefined ? {} : { maxLiveActivations: ceiling },
+    rules: hooks.rules ?? {}, budgets: ceiling === undefined ? {} : { maxLiveActivations: ceiling },
     ...hooks.grantLimit === undefined ? {} : { authorityGrant: {
       operations: ['register', 'invite', 'activate', 'close'], workspaceModes: ['shared'], readScopes: [], writeScopes: [],
       budgets: { maxLiveActivations: hooks.grantLimit },
@@ -92,6 +95,43 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
 }
 
 describe('live Activation startup capacity', () => {
+  it('quiesces a committed reserved activation when domain binding rejects it', async () => {
+    const h = await setup('sqlite', 1, { rules: { activationLifecycleOwner: 'domain' } })
+    const receipt = coordinationReceipt(() => true)
+    const bind = vi.fn<() => Promise<void>>().mockRejectedValueOnce(new Error('Domain rejected binding'))
+    const coordinated = { ...receipt, bind }
+    h.ctx.teamActivations.registerLifecycleOwner({ name: 'domain', reserve: async () => coordinated,
+      recover: async () => coordinated, recoverReservation: async () => coordinated })
+    const member = await h.member('worker')
+    await expect(h.activate(member)).rejects.toThrow('Domain rejected binding')
+    expect(h.starts).toHaveLength(1)
+    expect(h.stops).toHaveLength(1)
+    expect(await h.capacity()).toBe(0)
+    const state = await h.ctx.teams.getTeam({ teamId: h.teamId })
+    expect(state.activations[0]?.quiescedAt).toBeDefined()
+    expect(receipt.release).toHaveBeenCalledOnce()
+    await failFixtureTeam(h)
+    await recoverFixtureClosure(h)
+    expect((await h.ctx.teams.getTeam({ teamId: h.teamId })).team.stallReason).toBeUndefined()
+    expect(h.stops).toHaveLength(1)
+  })
+
+  it.each(['TEAM_CURSOR_CONFLICT', 'TEAM_POLICY_DENIED'] as const)('retains capacity when every unpublished release fails with %s', async (code) => {
+    const h = await setup('json', 1, { statusSyncAttempts: 2 })
+    const member = await h.member('worker')
+    vi.spyOn(h.ctx.teams, 'bindActivation').mockRejectedValueOnce(new Error('Binding failed'))
+    const { TeamError } = await import('@clocky/clocky-team')
+    const fault = vi.spyOn(h.ctx.teams, 'releaseActivationReservation').mockRejectedValue(new TeamError('Release refused', code))
+    await expect(h.activate(member)).rejects.toBeInstanceOf(AggregateError)
+    expect(await h.capacity()).toBe(1)
+    expect(h.stops).toHaveLength(1)
+    expect(fault.mock.calls.length).toBe(code === 'TEAM_CURSOR_CONFLICT' ? 2 : 1)
+    fault.mockRestore()
+    await h.ctx.teamActivations.close()
+    expect(await h.capacity()).toBe(0)
+    expect(h.stops).toHaveLength(1)
+  })
+
   it.each(['reservation-response', 'missing-provider'] as const)('retries failed capacity release when startup never ran (%s)', async (failure) => {
     const h = await setup('json', 1)
     const member = await h.member('worker')
@@ -370,4 +410,103 @@ describe('live Activation startup capacity', () => {
       reservationId: 'forged' as NonNullable<ParticipantSnapshot['activationReservation']>['id'],
       sessionId: SessionId('forged-session'), provider: 'capacity-provider' })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
   })
+})
+
+async function failFixtureTeam(h: Awaited<ReturnType<typeof setup>>) {
+  const actor = {} as TeamSystemClosureProof
+  const unregister = h.ctx.teams.registerSystemClosureProofSource({ name: 'team-run',
+    resolveClosureProof: value => value === actor ? { kind: 'team-run-create-failure', teamId: h.teamId } : undefined })
+  try {
+    await h.ctx.teams.failTeam({ actor, teamId: h.teamId, expectedCursor: (await h.ctx.teams.getTeam({ teamId: h.teamId })).team.cursor,
+      idempotencyKey: teamClosureIdempotencyKeySchema.parse('coordination-failure'), reason: { code: 'FAILED', message: 'Stop startup.' } })
+  } finally { unregister() }
+}
+async function recoverFixtureClosure(h: Awaited<ReturnType<typeof setup>>) {
+  const state = await h.ctx.teams.getTeam({ teamId: h.teamId })
+  const closure = state.team.closure
+  if (closure === undefined) throw new Error('fixture closure missing')
+  const actor = {} as TeamSystemClosureDriverProof
+  const scope: TeamSystemClosureDriverScope = { kind: 'closure-recover-fail', teamId: h.teamId,
+    expectedCursor: state.team.cursor, closureIdempotencyKey: closure.idempotencyKey, closureRequestedAt: closure.requestedAt }
+  const unregister = h.ctx.teams.registerSystemClosureDriverProofSource({ name: 'team-closure-driver',
+    resolveClosureDriverProof: value => value === actor ? scope : undefined })
+  try { await h.ctx.teamActivations.recoverClosure({ actor, teamId: h.teamId, expectedCursor: state.team.cursor }) }
+  finally { unregister() }
+}
+function coordinationReceipt(confirmed: () => boolean) {
+  return { get localTerminationConfirmed() { return confirmed() }, bind: () => Promise.resolve(),
+    revoke: vi.fn(() => Promise.resolve()), release: vi.fn(() => Promise.resolve()) }
+}
+
+it('keeps an unpublished domain startup reserved until its owner independently confirms termination', async () => {
+  let confirmed = false
+  const h = await setup('sqlite', 1, { rules: { activationLifecycleOwner: 'domain' }, start: () => Promise.reject(new Error('unknown startup')) })
+  const receipt = coordinationReceipt(() => confirmed)
+  h.ctx.teamActivations.registerLifecycleOwner({ name: 'domain', reserve: () => Promise.resolve(receipt),
+    recover: () => Promise.resolve(receipt), recoverReservation: () => Promise.resolve(receipt) })
+  const member = await h.member('worker')
+  await expect(h.activate(member)).rejects.toThrow('unknown startup')
+  const reservation = (await h.ctx.teams.getTeam({ teamId: h.teamId })).participants[0]?.activationReservation
+  if (reservation === undefined) throw new Error('fixture reservation missing')
+  await expect(h.ctx.teamActivations.recoverCoordinatedReservation({ teamId: h.teamId, participantId: member.id,
+    reservationId: reservation.id })).rejects.toThrow(/no startup termination proof/)
+  expect(await h.capacity()).toBe(1)
+  await failFixtureTeam(h)
+  await recoverFixtureClosure(h)
+  expect((await h.ctx.teams.getTeam({ teamId: h.teamId })).team.stallReason?.code).toBe('ACTIVATION_STARTUP_UNCONFIRMED')
+  confirmed = true
+  await recoverFixtureClosure(h)
+  expect(await h.capacity()).toBe(0)
+  expect(receipt.release).toHaveBeenCalledTimes(1)
+})
+
+it('drains retained unpublished handles through the owner disposer without returning capacity early', async () => {
+  let fail = true
+  const h = await setup('json', 1, { rules: { activationLifecycleOwner: 'domain' },
+    dispose: () => fail ? Promise.reject(new Error('termination uncertain')) : Promise.resolve() })
+  const receipt = coordinationReceipt(() => false)
+  const unregister = h.ctx.teamActivations.registerLifecycleOwner({ name: 'domain', reserve: () => Promise.resolve(receipt),
+    recover: () => Promise.resolve(receipt), recoverReservation: () => Promise.resolve(receipt) })
+  const member = await h.member('worker')
+  vi.spyOn(h.ctx.teams, 'bindActivation').mockRejectedValueOnce(new Error('binding failed'))
+  await expect(h.activate(member)).rejects.toBeInstanceOf(AggregateError)
+  expect(await h.capacity()).toBe(1)
+  await expect(unregister()).rejects.toThrow(/cleanup failed/)
+  fail = false
+  await unregister()
+  expect(await h.capacity()).toBe(0)
+  expect(h.stops).toHaveLength(1)
+})
+
+it('retries a locally retained startup during closure recovery and records cleanup failures', async () => {
+  let fail = true
+  const h = await setup('json', 1, { dispose: () => fail ? Promise.reject(new Error('termination uncertain')) : Promise.resolve() })
+  const member = await h.member('worker')
+  vi.spyOn(h.ctx.teams, 'bindActivation').mockRejectedValueOnce(new Error('binding failed'))
+  await expect(h.activate(member)).rejects.toBeInstanceOf(AggregateError)
+  await failFixtureTeam(h)
+  await recoverFixtureClosure(h)
+  expect((await h.ctx.teams.getTeam({ teamId: h.teamId })).team.stallReason?.code).toBe('ACTIVATION_STARTUP_UNCONFIRMED')
+  fail = false
+  await recoverFixtureClosure(h)
+  expect(await h.capacity()).toBe(0)
+})
+
+it('refuses coordinated recovery on unmanaged Teams and rejects recovery while a start is owned', async () => {
+  const entered = Promise.withResolvers<undefined>()
+  const finish = Promise.withResolvers<undefined>()
+  const h = await setup('json', 1, { start: async () => { entered.resolve(undefined); await finish.promise } })
+  cleanups.push(async () => { finish.resolve(undefined) })
+  const member = await h.member('worker')
+  const starting = h.activate(member)
+  await entered.promise
+  const reservation = (await h.ctx.teams.getTeam({ teamId: h.teamId })).participants[0]?.activationReservation
+  if (reservation === undefined) throw new Error('fixture reservation missing')
+  await expect(h.ctx.teamActivations.recoverCoordinatedReservation({ teamId: h.teamId, participantId: member.id,
+    reservationId: reservation.id })).rejects.toThrow(/conflicts with an owned activation/)
+  finish.resolve(undefined)
+  const lease = await starting
+  await lease.dispose()
+  await expect(h.ctx.teamActivations.recoverCoordinatedLocal({ teamId: h.teamId, participantId: member.id,
+    activationId: lease.binding.activation.id })).rejects.toThrow(/no local termination proof/)
 })

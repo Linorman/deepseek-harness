@@ -299,6 +299,12 @@ flowchart TD
     pkg_tool_pwsh["tool-pwsh"]
     pkg_tool_pwsh_persistent["tool-pwsh-persistent"]
   end
+  subgraph group_simulation["packages/simulation"]
+    pkg_simulation["simulation"]
+    pkg_simulation_local["simulation-local"]
+    pkg_simulation_team["simulation-team"]
+    pkg_tool_simulation["tool-simulation"]
+  end
   subgraph group_storage["packages/storage"]
     pkg_storage["storage"]
     pkg_storage_domain["storage-domain"]
@@ -656,6 +662,10 @@ flowchart TD
   pkg_shell --> pkg_sandbox
   pkg_shell --> pkg_settings
   pkg_shell --> pkg_subprocess
+  pkg_simulation --> pkg_brand
+  pkg_simulation --> pkg_invariants
+  pkg_simulation --> pkg_session
+  pkg_simulation --> pkg_team
   pkg_team_channel_basic --> pkg_invariants
   pkg_team_channel_basic --> pkg_team
   pkg_team_channel_direct --> pkg_attachment
@@ -797,6 +807,13 @@ flowchart TD
   pkg_pwsh_local --> pkg_shell
   pkg_pwsh_local --> pkg_subprocess
   pkg_pwsh_local --> pkg_timeout
+  pkg_simulation_local --> pkg_invariants
+  pkg_simulation_local --> pkg_session
+  pkg_simulation_local --> pkg_simulation
+  pkg_simulation_local --> pkg_storage
+  pkg_simulation_local --> pkg_storage_json
+  pkg_simulation_local --> pkg_storage_sqlite
+  pkg_simulation_local --> pkg_team
   pkg_command_team_goal --> pkg_agent
   pkg_command_team_goal --> pkg_commands
   pkg_command_team_goal --> pkg_invariants
@@ -1108,6 +1125,19 @@ flowchart TD
   pkg_tool_pwsh_persistent --> pkg_terminal
   pkg_tool_pwsh_persistent --> pkg_timeout
   pkg_tool_pwsh_persistent --> pkg_tools
+  pkg_simulation_team --> pkg_agent
+  pkg_simulation_team --> pkg_agent_runtime
+  pkg_simulation_team --> pkg_agent_runtime_in_process
+  pkg_simulation_team --> pkg_compaction
+  pkg_simulation_team --> pkg_invariants
+  pkg_simulation_team --> pkg_llm
+  pkg_simulation_team --> pkg_session
+  pkg_simulation_team --> pkg_session_persistence
+  pkg_simulation_team --> pkg_simulation
+  pkg_simulation_team --> pkg_team
+  pkg_simulation_team --> pkg_team_activation_controller
+  pkg_simulation_team --> pkg_team_agent_client
+  pkg_simulation_team --> pkg_tools
   pkg_team_activation_recovery --> pkg_invariants
   pkg_team_activation_recovery --> pkg_team
   pkg_team_activation_recovery --> pkg_team_activation_controller
@@ -1259,6 +1289,11 @@ flowchart TD
   pkg_tool_pwsh --> pkg_system_prompt
   pkg_tool_pwsh --> pkg_tools
   pkg_tool_pwsh --> pkg_user_approval
+  pkg_tool_simulation --> pkg_invariants
+  pkg_tool_simulation --> pkg_session
+  pkg_tool_simulation --> pkg_simulation
+  pkg_tool_simulation --> pkg_simulation_team
+  pkg_tool_simulation --> pkg_tools
   pkg_team_run --> pkg_agent
   pkg_team_run --> pkg_agent_default_model
   pkg_team_run --> pkg_invariants
@@ -1763,6 +1798,7 @@ flowchart TD
 | [`session-telemetry`](../packages/session/session-telemetry) | `session` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session) |
 | [`session-title`](../packages/session/session-title) | `session` | [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection) |
 | [`shell`](../packages/shell/shell) | `shell` | [`invariants`](../packages/runtime-diagnostics/invariants), [`sandbox`](../packages/sandbox/sandbox), [`settings`](../packages/settings/settings), [`subprocess`](../packages/subprocess/subprocess) |
+| [`simulation`](../packages/simulation/simulation) | `simulation` | [`brand`](../packages/util/brand), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`team`](../packages/core/team) |
 | [`team-channel-basic`](../packages/team/team-channel-basic) | `team` | [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team) |
 | [`team-channel-direct`](../packages/team/team-channel-direct) | `team` | [`attachment`](../packages/attachment/attachment), [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team) |
 | [`team-channel-task-assignment`](../packages/team/team-channel-task-assignment) | `team` | [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team) |
@@ -1795,6 +1831,7 @@ flowchart TD
 | [`session-title-llm`](../packages/session/session-title-llm) | `session` | [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-title`](../packages/session/session-title), [`timeout`](../packages/util/timeout) |
 | [`bash-local`](../packages/shell/bash-local) | `shell` | [`invariants`](../packages/runtime-diagnostics/invariants), [`settings`](../packages/settings/settings), [`shell`](../packages/shell/shell), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
 | [`pwsh-local`](../packages/shell/pwsh-local) | `shell` | [`invariants`](../packages/runtime-diagnostics/invariants), [`settings`](../packages/settings/settings), [`shell`](../packages/shell/shell), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
+| [`simulation-local`](../packages/simulation/simulation-local) | `simulation` | [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`simulation`](../packages/simulation/simulation), [`storage`](../packages/storage/storage), [`storage-json`](../packages/storage/storage-json), [`storage-sqlite`](../packages/storage/storage-sqlite), [`team`](../packages/core/team) |
 | [`command-team-goal`](../packages/team/command-team-goal) | `team` | [`agent`](../packages/core/agent), [`commands`](../packages/interaction/commands), [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team) |
 | [`team-activation-controller`](../packages/team/team-activation-controller) | `team` | [`activation-supervisor`](../packages/core/activation-supervisor), [`agent`](../packages/core/agent), [`agent-runtime`](../packages/core/agent-runtime), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`team`](../packages/core/team), [`team-workspace`](../packages/core/team-workspace) |
 | [`team-agent-client`](../packages/team/team-agent-client) | `team` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`team`](../packages/core/team), [`team-artifact`](../packages/core/team-artifact), [`team-channel-basic`](../packages/team/team-channel-basic), [`team-channel-direct`](../packages/team/team-channel-direct), [`team-channel-task-assignment`](../packages/team/team-channel-task-assignment), [`team-channel-workflow`](../packages/team/team-channel-workflow), [`team-link`](../packages/core/team-link), [`team-workspace`](../packages/core/team-workspace) |
@@ -1847,6 +1884,7 @@ flowchart TD
 | [`shell-env`](../packages/shell/shell-env) | `shell` | [`home-paths`](../packages/util/home-paths), [`invariants`](../packages/runtime-diagnostics/invariants), [`session-persistence`](../packages/session/session-persistence), [`shell`](../packages/shell/shell), [`tools`](../packages/core/tools) |
 | [`tool-bash-persistent`](../packages/shell/tool-bash-persistent) | `shell` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`terminal`](../packages/terminal/terminal), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
 | [`tool-pwsh-persistent`](../packages/shell/tool-pwsh-persistent) | `shell` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`terminal`](../packages/terminal/terminal), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
+| [`simulation-team`](../packages/simulation/simulation-team) | `simulation` | [`agent`](../packages/core/agent), [`agent-runtime`](../packages/core/agent-runtime), [`agent-runtime-in-process`](../packages/agent-runtime/agent-runtime-in-process), [`compaction`](../packages/compaction/compaction), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-persistence`](../packages/session/session-persistence), [`simulation`](../packages/simulation/simulation), [`team`](../packages/core/team), [`team-activation-controller`](../packages/team/team-activation-controller), [`team-agent-client`](../packages/team/team-agent-client), [`tools`](../packages/core/tools) |
 | [`team-activation-recovery`](../packages/team/team-activation-recovery) | `team` | [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team), [`team-activation-controller`](../packages/team/team-activation-controller) |
 | [`team-closure-driver`](../packages/team/team-closure-driver) | `team` | [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`team`](../packages/core/team), [`team-activation-controller`](../packages/team/team-activation-controller) |
 | [`team-placement-default`](../packages/team/team-placement-default) | `team` | [`agent-runtime`](../packages/core/agent-runtime), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`team`](../packages/core/team), [`team-activation-controller`](../packages/team/team-activation-controller), [`team-workspace`](../packages/core/team-workspace) |
@@ -1869,6 +1907,7 @@ flowchart TD
 | [`tool-cordis`](../packages/extensions/tool-cordis) | `extensions` | [`agent`](../packages/core/agent), [`cordis-host-runner`](../packages/extensions/cordis-host-runner), [`invariants`](../packages/runtime-diagnostics/invariants), [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools) |
 | [`tool-bash`](../packages/shell/tool-bash) | `shell` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`sandbox`](../packages/sandbox/sandbox), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`shell`](../packages/shell/shell), [`shell-env`](../packages/shell/shell-env), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
 | [`tool-pwsh`](../packages/shell/tool-pwsh) | `shell` | [`agent`](../packages/core/agent), [`invariants`](../packages/runtime-diagnostics/invariants), [`jobs`](../packages/jobs/jobs), [`llm`](../packages/llm/llm), [`sandbox`](../packages/sandbox/sandbox), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`shell`](../packages/shell/shell), [`shell-env`](../packages/shell/shell-env), [`system-prompt`](../packages/core/system-prompt), [`tools`](../packages/core/tools), [`user-approval`](../packages/interaction/user-approval) |
+| [`tool-simulation`](../packages/simulation/tool-simulation) | `simulation` | [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`simulation`](../packages/simulation/simulation), [`simulation-team`](../packages/simulation/simulation-team), [`tools`](../packages/core/tools) |
 | [`team-run`](../packages/team/team-run) | `team` | [`agent`](../packages/core/agent), [`agent-default-model`](../packages/core/agent-default-model), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt), [`team`](../packages/core/team), [`team-activation-controller`](../packages/team/team-activation-controller), [`team-channel-admission`](../packages/team/team-channel-admission), [`team-channel-basic`](../packages/team/team-channel-basic), [`team-channel-direct`](../packages/team/team-channel-direct), [`team-channel-workflow`](../packages/team/team-channel-workflow), [`team-placement-default`](../packages/team/team-placement-default) |
 | [`team-scheduler-dag`](../packages/team/team-scheduler-dag) | `team` | [`invariants`](../packages/runtime-diagnostics/invariants), [`team`](../packages/core/team), [`team-channel-admission`](../packages/team/team-channel-admission), [`team-channel-basic`](../packages/team/team-channel-basic), [`team-channel-task-assignment`](../packages/team/team-channel-task-assignment), [`team-placement-default`](../packages/team/team-placement-default), [`team-workspace`](../packages/core/team-workspace) |
 | [`compat-subagent-fork-in-process`](../packages/compat/subagent-fork-in-process) | `compat` | [`agent`](../packages/core/agent), [`compat-subagent`](../packages/compat/subagent), [`compat-subagent-in-process-driver`](../packages/compat/subagent-in-process-driver), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session) |

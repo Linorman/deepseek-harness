@@ -118,6 +118,20 @@ class MemoryPersistence extends SessionPersistence implements PersistenceBackend
       .then(loaded => ({ meta: loaded.meta, events: [...loaded.events] }))
   }
 
+  override isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
+    return this.coordinator.isUnmaterialized(id, signal)
+  }
+
+  override getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal):
+  ReturnType<PersistenceCoordinator['getPersistencePrefix']> {
+    return this.coordinator.getPersistencePrefix(id, throughSequence, signal)
+  }
+
+  override getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal):
+  ReturnType<PersistenceCoordinator['getPersistenceReference']> {
+    return this.coordinator.getPersistenceReference(id, expectedSequence, signal)
+  }
+
   readFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<{ meta: SessionHeader; events: SessionEvent[] }> {
     return this.coordinator.readFrom(id, fromSeq, signal)
   }
@@ -255,6 +269,21 @@ runPersistenceContract('memory', async () => {
 })
 
 describe('the inherited readRaw default', () => {
+  it('refuses checkpoint claims when a provider inherits unsupported reference methods', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(MemoryPersistence)
+    try {
+      const owner = ctx.sessionPersistence, id = SessionId('unsupported-reference')
+      await expect(SessionPersistence.prototype.isUnmaterialized.call(owner, id)).rejects.toThrow(/does not expose materialization state/)
+      await expect(SessionPersistence.prototype.getPersistenceReference.call(owner, id, -1))
+        .rejects.toThrow(/does not expose checkpoint references/)
+      await expect(SessionPersistence.prototype.getPersistencePrefix.call(owner, id, -1))
+        .rejects.toThrow(/does not expose retained checkpoint prefixes/)
+      expect(await owner.list()).toEqual([])
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('rejects unsupported reads distinctly from absence and honors an aborted signal', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
@@ -1309,6 +1338,33 @@ describe('PersistenceCoordinator observation cancellation', () => {
     }
   })
 
+  it('refuses a checkpoint reference when the physical source changes during collection', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    const backend = new ControlledBackend()
+    const id = SessionId('checkpoint-movement')
+    const events = oneTurnLog()
+    backend.store.set(id, { meta: meta(id), events })
+    let coordinator!: PersistenceCoordinator<never>
+    const fiber = await ctx.plugin(Object.assign((inner: Context) => {
+      coordinator = new PersistenceCoordinator(inner, backend)
+    }, { inject: ['sessions'] }))
+    try {
+      vi.spyOn(backend, 'readStoredRevision').mockImplementationOnce(() => {
+        const changed = { meta: meta(id), events: [...events, { type: 'turn/start' as const, seq: 6, time: 7, data: { turn: 2 } }] }
+        backend.store.set(id, changed)
+        return Promise.resolve(memoryRevision(changed))
+      })
+      await expect(coordinator.getPersistenceReference(id, 5)).rejects.toThrow(/source changed/)
+      const current = await coordinator.getPersistenceReference(id, 6)
+      expect(current.sequence).toBe(6)
+      expect(backend.store.get(id)?.events).toHaveLength(7)
+      expect(backend.repairAttempts).toBe(0)
+      await expect(coordinator.getPersistenceReference(id, -2)).rejects.toThrow(/safe integer/)
+      await expect(coordinator.getPersistenceReference(SessionId('missing-reference'), -1)).rejects.toThrow(/not found/)
+    } finally { await fiber.dispose() }
+  })
+
   it('readFrom via the seek hook: serves the suffix, maps undefined to not-found, and relays hook failures by abort state', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
@@ -1361,7 +1417,7 @@ describe('PersistenceCoordinator observation cancellation', () => {
     }
   })
 
-  it('rejects a cancelled inspect while an in-flight retirement drain is still pending', async () => {
+  it.each(['inspect', 'reference', 'prefix'] as const)('rejects a cancelled %s while an in-flight retirement drain is still pending', async (kind) => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
     const backend = new ControlledBackend()
@@ -1389,7 +1445,9 @@ describe('PersistenceCoordinator observation cancellation', () => {
 
       const controller = new AbortController()
       const reason = new Error('inspect cancelled during retirement')
-      const pending = coordinator.inspect(id, controller.signal)
+      const pending = kind === 'inspect' ? coordinator.inspect(id, controller.signal)
+        : kind === 'reference' ? coordinator.getPersistenceReference(id, 1, controller.signal)
+          : coordinator.getPersistencePrefix(id, 1, controller.signal)
       let observedReason: unknown
       const observed = pending.catch((error: unknown) => { observedReason = error })
 

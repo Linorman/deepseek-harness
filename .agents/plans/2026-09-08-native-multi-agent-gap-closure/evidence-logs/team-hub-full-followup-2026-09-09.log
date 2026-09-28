@@ -1,0 +1,22 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests --reporter=dot --maxWorkers=1
+
+Result:
+  52 test files passed; 791 tests passed; 0 failed; 0 skipped.
+  Duration: 66.42s on macOS source plane.
+  The candidate includes child-reservation model property coverage and the
+  JSON/SQLite create-bind-cancel-child-closure-parent-settlement matrix.
+
+Focused companion checks:
+  pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit
+  Result: exit 0.
+  Targeted oxlint for the changed child-reservation test files: exit 0.
+
+Changed test SHA-256:
+  packages/team/team-hub/tests/child-reservation-properties.spec.ts f75c059d6a1772b4da6db1eb9cc8ed8d81f0e1f1e79a737d840970fa8ac26a4d
+  packages/team/team-hub/tests/task-delegation.spec.ts 95e711b1952dcffc3cd3f06aaba9867246fa5508257d2f71f8a3c754c6f47f43
+
+Boundary:
+  This is a current Hub-directory PASS only. It does not close T-02 coverage,
+  T-03/T-04 multi-host or cross-log parity, T-05 real-model, T-06 browser,
+  T-07 full performance, or O-02 release consumers.

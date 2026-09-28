@@ -1,0 +1,47 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json organization benchmark > retains original debtors across daily role handoffs and conserves delivered inventory 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 12,
+  "completion": "target-complete",
+  "decisions": 36,
+  "departments": 2,
+  "employees": 4,
+  "handoffs": 6,
+  "issued": 12,
+  "managers": 2,
+  "modelCalls": 0,
+  "peakResidents": 2,
+  "pending": 0,
+  "policyCalls": 36,
+  "publications": 0,
+  "replayEqual": true,
+  "reportedTokens": 0,
+  "retainedDebtors": 12,
+  "simulatedDays": 3,
+}
+`;
+
+exports[`sqlite organization benchmark > retains original debtors across daily role handoffs and conserves delivered inventory 1`] = `
+{
+  "acceptedResponsibilitiesPreserved": true,
+  "completed": 12,
+  "completion": "target-complete",
+  "decisions": 36,
+  "departments": 2,
+  "employees": 4,
+  "handoffs": 6,
+  "issued": 12,
+  "managers": 2,
+  "modelCalls": 0,
+  "peakResidents": 2,
+  "pending": 0,
+  "policyCalls": 36,
+  "publications": 0,
+  "replayEqual": true,
+  "reportedTokens": 0,
+  "retainedDebtors": 12,
+  "simulatedDays": 3,
+}
+`;

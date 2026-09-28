@@ -269,7 +269,7 @@ describe('AgentRuntime service definition', () => {
     const runtime = ctx.agentRuntimes as unknown as {
       observeStatus(handle: ActivationHandle, initial: ActivationHandle['activation'], next: ActivationHandle['activation']): void
     }
-    expect(() => runtime.observeStatus(unobserved, unobserved.activation, { ...unobserved.activation, status: 'idle' })).not.toThrow()
+    expect(() => { runtime.observeStatus(unobserved, unobserved.activation, { ...unobserved.activation, status: 'idle' }) }).not.toThrow()
     await fiber.dispose()
     await ctx.fiber.dispose()
   })
@@ -283,4 +283,19 @@ describe('AgentRuntime service definition', () => {
     await fiber.dispose()
     await ctx.fiber.dispose()
   })
+})
+
+it('rejects a replaced implementation before invoking it and accepts an exact provider selection', async () => {
+  const { ctx, fiber } = await setup()
+  try {
+    const selected = provider()
+    const unregister = ctx.agentRuntimes.registerProvider(selected)
+    unregister()
+    const replacementActivate = vi.fn(async () => handle())
+    const replacement = provider({ activate: replacementActivate })
+    ctx.agentRuntimes.registerProvider(replacement)
+    await expect(ctx.agentRuntimes.activate(request(), selected)).rejects.toMatchObject({ code: 'AGENT_RUNTIME_PROVIDER_CHANGED' })
+    expect(replacementActivate).not.toHaveBeenCalled()
+    await expect(ctx.agentRuntimes.activate(request(), replacement)).resolves.toMatchObject({ sessionId: request().sessionId })
+  } finally { await fiber.dispose() }
 })

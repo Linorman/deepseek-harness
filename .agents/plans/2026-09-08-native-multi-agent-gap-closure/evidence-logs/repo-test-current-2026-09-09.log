@@ -1,0 +1,26 @@
+Command:
+  pnpm run test --reporter=json --outputFile=.tmp/repo-test-current.json --maxWorkers=1
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0.
+
+Summary:
+  Test-result files: 1009 total; 1009 passed.
+  Tests: 16139 total, 16023 passed, 0 failed, 116 skipped.
+
+The current candidate's Hub directory is green at 50/50 files and 780/780 tests.
+The extended runtime/channel slice is green at 8/8 files and 196/196 tests.
+ACP bridge/lifecycle, ACP demo, SDK plugin, workspace recovery, tool catalog,
+artifact retention, Typert catalog, and worktree provider slices are green on
+this candidate. The runner returned to the master branch.
+
+Evidence boundary:
+  T-01 is closed by the same-candidate Hub directory and full-repository suites.
+  Coverage, child cross-log kill-point matrix, multi-host, real-model, browser,
+  performance, and release artifact gates remain separate evidence rows.
+
+Targeted follow-up:
+  scheduler.spec.ts, budget-boundaries.spec.ts, composition.spec.ts,
+  core/team runtime.spec.ts, core/team-workspace integration.spec.ts,
+  WebSocket Hub/client, local composition, Agent Client, tool-team, and human
+  outbox slices pass their current focused commands independently.

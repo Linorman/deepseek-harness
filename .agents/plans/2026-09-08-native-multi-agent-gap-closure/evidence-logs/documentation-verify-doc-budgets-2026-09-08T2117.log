@@ -1,0 +1,2 @@
+$ tsx scripts/verify-doc-budgets.ts
+verify-doc-budgets: 9 budgeted docs within ceiling.

@@ -11,12 +11,14 @@ import pytest
 from clocky import Clocky, JsonObject, SdkProtocolError
 
 
-CORPUS = json.loads(
-    (
+CORPUS = [
+    case
+    for name in ("team-channel-view-cases", "simulation-context-cases")
+    for case in json.loads((
         Path(__file__).resolve().parents[3]
-        / "packages/sdk/protocol/tests/fixtures/team-channel-view-cases.json"
-    ).read_text()
-)
+        / f"packages/sdk/protocol/tests/fixtures/{name}.json"
+    ).read_text())
+]
 
 
 @pytest.mark.parametrize("case", CORPUS, ids=[entry["name"] for entry in CORPUS])

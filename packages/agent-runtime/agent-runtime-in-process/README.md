@@ -12,6 +12,8 @@ Concurrent activation requests for one Team/Participant share the exact handle o
 
 The provider rejects non-local Participants, named presets it cannot serve, mismatched Session requests, and resume provenance that names another Team participant. It does not infer parent-Agent authority; `parentSession` remains fork lineage only.
 
+`isInProcessAgentRuntimeProvider()` identifies this plugin's actual same-process implementation so lifecycle consumers can pin that object before reserving execution authority.
+
 ## Model Experience
 
 ### Local placement

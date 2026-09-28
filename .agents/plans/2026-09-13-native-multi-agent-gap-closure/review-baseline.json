@@ -1,0 +1,406 @@
+{
+  "capturedAt": "2026-09-13T09:57:20.438740+00:00",
+  "head": "26bc4314fca3a98e9f479c509f7771e623ef60f9",
+  "branch": "master",
+  "scope": "Read-only review inputs, not a reproducible release candidate. Shared runtime/UI implementation is in progress. No product tests were run by this documentation task.",
+  "environment": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "node": "v25.9.0",
+    "pnpm": "11.19.0"
+  },
+  "sourceFiles": [
+    {
+      "path": ".agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.md",
+      "sha256": "b93801b33efd347dfd84df567d283d71d923c47efdff4fc7d0bf2e941fa876e2"
+    },
+    {
+      "path": ".agents/notes/proposed/architecture/2026-08-27-native-multi-agent-work-system.md",
+      "sha256": "6fa59d206b4220b54c05f901e2d1d4113c3d33629afca247eb478bbcd93b800f"
+    },
+    {
+      "path": ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p0-safety-closure.md",
+      "sha256": "4896b67af5fc0d3d8902a7ab26a98046756128f7669da9507958834e046f7fbe"
+    },
+    {
+      "path": ".agents/notes/proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md",
+      "sha256": "37a19f4229d4987e377743428ae05860361f250fcbc0c922aaeb118349bec234"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/acceptance-map.md",
+      "sha256": "5a2cf5fb96eb75f4df51baddd3d9111c52d8c9d8c529da7a0ee6da188b52f532"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/current-state.md",
+      "sha256": "46dfe4d9f9ff5d205ecb27fa143db5f03954ea9b3eac5d5cb520fd97c42f825f"
+    },
+    {
+      "path": ".agents/plans/2026-09-05-native-multi-agent/wp13-system-verification.md",
+      "sha256": "b41750f61d5284f8194e729a222c020e5dd0d0d7041f42f2933e76c4d3fca9dc"
+    },
+    {
+      "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/development-plan.md",
+      "sha256": "448664210cdc6620bdd0fc896918033504c1bc10e78babfcf69c0579d0ba440f"
+    },
+    {
+      "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/gap-design.md",
+      "sha256": "676d4bf49d3bcf73e2a46ae4f2aaf711952b67c1d28371c9d478ee4585b55b89"
+    },
+    {
+      "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/verification-evidence.json",
+      "sha256": "61d063c064990ddddbb86dd6b2b687cab82607d23e9db0e7e43a192fc1ebd0d0"
+    },
+    {
+      "path": ".agents/plans/2026-09-13-team-audit/IMPLEMENTATION.md",
+      "sha256": "b7425d719a1da900f3c486ec00d1875c4ece9652ece0ff092e48ab33d3a76072"
+    },
+    {
+      "path": ".agents/plans/2026-09-13-team-audit/README.md",
+      "sha256": "28940d3ac240216c16c510047f185df642f77b6731194dfa28330066ed764ecc"
+    },
+    {
+      "path": ".agents/skills/dsh-pre-push-checks/SKILL.md",
+      "sha256": "097e9ec6863b020e7555012bdaf8a922fd63dbf79bd2973dfbbf00f8bb22365f"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "4f159b5d3f49df7d470af6b18a44eb66d2e852bb419d4cd616c13e83b5942b69"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "5de7da837a21c7e7882d0aef2d2e6472d172c48ab64b3e4f846873e9e04add00"
+    },
+    {
+      "path": "apps/web/tests/team-channel.snapshot.ts",
+      "sha256": "6ab7afeba6bcdefef0c65fec3526cb49bc61f5f981fd3474c1439db8ed0bc8ac"
+    },
+    {
+      "path": "docs/AGENTS.md",
+      "sha256": "1a2573dbb02c43c1be84bd8b670859792da4f46e311110edcde906248e8ee3bf"
+    },
+    {
+      "path": "examples/headless-agent/tests/child-delegation.snapshot.ts",
+      "sha256": "681d516b15f41237a8b9dc94f0d9e5c33161c46bdf770eeb4b57d422d842f7bb"
+    },
+    {
+      "path": "examples/headless-agent/tests/closed-channel-outbox.snapshot.ts",
+      "sha256": "089d3602681b515ddf7ad7d962125f6e23ee0b98cda2702fb510bcb8967dcc74"
+    },
+    {
+      "path": "examples/headless-agent/tests/remote-team-message.snapshot.ts",
+      "sha256": "c9749ff2988d4ced7f5d0cee8a35c8a03fe6a03e11817b168e09fca87045ff2e"
+    },
+    {
+      "path": "examples/headless-agent/tests/review-projection.snapshot.ts",
+      "sha256": "75baa5c9dba99566a3b79aa0f93c5ac2533fb7a243270382b254c6be1ce882b9"
+    },
+    {
+      "path": "package.json",
+      "sha256": "22bd5d876e935ca340b90720ff45d82b634828711a888af5380ce701daf37b0d"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/package.json",
+      "sha256": "b68b79ea4ce88fcf76f478d84cab78afca7def1d342a9e9f9275f106ea8e0ccd"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts",
+      "sha256": "633d565548e7b53d01043aa66c3f3a7004445dfdfebf158eda3acbb3cd43daac"
+    },
+    {
+      "path": "packages/agent-runtime/activation-supervisor-http/tsdown.config.ts",
+      "sha256": "55e3b472dc383a50acb2717e295343d87a7744b9d18e1becb5dece710c0ed0cd"
+    },
+    {
+      "path": "packages/agent-runtime/agent-runtime-acp/src/index.ts",
+      "sha256": "dd0326a840ab2b29f720a30294086ffa4c698feacdf888977ac4011bf7838b74"
+    },
+    {
+      "path": "packages/agent-runtime/agent-runtime-sdk/tsdown.config.ts",
+      "sha256": "44679f8b533d25d30e215d985453423832405937c96961e56559d19c68719d5e"
+    },
+    {
+      "path": "packages/client/runtime/src/client/teams/service.ts",
+      "sha256": "036848b8284f72ddd3c16f29fc1e9bf6c96d66eee1e57c442af6f431cbf084cc"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamManagementDialog.tsx",
+      "sha256": "e416bff4c58f34febadeceee78233c2e682036b4c736417bccd1f8da18b61191"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamPage.tsx",
+      "sha256": "334dbd08dfadb3631d7dbd439c6bf56d62d627c8a43a05af2d3c138282702dce"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamWorkspace.tsx",
+      "sha256": "4b313b35735c6c6a4f310e61557919de98c09c29018030db5b024e3e5e1b5541"
+    },
+    {
+      "path": "packages/client/ui-team/src/client/workspace-navigation.ts",
+      "sha256": "9a10a382c08fc3903455fe4aa8f38fbbb3ca2195925b6814161515eef4688136"
+    },
+    {
+      "path": "packages/client/ui-team/tests/channel-protocols.client.spec.tsx",
+      "sha256": "9e51ca9d22d31b7cec1891169bf16be33c1f0d74910195faceafe30e8796baf1"
+    },
+    {
+      "path": "packages/core/session/src/index.ts",
+      "sha256": "635bafc0732a448995082b24cab3f49735bb25d3b290ab341019a0d738b789bd"
+    },
+    {
+      "path": "packages/core/session/src/types.ts",
+      "sha256": "6a8bc8ff99a4b556fba872afe2771e66e28bc3bd8c27727983dcf3fce1e22c4a"
+    },
+    {
+      "path": "packages/core/team/src/human-delivery-types.ts",
+      "sha256": "41544dfed2584bb1158d533c5d1574300c91a530f07d73c8f7118fa6b6b4701d"
+    },
+    {
+      "path": "packages/core/team/src/metrics.ts",
+      "sha256": "9f4913018ba49a473a125d301bb86162315c3fc19c15910a287ba3448f2ea383"
+    },
+    {
+      "path": "packages/core/team/src/schema.ts",
+      "sha256": "56f43c50956313a995bde373cc67732b8a1ea9f69aaec6286ebff232c6f89ba6"
+    },
+    {
+      "path": "packages/core/team/src/task-execution.ts",
+      "sha256": "89bc5630eb403b21b1fe030abe4bae8cfc2d94d40b081b7175818070d42151b0"
+    },
+    {
+      "path": "packages/core/team/src/telemetry.ts",
+      "sha256": "8eec7fa6b275e85fc4d98cb40772155ccc957a7cb50f233b1f97f58fa10b6cf8"
+    },
+    {
+      "path": "packages/core/team/src/types.ts",
+      "sha256": "f28c0e02f6eefcad3c568afc8e0b3b4003d302e0d96423fd6b032184e7626377"
+    },
+    {
+      "path": "packages/e2b/team-workspace-e2b/src/index.ts",
+      "sha256": "8a548584e20f6860d3d189c4b32eb74d5e2bbf96ae0a86378720e0b17ce990ac"
+    },
+    {
+      "path": "packages/host/apiproxy/src/api-proxy.ts",
+      "sha256": "50850c7a5125f24e9fb885bc420db3cacee4144f481c2886360542db1c1a476c"
+    },
+    {
+      "path": "packages/host/apiproxy/src/api/teams.ts",
+      "sha256": "5d5dacf7bab18c0cb004dad2220f2adb5f09f69d32256572f900fdc37ced7d3c"
+    },
+    {
+      "path": "packages/sdk/server/src/server.ts",
+      "sha256": "cd476a3e4501825ec70b180cee4e71a6e6456392379d3c076f039245d7e78985"
+    },
+    {
+      "path": "packages/subagent/subagent/package.json",
+      "sha256": "224cfdc84e7ac80f5fe01da3cb14040cdde16d50d12cf9783dd4fed355c97d9e"
+    },
+    {
+      "path": "packages/subagent/tool-subagent/package.json",
+      "sha256": "7855f6e43ec792c7276b16c6bd6f4bfc56224009212d93a66301a3f372e6932a"
+    },
+    {
+      "path": "packages/team/team-activation-controller/src/index.ts",
+      "sha256": "e5527aed3cade31fee9af29c6607f52632f9b3c8364d55e798999149f905555a"
+    },
+    {
+      "path": "packages/team/team-activation-recovery/src/index.ts",
+      "sha256": "dd8f5c7625aa731627b24d11642006551663f56c226c469d4ac153368f2d6bd2"
+    },
+    {
+      "path": "packages/team/team-agent-client/src/index.ts",
+      "sha256": "036aa043f2219e4bb4938246630cdd1f04c9c1c2be6e28f64958c25ae7181549"
+    },
+    {
+      "path": "packages/team/team-channel-admission/src/principal.ts",
+      "sha256": "dd30c99ec46d9902d24ab96e13d5548dd0b5323ed8498e9e6173f3fe1f5077df"
+    },
+    {
+      "path": "packages/team/team-channel-workflow/src/workflow.ts",
+      "sha256": "4dcc82999c1c0ebef9622c04bcef0a2f24ffaa32df96ecea387c155f1100e7c6"
+    },
+    {
+      "path": "packages/team/team-delegation/src/index.ts",
+      "sha256": "0e5a4128af417774325c66a7cdaace3ca7c25df9f96a30306d5f9796a178087a"
+    },
+    {
+      "path": "packages/team/team-delegation/tests/delegation.spec.ts",
+      "sha256": "5ef8f5c86db0a63a993e6ed1f10252519f946dccaf5f3c030d04220b04da945f"
+    },
+    {
+      "path": "packages/team/team-hub/src/index.ts",
+      "sha256": "2a9b607b8fc80d9b8a5569c9e38d2f04cb9d7762464c6907f2e9cae1e0bdbadd"
+    },
+    {
+      "path": "packages/team/team-hub/src/workspace-observation.ts",
+      "sha256": "6c0f833f33f6905c963414d5673f29173f7942804dff71011e84b9e8bbf23757"
+    },
+    {
+      "path": "packages/team/team-hub/tests/child-result.spec.ts",
+      "sha256": "acfd2d39eb8893b4a2662e5a0386d67893c65cdcbb5a731c8e747e776b02a015"
+    },
+    {
+      "path": "packages/team/team-hub/tests/load.spec.ts",
+      "sha256": "281b789fd916170f65e66fd9cec1d90d94511392c70451ebaacb6e8cf99d25fe"
+    },
+    {
+      "path": "packages/team/team-hub/tests/replay-properties.spec.ts",
+      "sha256": "2bcc2dfbc74f1812b90261e977a8c0c36cccb569ba8b7867f636aaf1d4e3e12c"
+    },
+    {
+      "path": "packages/team/team-hub/tests/task-delegation.spec.ts",
+      "sha256": "95e711b1952dcffc3cd3f06aaba9867246fa5508257d2f71f8a3c754c6f47f43"
+    },
+    {
+      "path": "packages/team/team-hub/tests/usage-replay.spec.ts",
+      "sha256": "d218d070cc254fe0dcf466564638659cbe024e5970daedbed01d3bbab620fe4d"
+    },
+    {
+      "path": "packages/team/team-human-client/src/index.ts",
+      "sha256": "dd4b6709ab16171cc67ed413343333ec5150de5e6d2ca2aa0055060adb3d1ce5"
+    },
+    {
+      "path": "packages/team/team-placement-default/src/index.ts",
+      "sha256": "14e75e32c4f6636449a6fcb30815387fc2a07dcefd306b87f954e878875da32a"
+    },
+    {
+      "path": "packages/team/team-run/src/index.ts",
+      "sha256": "6936e4e8a467c25ac900f04a7258a9ccb5233747f3b258bd3c2bd50f3c77e1b2"
+    },
+    {
+      "path": "packages/team/team-run/tests/team-run.spec.ts",
+      "sha256": "17b8183ba77660b359d09006828f4734bf6d30878b97e5d6130fbdb7a129b675"
+    },
+    {
+      "path": "packages/team/team-scheduler-dag/src/index.ts",
+      "sha256": "c922e7cb5519d26e0170ccf1535064905d7f8a2b2d6e46d441382bf30b85f167"
+    },
+    {
+      "path": "packages/team/team-scheduler-dag/src/ranking.ts",
+      "sha256": "7f3b47b62edf43bc36fe7151f86a7eccb5265a408fecab01ac9a96ed403a8010"
+    },
+    {
+      "path": "packages/team/team-scheduler-dag/tests/scheduler.spec.ts",
+      "sha256": "75e26220dd40258fd7da7f3f0e5c71346bbbe35f6d1945a4cfdec8f675a7276e"
+    },
+    {
+      "path": "packages/team/team-telemetry-otel/src/alerts.ts",
+      "sha256": "69b6ad8b7ac1b30ec5f46a80ffb918316c91fbe8ca2f7c75c63b6566e6b371db"
+    },
+    {
+      "path": "packages/team/team-telemetry-otel/src/index.ts",
+      "sha256": "55126a20fe7e0e61725a365843d30fabf182be4c91a69f2140d814c6e4254346"
+    },
+    {
+      "path": "packages/team/team-workspace-shared/src/index.ts",
+      "sha256": "dd7957e016cef9f5b283153145fb887bc89df1e2a9eee2be979403087f7b4e02"
+    },
+    {
+      "path": "packages/team/tool-team-task/src/index.ts",
+      "sha256": "968ee0a87870af8487efcd43aa6490a0e13eeb5ccddb3e1823d6074ce831d136"
+    },
+    {
+      "path": "packages/team/tool-team-task/src/workflow-schema.ts",
+      "sha256": "9e7f4e7f55674e2c610aa85ea7a38ed207fafada9abe16fa4f5fe6f094ae746c"
+    },
+    {
+      "path": "packages/typert/generator/src/analyzer.ts",
+      "sha256": "00c3327e107c0a3346d73737bfe5396356f6c8fbad4e83ebafad64e559bb3120"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "49e672a1113ab805ec25c2eb582a41bf254329fcbc9ccfaaf603f78173202255"
+    },
+    {
+      "path": "python/sdk-runtime/package.json",
+      "sha256": "ee512c774c0aeb0d41c083bd3dec5e54c428ac8917c0ea389e6f1f03a7a9f246"
+    },
+    {
+      "path": "scripts/gen-cordis-catalog.ts",
+      "sha256": "85027797a72d6e1bfada2401cb680a8bd0e05734a84c02295dffc101a899c4e6"
+    },
+    {
+      "path": "scripts/gen-doc-graphs.ts",
+      "sha256": "8832e0c914ead602d16cec76c65007e8b4f46b72deca53972e6e558581c5cab3"
+    },
+    {
+      "path": "scripts/publint-all.ts",
+      "sha256": "e08d3201c29f43c3a9371f015f9e4a071c0d2ad6be9800ef5dcffc24acffbf17"
+    },
+    {
+      "path": "scripts/release/families.ts",
+      "sha256": "8fbe8f721b6c0fa70351b63d6fe28d3b0390614353579c11715a2085f09c118c"
+    },
+    {
+      "path": "scripts/run-gates.ts",
+      "sha256": "e2dca222925951d2d6f618cdac8b4fd3f024c1ad5f3d6a7498ceafacf910eee1"
+    },
+    {
+      "path": "scripts/source-entry-resolution.spec.ts",
+      "sha256": "ea801871dc219e37b11ef80781cb8f3e96dac1b7dd09247db9b1e70a0f23caf1"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "5baaa443efb2deab70c204b198700c65f1a3209b373366bba31d9c0399e27e83"
+    }
+  ],
+  "priorBaseline": {
+    "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/audit-baseline.json",
+    "unchangedCount": 22,
+    "changedOrMissing": [
+      "apps/web/tests/team-channel.snapshot.ts",
+      "examples/headless-agent/tests/child-delegation.snapshot.ts",
+      "examples/headless-agent/tests/closed-channel-outbox.snapshot.ts",
+      "package.json",
+      "packages/agent-runtime/activation-supervisor-http/package.json",
+      "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts",
+      "packages/agent-runtime/activation-supervisor-http/tsdown.config.ts",
+      "packages/agent-runtime/agent-runtime-acp/src/index.ts",
+      "packages/client/runtime/src/client/teams/service.ts",
+      "packages/client/ui-team/src/client/TeamManagementDialog.tsx",
+      "packages/client/ui-team/src/client/TeamPage.tsx",
+      "packages/core/session/src/index.ts",
+      "packages/core/session/src/types.ts",
+      "packages/core/team/src/human-delivery-types.ts",
+      "packages/core/team/src/schema.ts",
+      "packages/core/team/src/types.ts",
+      "packages/e2b/team-workspace-e2b/src/index.ts",
+      "packages/host/apiproxy/src/api-proxy.ts",
+      "packages/host/apiproxy/src/api/teams.ts",
+      "packages/sdk/server/src/server.ts",
+      "packages/subagent/subagent/package.json",
+      "packages/subagent/tool-subagent/package.json",
+      "packages/team/team-activation-controller/src/index.ts",
+      "packages/team/team-activation-recovery/src/index.ts",
+      "packages/team/team-channel-admission/src/principal.ts",
+      "packages/team/team-delegation/src/index.ts",
+      "packages/team/team-delegation/tests/delegation.spec.ts",
+      "packages/team/team-hub/src/index.ts",
+      "packages/team/team-hub/tests/load.spec.ts",
+      "packages/team/team-hub/tests/replay-properties.spec.ts",
+      "packages/team/team-human-client/src/index.ts",
+      "packages/team/team-placement-default/src/index.ts",
+      "packages/team/team-run/src/index.ts",
+      "packages/team/team-scheduler-dag/src/index.ts",
+      "packages/team/team-scheduler-dag/src/ranking.ts",
+      "packages/team/team-workspace-shared/src/index.ts",
+      "packages/team/tool-team-task/src/index.ts",
+      "python/sdk-runtime/package.json",
+      "scripts/gen-cordis-catalog.ts",
+      "scripts/gen-doc-graphs.ts",
+      "scripts/release/families.ts",
+      "tsconfig.base.json"
+    ]
+  },
+  "historicalLedgerIntegrity": {
+    "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/verification-evidence.json",
+    "records": 149,
+    "matchingSavedLogHashes": 149,
+    "missingLogs": [],
+    "mismatchedLogs": []
+  },
+  "limitations": [
+    "Source hashes detect drift, not execution against those inputs.",
+    "No repository restore snapshot or candidate patch is supplied by this review.",
+    "Runtime and UI files may change after capture; receive current owner evidence before implementation."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "simulationDays": 6,
+  "company": "街角鲜配",
+  "purpose": "为城区客户配送保鲜餐包，同时维持公司偿付能力和客户信任",
+  "openingState": {
+    "cashCredits": 900,
+    "mealKits": 18,
+    "deliveryCapacityPerDay": 10,
+    "warehouseCapacity": 40,
+    "dailyRentCredits": 100,
+    "deliveryCostCreditsPerKit": 5
+  },
+  "people": [
+    { "name": "安", "dailyWageCredits": 60, "experience": "采购与供应商沟通", "concern": "不愿未经确认就承诺供货日期" },
+    { "name": "博", "dailyWageCredits": 60, "experience": "排班与配送", "concern": "连续超负荷会使队伍流失" },
+    { "name": "晨", "dailyWageCredits": 60, "experience": "客户服务", "concern": "重大客户应尽早得到准确解释" },
+    { "name": "丹", "dailyWageCredits": 60, "experience": "财务记录", "concern": "不得用未到手的收入支付今日成本" }
+  ],
+  "existingPromises": [
+    { "customer": "北区食堂", "mealKits": 8, "dueDay": 2, "priceCreditsPerKit": 50, "paid": false },
+    { "customer": "社区门诊", "mealKits": 10, "dueDay": 4, "priceCreditsPerKit": 50, "paid": false }
+  ],
+  "localSupplier": {
+    "availableMealKits": 30,
+    "priceCreditsPerKit": 25,
+    "normalLeadDays": 2,
+    "payment": "订货时支付"
+  },
+  "accountingRules": [
+    "现金只能因实际收款增加，因已决定且实际支付的支出减少。",
+    "库存只能因实际到货增加，因实际交付或损失减少。",
+    "每日租金在公司继续营业的日子发生；工资取决于当日仍在岗的人。",
+    "客户请求、公司承诺、实际交付和收款是不同事件；不能互相代替。"
+  ]
+}

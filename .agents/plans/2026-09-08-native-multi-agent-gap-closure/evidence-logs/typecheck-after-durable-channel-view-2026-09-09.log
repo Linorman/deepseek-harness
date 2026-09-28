@@ -1,0 +1,9 @@
+Current candidate typecheck after durable channel-view composition fix (2026-09-09)
+
+Scope: validate the current source/artifact faces after the durable `team/channel-view` Session path and the headless direct-v4 adapter registration fix.
+
+Command:
+
+`pnpm run typecheck`
+
+Result: exit 0. The Host build/lib face and Client contract face both completed; the command rebuilt the current source artifacts before checking the contract solution. This is a typecheck result only and does not claim full test, browser, multi-host, coverage, or release closure.

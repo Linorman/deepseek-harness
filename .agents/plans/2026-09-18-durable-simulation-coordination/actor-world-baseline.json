@@ -1,0 +1,211 @@
+{
+  "date": "2026-09-23",
+  "layer": "scripted-cognition-with-world-history",
+  "limitations": [
+    "No real-model measurement: no configured model credentials or endpoint and no budget supplied.",
+    "Only selected entities bind participants on demand; 100 decisions do not demonstrate 10000 active actors.",
+    "JSON timed out and has no successful cold recovery."
+  ],
+  "durableWorldEventCounts": [
+    {
+      "path": ".tmp-simulation-development/p13-combined-baseline/json-actors-world-4liCbK",
+      "durableWorldEvents": 374000
+    },
+    {
+      "path": ".tmp-simulation-development/p13-combined-baseline/sqlite-actors-world-Jxpyig",
+      "durableWorldEvents": 1000000
+    }
+  ],
+  "reports": [
+    {
+      "version": 2,
+      "layer": "scripted-cognition-with-world-history",
+      "lastPhase": "workload",
+      "options": {
+        "backend": "json",
+        "entities": 10000,
+        "operations": 100,
+        "durationMs": 60000,
+        "timeoutMs": 300000,
+        "sampleEvery": 100000,
+        "entityBatchSize": 1000,
+        "replayPageSize": 1000,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/p13-combined-baseline",
+        "workload": "actors-world",
+        "residents": 100,
+        "models": 20,
+        "modelDelayMs": 1000,
+        "worldEvents": 1000000,
+        "worldBatchSize": 1000
+      },
+      "mode": "src",
+      "hardware": {
+        "platform": "darwin",
+        "release": "27.0.0",
+        "arch": "arm64",
+        "node": "v25.9.0",
+        "cpus": 12,
+        "cpuModel": "Apple M4 Pro",
+        "memoryBytes": 25769803776
+      },
+      "sourceDigest": "3d1c20909f7350efbea5eb48911a0c04a410c9d83dfa08271fa3dde5aea3972b",
+      "sourceFiles": 3217,
+      "elapsedMs": 300038.190583,
+      "timedOut": true,
+      "interrupted": false,
+      "exitCode": null,
+      "signal": "SIGKILL",
+      "status": "timeout",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "world-history-finished",
+        "worldEvents": 374000,
+        "requestedWorldEvents": 1000000,
+        "peakRssBytes": 1750335488
+      }
+    },
+    {
+      "version": 2,
+      "layer": "scripted-cognition-with-world-history",
+      "lastPhase": "cold-recovery",
+      "options": {
+        "backend": "sqlite",
+        "entities": 10000,
+        "operations": 100,
+        "durationMs": 60000,
+        "timeoutMs": 300000,
+        "sampleEvery": 100000,
+        "entityBatchSize": 1000,
+        "replayPageSize": 1000,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/p13-combined-baseline",
+        "workload": "actors-world",
+        "residents": 100,
+        "models": 20,
+        "modelDelayMs": 1000,
+        "worldEvents": 1000000,
+        "worldBatchSize": 1000
+      },
+      "mode": "src",
+      "hardware": {
+        "platform": "darwin",
+        "release": "27.0.0",
+        "arch": "arm64",
+        "node": "v25.9.0",
+        "cpus": 12,
+        "cpuModel": "Apple M4 Pro",
+        "memoryBytes": 25769803776
+      },
+      "sourceDigest": "3d1c20909f7350efbea5eb48911a0c04a410c9d83dfa08271fa3dde5aea3972b",
+      "sourceFiles": 3217,
+      "elapsedMs": 182295.52512500001,
+      "timedOut": false,
+      "interrupted": false,
+      "exitCode": 0,
+      "signal": null,
+      "coldExitCode": 0,
+      "coldSignal": null,
+      "coldProcessMs": 15457.527000000002,
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 14973.627792000001,
+        "peakRssBytes": 1426620416,
+        "cpuMicros": {
+          "user": 15114707,
+          "system": 1085696
+        }
+      },
+      "status": "measured",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 100,
+        "windows": 1,
+        "peakRssBytes": 667467776
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "scripted-cognition-with-world-history",
+        "completion": "target-complete",
+        "worldEvents": 1000000,
+        "requestedWorldEvents": 1000000,
+        "worldBatchSize": 1000,
+        "worldMs": 43775.234042,
+        "worldThroughputPerSecond": 22843.96695721954,
+        "worldPhase": {
+          "count": 1000,
+          "elapsedMs": 43775.234042,
+          "p50Ms": 41.36558399999922,
+          "p95Ms": 46.927458000001934,
+          "p99Ms": 53.82100000000355
+        },
+        "worldComplete": true,
+        "cognitionComplete": true,
+        "setupMs": 58174.47375,
+        "entitySetupMs": 6546.27,
+        "participantSetupMs": 6289.492954999994,
+        "nominationSetupMs": 7783.964,
+        "workMs": 87057.10625000001,
+        "completed": 100,
+        "requested": 100,
+        "modelCalls": 300,
+        "modelDelayMs": 1000,
+        "participantBinding": "on-demand",
+        "boundParticipants": 100,
+        "throughputPerSecond": 1.1486713067722716,
+        "peakModels": 20,
+        "peakResidents": 100,
+        "peakQueuedObserved": 79,
+        "starts": 100,
+        "resumes": 0,
+        "uniqueServed": 100,
+        "neverServed": 9900,
+        "maxSelectedWaitRounds": 0,
+        "queuedDecisions": 0,
+        "syntheticUsage": true,
+        "reportedTokens": 4500,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 100,
+            "elapsedMs": 87057.10625000001,
+            "p50Ms": 62032.672208,
+            "p95Ms": 63618.714209,
+            "p99Ms": 64191.95670799998
+          },
+          "window": {
+            "count": 1,
+            "elapsedMs": 87057.10625000001,
+            "p50Ms": 87055.32949999999,
+            "p95Ms": 87055.32949999999,
+            "p99Ms": 87055.32949999999
+          },
+          "placement": {
+            "count": 100,
+            "elapsedMs": 11580.47533099995,
+            "p50Ms": 114.35616700000537,
+            "p95Ms": 126.19095799999195,
+            "p99Ms": 140.47812499999418
+          }
+        },
+        "checkpointMs": 5887.040959000005,
+        "restoreMs": 14026.538874999998,
+        "peakRssBytes": 1703591936,
+        "diskBytes": 242831676,
+        "bytesBeforeClose": 247175012,
+        "cpuMicros": {
+          "user": 165487660,
+          "system": 6032488
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json world batching > retains each update with batch size 1 1`] = `
+{
+  "batches": 23,
+  "completed": 23,
+  "journalEntries": 31,
+  "replayEqual": true,
+  "writeBatchSize": 1,
+}
+`;
+
+exports[`json world batching > retains each update with batch size 7 1`] = `
+{
+  "batches": 4,
+  "completed": 23,
+  "journalEntries": 31,
+  "replayEqual": true,
+  "writeBatchSize": 7,
+}
+`;
+
+exports[`sqlite world batching > retains each update with batch size 1 1`] = `
+{
+  "batches": 23,
+  "completed": 23,
+  "journalEntries": 31,
+  "replayEqual": true,
+  "writeBatchSize": 1,
+}
+`;
+
+exports[`sqlite world batching > retains each update with batch size 7 1`] = `
+{
+  "batches": 4,
+  "completed": 23,
+  "journalEntries": 31,
+  "replayEqual": true,
+  "writeBatchSize": 7,
+}
+`;

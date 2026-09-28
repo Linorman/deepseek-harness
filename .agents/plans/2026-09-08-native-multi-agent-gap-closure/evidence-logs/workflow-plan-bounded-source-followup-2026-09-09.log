@@ -1,0 +1,16 @@
+Workflow-plan bounded source-read follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/host/apiproxy/tsconfig.json packages/sdk/server/tsconfig.json packages/sdk/client/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/sdk/server/tests/server.spec.ts packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/client/runtime/tests/team-tasks.client.spec.ts --pool=forks --maxWorkers=1`
+   Result: 3 files passed; 133 tests passed.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/core/team/src/types.ts packages/core/team/src/schema.ts packages/team/team-hub/src/index.ts packages/host/apiproxy/src/api-proxy.ts packages/sdk/server/src/server.ts packages/sdk/server/tests/server.spec.ts`
+   Result: existing pre-change findings remain at server.spec.ts lines 176 and 1291; no new finding was introduced by the bounded source-read change.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: the Hub now owns cursor/limit slicing for workflow-plan reads; Host and SDK no longer call the unbounded workflow-plan listing before slicing their wire response. Existing client continuation and API forwarding regressions remain green.
+
+Additional source-boundary regression: `pnpm exec vitest run packages/team/team-hub/tests/durable-workflow-replay.spec.ts --pool=forks --maxWorkers=1` passed 26 tests across JSON and SQLite, including first/continuation workflow-plan pages from the real Hub replay fixture. The targeted Hub TypeScript face and source test lint also pass.

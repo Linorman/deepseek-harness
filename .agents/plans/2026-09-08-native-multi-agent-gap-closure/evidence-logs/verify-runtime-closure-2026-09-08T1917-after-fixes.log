@@ -1,0 +1,2 @@
+$ tsx scripts/verify-runtime-closure.ts
+verify-runtime-closure: 4 agent presets and 146 workspace packages form a closed runtime dependency graph.

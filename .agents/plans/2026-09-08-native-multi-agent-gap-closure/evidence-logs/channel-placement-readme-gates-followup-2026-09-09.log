@@ -1,0 +1,14 @@
+Channel and placement README gates follow-up (2026-09-09)
+
+Scope: add the required model-experience grounding and bilingual README pair for channel admission and default placement.
+
+Commands:
+
+1. `pnpm run verify-translation-pairing --write packages/team/team-channel-admission/README.md packages/team/team-placement-default/README.md`
+   Result: exit 0; two README pair records refreshed, including the new placement Chinese counterpart.
+2. `pnpm run verify-package-readme-limitations`
+   Result: 260 package READMEs checked; all conform.
+3. `pnpm run verify-package-readme-model-experience`
+   Result: the channel-admission and placement violations are gone; remaining failures belong to unrelated current-worktree package README surfaces.
+4. `git diff --check`
+   Result: exit 0.

@@ -1,0 +1,21 @@
+Scope: selected active-child browser path through the real Web/Host composition.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; keyless replay.
+
+Scenario:
+- A real `team.create` parent receives `team.postInput` through the Host RPC and a replayed coordinator calls `team_task_delegate` and `team_message`.
+- The test reads the durable child task identity, opens the parent Team in the shipped browser, explicitly refreshes the bounded task collection, opens the live child Team through `打开子任务`, then cancels the parent.
+- The parent cancellation waits for the effect-scoped delegation drive; Host state reads confirm both parent and child reach `cancelled`, and the browser reports no page errors.
+
+Command and result:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 CLOCKY_SNAPSHOT=replay node node_modules/vitest/vitest.mjs run --config vitest.web.config.ts apps/web/tests/team-child-navigation.snapshot.ts --bail=1 --reporter=verbose`: 1 test passed, 0 failed in 5.82s.
+- `pnpm exec tsc -p apps/web/tsconfig.json --noEmit --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `apps/web/tests/team-child-navigation.snapshot.ts`: `752fc782a71bf7d07c6d3ca9c18e7cb9042cf9bf1a193537d45acf848aa52040`
+- `packages/team/team-run/src/index.ts`: `ce737982765fae50a173b6632f8b020c88e8872a9f7212b5a0093577792a7e81`
+- `packages/team/team-delegation/src/index.ts`: `0e5a4128af417774325c66a7cdaace3ca7c25df9f96a30306d5f9796a178087a`
+
+Boundary: this closes the selected local active-child navigation/cancellation browser scenario. It does not close remote lifecycle, multi-host transport, GIF, task integration/review, or the complete T-06 matrix.

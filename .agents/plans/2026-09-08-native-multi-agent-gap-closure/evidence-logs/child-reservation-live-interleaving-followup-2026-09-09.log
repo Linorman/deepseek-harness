@@ -1,0 +1,24 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests/task-delegation.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 7 tests passed; 0 failed; 0 skipped.
+  The added JSON/SQLite matrix creates and binds the child, records parent
+  cancellation, verifies settlement refuses a nonterminal child with
+  TEAM_NOT_QUIESCENT, then cancels and terminalizes the child through the
+  closure-driver continuation before parent settlement.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-hub/tests/task-delegation.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-hub/tests/task-delegation.spec.ts 95e711b1952dcffc3cd3f06aaba9867246fa5508257d2f71f8a3c754c6f47f43
+
+Boundary:
+  This adds live JSON/SQLite cancellation-after-bind and child-terminalization
+  coverage. It does not close the full child interleaving or T-08 matrix.

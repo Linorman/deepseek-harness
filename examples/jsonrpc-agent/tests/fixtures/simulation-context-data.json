@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "runId": "snapshot-run",
+  "entityId": "snapshot-entity",
+  "windowId": "snapshot-window",
+  "slot": "0",
+  "epoch": "1",
+  "time": "10",
+  "inputId": "snapshot-context-input",
+  "projections": {
+    "run": 9,
+    "entity": 3,
+    "team": 5
+  },
+  "versions": {
+    "rules": "1",
+    "policy": "1",
+    "persona": "1",
+    "model": "test-model"
+  },
+  "sources": [
+    {
+      "kind": "run-event",
+      "runId": "snapshot-run",
+      "sequence": 8
+    }
+  ],
+  "content": [
+    {
+      "kind": "identity",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Simulation entity: snapshot-entity."
+        }
+      ]
+    },
+    {
+      "kind": "commitments",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "No pending commitments."
+        }
+      ]
+    }
+  ]
+}

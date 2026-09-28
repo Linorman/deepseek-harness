@@ -1,0 +1,12 @@
+Core type-equivalence current follow-up (2026-09-09)
+
+Scope: synchronize the public `CancelOptions.resumePending` contract into the Core subsystem type-equivalence pages and bilingual pairing record.
+
+Commands:
+
+1. `pnpm run verify-type-equiv`
+   Result: 390 type-equiv blocks matched source structure/JSDoc; 390 paired derivatives matched.
+2. `pnpm run verify-translation-pairing --write docs/subsystems/core.md`
+   Result: exit 0; one subsystem pair record refreshed.
+3. `git diff --check`
+   Result: exit 0.

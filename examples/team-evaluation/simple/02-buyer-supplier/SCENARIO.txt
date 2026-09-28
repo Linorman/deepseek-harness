@@ -1,0 +1,1 @@
+本地公司有 buyer 与 supplier 两个实体。supplier 初始有 2 个 stock，buyer 的 received 初始为 0。buyer 请求 1 件商品，预定在模拟时间 5 交付。场景通过 Simulation 的 Agent 决策、消息投递、资源转移和承诺执行；脚本模型调用 simulation_observe、simulation_stage、simulation_submit。运行使用 SQLite 和项目自带预期快照。

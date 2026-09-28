@@ -1,0 +1,11 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/team/team-agent-client/tests/client.spec.ts (82 tests | 4 failed) 20011ms
+     × claims a task-assignment turn, starts its exact lease, records durable task provenance, and acknowledges the wake-up 1133ms
+     × reserves metadata before materializing a task root, then records durable release before removing that root 1165ms
+     × preserves a provider root durably when terminal cleanup cannot release it 1171ms
+     × runs the scheduler-to-Link-to-Agent task-assignment path without an advisory event waking the Agent 1151ms

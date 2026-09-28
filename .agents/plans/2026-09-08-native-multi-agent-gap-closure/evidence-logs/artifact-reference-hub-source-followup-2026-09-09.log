@@ -1,0 +1,16 @@
+Hub artifact reference source follow-up (2026-09-09)
+
+Scope: prove the real JSON-backed Team Hub returns the same visible artifact reference used by bounded artifact listing.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-hub/tests/team-hub.spec.ts --no-file-parallelism -t 'resolves visible artifacts through the provider-owned lookup source'`
+   Result: 1 file passed; 1 test passed; 93 skipped by filter.
+2. `pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-hub/tests/team-hub.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: a real JSON Team Hub records a completed attempt artifact, returns it through `getArtifact()`, returns `undefined` for a missing identity, and retains the source-attempt provenance. This supplements the Host/SDK consumer evidence; it does not close browser or release-wide UI evidence.

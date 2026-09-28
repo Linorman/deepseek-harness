@@ -178,9 +178,10 @@ export class AgentRuntime extends Service {
    * Team/Participant/Session binding, then publish its first observation. A
    * handle that fails post-return validation is disposed before rejection.
    * @param request - provider name and already-resolved activation inputs.
+   * @param expectedProvider - Optional exact implementation selected by a coordinating owner; replacement rejects before startup.
    * @returns the provider-owned published activation handle.
    */
-  async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle> {
+  async activate(request: AgentRuntimeActivationRequest, expectedProvider?: AgentRuntimeProvider): Promise<ActivationHandle> {
     if (request.participant.teamId !== request.teamId) {
       throw new AgentRuntimeError(
         `Participant '${request.participant.id}' does not belong to Team '${request.teamId}'`,
@@ -193,6 +194,9 @@ export class AgentRuntime extends Service {
         `AgentRuntime provider '${request.provider}' is not registered`,
         'AGENT_RUNTIME_PROVIDER_NOT_FOUND',
       )
+    }
+    if (expectedProvider !== undefined && provider !== expectedProvider) {
+      throw new AgentRuntimeError('AgentRuntime implementation changed before coordinated startup', 'AGENT_RUNTIME_PROVIDER_CHANGED')
     }
     const handle = await provider.activate(request)
     try {

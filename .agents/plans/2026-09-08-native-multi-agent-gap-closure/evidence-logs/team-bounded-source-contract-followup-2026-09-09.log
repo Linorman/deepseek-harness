@@ -1,0 +1,14 @@
+Team bounded source-contract follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/team/team-run/tsconfig.json packages/team/team-scheduler-dag/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/core/team/tests/runtime.spec.ts packages/core/team/tests/schema.spec.ts packages/team/team-hub/tests/child-creation-authority.spec.ts packages/team/team-hub/tests/edge-cases.spec.ts packages/team/team-hub/tests/root-creation-authority.spec.ts packages/team/team-hub/tests/team-hub.spec.ts packages/team/team-run/tests/team-run.spec.ts packages/acp/acp/tests/lifecycle.spec.ts packages/acp/acp/tests/edges.spec.ts packages/acp/acp/tests/bridge.spec.ts --pool=forks --maxWorkers=1`
+   Result: 10 files passed; 304 tests passed.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/core/team/src/runtime.ts packages/team/team-hub/src/index.ts packages/team/team-scheduler-dag/src/index.ts packages/core/team/tests/runtime.spec.ts packages/team/team-hub/tests/edge-cases.spec.ts packages/team/team-hub/tests/team-hub.spec.ts`
+   Result: exit 0.
+4. `pnpm run gen-cordis-api && pnpm run verify-cordis-api && pnpm run verify-cordis-catalog`
+   Result: generated API/catalog fresh; 103 generated files/regions up to date.
+
+The Core/Hub unbounded `listTeams()` contract and implementation are removed. Scheduler, recovery, workspace, human-client, transport fixtures, and ACP tests use bounded `listTeamsPage()` instead; the SDK wire `listTeams()` remains a bounded transport API that drives pages internally.

@@ -110,9 +110,10 @@ listProviders(): AgentRuntimeProviderRef[]
  * Team/Participant/Session binding, then publish its first observation. A
  * handle that fails post-return validation is disposed before rejection.
  * @param request - provider name and already-resolved activation inputs.
+ * @param expectedProvider - Optional exact implementation selected by a coordinating owner; replacement rejects before startup.
  * @returns the provider-owned published activation handle.
  */
-async activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>
+async activate(request: AgentRuntimeActivationRequest, expectedProvider?: AgentRuntimeProvider): Promise<ActivationHandle>
 ```
 
 Source: [`packages/core/agent-runtime/src/index.ts`](../../packages/core/agent-runtime/src/index.ts)

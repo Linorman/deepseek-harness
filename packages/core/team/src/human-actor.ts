@@ -86,3 +86,12 @@ export function fingerprintChannelManifest(manifest: ChannelManifest): ChannelMa
 export function fingerprintTeamChildResultContent(payload: JsonObject): import('./child-result-types.ts').TeamChildResultFingerprint {
   return `sha256:${createHash('sha256').update(canonicalJson(payload), 'utf8').digest('hex')}` as import('./child-result-types.ts').TeamChildResultFingerprint
 }
+
+/**
+ * Fingerprint one complete durable owner projection for checkpoint reference verification.
+ * @param payload - JSON projection with optional undefined fields already removed by serialization.
+ * @returns canonical SHA-256 projection identity.
+ */
+export function fingerprintTeamPersistenceProjection(payload: JsonValue): import('./persistence-reference.ts').TeamPersistenceFingerprint {
+  return `sha256:${createHash('sha256').update(canonicalJson(payload), 'utf8').digest('hex')}` as import('./persistence-reference.ts').TeamPersistenceFingerprint
+}

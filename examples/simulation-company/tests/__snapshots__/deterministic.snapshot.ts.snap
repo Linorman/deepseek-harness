@@ -1,0 +1,421 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json deterministic ledger > executes opaque decision identities once without inference 1`] = `
+{
+  "cancellations": 0,
+  "computations": 2,
+  "modelCalls": 0,
+  "opaqueDecisions": [
+    "accepted",
+    "accepted",
+    "accepted",
+  ],
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`json deterministic ledger > retains policy decisions and effects with crash=applied 1`] = `
+{
+  "cancellations": 0,
+  "computations": 0,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 2,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`json deterministic ledger > retains policy decisions and effects with crash=result 1`] = `
+{
+  "cancellations": 2,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 1,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`json deterministic ledger > retains policy decisions and effects with crash=selected 1`] = `
+{
+  "cancellations": 2,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`json deterministic ledger > retains policy decisions and effects with crash=undefined 1`] = `
+{
+  "cancellations": 0,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`sqlite deterministic ledger > executes opaque decision identities once without inference 1`] = `
+{
+  "cancellations": 0,
+  "computations": 2,
+  "modelCalls": 0,
+  "opaqueDecisions": [
+    "accepted",
+    "accepted",
+    "accepted",
+  ],
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`sqlite deterministic ledger > retains policy decisions and effects with crash=applied 1`] = `
+{
+  "cancellations": 0,
+  "computations": 0,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 2,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`sqlite deterministic ledger > retains policy decisions and effects with crash=result 1`] = `
+{
+  "cancellations": 2,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 1,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`sqlite deterministic ledger > retains policy decisions and effects with crash=selected 1`] = `
+{
+  "cancellations": 2,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;
+
+exports[`sqlite deterministic ledger > retains policy decisions and effects with crash=undefined 1`] = `
+{
+  "cancellations": 0,
+  "computations": 2,
+  "modelCalls": 0,
+  "operations": [
+    {
+      "code": "SIM_POSTED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retainedResults": 0,
+  "tokenReservations": 0,
+}
+`;

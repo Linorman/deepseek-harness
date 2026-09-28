@@ -1,0 +1,19 @@
+Scope: AgentRuntime SDK provider recovery-failure coverage follow-up.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test additions:
+- Provider tests now cover supervised recovery without a mounted supervisor owner, credential-revoke failure during offline transition, issuer-replacement re-enrollment failure, and POSIX/Windows fence escalation/failure paths.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts --no-file-parallelism --reporter=dot`: 1 file, 35 tests passed, 0 failed.
+- Same provider test with V8 coverage over `agent-runtime-sdk/src/index.ts` and `error.ts`: 35 tests passed; statements 94.88%, branches 88.70%, functions 100%, lines 96.18%. The repository's 100% per-file threshold remains intentionally failing, so T-02 stays partial.
+- `pnpm exec tsc -b packages/agent-runtime/agent-runtime-sdk/tsconfig.json packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/agent-runtime-sdk/src/index.ts`: `bf495c1e2b8cf547548e350dad9f91624ed30cfe43f5f80ef6458004f1e96ce2`
+- `packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts`: `b28e9bc627f289be86c072ae3d31bc0ce7be2aa91c02d81265777316667a8df2`
+
+Boundary: this improves changed SDK provider recovery coverage only. ACP/supervisor per-file 100%, separate-host recovery, and the full T-02 gate remain open.

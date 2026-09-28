@@ -1,0 +1,14 @@
+Export-JSDoc source-plane follow-up (2026-09-10)
+
+Scope: keep generated declaration artifacts out of the source export-JSDoc scan and complete the remaining real source contracts in `ModelDirectory`.
+
+Changes:
+
+1. `scripts/verify-export-jsdoc.ts` now excludes generated `*.d.ts` files under package `src/` from the source-plane walk.
+2. `ModelDirectory.forSession` now documents `sessions`, `sessionId`, and its return value; `syncCurrent` documents its `selection` parameter.
+
+Command:
+
+`pnpm run verify-export-jsdoc && git diff --check`
+
+Result: exit 0; every exported name in each scanned package API is documented.

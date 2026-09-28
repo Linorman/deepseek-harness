@@ -1,0 +1,5 @@
+请分析本案例本地运行产生的虚拟公司 Simulation 记录，不要联网，不要把角色扮演文字当作运行结果。输入说明在 SCENARIO.txt，运行方式在 run.sh。
+
+先运行 examples/team-evaluation/simple/02-buyer-supplier/run.sh。如果已由测试者运行且 output/vitest.log 中明确通过，可复用这次记录。读取 output/vitest.log 和项目中该场景对应的预期快照，写 output/report.txt：按模拟时间列出买方请求、供应商接收并承诺、库存转移、买方报告四个节点；列出前后库存、承诺终态、任务创建状态，以及这次运行是否发生真实的 Simulation 执行。请引用具体快照字段或运行日志，不要只复述 SCENARIO.txt。
+
+若运行失败，报告失败和最先出现的错误，不得编造成功结果。最终答复给出日志及报告路径。

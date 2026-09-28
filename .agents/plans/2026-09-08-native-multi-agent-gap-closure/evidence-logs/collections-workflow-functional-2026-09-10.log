@@ -1,0 +1,250 @@
+=== focused-final.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·························································································································································································
+
+ Test Files  5 passed (5)
+      Tests  185 passed (185)
+   Start at  19:55:12
+   Duration  18.99s (transform 3.72s, setup 770ms, import 4.28s, tests 19.73s, environment 269ms)
+
+
+=== gui-final.log ===
+$ vitest run packages/client packages/host --maxWorkers=4 --reporter=dot
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+··································································································································································································································································································································································································································································································································································································································································································································································stderr | packages/client/ui-primitives/tests/markdown.client.spec.tsx > MarkdownText > keeps the CJK strong extension out of escaped, code, math, and ASCII contexts
+LaTeX-incompatible input and strict mode is set to 'warn': Unicode text character "注" used in math mode [unicodeTextInMathMode]
+LaTeX-incompatible input and strict mode is set to 'warn': Unicode text character "意" used in math mode [unicodeTextInMathMode]
+LaTeX-incompatible input and strict mode is set to 'warn': Unicode text character "：" used in math mode [unicodeTextInMathMode]
+LaTeX-incompatible input and strict mode is set to 'warn': Unicode text character "内" used in math mode [unicodeTextInMathMode]
+LaTeX-incompatible input and strict mode is set to 'warn': Unicode text character "容" used in math mode [unicodeTextInMathMode]
+
+··············stderr | packages/client/ui-primitives/tests/markdown.client.spec.tsx > MarkdownText > keeps backslash delimiters correct across Markdown boundaries and malformed candidates
+LaTeX-incompatible input and strict mode is set to 'warn': In LaTeX, \\ or \newline does nothing in display mode [newLineInDisplayMode]
+
+stderr | packages/client/ui-primitives/tests/markdown.client.spec.tsx > MarkdownText > renders escaped dollars and even backslash pairs before closing fences
+LaTeX-incompatible input and strict mode is set to 'warn': In LaTeX, \\ or \newline does nothing in display mode [newLineInDisplayMode]
+
+························-···········································································································································stderr | packages/client/ui-commands/tests/popup-view.client.spec.tsx > PopupSelectView > a failed options load shows the error with a retry button that reloads
+[ui-commands] popupSelect options failed for /theme: Error: directory down
+    at Object.options (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup-view.client.spec.tsx:218:48)
+    at PopupSelectController.load (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:145:18)
+    at PopupSelectController.open (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:140:10)
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup-view.client.spec.tsx:69:11
+    at /Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@testing-library+react@16.3.2_@testing-library+dom@10.4.1_@types+react-dom@18.3.7_@type_b0bbe147884ef4cbbf95e64a97c782e8/node_modules/@testing-library/react/dist/act-compat.js:47:24
+    at act (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react@18.3.1/node_modules/react/cjs/react.development.js:2512:16)
+    at /Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@testing-library+react@16.3.2_@testing-library+dom@10.4.1_@types+react-dom@18.3.7_@type_b0bbe147884ef4cbbf95e64a97c782e8/node_modules/@testing-library/react/dist/act-compat.js:46:25
+    at mountOpen (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup-view.client.spec.tsx:68:9)
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup-view.client.spec.tsx:215:11
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+
+stderr | packages/client/ui-commands/tests/popup-view.client.spec.tsx > PopupSelectView > an onSelect failure keeps the shell open with the error strip and no retry button (re-select is the retry)
+[ui-commands] popupSelect onSelect failed for /theme: Error: host rejected
+    at Object.onSelect (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup-view.client.spec.tsx:231:82)
+    at PopupSelectController.settle (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:258:26)
+    at PopupSelectController.select (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:224:16)
+    at onKeyDown (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/PopupSelectView.tsx:96:20)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+
+······································································································································stderr | packages/client/ui-settings-models/tests/components.client.spec.tsx > ModelsSection > renders the read-only notice and exercises an idle refresh
+Warning: Cannot update a component (`Loaded`) while rendering a different component (`Loaded`). To locate the bad setState() call inside `Loaded`, follow the stack trace as described in https://reactjs.org/link/setstate-in-render
+    at Loaded (/Volumes/projects-mac/deepseek-harness/packages/client/ui-settings-models/src/client/ModelsSection.tsx:119:19)
+    at ModelsSection (/Volumes/projects-mac/deepseek-harness/packages/client/ui-settings-models/src/client/ModelsSection.tsx:105:10)
+
+······················································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································································Error: renderSlot('root') before any 'root' registration (boot order)
+    at RootOutlet (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:868:11)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: renderSlot('root') before any 'root' registration (boot order)
+    at RootOutlet (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:868:11)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:336:48)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:336:48)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry A boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:395:32)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: entry A boom
+    at component (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:395:32)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+stderr | packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx > overlay chains (ChainRenderOpts.overlay) > keeps election semantics under overlay: priority order, selector-crash decline, live dispose back to fallback
+chain selector crashed in 'k.chain' (unknown registrant), treating as declined: Error: selector boom
+    at Object.select (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:601:29)
+    at renderOutletContent (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:786:26)
+    at SlotOutlet (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:678:8)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at updateFunctionComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:19617:20)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21640:16)
+    at beginWork$1 (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:27465:14)
+    at performUnitOfWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26599:12)
+    at workLoopSync (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26505:5)
+    at renderRootSync (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:26473:7)
+
+Error: inject boom
+    at inject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:935:29)
+    at runInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:110:27)
+    at cachedRootInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:179:13)
+    at RootEntry (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:615:20)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+Error: inject boom
+    at inject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx:935:29)
+    at runInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:110:27)
+    at cachedRootInject (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:179:13)
+    at RootEntry (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/scoped-slots.tsx:615:20)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+······················································································································································································································································································································································································································································································································································stderr | packages/host/apiproxy/tests/api-proxy-view.spec.ts > mux live view computation > attaches the three standard card views, omits view without a presenter, soft-falls on throw
+api-proxy: presenter failed for tool/call, falling back to generic: Error: presenter exploded
+
+stderr | packages/host/apiproxy/tests/api-proxy-view.spec.ts > mux live view computation > serves history entries with call/result views, backscan pairing, and soft-falls
+api-proxy: presenter failed for tool/call, falling back to generic: SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)
+
+·························································································································································································································Error: slot machinery rendered outside the installed renderer tree
+    at useHost (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:27:20)
+    at SessionProvider (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:151:16)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+Error: slot machinery rendered outside the installed renderer tree
+    at useHost (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:27:20)
+    at SessionProvider (/Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer/src/client/session-provider.tsx:151:16)
+    at renderWithHooks (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/jsdom@29.1.1/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+················································································································································································································································································································································································································································································stderr | packages/client/ui-commands/tests/popup.client.spec.ts > open and options load > an options failure keeps the shell open with search retained, surfaces the error, and retry reloads
+[ui-commands] popupSelect options failed for /theme: Error: directory down
+    at Object.options (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:133:48)
+    at PopupSelectController.load (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:145:18)
+    at PopupSelectController.open (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:140:10)
+    at readyPopup (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:53:9)
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:130:29
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel (file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)
+
+stderr | packages/client/ui-commands/tests/popup.client.spec.ts > select > an onSelect failure keeps the shell open with search/highlight/token intact, no consumption, and select re-arms
+[ui-commands] popupSelect onSelect failed for /theme: Error: host rejected
+    at Object.onSelect (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:295:35)
+    at PopupSelectController.settle (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:258:26)
+    at PopupSelectController.select (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:224:16)
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:301:17
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20
+
+stderr | packages/client/ui-commands/tests/popup.client.spec.ts > select > ignores selects while closed, pending, failed, or out of filtered range
+[ui-commands] popupSelect options failed for /theme: Error: x
+    at Object.options (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:316:80)
+    at PopupSelectController.load (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:145:18)
+    at PopupSelectController.open (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/src/client/popup.ts:140:10)
+    at readyPopup (/Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:53:9)
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:316:37
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+stderr | packages/client/ui-commands/tests/popup.client.spec.ts > select > a dispose racing a failing onSelect revokes its error write
+[ui-commands] popupSelect onSelect failed for /theme: Error: late
+    at /Volumes/projects-mac/deepseek-harness/packages/client/ui-commands/tests/popup.client.spec.ts:350:12
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at file:///Volumes/projects-mac/deepseek-harness/node_modules/.pnpm/@vitest+runner@4.1.8/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:20
+
+··································································································································································································································································································································································································································································································································································
+
+ Test Files  292 passed (292)
+      Tests  3920 passed | 1 skipped (3921)
+   Start at  19:17:25
+   Duration  43.28s (transform 7.40s, setup 5.90s, import 53.51s, tests 46.63s, environment 36.36s)
+
+
+=== typecheck-final.log ===
+
+=== browser-lint-final.log ===
+
+=== pairing.log ===
+$ tsx scripts/verify-translation-pairing.ts --write packages/client/ui-team/README.md packages/team/team-run/README.md
+verify-translation-pairing: recorded packages/client/ui-team/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-run/README.i18n.yaml
+verify-translation-pairing: 2 record(s) written; run the check to validate the pairs.

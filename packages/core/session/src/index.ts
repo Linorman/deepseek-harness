@@ -1,3 +1,4 @@
+import { isSimulationContextView, isSimulationContextViewEvent } from './simulation-context.ts'
 /**
  * Event-sourced session service: append-only session log, in-memory store, and
  * the derived LLM message history. Persistence is a plugin concern (subscribe
@@ -181,6 +182,10 @@ function snapshotSessionHeader(id: SessionId, source?: SessionHeader): SessionHe
  * @returns the same event object with a validated, deeply frozen message.
  */
 export function adoptSessionEvent<T extends SessionEvent>(event: T): T {
+  if (event.type === 'simulation/context-view'
+    && !isSimulationContextViewEvent(event)) {
+    throw new Error('simulation/context-view has invalid required context data')
+  }
   if (event.type === 'team/channel-view') {
     if (Object.hasOwn(event, 'ignorable')) {
       throw new Error('session event team/channel-view cannot be marked ignorable')
@@ -194,6 +199,7 @@ export function adoptSessionEvent<T extends SessionEvent>(event: T): T {
   switch (event.type) {
     case 'user/message':
     case 'team/channel-view':
+    case 'simulation/context-view':
       deepFreeze(event.data)
       break
     case 'assistant/message':
@@ -260,7 +266,7 @@ function assertSessionEventEnvelope(value: Record<string, unknown>, index: numbe
     || typeof time !== 'number' || !Number.isSafeInteger(time)
     || event['data'] === undefined
     || (event['ignorable'] !== undefined && event['ignorable'] !== true)
-    || (type === 'team/channel-view' && Object.hasOwn(event, 'ignorable'))) {
+    || ((type === 'team/channel-view' || type === 'simulation/context-view') && Object.hasOwn(event, 'ignorable'))) {
     throw new Error(`seed event at index ${index} has an invalid event envelope`)
   }
   switch (type) {
@@ -269,6 +275,9 @@ function assertSessionEventEnvelope(value: Record<string, unknown>, index: numbe
     case 'assistant/message':
     case 'tool/result':
       assertCurrentLlmShape(event, index)
+      break
+    case 'simulation/context-view':
+      if (!isSimulationContextView(event['data'])) throw new Error('simulation/context-view has invalid context data')
       break
     case 'team/channel-view':
       assertTeamChannelViewShape(event['data'], `seed team/channel-view at index ${index}`)

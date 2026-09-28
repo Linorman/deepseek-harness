@@ -1,0 +1,19 @@
+$ tsx scripts/gen-cordis-catalog.ts --check
+/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518
+    throw new TypertAnalysisError(
+          ^
+
+TypertAnalysisError: typert(host): packages/core/team/src/human-delivery-types.ts:99:19: reference to TeamChannelViewEventData crosses a package without an explicit package import
+    at FaceAnalyzer.fail (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518:11)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2365:16)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2210:22)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:44)
+    at Array.map (<anonymous>)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:27)
+    at FaceAnalyzer.members (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2026:61)
+    at FaceAnalyzer.ensureDeclaration (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1965:16)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2374:68)
+    at FaceAnalyzer.convertHeritage (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1999:20)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.

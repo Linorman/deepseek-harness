@@ -1,0 +1,5 @@
+packages/team/team-hub/src/index.ts(2,15): error TS6196: 'ActivationReservationInput' is declared but never used.
+packages/team/team-hub/src/index.ts(3832,61): error TS2345: Argument of type 'ActivationControllerReservationScope | ActivationControllerFenceScope | ActivationControllerQuiesceScope | ActivationRecoveryQuiesceScope' is not assignable to parameter of type '{ readonly teamId: TeamId; readonly activationId: ActivationId; readonly participantId: ParticipantId; readonly sessionId: SessionId; readonly provider: string; }'.
+  Property 'activationId' is missing in type 'ActivationControllerReservationScope' but required in type '{ readonly teamId: TeamId; readonly activationId: ActivationId; readonly participantId: ParticipantId; readonly sessionId: SessionId; readonly provider: string; }'.
+packages/team/team-hub/src/index.ts(3884,16): error TS2339: Property 'activationId' does not exist on type 'ActivationControllerReservationScope | ActivationControllerFenceScope | ActivationControllerQuiesceScope | ActivationRecoveryQuiesceScope'.
+  Property 'activationId' does not exist on type 'ActivationControllerReservationScope'.

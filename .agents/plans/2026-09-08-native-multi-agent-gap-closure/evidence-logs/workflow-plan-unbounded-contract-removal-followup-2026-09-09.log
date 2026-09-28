@@ -1,0 +1,18 @@
+Workflow-plan unbounded contract removal follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/host/apiproxy/tsconfig.json packages/sdk/server/tsconfig.json packages/sdk/client/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-hub/tests/durable-workflow-replay.spec.ts --pool=forks --maxWorkers=1`
+   Result: 1 file passed; 26 tests passed across JSON and SQLite, including source-boundary page cursors.
+3. `pnpm exec vitest run packages/sdk/server/tests/server.spec.ts packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/client/runtime/tests/team-tasks.client.spec.ts --pool=forks --maxWorkers=1`
+   Result: 3 files passed; 133 tests passed.
+4. `pnpm exec vitest run packages/host/apiproxy/tests/api-proxy-teams.spec.ts --pool=forks --maxWorkers=1 -t 'runs the default local topology through the full fetch carrier'`
+   Result: 1 test passed; 49 tests filtered.
+5. `pnpm run gen-cordis-api && pnpm run verify-cordis-api && pnpm run verify-cordis-catalog`
+   Result: generated API/catalog fresh; 103 generated files/regions up to date.
+6. `node --import tsx/esm scripts/run-oxlint.ts scripts/gen-cordis-catalog.ts packages/team/team-hub/tests/durable-workflow-replay.spec.ts packages/core/team/src/runtime.ts packages/core/team/src/schema.ts`
+   Result: exit 0.
+
+The old unbounded Core `TeamRuntime.listWorkflowPlans()` contract is removed; consumers use the provider-bounded `listWorkflowPlansPage()` contract. The SDK wire method remains the bounded public page API.

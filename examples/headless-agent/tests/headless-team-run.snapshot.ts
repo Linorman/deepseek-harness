@@ -1,4 +1,5 @@
-import { copyFile, mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import ts from 'typescript'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { LOADER_SMOKE_TEST_TIMEOUT_MS, runLoaderSmoke } from '@clocky/clocky-loader-smoke'
@@ -190,7 +191,10 @@ async function prepareTeamRunFixture(cwd: string): Promise<void> {
   const fixtureDir = join(cwd, '.clocky', 'profiles', 'headless', 'snapshot-fixtures')
   await mkdir(fixtureDir, { recursive: true })
   await Promise.all([
-    copyFile(teamRunLlmPluginPath, join(fixtureDir, 'headless-team-run-llm.ts')),
+    writeFile(join(fixtureDir, 'headless-team-run-llm.mjs'), ts.transpileModule(await readFile(teamRunLlmPluginPath, 'utf8'), {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+      fileName: teamRunLlmPluginPath,
+    }).outputText),
     writeFile(join(fixtureDir, 'package.json'), '{"type":"module"}\n'),
   ])
 }

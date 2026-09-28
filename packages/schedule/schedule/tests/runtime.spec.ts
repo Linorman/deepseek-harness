@@ -65,6 +65,7 @@ async function harness(): Promise<RuntimeHarness> {
     inbox,
     status: 'idle',
     ctx: new Context(),
+    wakePending: () => false,
     send(_message: UserMessage, _target: InboxTarget, _wakeup: boolean) {},
     runMaintenance<T>(task: (signal: AbortSignal) => Promise<T>): Promise<T> {
       order.push('maintenance')

@@ -361,9 +361,7 @@ export function teamProjectionFromData(data: TeamProjectionData): TeamProjection
   const workspaceAllocations = new Map<TeamWorkspaceAllocationId, TeamWorkspaceAllocationSnapshot>()
   const allocationAttempts = new Set<string>()
   for (const allocation of data.workspaceAllocations) {
-    assertWorkspaceAllocationRelation(data.team.id, tasks, activations, allocation, false)
-    const task = tasks.get(allocation.taskId)
-    if (task === undefined) throw malformedTeam('Workspace checkpoint observation has no task')
+    const task = requireWorkspaceAllocationTask(data.team.id, tasks, activations, allocation, false)
     assertWorkspaceObservationSnapshot(allocation, task, data.team.updatedAt)
     const attemptKey = workspaceAttemptKey(allocation)
     if (allocationAttempts.has(attemptKey)) {
@@ -624,7 +622,6 @@ function foldTeamRecordValue(
         throw malformedTeam('child result admission must be unique and cannot replace human or cancelled work')
       }
       assertChildResultAdmission(previous, record.admission)
-      if (record.admission.admittedAt !== record.createdAt) throw malformedTeam('child result admission timestamp differs from its record')
       return { ...previous, team: { ...team, childResultAdmission: structuredClone(record.admission) } }
     case 'team/final-admitted':
       if (previous.team.parentTeamId !== undefined) throw malformedTeam('a child Team cannot accept a human final result')
@@ -786,6 +783,7 @@ function foldTeamRecordValue(
 /** Journal kinds admitted after closure intent, before resource-specific cleanup checks. */
 type ClosureCleanupRecord = Exclude<TeamJournalRecord, { readonly type:
   | 'team/created'
+  | 'team/child-run-bound'
   | 'team/cancellation'
   | 'participant-interrupt/requested'
   | 'channel/attached'
@@ -822,7 +820,8 @@ function assertClosureCleanupRecord(
       if (!previous.workspaceAllocations.has(record.allocation.id)
         || (record.allocation.lifecycle !== 'release-requested'
           && record.allocation.lifecycle !== 'released'
-          && record.allocation.lifecycle !== 'preserved')) {
+          && record.allocation.lifecycle !== 'preserved'
+          && record.allocation.lifecycle !== 'unavailable')) {
         throw malformedTeam(`Team '${streamTeamId}' closure cleanup cannot create or reactivate workspace allocation '${record.allocation.id}'`)
       }
       return
@@ -848,8 +847,6 @@ function assertClosureCleanupRecord(
       }
       return
     }
-    case 'team/child-run-bound':
-      throw malformedTeam(`Team '${streamTeamId}' cannot bind child endpoints after closure admission`)
     case 'team/child-result-admitted':
     case 'team/final-admitted':
     case 'team/closure':
@@ -1710,7 +1707,7 @@ function foldWorkspaceAllocation(
       || allocation.observation !== undefined) {
       throw malformedTeam(`workspace allocation '${allocation.id}' has an invalid initial reservation`)
     }
-    assertWorkspaceAllocationRelation(streamTeamId, previous.tasks, previous.activations, allocation, true)
+    requireWorkspaceAllocationTask(streamTeamId, previous.tasks, previous.activations, allocation, true)
     if ([...previous.workspaceAllocations.values()].some(candidate => workspaceAttemptKey(candidate) === workspaceAttemptKey(allocation))) {
       throw malformedTeam(`workspace allocation '${allocation.id}' repeats task attempt '${allocation.attemptId}'`)
     }
@@ -1721,21 +1718,21 @@ function foldWorkspaceAllocation(
     if (!isDeepStrictEqual(current.observation, allocation.observation)) throw malformedTeam('Workspace lifecycle cannot rewrite its observation')
     assertWorkspaceAllocationImmutableFields(current, allocation)
     assertWorkspaceAllocationTransition(current, allocation, record.createdAt)
-    assertWorkspaceAllocationRelation(streamTeamId, previous.tasks, previous.activations, allocation, false)
+    requireWorkspaceAllocationTask(streamTeamId, previous.tasks, previous.activations, allocation, false)
   }
   const workspaceAllocations = new Map(previous.workspaceAllocations)
   workspaceAllocations.set(allocation.id, structuredClone(allocation))
   return { ...previous, team, workspaceAllocations }
 }
 
-/** Validate the durable task, attempt, activation, and Session relation of an allocation. */
-function assertWorkspaceAllocationRelation(
+/** Return the task after validating the allocation's attempt, activation, and Session relation. */
+function requireWorkspaceAllocationTask(
   teamId: TeamId,
   tasks: ReadonlyMap<TeamTaskId, TeamTaskSnapshot>,
   activations: ReadonlyMap<ActivationId, ActivationBindingSnapshot>,
   allocation: TeamWorkspaceAllocationSnapshot,
   requireRunningLease: boolean,
-): void {
+): TeamTaskSnapshot {
   const task = tasks.get(allocation.taskId)
   if (task === undefined || task.phase === 'deleted' || task.workspaceMode !== allocation.mode) {
     throw malformedTeam(`workspace allocation '${allocation.id}' has an invalid task or workspace mode relation`)
@@ -1760,6 +1757,7 @@ function assertWorkspaceAllocationRelation(
     || binding.sessionId !== allocation.sessionId) {
     throw malformedTeam(`workspace allocation '${allocation.id}' has an invalid activation Session relation`)
   }
+  return task
 }
 
 /** Keep provider identity and exact ownership fields immutable across lifecycle transitions. */
@@ -1852,6 +1850,21 @@ function assertTaskCreateProvenance(
   const command = task.createCommand
   const creator = command.creator
   const participant = projection.participants.get(creator.participantId)
+  if ('kind' in creator) {
+    if (creator.teamId !== projection.team.id || creator.teamId !== task.teamId
+      || projection.rules['simulationRunId'] !== creator.runId || participant === undefined || !isAgentParticipant(participant)
+      || requireDeliverable && (participant.phase !== 'active' || projection.team.phase !== 'active'
+        || projection.team.cancellation !== undefined)
+      || command.idempotencyKey !== JSON.stringify(['simulation-task', creator.runId, creator.operationId])
+      || task.execution.kind !== 'participant' || task.workflowPlanId !== undefined || task.parentTaskId !== undefined
+      || task.integration !== undefined) throw malformedTeam(`task '${task.id}' has an invalid Simulation creation relation`)
+    for (const current of projection.tasks.values()) {
+      if (current.id !== task.id && sameTaskCreateCommand(current.createCommand, command)) {
+        throw malformedTeam(`task '${task.id}' repeats a task-creation command`)
+      }
+    }
+    return
+  }
   if (isHumanTaskCreator(creator)) {
     if (creator.teamId !== projection.team.id
       || creator.teamId !== task.teamId
@@ -1904,7 +1917,7 @@ function sameTaskCreator(left: TeamTaskCommandCreator, right: TeamTaskCommandCre
 
 /** Identify a task command whose durable attribution is an authenticated human, not an activation. */
 function isHumanTaskCreator(creator: TeamTaskCommandCreator): creator is TeamHumanTaskCreator {
-  return !('activationId' in creator)
+  return !('activationId' in creator) && !('kind' in creator)
 }
 
 /** Keep an advisory owner proposal attached to an existing Team Participant. */

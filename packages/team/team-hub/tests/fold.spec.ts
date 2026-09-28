@@ -1425,29 +1425,35 @@ describe('channel WAL fold', () => {
     failure(() => foldChannelRecord(active, channelEnvelope({
       envelope: { ...canonicalEnvelope.envelope, sequence: 3 },
     }), 3, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(active, channelOpened({ sequence: 2, manifest: baseManifest }), 2, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(active, channelPhase({ sequence: 2, phase: 'pending' }), 2, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(active, channelEnvelope({
+    const repeatedOpening = channelOpened({ sequence: 5, manifest: baseManifest })
+    expect(failure(() => foldChannelRecord(active, repeatedOpening, 5, baseManifest.id, validAdapter),
+      'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('channel/opened appears after the first record')
+    expect(failure(() => foldChannelRecord(active, channelPhase({ sequence: 5, phase: 'pending' }), 5, baseManifest.id, validAdapter),
+      'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('durable lifecycle transition is invalid')
+    expect(failure(() => foldChannelRecord(active, channelEnvelope({
       envelope: { ...canonicalEnvelope.envelope, channelId: 'channel-other' },
-    }), 2, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(active, channelEnvelope({
+    }), 5, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('does not belong to channel')
+    expect(failure(() => foldChannelRecord(active, channelEnvelope({
       envelope: { ...canonicalEnvelope.envelope, teamId: otherTeamId },
-    }), 2, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(active, channelAdapter({
-      sequence: 2,
+    }), 5, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('does not belong to channel')
+    expect(failure(() => foldChannelRecord(active, channelAdapter({
+      sequence: 5,
       adapter: { type: 'other', version: 1 },
-    }), 2, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
+    }), 5, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('adapter record does not match')
 
     const delivered = foldChannelRecord(active, canonicalEnvelope, 5, baseManifest.id, validAdapter)
-    failure(() => foldChannelRecord(delivered, channelReceipt({
+    expect(failure(() => foldChannelRecord(delivered, channelReceipt({
+      sequence: 6,
       participantId: 'missing-participant',
       cursor: 5,
-    }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(delivered, channelReceipt({
+    }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('does not belong to channel')
+    expect(failure(() => foldChannelRecord(delivered, channelReceipt({
+      sequence: 6,
       envelopeId: 'missing-envelope',
       cursor: 5,
-    }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
-    failure(() => foldChannelRecord(delivered, channelReceipt({ cursor: 1 }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
+    }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('has no pending delivery')
+    expect(failure(() => foldChannelRecord(delivered, channelReceipt({ sequence: 6, cursor: 1 }), 6, baseManifest.id, validAdapter),
+      'TEAM_CHANNEL_WAL_MALFORMED').message).toContain('does not match')
     const ttlEnvelope = channelEnvelopeAt(5, { envelope: { ...canonicalEnvelope.envelope, ttlMs: 10 } })
     const ttlPending = foldChannelRecord(active, ttlEnvelope, 5, baseManifest.id, validAdapter)
     failure(() => foldChannelRecord(ttlPending, {
@@ -1509,22 +1515,23 @@ describe('channel WAL fold', () => {
       receiptCursors: [{ participantId, cursor: 2 }, { participantId, cursor: 2 }],
     }), 'TEAM_CHANNEL_WAL_MALFORMED')
 
-    const invalidPlans: readonly unknown[] = [
-      null,
-      [{}],
-      [{ participantId, envelopeId: 'other-envelope', delivery: 'context' }],
-      [{ participantId: 'missing-participant', envelopeId: 'envelope-a', delivery: 'context' }],
-      [
+    const invalidPlans: readonly (readonly [unknown, string])[] = [
+      [null, 'non-array delivery plan'],
+      [[{}], 'invalid delivery plan'],
+      [[{ participantId, envelopeId: 'other-envelope', delivery: 'context' }], 'not Envelope'],
+      [[{ participantId: 'missing-participant', envelopeId: 'envelope-a', delivery: 'context' }], 'not a channel participant'],
+      [[
         { participantId, envelopeId: 'envelope-a', delivery: 'context' },
         { participantId, envelopeId: 'envelope-a', delivery: 'context' },
-      ],
+      ], 'repeats recipient'],
     ]
-    for (const plan of invalidPlans) {
+    for (const [plan, message] of invalidPlans) {
       const planAdapter: TeamChannelAdapter = {
         ...adapter().value,
         deliveryPlan() { return plan as never },
       }
-      failure(() => foldChannelRecord(active, channelEnvelope(), 2, baseManifest.id, planAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
+      expect(failure(() => foldChannelRecord(active, canonicalEnvelope, 5, baseManifest.id, planAdapter),
+        'TEAM_CHANNEL_WAL_MALFORMED').message).toContain(message)
     }
     const repeated = foldChannelRecord(active, canonicalEnvelope, 5, baseManifest.id, validAdapter)
     const duplicateEnvelope = channelEnvelope()
@@ -1533,4 +1540,38 @@ describe('channel WAL fold', () => {
       envelope: { ...duplicateEnvelope.envelope, sequence: 6 },
     }), 6, baseManifest.id, validAdapter), 'TEAM_CHANNEL_WAL_MALFORMED')
   })
+})
+
+describe('Team checkpoint ownership integrity', () => {
+  it.each(['unknown-human', participantId])('refuses an accepted answer whose responder %s is not a retained human', (respondedBy) => {
+    const { projection, binding } = interruptProjection()
+    const action = teamHumanActionSnapshotSchema.parse({ ...humanAction(binding), response: {
+      expectedUpdatedAt: 20, idempotencyKey: 'response-a',
+      answer: { kind: 'question', answers: [] }, respondedBy, acceptedAt: 20,
+    } })
+    const withAction = foldTeamRecord(projection, { type: 'human-action/changed', action: humanAction(binding), createdAt: 20 }, 6, teamId)
+    const data = teamProjectionDataSchema.parse({ ...teamProjectionData(withAction), humanActions: [action] })
+    expect(() => teamProjectionFromData(data)).toThrow('names an unknown human responder')
+  })
+
+  it.each(['', 17])('refuses a non-path workspace rule %j from the journal', (workspacePath) => {
+    expect(() => foldTeamRecord(undefined, createdTeam({ rules: { workspacePath } }), 0, teamId))
+      .toThrow('workspacePath rule must be a non-empty string')
+  })
+})
+
+it('attributes non-agent attempt usage without inventing an activation binding', () => {
+  let projection = taskBaseTeam()
+  for (const [index, phase] of ['invited', 'provisioning', 'active'].entries()) {
+    projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human', phase }), createdAt: 12 + index }),
+      projection.team.cursor + 1, teamId)
+  }
+  projection = foldTeamRecord(projection, taskChanged({ createdAt: 15 }), projection.team.cursor + 1, teamId)
+  const lease = taskLease({ participantId, activationId: undefined, assignedAt: 16, renewedAt: 16, expiresAt: 26 })
+  projection = foldTeamRecord(projection, taskChanged({ task: task({ revision: 2, phase: 'assigned', attemptCount: 1, lease }), createdAt: 16 }),
+    projection.team.cursor + 1, teamId)
+  const sample = usageSample({ taskId, attemptId: lease.attemptId })
+  const usage = usageFromSamples(new Map([[sample.id, sample]]))
+  const next = foldTeamRecord(projection, { type: 'usage/changed', sample, usage, createdAt: 20 }, projection.team.cursor + 1, teamId)
+  expect(next.usageSamples.get(sample.id)).toEqual(sample)
 })

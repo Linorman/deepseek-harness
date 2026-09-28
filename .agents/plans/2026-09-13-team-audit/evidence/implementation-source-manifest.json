@@ -1,0 +1,19 @@
+{
+  "note": "Current working-tree fingerprints; shared TeamHub and TeamRun files also contain preserved parallel work.",
+  "head": "26bc4314fca3a98e9f479c509f7771e623ef60f9",
+  "files": {
+    "packages/team/team-agent-client/src/index.ts": "909f82adc7a995b7326060270186bed40c3f76429f3bd88918cc196738b61481",
+    "packages/team/team-scheduler-dag/src/index.ts": "273c8d510b69c6810587d2e9bfabca351e1dff1e2c248b3f7d65fb2be5186b5e",
+    "packages/team/team-hub/src/index.ts": "0c5154c1de9b1133b29308d9b46ee2633bd4c1d2a77146e7834f7d2765b8e8d1",
+    "packages/team/team-run/src/index.ts": "96f340b7e30453ff6e7b80110e7c5c816b1f6eef4348cdc1177710eae8657ea5",
+    "packages/team/tool-team/src/index.ts": "7ad9957b2438e1ed083cb82a81afc30e7c94bb7c1d7b3398546fb0c7baf28b34",
+    "packages/team/tool-team-task/src/index.ts": "2af9ba127dfacee1c75e3f3382faa31a180cc5d45f674bf830bd24f8d7207d7e",
+    "packages/team/tool-team-task/src/workflow-schema.ts": "a81fe5e758b04bca83ca402f33ebd1334b6d9a0fa3583b2cfc35c885d7ef7fc9",
+    "packages/core/team-link/src/index.ts": "dfa6180b47fbdf49fad0c96a6eeff32b8b40caf95591913a6ae23f8330ced0ef",
+    "packages/core/team-link/src/error.ts": "bd8a7c7375d9d608655c2c9d19c2ee5773c69982422a5bf07cf5823e0aab1dde",
+    "packages/team/team-link-websocket/src/index.ts": "ebfbcb5c4bb8a836fa5a26ad010fe466a84a64f35192980e307d7140652efa0a",
+    "packages/team/team-link-websocket/src/error.ts": "963159a36b9215bbc5c367a772527e41dff4615da3fc36e84da271764fe86c79",
+    "packages/team/team-workspace-shared/src/index.ts": "c2990984f6f17b6d453b3e4ecee1e41ac2d762d9472f58755d0b2522ea19cb2a",
+    "packages/team/team-workspace-shared/src/fingerprint.ts": "93005339dfc9b335d08970f5ef812a0b38e40f80e96a7d7d217fc742c45ac908"
+  }
+}

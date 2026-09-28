@@ -1,0 +1,20 @@
+Scheduler bounded channel-recovery follow-up (2026-09-09)
+
+Scope: migrate scheduler review and task-assignment recovery scans from the unbounded legacy channel suffix read to bounded channel pages.
+
+Commands:
+
+1. `pnpm exec tsc -p packages/team/team-scheduler-dag/tsconfig.json --noEmit`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-scheduler-dag/tests/scheduler.spec.ts packages/team/team-scheduler-dag/tests/composition.spec.ts --no-file-parallelism`
+   Result: 2 files passed; 60 tests passed.
+3. `pnpm exec oxlint packages/team/team-scheduler-dag/src/index.ts packages/team/team-scheduler-dag/tests/scheduler.spec.ts`
+   Result: exit 0.
+4. `pnpm run gen-config-catalog && pnpm run verify-config-catalog`
+   Result: generated config catalog and verification passed.
+5. `pnpm run verify-translation-pairing --write packages/team/team-scheduler-dag/README.md && pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-28-deterministic-team-dag-scheduler.md`
+   Result: scheduler README and scheduler Agent Note pair records refreshed.
+6. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: scheduler review-request discovery, review-response recovery, duplicate review prevention, and wake assignment recovery all use `readChannelPage()` through a shared continuation scanner. A repeated/non-advancing page cursor returns `TEAM_CHANNEL_CURSOR_CONFLICT`; duplicate wake Envelopes still fail closed. `channelPageSize` defaults to `128` and is validated as a positive safe integer. The evidence does not claim browser, separate-host, or full performance closure.

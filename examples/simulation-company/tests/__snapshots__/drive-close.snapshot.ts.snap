@@ -1,0 +1,559 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"completed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"consumed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"config"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "config",
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"system"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "system",
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"tools"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "tools",
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"input":"queued","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"lifecycle":"receive"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-recipient",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"lifecycle":"recover"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-recovery",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"lifecycle":"service"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-bootstrap",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "until",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"completed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"consumed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"drift"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "conversation",
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"queued"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":false,"outbound":true,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "settled",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"input":"completed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"input":"consumed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"input":"queued","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"lifecycle":"receive"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "recipient-read-failure",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"lifecycle":"recover"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "recovery-read-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"lifecycle":"service"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "bootstrap-response-lost",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "storage-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"completed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"consumed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"drift"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "conversation",
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"queued"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`json coordinator teardown > drains admitted work {"fails":true,"outbound":true,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "outcome-unknown",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"completed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"consumed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"config"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "config",
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"system"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "system",
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"drift","drift":"tools"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "tools",
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"input":"queued","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "checkpoint-input",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"lifecycle":"receive"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-recipient",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"lifecycle":"recover"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-recovery",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"lifecycle":"service"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-bootstrap",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "until",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"completed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"consumed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"drift"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "conversation",
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":false,"input":"queued"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "closed-input",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":false,"outbound":true,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "settled",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"input":"completed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"input":"consumed","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"input":"queued","checkpoint":true} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"lifecycle":"receive"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "recipient-read-failure",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"lifecycle":"recover"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "recovery-read-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"lifecycle":"service"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "bootstrap-response-lost",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "storage-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"completed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 2,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"consumed"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 1,
+  "unownedInferenceRejected": true,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"drift"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+  "requestDriftRejected": "conversation",
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":false,"input":"queued"} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "input-flush-failure",
+  "messages": 0,
+  "modelCalls": 0,
+}
+`;
+
+exports[`sqlite coordinator teardown > drains admitted work {"fails":true,"outbound":true,"input":""} 1`] = `
+{
+  "closeWaited": true,
+  "closedAdmission": true,
+  "driveResult": "outcome-unknown",
+  "messages": 1,
+  "modelCalls": 0,
+}
+`;

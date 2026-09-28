@@ -1,0 +1,18 @@
+Current documentation sync after runtime/channel graph follow-up (2026-09-09)
+
+Scope: rerun the repository documentation suite after adding the five runtime/channel service-role classifications and refreshing graph outputs. This is a scoped acceptance snapshot; remaining pair, wrap, JSDoc, and persistence failures stay explicitly open.
+
+Command:
+
+`pnpm run doc-sync`
+
+Result: exit 1; 24 gates passed, 4 gates failed, and 0 were skipped in 39.30 seconds.
+
+The graph gate now passes. Remaining failures:
+
+- `verify-translation-pairing`: existing drift in the exact-single-task-cancellation note, generated capability/event/config/tool catalogs and Team/SDK/link README pairs. The generated capability/event pair records remain unconfirmed because their English and Chinese graph bodies still differ.
+- `verify-md-wrap`: existing hard-wrapped prose in the bounded-channel Agent Note and several Team workspace/run/link/inbox/closure/admission/recovery READMEs.
+- `verify-export-jsdoc`: seven existing declaration/source violations, including AgentRuntimeSdkError, ModelDirectory, ActivationSupervisorError, and JsonlSessionPersistence.
+- `verify-persistence-catalog`: duplicate `plan/mode` event declaration in `packages/plan/plan-mode/src/index.ts` and `index.d.ts`.
+
+Passed gates include doc-typecheck, documentation build, doc graphs, Markdown links, type equivalence, Cordis/client/config/tool catalogs, package paths, public repository links, note checks, doc budgets, package README Model Experience/limitations, and documentation site checks.

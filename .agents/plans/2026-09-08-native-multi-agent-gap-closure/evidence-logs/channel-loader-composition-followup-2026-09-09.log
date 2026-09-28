@@ -1,0 +1,17 @@
+Channel Loader composition and direct-v4 follow-up (2026-09-09)
+
+Scope: repair and verify the real headless Loader channel fixtures after the expanded channel snapshot sweep exposed composition and protocol-version drift. This record covers channel composition and keyless replay behavior; it does not claim full browser, multi-host, coverage, real-model, or release closure.
+
+Changes:
+
+1. Custom-topology channel fixtures disable the default `team-delegation` Consumer when `team-run` is intentionally disabled; this prevents a provider-waiting entry from blocking Loader startup.
+2. The channel-open-failure fixture registers the direct v4 adapter used by the current `TeamRun` topology and derives its orphan WAL expectation from the invitation count.
+3. The direct-v4 fixture admits all endpoints before dispatch, then asserts that context delivery receipts the connected endpoint without waking its model.
+
+Command:
+
+`CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/headless-agent/tests/channel-admission-websocket.snapshot.ts examples/headless-agent/tests/channel-admission.snapshot.ts examples/headless-agent/tests/channel-open-failure.snapshot.ts examples/headless-agent/tests/channel-summary.snapshot.ts examples/headless-agent/tests/channel-view-capacity.snapshot.ts examples/headless-agent/tests/closed-channel-outbox.snapshot.ts examples/headless-agent/tests/direct-v4.snapshot.ts examples/headless-agent/tests/team-channel-view.snapshot.ts --no-file-parallelism`
+
+Result: exit 0; 8 files and 14 snapshot tests passed across JSON/SQLite scenarios.
+
+`git diff --check` also passed.

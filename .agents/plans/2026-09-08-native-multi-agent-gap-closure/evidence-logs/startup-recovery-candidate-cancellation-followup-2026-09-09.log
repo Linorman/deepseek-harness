@@ -1,0 +1,16 @@
+Startup recovery candidate cancellation follow-up (2026-09-09)
+
+Scope: stop processing later activation candidates in a bounded recovery page after the scan signal is cancelled during one cold replacement.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 27 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-activation-recovery/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-activation-recovery/src/index.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: the recovery scan checks its cancellation signal before each discovered Team and activation candidate, so disposal does not continue entering later recovery work after the current operation is cancelled.

@@ -1,0 +1,16 @@
+Persistence catalog source-plane follow-up (2026-09-10)
+
+Scope: correct the persistence catalog scanner so generated declaration artifacts under package `src/` cannot be treated as a second `SessionEventMap` declaration. This closes the source/artifact-plane catalog defect; it does not claim full documentation, release, or F-LG-02 Session-header migration closure.
+
+Change:
+
+`scripts/gen-persistence-catalog.ts` now scans package source files through a shared helper that excludes `*.d.ts` declaration artifacts while retaining real `.ts` declarations. The generated persistence catalog and `known-event-types.ts` were refreshed.
+
+Commands:
+
+1. `pnpm run gen-persistence-catalog`
+   Result: exit 0; generated `docs/persistence-catalog.md` and `packages/core/session/src/known-event-types.ts`.
+2. `pnpm run verify-persistence-catalog`
+   Result: exit 0; both generated artifacts are current.
+3. `git diff --check`
+   Result: exit 0.

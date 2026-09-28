@@ -1,0 +1,6 @@
+verify-translation-pairing: recorded docs/persistence-catalog.i18n.yaml
+verify-translation-pairing: 1 record(s) written; run the check to validate the pairs.
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: 1073 pair(s) checked across all in-scope documentation, all consistent.
+$ tsx scripts/verify-md-links.ts
+verify-md-links: 2192 file(s) checked, all relative cross-links and fragments resolve.

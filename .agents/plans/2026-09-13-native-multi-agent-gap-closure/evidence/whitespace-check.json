@@ -1,0 +1,22 @@
+[
+  {
+    "path": ".agents/plans/2026-09-13-native-multi-agent-gap-closure/gap-design.md",
+    "exitCode": 1,
+    "output": ""
+  },
+  {
+    "path": ".agents/plans/2026-09-13-native-multi-agent-gap-closure/development-plan.md",
+    "exitCode": 1,
+    "output": ""
+  },
+  {
+    "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/gap-design.md",
+    "exitCode": 1,
+    "output": ""
+  },
+  {
+    "path": ".agents/plans/2026-09-08-native-multi-agent-gap-closure/development-plan.md",
+    "exitCode": 1,
+    "output": ""
+  }
+]

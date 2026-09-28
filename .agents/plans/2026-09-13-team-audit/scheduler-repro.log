@@ -1,0 +1,52 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ × .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts > repro: existing assigned wakes do not starve another idle participant (wake budget 1) 13ms
+   → expected 'pending' to be 'assigned' // Object.is equality
+ ✓ .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts > repro: existing assigned wakes do not starve another idle participant (wake budget 2) 3ms
+ × .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts > repro: review request retries reuse the already attached review channel 3ms
+   → expected [ 'channel-scheduler-1', …(1) ] to have a length of 1 but got 2
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts > repro: existing assigned wakes do not starve another idle participant (wake budget 1)
+AssertionError: expected 'pending' to be 'assigned' // Object.is equality
+
+Expected: "assigned"
+Received: "pending"
+
+ ❯ .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts:964:83
+    962|     for(let i=0;i<5;i++) await scheduler.drive({teamId})
+    963|     expect(first.harness.teams.postChannelEnvelope.mock.calls.length).…
+    964|     expect(first.harness.getState().tasks.find(t=>t.id===thirdPending.…
+       |                                                                                   ^
+    965|   } finally {await scheduler.close()}
+    966| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts > repro: review request retries reuse the already attached review channel
+AssertionError: expected [ 'channel-scheduler-1', …(1) ] to have a length of 1 but got 2
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ .agents/plans/2026-09-13-team-audit/scheduler-repro.spec.ts:981:43
+    979|     expect(harness.getState().channelIds).toHaveLength(1)
+    980|     await scheduler.drive({teamId})
+    981|     expect(harness.getState().channelIds).toHaveLength(1)
+       |                                           ^
+    982|   } finally {await scheduler.close()}
+    983| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  17:25:16
+   Duration  429ms (transform 224ms, setup 141ms, import 162ms, tests 20ms, environment 0ms)

@@ -1,0 +1,9 @@
+Current candidate typecheck after recovery cancellation changes (2026-09-09)
+
+Scope: repository Host build/lib and Client contract typecheck after startup recovery cancellation, closure-driver retry, channel queue retry, and supervisor fence cancellation changes.
+
+Command:
+
+`pnpm run typecheck`
+
+Result: exit 0. Host build/lib and Client contract faces completed successfully; no TypeScript diagnostics were reported.

@@ -7,7 +7,7 @@
  * @module @clocky/clocky-compaction/types
  */
 
-import type { ContentBlock, TokenUsage } from '@clocky/clocky-llm'
+import type { ContentBlock, TokenUsage, GenerateOptions } from '@clocky/clocky-llm'
 import type { CommandId } from '@clocky/clocky-commands/brand'
 import type { CompactionId } from './brand.ts'
 
@@ -16,11 +16,12 @@ export type { CompactionId }
 declare module '@clocky/clocky-session/types' {
   interface SessionEventMap {
     /**
-     * Marks the start of a compaction — log-only, holds the lock until
-     * `compaction/end`. A numbered owner is strictly enclosed by that open turn;
-     * `null` identifies a standalone manual transaction between turns.
+     * Marks the start of a compaction; the lock lasts until compaction/end.
+     * A numbered owner is enclosed by its turn; null denotes standalone maintenance.
      */
     'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null }
+    /** Complete assembled auxiliary input before routing/dispatch; log-only, linked to its active transaction. */
+    'compaction/request': { compactionId: CompactionId; startSequence: number; request: Omit<GenerateOptions, 'signal' | 'sessionId' | 'purpose'> }
     /**
      * Completed summary, its inputs, and its model call facts — log-only, no surfaceOp.
      * The summary content is in `data.summary`; the actual surface replacement

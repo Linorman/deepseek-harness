@@ -27,3 +27,7 @@
 ## acp-agent
 
 面向程序化客户端的 ACP（Agent Client Protocol）自动化服务器，支持会话、权限和取消操作。详见 [ACP 示例参考](acp-agent/README.zh.md)。
+
+## team-evaluation
+
+六个离线 Team 协作与社会、公司模拟案例，各有独立 prompt、输入和验收条件。详见[案例索引](team-evaluation/README.zh.md)。

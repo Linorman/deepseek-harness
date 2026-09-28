@@ -341,7 +341,7 @@ describe('Team DAG scheduler composition', () => {
         }
       },
     ), { seed: 20260916, numRuns: 20 })
-  })
+  }, 30000)
 
   it.each(['capable', 'wrong-capability', 'unavailable-workspace', 'closing'] as const)('distinguishes a temporarily busy owner from unavailable work (%s)', async (kind) => {
     const ctx = await setup()

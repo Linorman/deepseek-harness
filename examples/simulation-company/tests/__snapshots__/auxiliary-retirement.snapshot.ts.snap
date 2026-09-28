@@ -1,0 +1,161 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json auxiliary retirement > drains checkpoint provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "checkpoint",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`json auxiliary retirement > drains close provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "close",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`json auxiliary retirement > drains hibernate provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "hibernate",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`json auxiliary retirement > drains lease provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "lease",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`json auxiliary retirement > drains service-bootstrap provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "service-bootstrap",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`sqlite auxiliary retirement > drains checkpoint provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "checkpoint",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`sqlite auxiliary retirement > drains close provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "close",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`sqlite auxiliary retirement > drains hibernate provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "hibernate",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`sqlite auxiliary retirement > drains lease provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "lease",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;
+
+exports[`sqlite auxiliary retirement > drains service-bootstrap provider cleanup before releasing residency 1`] = `
+{
+  "cancelledByOwner": true,
+  "chargedActors": 0,
+  "mode": "service-bootstrap",
+  "modelPermits": 0,
+  "observedUsage": {
+    "inputTokens": 3,
+    "outputTokens": 2,
+  },
+  "rejectedBindRetainedAuthority": true,
+  "sessionRetainedThroughCleanup": true,
+  "tokenStatus": "unknown",
+}
+`;

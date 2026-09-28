@@ -1,3 +1,5 @@
+export { fingerprintTeamPersistenceProjection } from './human-actor.ts'
+export * from './persistence-reference.ts'
 export { teamMemberInspectRequestSchema, teamMemberInspectionSchema } from './schema.ts'
 export { teamWorkflowInspectRequestSchema, teamWorkflowInspectionSchema } from './schema.ts'
 export { teamHumanActionReadRequestSchema } from './schema.ts'
@@ -182,6 +184,7 @@ export {
   teamSystemEnvelopePostProofResolutionSchema,
   teamSystemEnvelopePostProofSourceNameSchema,
   teamSystemEnvelopePostScopeSchema,
+  teamDeliveryOwnerScopeSchema,
   teamSystemClosureProofResolutionSchema,
   teamSystemClosureProofSourceNameSchema,
   teamSystemClosureScopeSchema,

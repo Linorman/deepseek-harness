@@ -1,0 +1,26 @@
+{
+  "simulationDays": 6,
+  "setting": "热浪中的河湾社区",
+  "sharedGoal": "降低健康风险，同时让资源分配可解释并维持居民对协作机构的信任",
+  "districts": [
+    { "id": "north", "households": 30, "coolingKitsRequested": 12, "concern": "行动不便的长者需要送上门" },
+    { "id": "west", "households": 25, "coolingKitsRequested": 10, "concern": "过去几次分配中排队时间很长" },
+    { "id": "riverside", "households": 20, "coolingKitsRequested": 8, "concern": "居民担心现场登记暴露个人健康情况" }
+  ],
+  "institutions": [
+    { "id": "clinic", "interest": "优先保障急症人员", "initialMedicalIcePacks": 8 },
+    { "id": "community-office", "interest": "要求分配规则公开且能审计", "initialCashCredits": 600 },
+    { "id": "volunteer-network", "interest": "避免志愿者过劳", "availableHoursPerDay": 24 }
+  ],
+  "sharedOpeningResources": {
+    "coolingKits": 20,
+    "backupGeneratorFuelHours": 12,
+    "purchaseOffer": "本地仓库还有 15 套降温包，每套 20 credits，付款后 2 日到货"
+  },
+  "factsAndAuthority": [
+    "各区请求是需求陈述，不是已领取物资。",
+    "只有实际采购、到货、发放或损失才改变物资数量。",
+    "机构与居民可以表达不同偏好；单方声明不自动代表社区共识。",
+    "未经核实的传言不自动成为 Simulation 世界事实。"
+  ]
+}

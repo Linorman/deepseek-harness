@@ -1,0 +1,37 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+---xx------------------------
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-activation-recovery/tests/startup-recovery.spec.ts > @clocky/clocky-team-activation-recovery > preserves a stale epoch when its runtime provider is retired (supervised: false)
+ FAIL  |thread-safe| packages/team/team-activation-recovery/tests/startup-recovery.spec.ts > @clocky/clocky-team-activation-recovery > preserves a stale epoch when its runtime provider is retired (supervised: true)
+AgentRuntimeError: AgentRuntime provider 'sdk' is not registered
+ ❯ Proxy.activate packages/core/agent-runtime/src/index.ts:192:13
+    190|     const provider = this.providers.get(request.provider)
+    191|     if (provider === undefined) {
+    192|       throw new AgentRuntimeError(
+       |             ^
+    193|         `AgentRuntime provider '${request.provider}' is not registered…
+    194|         'AGENT_RUNTIME_PROVIDER_NOT_FOUND',
+ ❯ Object.apply vendor/cordis/src/utils.ts:160:40
+ ❯ Proxy.activateOwned packages/team/team-activation-controller/src/index.ts:739:46
+ ❯ Proxy.activateColdReplacement packages/team/team-activation-controller/src/index.ts:889:16
+ ❯ Proxy.coldReplaceOwned packages/team/team-activation-controller/src/index.ts:634:12
+ ❯ Proxy.coldReplace packages/team/team-activation-controller/src/index.ts:517:14
+ ❯ recoverOnce packages/team/team-activation-recovery/src/index.ts:182:11
+ ❯ Object.apply [as callback] packages/team/team-activation-recovery/src/index.ts:117:5
+ ❯ Fiber._reload vendor/cordis/src/fiber.ts:656:9
+ ❯ Fiber.await vendor/cordis/src/fiber.ts:706:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 27 skipped (29)
+   Start at  21:29:41
+   Duration  908ms (transform 485ms, setup 136ms, import 480ms, tests 183ms, environment 0ms)

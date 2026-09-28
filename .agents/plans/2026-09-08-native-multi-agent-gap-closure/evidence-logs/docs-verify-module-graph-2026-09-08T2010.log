@@ -1,0 +1,3 @@
+$ tsx scripts/gen-module-graph.ts --check
+gen-module-graph: docs/module-graph.md is stale. Run `pnpm run gen-module-graph` and commit docs/module-graph.md.
+[ELIFECYCLE] Command failed with exit code 1.

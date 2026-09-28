@@ -1,0 +1,12 @@
+Command:
+  pnpm run typecheck
+
+Result:
+  PASS — Host TypeScript build, host tsdown/lib generation with Typert
+  contracts, and Client TypeScript project-reference aggregate all exited 0.
+  This run includes the current runtime/channel, recovery-consumer, TeamRun,
+  and client Team-task test fixture types.
+
+Boundary:
+  This is a repository TypeScript/build-contract gate. It does not imply full
+  test, coverage, multi-host, browser, performance, or release closure.

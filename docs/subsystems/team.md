@@ -81,6 +81,13 @@ Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnp
 Team Consumer that owns the small two-system transaction from a published AgentRuntime handle to a durable Team binding. Each provider owns the execution-specific mechanism behind its handle status stream.
 
 ```ts cordis-catalog
+/**
+ * Register the owner required by Team rules.activationLifecycleOwner. Unregister closes starts and drains its handles.
+ * @param owner - Durable domain coordination owner.
+ * @returns retryable asynchronous disposer; unconfirmed termination rejects without dropping ownership.
+ */
+registerLifecycleOwner(owner: TeamActivationLifecycleOwner): () => Promise<void>
+
 /** Begin terminal-intent-driven release of every exact activation handle currently owned by this controller. */
 start(): void
 
@@ -103,6 +110,13 @@ async recoverClosure(input: TeamClosureContinuationRequest): Promise<void>
 async activate(input: TeamActivationRequest): Promise<TeamActivationLease>
 
 /**
+ * Stop one exact activation retained by this controller, with ordinary domain revocation and quiescence.
+ * @param request - Exact owned Team, participant and activation identity; no replacement is started.
+ * @returns confirmed disposal; failed cleanup retains the owned entry for retry.
+ */
+async stopOwnedActivation( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId }, ): Promise<void>
+
+/**
  * Fence one stale external epoch, atomically release its current task leases
  * and persist it offline, then publish a new activation with the same Team
  * participant and Session under a new id.
@@ -116,6 +130,20 @@ async coldReplace(input: TeamActivationColdReplaceRequest): Promise<TeamActivati
  * @param input - Exact stale activation and recovery authorization selected by the recovery owner.
  */
 async fenceStale(input: TeamActivationStaleFenceRequest): Promise<void>
+
+/**
+ * Retire a recovered local epoch only when its registered domain owner proves the prior Host cannot execute it.
+ * @param request - Exact durable Team/Participant/activation identity.
+ * @returns completion after domain revocation and durable Team quiescence.
+ */
+async recoverCoordinatedLocal( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly activationId: ActivationId }, ): Promise<void>
+
+/**
+ * Settle a coordinated startup with no published epoch only after the owner proves no execution remains.
+ * @param request - Exact durable Team participant and startup reservation.
+ * @returns durable Team reservation and domain-writer release.
+ */
+async recoverCoordinatedReservation( request: { readonly teamId: TeamId; readonly participantId: ParticipantId; readonly reservationId: ActivationReservationId }, ): Promise<void>
 
 /**
  * Confirm that a human-authorized coordinator recovery can reach the selected provider without mutating Team state.
@@ -641,7 +669,7 @@ async cancel( teamId: TeamId, humanOwner?: Extract<TeamParticipantOwner, { reado
  */
 async archiveTerminal(request: TeamArchiveInput): Promise<TeamStateSnapshot>
 
-/** Release current local coordinator leases without mutating durable Team phase on plugin disposal. */
+/** Abort and drain accepted resumes, then release local leases; unconfirmed cleanup rejects closure without changing Team phase. */
 close(): Promise<void>
 ```
 
@@ -773,8 +801,8 @@ registerSystemTaskLeaseProofSource(source: TeamSystemTaskLeaseProofSource): () =
 registerSystemWorkflowProofSource(source: TeamSystemWorkflowProofSource): () => void
 
 /**
- * Register one TeamRun owner that privately resolves opaque proofs for exact
- * default-worker owner proposals and current-coordinator cancellations.
+ * Register a task-control owner that privately resolves exact mutation proofs
+ * for coordinator controls or accepted Simulation task creation.
  * Registration is effect-scoped: disposing the contributing fiber
  * immediately invalidates every proof retained by it.
  * @param source - named resolver that owns proof construction and lifetime.
@@ -896,6 +924,13 @@ registerSystemFinalizationCleanupProofSource(source: TeamSystemFinalizationClean
 registerSystemFinalReceiptProofSource(source: TeamSystemFinalReceiptProofSource): () => void
 
 /**
+ * Register one named consumer that owns exact delivery claim and receipt capabilities.
+ * @param source - Resolver whose tokens are invalidated on owner unload.
+ * @returns the effect-scoped registration disposer.
+ */
+registerDeliveryOwnerProofSource(source: TeamDeliveryOwnerProofSource): () => void
+
+/**
  * Register one system owner that privately resolves opaque proofs for exact
  * ordinary Envelope admissions. Registration is effect-scoped: disposing the
  * contributing fiber immediately makes all of its proofs invalid.
@@ -991,6 +1026,14 @@ abstract createTeam(request: TeamCreateRequest): Promise<TeamStateSnapshot>
  * @returns the current Team state and its journal cursor.
  */
 abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
+
+/**
+ * Read actual stream identity and full-projection fingerprint at a caller-observed cursor.
+ * This does not pin history or prevent later writes; collectors must revalidate before publication.
+ * @param request - Exact Team/channel owner, expected current cursor and optional retained prefix cursor.
+ * @returns owner-issued prefix reference; moved current cursors or missing prefixes reject.
+ */
+getPersistenceReference(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest): Promise<import('./persistence-reference.ts').TeamPersistenceReference>
 
 /** Read one current human action without copying the Team projection.
  * @param request - Exact Team and action identity.
@@ -1369,6 +1412,13 @@ transitionWorkflowPlan(request: TeamWorkflowPlanPhaseRequest): Promise<TeamWorkf
  * @returns the current task projection.
  */
 abstract getTask(request: TeamTaskGetRequest): Promise<TeamTaskSnapshot>
+
+/**
+ * Create or reconcile one exact task authorized by a durable Simulation operation.
+ * @param request - Runtime-only system proof and its exact task input.
+ * @returns the original task for retries, or a newly persisted task.
+ */
+createSimulationTask(request: import('./types.ts').TeamSimulationTaskCreateRequest): Promise<TeamTaskSnapshot>
 
 /** Reserve one child identity and complete creation payload under parent-task CAS.
  * @param request - exact source-owned reservation and resolved child template.

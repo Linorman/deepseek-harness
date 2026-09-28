@@ -1,0 +1,35 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-created window (sqlite) 7716ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-run-bound window (sqlite) 7839ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the response window (sqlite) 7932ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the result-admission window (sqlite) 7927ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-result-admitted window (sqlite) 7891ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-receipt window (sqlite) 7839ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-closure window (sqlite) 7949ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-terminal window (sqlite) 11705ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-pending window (sqlite) 7834ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-accepted window (sqlite) 7747ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-settled window (sqlite) 7758ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-settled window (sqlite) 11638ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-created window (json) 7872ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-run-bound window (json) 7914ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the response window (json) 8104ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the result-admission window (json) 8077ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-result-admitted window (json) 8179ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-receipt window (json) 8021ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-closure window (json) 8067ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the child-terminal window (json) 11860ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-pending window (json) 8096ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-accepted window (json) 7953ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-charge-settled window (json) 8038ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains the child result after SIGKILL at the parent-settled window (json) 11945ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains cancellation intent after SIGKILL during child cancellation (sqlite) 7710ms
+ ✓ examples/headless-agent/tests/child-delegation-restart.snapshot.ts > native child Team delegation across an independent Loader crash > retains cancellation intent after SIGKILL during child cancellation (json) 8019ms
+
+ Test Files  1 passed (1)
+      Tests  26 passed (26)
+   Start at  21:46:56
+   Duration  221.97s (transform 173ms, setup 144ms, import 85ms, tests 221.63s, environment 0ms)

@@ -1,0 +1,16 @@
+Workflow-plan cancellation-reason follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/team/team-run/tsconfig.json packages/team/tool-team-task/tsconfig.json packages/client/runtime/tsconfig.json packages/client/ui-team/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-hub/tests/team-hub.spec.ts packages/team/team-hub/tests/durable-workflow-replay.spec.ts packages/team/team-run/tests/team-run.spec.ts --pool=forks --maxWorkers=1`
+   Result: 3 files passed; 210 tests passed.
+3. `pnpm exec vitest run packages/client/ui-team/tests/team-browser.client.spec.tsx packages/client/runtime/tests/team-tasks.client.spec.ts --pool=forks --maxWorkers=1`
+   Result: 2 files passed; 73 tests passed.
+4. `pnpm exec vitest run packages/team/tool-team-task/tests/tool-team-task.spec.ts packages/core/tools/tests/gen-tool-catalog.spec.ts --pool=forks --maxWorkers=1`
+   Result: 2 files passed; 23 tests passed.
+5. `pnpm run gen-tool-catalog && pnpm run verify-tool-catalog`
+   Result: generated catalog refreshed and verified.
+
+Behavior proved: Team cancellation cleanup persists its structured reason on cancelled workflow plans; TeamRun and `team_workflow_wait` carry the reason; the read-only TeamPage renders it; JSON/SQLite workflow replay and tool catalog remain valid.

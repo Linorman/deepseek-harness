@@ -16,9 +16,13 @@ The Host and SDK principal admission Consumers retain the caller's channel post 
 
 `team-delegation` discovers Teams through `listTeamsPage`, retaining the provider-order continuation cursor between bounded pulses. Event-driven requests still wake the affected Team and its parent, while restart discovery rebuilds the cursor from `-1`.
 
+A child-run authorization pins the issuing proof's complete scope. Every synchronous liveness check compares the current resolved scope, so changing its operation or task invalidates the token even if the proof object remains registered. Asynchronous workspace checks and endpoint publication revalidate this relationship before committing.
+
 After a TeamRun persists a complete finalization intent, the Hub permits bounded pending-delivery reads for that exact final channel while the Team is quiescing. Other channels and cancellation paths retain their active-state checks.
 
 The shared workspace provider exposes an opt-in periodic observation pulse. Each pulse visits only live provider allocations up to its configured bound, records the explicit `periodic` observation stage through the existing Team proof and WAL path, serializes with release/publish scans, and waits for an accepted pulse during disposal. The default interval is disabled.
+
+Child turn-end failure handling retains authority through the current local activation binding rather than requiring a still-running model turn. The proof is revoked on release and still undergoes Hub activation checks. Cursor conflicts from the concurrent activation-status write retry the same failure key within the configured bound; unrelated errors are not retried. Recovery selects the latest activation epoch and combines caller cancellation with service shutdown. Teardown is registered through `ctx.effect()`: a function-plugin return value alone does not own cleanup when Cordis constructs that function. Shutdown drains accepted resumes before releasing proof sources. A resume whose acquired lease cleanup fails reports that failure to its caller and to concurrent service shutdown; shutdown cannot treat a rejected resume as proof of quiescence.
 
 ## Alternatives considered
 

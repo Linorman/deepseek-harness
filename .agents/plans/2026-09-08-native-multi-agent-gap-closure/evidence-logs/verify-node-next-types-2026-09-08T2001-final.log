@@ -1,0 +1,2 @@
+$ tsx scripts/verify-node-next-types.ts
+verify-node-next-types: 269 workspace package declaration API(s) compile under NodeNext.

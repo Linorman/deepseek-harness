@@ -7,11 +7,19 @@ import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import { taskConcurrencyUsage, taskChildTeamReservation, teamClosureIdempotencyKeySchema,
+  teamTaskIdSchema,
+  participantIdSchema,
+  teamDelegationIdSchema,
+  teamChildRunBindingSchema,
   type JsonObject, type TeamSystemChildCreationProof, type TeamSystemChildCreationScope,
   type TeamSystemClosureDriverProof, type TeamSystemClosureDriverScope, type TeamSystemTaskControlProof, type TeamSystemTaskControlScope } from '@clocky/clocky-team'
 import TeamHub from '../src/index.ts'
 import { delegationFixture } from './delegation-fixtures.ts'
 import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.ts'
+import { inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
+import { openTestChannel } from '../../../core/team/tests/channel-lifecycle-authority.ts'
+import { consultChannelAdapter } from '@clocky/clocky-team-channel-basic'
+import { FULL_TRANSCRIPT_VIEW_POLICY } from '@clocky/clocky-team-channel-direct'
 
 const roots: string[] = []
 const contexts: Context[] = []
@@ -28,7 +36,7 @@ async function setup(backend: 'json' | 'sqlite' = 'json', budgets: JsonObject = 
   if (backend === 'json') await ctx.plugin(StorageJson, { root })
   else await ctx.plugin(StorageSqlite, { path: join(root, 'hub.db') })
   await ctx.plugin(StorageLog, { backend, routes: {} })
-  const hub = await ctx.plugin(TeamHub, { maxTeamDepth: 2 })
+  const hub = await ctx.plugin(TeamHub, { maxTeamDepth: 2, maxEnvelopeBytes: 4096 })
   const fixture = await delegationFixture(ctx, root, budgets, childBudgets)
   const creation = new Map<TeamSystemChildCreationProof, TeamSystemChildCreationScope>()
   ctx.teams.registerSystemChildCreationProofSource({ name: 'team-child-delegation', resolveChildCreationProof: proof => creation.get(proof) })
@@ -54,7 +62,206 @@ async function setup(backend: 'json' | 'sqlite' = 'json', budgets: JsonObject = 
   return { ctx, fixture, create, cancel, hub }
 }
 
+/** Prepare actual child roster/channel facts before publishing their parent-authorized binding. */
+async function endpoints(backend: 'json' | 'sqlite' = 'json') {
+  const selected = await setup(backend)
+  const { ctx, fixture } = selected
+  const child = await selected.create()
+  await provisionTestCoordinator(ctx, child.team.id)
+  let state = await ctx.teams.getTeam({ teamId: child.team.id })
+  const service = await inviteBootstrapParticipant(ctx, { teamId: child.team.id, expectedCursor: state.team.cursor,
+    kind: 'service', displayName: 'Parent service', role: 'parent-service', capabilities: [] })
+  for (const phase of ['provisioning', 'active'] as const) {
+    state = await ctx.teams.getTeam({ teamId: child.team.id })
+    await transitionBootstrapParticipant(ctx, {
+      teamId: child.team.id, participantId: service.id, expectedCursor: state.team.cursor, phase,
+    })
+  }
+  ctx.teams.registerAdapter(consultChannelAdapter)
+  ctx.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY)
+  state = await ctx.teams.getTeam({ teamId: child.team.id })
+  const coordinator = state.participants.find(member => member.role === 'coordinator')!
+  const channelInput = { teamId: child.team.id, expectedCursor: state.team.cursor, adapter: { type: 'consult', version: 1 },
+    viewPolicy: { type: FULL_TRANSCRIPT_VIEW_POLICY.type, version: FULL_TRANSCRIPT_VIEW_POLICY.version },
+    participants: [{ id: service.id, role: 'initiator' }, { id: coordinator.id, role: 'respondent' }], limits: {} }
+  const channel = await openTestChannel(ctx, channelInput)
+  const current = await fixture.current()
+  const input = { ...current.input, childTeamId: child.team.id }
+  await ctx.teams.bindTaskDelegation({ ...input, actor: fixture.issue({ kind: 'delegation-bind', ...input }) })
+  const observed = await fixture.current()
+  const scope = { kind: 'delegation-authorize-run' as const, ...observed.input, operation: 'start' as const }
+  const actor = fixture.issue(scope)
+  const authorization = await ctx.teams.authorizeChildRun({ ...observed.input, operation: 'start', actor })
+  const binding = teamChildRunBindingSchema.parse({ parentTeamId: fixture.parentId, parentTaskId: fixture.task.id,
+    childTeamId: child.team.id, delegationId: fixture.task.delegation!.id, parentServiceId: service.id,
+    coordinatorId: coordinator.id, channelId: channel.manifest.id })
+  const expectedCursor = (await ctx.teams.getTeam({ teamId: child.team.id })).team.cursor
+  return { ...selected, child, channelInput, binding, scope, actor, authorization, expectedCursor }
+}
+
+describe('child endpoint publication authority', () => {
+  it.each(['json', 'sqlite'] as const)('publishes one exact binding and keeps retries idempotent (%s)', async (backend) => {
+    const f = await endpoints(backend)
+    try {
+      expect(await f.ctx.teams.bindChildRun({ binding: f.binding,
+        authorization: f.authorization, expectedCursor: f.expectedCursor })).toEqual(f.binding)
+      const accepted = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+      expect(await f.ctx.teams.bindChildRun({ binding: f.binding, authorization: f.authorization, expectedCursor: 0 })).toEqual(f.binding)
+      expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.cursor).toBe(accepted.team.cursor)
+      const current = await f.fixture.current()
+      const input = { ...current.input, childTeamId: f.child.team.id }
+      expect((await f.ctx.teams.bindTaskDelegation({ ...input, actor: f.fixture.issue({ kind: 'delegation-bind', ...input }) })).delegation?.phase)
+        .toBe('active')
+    } finally { f.authorization.close() }
+  })
+
+  it.each(['cursor', 'parent task', 'service'] as const)('rejects mismatched %s before endpoint publication', async (field) => {
+    const f = await endpoints()
+    try {
+      const binding = { ...f.binding,
+        ...field === 'parent task' ? { parentTaskId: teamTaskIdSchema.parse('other') } : {},
+        ...field === 'service' ? { parentServiceId: participantIdSchema.parse('other') } : {} }
+      await expect(f.ctx.teams.bindChildRun({ binding, authorization: f.authorization,
+        expectedCursor: field === 'cursor' ? 0 : f.expectedCursor })).rejects.toMatchObject({
+        code: field === 'cursor' ? 'TEAM_CURSOR_CONFLICT' : field === 'parent task' ? 'TEAM_ACTOR_PROOF_INVALID' : 'TEAM_INVALID_ARGUMENT',
+      })
+      expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.childRun).toBeUndefined()
+    } finally { f.authorization.close() }
+  })
+
+  it('revalidates the retained startup scope after endpoint policy yields', async () => {
+    const f = await endpoints()
+    const remove = f.ctx.teams.registerPolicy('activate', { name: 'retarget-startup', async apply(request, next) {
+      if (request.facts['operation'] === 'child-run-bind') f.fixture.replace(f.actor, { ...f.scope, operation: 'cancel' })
+      return await next()
+    } })
+    try {
+      await expect(f.ctx.teams.bindChildRun({ binding: f.binding, authorization: f.authorization, expectedCursor: f.expectedCursor }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      const after = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+      expect(after.team.childRun).toBeUndefined()
+      expect(after.team.cursor).toBe(f.expectedCursor)
+    } finally { remove(); f.authorization.close() }
+  })
+
+  it('rejects endpoint replacement after the original binding became durable', async () => {
+    const f = await endpoints()
+    try {
+      await f.ctx.teams.bindChildRun({ binding: f.binding, authorization: f.authorization, expectedCursor: f.expectedCursor })
+      const state = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+      const channel = await openTestChannel(f.ctx, { ...f.channelInput, expectedCursor: state.team.cursor })
+      await expect(f.ctx.teams.bindChildRun({ binding: { ...f.binding, channelId: channel.manifest.id },
+        authorization: f.authorization, expectedCursor: state.team.cursor })).rejects.toThrow('already has different result endpoints')
+      expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.childRun).toEqual(f.binding)
+    } finally { f.authorization.close() }
+  })
+})
+
 describe('parent child-Team reservations', () => {
+  it('retains a stalled reservation and treats the same reason as an idempotent retry', async () => {
+    const { ctx, fixture } = await setup()
+    const current = await fixture.current()
+    const request = { ...current.input, reason: { code: 'CHILD_UNAVAILABLE', message: 'The child host is unavailable' } }
+    const stalled = await ctx.teams.stallTaskDelegation({ ...request, actor: fixture.issue({ kind: 'delegation-stall', ...request }) })
+    expect(stalled).toMatchObject({ phase: 'running', delegation: { phase: 'stalled', childTeamId: fixture.task.delegation!.childTeamId } })
+    const after = await fixture.current()
+    expect(after.state.team.phase).toBe('stalled')
+    const retry = { ...after.input, reason: request.reason }
+    expect(await ctx.teams.stallTaskDelegation({ ...retry, actor: fixture.issue({ kind: 'delegation-stall', ...retry }) })).toEqual(stalled)
+    expect((await fixture.current()).state.team.cursor).toBe(after.state.team.cursor)
+    const start = { ...after.input, operation: 'start' as const }
+    await expect(ctx.teams.authorizeChildRun({ ...start, actor: fixture.issue({ kind: 'delegation-authorize-run', ...start }) }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  })
+
+  it('does not replace a terminal delegation with a late operational stall', async () => {
+    const { ctx, fixture, cancel } = await setup()
+    await cancel()
+    const current = await fixture.current()
+    const settle = { ...current.input, childTeamId: fixture.task.delegation!.childTeamId! }
+    const terminal = await ctx.teams.settleTaskDelegation({ ...settle, actor: fixture.issue({ kind: 'delegation-settle', ...settle }) })
+    const after = await fixture.current()
+    const stalled = { ...after.input, reason: { code: 'LATE_FAILURE', message: 'An old operation finished late' } }
+    expect(await ctx.teams.stallTaskDelegation({ ...stalled, actor: fixture.issue({ kind: 'delegation-stall', ...stalled }) })).toEqual(terminal)
+    expect((await fixture.current()).state.team.cursor).toBe(after.state.team.cursor)
+  })
+
+  it.each(['cursor', 'revision', 'delegation'] as const)('rejects a stale %s on a provider-owned delegation operation', async (field) => {
+    const { ctx, fixture } = await setup()
+    const current = await fixture.current()
+    const input = { ...current.input, operation: 'start' as const,
+      ...field === 'cursor' ? { expectedCursor: 0 } : {},
+      ...field === 'revision' ? { expectedRevision: current.task.revision - 1 } : {},
+      ...field === 'delegation' ? { delegationId: teamDelegationIdSchema.parse('other') } : {},
+    }
+    await expect(ctx.teams.authorizeChildRun({ ...input, actor: fixture.issue({ kind: 'delegation-authorize-run', ...input }) }))
+      .rejects.toMatchObject({ code: field === 'cursor' ? 'TEAM_CURSOR_CONFLICT'
+        : field === 'revision' ? 'TEAM_TASK_STALE_REVISION' : 'TEAM_DELEGATION_INVALID' })
+  })
+
+  it('reuses the original child reservation and refuses changes to its frozen payload', async () => {
+    const { ctx, fixture } = await setup()
+    const { parentTeamId: _parent, parentTaskId: _task, delegationId: _delegation, ...child } = fixture.creation
+    const current = await fixture.current()
+    const retry = { ...current.input, child }
+    expect(await ctx.teams.beginTaskDelegation({ ...retry, actor: fixture.issue({ kind: 'delegation-begin', ...retry }) })).toEqual(current.task)
+    const changed = { ...retry, child: { ...child, goal: { ...child.goal, objective: 'Different child work' } } }
+    await expect(ctx.teams.beginTaskDelegation({ ...changed, actor: fixture.issue({ kind: 'delegation-begin', ...changed }) }))
+      .rejects.toThrow('changed its frozen payload')
+    expect((await fixture.current()).state.team.cursor).toBe(current.state.team.cursor)
+  })
+
+  it('does not publish another revision when the parent already observed the same unbound child cursor', async () => {
+    const { ctx, fixture, create } = await setup()
+    const child = await create()
+    const current = await fixture.current()
+    const input = { ...current.input, childTeamId: child.team.id }
+    const observed = await ctx.teams.bindTaskDelegation({ ...input, actor: fixture.issue({ kind: 'delegation-bind', ...input }) })
+    const after = await fixture.current()
+    const retry = { ...after.input, childTeamId: child.team.id }
+    expect(await ctx.teams.bindTaskDelegation({ ...retry, actor: fixture.issue({ kind: 'delegation-bind', ...retry }) })).toEqual(observed)
+    expect((await fixture.current()).state.team.cursor).toBe(after.state.team.cursor)
+  })
+
+  it.each(['operation', 'task'] as const)('revokes a startup authorization when its retained proof changes %s', async (change) => {
+    const { ctx, fixture, create } = await setup()
+    const child = await create()
+    const current = await fixture.current()
+    const bind = { ...current.input, childTeamId: child.team.id }
+    await ctx.teams.bindTaskDelegation({ ...bind, actor: fixture.issue({ kind: 'delegation-bind', ...bind }) })
+    const { input } = await fixture.current()
+    const scope = { kind: 'delegation-authorize-run' as const, ...input, operation: 'start' as const }
+    const actor = fixture.issue(scope)
+    const token = await ctx.teams.authorizeChildRun({ ...input, operation: 'start', actor })
+    try {
+      await expect(token.assertCurrent()).resolves.toMatchObject({ operation: 'start', childTeamId: child.team.id })
+      fixture.replace(actor, change === 'operation' ? { ...scope, operation: 'cancel' }
+        : { ...scope, taskId: teamTaskIdSchema.parse('another-task') })
+      await expect(token.assertCurrent()).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    } finally { token.close() }
+  })
+
+  it('rechecks the exact delegation proof after an awaited workspace lookup', async () => {
+    const { ctx, fixture, create } = await setup()
+    const child = await create()
+    const current = await fixture.current()
+    const bind = { ...current.input, childTeamId: child.team.id }
+    await ctx.teams.bindTaskDelegation({ ...bind, actor: fixture.issue({ kind: 'delegation-bind', ...bind }) })
+    const { input } = await fixture.current()
+    const scope = { kind: 'delegation-authorize-run' as const, ...input, operation: 'start' as const }
+    const actor = fixture.issue(scope)
+    const token = await ctx.teams.authorizeChildRun({ ...input, operation: 'start', actor })
+    const entered = Promise.withResolvers<undefined>(), resume = Promise.withResolvers<undefined>()
+    fixture.beforeWorkspaceRead(async () => { entered.resolve(undefined); await resume.promise })
+    const assertion = token.assertCurrent()
+    try {
+      await entered.promise
+      fixture.replace(actor, { ...scope, operation: 'cancel' })
+      resume.resolve(undefined)
+      await expect(assertion).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    } finally { resume.resolve(undefined); token.close() }
+  })
+
   it.each(['json', 'sqlite'] as const)('passes only reserved descendant capacity into a third Team level (%s)', async (backend) => {
     const { ctx, fixture, create } = await setup(backend, { maxChildTeams: 2 }, { maxChildTeams: 1 })
     if (fixture.task.execution.kind !== 'child-team') throw new Error('Expected child execution')

@@ -25,6 +25,7 @@
     "build:web": "pnpm --filter @clocky/clocky-web-frontend run build",
     "clean": "tsx scripts/clean.ts",
     "change-scope": "tsx scripts/change-scope.ts",
+    "benchmark:simulation": "tsx scripts/benchmark-simulation.ts",
     "typecheck": "npm run build:lib:host && npm run typecheck:contracts-ready",
     "typecheck:contracts-ready": "tsc -b tsconfig.client.json",
     "lint": "npm run typecheck && npm run lint:contracts-ready",

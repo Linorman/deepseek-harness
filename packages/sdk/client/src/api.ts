@@ -1,3 +1,4 @@
+import { isSimulationContextViewEvent } from '@clocky/clocky-session/surface'
 import type { TeamMemberInspectParams, TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamTaskInspectParams, TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamBrowseParams, TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
@@ -397,7 +398,6 @@ export class Clocky implements AsyncDisposable {
       for (let queued = subscription.tryNext(); queued !== undefined; queued = subscription.tryNext()) collect(queued)
 
       const final = await waitForFinal(client, team, subscription, collect)
-      for (let queued = subscription.tryNext(); queued !== undefined; queued = subscription.tryNext()) collect(queued)
       return {
         teamId: team.id,
         finalResponse: final.text,
@@ -867,6 +867,7 @@ async function waitForFinal(
 ): Promise<TeamWaitFinalResult> {
   const completion = client.waitForTeamFinal({ teamId: team.id })
   while (true) {
+    for (let queued = subscription.tryNext(); queued !== undefined; queued = subscription.tryNext()) collect(queued)
     const next = subscription.next()
     const result = await Promise.race([
       completion.then(final => ({ kind: 'final' as const, final })),
@@ -886,6 +887,9 @@ function belongsToCoordinator(notification: HarnessNotification, coordinatorSess
 function validatedSessionEvent(value: unknown): SessionEvent {
   if (!isRecord(value) || typeof value.type !== 'string') {
     throw new SdkProtocolError(`session.event carried no event envelope: ${JSON.stringify(value)}`)
+  }
+  if (value.type === 'simulation/context-view' && !isSimulationContextViewEvent(value)) {
+    throw new SdkProtocolError('simulation/context-view event is malformed')
   }
   if (value.type === 'team/channel-view') validateTeamChannelViewEvent(value)
   if (value.type === 'assistant/message') {

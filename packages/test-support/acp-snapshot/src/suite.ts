@@ -20,7 +20,7 @@
 import { readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { isSurfaceEligibleType } from '@clocky/clocky-session/surface'
+import { deriveEventMessage, isSimulationContextView, isSurfaceEligibleType } from '@clocky/clocky-session/surface'
 import { describe, expect, it } from 'vitest'
 import { type AgentUnderTest, type HarvestedLog, type InputScript, runScenario } from './harness.ts'
 import {
@@ -579,6 +579,11 @@ function surfaceEventMessage(record: Record<string, unknown>): Record<string, un
     case 'user/message':
       message = data
       break
+    case 'simulation/context-view': {
+      if (!isSimulationContextView(data)) throw new Error('acp-snapshot: invalid Simulation context')
+      message = deriveEventMessage({ type, seq: 0, time: 0, data, surfaceOp: 'append' })
+      break
+    }
     case 'team/channel-view': {
       const { content, ...source } = data
       message = {

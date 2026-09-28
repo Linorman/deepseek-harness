@@ -9,6 +9,7 @@ import {
   isSurfaceEligibleType,
   isSurfaceEvent,
   snapshotSessionEvent,
+  adoptSessionEvent,
 } from '@clocky/clocky-session'
 import { SurfaceManager } from '@clocky/clocky-session/surface'
 import {
@@ -97,6 +98,21 @@ function teamChannelViewData(): TeamChannelViewEventData {
 }
 
 describe('foldSurface source-event references', () => {
+  it('refreshes one context node repeatedly without hiding intervening messages or tool results', () => {
+    const events: SessionEvent[] = [
+      provenanceEvent(0, undefined),
+      provenanceEvent(1, undefined),
+      toolResultEvent(2, 'read'),
+      { ...provenanceEvent(3, [0]), surfaceOp: { op: 'replace', start: 0, end: 0 } } as SessionEvent,
+      provenanceEvent(4, undefined),
+      { ...provenanceEvent(5, [3]), surfaceOp: { op: 'replace', start: 3, end: 3 } } as SessionEvent,
+    ]
+    const folded = foldSurface(events)
+    expect(folded.nodes).toEqual([5, 1, 2, 4])
+    expect(folded.replacements.map(item => item.shadowedSeqs)).toEqual([[0], [3]])
+    expect(events[0]?.seq).toBe(0)
+  })
+
   it('accepts absent or valid source-event references and complete replacement coverage', () => {
     const events = [
       provenanceEvent(0, undefined),
@@ -792,6 +808,37 @@ describe('deriveMessages with surface', () => {
     } as unknown as SessionEvent
     expect(() => Session.create(SessionId('team-channel-view-required'), [ignorable]))
       .toThrow(/invalid event envelope/)
+    expect(() => snapshotSessionEvent(ignorable)).toThrow(/cannot be marked ignorable/)
+  })
+
+  it('rejects incomplete channel provenance and malformed retained content without appending', () => {
+    const base = teamChannelViewData()
+    const invalid: unknown[] = [null, [], 1]
+    for (const key of ['teamId', 'channelId', 'triggeringEnvelopeId']) invalid.push({ ...base, [key]: '' })
+    for (const key of ['adapter', 'viewPolicy']) {
+      for (const value of [null, [], { unexpected: true }, { type: '', version: 1 }, { type: 'view', version: '1' },
+        { type: 'view', version: 0 }, { type: 'view', version: 1.5 }]) invalid.push({ ...base, [key]: value })
+    }
+    for (const value of [null, [], [''], [base.triggeringEnvelopeId, base.triggeringEnvelopeId], ['other']]) {
+      invalid.push({ ...base, sourceEnvelopeIds: value })
+    }
+    invalid.push({ ...base, delivery: 'unknown' })
+    for (const content of [null, [], [null], [1], [[]], [{}], [{ type: '' }]]) invalid.push({ ...base, content })
+    for (const key of ['causationId', 'taskId']) {
+      for (const value of [undefined, '']) invalid.push({ ...base, [key]: value })
+    }
+    for (const review of [undefined, null, [], { extra: true },
+      { ...base.review, attemptId: '' }, { ...base.review, reviewerId: '' },
+      { ...base.review, reviewRevision: '1' }, { ...base.review, reviewRevision: 0 }, { ...base.review, reviewRevision: 1.5 },
+      { ...base.review, initiatorId: undefined }, { ...base.review, initiatorId: '' }]) invalid.push({ ...base, review })
+    const session = Session.create(SessionId('invalid-channel-provenance'))
+    for (const data of invalid) {
+      expect(() => adoptSessionEvent({ type: 'team/channel-view', seq: 0, time: 1, data, surfaceOp: 'append' } as never)).toThrow()
+      expect(() => session.append('team/channel-view', data as never, { surfaceOp: 'append' })).toThrow()
+      expect(() => Session.create(session.id, [{ type: 'team/channel-view', seq: 0, time: 1, data, surfaceOp: 'append' } as never]))
+        .toThrow()
+    }
+    expect(session.events).toEqual([])
   })
 
   it('rejects malformed Team channel views at both append and restore boundaries', () => {

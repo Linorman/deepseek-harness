@@ -1,0 +1,3 @@
+当前默认 Headless Team 组合并不直接挂载 Simulation 服务。项目内已有可用的 opt-in 组合 examples/simulation-company/cordis.yml；examples/simulation-company/tests/scenario.ts 展示 run 创建、Team 绑定、参与者激活、决策与推进，packages/simulation/ 下是实际实现。被测 Team 可以自行选择如何基于这些入口创建本案例的运行代码或配置；本文件不规定角色、行动序列或业务结局。
+
+项目提供的 procurement 和 organization 快照是固定场景的验证材料，不能直接作为本案例已运行的证据。若选择使用 Simulation，验收应检查本案例产生的独立 run、Team/Participant、持久事件、资源和最终快照；若当前配置缺少可用模型或入口，应如实说明未启动的范围。

@@ -898,7 +898,7 @@ interface TaskControlProofRecord {
   /** Exact currently running coordinator turn that issued the proof. */
   readonly coordinator: Agent
   /** Closed task-control operation and every durable fact it permits. */
-  readonly scope: TeamSystemTaskControlScope
+  readonly scope: Exclude<TeamSystemTaskControlScope, { kind: 'simulation-task-create' }>
 }
 
 /** Private source-owned root-creation proof retained for one exact Hub admission. */
@@ -939,6 +939,9 @@ interface FinalizationCleanupProofRecord {
   readonly scope: TeamSystemFinalizationCleanupScope
 }
 
+/** Topology operations issued only by this TeamRun owner. */
+type TeamRunTopologyScope = Exclude<TeamSystemTopologyScope, { kind: 'simulation-participant-invite' | 'simulation-participant-phase' }>
+
 /** Private un-published bootstrap state that owns one in-flight topology proof. */
 interface BootstrapTopologyState {
   /** Team being assembled before a current local run exists. */
@@ -950,7 +953,7 @@ interface BootstrapTopologyState {
 /** Private source-owned topology proof retained only around one exact Hub mutation. */
 interface TopologyProofRecord {
   /** Closed topology operation and every immutable durable fact it permits. */
-  readonly scope: TeamSystemTopologyScope
+  readonly scope: TeamRunTopologyScope
   /** Bootstrap owner before publication, or retained local run after publication. */
   readonly owner: BootstrapTopologyState | RunState
 }
@@ -1033,6 +1036,9 @@ interface ResolvedConfig {
   readonly maxCoordinatorOutputContinuations: number
   readonly channelPageSize: number
 }
+
+/** A rejected resume whose acquired activation cleanup remains unconfirmed. */
+class ResumeCleanupError extends AggregateError {}
 
 /**
  * Owns the current local default Team topology, trusted human ingress, and
@@ -1157,7 +1163,7 @@ export class TeamRunService extends Service {
     teamRunFinalizationCleanupProofSources.set(this, finalizationCleanupProofSource)
     const topologyProofSource: TeamSystemTopologyProofSource = Object.freeze({
       name: TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
-      resolveTopologyProof: (proof: TeamSystemTopologyProof): TeamSystemTopologyScope | undefined =>
+      resolveTopologyProof: (proof: TeamSystemTopologyProof): TeamRunTopologyScope | undefined =>
         this.resolveTopologyProof(proof),
     })
     teamRunTopologyProofSources.set(this, topologyProofSource)
@@ -1617,6 +1623,8 @@ export class TeamRunService extends Service {
   /** Resume one Team while any Host-provided human authorization remains retained. */
   private async resumeAuthorized(request: TeamRunResumeRequest): Promise<TeamRunHandle> {
     this.assertOpen()
+    const admissionSignal = request.signal === undefined ? this.admissionAbort.signal
+      : AbortSignal.any([request.signal, this.admissionAbort.signal])
     const authorization = request.authorization
     const authorizedState = authorization === undefined ? undefined : await authorization.assert()
     const existing = this.runs.get(request.teamId)
@@ -1652,7 +1660,7 @@ export class TeamRunService extends Service {
     const worker = workers.find(participant => participant.role === 'worker')
     const memberSpecs = retainedTemplateMembers(resumableState)
     const members = memberSpecs.map(spec => requiredRoleParticipant(resumableState, spec.role))
-    let binding = resumableState.activations.find(item => item.activation.participantId === coordinator.id)
+    let binding = resumableState.activations.findLast(item => item.activation.participantId === coordinator.id)
     if (binding === undefined) {
       throw new TeamRunError(`Team '${request.teamId}' has no durable coordinator activation`, 'TEAM_RUN_NOT_QUIESCENT')
     }
@@ -1667,7 +1675,7 @@ export class TeamRunService extends Service {
     if (persistence === undefined) {
       throw new TeamRunError('Team resume requires a mounted Session persistence provider', 'TEAM_RUN_NOT_QUIESCENT')
     }
-    const inspected = await persistence.inspect(binding.sessionId, request.signal)
+    const inspected = await persistence.inspect(binding.sessionId, admissionSignal)
     if (inspected.meta.teamId !== String(request.teamId) || inspected.meta.participantId !== String(coordinator.id)) {
       throw new TeamRunError(
         `Session '${binding.sessionId}' does not belong to Team coordinator '${coordinator.id}'`,
@@ -1706,7 +1714,7 @@ export class TeamRunService extends Service {
           teamId: request.teamId,
           participantId: coordinator.id,
           activationId: binding.activation.id,
-          signal: request.signal ?? new AbortController().signal,
+          signal: admissionSignal,
           ...authorization === undefined ? {} : { authorization },
         })
         const replaced = (await this.ctx.teams.getTeam({ teamId: request.teamId })).activations
@@ -1728,7 +1736,7 @@ export class TeamRunService extends Service {
               ? {}
               : { preset: request.preset ?? inspected.meta.agentPreset },
           },
-          signal: request.signal ?? new AbortController().signal,
+          signal: admissionSignal,
           ...authorization === undefined ? {} : { authorization },
         })
       }
@@ -1736,8 +1744,6 @@ export class TeamRunService extends Service {
         throw new TeamRunError('the resumed coordinator activation did not publish a local Agent', 'TEAM_RUN_NOT_QUIESCENT')
       }
       await authorization?.assert()
-      const admissionSignal = request.signal === undefined ? this.admissionAbort.signal
-        : AbortSignal.any([request.signal, this.admissionAbort.signal])
       await this.admitHumanEndpoint(channel, human, request.admitHumanChannel, admissionSignal)
       await this.ctx.teamChannelAdmission.waitUntilActive({ channelId: channel.manifest.id, signal: admissionSignal })
       disposePrompt = coordinatorPrompt(
@@ -1746,8 +1752,9 @@ export class TeamRunService extends Service {
       for (const spec of memberSpecs) {
         const participant = members.find(member => member.role === spec.role) as ParticipantSnapshot
         memberStates.set(participant.id, await this.activateTemplateMember(request.teamId, participant, spec,
-          cwd, request.signal ?? this.admissionAbort.signal, this.config.workerPromptOrder))
+          cwd, admissionSignal, this.config.workerPromptOrder))
       }
+      admissionSignal.throwIfAborted()
       const handle: TeamRunHandle = Object.freeze({
         members: Object.freeze(members),
         teamId: request.teamId,
@@ -1760,7 +1767,7 @@ export class TeamRunService extends Service {
         coordinatorLease: lease,
       })
       const workerAgents = new Map(workers.map((participant) => {
-        const workerBinding = resumableState.activations.find(item => item.activation.participantId === participant.id)
+        const workerBinding = resumableState.activations.findLast(item => item.activation.participantId === participant.id)
         return [participant.id, {
           cwd,
           options,
@@ -1812,13 +1819,15 @@ export class TeamRunService extends Service {
       return handle
     } catch (error: unknown) {
       disposePrompt?.()
-      const cleanup = await Promise.allSettled([...memberStates.values()].map(async (member) => {
-        member.disposePrompt()
-        await member.lease.dispose()
-      }))
-      if (lease !== undefined) await lease.dispose().catch(() => {})
+      const cleanup = await Promise.allSettled([
+        ...[...memberStates.values()].map(async (member) => {
+          member.disposePrompt()
+          await member.lease.dispose()
+        }),
+        ...lease === undefined ? [] : [lease.dispose()],
+      ])
       const failures = cleanup.flatMap(result => result.status === 'rejected' ? [result.reason as unknown] : [])
-      if (failures.length > 0) throw new AggregateError([error, ...failures], 'Template member resume cleanup failed')
+      if (failures.length > 0) throw new ResumeCleanupError([error, ...failures], 'Team-run resume cleanup failed')
       throw error
     }
   }
@@ -2980,11 +2989,16 @@ export class TeamRunService extends Service {
       }
       if (event.data.reason.kind === 'error') {
         const reason = event.data.reason.error
-        await this.withCoordinatorActorProof({ state, coordinator }, async actor => await this.ctx.teams.failTeam({
-          actor, teamId: binding.childTeamId, expectedCursor: current.team.cursor,
-          idempotencyKey: closureKey('fail', binding.childTeamId), reason: { code: reason.code, message: reason.message },
-        }))
-        return
+        try {
+          await this.withCoordinatorBindingProof(state, async actor => await this.ctx.teams.failTeam({
+            actor, teamId: binding.childTeamId, expectedCursor: current.team.cursor,
+            idempotencyKey: closureKey('fail', binding.childTeamId), reason: { code: reason.code, message: reason.message },
+          }))
+          return
+        } catch (error: unknown) {
+          if (!isTeamCursorConflict(error) || retry + 1 === state.config.receiptRetryAttempts) throw error
+        }
+        continue
       }
       const token: object = Object.freeze({ toJSON(): never { throw new TypeError('Child result proof is runtime-only') } })
       const actor = token as TeamSystemChildResultProof
@@ -3150,7 +3164,7 @@ export class TeamRunService extends Service {
     throw lastConflict
   }
 
-  /** Release current local coordinator leases without mutating durable Team phase on plugin disposal. */
+  /** Abort and drain accepted resumes, then release local leases; unconfirmed cleanup rejects closure without changing Team phase. */
   close(): Promise<void> {
     this.disposal ??= this.dispose()
     return this.disposal
@@ -3787,9 +3801,18 @@ export class TeamRunService extends Service {
   ): Promise<T> {
     this.assertOpen()
     await this.assertCoordinatorAuthority(retained.state, retained.coordinator, 'coordinator proof issuance')
+    return await this.withCoordinatorBindingProof(retained.state, operation)
+  }
+
+  /** Retain lifecycle authority after a turn ends, but never after this local run has been released or replaced. */
+  private async withCoordinatorBindingProof<T>(state: RunState, operation: (actor: TeamActorProof) => Promise<T>): Promise<T> {
+    this.assertOpen()
+    if (this.runs.get(state.handle.teamId) !== state || state.topologyReleased) {
+      throw new TeamRunError('Coordinator binding is not owned by this local run', 'TEAM_RUN_COORDINATOR_INVALID')
+    }
     const issuer = this.coordinatorActorProofIssuer ??= this.ctx.teams.openActivationActorProofIssuer()
-    const lease = issuer.issue(retained.state.handle.coordinatorLease.binding)
-    this.coordinatorActorProofLeases.set(lease, retained.state)
+    const lease = issuer.issue(state.handle.coordinatorLease.binding)
+    this.coordinatorActorProofLeases.set(lease, state)
     try {
       return await operation(lease.proof)
     } finally {
@@ -4266,7 +4289,9 @@ export class TeamRunService extends Service {
     this.admissionAbort.abort()
     const childStarts = [...this.childStarts.values()]
     for (const child of childStarts) child.abort.abort(this.admissionAbort.signal.reason)
-    await Promise.allSettled(childStarts.map(child => child.operation))
+    const startups = await Promise.allSettled([...childStarts.map(child => child.operation), ...this.resumes.values()])
+    const failures: unknown[] = startups.flatMap(result => result.status === 'rejected' && result.reason instanceof ResumeCleanupError
+      ? [result.reason] : [])
     this.childChannelProofs.clear()
     this.childResultProofs.clear()
     this.coordinatorActorProofIssuer?.close()
@@ -4289,9 +4314,8 @@ export class TeamRunService extends Service {
     this.resumes.clear()
     this.starts.clear()
     this.workflowStarts.clear()
-    const failures = results
-      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
-      .map(result => result.reason as unknown)
+    failures.push(...results.filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .map(result => result.reason as unknown))
     if (failures.length > 0) throw new AggregateError(failures, 'Team-run disposal failed')
   }
 
@@ -4871,7 +4895,7 @@ export class TeamRunService extends Service {
   private async withTaskControlProof<T>(
     state: RunState,
     coordinator: Agent,
-    scope: TeamSystemTaskControlScope,
+    scope: Exclude<TeamSystemTaskControlScope, { kind: 'simulation-task-create' }>,
     operation: (actor: TeamSystemTaskControlProof) => Promise<T>,
   ): Promise<T> {
     this.assertOpen()
@@ -5055,7 +5079,7 @@ export class TeamRunService extends Service {
   /** Issue one exact bootstrap topology proof and revoke it when its one Hub mutation settles. */
   private async withBootstrapTopologyProof<T>(
     bootstrap: BootstrapTopologyState,
-    scope: TeamSystemTopologyScope,
+    scope: TeamRunTopologyScope,
     operation: (actor: TeamSystemTopologyProof) => Promise<T>,
   ): Promise<T> {
     this.assertOpen()
@@ -5071,7 +5095,7 @@ export class TeamRunService extends Service {
   /** Issue one exact current-run topology proof and revoke it when its one Hub mutation settles. */
   private async withRunTopologyProof<T>(
     state: RunState,
-    scope: TeamSystemTopologyScope,
+    scope: TeamRunTopologyScope,
     operation: (actor: TeamSystemTopologyProof) => Promise<T>,
   ): Promise<T> {
     this.assertOpen()
@@ -5105,7 +5129,7 @@ export class TeamRunService extends Service {
   /** Retain one source-owned topology token until its single Hub call completes. */
   private async withTopologyProof<T>(
     owner: BootstrapTopologyState | RunState,
-    scope: TeamSystemTopologyScope,
+    scope: TeamRunTopologyScope,
     operation: (actor: TeamSystemTopologyProof) => Promise<T>,
   ): Promise<T> {
     const proof = createTeamRunTopologyProof()
@@ -5119,7 +5143,7 @@ export class TeamRunService extends Service {
   }
 
   /** Resolve one topology proof only while its exact bootstrap or current local run remains authoritative. */
-  private resolveTopologyProof(proof: TeamSystemTopologyProof): TeamSystemTopologyScope | undefined {
+  private resolveTopologyProof(proof: TeamSystemTopologyProof): TeamRunTopologyScope | undefined {
     const record = this.topologyProofs.get(proof)
     if (record === undefined || this.closing) return undefined
     const { owner, scope } = record
@@ -5272,7 +5296,7 @@ export function apply(ctx: Context, config: Config = {}): () => Promise<void> {
   const unregisterTopology = ctx.teams.registerSystemTopologyProofSource(topologySource)
   const unregisterWorkflow = ctx.teams.registerSystemWorkflowProofSource(workflowSource)
   const disposeTurnEndObserver = ctx.on('session/event', observeTurnEnd)
-  return async () => {
+  return ctx.effect(() => async () => {
     disposeTurnEndObserver()
     try {
       await service.close()
@@ -5290,7 +5314,7 @@ export function apply(ctx: Context, config: Config = {}): () => Promise<void> {
       unregisterEnvelopePost()
       unregisterFinalReceipt()
     }
-  }
+  })
 }
 
 /** Keep each opaque Team-run proof source private to its service instance. */

@@ -1,0 +1,11 @@
+# Free-form discussion channel browser follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay. Browser plugin was not available, so the repository's Playwright/Vitest runner was used.
+
+Command:
+
+    env CLOCKY_SNAPSHOT=replay CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts apps/web/tests/team-channel.snapshot.ts --no-file-parallelism
+
+Result: exit 0; 1 test file and 4 tests passed in 8.49s. Direct-v4, consult response, round-robin discussion, and free-form discussion paths pass; free-form verifies creation/ACK, human message, coordinator response, turnCount `2/3`, console health, and cancellation cleanup.
+
+Scope boundary: reconnect races, child navigation, remote lifecycle, GIF, multi-host UI transport, and the complete T-06 matrix remain open.

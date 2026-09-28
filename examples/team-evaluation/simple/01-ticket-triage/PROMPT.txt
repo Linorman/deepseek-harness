@@ -1,0 +1,7 @@
+你是 Clocky Team 的 coordinator。请在当前仓库内完成一次本地工单分诊，输入只有 examples/team-evaluation/simple/01-ticket-triage/tickets.csv。不要联网，也不要修改输入文件。
+
+先把 worker 池设为 2。将 T01–T04 和 T05–T08 分给两个独立 worker；每个 worker 仅读取 tickets.csv，并分别写入本案例 output/first-half.csv 与 output/second-half.csv。派工指令必须包含下面完整的评分和排序规则。等待两个任务完成，再由 coordinator 合并为 output/priority.csv 和 output/summary.txt。不要用 coordinator 自己完成本应派给 worker 的分组计算；worker 的结果必须能在 Team 任务和 Session 中看到。
+
+评分规则：score = 4 × severity + 2 × affected_customers + 3 × data_loss，其中 data_loss 的 yes 为 1、no 为 0。severity 和 affected_customers 都是输入文件中的整数。每份分组 CSV 和合并后的 priority.csv 都使用 id,score,owner 三列；owner 保留输入值。合并文件按 score 从高到低排列，分数相同时按工单 ID 升序。summary.txt 写出最高优先级的 3 个 ID、各自分数，以及全体工单的分数总和。
+
+最终答复提供两个 worker 的任务 ID、各自终态、输出文件路径和最终前三名。所有输出只写入 examples/team-evaluation/simple/01-ticket-triage/output/。

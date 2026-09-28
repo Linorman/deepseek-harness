@@ -235,3 +235,98 @@ describe('Agent', () => {
     )
   })
 })
+
+describe('waking retained input', () => {
+  it('preserves an existing wake when reinserting the same input fails', async () => {
+    const adapter = new MockAdapter([textResponse('retained')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('wake-splice-retry'), { provider: 'mock', model: 'mock' })
+    const input = createUserMessage({ content: [{ type: 'text', text: 'Retain the wake' }], source: { kind: 'user' } })
+    try {
+      await agent.runMaintenance(async () => {
+        expect(() => agent.runMaintenance(async () => {})).toThrow(/already has active work/)
+        agent.send(input, 'next-turn', true)
+        const fault = vi.spyOn(agent.inbox, 'splice').mockImplementationOnce(() => { throw new Error('Splice failed') })
+        try { expect(() => { agent.send(input, 'next-turn', true) }).toThrow('Splice failed') }
+        finally { fault.mockRestore() }
+      })
+      await agent.whenIdle()
+      expect(adapter.requests).toHaveLength(1)
+      expect(agent.session.events.filter(event => event.type === 'user/message' && event.data.id === input.id)).toHaveLength(1)
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('wakes a queued message after maintenance without inserting it again', async () => {
+    const adapter = new MockAdapter([textResponse('retained')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('wake-retained'), { provider: 'mock', model: 'mock' })
+    const input = createUserMessage({ content: [{ type: 'text', text: 'Queued first' }], source: { kind: 'user' } })
+    await agent.runMaintenance(async () => {
+      agent.send(input, 'next-turn', false)
+      const before = agent.session.events.length
+      expect(agent.wakePending(input.id)).toBe(true)
+      expect(agent.session.events).toHaveLength(before)
+      expect(adapter.requests).toHaveLength(0)
+    })
+    await agent.whenIdle()
+    expect(adapter.requests).toHaveLength(1)
+    expect(agent.session.events.filter(event => event.type === 'user/message' && event.data.id === input.id)).toHaveLength(1)
+    expect(agent.wakePending(input.id)).toBe(false)
+    expect(adapter.requests).toHaveLength(1)
+    await ctx.fiber.dispose()
+  })
+
+  it('does not wake retained input while disposal is pending', async () => {
+    const adapter = new MockAdapter([textResponse('unexpected')])
+    const ctx = await harness(adapter)
+    const agent = ctx.agentLoop.create(SessionId('wake-disposed'), { provider: 'mock', model: 'mock' })
+    const input = createUserMessage({ content: [{ type: 'text', text: 'Retain' }], source: { kind: 'user' } })
+    await agent.runMaintenance(async () => {
+      agent.send(input, 'next-turn', false)
+      agent.cancel({ kind: 'disposed' }, { keepInbox: true })
+      expect(agent.wakePending(input.id)).toBe(false)
+    })
+    await agent.whenIdle()
+    expect(adapter.requests).toHaveLength(0)
+    await ctx.fiber.dispose()
+  })
+})
+
+it('does not wake an Agent after its owner has retired it', async () => {
+  const ctx = await harness(new MockAdapter([textResponse('unexpected')]))
+  const owner = await ctx.agents.create({ sessionId: SessionId('retired-wake'), agentOptions: { provider: 'mock', model: 'mock' } })
+  const input = createUserMessage({ content: [{ type: 'text', text: 'Retire' }], source: { kind: 'user' } })
+  owner.agent.send(input, 'next-turn', false)
+  await owner.dispose()
+  expect(owner.agent.wakePending(input.id)).toBe(false)
+  await ctx.fiber.dispose()
+})
+
+it('can explicitly wake retained input behind an aborted maintenance task', async () => {
+  const adapter = new MockAdapter([textResponse('continued')])
+  const ctx = await harness(adapter)
+  const agent = ctx.agentLoop.create(SessionId('wake-after-abort'), { provider: 'mock', model: 'mock' })
+  const input = createUserMessage({ content: [{ type: 'text', text: 'Continue' }], source: { kind: 'user' } })
+  await agent.runMaintenance(async () => {
+    agent.send(input, 'next-turn', false)
+    agent.cancel({ kind: 'hook', reason: 'Checkpoint interrupted' }, { keepInbox: true })
+    expect(agent.wakePending(input.id)).toBe(true)
+  })
+  await agent.whenIdle()
+  expect(adapter.requests).toHaveLength(1)
+  await ctx.fiber.dispose()
+})
+
+it('starts an idle driver from an existing queued identity', async () => {
+  const adapter = new MockAdapter([textResponse('queued')])
+  const ctx = await harness(adapter)
+  const agent = ctx.agentLoop.create(SessionId('wake-idle'), { provider: 'mock', model: 'mock' })
+  const input = createUserMessage({ content: [{ type: 'text', text: 'Already queued' }], source: { kind: 'user' } })
+  agent.send(input, 'next-turn', false)
+  expect(agent.status).toBe('idle')
+  expect(agent.wakePending(input.id)).toBe(true)
+  await agent.whenIdle()
+  expect(adapter.requests).toHaveLength(1)
+  expect(agent.session.events.filter(event => event.type === 'agent/inbox/spliced' && event.data.inserted.length > 0)).toHaveLength(1)
+  await ctx.fiber.dispose()
+})

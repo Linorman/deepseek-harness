@@ -1,0 +1,23 @@
+Command:
+  pnpm exec vitest run packages/team/team-closure-driver/tests/closure-driver.spec.ts -t "repeated discovery cursor|scans bounded pages|rotates the bounded" --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 3 selected tests passed; 0 failed; 76 skipped by name.
+  A repeated discovery cursor now fails with TEAM_CURSOR_CONFLICT before the
+  closure driver can rescan the same Team page.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-closure-driver/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-closure-driver/src/index.ts packages/team/team-closure-driver/tests/closure-driver.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-closure-driver/src/index.ts ea8b5f234a2259f87f2a7b7861a38429068e2db7f6fd01ebe0e9818c6876b521
+  packages/team/team-closure-driver/tests/closure-driver.spec.ts 7077fe85988a9835469115d658d02e07c96462f4fd4ac6239bcda87b9b0abf52
+
+Boundary:
+  This closes local closure-driver discovery cursor safety only. It does not
+  expand multi-host, browser, coverage, performance, or release evidence.

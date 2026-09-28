@@ -1,0 +1,12 @@
+# T-08 current property/replay evidence
+
+- Date: 2026-09-09 (Asia/Shanghai)
+- Source plane: `/Volumes/projects-mac/deepseek-harness`
+
+```text
+pnpm exec vitest run packages/team/team-hub/tests/replay-properties.spec.ts packages/team/team-hub/tests/task-state-machine-properties.spec.ts packages/team/team-hub/tests/durable-workflow-replay.spec.ts packages/team/team-scheduler-dag/tests/scheduler.spec.ts packages/team/team-scheduler-dag/tests/budget-boundaries.spec.ts --reporter=dot --maxWorkers=1
+```
+
+PASS: 5 files, 120 tests passed. The current property/replay slice covers channel receipt interleavings, task lease/settlement state transitions, workflow replay, scheduler assignment/expiration, and budget boundaries.
+
+This is supporting T-08 evidence, not the complete requested model matrix: invitation revision, child reservation, cross-backend projection agreement, ranking-version model, and reproducible minimized counterexample artifacts remain open.

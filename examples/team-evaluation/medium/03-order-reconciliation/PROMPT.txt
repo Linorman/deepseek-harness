@@ -1,0 +1,5 @@
+你是一个 Clocky Team coordinator。请只使用本案例 data/ 的三个 CSV，完成销售、库存、收款对账；不要联网，不要更改输入文件。先把 worker 池设为 2。
+
+任务 A 交给一个 worker：按订单 ID 升序扣减 inventory.csv，库存不足时只满足可用数量，输出 output/fulfillment.csv，列为 order_id,sku,ordered,fulfilled,backordered,stock_after。任务 B 交给另一个 worker：以订单的 quantity × unit_price 作为票面金额，把 payments.csv 按 payment_id 去重后汇总，输出 output/receivables.csv，列为 order_id,invoice,paid,due。付款记录必须按付款 ID 去重，不可按订单 ID 去重；引用未知订单的付款须标为异常。两项任务的输入均为 data/，输出范围各自独立。等待两个 worker 完成，再让一个后续任务或 coordinator 对两个结果做交叉核对，并写 output/reconciliation.txt。
+
+对账报告要列总订购量、已交付量、欠货量、票面金额、实收和欠款；指出每个异常及其影响。这里票面金额即使欠货也暂不自动撤销，欠货订单已经开票应列为风险。每个输出都写明计算依据。报告最后列出可以直接从输入验证的五个关键数字。最终答复给出两个 worker 任务 ID、终态和所有输出路径。不要靠口头宣称派工或完成；实际 Team 任务记录和 worker 输出都要存在。

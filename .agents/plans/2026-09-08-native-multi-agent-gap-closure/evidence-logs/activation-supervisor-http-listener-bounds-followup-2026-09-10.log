@@ -1,0 +1,21 @@
+Scope: activation-supervisor HTTP listener admission and bounded request coverage.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test addition:
+- Added a real listener scenario covering wrong method/path, missing authentication, malformed JSON, oversized request body, and valid authenticated health admission through the endpoint.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts --no-file-parallelism --reporter=dot`: 2 files, 15 tests passed, 1 platform skip.
+- Same lane with V8 coverage: client.ts statements 95.34%, branches 90%, functions 100%, lines 100%; endpoint.ts statements 72.34%, branches 66.66%, functions 73.33%, lines 79.43%; protocol.ts remains 100% across all metrics.
+- `pnpm exec tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/activation-supervisor-http/src/endpoint.ts`: `3d5e825ac29200c0db4c88a9957a5a10401da4cb6a9e89ae9adb150f4a171307`
+- `packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts`: `3a7b49a389886ff011fcef6944dbcc56af1622e1d24d971df227a4d228615abd`
+- `packages/agent-runtime/activation-supervisor-http/src/client.ts`: `1ada13c54126ec34312860ac6f2aa07bb2349e27cf130767cde3031ba602b927`
+- `packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts`: `0f67971f4ac5aeacf200424a7fa42cb1853c234d162f1842afde9b389a6a2057`
+
+Boundary: this improves the local HTTP listener admission slice only. Endpoint ownership queue branches, ACP provider coverage, and separate-host recovery remain open.

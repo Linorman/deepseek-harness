@@ -1,0 +1,13 @@
+# AgentRuntime SDK provider follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Commands:
+
+    env TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts --no-file-parallelism --reporter=dot
+    pnpm exec tsc -b packages/agent-runtime/agent-runtime-sdk/tsconfig.json packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false
+    git diff --check
+
+Result: exit 0; SDK provider file passes 30/30 tests, including whitespace recovery identity rejection and missing child process identity rejection; SDK and supervisor HTTP TypeScript faces and diff check pass.
+
+Scope boundary: SDK/ACP/supervisor per-file 100% coverage, ACP independent-host recovery, and separate-host transport remain open.

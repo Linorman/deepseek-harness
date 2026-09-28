@@ -1,0 +1,1 @@
+验收者检查 output/vitest.log 显示 2 passed。财务拒付：资金不足 20 credits，supplier-stock 保持 10、warehouse-stock 保持 0，restock 承诺 cancelled，CEO 风险为 FINANCE_INSUFFICIENT_FUNDS。交付逾期：资源预订后 restock 承诺仍 open，warehouse-stock 仍 0，CEO 风险为 FULFILLMENT_OVERDUE，且报告保留后续更新时间。两种变体须分别解释 money 与 inventory 的守恒；未收到的货不可报告为已交付。

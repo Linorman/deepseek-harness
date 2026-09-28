@@ -1,0 +1,36 @@
+packages/team/team-agent-client/src/index.ts:533:5 uncovered branch (if, path 1/2)
+packages/team/team-agent-client/src/index.ts:540:54 uncovered branch (binary-expr, path 11/11)
+packages/team/team-agent-client/src/index.ts:540:99 uncovered statement
+packages/team/team-agent-client/src/index.ts:541:5 uncovered branch (if, path 1/2)
+packages/team/team-agent-client/src/index.ts:542:7 uncovered statement
+packages/team/team-agent-client/src/index.ts:571:7 uncovered statement
+packages/team/team-agent-client/src/index.ts:572:7 uncovered statement
+packages/team/team-agent-client/src/index.ts:587:5 uncovered branch (if, path 1/2)
+packages/team/team-agent-client/src/index.ts:592:67 uncovered statement
+packages/team/team-agent-client/src/index.ts:726:78 uncovered branch (binary-expr, path 2/2)
+packages/team/team-agent-client/src/index.ts:2674:3 uncovered branch (if, path 1/2)
+packages/team/team-agent-client/src/index.ts:2675:5 uncovered statement
+packages/team/team-agent-client/src/index.ts:2678:3 uncovered branch (if, path 1/2)
+packages/team/team-agent-client/src/index.ts:2678:34 uncovered statement
+packages/team/team-agent-client/src/index.ts:2825:102 uncovered branch (cond-expr, path 2/2)
+packages/team/team-hub/src/index.ts:8101:7 uncovered branch (if, path 1/2)
+packages/team/team-hub/src/index.ts:8102:9 uncovered statement
+packages/team/team-run/src/index.ts:1484:12 uncovered function (anonymous_46)
+packages/team/team-run/src/index.ts:1484:27 uncovered statement (to 1484:71)
+packages/team/team-run/src/index.ts:1484:73 uncovered function (anonymous_47)
+packages/team/team-run/src/index.ts:1484:85 uncovered statement (to 1484:92)
+packages/team/team-run/src/index.ts:2481:50 uncovered branch (binary-expr, path 2/3)
+packages/team/team-run/src/index.ts:2485:11 uncovered branch (if, path 1/2)
+packages/team/team-run/src/index.ts:2485:40 uncovered statement
+packages/team/team-run/src/index.ts:4479:5 uncovered branch (if, path 1/2)
+packages/team/team-workspace-shared/src/index.ts:917:6 uncovered function (anonymous_57)
+packages/team/team-workspace-shared/src/index.ts:917:18 uncovered statement (to 917:70)
+packages/team/team-workspace-shared/src/index.ts:918:3 uncovered branch (if, path 1/2)
+packages/team/team-workspace-shared/src/index.ts:918:32 uncovered function (anonymous_58)
+packages/team/team-workspace-shared/src/index.ts:918:49 uncovered statement (to 918:76)
+packages/team/team-workspace-shared/src/index.ts:919:5 uncovered statement
+packages/team/tool-team-task/src/index.ts:767:44 uncovered branch (cond-expr, path 1/2)
+packages/team/tool-team-task/src/index.ts:768:45 uncovered branch (cond-expr, path 1/2)
+packages/team/tool-team-task/src/index.ts:769:48 uncovered branch (cond-expr, path 1/2)
+packages/team/tool-team-task/src/index.ts:770:48 uncovered branch (cond-expr, path 1/2)
+packages/team/tool-team-task/src/index.ts:771:47 uncovered branch (cond-expr, path 1/2)

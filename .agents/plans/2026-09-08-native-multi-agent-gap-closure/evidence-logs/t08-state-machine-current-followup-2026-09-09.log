@@ -1,0 +1,45 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests/replay-properties.spec.ts
+  packages/team/team-hub/tests/child-reservation-properties.spec.ts
+  packages/team/team-hub/tests/task-state-machine-properties.spec.ts
+  packages/team/team-hub/tests/durable-task-ranking.spec.ts
+  packages/team/team-hub/tests/durable-workflow-replay.spec.ts
+  packages/team/team-hub/tests/durable-workflow-selection.spec.ts
+  packages/team/team-hub/tests/task-delegation.spec.ts
+  packages/team/team-scheduler-dag/tests/ranking-properties.spec.ts
+  packages/team/team-scheduler-dag/tests/budget-boundaries.spec.ts
+  --reporter=dot --maxWorkers=1
+
+Environment:
+  platform: Darwin 27.0.0 arm64
+  node: v25.9.0
+  pnpm: 11.19.0
+  credentials: keyless; no real API credential was required
+
+Result:
+  PASS — 9 test files, 97 tests passed, 0 failed, 0 skipped.
+  Duration: 7.28s.
+
+Coverage represented by this combined slice:
+  channel receipt/interleaving and invitation revision properties;
+  child reservation interleavings, identity, cancellation, and checkpoint
+  agreement; task retry/heartbeat/terminal state-machine properties; JSON and
+  SQLite durable ranking and workflow replay; workflow selection projection;
+  live JSON/SQLite child-delegation cancellation/settlement; deterministic
+  owner ranking and scheduler budget boundaries.
+
+Selected test source hashes:
+  replay-properties 2bcc2dfbc74f1812b90261e977a8c0c36cccb569ba8b7867f636aaf1d4e3e12c
+  child-reservation-properties f75c059d6a1772b4da6db1eb9cc8ed8d81f0e1f1e79a737d840970fa8ac26a4d
+  task-state-machine-properties 7129ee1215460b0a14814b2008d26762b443fc9f6e854c6b9fc4905215138ea6
+  durable-task-ranking 939a038ac0ac674ace291ee776ffa8266bc6d23c3cf2b1d4143b278cb264c454
+  durable-workflow-replay a4eb4b90f72e1ef5f6ca7cdb8ce274747ceae7d47c8ba682b1b0332a94b8ad0b
+  durable-workflow-selection 832378217dcfde76e7b5622ee0cebe71c0cd843644ab6e99a3d7af7d26bcf00a
+  task-delegation 95e711b1952dcffc3cd3f06aaba9867246fa5508252d7f71f8a3c754c6f47f43
+  ranking-properties e52d33a6d941d1d9c2eaddf2184c8d5d1f2935eac12e2ae10e05f7dd4a7c6b41
+  budget-boundaries 4b4067ddec40ef8e22336175e318d8d91528164dd693a1172dc8102ce49f4a68
+
+Interpretation:
+  This is a unified current-candidate state-machine/replay slice. It strengthens
+  T-08 evidence but does not close the remaining full ranking restart/no-provider,
+  complete cross-log matrix, or minimized-counterexample requirements.

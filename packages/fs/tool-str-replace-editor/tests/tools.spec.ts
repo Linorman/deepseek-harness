@@ -36,6 +36,7 @@ function agent(ctx: Context, cwd: string): Agent {
     inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
     status: 'idle',
     ctx: scope.ctx,
+    wakePending: () => false,
     send: () => {},
     followup: () => {},
     steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),

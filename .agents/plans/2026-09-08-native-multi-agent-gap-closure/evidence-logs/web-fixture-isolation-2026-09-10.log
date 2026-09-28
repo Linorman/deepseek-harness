@@ -1,0 +1,98 @@
+=== scaffold-before.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+x
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/tests/scaffold-hermetic.e2e.ts > isolates replay skill discovery from every ambient host root
+AssertionError: expected [ 'ambient-project' ] to not include 'ambient-project'
+ ❯ apps/web/tests/scaffold-hermetic.e2e.ts:65:25
+     63|       expect(names).not.toContain('ambient-agents')
+     64|       expect(names).not.toContain('ambient-bundled')
+     65|       expect(names).not.toContain('ambient-project')
+       |                         ^
+     66|       expect(await discoverBaselineInstructionFiles({ cwd: scaffold.wo…
+     67|     } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  19:39:07
+   Duration  1.41s (transform 315ms, setup 12ms, import 430ms, tests 855ms, environment 0ms)
+
+
+=== host-auth-before.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+-x
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/tests/scaffold-hermetic.e2e.ts > keeps each Host authenticated while a second Host shares its settings home
+SyntaxError: Unexpected token 'p', "product au"... is not valid JSON
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+   Start at  20:10:46
+   Duration  1.35s (transform 341ms, setup 12ms, import 482ms, tests 747ms, environment 0ms)
+
+
+=== browser-isolation-followup.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·············
+
+ Test Files  5 passed (5)
+      Tests  13 passed (13)
+   Start at  19:40:13
+   Duration  22.95s (transform 332ms, setup 21ms, import 1.48s, tests 20.93s, environment 0ms)
+
+
+=== browser-host-isolation.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·······················
+
+ Test Files  3 passed (3)
+      Tests  23 passed (23)
+   Start at  20:11:49
+   Duration  16.68s (transform 361ms, setup 16ms, import 1.02s, tests 15.33s, environment 0ms)
+
+
+=== continuous-followup.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  20:14:50
+   Duration  6.01s (transform 280ms, setup 11ms, import 548ms, tests 5.35s, environment 0ms)
+
+
+=== lifecycle-refresh.log ===
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+·······
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  20:25:15
+   Duration  6.56s (transform 300ms, setup 11ms, import 565ms, tests 5.88s, environment 0ms)

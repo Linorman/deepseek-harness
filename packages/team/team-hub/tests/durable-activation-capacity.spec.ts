@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { liveActivationCapacity } from '@clocky/clocky-team'
 import { teamProjectionFromData } from '../src/fold.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
-import { createdTeam, participant, participantChanged, taskCreatorActivationId, taskCreatorId,
+import { createdTeam, participant, participantChanged, task, taskCreatorActivationId, taskCreatorId,
   taskCreatorSessionId, teamId, teamPhase } from './fixtures.ts'
 
 function fixture() {
@@ -25,6 +25,7 @@ describe('durable startup capacity', () => {
     const f = fixture()
     const valid = checkpointFor(f.bound)
     expect(() => teamProjectionFromData(valid)).not.toThrow()
+    expect(() => teamProjectionFromData({ ...valid, tasks: [task()] })).not.toThrow()
     expect(() => teamProjectionFromData({ ...valid, participants: [f.member] })).toThrow(/startup identity/)
     expect(() => teamProjectionFromData({ ...valid, budgets: { maxLiveActivations: 0 } })).toThrow(/exceed/)
   })
@@ -57,4 +58,29 @@ describe('durable startup capacity', () => {
     const invalid = await recover(backend, rows)
     await expect(invalid.teams.getTeam({ teamId })).rejects.toThrow(/share one startup/)
   })
+})
+
+it('requires zero-capacity members to retain only released or quiesced startup responsibility', () => {
+  const f = fixture()
+  const grant = { operations: ['activate'] as const, workspaceModes: ['shared'] as const,
+    readScopes: [], writeScopes: [], budgets: { maxLiveActivations: 0 } }
+  const bounded = participant({ ...f.member, authorityGrant: grant, activationReservation: f.reservation })
+  const data = checkpointFor(f.bound)
+  expect(() => teamProjectionFromData({ ...data, participants: [bounded] })).toThrow('zero live authority retains startup capacity')
+  const quiesced = { ...data.activations[0]!, activation: { ...data.activations[0]!.activation, status: 'offline' as const },
+    quiescedAt: 16, quiescenceSource: 'quiesced' as const, quiescedWakeChannelIds: [] }
+  expect(() => teamProjectionFromData({ ...data, participants: [bounded], activations: [quiesced] })).not.toThrow()
+  const unbound = checkpointFor(f.prefix)
+  expect(() => teamProjectionFromData({ ...unbound,
+    participants: [participant({ ...bounded, activationReservation: { ...f.reservation, releasedAt: 15 } })] })).not.toThrow()
+})
+
+it('rejects membership changes during cancellation unless they release unpublished startup responsibility', () => {
+  const f = fixture()
+  const data = checkpointFor(f.bound)
+  const cancellation = { type: 'team/cancellation', createdAt: 17, cancellation: { teamId, idempotencyKey: 'cancel',
+    actor: { kind: 'system', name: 'owner' }, reason: { code: 'cancelled', message: 'Cancellation requested' }, requestedAt: 17 } }
+  expect(() => checkpointFor([...f.bound, cancellation,
+    participantChanged({ participant: { ...data.participants[0], phase: 'left' }, createdAt: 18 })]))
+    .toThrow('Closure participant mutation is not an unpublished-start release')
 })

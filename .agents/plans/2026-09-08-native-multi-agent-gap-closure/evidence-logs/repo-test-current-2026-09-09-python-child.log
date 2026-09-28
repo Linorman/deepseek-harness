@@ -1,0 +1,27 @@
+Command A:
+  pnpm run test --reporter=json --outputFile=.tmp/repo-test-current-2026-09-09-python-child.json --maxWorkers=1
+
+Command B:
+  pnpm exec vitest run packages/team/team-agent-client/tests/client.spec.ts --reporter=dot --maxWorkers=1
+
+Command C:
+  pnpm exec vitest run packages/team/team-agent-client/tests/client.spec.ts --reporter=dot --maxWorkers=1
+
+Results:
+  Command A exited 1: 1009 test-result files, 16139 tests, 16022 passed,
+  1 failed, 116 skipped. The only reported assertion failure was
+  `Team Agent Client restores provider metadata that has no base version`,
+  with `TeamLinkLocalError: local Team Link is closed` while acknowledging
+  an envelope.
+  Command B exited 1: 1 file, 79/80 passed; its failure was a different
+  timing-sensitive `TeamLinkLocalError: local Team Link disposal exceeded
+  100ms` case.
+  Command C exited 0: 1 file, 80/80 passed.
+
+Interpretation:
+  The post-runtime-config full lane is not recorded as a PASS because the
+  shared Team Agent Client file showed a transient link-lifecycle failure.
+  The second isolated rerun passed all 80 tests, while the first isolated
+  rerun failed a different disposal-timing case; this remains flaky evidence,
+  not a product regression conclusion. The prior same-candidate full green
+  result remains recorded separately in repo-test-current-2026-09-09.log.

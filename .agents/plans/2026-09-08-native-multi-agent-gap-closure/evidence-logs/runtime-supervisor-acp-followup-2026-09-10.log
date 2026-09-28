@@ -1,0 +1,11 @@
+# Runtime supervisor and ACP follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Command:
+
+    env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts packages/agent-runtime/agent-runtime-acp/tests/termination.spec.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts packages/team/team-activation-controller/tests/edges.spec.ts --no-file-parallelism
+
+Result: exit 0; 5 test files passed; 63 tests passed; 2 tests skipped by platform condition.
+
+Scope: local ACP lifecycle and termination, authenticated HTTP supervisor ownership and typed fencing errors, startup recovery with remote-supervisor selection, and controller fence edge cases. The skipped detached-process cases and separate-host deployment matrix remain outside this evidence.

@@ -1,0 +1,248 @@
+{
+  "scope": "10000 entities / 1M requested world updates, zero-model storage layer only",
+  "report": ".tmp-simulation-development/benchmarks/sqlite-world-4g3Z9Q/report.json",
+  "reportSha256": "014ca56fd6f035f45dfdff93d051d48b2c9a55677206b03d9d7e95b44438f059",
+  "result": {
+    "version": 2,
+    "layer": "zero-model-storage",
+    "lastPhase": "cold-recovery",
+    "options": {
+      "backend": "sqlite",
+      "entities": 10000,
+      "operations": 1000000,
+      "durationMs": 60000,
+      "timeoutMs": 180000,
+      "sampleEvery": 10000,
+      "entityBatchSize": 1000,
+      "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+      "workload": "world",
+      "worldBatchSize": 1000
+    },
+    "mode": "src",
+    "hardware": {
+      "platform": "darwin",
+      "release": "27.0.0",
+      "arch": "arm64",
+      "node": "v25.9.0",
+      "cpus": 12,
+      "cpuModel": "Apple M4 Pro",
+      "memoryBytes": 25769803776
+    },
+    "sourceDigest": "99d65d88b18b1577a1d94ddd367554cab18f80dc1cfdbea892349fd444601ce6",
+    "sourceFiles": 3205,
+    "elapsedMs": 210216.917667,
+    "timedOut": true,
+    "interrupted": false,
+    "exitCode": 0,
+    "signal": null,
+    "coldExitCode": null,
+    "coldSignal": "SIGKILL",
+    "coldProcessMs": 82225.031709,
+    "status": "timeout",
+    "lastProgress": {
+      "kind": "progress",
+      "phase": "restore-start",
+      "completed": 18000,
+      "consumed": 0,
+      "peakRssBytes": 462929920
+    },
+    "result": {
+      "kind": "result",
+      "recoveryMode": "same-process-owner-services",
+      "completion": "time-budget",
+      "layer": "zero-model-storage",
+      "writeBatchSize": 1000,
+      "setupMs": 15016.652375000001,
+      "completed": 18000,
+      "consumed": 0,
+      "requested": 1000000,
+      "throughputPerSecond": 255.72565781616476,
+      "phases": {
+        "write-batch": {
+          "count": 18,
+          "elapsedMs": 70387.931167,
+          "p50Ms": 1659.4416249999995,
+          "p95Ms": 39162.918334,
+          "p99Ms": 39162.918334
+        }
+      },
+      "checkpointMs": 179.4967089999991,
+      "restoreMs": 40732.82545800001,
+      "peakRssBytes": 639844352,
+      "diskBytes": 6660752,
+      "bytesBeforeClose": 8078608,
+      "cpuMicros": {
+        "user": 82535906,
+        "system": 4195248
+      },
+      "journalEntries": 28005,
+      "stops": {},
+      "residents": 0,
+      "modelCalls": 0,
+      "teamMessages": 0,
+      "modelTokens": 0,
+      "modelCost": 0,
+      "replayEqual": true,
+      "acceptedResponsibilitiesPreserved": true,
+      "stalled": null
+    }
+  },
+  "conclusion": "timeout: 18000 updates retained and same-process recovery matched; fresh-process recovery did not finish inside the total 180s budget. Scenario B remains unverified. Batch size 1000 retains individual journal events; batch latency is not event latency.",
+  "coldRecoveryFollowup": {
+    "result": {
+      "kind": "cold-recovery",
+      "replayEqual": true,
+      "modelCalls": 0,
+      "publications": 0,
+      "restoreMs": 44613.1415,
+      "peakRssBytes": 472432640,
+      "cpuMicros": {
+        "user": 41287596,
+        "system": 3214496
+      }
+    },
+    "raw": ".tmp-simulation-development/world-cold-profile/output.log",
+    "rawSha256": "e86625ea9a665624fcf5059518e48a6c946a163fe5e577208cb47d62ae099a19",
+    "profile": ".tmp-simulation-development/world-cold-profile/CPU.20260922.200011.86224.0.001.cpuprofile",
+    "profileSha256": "42a2deb86fa4a8fdb2c4de7510d635c08dd18ad909e05a3a3bb52ff82b65f9df",
+    "topSampledMilliseconds": {
+      "foldEntityChange entities.ts": 41404.377,
+      "readSync node:fs": 963.301,
+      "(garbage collector) ": 693.635,
+      "Module._resolveFilename loader": 168.718,
+      "NodeError errors": 164.163,
+      "read log.ts": 159.003,
+      "structuredClone js_transferable": 132.573,
+      "get tailSequence log.ts": 125.288,
+      "read package_json_reader": 123.457,
+      "configureDatabase schema.ts": 120.143,
+      "stat loader": 93.766,
+      "finalizeResolution resolve": 77.792,
+      " entities.ts": 69.943,
+      "parseStoredValue log.ts": 65.614,
+      "readFileSync node:fs": 58.452
+    },
+    "conclusion": "Separate profiled fresh-process recovery succeeded after 44.61s with exact projection equality and no model or publication effects. It does not change the original timeout. Entity folding accounts for 41.40s of samples; each immutable entity update copies the full entity dictionary."
+  },
+  "batchedFoldFollowup": {
+    "report": ".tmp-simulation-development/benchmarks/sqlite-world-qgUKcc/report.json",
+    "reportSha256": "618c3500f0b2475c252472fa4029665bb565876b9f3deb5b8332b527c03beef8",
+    "result": {
+      "version": 2,
+      "layer": "zero-model-storage",
+      "lastPhase": "cold-recovery",
+      "options": {
+        "backend": "sqlite",
+        "entities": 10000,
+        "operations": 1000000,
+        "durationMs": 60000,
+        "timeoutMs": 180000,
+        "sampleEvery": 10000,
+        "entityBatchSize": 1000,
+        "replayPageSize": 1000,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "world",
+        "worldBatchSize": 1000
+      },
+      "mode": "src",
+      "hardware": {
+        "platform": "darwin",
+        "release": "27.0.0",
+        "arch": "arm64",
+        "node": "v25.9.0",
+        "cpus": 12,
+        "cpuModel": "Apple M4 Pro",
+        "memoryBytes": 25769803776
+      },
+      "sourceDigest": "f567f812e429c816095e37309aea5b001c90e81d709cfa990b8426ba22490d2b",
+      "sourceFiles": 3205,
+      "elapsedMs": 80907.617958,
+      "timedOut": false,
+      "interrupted": false,
+      "exitCode": 0,
+      "signal": null,
+      "coldExitCode": 0,
+      "coldSignal": null,
+      "coldProcessMs": 15890.090833999988,
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 15304.960875,
+        "peakRssBytes": 1378729984,
+        "cpuMicros": {
+          "user": 14329034,
+          "system": 1137808
+        }
+      },
+      "status": "measured",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 1000000,
+        "consumed": 0,
+        "peakRssBytes": 561446912
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "completion": "target-complete",
+        "layer": "zero-model-storage",
+        "writeBatchSize": 1000,
+        "setupMs": 6822.686333,
+        "completed": 1000000,
+        "consumed": 0,
+        "requested": 1000000,
+        "throughputPerSecond": 23581.074848029406,
+        "phases": {
+          "write-batch": {
+            "count": 1000,
+            "elapsedMs": 42406.888,
+            "p50Ms": 42.00149999999849,
+            "p95Ms": 48.378333000000566,
+            "p99Ms": 53.417709000001196
+          }
+        },
+        "checkpointMs": 189.51133299999492,
+        "restoreMs": 13753.307374999997,
+        "peakRssBytes": 1429716992,
+        "diskBytes": 233546384,
+        "bytesBeforeClose": 237742264,
+        "cpuMicros": {
+          "user": 63373438,
+          "system": 3019514
+        },
+        "journalEntries": 1010005,
+        "stops": {},
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      }
+    },
+    "sameRetainedSample": {
+      "raw": ".tmp-simulation-development/world-cold-profile-after/output.log",
+      "rawSha256": "b15a10fa37764f69c2691545d8f699aa0ef3008476a9446e592eaa997c91efd0",
+      "result": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 17605.686458,
+        "peakRssBytes": 444497920,
+        "cpuMicros": {
+          "user": 16698486,
+          "system": 1261111
+        }
+      }
+    },
+    "fourRecordPageReport": ".tmp-simulation-development/benchmarks/sqlite-world-IJKouQ/report.json",
+    "fourRecordPageReportSha256": "bc5c495250df83e9d5e3b28b86bf909af3d8c3fb2ac205e201c0d1b8b142fd0e",
+    "scope": "Complete 10000-entity/1M-update zero-model SQLite storage workload and fresh-process recovery; this does not establish Scenario B residency/model workload or Scenario A delivery capacity."
+  }
+}

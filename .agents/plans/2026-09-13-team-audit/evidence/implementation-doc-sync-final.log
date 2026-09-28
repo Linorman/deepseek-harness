@@ -1,0 +1,71 @@
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 28 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+run-gates: PASS markdown links (5.98s)
+run-gates: start type equivalence
+run-gates: PASS type equivalence (5.38s)
+run-gates: start cordis catalog
+run-gates: PASS doc-typecheck (19.37s)
+run-gates: start verify-mermaid
+run-gates: PASS documentation build (20.03s)
+run-gates: start scoped events
+run-gates: PASS doc graphs (20.91s)
+run-gates: start translation pairing
+run-gates: PASS verify-mermaid (5.78s)
+run-gates: start markdown wrap
+run-gates: PASS cordis catalog (16.50s)
+run-gates: start client catalog
+run-gates: PASS markdown wrap (4.54s)
+run-gates: start export jsdoc
+run-gates: PASS client catalog (1.83s)
+run-gates: start tool catalog
+run-gates: PASS scoped events (9.76s)
+run-gates: start config catalog
+
+== FAILED translation pairing (9.56s) ==
+command: pnpm run verify-translation-pairing
+outcome: exit 1
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  docs/persistence-catalog.md ↔ docs/persistence-catalog.zh.md: link target #4 diverges between the pair: "../.agents/notes/archived/process/2026-07-04-persistence-log-catalog.md… vs "../.agents/notes/archived/process/2026-07-04-persistence-log-catalog.zh…
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start persistence catalog
+run-gates: PASS config catalog (1.14s)
+run-gates: start public repository links
+run-gates: PASS persistence catalog (1.13s)
+run-gates: start doc refs
+run-gates: PASS tool catalog (2.19s)
+run-gates: start package paths
+run-gates: PASS doc refs (0.83s)
+run-gates: start config source ownership
+run-gates: PASS export jsdoc (2.80s)
+run-gates: start package README model experience
+run-gates: PASS public repository links (1.82s)
+run-gates: start agent note classification
+run-gates: PASS package paths (0.94s)
+run-gates: start agent note format
+run-gates: PASS config source ownership (0.81s)
+run-gates: start archived agent notes
+run-gates: PASS agent note classification (0.49s)
+run-gates: start skill invocation metadata
+run-gates: PASS agent note format (0.51s)
+run-gates: start translation prompt
+run-gates: PASS skill invocation metadata (0.46s)
+run-gates: start doc budgets
+run-gates: PASS archived agent notes (0.50s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.45s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.45s)
+run-gates: PASS package README model experience (2.05s)
+run-gates: PASS package README limitations (1.97s)
+run-gates: PASS documentation site checks (3.59s)
+
+run-gates: 27 passed, 1 failed, 0 skipped in 37.33s.
+run-gates: unsuccessful gates:
+  - FAILED translation pairing (9.56s, exit 1)
+    pnpm run verify-translation-pairing
+[ELIFECYCLE] Command failed with exit code 1.

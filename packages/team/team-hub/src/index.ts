@@ -1,3 +1,6 @@
+import { readPersistencePrefix } from './persistence-prefix.ts'
+import { teamPersistenceReferenceRequestSchema, fingerprintTeamPersistenceProjection, jsonValueSchema } from '@clocky/clocky-team'
+import type { TeamDeliveryOwnerProof } from '@clocky/clocky-team'
 import { projectMemberInspection } from '@clocky/clocky-team/selection'
 import { teamMemberInspectRequestSchema, type TeamMemberInspectRequest, type TeamMemberInspectSpec, type TeamMemberInspection } from '@clocky/clocky-team'
 import { projectWorkflowInspection } from '@clocky/clocky-team/selection'
@@ -701,6 +704,8 @@ interface CreatedChannel {
 
 /** Sender and runtime proof revalidation retained through one Envelope append. */
 interface ResolvedChannelEnvelopePost extends ChannelEnvelopePostInput {
+  /** A source-scoped Simulation intent may reconcile an already committed result after authority withdrawal. */
+  readonly allowCommittedReplay?: boolean
   /** Durable sender derived from the accepted runtime authority. */
   readonly senderId: ParticipantId
   /** Re-resolve the opaque actor against this exact post before the WAL append. */
@@ -741,6 +746,8 @@ type ResolvedTeamClosureInput<T extends TeamClosureInput> = T & {
 
 /** Root creation authority retained only through one policy and journal-admission interval. */
 interface RootCreationAuthority {
+  readonly reservedId?: TeamId
+
   /** Source identity derived from the opaque root-creation proof. */
   readonly sourceName: string
   /** Immutable root payload derived from the initial source scope. */
@@ -784,7 +791,7 @@ interface ChannelOpenLifecycleAuthority {
   /** Immutable JSON-only channel-open input derived from the initial source scope. */
   readonly input: ChannelOpenInput
   /** Re-resolve the proof and return its exact generic open scope before WAL attachment. */
-  revalidate(): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' }>
+  revalidate(): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' | 'simulation-channel-open' }>
 }
 
 /** Terminal archive authority retained only through one policy and journal-admission interval. */
@@ -937,7 +944,7 @@ function sameChannelCloseInput(
 
 /** Copy the JSON-only channel-open fields selected by a generic lifecycle source scope. */
 function channelOpenInput(
-  scope: Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' }>,
+  scope: Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' | 'simulation-channel-open' }>,
 ): ChannelOpenInput {
   return {
     ...scope.invitations === undefined ? {} : { invitations: structuredClone(scope.invitations) },
@@ -955,7 +962,7 @@ function sameChannelOpenInput(
   resolved: TeamSystemChannelLifecycleProofResolution,
   input: ChannelOpenInput,
 ): boolean {
-  return resolved.scope.kind === 'channel-open'
+  return (resolved.scope.kind === 'channel-open' || resolved.scope.kind === 'simulation-channel-open')
     && isDeepStrictEqual(channelOpenInput(resolved.scope), input)
 }
 
@@ -1101,6 +1108,7 @@ export class TeamHub extends TeamRuntime {
   static Config = Config
 
   private readonly config: Omit<Required<Config>, 'rankingLatencyBucketsMs' | 'rankingCostRateBuckets'> & { readonly taskRanking: TeamTaskRankingPolicy }
+  private readonly simulationRootCreates = new SerialQueue()
   private readonly teams = new Map<TeamId, LoadedTeam>()
   private readonly projectionReadScopes = new AsyncLocalStorage<{
     active: boolean
@@ -1223,6 +1231,7 @@ export class TeamHub extends TeamRuntime {
       const input = teamCreateRequestSchema.parse(untrustedInput)
       if (!('parentTeamId' in input)) {
         const authority = this.requireRootCreationAuthority(actor as TeamSystemRootCreationProof | undefined, input)
+        if (authority.reservedId !== undefined) return await this.simulationRootCreates.run(() => this.createSimulationRoot(authority))
         return await this.createResolvedTeam(authority.input, {
           depth: 0,
           maxTeamDepth: this.config.maxTeamDepth,
@@ -1257,6 +1266,32 @@ export class TeamHub extends TeamRuntime {
           task.delegation.childTeamId)
       })
     })
+  }
+
+  /** Reconcile a reserved Simulation root against its immutable genesis before returning its current state. */
+  private async createSimulationRoot(authority: RootCreationAuthority): Promise<TeamStateSnapshot> {
+    const id = authority.reservedId
+    if (id === undefined) throw new Error('Simulation root authority omitted its reserved identity')
+    const input = authority.revalidate()
+    let existing: LoadedTeam | undefined
+    try { existing = await this.ensureTeam(id) }
+    catch (error: unknown) { if (!(error instanceof TeamError) || error.code !== 'TEAM_NOT_FOUND') throw error }
+    if (existing !== undefined) {
+      const row = (await existing.stream.read(-1, 1))[0]
+      authority.revalidate()
+      const record = row === undefined ? undefined : parseTeamRecord(row.value, id)
+      if (row?.sequence !== 0 || record?.type !== 'team/created' || record.parentTeamId !== undefined
+        || record.createdBy?.kind !== 'system' || record.createdBy.name !== 'simulation-team'
+        || record.goal.objective !== normalizedText(input.goal.objective, 'goal objective')
+        || !isDeepStrictEqual(record.goal.budgets, input.goal.budgets) || !isDeepStrictEqual(record.budgets, input.budgets)
+        || !isDeepStrictEqual(record.authorityGrant, resolveAuthorityGrant(input.authorityGrant, undefined))) {
+        throw new TeamError('Simulation root identity has another creation payload', 'TEAM_ACTOR_PROOF_INVALID')
+      }
+      const { teamLimits: _limits, usageRates: _rates, taskRanking: _ranking, ...rules } = record.rules
+      if (!isDeepStrictEqual(rules, input.rules)) throw new TeamError('Simulation root rules differ from its reservation', 'TEAM_ACTOR_PROOF_INVALID')
+      return this.teamState(existing.projection)
+    }
+    return await this.createResolvedTeam(input, { depth: 0, maxTeamDepth: this.config.maxTeamDepth }, undefined, authority, undefined, id)
   }
 
   /** Create one Team after root-or-child hierarchy facts have been resolved. */
@@ -1378,17 +1413,21 @@ export class TeamHub extends TeamRuntime {
       throw new TeamError('Root Team creation requires a live system root-creation proof', 'TEAM_ACTOR_PROOF_INVALID')
     }
     const initial = this.requireSystemRootCreationProof(actor)
-    if (initial.sourceName !== TEAM_RUN_ROOT_CREATION_PROOF_SOURCE || !sameRootCreationInput(initial, input)) {
+    const simulation = initial.scope.kind === 'simulation-root-create' && initial.sourceName === 'simulation-team'
+      && isDeepStrictEqual(initial.scope.rules, { simulationRunId: initial.scope.runId,
+        activationLifecycleOwner: initial.scope.lifecycleOwner })
+    const teamRun = initial.scope.kind === 'team-run-root-create' && initial.sourceName === TEAM_RUN_ROOT_CREATION_PROOF_SOURCE
+    if ((!simulation && !teamRun) || !sameRootCreationInput(initial, input)) {
       throw new TeamError('Root Team creation proof does not authorize the supplied payload', 'TEAM_ACTOR_PROOF_INVALID')
     }
     const expected = initial.scope
     return Object.freeze({
       sourceName: initial.sourceName,
       input: rootCreationInput(expected),
+      ...expected.kind === 'simulation-root-create' ? { reservedId: expected.teamId } : {},
       revalidate: (): TeamRootCreateInput => {
         const current = this.requireSystemRootCreationProof(actor)
-        if (current.sourceName !== TEAM_RUN_ROOT_CREATION_PROOF_SOURCE
-          || current.sourceName !== initial.sourceName
+        if (current.sourceName !== initial.sourceName
           || !isDeepStrictEqual(current.scope, expected)) {
           throw new TeamError('Root Team creation proof changed before journal admission', 'TEAM_ACTOR_PROOF_INVALID')
         }
@@ -1483,6 +1522,51 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  private assertSimulationChannelOpening(team: LoadedTeam, scope: import('@clocky/clocky-team').SimulationChannelOpenScope): void {
+    this.assertSimulationTopologyTeam(team, scope)
+    if (team.projection.team.phase !== 'active' || team.projection.team.cancellation !== undefined
+      || team.projection.team.closure !== undefined || team.projection.team.cursor !== scope.expectedCursor
+      || scope.adapter.type !== 'direct' || scope.adapter.version !== 4
+      || scope.invitations?.length !== scope.participants.length
+      || new Set(scope.invitations.map(value => value.participantId)).size !== scope.participants.length
+      || scope.participants.some((member) => {
+        const invitation = scope.invitations?.find(value => value.participantId === member.id)
+        return invitation?.required !== true || invitation.sessionId === undefined
+          || team.projection.participants.get(member.id)?.kind !== 'local-agent'
+          || team.projection.participants.get(member.id)?.phase !== 'active'
+      })) throw new TeamError('Simulation channel opening requires active canonical endpoints', 'TEAM_ACTOR_PROOF_INVALID')
+  }
+
+  /** Recover only the reserved WAL whose immutable creation and invitations match the source-owned request. */
+  private async findSimulationChannel(team: LoadedTeam, scope: import('@clocky/clocky-team').SimulationChannelOpenScope): Promise<CreatedChannel | undefined> {
+    let channel: LoadedChannel
+    try { channel = await this.ensureChannel(scope.channelId) }
+    catch (error: unknown) {
+      if (!(error instanceof TeamError) || error.code !== 'TEAM_CHANNEL_NOT_FOUND') throw error
+      if (team.projection.channelIds.has(scope.channelId)) throw error
+      return undefined
+    }
+    const entries = await channel.stream.read(-1, scope.participants.length + 2)
+    const records = entries.map(entry => parseChannelRecord(entry.value, scope.channelId))
+    const opening = records[0]
+    const expected: ChannelManifest = { id: scope.channelId, teamId: scope.teamId, adapter: scope.adapter,
+      participants: scope.participants, limits: scope.limits,
+      ...scope.viewPolicy === undefined ? {} : { viewPolicy: scope.viewPolicy } }
+    if (opening?.type !== 'channel/opened' || entries[0]?.sequence !== 0
+      || !isDeepStrictEqual(opening.manifest, expected) || !isDeepStrictEqual(channel.projection.manifest, expected)
+      || records.length !== scope.participants.length + 2
+      || records[1]?.type !== 'channel/phase' || records[1].phase !== 'pending'
+      || records.slice(2).some((record, index) => {
+        const member = scope.participants[index]
+        const option = scope.invitations?.find(value => value.participantId === member?.id)
+        return record.type !== 'channel/invitation' || record.invitation.participantId !== member?.id
+          || !record.invitation.required || record.invitation.revision !== 1 || record.invitation.status !== 'pending'
+          || record.invitation.endpoint.kind !== 'activation' || record.invitation.endpoint.activationId !== undefined
+          || record.invitation.endpoint.sessionId !== option?.sessionId
+      })) throw new TeamError('Simulation channel reservation differs from its original WAL', 'TEAM_ACTOR_PROOF_INVALID')
+    return { channel, records }
+  }
+
   /** Resolve one generic channel-open proof and bind it to exact JSON admission input. */
   private requireChannelOpenLifecycleAuthority(
     actor: TeamSystemChannelLifecycleProof | undefined,
@@ -1492,8 +1576,10 @@ export class TeamHub extends TeamRuntime {
       throw new TeamError('Channel opening requires a live system channel-lifecycle proof', 'TEAM_ACTOR_PROOF_INVALID')
     }
     const initial = this.requireSystemChannelLifecycleProof(actor)
-    if ((initial.sourceName !== TEAM_CHANNEL_LIFECYCLE_PROOF_SOURCE && initial.sourceName !== 'team-run-child')
-      || initial.scope.kind !== 'channel-open'
+    const simulation = initial.scope.kind === 'simulation-channel-open'
+    if ((simulation ? initial.sourceName !== 'simulation-team'
+      : initial.sourceName !== TEAM_CHANNEL_LIFECYCLE_PROOF_SOURCE && initial.sourceName !== 'team-run-child')
+      || (initial.scope.kind !== 'channel-open' && initial.scope.kind !== 'simulation-channel-open')
       || !sameChannelOpenInput(initial, input)) {
       throw new TeamError('Channel lifecycle proof does not authorize the supplied payload', 'TEAM_ACTOR_PROOF_INVALID')
     }
@@ -1501,10 +1587,10 @@ export class TeamHub extends TeamRuntime {
     return Object.freeze({
       sourceName: initial.sourceName,
       input: channelOpenInput(expected),
-      revalidate: (): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' }> => {
+      revalidate: (): Extract<TeamSystemChannelLifecycleProofResolution['scope'], { readonly kind: 'channel-open' | 'simulation-channel-open' }> => {
         const current = this.requireSystemChannelLifecycleProof(actor)
         if (current.sourceName !== initial.sourceName
-          || current.scope.kind !== 'channel-open'
+          || current.scope.kind !== expected.kind
           || !isDeepStrictEqual(current.scope, expected)) {
           throw new TeamError('Channel lifecycle proof changed before WAL admission', 'TEAM_ACTOR_PROOF_INVALID')
         }
@@ -1738,6 +1824,54 @@ export class TeamHub extends TeamRuntime {
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(() => Promise.resolve(this.teamState(this.requireLiveTeam(loaded).projection)))
     })
+  }
+
+  override async getPersistenceReference(request: import('@clocky/clocky-team').TeamPersistenceReferenceRequest):
+  Promise<import('@clocky/clocky-team').TeamPersistenceReference> {
+    return await this.admit(async () => {
+      const input = teamPersistenceReferenceRequestSchema.parse(request)
+      if (input.kind === 'team') {
+        const loaded = await this.ensureTeam(input.teamId)
+        return await loaded.queue.run(async () => {
+          const current = this.requireLiveTeam(loaded)
+          this.assertTeamCursor(current, input.expectedCursor)
+          const prefix = input.prefixCursor === undefined ? current.projection
+            : await readPersistencePrefix<TeamProjection>(current.stream, input.prefixCursor, this.config.recoveryPageSize,
+              (previous, entry) => foldTeamRecord(previous, parseTeamRecord(entry.value, input.teamId), entry.sequence, input.teamId))
+          return Promise.resolve(this.persistenceReference({ kind: 'team', teamId: input.teamId }, current.stream,
+            prefix.team.cursor, TEAM_CHECKPOINT_FORMAT_VERSION, teamProjectionData(prefix),
+            current.projection.rules['simulationRunId'] !== undefined ? 'full' : 'compactable', input.expectedCursor))
+        })
+      }
+      const loaded = await this.ensureAttachedChannel(input.channelId)
+      const team = await this.ensureTeam(loaded.projection.manifest.teamId)
+      return await team.queue.run(() => loaded.queue.run(async () => {
+        const currentTeam = this.requireLiveTeam(team)
+        const current = this.requireLiveChannel(loaded)
+        this.assertAttachedChannel(currentTeam, current)
+        if (current.projection.cursor !== input.expectedCursor) throw new TeamError('Channel checkpoint cursor moved', 'TEAM_CHANNEL_CURSOR_CONFLICT')
+        const prefix = input.prefixCursor === undefined ? current.projection
+          : await readPersistencePrefix<ChannelProjection>(current.stream, input.prefixCursor, this.config.recoveryPageSize,
+            (previous, entry) => foldChannelRecord(previous, parseChannelRecord(entry.value, input.channelId),
+              entry.sequence, input.channelId, current.adapter))
+        return Promise.resolve(this.persistenceReference({ kind: 'channel', channelId: input.channelId }, current.stream,
+          prefix.cursor, CHANNEL_CHECKPOINT_FORMAT_VERSION, channelProjectionData(prefix),
+          currentTeam.projection.rules['simulationRunId'] !== undefined ? 'full' : 'compactable', input.expectedCursor))
+      }))
+    })
+  }
+
+  /** Capture only a projection whose owner queue still agrees with its physical stream tail. */
+  private persistenceReference(owner: import('@clocky/clocky-team').TeamPersistenceReference['owner'], stream: HubLogStream,
+    cursor: number, projectionVersion: number,
+    projection: ReturnType<typeof teamProjectionData> | ReturnType<typeof channelProjectionData>,
+    retention: import('@clocky/clocky-team').TeamPersistenceReference['retention'], expectedTail: number):
+  import('@clocky/clocky-team').TeamPersistenceReference {
+    if (stream.tailSequence !== expectedTail) throw new TeamError('Checkpoint projection does not match its durable stream',
+      owner.kind === 'team' ? 'TEAM_CURSOR_CONFLICT' : 'TEAM_CHANNEL_CURSOR_CONFLICT')
+    const durable: unknown = JSON.parse(JSON.stringify(projection))
+    return freeze({ owner, stream: { name: stream.name, version: stream.version }, cursor, firstSequence: stream.firstSequence,
+      projectionVersion, retention, fingerprint: fingerprintTeamPersistenceProjection(jsonValueSchema.parse(durable)) })
   }
 
   /** Read the selected action under its owning Team serializer and selection byte allowance. */
@@ -3493,6 +3627,21 @@ export class TeamHub extends TeamRuntime {
           ? this.resolveHumanParticipantInviteAuthority(current, actor as TeamHumanActorProof, input)
           : undefined
         if (human && input.kind === 'human') this.rejectHumanParticipantActor()
+        const topology = human ? undefined
+          : this.topologyParticipantInviteScope(actor as TeamSystemTopologyProof, input)
+        const reserved = topology?.kind === 'simulation-participant-invite' ? topology.participantId : undefined
+        if (reserved !== undefined) this.resolveTopologyParticipantInviteAuthority(current, actor as TeamSystemTopologyProof, input)
+        const retained = reserved === undefined ? undefined : current.projection.participants.get(reserved)
+        if (retained !== undefined) {
+          const rows = await this.readSimulationParticipantOrigin(current, retained.id)
+          const expected = participantInviteDescriptor({ ...input,
+            displayName: normalizedText(input.displayName, 'displayName'), role: normalizedText(input.role, 'role'),
+            capabilities: normalizeLabels(input.capabilities, 'participant capabilities'),
+            authorityGrant: resolveAuthorityGrant(input.authorityGrant, current.projection.team.authorityGrant) })
+          if (!isDeepStrictEqual(rows, expected)) this.rejectTopologyActor()
+          this.resolveTopologyParticipantInviteAuthority(current, actor as TeamSystemTopologyProof, input)
+          return freeze(structuredClone(retained))
+        }
         if (current.projection.participants.size >= this.teamLimit(current.projection, 'maxParticipants', this.config.maxParticipantsPerTeam)) {
           throw new TeamError(`Team '${input.teamId}' reached its participant limit`, 'TEAM_CHANNEL_BACKPRESSURE')
         }
@@ -3515,7 +3664,7 @@ export class TeamHub extends TeamRuntime {
           await this.authorizeOrThrow('invite', input.teamId, {
             operation: 'topology-participant-invite',
             topologyOperation: scope.kind,
-            sourceName: TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
+            sourceName: scope.kind === 'simulation-participant-invite' ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
             kind: input.kind,
             displayName: input.displayName,
             role: input.role,
@@ -3524,7 +3673,7 @@ export class TeamHub extends TeamRuntime {
           })
         }
         const participant: ParticipantSnapshot = {
-          id: mintParticipantId(),
+          id: reserved ?? mintParticipantId(),
           teamId: input.teamId,
           kind: input.kind,
           displayName: normalizedText(input.displayName, 'displayName'),
@@ -3585,7 +3734,7 @@ export class TeamHub extends TeamRuntime {
           await this.authorizeOrThrow(scope.kind === 'team-run-worker-retire' ? 'close' : 'activate', input.teamId, {
             operation: 'topology-participant-phase',
             topologyOperation: scope.kind,
-            sourceName: TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
+            sourceName: scope.kind === 'simulation-participant-phase' ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE,
             participantId: input.participantId,
             phase: input.phase,
             expectedCursor: input.expectedCursor,
@@ -4295,21 +4444,35 @@ export class TeamHub extends TeamRuntime {
    * @param request - Team, observed cursor, complete task fields, coordinator retry command, and runtime proof.
    * @returns the detached pending task projection.
    */
-  override async createTask(request: TeamTaskCreateRequest): Promise<TeamTaskSnapshot> {
+  override createTask(request: TeamTaskCreateRequest): Promise<TeamTaskSnapshot> {
+    return this.createTaskOwned(request, false)
+  }
+
+  override createSimulationTask(request: import('@clocky/clocky-team').TeamSimulationTaskCreateRequest): Promise<TeamTaskSnapshot> {
+    return this.createTaskOwned(request, true)
+  }
+
+  private async createTaskOwned(request: TeamTaskCreateRequest | import('@clocky/clocky-team').TeamSimulationTaskCreateRequest,
+    simulation: boolean): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
       const input = teamTaskCreateInputSchema.parse(untrustedInput)
-      const human = this.isHumanTaskCreateActor(actor, input)
+      // The public entry selects the nominal proof family; each family resolves through its registered owner.
+      const ordinaryActor = actor as TeamTaskCreateRequest['actor']
+      const systemActor = actor as TeamSystemTaskControlProof
+      if (simulation) this.simulationTaskScope(systemActor, input)
+      const human = !simulation && this.isHumanTaskCreateActor(ordinaryActor, input)
       if (human && (input.workflowPlanId !== undefined || input.workflowTemplateId !== undefined)) {
         return this.rejectHumanTaskActor()
       }
-      const coordinatorActor = human ? undefined : this.requireCoordinatorTaskAuthorityForTeam(actor, input.teamId)
+      const coordinatorActor = human || simulation ? undefined
+        : this.requireCoordinatorTaskAuthorityForTeam(ordinaryActor as TeamActorProof, input.teamId)
       const loaded = await this.ensureTeam(input.teamId)
       await this.repairPendingParentCharges(loaded)
       return await loaded.queue.run(async () => {
         const current = this.requireLiveTeam(loaded)
-        const createCommand = human
-          ? this.createCommandFromHuman(current, actor, input)
+        const createCommand = simulation ? this.simulationTaskCommand(current, systemActor, input, false) : human
+          ? this.createCommandFromHuman(current, ordinaryActor, input)
           : this.createCommandFromCoordinator(
             current,
             this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId),
@@ -4373,6 +4536,7 @@ export class TeamHub extends TeamRuntime {
           }
           return this.taskSnapshot(existing)
         }
+        if (simulation) this.simulationTaskCommand(current, systemActor, input, true)
         this.assertTeamWallTime(current.projection)
         this.assertTeamCursor(current, input.expectedCursor)
         resourceBudget(creation.budget, 'task budget')
@@ -4406,13 +4570,14 @@ export class TeamHub extends TeamRuntime {
           expectedCursor: input.expectedCursor,
           idempotencyKey: createCommand.idempotencyKey,
         }, createCommand.creator.participantId)
-        const confirmedCreateCommand = human
-          ? this.createCommandFromHuman(current, actor, input)
+        const confirmedCreateCommand = simulation ? this.simulationTaskCommand(current, systemActor, input, true) : human
+          ? this.createCommandFromHuman(current, ordinaryActor, input)
           : this.createCommandFromCoordinator(
             current,
             this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId),
             input.createCommand.idempotencyKey,
           )
+        if (simulation && !isDeepStrictEqual(confirmedCreateCommand, createCommand)) return this.rejectTaskControlActor()
         const createdAt = nextTeamTimestamp(current.projection)
         const task: TeamTaskSnapshot = {
           id: mintTaskId(),
@@ -4588,7 +4753,7 @@ export class TeamHub extends TeamRuntime {
           : { ...identity, operation: 'start', workspacePath: workspacePath as string }
         const isLive = (): boolean => {
           if (this.getSystemDelegationProofSource(resolution.sourceName) !== source
-            || source.resolveDelegationProof(actor) === undefined) return false
+            || !isDeepStrictEqual(source.resolveDelegationProof(actor), resolution.scope)) return false
           const latest = parent.projection.tasks.get(input.taskId)
           if (latest?.execution.kind !== 'child-team' || latest.delegation?.id !== input.delegationId
             || latest.delegation.childTeamId !== childTeamId
@@ -7024,6 +7189,39 @@ export class TeamHub extends TeamRuntime {
     throw new TeamError('Task lease actor is invalid for this command', 'TEAM_ACTOR_PROOF_INVALID')
   }
 
+  /** Match a registered Simulation source to every durable task field before touching its Team. */
+  private simulationTaskScope(actor: TeamSystemTaskControlProof, input: TeamTaskCreateInput):
+  import('@clocky/clocky-team').SimulationTaskCreateScope {
+    const resolution = this.requireSystemTaskControlProof(actor)
+    const scope = resolution.scope
+    const { expectedCursor: _cursor, ...payload } = input
+    if (resolution.sourceName !== 'simulation-team' || scope.kind !== 'simulation-task-create'
+      || !isDeepStrictEqual(scope.input, payload)
+      || input.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+      || input.execution?.kind === 'child-team' || input.workflowPlanId !== undefined
+      || input.workflowTemplateId !== undefined || input.integration !== undefined || input.parentTaskId !== undefined) {
+      return this.rejectTaskControlActor()
+    }
+    return scope
+  }
+
+  /** Recheck live source authority under the Team queue and after policy awaits. */
+  private simulationTaskCommand(team: LoadedTeam, actor: TeamSystemTaskControlProof, input: TeamTaskCreateInput,
+    publish: boolean): TeamTaskCreateCommand {
+    const scope = this.simulationTaskScope(actor, input)
+    if (team.id !== scope.input.teamId || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner) return this.rejectTaskControlActor()
+    if (publish && (team.projection.team.phase !== 'active' || team.projection.team.cancellation !== undefined
+      || team.projection.team.closure !== undefined)) {
+      throw new TeamError('Simulation intent may only reconcile an existing task while its Team is closing', 'TEAM_POLICY_DENIED')
+    }
+    if (publish && (!scope.publishAllowed || team.projection.participants.get(scope.participantId)?.phase !== 'active')) {
+      return this.rejectTaskControlActor()
+    }
+    return { creator: { kind: 'simulation', teamId: team.id, participantId: scope.participantId,
+      runId: scope.runId, operationId: scope.operationId }, idempotencyKey: input.createCommand.idempotencyKey }
+  }
+
   /** Resolve one TeamRun-owned proof to its closed default-worker task-control scope. */
   private requireTeamRunTaskControlScope<K extends TeamSystemTaskControlScope['kind']>(
     actor: TeamSystemTaskControlProof | undefined,
@@ -7771,8 +7969,33 @@ export class TeamHub extends TeamRuntime {
   private requireTeamRunTopologyScope(actor: TeamSystemTopologyProof | undefined): TeamSystemTopologyScope {
     if (actor === undefined) return this.rejectTopologyActor()
     const resolution = this.requireSystemTopologyProof(actor)
-    if (resolution.sourceName !== TEAM_RUN_TOPOLOGY_PROOF_SOURCE) return this.rejectTopologyActor()
+    const simulation = resolution.scope.kind === 'simulation-participant-invite' || resolution.scope.kind === 'simulation-participant-phase'
+    if (resolution.sourceName !== (simulation ? 'simulation-team' : TEAM_RUN_TOPOLOGY_PROOF_SOURCE)) return this.rejectTopologyActor()
     return resolution.scope
+  }
+
+  private async readSimulationParticipantOrigin(
+    team: LoadedTeam, id: ParticipantId,
+  ): Promise<ReturnType<typeof participantInviteDescriptor>> {
+    let cursor = -1
+    while (true) {
+      const entries = await team.stream.read(cursor, this.config.recoveryPageSize)
+      if (entries.length === 0) throw new TeamError('Simulation participant origin is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+      for (const entry of entries) {
+        const record = parseTeamRecord(entry.value, team.projection.team.id)
+        if (record.type === 'participant/changed' && record.participant.id === id) {
+          if (record.participant.phase !== 'invited') this.rejectTopologyActor()
+          const { id: _id, phase: _phase, activationReservation: _reservation, ...participant } = record.participant
+          return participantInviteDescriptor({ ...participant, expectedCursor: 0 })
+        }
+        cursor = entry.sequence
+      }
+    }
+  }
+
+  private assertSimulationTopologyTeam(team: LoadedTeam, scope: { runId: string; lifecycleOwner: string }): void {
+    if (team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner) this.rejectTopologyActor()
   }
 
   /** Resolve an exact bootstrap or reviewer invitation scope before Team loading. */
@@ -7780,10 +8003,10 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantInviteInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'team-run-bootstrap-participant-invite' | 'team-run-worker-invite' | 'team-run-reviewer-invite'
+    readonly kind: 'simulation-participant-invite' | 'team-run-bootstrap-participant-invite' | 'team-run-worker-invite' | 'team-run-reviewer-invite'
   }> {
     const scope = this.requireTeamRunTopologyScope(actor)
-    if ((scope.kind !== 'team-run-bootstrap-participant-invite'
+    if ((scope.kind !== 'simulation-participant-invite' && scope.kind !== 'team-run-bootstrap-participant-invite'
       && scope.kind !== 'team-run-worker-invite' && scope.kind !== 'team-run-reviewer-invite')
       || scope.teamId !== input.teamId
       || scope.expectedCursor !== input.expectedCursor
@@ -7799,7 +8022,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantInviteInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'team-run-bootstrap-participant-invite' | 'team-run-worker-invite' | 'team-run-reviewer-invite'
+    readonly kind: 'simulation-participant-invite' | 'team-run-bootstrap-participant-invite' | 'team-run-worker-invite' | 'team-run-reviewer-invite'
   }> {
     const scope = this.topologyParticipantInviteScope(actor, input)
     if (team.projection.team.cursor !== scope.expectedCursor
@@ -7809,6 +8032,10 @@ export class TeamHub extends TeamRuntime {
       return this.rejectTopologyActor()
     }
     switch (scope.kind) {
+      case 'simulation-participant-invite':
+        this.assertSimulationTopologyTeam(team, scope)
+        if (scope.participant.kind !== 'local-agent') return this.rejectTopologyActor()
+        return scope
       case 'team-run-bootstrap-participant-invite':
         return scope
       case 'team-run-worker-invite':
@@ -7841,10 +8068,10 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantPhaseTransitionInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
+    readonly kind: 'simulation-participant-phase' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
   }> {
     const scope = this.requireTeamRunTopologyScope(actor)
-    if ((scope.kind !== 'team-run-bootstrap-participant-phase'
+    if ((scope.kind !== 'simulation-participant-phase' && scope.kind !== 'team-run-bootstrap-participant-phase'
       && scope.kind !== 'team-run-worker-activate'
       && scope.kind !== 'team-run-worker-retire'
       && scope.kind !== 'team-run-reviewer-phase')
@@ -7863,7 +8090,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamSystemTopologyProof | undefined,
     input: ParticipantPhaseTransitionInput,
   ): Extract<TeamSystemTopologyScope, {
-    readonly kind: 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
+    readonly kind: 'simulation-participant-phase' | 'team-run-bootstrap-participant-phase' | 'team-run-worker-activate' | 'team-run-worker-retire' | 'team-run-reviewer-phase'
   }> {
     const scope = this.topologyParticipantPhaseScope(actor, input)
     const participant = team.projection.participants.get(scope.participantId)
@@ -7876,6 +8103,10 @@ export class TeamHub extends TeamRuntime {
       return this.rejectTopologyActor()
     }
     switch (scope.kind) {
+      case 'simulation-participant-phase':
+        this.assertSimulationTopologyTeam(team, scope)
+        if (participant.kind !== 'local-agent' || !isParticipantTopologyPhase(scope.expectedPhase, scope.phase)) return this.rejectTopologyActor()
+        return scope
       case 'team-run-bootstrap-participant-phase':
         return scope
       case 'team-run-worker-activate':
@@ -8243,6 +8474,7 @@ export class TeamHub extends TeamRuntime {
           ? undefined
           : this.resolveTopologyChannelOpenAuthority(current, actor as TeamSystemTopologyProof, input)
         const lifecycleScope = lifecycle === undefined ? undefined : lifecycle.revalidate()
+        if (lifecycleScope?.kind === 'simulation-channel-open') this.assertSimulationChannelOpening(current, lifecycleScope)
         if (lifecycleScope !== undefined && lifecycleScope.teamId !== current.id) {
           throw new TeamError('Channel lifecycle proof is invalid for the current Team', 'TEAM_ACTOR_PROOF_INVALID')
         }
@@ -8266,6 +8498,14 @@ export class TeamHub extends TeamRuntime {
           if (input.adapter.type !== 'workflow' || input.adapter.version !== 1) {
             throw new TeamError(`workflow plan '${workflowPlan.id}' requires workflow channel adapter version 1`, 'TEAM_WORKFLOW_PLAN_INVALID')
           }
+        }
+        const retained = lifecycleScope?.kind === 'simulation-channel-open'
+          ? await this.findSimulationChannel(current, lifecycleScope) : undefined
+        if (retained !== undefined && current.projection.channelIds.has(retained.channel.id)) {
+          const scope = lifecycle?.revalidate()
+          if (scope?.kind !== 'simulation-channel-open') throw new TeamError('Simulation channel proof changed', 'TEAM_ACTOR_PROOF_INVALID')
+          this.assertSimulationChannelOpening(current, scope)
+          return this.channelSnapshot(retained.channel)
         }
         this.assertTeamWallTime(current.projection)
         if (current.projection.channelIds.size >= this.teamLimit(current.projection, 'maxChannels', this.config.maxChannelsPerTeam)) {
@@ -8316,6 +8556,7 @@ export class TeamHub extends TeamRuntime {
           }
           if (lifecycle?.sourceName === 'team-run-child') this.assertChildResultChannelOpening(current, input)
           const scope = lifecycle?.revalidate()
+          if (scope?.kind === 'simulation-channel-open') this.assertSimulationChannelOpening(current, scope)
           if (scope === undefined || scope.teamId !== current.id) {
             throw new TeamError('Channel lifecycle proof is invalid for the current Team', 'TEAM_ACTOR_PROOF_INVALID')
           }
@@ -8323,7 +8564,7 @@ export class TeamHub extends TeamRuntime {
         revalidateOpenAuthority()
         if (input.viewPolicy !== undefined) this.getViewPolicy(input.viewPolicy)
         const manifest: ChannelManifest = {
-          id: mintChannelId(),
+          id: lifecycleScope?.kind === 'simulation-channel-open' ? lifecycleScope.channelId : mintChannelId(),
           teamId: input.teamId,
           adapter: { ...input.adapter },
           ...input.viewPolicy === undefined ? {} : { viewPolicy: { ...input.viewPolicy } },
@@ -8332,7 +8573,7 @@ export class TeamHub extends TeamRuntime {
           limits: jsonObjectSchema.parse(input.limits),
         }
         this.assertChannelViewBound(current, manifest)
-        const created = await this.createChannel(manifest, revalidateOpenAuthority, input.invitations)
+        const created = retained ?? await this.createChannel(manifest, revalidateOpenAuthority, input.invitations)
         try {
           revalidateOpenAuthority()
           await this.commitTeam(current, [{
@@ -8684,7 +8925,7 @@ export class TeamHub extends TeamRuntime {
 
   override async ackChannelEnvelope(request: ChannelEnvelopeReceiptRequest): Promise<ChannelReceiptRecord> {
     return await this.admit(async () => {
-      const { actor, ...untrustedInput } = request
+      const { actor, deliveryOwner, ...untrustedInput } = request
       const input = channelEnvelopeReceiptInputSchema.parse(untrustedInput)
       const channel = await this.ensureAttachedChannel(input.channelId)
       const team = await this.ensureTeam(channel.projection.manifest.teamId)
@@ -8692,7 +8933,13 @@ export class TeamHub extends TeamRuntime {
         const currentTeam = this.requireLiveTeam(team)
         const currentChannel = this.requireLiveChannel(channel)
         this.assertAttachedChannel(currentTeam, currentChannel)
-        const authority = await this.resolveReceiptAuthority(currentTeam, currentChannel, actor, input)
+        this.assertDeliveryOwner(currentTeam, actor, deliveryOwner, 'receipt', input.channelId, input.envelopeId, input.expectedCursor)
+        const baseAuthority = await this.resolveReceiptAuthority(currentTeam, currentChannel, actor, input)
+        const authority = { ...baseAuthority, revalidate: async () => {
+          const recipient = await baseAuthority.revalidate()
+          this.assertDeliveryOwner(currentTeam, actor, deliveryOwner, 'receipt', input.channelId, input.envelopeId, input.expectedCursor)
+          return recipient
+        } }
         const participantId = authority.participantId
         await this.authorizeOrThrow('dispatch', currentTeam.id, {
           channelId: currentChannel.id,
@@ -8749,7 +8996,7 @@ export class TeamHub extends TeamRuntime {
    */
   override async claimChannelDelivery(request: ChannelDeliveryClaimRequest): Promise<ChannelDeliveryClaim | undefined> {
     return await this.admit(async () => {
-      const { actor, ...untrustedInput } = request
+      const { actor, deliveryOwner, ...untrustedInput } = request
       const input = channelDeliveryClaimInputSchema.parse(untrustedInput)
       const channel = await this.ensureAttachedChannel(input.channelId)
       const team = await this.ensureTeam(channel.projection.manifest.teamId)
@@ -8757,6 +9004,7 @@ export class TeamHub extends TeamRuntime {
         const currentTeam = this.requireLiveTeam(team)
         const currentChannel = this.requireLiveChannel(channel)
         this.assertAttachedChannel(currentTeam, currentChannel)
+        this.assertDeliveryOwner(currentTeam, actor, deliveryOwner, 'claim', input.channelId, input.envelopeId, null)
         if (currentTeam.projection.team.phase !== 'active' || currentTeam.projection.team.cancellation !== undefined || currentTeam.projection.team.closure !== undefined) {
           if (currentTeam.projection.team.closure?.kind === 'complete') return undefined
           throw new TeamError(`Team '${currentTeam.id}' is not active`, 'TEAM_INVALID_ARGUMENT')
@@ -8764,7 +9012,11 @@ export class TeamHub extends TeamRuntime {
         if (!this.channelDeliveryOpen(currentChannel)) {
           throw new TeamError(`channel '${currentChannel.id}' is not active`, 'TEAM_INVALID_ARGUMENT')
         }
-        const authority = this.resolveChannelDeliveryClaimAuthority(currentTeam, currentChannel, actor)
+        const baseAuthority = this.resolveChannelDeliveryClaimAuthority(currentTeam, currentChannel, actor)
+        const authority = { ...baseAuthority, revalidate: () => {
+          this.assertDeliveryOwner(currentTeam, actor, deliveryOwner, 'claim', input.channelId, input.envelopeId, null)
+          return baseAuthority.revalidate()
+        } }
         const binding = authority.binding
         const participantId = binding.activation.participantId
         const pending = currentChannel.projection.pendingDeliveries.get(participantId)?.get(input.envelopeId)
@@ -8786,7 +9038,8 @@ export class TeamHub extends TeamRuntime {
           delivery: pending.delivery,
         }, participantId)
         const confirmedBinding = authority.revalidate()
-        if (!this.requiresDurableChannelView(currentChannel.projection.manifest)
+        if (currentTeam.projection.rules['simulationRunId'] === undefined
+          && !this.requiresDurableChannelView(currentChannel.projection.manifest)
           && await this.hasCommittedCausalResult(currentChannel, participantId, input.envelopeId)) {
           await this.commitPendingDeliveryReceipt(currentChannel, participantId, pending, () => {
             authority.revalidate()
@@ -9368,7 +9621,7 @@ export class TeamHub extends TeamRuntime {
         if (!(error instanceof TeamError) || error.code !== 'TEAM_ACTOR_PROOF_INVALID') throw error
         const resolution = this.requireSystemChannelAdmissionProof(actor as TeamSystemChannelAdmissionProof)
         const scope = resolution.scope
-        if (scope.kind !== 'channel-invitation-acknowledge' || scope.teamId !== team.id
+        if ((scope.kind !== 'channel-invitation-acknowledge' && scope.kind !== 'simulation-invitation-acknowledge') || scope.teamId !== team.id
           || !isDeepStrictEqual({ channelId: scope.channelId, revision: scope.revision,
             manifestFingerprint: scope.manifestFingerprint, idempotencyKey: scope.idempotencyKey }, input)) {
           throw new TeamError('System endpoint proof does not match this invitation', 'TEAM_ACTOR_PROOF_INVALID')
@@ -9385,7 +9638,15 @@ export class TeamHub extends TeamRuntime {
           && channel.projection.manifest.participants.some(member => member.id === participantId && member.role === 'human')
           && channel.projection.manifest.participants.some(member => member.role === 'coordinator'
             && team.projection.participants.get(member.id)?.role === 'coordinator')
-        if (!service && !systemHuman) throw new TeamError('Named source does not own this endpoint', 'TEAM_ACTOR_PROOF_INVALID')
+        const simulation = scope.kind === 'simulation-invitation-acknowledge' && resolution.sourceName === 'simulation-team'
+          && team.projection.rules['simulationRunId'] === scope.runId
+          && team.projection.rules['activationLifecycleOwner'] === scope.lifecycleOwner
+          && participant?.kind === 'local-agent' && expected?.kind === 'activation'
+          && expected.activationId === undefined && expected.sessionId === scope.sessionId
+          && channel.projection.manifest.adapter.type === 'direct' && channel.projection.manifest.adapter.version === 4
+        if (scope.kind === 'simulation-invitation-acknowledge' ? !simulation : !service && !systemHuman) {
+          throw new TeamError('Named source does not own this endpoint', 'TEAM_ACTOR_PROOF_INVALID')
+        }
       }
     }
     const invitation = channel.projection.invitations.get(participantId)
@@ -9551,6 +9812,13 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  /** Simulation's dedicated history policy protects every future checkpoint and operation retry reference. */
+  private assertHistoryCompactable(team: LoadedTeam): void {
+    if (team.projection.rules['simulationRunId'] !== undefined) {
+      throw new TeamError('Simulation-owned history cannot be destructively compacted', 'TEAM_POLICY_DENIED')
+    }
+  }
+
   /** Compact a terminal channel WAL only after delivery, audit, and checkpoint watermarks settle. */
   override async compactChannel(request: TeamChannelCompactRequest): Promise<TeamChannelCompactResult> {
     return await this.admit(async () => {
@@ -9569,6 +9837,7 @@ export class TeamHub extends TeamRuntime {
         const currentChannel = this.requireLiveChannel(channel)
         const actorName = this.resolveChannelMaintenanceAuthority(currentTeam, currentChannel, actor, input)
         this.assertAttachedChannel(currentTeam, currentChannel)
+        this.assertHistoryCompactable(currentTeam)
         await this.authorizeOrThrow('close', input.teamId, {
           phase: 'compact',
           channelId: input.channelId,
@@ -9716,6 +9985,7 @@ export class TeamHub extends TeamRuntime {
       return await team.queue.run(async () => {
         const current = this.requireLiveTeam(team)
         const actorName = this.resolveTeamMaintenanceAuthority(current, actor, input)
+        this.assertHistoryCompactable(current)
         await this.authorizeOrThrow('close', input.teamId, {
           phase: 'compact',
           stream: 'team-journal',
@@ -12407,12 +12677,8 @@ export class TeamHub extends TeamRuntime {
       ...input,
       draft: structuredClone(input.draft),
     }
-    const resolve = (): ParticipantId => this.resolveEnvelopePostSender(team, channel, actor, acceptedInput)
-    return {
-      ...acceptedInput,
-      senderId: resolve(),
-      revalidate: resolve,
-    }
+    const resolve = () => this.resolveEnvelopePostSender(team, channel, actor, acceptedInput)
+    return { ...acceptedInput, ...resolve(), revalidate: () => resolve().senderId }
   }
 
   /** Re-resolve one ordinary Envelope actor against the exact JSON-only post input. */
@@ -12421,20 +12687,30 @@ export class TeamHub extends TeamRuntime {
     channel: LoadedChannel,
     actor: ChannelEnvelopePostActor,
     input: ChannelEnvelopePostInput,
-  ): ParticipantId {
+  ): { senderId: ParticipantId; allowCommittedReplay: boolean } {
+    if (team.projection.rules['simulationRunId'] !== undefined) {
+      const resolution = this.requireSystemEnvelopePostProof(actor as TeamSystemEnvelopePostProof)
+      if (resolution.scope.kind !== 'simulation-operation') return this.rejectEnvelopePostActor()
+      return { senderId: this.resolveSimulationOperationSender(team, channel, resolution, input), allowCommittedReplay: true }
+    }
     if (this.requiresSystemEnvelopePostProof(channel, input)) {
       const resolution = this.requireSystemEnvelopePostProof(actor as TeamSystemEnvelopePostProof)
-      return this.resolveSystemEnvelopePostSender(team, channel, resolution, input)
+      return { senderId: this.resolveSystemEnvelopePostSender(team, channel, resolution, input),
+        allowCommittedReplay: resolution.scope.kind === 'simulation-operation' }
     }
     const human = this.tryResolveHumanActorProof(actor)
-    if (human !== undefined) return this.resolveHumanEnvelopePostSender(team, channel, human, input)
+    if (human !== undefined) return {
+      senderId: this.resolveHumanEnvelopePostSender(team, channel, human, input), allowCommittedReplay: false,
+    }
     try {
-      return this.requireCurrentActivationActorBinding(team, actor as TeamActorProof).activation.participantId
+      return { senderId: this.requireCurrentActivationActorBinding(team, actor as TeamActorProof).activation.participantId,
+        allowCommittedReplay: false }
     } catch (error: unknown) {
       if (!(error instanceof TeamError) || error.code !== 'TEAM_ACTOR_PROOF_INVALID') throw error
     }
     const resolution = this.requireSystemEnvelopePostProof(actor as TeamSystemEnvelopePostProof)
-    return this.resolveSystemEnvelopePostSender(team, channel, resolution, input)
+    return { senderId: this.resolveSystemEnvelopePostSender(team, channel, resolution, input),
+      allowCommittedReplay: resolution.scope.kind === 'simulation-operation' }
   }
 
   /** Re-resolve an authenticated human proof against the full parsed ordinary-post input. */
@@ -12480,6 +12756,8 @@ export class TeamHub extends TeamRuntime {
     input: ChannelEnvelopePostInput,
   ): ParticipantId {
     switch (resolution.scope.kind) {
+      case 'simulation-operation':
+        return this.resolveSimulationOperationSender(team, channel, resolution, input)
       case 'team-delegation-request':
         return this.resolveDelegationRequestSender(team, channel, resolution, input)
       case 'team-run-human-input':
@@ -12493,6 +12771,32 @@ export class TeamHub extends TeamRuntime {
         resolution.scope satisfies never
         return this.rejectEnvelopePostActor()
     }
+  }
+
+  /** Admit only the exact due Simulation payload; retained target results do not need a live sender activation. */
+  private resolveSimulationOperationSender(team: LoadedTeam, channel: LoadedChannel,
+    resolution: TeamSystemEnvelopePostProofResolution, input: ChannelEnvelopePostInput): ParticipantId {
+    const scope = resolution.scope
+    if (scope.kind !== 'simulation-operation' || resolution.sourceName !== 'simulation-team'
+      || scope.teamId !== team.id || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+      || channel.id !== scope.draft.channelId || !isDeepStrictEqual(scope.draft, input.draft)
+      || input.idempotencyKey !== scope.idempotencyKey
+      || scope.idempotencyKey !== JSON.stringify(['simulation', scope.runId, scope.operationId])
+      || input.draft.correlationId !== JSON.stringify([scope.runId, scope.decisionId, scope.operationId, scope.acceptedRevision])
+      || input.draft.traceId !== scope.fingerprint
+      || channel.projection.manifest.adapter.type !== DIRECT_CHANNEL_V4_ADAPTER.type
+      || channel.projection.manifest.adapter.version !== DIRECT_CHANNEL_V4_ADAPTER.version
+      || input.draft.kind !== DIRECT_CHANNEL_MESSAGE_KIND || input.draft.delivery !== 'context'
+      || input.draft.audience?.length !== 1 || input.draft.audience[0] !== scope.recipientId
+      || scope.senderId === scope.recipientId || input.draft.taskId !== undefined || input.draft.causationId !== undefined
+      || team.projection.participants.get(scope.senderId)?.kind !== 'local-agent'
+      || team.projection.participants.get(scope.recipientId)?.kind !== 'local-agent') return this.rejectEnvelopePostActor()
+    const existing = channel.projection.postIdempotency.get(scope.senderId)?.get(scope.idempotencyKey)
+    if (existing === undefined && (!scope.publishAllowed || team.projection.team.phase !== 'active' || channel.projection.phase !== 'active')) {
+      throw new TeamError('Simulation intent may only reconcile an existing Envelope', 'TEAM_POLICY_DENIED')
+    }
+    return scope.senderId
   }
 
   /** Admit only the immutable parent objective to its exact child consult endpoint. */
@@ -12662,6 +12966,24 @@ export class TeamHub extends TeamRuntime {
     return scope.initiatorId
   }
 
+  /** Bind a dedicated consumer to the same live activation as the ordinary recipient authority. */
+  private assertDeliveryOwner(team: LoadedTeam, actor: unknown, proof: TeamDeliveryOwnerProof | undefined,
+    operation: 'claim' | 'receipt', channelId: ChannelId, envelopeId: EnvelopeId, cursor: number | null): void {
+    const runId = team.projection.rules['simulationRunId']
+    if (runId === undefined) {
+      if (proof !== undefined) this.rejectEnvelopePostActor()
+      return
+    }
+    if (proof === undefined) this.rejectEnvelopePostActor()
+    const { sourceName, scope } = this.requireDeliveryOwnerProof(proof)
+    const binding = this.requireCurrentActivationActorBinding(team, actor as TeamActorProof)
+    if (sourceName !== 'simulation-team' || scope.runId !== runId || scope.teamId !== team.id
+      || scope.lifecycleOwner !== team.projection.rules['activationLifecycleOwner'] || scope.operation !== operation
+      || scope.channelId !== channelId || scope.envelopeId !== envelopeId || scope.cursor !== cursor
+      || scope.participantId !== binding.activation.participantId || scope.activationId !== binding.activation.id
+      || scope.sessionId !== binding.sessionId) this.rejectEnvelopePostActor()
+  }
+
   /** Reject every forged, stale, cross-scope, or unsupported ordinary-post actor uniformly. */
   private rejectEnvelopePostActor(): never {
     throw new TeamError('Channel Envelope actor is invalid for this Team admission', 'TEAM_ACTOR_PROOF_INVALID')
@@ -12675,7 +12997,7 @@ export class TeamHub extends TeamRuntime {
   ): Promise<TeamEnvelope> {
     this.assertAttachedChannel(currentTeam, currentChannel)
     this.assertNoPendingParentCharges(currentTeam.projection)
-    this.assertActiveChannelSender(currentTeam, currentChannel, input.senderId)
+    if (!input.allowCommittedReplay) this.assertActiveChannelSender(currentTeam, currentChannel, input.senderId)
     if (input.idempotencyKey !== undefined) {
       const existing = currentChannel.projection.postIdempotency.get(input.senderId)?.get(input.idempotencyKey)
       if (existing !== undefined) {
@@ -12689,6 +13011,7 @@ export class TeamHub extends TeamRuntime {
       }
       this.assertPostIdempotencyLimit(currentChannel.projection, currentTeam.projection)
     }
+    if (input.allowCommittedReplay) this.assertActiveChannelSender(currentTeam, currentChannel, input.senderId)
     this.assertTeamWallTime(currentTeam.projection)
     if (currentTeam.projection.team.phase !== 'active') {
       throw new TeamError(`Team '${currentTeam.id}' is not active`, 'TEAM_INVALID_ARGUMENT')
@@ -13296,6 +13619,13 @@ export class TeamHub extends TeamRuntime {
             && typeof manifest.limits.activationId === 'string' && typeof manifest.limits.sessionId === 'string'
             ? { activationId: manifest.limits.activationId as ActivationId, sessionId: manifest.limits.sessionId as ActivationBindingSnapshot['sessionId'] } : {} }
         : participant.kind === 'human' ? { kind: 'human' as const } : { kind: 'service' as const, name: participant.role }
+      const sessionId = options.find(option => option.participantId === member.id)?.sessionId
+      if (sessionId !== undefined) {
+        if (endpoint.kind !== 'activation' || (endpoint.sessionId !== undefined && endpoint.sessionId !== sessionId)) {
+          throw new TeamError('Invitation Session does not match the selected endpoint', 'TEAM_INVALID_ARGUMENT')
+        }
+        endpoint.sessionId = sessionId
+      }
       return { participantId: member.id, role: member.role, visibility: 'channel',
         required: options.find(option => option.participantId === member.id)?.required ?? true,
         deadline, endpoint, revision: 1, manifestFingerprint, status: 'pending' }
@@ -15023,20 +15353,21 @@ export class TeamHub extends TeamRuntime {
 
   /** Build an immutable detached Team state response. */
   private teamState(projection: TeamProjection): TeamStateSnapshot {
-    const data = teamProjectionData(projection)
-    const {
-      finalAdmission: _finalAdmission,
-      interrupts: _interrupts,
-      taskExecutionStats: _taskExecutionStats,
-      usageSamples: _usageSamples,
-      usageCharges: _usageCharges,
-      pendingParentCharges: _pendingParentCharges,
-      ...state
-    } = {
-      ...data,
-      participants: data.participants.map(participant => this.participantWithStats(projection, participant)),
+    const state = {
+      team: projection.team,
+      goal: projection.team.goal,
+      rules: projection.rules,
+      budgets: projection.budgets,
+      participants: [...projection.participants.values()].map(participant => this.participantWithStats(projection, participant)),
+      tasks: [...projection.tasks.values()],
+      workspaceAllocations: [...projection.workspaceAllocations.values()],
+      activations: [...projection.activations.values()],
+      humanActions: [...projection.humanActions.values()],
+      usage: projection.usage,
+      ...projection.workflowPlans.size === 0 ? {} : { workflowPlans: [...projection.workflowPlans.values()] },
+      channelIds: [...projection.channelIds],
     }
-    return freeze(teamStateSnapshotSchema.parse(state))
+    return freeze(teamStateSnapshotSchema.parse(structuredClone(state)))
   }
 
   /** Overlay immutable Hub-derived task observations on one participant read model. */

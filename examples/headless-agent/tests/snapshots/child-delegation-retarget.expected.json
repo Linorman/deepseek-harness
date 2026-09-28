@@ -1,0 +1,8 @@
+{
+  "scenario": "retarget",
+  "authorityChanged": true,
+  "endpointBindingRejected": true,
+  "childModelRequests": 0,
+  "parent": "cancelled",
+  "task": "cancelled"
+}

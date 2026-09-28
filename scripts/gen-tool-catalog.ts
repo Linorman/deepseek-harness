@@ -54,6 +54,7 @@ import * as NativeToolTeam from '@clocky/clocky-tool-team'
 import * as NativeChannelSummaryTool from '@clocky/clocky-team-channel-summary/tool'
 import * as NativeToolTeamGoal from '@clocky/clocky-tool-team-goal'
 import * as NativeToolTeamTask from '@clocky/clocky-tool-team-task'
+import * as ToolSimulation from '@clocky/clocky-tool-simulation'
 import * as ToolTodo from '@clocky/clocky-tool-todo'
 import * as ToolWeb from '@clocky/clocky-tool-web'
 import { githubSlug } from './verify-md-links.ts'
@@ -158,6 +159,16 @@ export interface ToolPackage {
  * composition code and are excluded from the product catalog.
  */
 const TOOL_PACKAGES: ToolPackage[] = [
+  {
+    pkg: '@clocky/clocky-tool-simulation', dir: 'tool-simulation', source: 'packages/simulation/tool-simulation/src/index.ts',
+    requires: ['ctx.tools', 'ctx.simulationTeams', 'current prepared Agent decision'],
+    writes: ['tool/call', 'tool/result', 'Simulation decision submissions, acceptance and operation intents'],
+    async mount(ctx) {
+      // Schema collection never invokes the model-operation owner.
+      ctx.provide('simulationTeams', {} as never)
+      await ctx.plugin(ToolSimulation)
+    },
+  },
   {
     pkg: '@clocky/clocky-tool-ask-user',
     dir: 'tool-ask-user',

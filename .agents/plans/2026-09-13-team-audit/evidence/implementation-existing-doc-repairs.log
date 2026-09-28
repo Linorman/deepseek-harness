@@ -1,0 +1,12 @@
+$ tsx scripts/verify-translation-pairing.ts --write docs/event-producer-consumer.md docs/persistence-catalog.md packages/team/team-workspace-recovery/README.md packages/team/team-run/README.md packages/team/team-link-websocket-hub/README.md packages/team/team-link-local/README.md packages/team/team-closure-driver/README.md packages/team/team-activation-recovery/README.md .agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.md .agents/notes/implemented/feature/2026-09-07-team-detail-compact-delete.md
+verify-translation-pairing: recorded .agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.i18n.yaml
+verify-translation-pairing: recorded .agents/notes/implemented/feature/2026-09-07-team-detail-compact-delete.i18n.yaml
+verify-translation-pairing: recorded docs/event-producer-consumer.i18n.yaml
+verify-translation-pairing: recorded docs/persistence-catalog.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-activation-recovery/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-closure-driver/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-link-local/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-link-websocket-hub/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-run/README.i18n.yaml
+verify-translation-pairing: recorded packages/team/team-workspace-recovery/README.i18n.yaml
+verify-translation-pairing: 10 record(s) written; run the check to validate the pairs.

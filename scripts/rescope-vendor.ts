@@ -89,6 +89,8 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // the creator flow stages and which id the roster reports.
   { file: 'packages/client/ui-agent-preset/src/client/AgentPresetSection.tsx', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/src/client/index.ts', upstream: ['cordis'] },
+  { file: 'packages/bundle/headless/tests/team-task-composition.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/client/runtime/tests/team-tasks.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/apply.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/locales.client.spec.ts', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/tests/section.client.spec.tsx', upstream: ['cordis'] },
@@ -153,7 +155,7 @@ const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'packages/typert/generator/src/analyzer.ts', text: '!== \'@clocky/cordis\'', count: 2 },
   { file: 'scripts/check-workspace-constraints.ts', text: '?.[\'@clocky/cordis\']', count: 2 },
   { file: 'packages/boot/app-boot/tsdown.config.ts', text: '[\'@clocky/cordis-plugin-include\']', count: 1 },
-  { file: 'tsconfig.base.json', text: '"@clocky/cordis-plugin-loader": ["./vendor/loader/src"]', count: 1 },
+  { file: 'tsconfig.base.json', text: '"@clocky/cordis-plugin-loader": ["./vendor/loader/src/index.ts"]', count: 1 },
   // The vendored README owns this required entry; reject its deletion or duplication.
   { file: 'vendor/README.md', text: '17. **`@clocky` rescope**', count: 1 },
   { file: 'knip.json', text: '@cordisjs', count: 0 },

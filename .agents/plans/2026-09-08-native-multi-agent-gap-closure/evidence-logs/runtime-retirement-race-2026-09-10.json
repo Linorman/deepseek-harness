@@ -1,0 +1,10 @@
+{
+  "qualification": "Scoped source hashes, not a full candidate or separate-host acceptance.",
+  "files": {
+    "packages/team/team-activation-controller/src/index.ts": "e5527aed3cade31fee9af29c6607f52632f9b3c8364d55e798999149f905555a",
+    "packages/team/team-activation-recovery/tests/startup-recovery.spec.ts": "fcfdd5f034253080d13bcdf7788f7fff792df7dd7acf9a47e14126900cc32ff0",
+    "examples/headless-agent/tests/child-delegation-restart.snapshot.ts": "84ef88931638cbb137b5a4982a4a53b30261caf1ef94f111af336163a203da87",
+    "examples/headless-agent/tests/fixtures/headless-child-delegation-driver.ts": "6198f22c5dad4af1527f1ff2af226008b9bacafb63755403780f61205bad417d",
+    "examples/headless-agent/tests/fixtures/headless-child-delegation.cordis.yml": "c34b5581f0059d1a4a51bb5bf4fbeb83cf003d936a186b066f70c3e55712fad8"
+  }
+}

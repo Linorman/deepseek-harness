@@ -1,0 +1,25 @@
+T-07 ACK-corrected load fixture follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane test; no credential values or .env contents were read.
+
+Source hashes:
+281b789fd916170f65e66fd9cec1d90d94511392c70451ebaacb6e8cf99d25fe  packages/team/team-hub/tests/load.spec.ts
+ac8b0ac94c535cd052530a517cfb51f96357fa163aaf5944c01d26c69a95cd07  packages/core/team/tests/channel-lifecycle-authority.ts
+
+The load fixture opens a real channel, binds both local activation proofs, acknowledges every activation invitation through `acknowledgeTestChannelActivations`, refreshes the channel cursor, and only then posts the bounded message load. Production auto-ack remains unchanged.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/load.spec.ts --reporter=dot
+Result: PASS — 1 file, 1 test passed, 0 failed, 0 skipped; default load count 4,096, SQLite backend, bounded replay page size 32.
+
+Command: env CLOCKY_TEAM_HUB_LARGE_LOAD=1 TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/load.spec.ts --reporter=dot
+Result: PASS — 1 file, 1 test passed, 0 failed, 0 skipped; large load count 16,384, SQLite backend, bounded replay page size 32, wall time 143.23s. This is one reference sample, not a performance median or CI budget result.
+
+Three macOS large-load raw samples, same command/environment and candidate:
+1. real 145.93s; maximum resident set size 592,297,984 bytes; test 1/1 passed.
+2. real 143.59s; maximum resident set size 593,510,400 bytes; test 1/1 passed.
+3. real 144.32s; maximum resident set size 596,475,904 bytes; test 1/1 passed.
+Median: 144.32s wall time; 593,510,400 bytes maximum RSS. These are macOS reference samples only; no Linux runner, CI budget, startup-to-first-32 metric, or cancellation/shutdown performance claim is included.
+
+Scope boundary: this closes the fixture-admission defect and records three macOS large-load reference samples with a median/RSS summary. Linux runner, fresh-process startup/cancel-shutdown metrics, and CI performance budget claim remain open.

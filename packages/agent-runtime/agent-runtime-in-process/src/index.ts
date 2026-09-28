@@ -372,3 +372,12 @@ export function apply(ctx: Context, config: Config): void {
     }
   }, 'agentRuntimeInProcess.registerProvider()')
 }
+
+/**
+ * Identify this module's actual same-process implementation, independently of its configurable registry name.
+ * @param provider - Runtime implementation selected by a trusted coordinating owner.
+ * @returns whether all Agent execution belongs to this Host process.
+ */
+export function isInProcessAgentRuntimeProvider(provider: AgentRuntimeProvider): boolean {
+  return provider instanceof InProcessAgentRuntimeProvider
+}

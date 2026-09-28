@@ -1,0 +1,132 @@
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 28 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+run-gates: PASS markdown links (5.92s)
+run-gates: start type equivalence
+run-gates: PASS type equivalence (5.28s)
+run-gates: start cordis catalog
+run-gates: PASS doc-typecheck (15.46s)
+run-gates: start verify-mermaid
+run-gates: PASS documentation build (20.70s)
+run-gates: start scoped events
+
+== FAILED doc graphs (20.72s) ==
+command: pnpm run verify-doc-graphs
+outcome: exit 1
+$ tsx scripts/gen-doc-graphs.ts --check
+gen-doc-graphs: stale graph doc(s): docs/event-producer-consumer.md. Run `pnpm run gen-doc-graphs` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start translation pairing
+run-gates: PASS verify-mermaid (5.68s)
+run-gates: start markdown wrap
+
+== FAILED markdown wrap (4.56s) ==
+command: pnpm run verify-md-wrap
+outcome: exit 1
+$ tsx scripts/verify-md-wrap.ts
+verify-md-wrap: hard-wrapped prose paragraphs found (write one physical line per paragraph):
+  packages/team/team-workspace-recovery/README.md:17  Durable `release-requested` events trigger a coalesced, single-flight drive even…
+  packages/team/team-workspace-recovery/README.zh.md:17  即使未配置 pulse，持久的 `release-requested` 事件也会触发合并后的 single-flight drive。每轮遵守已配置的 Team…
+  packages/team/team-run/README.md:9  The service is not an Agent loop. `@clocky/clocky-team-agent-client` delivers th…
+  packages/team/team-run/README.md:43  `listDefaultWorkerTasks()` returns the compact phase of every non-workflow task …
+  packages/team/team-run/README.zh.md:9  该 service 不是 Agent loop。`@clocky/clocky-team-agent-client`会将 human Envelope 投递到 …
+  packages/team/team-run/README.zh.md:43  `listDefaultWorkerTasks()`会返回通过该 coordinator authority 准入的每个非 workflow task 的紧凑 …
+  packages/team/team-link-websocket-hub/README.md:19  `post` requires a nonempty opaque `idempotencyKey` beside its cursor and draft. …
+  packages/team/team-link-websocket-hub/README.zh.md:19  `post`要求在 cursor 和 draft 之外提供非空、不透明的 `idempotencyKey`。Hub 会将 sender/key pair 与已接…
+  packages/team/team-link-local/README.md:25  The first pending-delivery scan uses the channel's durable `replayWatermark` whe…
+  packages/team/team-link-local/README.zh.md:25  首个 pending-delivery scan 会在 provider 提供时使用 channel 的 durable `replayWatermark`。这…
+  packages/team/team-closure-driver/README.md:9  `backend` names the paired Hub bridge; `maxTeamsPerDrive`, `pageSize`, `disposal…
+  packages/team/team-closure-driver/README.zh.md:9  `backend`指定配对的 Hub bridge；`maxTeamsPerDrive`、`pageSize`、`disposalTimeoutMs`和`obs…
+  packages/team/team-activation-recovery/README.md:15  `provider`, `profile`, and `hostId` are required non-empty values without surrou…
+  packages/team/team-activation-recovery/README.zh.md:15  `provider`、`profile`和 `hostId`均为必填，且必须是没有首尾空白的非空值。`kind`默认为 `sdk-local-cold-repl…
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start client catalog
+run-gates: PASS client catalog (2.02s)
+run-gates: start export jsdoc
+
+== FAILED cordis catalog (16.57s) ==
+command: pnpm run verify-cordis-catalog
+outcome: exit 1
+$ tsx scripts/gen-cordis-catalog.ts --check
+gen-cordis-catalog: stale — docs/subsystems/team.md, docs/subsystems/team.zh.md. Run `pnpm run gen-cordis-catalog` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start tool catalog
+run-gates: PASS tool catalog (2.42s)
+run-gates: start config catalog
+run-gates: PASS export jsdoc (2.92s)
+run-gates: start persistence catalog
+
+== FAILED translation pairing (9.92s) ==
+command: pnpm run verify-translation-pairing
+outcome: exit 1
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  .agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.zh.md:23: link target "../feature/2026-09-07-team-detail-compact-delete.md" uses the wrong locale; expected "../feature/2026-09-07-team-detail-compact-delete.zh.md"
+  .agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.zh.md:23: link target "2026-08-31-team-closure-authority-and-detail-inspection.md" uses the wrong locale; expected "2026-08-31-team-closure-authority-and-detail-inspection.zh.md"
+  .agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.zh.md:23: link target "../../proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.md" uses the wrong locale; expected "../../proposed/architecture/2026-09-04-native-multi-agent-p1-product-convergence.zh.md"
+  .agents/notes/implemented/feature/2026-09-07-team-detail-compact-delete.zh.md:13: link target "../architecture/2026-09-11-team-workspace-ui.md" uses the wrong locale; expected "../architecture/2026-09-11-team-workspace-ui.zh.md"
+  docs/capability-seams.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/capability-seams.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/event-producer-consumer.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/event-producer-consumer.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/event-producer-consumer.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/event-producer-consumer.i18n.yaml (bring the other side along, then re-record with --write)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start public repository links
+run-gates: PASS scoped events (10.17s)
+run-gates: start doc refs
+
+== FAILED config catalog (1.26s) ==
+command: pnpm run verify-config-catalog
+outcome: exit 1
+$ tsx scripts/gen-config-catalog.ts --check
+gen-config-catalog: docs/config-catalog.md is stale. Run `pnpm run gen-config-catalog` and commit docs/config-catalog.md.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start package paths
+run-gates: PASS doc refs (0.91s)
+run-gates: start config source ownership
+
+== FAILED persistence catalog (1.16s) ==
+command: pnpm run verify-persistence-catalog
+outcome: exit 1
+$ tsx scripts/gen-persistence-catalog.ts --check
+gen-persistence-catalog: docs/persistence-catalog.md stale. Run `pnpm run gen-persistence-catalog` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start package README model experience
+run-gates: PASS package paths (0.93s)
+run-gates: start agent note classification
+run-gates: PASS public repository links (1.83s)
+run-gates: start agent note format
+run-gates: PASS config source ownership (0.83s)
+run-gates: start archived agent notes
+run-gates: PASS agent note classification (0.50s)
+run-gates: start skill invocation metadata
+run-gates: PASS agent note format (0.53s)
+run-gates: start translation prompt
+run-gates: PASS archived agent notes (0.52s)
+run-gates: start doc budgets
+run-gates: PASS skill invocation metadata (0.48s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.46s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.47s)
+run-gates: PASS package README model experience (2.10s)
+run-gates: PASS package README limitations (2.01s)
+run-gates: PASS documentation site checks (3.75s)
+
+run-gates: 22 passed, 6 failed, 0 skipped in 37.12s.
+run-gates: unsuccessful gates:
+  - FAILED doc graphs (20.72s, exit 1)
+    pnpm run verify-doc-graphs
+  - FAILED cordis catalog (16.57s, exit 1)
+    pnpm run verify-cordis-catalog
+  - FAILED translation pairing (9.92s, exit 1)
+    pnpm run verify-translation-pairing
+  - FAILED markdown wrap (4.56s, exit 1)
+    pnpm run verify-md-wrap
+  - FAILED config catalog (1.26s, exit 1)
+    pnpm run verify-config-catalog
+  - FAILED persistence catalog (1.16s, exit 1)
+    pnpm run verify-persistence-catalog
+[ELIFECYCLE] Command failed with exit code 1.

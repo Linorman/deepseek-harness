@@ -1,0 +1,16 @@
+Closure-driver budget discovery cursor follow-up (2026-09-09)
+
+Scope: retain the bounded Team discovery cursor when an active Team budget hydration read fails, while allowing already selected closure work in the page to settle.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-closure-driver/tests/closure-driver.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 80 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-closure-driver/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-closure-driver/src/index.ts packages/team/team-closure-driver/tests/closure-driver.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: a transient budget-state read marks the page for discovery retry without advancing `discoveryCursor`; the next drive requests the same page, while closure candidates from the failed page still use the existing coalesced recovery path.

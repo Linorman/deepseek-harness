@@ -19,6 +19,8 @@ Task waits, workflow waits, and blocking task watches reject with `TEAM_RUN_REVI
 
 `maxLiveActivations` freezes the root’s simultaneous startup/epoch capacity; child requests explicitly allocate a subset including their coordinator and idle members. Shipped headless/web roots select `maxChildTeams: 32` and `maxLiveActivations: 128` in Cordis configuration.
 
+Child coordinator model failures retain their original error code in the Team failure intent. Turn-end handling uses the still-owned activation binding after the model turn stops, rechecks ownership before issuing a proof, and retries cursor conflicts within `receiptRetryAttempts`; public task and goal commands still require the current coordinator turn.
+
 ## Configuration
 
 `channelPageSize` is a positive safe-integer setting that defaults to `128`; `waitForFinal()` uses it to read the final-output channel WAL through bounded provider pages.
@@ -31,7 +33,7 @@ The coordinator delegates independently deliverable and verifiable work when it 
 
 Default-worker task creation applies `receiptRetryAttempts` separately to worker-pool preparation, each reviewer membership/activation step, and task admission. Concurrent coordinator admissions are serialized only around pool topology and task creation so every independent task contributes to automatic scale-up; worker execution remains parallel. A successful reviewer step resets its cursor-conflict count; completed participant preparation does not consume the task mutation's retries. Every attempt re-reads Team state and issues a fresh proof, and non-cursor failures still propagate.
 
-`resume({ teamId })` re-owns an active or stalled durable default Team after its previous coordinator activation settled offline. For a stalled Team it mints one source-scoped phase proof that can restore only that Team to `active`, then reuses the persisted coordinator Session, model route, preset, and default channel and mints a new activation epoch; a terminal or archived Team is not resumable.
+`resume({ teamId })` re-owns an active or stalled durable default Team after its previous coordinator activation settled offline. For a stalled Team it mints one source-scoped phase proof that can restore only that Team to `active`, then reuses the persisted coordinator Session, model route, preset, and default channel and mints a new activation epoch; a terminal or archived Team is not resumable. Resume selects the latest coordinator and worker activation records. Closing aborts and drains accepted resume operations before releasing proof sources; plugin teardown registers this cleanup as a Cordis effect and waits for retained activations to stop. Failed resume cleanup rejects both the resume and concurrent close calls with the original error and cleanup failures.
 
 `cancel(teamId)` first sends the Hub's typed cancellation command with an ephemeral TeamRun cancellation proof. Only after that command durably closes admission does it release local leases and use fresh cancellation-cleanup proofs for each exact retryable task or channel cleanup; if an unrelated accepted Team record advances the cursor first, it re-reads and retries the same idempotency key within `receiptRetryAttempts` with a new proof. If the initial command is not accepted, the service retains local ownership so the caller can retry without leaving an ordinary quiescing Team behind.
 

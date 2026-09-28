@@ -1,0 +1,14 @@
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests --reporter=json --outputFile=.tmp/team-hub-full-current.json --maxWorkers=1
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0 for the Hub directory; T-01 still requires the separate full-repository lane.
+
+Summary:
+  Test files: 50 total, 50 passed, 0 failed.
+  Tests: 780 total, 780 passed, 0 failed, 0 skipped.
+
+The current JSON report is retained at .tmp/team-hub-full-current.json. The
+team-hub command/recovery file passes 93/93, closure-authority passes 135/135,
+and the focused runtime/channel slice remains green independently of this
+full-directory result.

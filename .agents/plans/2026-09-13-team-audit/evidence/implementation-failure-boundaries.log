@@ -1,0 +1,38 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/team/team-agent-client/tests/channel-view.spec.ts (52 tests | 1 failed) 3771ms
+     × handles a worker turn whose recovery encounters flush-failure 56ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-agent-client/tests/channel-view.spec.ts > Team channel-view delivery recovery > handles a worker turn whose recovery encounters flush-failure
+AssertionError: promise resolved "{ kind: 'reject' }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "kind": "reject",
+  }
+
+ ❯ packages/team/team-agent-client/tests/channel-view.spec.ts:201:66
+    199|         expect(warning).toHaveBeenCalled()
+    200|         expect(mounted.followup).toHaveBeenCalledTimes(1)
+    201|         await expect(mounted.preStep([...mounted.inbox.nextTurn])).rej…
+       |                                                                  ^
+    202|       } else expect(mounted.followup).not.toHaveBeenCalled()
+    203|     },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 116 passed (117)
+   Start at  18:28:49
+   Duration  4.28s (transform 972ms, setup 431ms, import 961ms, tests 4.84s, environment 0ms)

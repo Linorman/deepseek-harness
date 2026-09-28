@@ -349,6 +349,32 @@ abstract load(id: SessionId): Promise<SessionInspection>
 abstract inspect(id: SessionId, signal?: AbortSignal): Promise<SessionInspection>
 
 /**
+ * Check that an identity has no live, tracked, prepared or stored Session owner.
+ * @param id - Reserved Session identity.
+ * @param signal - Optional cancellation of queued storage work.
+ * @returns true only for absence; backend read failures reject.
+ */
+isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean>
+
+/**
+ * Capture a complete physical prefix and source-qualified revision without performing recovery.
+ * @param id - Exact persisted Session identity.
+ * @param expectedSequence - Expected last event seq, or -1 for a header-only Session.
+ * @param signal - Optional cancellation of queued storage work.
+ * @returns immutable reference; torn or moving sources and cursor mismatches reject.
+ */
+getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference>
+
+/**
+ * Read a retained physical prefix and validate the whole stored suffix without repair.
+ * @param id - Exact persisted Session identity.
+ * @param throughSequence - Included last prefix seq, or -1 for the header only.
+ * @param signal - Optional cancellation of queued storage work.
+ * @returns prefix fingerprint and current whole-source revision; missing or torn history rejects.
+ */
+getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference>
+
+/**
  * Read the stored events from `fromSeq` onward — the read-from-seq
  * primitive for read models that resume from a watermark (e.g. a persisted
  * projection cache folding only the tail past its checkpoint). Unlike

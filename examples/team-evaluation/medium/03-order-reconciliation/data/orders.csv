@@ -1,0 +1,6 @@
+order_id,sku,quantity,unit_price
+O101,A,4,25
+O102,B,2,40
+O103,A,3,25
+O104,C,1,60
+O105,B,1,40

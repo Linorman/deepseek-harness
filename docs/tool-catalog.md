@@ -15,6 +15,7 @@ This table connects model-visible tool names to the plugin package and service s
 
 | Tool package | Model-visible names | Requires | Writes / affects | Configured aliases | Deployment note |
 | --- | --- | --- | --- | --- | --- |
+| `@clocky/clocky-tool-simulation` | `simulation_observe`, `simulation_stage`, `simulation_submit` | `ctx.tools`, `ctx.simulationTeams`, `current prepared Agent decision` | `tool/call`, `tool/result`, `Simulation decision submissions, acceptance and operation intents` | - | - |
 | `@clocky/clocky-tool-ask-user` | `ask_user_question` | `ctx.tools`, `ctx.userQuestions` | `tool/call`, `tool/result after a UI/provider answers the question` | - | ask_user_question pauses the tool call until the active UI provider returns a human answer. |
 | `@clocky/clocky-tools` | `run_code` | `ctx.tools`, `ctx.codeRuntime (execution time)`, `ctx.systemPrompt` | `tool/call`, `one tool/code-dispatch-start + tool/code-dispatch pair per bridged sub-call`, `tool/result` | - | Owned by the tool registry as a reserved transport outside filterable capability layers under `mode: code` / `mode: both` (see the Code Mode Agent Note). Under `code` it is the registry's only wire contribution; the other visible capabilities are declared in a generated SDK section in the loaded runtime's language, and a program calls them through bindings scheduled under the native concurrency contract (submission-ordered starts and policy; concurrency-safe bodies overlap up to `maxParallelSubCalls`) that re-enter the complete guarded tool pipeline and link each nested execution to this outer result. |
 | `@clocky/clocky-plan-mode` | `exit_plan_mode` | `ctx.tools`, `ctx.systemPrompt`, `ctx.userQuestions (execution time, opportunistic)` | `tool/call`, `plan/mode inactive on an approved review`, `tool/result` | - | exit_plan_mode stays in the model-facing schema while planning is inactive so transitions add no tool-catalog churn on top of the plan-policy change. Its execute path rejects calls outside plan mode; in plan mode it presents the plan over the user-questions seam (approve / keep planning with feedback), and approval logs plan mode inactive at the step boundary. |
@@ -38,6 +39,682 @@ This table connects model-visible tool names to the plugin package and service s
 | `@clocky/clocky-tool-team-task` | `team_task_cancel`, `team_task_delegate`, `team_task_list`, `team_task_propose_owner`, `team_task_start`, `team_task_wait`, `team_task_watch`, `team_worker_pool_set`, `team_workflow_start`, `team_workflow_task_cancel`, `team_workflow_wait` | `ctx.tools`, `ctx.teamRuns`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `durable default-worker task creation, inspection, owner proposal, cancellation, or Team-journal wait`, `tool/result` | - | team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation. |
 | `@clocky/clocky-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@clocky/clocky-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
+
+<a id="clockyclocky-tool-simulation"></a>
+
+## `@clocky/clocky-tool-simulation`
+
+### `simulation_observe`
+
+Read the authorized observations prepared for your current simulation decision. This does not query newer or hidden world state.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/simulation/tool-simulation/src/index.ts`](../packages/simulation/tool-simulation/src/index.ts)
+
+### `simulation_stage`
+
+Replace your complete staged proposal list. No world effects occur until a submitted proposal is executed. Send an empty list to stage no actions.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "proposals": {
+      "type": "array",
+      "description": "The complete replacement proposal list. Times and quantities are non-negative decimal strings. Dependencies name earlier indices or accepted operation ids.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "action": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "task/create"
+                  },
+                  "task": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "subject": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "blockedBy": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "requiredCapabilities": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "priority": {
+                        "type": "integer"
+                      },
+                      "readScopes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "writeScopes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "workspaceMode": {
+                        "type": "string",
+                        "enum": [
+                          "shared",
+                          "worktree",
+                          "sandbox",
+                          "remote"
+                        ]
+                      },
+                      "reviewPolicy": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "none"
+                              }
+                            },
+                            "required": [
+                              "kind"
+                            ]
+                          },
+                          {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "const": "participant"
+                              },
+                              "reviewerId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "reviewerId"
+                            ]
+                          }
+                        ]
+                      },
+                      "budget": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "maxAttempts": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "subject",
+                      "description",
+                      "blockedBy",
+                      "requiredCapabilities",
+                      "priority",
+                      "readScopes",
+                      "writeScopes",
+                      "workspaceMode",
+                      "reviewPolicy",
+                      "budget",
+                      "maxAttempts"
+                    ]
+                  },
+                  "deliverAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "task",
+                  "deliverAt"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "communication/post"
+                  },
+                  "recipient": {
+                    "type": "string"
+                  },
+                  "channelId": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "deliverAt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "recipient",
+                  "channelId",
+                  "text",
+                  "deliverAt"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/request"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "assignee": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "replyBy": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "completeBy": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fulfillment": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "explicit"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "task-completed"
+                          }
+                        },
+                        "required": [
+                          "kind"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "transfer"
+                          },
+                          "from": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "from",
+                          "to",
+                          "quantity"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "assignee",
+                  "description",
+                  "replyBy",
+                  "completeBy",
+                  "fulfillment"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/accept"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/reject"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision",
+                  "reason"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/defer"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  },
+                  "until": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision",
+                  "until",
+                  "reason"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/cancel"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision",
+                  "reason"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/confirm"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "interaction/result"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision",
+                  "evidence"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "resource/transfer"
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "commitmentId": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reads": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "resourceId": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "resourceId",
+                            "revision"
+                          ]
+                        }
+                      },
+                      "transfers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "quantity"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "commitmentId",
+                      "reads",
+                      "transfers"
+                    ]
+                  },
+                  "grants": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "transaction",
+                  "grants"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "resource/grant"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "grantee": {
+                    "type": "string"
+                  },
+                  "resources": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "commitmentId": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "reads": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "resourceId": {
+                              "type": "string"
+                            },
+                            "revision": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "resourceId",
+                            "revision"
+                          ]
+                        }
+                      },
+                      "transfers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "string"
+                            },
+                            "to": {
+                              "type": "string"
+                            },
+                            "quantity": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "quantity"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "commitmentId",
+                      "reads",
+                      "transfers"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "grantee",
+                  "resources",
+                  "transaction"
+                ]
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "resource/revoke-grant"
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "expectedRevision": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "id",
+                  "expectedRevision"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "after",
+          "action"
+        ]
+      }
+    }
+  },
+  "required": [
+    "proposals"
+  ]
+}
+```
+
+Source: [`packages/simulation/tool-simulation/src/index.ts`](../packages/simulation/tool-simulation/src/index.ts)
+
+### `simulation_submit`
+
+Submit the complete staged proposal list and end this decision. A submitted window proposal awaits ordered acceptance; accepted proposals await execution. Results arrive in a later decision.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/simulation/tool-simulation/src/index.ts`](../packages/simulation/tool-simulation/src/index.ts)
 
 <a id="clockyclocky-tool-ask-user"></a>
 

@@ -1,0 +1,671 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json checkpoint restore > restores retained owners with crash=checkpoint-published 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 1,
+    "status": "applied",
+  },
+  "dormantMaterialized": false,
+  "ingressRetained": 0,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": false,
+    "status": "pending",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 0,
+  "phase": "paused",
+  "publicationRefusals": 0,
+  "publications": 0,
+  "time": "0",
+  "writerRefusals": 3,
+  "writersReleased": 2,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=restore-prefix 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=restore-window 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": true,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=restore-writer 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=suffix-written 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=undefined 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=window-inference 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 10000,
+    "pendingTokens": 1,
+    "retainedSubmission": false,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=window-opened 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": false,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=window-partial 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": true,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`json checkpoint restore > restores retained owners with crash=window-submitted 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=checkpoint-published 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 1,
+    "status": "applied",
+  },
+  "dormantMaterialized": false,
+  "ingressRetained": 0,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": false,
+    "status": "pending",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 0,
+  "phase": "paused",
+  "publicationRefusals": 0,
+  "publications": 0,
+  "time": "0",
+  "writerRefusals": 3,
+  "writersReleased": 2,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=restore-prefix 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=restore-window 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": true,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=restore-writer 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=suffix-written 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=undefined 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=window-inference 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 10000,
+    "pendingTokens": 1,
+    "retainedSubmission": false,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=window-opened 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": false,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=window-partial 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": true,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;
+
+exports[`sqlite checkpoint restore > restores retained owners with crash=window-submitted 1`] = `
+{
+  "committedNotificationValid": true,
+  "continued": {
+    "newPublications": 0,
+    "status": "applied",
+  },
+  "dormantMaterialized": true,
+  "ingressRetained": 1,
+  "manifestSessions": [
+    "materialized",
+    "materialized",
+    "unmaterialized",
+  ],
+  "modelCalls": 0,
+  "operation": {
+    "receipt": true,
+    "status": "applied",
+  },
+  "ownerRefusals": 4,
+  "pendingWakes": 1,
+  "phase": "paused",
+  "publicationRefusals": 1,
+  "publications": 0,
+  "time": "5",
+  "windowRecovery": {
+    "accepted": false,
+    "chargedTokens": 0,
+    "pendingTokens": 0,
+    "retainedSubmission": true,
+    "status": "closed",
+  },
+  "writerRefusals": 3,
+  "writersReleased": 3,
+}
+`;

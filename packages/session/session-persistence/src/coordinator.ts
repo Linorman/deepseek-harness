@@ -1,3 +1,5 @@
+import { SessionPersistenceReferenceChanged } from './reference-error.ts'
+import { createHash } from 'node:crypto'
 /**
  * Shared buffering, serialization, adoption, repair, and disposal orchestration
  * for first-party backends. Third-party backends may implement the public
@@ -925,6 +927,81 @@ export class PersistenceCoordinator<TornMarker = unknown> {
     const whole = await this.readStoredPrefix(id, signal)
     // Sequential fallback: contiguous seqs from 0 make the suffix an index slice.
     return { meta: whole.meta, events: whole.events.slice(fromSeq) }
+  }
+
+  /**
+   * Observe absence after accepted retirement writes, under the Session serializer.
+   * @param id - Reserved Session identity.
+   * @param signal - Optional cancellation of queued storage work.
+   * @returns true only without live, tracked, prepared or stored ownership.
+   */
+  isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
+    const retired = Promise.resolve(this.retirements.get(id))
+    const waited = signal === undefined ? retired : observeQueuedAbort(retired, signal, () => false)
+    return waited.then(() => this.serialize(id, async () => {
+      signal?.throwIfAborted()
+      const stored = await this.backend.loadStored(id, signal)
+      signal?.throwIfAborted()
+      return stored === undefined && this.ctx.sessions.get(id) === undefined
+        && !this.states.has(id) && !this.preparations.has(id)
+    }, signal))
+  }
+
+  /**
+   * Capture the stored prefix under the same serializer as writes, without adding recovery closers.
+   * @param id - Persisted Session identity.
+   * @param expectedSequence - Last expected event seq, or -1 for an empty log.
+   * @param signal - Optional queued-work cancellation.
+   * @returns source-qualified reference for later collector revalidation.
+   */
+  getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal):
+  Promise<import('./index.ts').SessionPersistenceReference> {
+    if (!Number.isSafeInteger(expectedSequence) || expectedSequence < -1) {
+      return Promise.reject(new TypeError('Session checkpoint sequence must be a safe integer at least -1'))
+    }
+    return this.persistenceReference(id, expectedSequence, undefined, signal)
+  }
+
+  /**
+   * Hash a retained physical prefix while validating the entire stored suffix without repair.
+   * @param id - Persisted Session identity.
+   * @param throughSequence - Included last prefix sequence, or -1 for the header only.
+   * @param signal - Optional queued-work cancellation.
+   * @returns prefix fingerprint and current whole-source revision for revalidation.
+   */
+  getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal):
+  Promise<import('./index.ts').SessionPersistenceReference> {
+    if (!Number.isSafeInteger(throughSequence) || throughSequence < -1) {
+      return Promise.reject(new TypeError('Session checkpoint sequence must be a safe integer at least -1'))
+    }
+    return this.persistenceReference(id, undefined, throughSequence, signal)
+  }
+
+  private persistenceReference(id: SessionId, expectedSequence: number | undefined, throughSequence: number | undefined,
+    signal?: AbortSignal): Promise<import('./index.ts').SessionPersistenceReference> {
+    const retired = Promise.resolve(this.retirements.get(id))
+    const waited = signal === undefined ? retired : observeQueuedAbort(retired, signal, () => false)
+    return waited.then(() => this.serialize(id, async () => {
+      signal?.throwIfAborted()
+      const stored = await this.backend.loadStored(id, signal)
+      signal?.throwIfAborted()
+      if (stored === undefined) throw new Error(`session "${id}" not found`)
+      this.assertStoredId(id, stored.meta)
+      this.assertVersion(stored.meta)
+      if (stored.tornMarker !== undefined) throw new Error('Session checkpoint requires a complete physical prefix')
+      const events = snapshotStoredEvents(stored.events, id)
+      this.assertEventsSupported(stored.meta, events)
+      if (expectedSequence !== undefined && events.length - 1 !== expectedSequence) throw new SessionPersistenceReferenceChanged(id, 'cursor')
+      const sequence = throughSequence ?? events.length - 1
+      if (sequence >= events.length) throw new Error('Session checkpoint prefix is not retained')
+      const revision = await this.backend.readStoredRevision(id, signal)
+      signal?.throwIfAborted()
+      if (revision !== stored.revision) throw new SessionPersistenceReferenceChanged(id, 'source')
+      const header = structuredClone(stored.meta)
+      const digest = createHash('sha256').update(JSON.stringify({ header, events: events.slice(0, sequence + 1) }), 'utf8').digest('hex')
+      const fingerprint = `sha256:${digest}` as import('@clocky/clocky-brand').Branded<'SessionPersistenceFingerprint'>
+      return { header, revision, sequence, fingerprint, retention: 'full' as const }
+    }, signal))
   }
 
   /** Read one detached physical prefix without logical recovery or caching. */

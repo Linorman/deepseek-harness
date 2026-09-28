@@ -1,4 +1,4 @@
-import { channelInvitationIdempotencyKeySchema } from '@clocky/clocky-team'
+import { channelInvitationIdempotencyKeySchema, teamClosureIdempotencyKeySchema } from '@clocky/clocky-team'
 import type { TeamSystemChannelAdmissionProof } from '@clocky/clocky-team'
 import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
 import { consentChannelEndpoints } from '../../../core/team/tests/channel-endpoint-consent.ts'
@@ -23,6 +23,8 @@ import type {
   TeamSystemEnvelopePostScope,
   TeamSystemInterruptProof,
   TeamSystemInterruptScope,
+  TeamSystemTaskControlProof,
+  TeamSystemTaskControlScope,
   TeamSystemTaskLeaseProof,
   TeamSystemTaskLeaseScope,
   TeamSystemWorkspaceAllocationProof,
@@ -52,12 +54,14 @@ import * as TeamChannelTaskAssignment from '@clocky/clocky-team-channel-task-ass
 import TeamLinkRegistry from '@clocky/clocky-team-link'
 import * as TeamLinkLocal from '@clocky/clocky-team-link-local'
 import { TeamDagScheduler } from '@clocky/clocky-team-scheduler-dag'
-import TeamWorkspaceRegistry from '@clocky/clocky-team-workspace'
+import TeamWorkspaceRegistry, { TeamWorkspaceLostError } from '@clocky/clocky-team-workspace'
+import TeamArtifactStore from '@clocky/clocky-team-artifact'
 import type {
   TeamWorkspaceAllocation,
   TeamWorkspaceAllocationMetadata,
   TeamWorkspacePreparation,
   TeamWorkspaceProvider,
+  TeamWorkspacePublishRequest,
 } from '@clocky/clocky-team-workspace'
 import * as TeamAgentClientPlugin from '../src/index.ts'
 
@@ -217,7 +221,8 @@ async function freshRoot(): Promise<string> {
 }
 
 /** Build one root-less provider whose calls make reservation/materialization order observable. */
-function workspaceProvider(calls: string[], release: () => Promise<void>, withBaseVersion = true): TeamWorkspaceProvider {
+function workspaceProvider(calls: string[], release: () => Promise<void>, withBaseVersion = true,
+  executionWorld?: TeamWorkspaceAllocationMetadata['executionWorld']): TeamWorkspaceProvider {
   return {
     name: 'agent-client-workspace',
     modes: ['shared'],
@@ -236,6 +241,7 @@ function workspaceProvider(calls: string[], release: () => Promise<void>, withBa
         activationId: request.activationId,
         sessionId: request.sessionId,
         ...withBaseVersion ? { baseVersion: 'client-test-base' } : {},
+        ...executionWorld === undefined ? {} : { executionWorld },
       }
       let abandoned = false
       const preparation: TeamWorkspacePreparation = {
@@ -376,7 +382,8 @@ async function bindActivation(
 }
 
 /** Mark a temporary task-creation coordinator offline before scheduler selection. */
-async function offlineActivation(ctx: Context, binding: ActivationBindingSnapshot): Promise<void> {
+async function updateFixtureActivationStatus(ctx: Context, binding: ActivationBindingSnapshot,
+  status: ActivationBindingSnapshot['activation']['status'] = 'offline'): Promise<void> {
   const proofs = activationProofStores.get(ctx)
   if (proofs === undefined) throw new Error('task-creation fixture did not register the activation proof source')
   const state = await ctx.teams.getTeam({ teamId: binding.activation.teamId })
@@ -384,7 +391,7 @@ async function offlineActivation(ctx: Context, binding: ActivationBindingSnapsho
     teamId: binding.activation.teamId,
     activationId: binding.activation.id,
     expectedCursor: state.team.cursor,
-    status: 'offline' as const,
+    status,
   }
   const proof: object = {}
   Object.defineProperty(proof, 'toJSON', {
@@ -429,8 +436,8 @@ async function assignSchedulerLease(ctx: Context, input: TeamTaskAssignInput) {
 }
 
 /** Build an active two-member direct channel for one selected direct protocol version. */
-async function directChannel(ctx: Context, adapter = TeamChannelDirect.DIRECT_CHANNEL_ADAPTER_V1, recipientRole = 'worker') {
-  const created = await createTestRootTeam(ctx, { goal: { objective: 'Deliver one direct Envelope', budgets: {} }, rules: {}, budgets: {} })
+async function directChannel(ctx: Context, adapter = TeamChannelDirect.DIRECT_CHANNEL_ADAPTER_V1, recipientRole = 'worker', rules = {}) {
+  const created = await createTestRootTeam(ctx, { goal: { objective: 'Deliver one direct Envelope', budgets: {} }, rules, budgets: {} })
   const sender = await activeParticipant(ctx, created.team.id, 'Sender')
   const recipient = await activeParticipant(ctx, created.team.id, 'Recipient', 'local-agent', recipientRole)
   const state = await ctx.teams.getTeam({ teamId: created.team.id })
@@ -792,6 +799,7 @@ async function reserveAssignedWorkspace(
       assignedRevision: preparation.assignedRevision, participantId: preparation.participantId,
       activationId: preparation.activationId, sessionId: preparation.sessionId,
       ...preparation.baseVersion === undefined ? {} : { baseVersion: preparation.baseVersion },
+      ...preparation.executionWorld === undefined ? {} : { executionWorld: preparation.executionWorld },
     },
   }
   const reserved = await withWorkspaceAllocationProof(ctx, { kind: 'workspace-allocation-reserve', ...reserve },
@@ -805,10 +813,16 @@ async function workspaceRecoveryFixture(
   withBaseVersion = true,
   disposalTimeoutMs = 1_000,
   workspaceMutationMaxAttempts?: number,
+  options: {
+    readonly adapter?: LlmAdapter
+    readonly publish?: TeamWorkspaceProvider['publish']
+    readonly executionWorld?: TeamWorkspaceAllocationMetadata['executionWorld']
+  } = {},
 ) {
   const calls: string[] = []
-  const provider = workspaceProvider(calls, release, withBaseVersion)
-  const ctx = await setup(false, new ReplyAdapter(), {}, provider)
+  const provider = { ...workspaceProvider(calls, release, withBaseVersion, options.executionWorld),
+    ...options.publish === undefined ? {} : { publish: options.publish } }
+  const ctx = await setup(false, options.adapter ?? new ReplyAdapter(), {}, provider)
   const input = await directChannel(ctx)
   const receiver = await ctx.agents.create({ sessionId: SessionId('workspace-recovery-fixture'),
     meta: { teamId: input.team.id, participantId: input.recipient.id, cwd: '/session/recovery-fixture' },
@@ -880,7 +894,7 @@ async function createPendingTask(ctx: Context, input: Awaited<ReturnType<typeof 
     reviewPolicy: { kind: 'none' },
     maxAttempts: 1,
   })
-  await offlineActivation(ctx, coordinatorBinding)
+  await updateFixtureActivationStatus(ctx, coordinatorBinding)
   return task
 }
 
@@ -938,7 +952,7 @@ async function expectReceipt(ctx: Context, envelope: TeamEnvelope, participantId
 }
 
 /** Run a real task turn while the external workspace provider owns its loss notification. */
-async function workspaceLossFixture() {
+async function workspaceLossFixture(publish?: TeamWorkspaceProvider['publish']) {
   const calls: string[] = []
   const release = vi.fn(async () => { calls.push('release') })
   const base = workspaceProvider(calls, release)
@@ -946,6 +960,7 @@ async function workspaceLossFixture() {
   let listener: ((loss: TeamWorkspaceLoss) => Promise<void>) | undefined
   const provider: TeamWorkspaceProvider = {
     ...base, modes: ['remote'],
+    ...publish === undefined ? {} : { publish },
     async prepare(request) {
       const preparation = await base.prepare(request)
       return {
@@ -970,9 +985,13 @@ async function workspaceLossFixture() {
   await adapter.started.promise
   return {
     ctx, input, receiver, binding, assignment, release, world,
-    async lose(reason: TeamWorkspaceLoss['reason']) {
+    captureLossListener() {
       if (listener === undefined) throw new Error('Expected the current allocation loss listener')
-      await listener({ executionWorld: world, reason, terminationProven: reason === 'sandbox-expired', artifacts: [] })
+      return listener
+    },
+    async lose(reason: TeamWorkspaceLoss['reason'], overrides: Partial<TeamWorkspaceLoss> = {}) {
+      if (listener === undefined) throw new Error('Expected the current allocation loss listener')
+      await listener({ executionWorld: world, reason, terminationProven: reason === 'sandbox-expired', artifacts: [], ...overrides })
     },
   }
 }
@@ -1029,7 +1048,7 @@ describe('Team Agent Client', () => {
     const input = await directChannel(ctx)
     const predecessor = await bindRecipient(ctx, input, SessionId('direct-context-recipient'), 'activation-consent-predecessor')
     await consentDirect(ctx, input)
-    await offlineActivation(ctx, predecessor)
+    await updateFixtureActivationStatus(ctx, predecessor)
     const receiver = await ctx.agents.create({
       sessionId: SessionId('direct-context-recipient'),
       meta: { teamId: input.team.id, participantId: input.recipient.id },
@@ -2935,4 +2954,593 @@ describe('Team Agent Client', () => {
     } finally { gate.resolve(undefined); await delivery.close() }
   })
 
+})
+
+it('leaves Simulation bindings to their dedicated consumer instead of opening a generic Link', async () => {
+  const ctx = await setup(false)
+  const input = await directChannel(ctx, TeamChannelDirect.DIRECT_CHANNEL_ADAPTER_V4, 'worker', { simulationRunId: 'run' })
+  const receiver = await ctx.agents.create({ sessionId: SessionId('simulation-owned-recipient'),
+    meta: { teamId: input.team.id, participantId: input.recipient.id }, agentOptions: { provider: 'mock', model: 'mock' } })
+  await bindRecipient(ctx, input, receiver.agent.session.id)
+  const seen = Promise.withResolvers<undefined>()
+  const getTeam = ctx.teams.getTeam.bind(ctx.teams)
+  const read = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
+    const state = await getTeam(request)
+    if (request.teamId === input.team.id) seen.resolve(undefined)
+    return state
+  })
+  const connect = vi.spyOn(ctx.teamLinks, 'connect')
+  try {
+    await ctx.plugin(TeamAgentClientPlugin, { maxTaskReportReminders: 0 })
+    await seen.promise
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(connect).not.toHaveBeenCalled()
+    expect(receiver.agent.inbox.hasPending).toBe(false)
+  } finally { read.mockRestore(); connect.mockRestore() }
+})
+
+/** Keep an actual claimed model turn open while its allocation owner publishes. */
+async function publicationFixture(publish?: TeamWorkspaceProvider['publish']) {
+  const model = new InterruptibleAdapter()
+  const release = vi.fn(async () => {})
+  const mounted = await workspaceRecoveryFixture(release, true, 1_000, undefined, { adapter: model, publish })
+  mounted.delivery.start()
+  await model.started.promise
+  const state = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+  const allocation = state.workspaceAllocations[0]!
+  const request = { taskId: allocation.taskId, attemptId: allocation.attemptId, allocationId: allocation.id,
+    expectedRevision: allocation.revision, signal: new AbortController().signal }
+  return { ...mounted, release, request, async close() {
+    mounted.receiver.agent.cancel({ kind: 'user' })
+    await mounted.receiver.agent.whenIdle()
+    await mounted.delivery.close()
+  } }
+}
+
+/** Return provider provenance for the exact live task allocation. */
+function publicationResult({ allocation }: TeamWorkspacePublishRequest) {
+  return { teamId: allocation.teamId, taskId: allocation.taskId, attemptId: allocation.attemptId,
+    changedPaths: ['result.txt'], artifacts: [], accepted: true }
+}
+
+describe('claimed workspace publication', () => {
+  it('publishes from a persisted task claim and releases its publisher with the delivery owner', async () => {
+    const publish = vi.fn(async (request: TeamWorkspacePublishRequest) => publicationResult(request))
+    const mounted = await publicationFixture(publish)
+    try {
+      await updateFixtureActivationStatus(mounted.ctx, mounted.binding, 'running')
+      const actual = await mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request)
+      expect(actual).toMatchObject({ taskId: mounted.request.taskId, attemptId: mounted.request.attemptId, changedPaths: ['result.txt'] })
+      expect(publish).toHaveBeenCalledOnce()
+      expect(mounted.release).not.toHaveBeenCalled()
+    } finally { await mounted.close() }
+    await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request))
+      .rejects.toThrow('no current publisher')
+  })
+
+  it('returns no publication only for a valid owner whose provider has no publishing capability', async () => {
+    const mounted = await publicationFixture()
+    try {
+      await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request)).resolves.toBeUndefined()
+    } finally { await mounted.close() }
+  })
+
+  it('retries a failed provider publication without retaining the failed operation', async () => {
+    const publish = vi.fn(async (request: TeamWorkspacePublishRequest) => publicationResult(request))
+      .mockRejectedValueOnce(new Error('Publication failed'))
+    const mounted = await publicationFixture(publish)
+    try {
+      await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request)).rejects.toThrow('Publication failed')
+      await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request))
+        .resolves.toMatchObject({ accepted: true })
+      expect(publish).toHaveBeenCalledTimes(2)
+    } finally { await mounted.close() }
+  })
+
+  it.each(['revision', 'allocation', 'aborted', 'closed turn'] as const)('refuses publication with %s ownership', async (variant) => {
+    const publish = vi.fn(async (request: TeamWorkspacePublishRequest) => publicationResult(request))
+    const mounted = await publicationFixture(publish)
+    try {
+      const controller = new AbortController()
+      if (variant === 'aborted') controller.abort(new Error('Tool cancelled'))
+      if (variant === 'closed turn') {
+        mounted.receiver.agent.cancel({ kind: 'user' })
+        await mounted.receiver.agent.whenIdle()
+      }
+      const request = { ...mounted.request, signal: controller.signal,
+        ...variant === 'revision' ? { expectedRevision: mounted.request.expectedRevision + 1 } : {},
+        ...variant === 'allocation' ? { allocationId: teamWorkspaceAllocationIdSchema.parse('other') } : {},
+      }
+      await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, request)).rejects.toThrow(variant === 'aborted'
+        ? 'Tool cancelled' : variant === 'revision' ? 'lost its running lease or activation binding' : 'requires its current claimed task allocation')
+      expect(publish).not.toHaveBeenCalled()
+    } finally { await mounted.close() }
+  })
+
+  it('refuses publication if the owning provider disappears', async () => {
+    const mounted = await publicationFixture(async request => publicationResult(request))
+    const provider = vi.spyOn(mounted.ctx.teamWorkspaces, 'getProvider').mockReturnValueOnce(undefined)
+    try {
+      await expect(mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request))
+        .rejects.toThrow('provider is no longer registered')
+    } finally { provider.mockRestore(); await mounted.close() }
+  })
+
+  it.each([false, true])('shares publication while preserving each caller cancellation (aborted=%s)', async (aborted) => {
+    const entered = Promise.withResolvers<undefined>()
+    const finish = Promise.withResolvers<undefined>()
+    const publish = vi.fn(async (request: TeamWorkspacePublishRequest) => {
+      entered.resolve(undefined)
+      await finish.promise
+      return publicationResult(request)
+    })
+    const mounted = await publicationFixture(publish)
+    try {
+      const first = mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request)
+      await entered.promise
+      const controller = new AbortController()
+      const second = mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, { ...mounted.request, signal: controller.signal })
+      const result = second.then(value => ({ value }), (error: unknown) => ({ error }))
+      await new Promise<void>(resolve => setImmediate(resolve))
+      if (aborted) controller.abort(new Error('Second caller cancelled'))
+      expect(publish).toHaveBeenCalledOnce()
+      finish.resolve(undefined)
+      const actual = await first
+      if (aborted) expect(await result).toMatchObject({ error: new Error('Second caller cancelled') })
+      else expect(await result).toEqual({ value: actual })
+    } finally { finish.resolve(undefined); await mounted.close() }
+  })
+
+  it('waits for accepted provider publication before close releases the workspace', async () => {
+    const entered = Promise.withResolvers<undefined>()
+    const finish = Promise.withResolvers<undefined>()
+    const mounted = await publicationFixture(async (request) => {
+      entered.resolve(undefined)
+      await finish.promise
+      return publicationResult(request)
+    })
+    let closing: Promise<void> | undefined
+    try {
+      const publication = mounted.ctx.teamWorkspaces.publishForOwner(mounted.receiver.agent, mounted.request)
+      const result = publication.then(value => ({ value }), (error: unknown) => ({ error }))
+      await entered.promise
+      closing = mounted.close()
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(mounted.release).not.toHaveBeenCalled()
+      finish.resolve(undefined)
+      expect(await result).toHaveProperty('error')
+      await closing
+      expect(mounted.release).toHaveBeenCalledOnce()
+    } finally { finish.resolve(undefined); await (closing ?? mounted.close()) }
+  })
+})
+
+/** Authorize one task cancellation from its retained coordinator, then revoke the test source. */
+async function cancelFixtureTask(ctx: Context, teamId: TeamTaskAssignInput['teamId'], taskId: TeamTaskAssignInput['taskId']) {
+  const task = await ctx.teams.getTask({ teamId, taskId })
+  const coordinator = task.createCommand.creator
+  if (!('activationId' in coordinator)) throw new Error('Cancellation fixture requires an Agent task creator')
+  const input = { teamId: task.teamId, taskId: task.id, expectedRevision: task.revision, reason: 'Stop the selected attempt' }
+  const scope: TeamSystemTaskControlScope = { kind: 'team-run-default-worker-cancel', coordinator, ...input }
+  const token: object = {}
+  Object.defineProperty(token, 'toJSON', { value: (): never => { throw new TypeError('Task control proofs are runtime-only') } })
+  const actor = Object.freeze(token) as TeamSystemTaskControlProof
+  const unregister = ctx.teams.registerSystemTaskControlProofSource({ name: 'team-run',
+    resolveTaskControlProof: proof => proof === actor ? scope : undefined })
+  try { return await ctx.teams.cancelTask({ actor, ...input }) }
+  finally { unregister() }
+}
+
+it('stops the claimed task before acknowledging cancellation and waits for physical workspace release', async () => {
+  const mounted = await publicationFixture()
+  const releasing = Promise.withResolvers<undefined>()
+  const released = Promise.withResolvers<undefined>()
+  mounted.release.mockImplementationOnce(async () => {
+    releasing.resolve(undefined)
+    await released.promise
+  })
+  try {
+    const admitted = await cancelFixtureTask(mounted.ctx, mounted.input.team.id, mounted.request.taskId)
+    expect(admitted.phase).toBe('running')
+    await releasing.promise
+    await mounted.receiver.agent.whenIdle()
+    const pending = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+    expect(pending.tasks.find(task => task.id === mounted.request.taskId)).toMatchObject({ phase: 'running', cancellation: {
+      target: { kind: 'attempt', attemptId: mounted.request.attemptId },
+    } })
+    expect(pending.workspaceAllocations[0]?.lifecycle).toBe('release-requested')
+    expect(mounted.receiver.agent.session.events.some(event => event.type === 'turn/end')).toBe(true)
+    released.resolve(undefined)
+    await vi.waitFor(async () => {
+      const task = await mounted.ctx.teams.getTask({ teamId: mounted.input.team.id, taskId: mounted.request.taskId })
+      expect(task).toMatchObject({ phase: 'cancelled', attemptHistory: [{ outcome: { kind: 'cancelled' } }] })
+    })
+    expect(mounted.release).toHaveBeenCalledOnce()
+    expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/session/recovery-fixture')
+  } finally { released.resolve(undefined); await mounted.close() }
+})
+
+it('cancels only queued assignment input while preserving unrelated running and queued work', async () => {
+  const model = new InterruptibleAdapter()
+  const ctx = await setup(false, model)
+  const input = await directChannel(ctx)
+  const receiver = await ctx.agents.create({ sessionId: SessionId('queued-task-cancellation'),
+    meta: { teamId: input.team.id, participantId: input.recipient.id }, agentOptions: { provider: 'mock', model: 'mock' } })
+  const binding = await bindRecipient(ctx, input, receiver.agent.session.id)
+  const delivery = new TeamAgentClientPlugin.FixedBindingTeamAgentLinkDelivery(ctx, { agent: receiver.agent, binding })
+  delivery.start()
+  try {
+    receiver.agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Unrelated running work' }], source: { kind: 'user' } }))
+    await model.started.promise
+    const keep = createUserMessage({ content: [{ type: 'text', text: 'Unrelated queued work' }], source: { kind: 'user' } })
+    receiver.agent.followup(keep)
+    const assignment = await assignTask(ctx, input, binding)
+    await vi.waitFor(() => {
+      expect(receiver.agent.inbox.nextTurn.some(message => message.source.kind === 'team-task-assignment')).toBe(true)
+    })
+    const cancel = vi.spyOn(receiver.agent, 'cancel')
+    await cancelFixtureTask(ctx, input.team.id, assignment.task.id)
+    await vi.waitFor(async () => {
+      const task = await ctx.teams.getTask({ teamId: input.team.id, taskId: assignment.task.id })
+      expect(task.phase).toBe('cancelled')
+    })
+    expect(cancel).not.toHaveBeenCalled()
+    expect(receiver.agent.status).toBe('running')
+    expect(receiver.agent.inbox.nextTurn).toEqual([keep])
+    expect(receiver.agent.session.events.some(event => event.type === 'agent/inbox/spliced'
+      && event.data.removedCount === 1 && event.data.inserted.length === 0)).toBe(true)
+  } finally {
+    receiver.agent.cancel({ kind: 'user' })
+    await receiver.agent.whenIdle()
+    await delivery.close()
+  }
+})
+
+it('acknowledges cancellation from a retained closed task turn without cancelling the Agent again', async () => {
+  const mounted = await publicationFixture()
+  try {
+    mounted.receiver.agent.cancel({ kind: 'user' })
+    await mounted.receiver.agent.whenIdle()
+    const cancel = vi.spyOn(mounted.receiver.agent, 'cancel')
+    await cancelFixtureTask(mounted.ctx, mounted.input.team.id, mounted.request.taskId)
+    await vi.waitFor(async () => {
+      const task = await mounted.ctx.teams.getTask({ teamId: mounted.input.team.id, taskId: mounted.request.taskId })
+      expect(task.phase).toBe('cancelled')
+    })
+    expect(cancel).not.toHaveBeenCalled()
+    expect(mounted.release).toHaveBeenCalledOnce()
+  } finally { await mounted.close() }
+})
+
+describe('workspace publication loss', () => {
+  it('settles provider-confirmed loss discovered during publication without retrying model work', async () => {
+    const publish = vi.fn(async (request: TeamWorkspacePublishRequest) => publicationResult(request))
+    const test = await workspaceLossFixture(publish)
+    const loss: TeamWorkspaceLoss = { executionWorld: test.world, reason: 'sandbox-expired', terminationProven: true, artifacts: [] }
+    publish.mockRejectedValueOnce(new TeamWorkspaceLostError(loss))
+    const snapshot = (await test.ctx.teams.getTeam({ teamId: test.input.team.id })).workspaceAllocations[0]!
+    await expect(test.ctx.teamWorkspaces.publishForOwner(test.receiver.agent, {
+      taskId: snapshot.taskId, attemptId: snapshot.attemptId, allocationId: snapshot.id,
+      expectedRevision: snapshot.revision, signal: new AbortController().signal,
+    })).rejects.toMatchObject({ code: 'TEAM_WORKSPACE_LOST' })
+    await vi.waitFor(async () => {
+      const state = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+      expect(state.workspaceAllocations[0]?.lifecycle).toBe('released')
+      expect(state.tasks.find(task => task.id === test.assignment.task.id)).toMatchObject({ phase: 'pending' })
+    })
+    expect(test.release).toHaveBeenCalledOnce()
+    expect(publish).toHaveBeenCalledOnce()
+  })
+
+  it('coalesces simultaneous loss notifications until physical release settles', async () => {
+    const test = await workspaceLossFixture()
+    const entered = Promise.withResolvers<undefined>()
+    const finish = Promise.withResolvers<undefined>()
+    test.release.mockImplementationOnce(async () => { entered.resolve(undefined); await finish.promise })
+    const first = test.lose('sandbox-expired')
+    await entered.promise
+    const second = test.lose('sandbox-expired')
+    try {
+      expect(test.release).toHaveBeenCalledOnce()
+      finish.resolve(undefined)
+      await Promise.all([first, second])
+      expect(test.release).toHaveBeenCalledOnce()
+    } finally { finish.resolve(undefined); await Promise.allSettled([first, second]) }
+  })
+
+  it('rejects loss from another world at the delivery consumer and retains the exact owner for retry', async () => {
+    const test = await workspaceLossFixture()
+    const before = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+    await expect(test.lose('sandbox-expired', {
+      executionWorld: teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'foreign' }),
+    })).rejects.toThrow('does not belong to this exact task execution owner')
+    expect((await test.ctx.teams.getTeam({ teamId: test.input.team.id })).workspaceAllocations).toEqual(before.workspaceAllocations)
+    expect(test.release).not.toHaveBeenCalled()
+    await test.lose('sandbox-expired')
+    expect(test.release).toHaveBeenCalledOnce()
+  })
+
+  it.each(['missing registry', 'missing provider', 'unreadable bytes', 'valid'] as const)('verifies retained loss artifacts: %s', async (variant) => {
+    const test = await workspaceLossFixture()
+    const attemptId = test.assignment.assigned.lease!.attemptId
+    const reference = { id: 'loss-log', provider: 'loss-artifacts', kind: 'log' as const,
+      uri: 'artifact:loss-log', sourceAttemptId: attemptId, visibility: 'team' as const }
+    const read = vi.fn(async () => new TextEncoder().encode('retained execution log'))
+    if (variant !== 'missing registry') {
+      await test.ctx.plugin(TeamArtifactStore)
+      test.ctx.teamArtifacts.registerProvider({ name: 'loss-artifacts',
+        async save() { throw new Error('Loss fixture does not save artifacts') }, read })
+    }
+    if (variant === 'unreadable bytes') read.mockRejectedValueOnce(new Error('Artifact bytes missing'))
+    const { provider: _provider, ...unbacked } = reference
+    const artifacts = [variant === 'missing provider' ? unbacked : reference]
+    if (variant === 'valid') {
+      await test.lose('sandbox-expired', { artifacts })
+      expect(read).toHaveBeenCalledOnce()
+      const state = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+      expect(state.workspaceAllocations[0]?.loss?.artifacts).toEqual([reference])
+    } else {
+      await expect(test.lose('sandbox-expired', { artifacts })).rejects.toThrow(variant === 'unreadable bytes'
+        ? 'Artifact bytes missing' : 'no exact provider-backed attempt provenance')
+      expect(test.release).not.toHaveBeenCalled()
+      await test.lose('sandbox-expired')
+    }
+  })
+})
+
+it.each([false, true])('records physical-release loss without fabricating termination (confirmed=%s)', async (confirmed) => {
+  const test = await workspaceLossFixture()
+  test.receiver.agent.cancel({ kind: 'user' })
+  await test.receiver.agent.whenIdle()
+  test.release.mockRejectedValueOnce(new TeamWorkspaceLostError({ executionWorld: test.world,
+    reason: confirmed ? 'sandbox-expired' : 'manifest-missing', terminationProven: confirmed, artifacts: [] }))
+  await settleAgentWorkspaceLease(test.receiver.agent)
+  const state = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+  expect(state.workspaceAllocations[0]).toMatchObject({ lifecycle: confirmed ? 'released' : 'unavailable',
+    loss: { terminationProven: confirmed } })
+  expect(test.release).toHaveBeenCalledTimes(confirmed ? 2 : 1)
+  if (!confirmed) {
+    expect(() => resolveAgentWorkspaceRoot(test.receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
+    await test.lose('sandbox-expired')
+    expect(test.release).toHaveBeenCalledTimes(2)
+  }
+})
+
+it('waits for an active publication before releasing a world lost through a separate provider notification', async () => {
+  const entered = Promise.withResolvers<undefined>()
+  const finish = Promise.withResolvers<undefined>()
+  const test = await workspaceLossFixture(async (request) => {
+    entered.resolve(undefined)
+    await finish.promise
+    return publicationResult(request)
+  })
+  const snapshot = (await test.ctx.teams.getTeam({ teamId: test.input.team.id })).workspaceAllocations[0]!
+  const publication = test.ctx.teamWorkspaces.publishForOwner(test.receiver.agent, { taskId: snapshot.taskId,
+    attemptId: snapshot.attemptId, allocationId: snapshot.id, expectedRevision: snapshot.revision, signal: new AbortController().signal })
+  const result = publication.then(value => ({ value }), (error: unknown) => ({ error }))
+  await entered.promise
+  const flushed = Promise.withResolvers<undefined>()
+  const flush = test.ctx.sessions.flush.bind(test.ctx.sessions)
+  vi.spyOn(test.ctx.sessions, 'flush').mockImplementation(async (session) => {
+    const result = await flush(session)
+    if (session === test.receiver.agent.session) flushed.resolve(undefined)
+    return result
+  })
+  const loss = test.lose('sandbox-expired')
+  try {
+    await flushed.promise
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(test.release).not.toHaveBeenCalled()
+    finish.resolve(undefined)
+    expect(await result).toHaveProperty('error')
+    await loss
+    expect(test.release).toHaveBeenCalledOnce()
+  } finally { finish.resolve(undefined); await Promise.allSettled([publication, loss]) }
+})
+
+it('preserves lost restore responsibility when the running attempt has no stopped-turn Session evidence', async () => {
+  const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'restore-loss-world' })
+  const mounted = await workspaceRecoveryFixture(undefined, true, 1_000, undefined, { executionWorld: world })
+  const warning = vi.spyOn(mounted.ctx.logger, 'warn').mockImplementation(() => undefined)
+  vi.spyOn(mounted.ctx.teamWorkspaces, 'restore').mockRejectedValueOnce(new TeamWorkspaceLostError({
+    executionWorld: world, reason: 'sandbox-expired', terminationProven: true, artifacts: [],
+  }))
+  try {
+    mounted.delivery.start()
+    await vi.waitFor(async () => {
+      const state = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+      expect(state.workspaceAllocations[0]).toMatchObject({ lifecycle: 'preserved',
+        preservationReason: { code: 'WORKSPACE_TASK_STOP_UNCONFIRMED' } })
+    })
+    await vi.waitFor(() => { expect(warning).toHaveBeenCalledWith(expect.stringContaining('no exact Session evidence')) })
+    expect(() => resolveAgentWorkspaceRoot(mounted.receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
+    expect(mounted.receiver.agent.session.events.some(event => event.type === 'assistant/message')).toBe(false)
+  } finally { await mounted.delivery.close() }
+})
+
+it.each([false, true])('reconciles provider loss under a retained release intent (confirmed=%s)', async (confirmed) => {
+  const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'release-loss-world' })
+  const mounted = await workspaceRecoveryFixture(undefined, true, 1_000, undefined, { executionWorld: world })
+  const state = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+  const snapshot = state.workspaceAllocations[0]!
+  const input = { teamId: state.team.id, expectedCursor: state.team.cursor, allocationId: snapshot.id, expectedRevision: snapshot.revision }
+  await withWorkspaceAllocationProof(mounted.ctx, { kind: 'workspace-allocation-release-request', ...input },
+    async actor => await mounted.ctx.teams.requestWorkspaceAllocationRelease({ actor, ...input }))
+  const reconcile = vi.spyOn(mounted.ctx.teamWorkspaces, 'reconcileRelease').mockRejectedValueOnce(new TeamWorkspaceLostError({
+    executionWorld: world, reason: confirmed ? 'sandbox-expired' : 'manifest-missing', terminationProven: confirmed, artifacts: [],
+  }))
+  try {
+    mounted.delivery.start()
+    await vi.waitFor(async () => {
+      const current = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+      expect(current.workspaceAllocations[0]?.lifecycle).toBe(confirmed ? 'released' : 'preserved')
+    })
+    expect(reconcile).toHaveBeenCalledTimes(confirmed ? 2 : 1)
+  } finally { await mounted.delivery.close() }
+})
+
+it.each([false, true])('settles a world lost during materialization before any model request (confirmed=%s)', async (confirmed) => {
+  const calls: string[] = []
+  const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'materialization-loss' })
+  const base = workspaceProvider(calls, async () => {}, true, world)
+  const provider: TeamWorkspaceProvider = { ...base, async prepare(request) {
+    const preparation = await base.prepare(request)
+    return { ...preparation, async materialize() {
+      throw new TeamWorkspaceLostError({ executionWorld: world, reason: confirmed ? 'sandbox-expired' : 'manifest-missing',
+        terminationProven: confirmed, artifacts: [] })
+    } }
+  } }
+  const model = new ReplyAdapter()
+  const requests = vi.spyOn(model, 'stream')
+  const ctx = await setup(true, model, { consumeWorkspace: true }, provider)
+  const input = await directChannel(ctx)
+  const receiver = await ctx.agents.create({ sessionId: SessionId('materialization-loss-recipient'),
+    meta: { teamId: input.team.id, participantId: input.recipient.id }, agentOptions: { provider: 'mock', model: 'mock' } })
+  const binding = await bindRecipient(ctx, input, receiver.agent.session.id)
+  const assignment = await assignTask(ctx, input, binding, '', 'shared', 2)
+  await vi.waitFor(async () => {
+    const state = await ctx.teams.getTeam({ teamId: input.team.id })
+    expect(state.workspaceAllocations[0]).toMatchObject({ lifecycle: confirmed ? 'released' : 'unavailable',
+      loss: { terminationProven: confirmed } })
+    expect(state.tasks.find(task => task.id === assignment.task.id)?.phase).toBe('pending')
+    expect(state.team.phase).toBe(confirmed ? 'active' : 'stalled')
+  })
+  expect(requests).not.toHaveBeenCalled()
+  expect(calls).toContain('abandon')
+})
+
+it.each([
+  { confirmed: false, preserved: false }, { confirmed: true, preserved: false },
+  { confirmed: false, preserved: true }, { confirmed: true, preserved: true },
+])('keeps persisted loss unavailable until termination is confirmed ($confirmed, preserved=$preserved)', async ({ confirmed, preserved }) => {
+  const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'persisted-loss-world' })
+  const mounted = await workspaceRecoveryFixture(undefined, true, 1_000, undefined, { executionWorld: world })
+  const running = await mounted.ctx.teams.getTask({ teamId: mounted.input.team.id, taskId: mounted.seeded.assignment.task.id })
+  await mounted.ctx.teams.settleTaskAttempt({ actor: await activeActor(mounted.ctx, mounted.input.team.id, mounted.input.recipient),
+    taskId: running.id, attemptId: running.lease!.attemptId, expectedRevision: running.revision, outcome: { kind: 'released' } })
+  const state = await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })
+  const snapshot = state.workspaceAllocations[0]!
+  const input = { teamId: state.team.id, expectedCursor: state.team.cursor, allocationId: snapshot.id, expectedRevision: snapshot.revision,
+    loss: { executionWorld: world, reason: confirmed ? 'sandbox-expired' as const : 'manifest-missing' as const,
+      terminationProven: confirmed, artifacts: [] } }
+  await withWorkspaceAllocationProof(mounted.ctx, { kind: 'workspace-allocation-loss', ...input },
+    async actor => await mounted.ctx.teams.recordWorkspaceAllocationLoss({ actor, ...input }))
+  if (preserved) {
+    const current = await mounted.ctx.teams.getTeam({ teamId: state.team.id })
+    const preserve = { teamId: state.team.id, expectedCursor: current.team.cursor, allocationId: snapshot.id,
+      expectedRevision: current.workspaceAllocations[0]!.revision, reason: { code: 'retained', message: 'Preserve loss evidence' } }
+    await withWorkspaceAllocationProof(mounted.ctx, { kind: 'workspace-allocation-preserve', ...preserve },
+      async actor => await mounted.ctx.teams.preserveWorkspaceAllocation({ actor, ...preserve }))
+  }
+  const restore = vi.spyOn(mounted.ctx.teamWorkspaces, 'restore')
+  const connect = vi.spyOn(mounted.ctx.teamLinks, 'connect')
+  try {
+    mounted.delivery.start()
+    await vi.waitFor(() => { expect(connect).toHaveBeenCalledOnce() })
+    expect(restore).not.toHaveBeenCalled()
+    if (confirmed) expect(resolveAgentWorkspaceRoot(mounted.receiver.agent)).toBe('/session/recovery-fixture')
+    else expect(() => resolveAgentWorkspaceRoot(mounted.receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
+    expect((await mounted.ctx.teams.getTeam({ teamId: state.team.id })).workspaceAllocations[0]?.lifecycle)
+      .toBe(confirmed ? 'released' : preserved ? 'preserved' : 'unavailable')
+  } finally { await mounted.delivery.close() }
+})
+
+it('does not read or recover a finished task turn after its Agent object leaves the registry', async () => {
+  const mounted = await workspaceRecoveryFixture()
+  try {
+    mounted.delivery.start()
+    await waitWorkspaceTurn(mounted)
+    const event = mounted.receiver.agent.session.events.findLast(value => value.type === 'turn/end')!
+    const get = vi.spyOn(mounted.ctx.agents, 'get').mockReturnValueOnce(undefined)
+    const read = vi.spyOn(mounted.ctx.teams, 'getTeam')
+    mounted.delivery.observeTurnEnd(event)
+    expect(read).not.toHaveBeenCalled()
+    expect(get).toHaveBeenCalled()
+    get.mockRestore()
+    read.mockRestore()
+  } finally { await mounted.delivery.close() }
+})
+
+it('ignores a late provider loss callback after its allocation ownership was released', async () => {
+  const test = await workspaceLossFixture()
+  const notify = test.captureLossListener()
+  await test.lose('sandbox-expired')
+  const before = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+  await notify({ executionWorld: test.world, reason: 'sandbox-expired', terminationProven: true, artifacts: [] })
+  expect((await test.ctx.teams.getTeam({ teamId: test.input.team.id })).team.cursor).toBe(before.team.cursor)
+  expect(test.release).toHaveBeenCalledOnce()
+})
+
+it('does not acknowledge task cancellation after the delivery closes during physical release', async () => {
+  const mounted = await publicationFixture()
+  let closing: Promise<void> | undefined
+  mounted.release.mockImplementationOnce(async () => { closing = mounted.delivery.close() })
+  try {
+    await cancelFixtureTask(mounted.ctx, mounted.input.team.id, mounted.request.taskId)
+    await vi.waitFor(() => { expect(closing).toBeDefined() })
+    await closing
+    const task = await mounted.ctx.teams.getTask({ teamId: mounted.input.team.id, taskId: mounted.request.taskId })
+    expect(task.phase).toBe('running')
+    expect(task.cancellation).toBeDefined()
+    expect(mounted.release).toHaveBeenCalledOnce()
+  } finally { await mounted.close() }
+})
+
+it('settles restore-reported expiry for an attempt whose release is already durable', async () => {
+  const world = teamWorkspaceExecutionWorldSchema.parse({ kind: 'e2b', id: 'settled-restore-world' })
+  const mounted = await workspaceRecoveryFixture(undefined, true, 1_000, undefined, { executionWorld: world })
+  const running = await mounted.ctx.teams.getTask({ teamId: mounted.input.team.id, taskId: mounted.seeded.assignment.task.id })
+  await mounted.ctx.teams.settleTaskAttempt({ actor: await activeActor(mounted.ctx, mounted.input.team.id, mounted.input.recipient),
+    taskId: running.id, attemptId: running.lease!.attemptId, expectedRevision: running.revision, outcome: { kind: 'released' } })
+  const restore = vi.spyOn(mounted.ctx.teamWorkspaces, 'restore').mockRejectedValueOnce(new TeamWorkspaceLostError({
+    executionWorld: world, reason: 'sandbox-expired', terminationProven: true, artifacts: [],
+  }))
+  const connect = vi.spyOn(mounted.ctx.teamLinks, 'connect')
+  try {
+    mounted.delivery.start()
+    await vi.waitFor(() => { expect(connect).toHaveBeenCalledOnce() })
+    expect(restore).toHaveBeenCalledOnce()
+    expect((await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })).workspaceAllocations[0]?.lifecycle).toBe('released')
+    expect(() => resolveAgentWorkspaceRoot(mounted.receiver.agent)).toThrow(AgentWorkspaceUnavailableError)
+  } finally { await mounted.delivery.close() }
+})
+
+it('cancels the attempt instead of scheduling retry when workspace loss follows Team closure', async () => {
+  const test = await workspaceLossFixture()
+  const actor = await coordinatorTaskActor(test.ctx, test.input.team.id)
+  const state = await test.ctx.teams.getTeam({ teamId: test.input.team.id })
+  await test.ctx.teams.failTeam({ actor, teamId: state.team.id, expectedCursor: state.team.cursor,
+    idempotencyKey: teamClosureIdempotencyKeySchema.parse('workspace-loss-close'),
+    reason: { code: 'RUN_FAILED', message: 'Stop this Team' } })
+  await test.lose('sandbox-expired')
+  const final = await test.ctx.teams.getTeam({ teamId: state.team.id })
+  expect(final.tasks.find(task => task.id === test.assignment.task.id)).toMatchObject({
+    phase: 'cancelled', attemptHistory: [{ outcome: { kind: 'cancelled' } }],
+  })
+  expect(test.release).toHaveBeenCalledOnce()
+})
+
+it('keeps activation workspace settlement pending until accepted materialization has returned', async () => {
+  const mounted = await liveWorkspaceFixture(true, true)
+  const materialize = mounted.ctx.teamWorkspaces.materialize.bind(mounted.ctx.teamWorkspaces)
+  const entered = Promise.withResolvers<undefined>(), finish = Promise.withResolvers<undefined>()
+  vi.spyOn(mounted.ctx.teamWorkspaces, 'materialize').mockImplementationOnce(async (...args) => {
+    entered.resolve(undefined)
+    await finish.promise
+    return await materialize(...args)
+  })
+  let settlement: Promise<void> | undefined
+  try {
+    await assignTask(mounted.ctx, mounted.input, mounted.binding)
+    await entered.promise
+    let settled = false
+    settlement = settleAgentWorkspaceLease(mounted.receiver.agent).then(() => { settled = true })
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(settled).toBe(false)
+    finish.resolve(undefined)
+    await settlement
+    await mounted.receiver.agent.whenIdle()
+    expect(mounted.calls).toContain('release')
+    expect((await mounted.ctx.teams.getTeam({ teamId: mounted.input.team.id })).workspaceAllocations[0]?.lifecycle).toBe('released')
+  } finally { finish.resolve(undefined); await settlement; await mounted.delivery?.close() }
 })

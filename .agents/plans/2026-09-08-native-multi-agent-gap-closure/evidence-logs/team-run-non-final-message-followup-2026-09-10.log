@@ -1,0 +1,12 @@
+# TeamRun non-final channel-message lifecycle follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Commands:
+
+    env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/team/team-run/tests/team-run.spec.ts --no-file-parallelism
+    pnpm exec tsc -b packages/team/team-run/tsconfig.json
+
+Result: TeamRun file 94/94 tests passed; package TypeScript face exited 0.
+
+Scope: a real `tool-team` composition successfully posts a non-final `team_message`, leaves the Team active after coordinator turn end, retains the WAL message, and then cancels the Team; ordinary missing-final, model failure, max-tokens, and cancellation regressions remain covered by the same full file.

@@ -1,0 +1,207 @@
+{
+  "scope": "Team public snapshot construction without copying checkpoint-only fields",
+  "profiles": [
+    {
+      "label": "json-profile",
+      "profile": ".tmp-simulation-development/json-profile/CPU.20260922.140152.63772.0.001.cpuprofile",
+      "profileSha256": "8f0d31f281e1244330457962200feadf2bca1355dda2ddc3534cba8db5eb6576",
+      "raw": ".tmp-simulation-development/json-profile/output.log",
+      "rawSha256": "5237e4bb97744003987674e5c2055eb79ac9d764e661e09198d87ef2d7be955c",
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "scripted-cognition",
+        "completion": "time-budget",
+        "setupMs": 11290.197417,
+        "entitySetupMs": 7.968417000000045,
+        "participantSetupMs": 10248.114792,
+        "nominationSetupMs": 829.2441660000004,
+        "workMs": 8111.029791999999,
+        "completed": 20,
+        "requested": 1000,
+        "modelCalls": 60,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 2.4657781456710004,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 10,
+        "starts": 20,
+        "resumes": 0,
+        "uniqueServed": 20,
+        "neverServed": 180,
+        "maxSelectedWaitRounds": 0,
+        "queuedDecisions": 200,
+        "syntheticUsage": true,
+        "reportedTokens": 900,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 20,
+            "elapsedMs": 8111.029791999999,
+            "p50Ms": 4310.428333999998,
+            "p95Ms": 5640.590291999999,
+            "p99Ms": 5682.655125000001
+          },
+          "window": {
+            "count": 1,
+            "elapsedMs": 8111.029791999999,
+            "p50Ms": 8110.824624999999,
+            "p95Ms": 8110.824624999999,
+            "p99Ms": 8110.824624999999
+          },
+          "placement": {
+            "count": 20,
+            "elapsedMs": 1800.3896229999955,
+            "p50Ms": 89.97879099999955,
+            "p95Ms": 101.44683299999997,
+            "p99Ms": 108.29891700000007
+          }
+        },
+        "checkpointMs": 1885.7578329999997,
+        "restoreMs": 194.33391699999993,
+        "peakRssBytes": 637501440,
+        "diskBytes": 3282983,
+        "bytesBeforeClose": 3283585,
+        "cpuMicros": {
+          "user": 11362676,
+          "system": 2287855
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "sampledCpuMs": {
+        "structuredClone": 2994.413,
+        "serializeLog": 1994.148,
+        "(idle)": 12440.008,
+        "(garbage collector)": 358.015
+      }
+    },
+    {
+      "label": "json-profile-after",
+      "profile": ".tmp-simulation-development/json-profile-after/CPU.20260922.140409.65214.0.001.cpuprofile",
+      "profileSha256": "1e7d3e9e8a840ba2cddea1d64543c06cc4264a492ab9d07b999187cb460aa1ab",
+      "raw": ".tmp-simulation-development/json-profile-after/output.log",
+      "rawSha256": "728b464ded0be09d167d478e2a588a0ee2b5a20dbefa5d99b861653c8bba6f4c",
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "scripted-cognition",
+        "completion": "time-budget",
+        "setupMs": 10474.207583,
+        "entitySetupMs": 19.634291000000076,
+        "participantSetupMs": 8902.46025,
+        "nominationSetupMs": 1493.8493330000001,
+        "workMs": 6779.011749999998,
+        "completed": 20,
+        "requested": 1000,
+        "modelCalls": 60,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 2.9502825393391605,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 10,
+        "starts": 20,
+        "resumes": 0,
+        "uniqueServed": 20,
+        "neverServed": 180,
+        "maxSelectedWaitRounds": 0,
+        "queuedDecisions": 200,
+        "syntheticUsage": true,
+        "reportedTokens": 900,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 20,
+            "elapsedMs": 6779.011749999998,
+            "p50Ms": 4049.5554589999992,
+            "p95Ms": 4538.285667000002,
+            "p99Ms": 4596.395375
+          },
+          "window": {
+            "count": 1,
+            "elapsedMs": 6779.011749999998,
+            "p50Ms": 6778.857375,
+            "p95Ms": 6778.857375,
+            "p99Ms": 6778.857375
+          },
+          "placement": {
+            "count": 20,
+            "elapsedMs": 1668.0940830000018,
+            "p50Ms": 84.58416700000089,
+            "p95Ms": 88.3825829999987,
+            "p99Ms": 93.68483399999968
+          }
+        },
+        "checkpointMs": 1761.9105419999978,
+        "restoreMs": 179.01891599999726,
+        "peakRssBytes": 641892352,
+        "diskBytes": 3282983,
+        "bytesBeforeClose": 3283585,
+        "cpuMicros": {
+          "user": 10915961,
+          "system": 1922163
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "sampledCpuMs": {
+        "structuredClone": 2973.466,
+        "serializeLog": 2204.169,
+        "(idle)": 10377.015,
+        "(garbage collector)": 340.72
+      }
+    }
+  ],
+  "scaleReport": ".tmp-simulation-development/benchmarks/json-actors-bjzVUc/report.json",
+  "scaleReportSha256": "abddee0944955da859b6d468a372953452bd385ce058211006312ad98eaf080f",
+  "scaleResult": {
+    "version": 2,
+    "layer": "scripted-cognition",
+    "lastPhase": "workload",
+    "options": {
+      "backend": "json",
+      "entities": 1000,
+      "operations": 100000,
+      "durationMs": 15000,
+      "timeoutMs": 180000,
+      "sampleEvery": 100,
+      "entityBatchSize": 100,
+      "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+      "workload": "actors",
+      "residents": 20,
+      "models": 10,
+      "modelDelayMs": 100
+    },
+    "mode": "src",
+    "hardware": {
+      "platform": "darwin",
+      "release": "27.0.0",
+      "arch": "arm64",
+      "node": "v25.9.0",
+      "cpus": 12,
+      "cpuModel": "Apple M4 Pro",
+      "memoryBytes": 25769803776
+    },
+    "sourceDigest": "d6bc3ab277ed6ccd5414e609d0cb68eccad422bf8bcd345738818c8f37b5ad59",
+    "sourceFiles": 3204,
+    "elapsedMs": 191153.268833,
+    "timedOut": true,
+    "interrupted": false,
+    "exitCode": null,
+    "signal": "SIGKILL",
+    "status": "timeout",
+    "lastProgress": {
+      "kind": "progress",
+      "phase": "participants",
+      "participants": 600,
+      "peakRssBytes": 736935936
+    }
+  },
+  "conclusion": "Single profiled samples do not establish a performance win. The 1000-entity JSON workload still timed out; scale acceptance remains open."
+}

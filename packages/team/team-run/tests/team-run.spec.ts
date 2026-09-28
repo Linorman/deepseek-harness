@@ -19,7 +19,7 @@ import TeamHub from '@clocky/clocky-team-hub'
 import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
 import * as TeamPlacement from '@clocky/clocky-team-placement-default'
 import * as ToolTeam from '@clocky/clocky-tool-team'
-import { fingerprintTeamChildResultContent, teamChildRunBindingSchema, teamDelegationResultAdmissionSchema, teamTaskSnapshotSchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema, TeamError } from '@clocky/clocky-team'
+import { jsonObjectSchema, fingerprintTeamChildResultContent, teamChildRunBindingSchema, teamDelegationResultAdmissionSchema, teamTaskSnapshotSchema, channelPostIdempotencyKeySchema, teamTaskCreateIdempotencyKeySchema, teamWorkflowPlanIdempotencyKeySchema, teamWorkflowPlanSchema, TeamError } from '@clocky/clocky-team'
 import type {
   ActivationActorProofIssuer,
   ParticipantSnapshot,
@@ -3862,4 +3862,368 @@ describe('local Team run', () => {
       await ctx.fiber.dispose()
     }
   })
+})
+
+/** Reserve a real child and retain only the parent's scoped startup authority. */
+async function reservedChild(childModel: LlmAdapter = new ReplyAdapter()) {
+  const model = new GateAdapter()
+  try {
+    const ctx = await setup(true, { templateId: 'fixture', workerCount: 0, maxWorkerCount: 0 }, model, true,
+      { maxTeamDepth: 2 })
+    const basic = await import('@clocky/clocky-team-channel-basic')
+    await ctx.plugin(basic)
+    const { createTestChildTeam } = await import('../../../core/team/tests/bootstrap-topology-authority.ts')
+    const cwd = await freshRoot()
+    const parent = await ctx.teamRuns.create({ objective: 'Own one child', cwd })
+    await ctx.teamRuns.postHumanInput({ teamId: parent.teamId, content: [{ type: 'text', text: 'Delegate the work' }] })
+    await model.started.promise
+    const coordinator = parent.coordinatorLease.localAgent!
+    const authority = ctx.teamRuns.coordinatorTaskAuthority(coordinator)
+    const accepted = await ctx.agents.withInitiator(coordinator, () => ctx.teamRuns.startDelegatedTask(authority, {
+      idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('child-runtime'), subject: 'Child task',
+      instructions: 'Perform the child task', readScopes: [], writeScopes: [], budget: {},
+    }))
+    const task = await ctx.teams.getTask({ teamId: parent.teamId, taskId: accepted.id })
+    if (task.execution.kind !== 'child-team' || task.delegation === undefined) throw new Error('Fixture child task missing')
+    const proofs = new Map<import('@clocky/clocky-team').TeamSystemDelegationProof, import('@clocky/clocky-team').TeamSystemDelegationScope>()
+    ctx.teams.registerSystemDelegationProofSource({ name: 'team-delegation', resolveDelegationProof: proof => proofs.get(proof),
+      resolveChildWorkspace: async () => cwd })
+    const issue = (scope: import('@clocky/clocky-team').TeamSystemDelegationScope) => {
+      const proof = Object.freeze({}) as import('@clocky/clocky-team').TeamSystemDelegationProof
+      proofs.set(proof, scope)
+      return proof
+    }
+    const current = async () => {
+      const state = await ctx.teams.getTeam({ teamId: parent.teamId })
+      const latest = state.tasks.find(candidate => candidate.id === task.id)!
+      return { teamId: parent.teamId, taskId: task.id, expectedCursor: state.team.cursor,
+        expectedRevision: latest.revision, delegationId: task.delegation!.id }
+    }
+    ctx.llm.registerAdapter(['child-fixture'], childModel)
+    const template = ctx.teamRuns.describeChildTemplate('fixture', 1)
+    const runtime = jsonObjectSchema.parse(template['childRuntime'])
+    const begin = { ...await current(), child: { goal: { objective: task.description, budgets: {} },
+      rules: { ...template, childRuntime: { ...runtime, selection: { provider: 'child-fixture', model: 'mock' } }, workspacePath: cwd },
+      budgets: {}, authorityGrant: task.execution.authorityGrant } }
+    const reserved = await ctx.teams.beginTaskDelegation({ ...begin, actor: issue({ kind: 'delegation-begin', ...begin }) })
+    const child = await createTestChildTeam(ctx, reserved.delegation!.creation!)
+    const input = { ...await current(), childTeamId: child.team.id }
+    await ctx.teams.bindTaskDelegation({ ...input, actor: issue({ kind: 'delegation-bind', ...input }) })
+    const scope = { kind: 'delegation-authorize-run' as const, ...await current(), operation: 'start' as const }
+    const actor = issue(scope)
+    const authorization = await ctx.teams.authorizeChildRun({ ...await current(), operation: 'start', actor })
+    const request = { parentTeamId: parent.teamId, parentTaskId: task.id, childTeamId: child.team.id,
+      delegationId: task.delegation.id, authorization }
+    return { ctx, child, request, actor, scope, model, proofs, issue, current,
+      cancelParent: () => ctx.agents.withInitiator(coordinator,
+        () => ctx.teamRuns.cancelDefaultWorkerTask(authority, { taskId: task.id })) }
+  } catch (error: unknown) { model.release.resolve(undefined); throw error }
+}
+
+describe('reserved child runtime ownership', () => {
+  it('coalesces concurrent startup and retains one durable endpoint binding', async () => {
+    const { ctx, child, request, model } = await reservedChild()
+    try {
+      const [first, second] = await Promise.all([ctx.teamRuns.startChild(request), ctx.teamRuns.startChild(request)])
+      expect(second).toEqual(first)
+      expect(await ctx.teamRuns.startChild(request)).toEqual(first)
+      const current = await ctx.teams.getTeam({ teamId: child.team.id })
+      expect(current.team.childRun).toEqual(first)
+      expect(current.participants.map(member => member.role).sort()).toEqual(['coordinator', 'parent-service'])
+      expect(current.activations).toHaveLength(1)
+      expect(current.channelIds).toEqual([first.channelId])
+    } finally { model.release.resolve(undefined); request.authorization.close() }
+  })
+})
+
+it('cancels one child under fresh parent authority after releasing its execution lease', async () => {
+  const f = await reservedChild()
+  try {
+    const binding = await f.ctx.teamRuns.startChild(f.request)
+    await f.cancelParent()
+    const input = { ...await f.current(), operation: 'cancel' as const }
+    const authorization = await f.ctx.teams.authorizeChildRun({ ...input, actor: f.issue({ kind: 'delegation-authorize-run', ...input }) })
+    try {
+      let stopped = await f.ctx.teamRuns.cancelChild({ ...f.request, authorization })
+      expect(stopped.team.cancellation).toMatchObject({ reason: { code: 'PARENT_DELEGATION_CANCELLED' } })
+      await vi.waitFor(async () => {
+        stopped = await f.ctx.teamRuns.cancelChild({ ...f.request, authorization })
+        expect(stopped.team.phase).toBe('cancelled')
+      })
+      expect(stopped.team.childRun).toEqual(binding)
+      expect(stopped.activations.every(value => value.activation.status === 'offline' && value.quiescedAt !== undefined)).toBe(true)
+      expect((await f.ctx.teamRuns.cancelChild({ ...f.request, authorization })).team.phase).toBe('cancelled')
+    } finally { authorization.close() }
+  } finally { f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it.each(['missing', 'partial', 'invalid'] as const)('rejects %s frozen child runtime configuration before publishing resources', async (variant) => {
+  const f = await reservedChild()
+  const read = f.ctx.teams.getTeam.bind(f.ctx.teams)
+  const fault = vi.spyOn(f.ctx.teams, 'getTeam').mockImplementation(async (request) => {
+    const state = await read(request)
+    if (request.teamId !== f.child.team.id) return state
+    return { ...state, rules: { ...state.rules, childRuntime: variant === 'missing' ? null : {
+      config: variant === 'partial' ? {} : { workerCount: -1 }, selection: { provider: 'mock', model: 'mock' },
+    } } }
+  })
+  try {
+    await expect(f.ctx.teamRuns.startChild(f.request)).rejects.toThrow()
+    fault.mockRestore()
+    const state = await read({ teamId: f.child.team.id })
+    expect(state.participants).toEqual([])
+    expect(state.activations).toEqual([])
+    expect(state.channelIds).toEqual([])
+    expect((await f.ctx.teamRuns.startChild(f.request)).childTeamId).toBe(f.child.team.id)
+  } finally { fault.mockRestore(); f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it('drains cancelled child startup before acknowledging cancellation', async () => {
+  const f = await reservedChild()
+  const entered = Promise.withResolvers<undefined>()
+  const release = Promise.withResolvers<undefined>()
+  const activate = f.ctx.teamActivations.activate.bind(f.ctx.teamActivations)
+  const hold = vi.spyOn(f.ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+    if (request.teamId === f.child.team.id) { entered.resolve(undefined); await release.promise }
+    return await activate(request)
+  })
+  let authorization: typeof f.request.authorization | undefined
+  try {
+    const starting = f.ctx.teamRuns.startChild(f.request)
+    const rejected = expect(starting).rejects.toThrow()
+    await entered.promise
+    await f.cancelParent()
+    const input = { ...await f.current(), operation: 'cancel' as const }
+    authorization = await f.ctx.teams.authorizeChildRun({ ...input, actor: f.issue({ kind: 'delegation-authorize-run', ...input }) })
+    let settled = false
+    const cancelling = f.ctx.teamRuns.cancelChild({ ...f.request, authorization }).then((result) => { settled = true; return result })
+    await vi.waitFor(async () => { expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.cancellation).toBeDefined() })
+    expect(settled).toBe(false)
+    release.resolve(undefined)
+    await rejected
+    expect((await cancelling).team.phase).toBe('cancelled')
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).activations).toEqual([])
+  } finally {
+    release.resolve(undefined); hold.mockRestore(); authorization?.close()
+    f.model.release.resolve(undefined); f.request.authorization.close()
+  }
+})
+
+it('recovers a stopped child with the same participants, channel and Session', async () => {
+  const f = await reservedChild()
+  try {
+    const first = await f.ctx.teamRuns.startChild(f.request)
+    const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
+    const previous = owner.handle.coordinatorLease.binding
+    await topologyReleaseInternals(f.ctx.teamRuns).releaseRun(owner)
+    ownedRuns(f.ctx.teamRuns).delete(f.child.team.id)
+    expect(await f.ctx.teamRuns.startChild(f.request)).toEqual(first)
+    const current = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+    expect(current.participants).toHaveLength(2)
+    expect(current.channelIds).toEqual([first.channelId])
+    expect(current.activations).toHaveLength(2)
+    expect(current.activations[0]).toMatchObject({ activation: { id: previous.activation.id, status: 'offline' } })
+    expect(current.activations[1]).toMatchObject({ sessionId: previous.sessionId, activation: { status: 'idle' } })
+    expect(current.activations[1]!.activation.id).not.toBe(previous.activation.id)
+  } finally { f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it('keeps child startup in disposal until admitted activation IO stops', async () => {
+  const f = await reservedChild()
+  const entered = Promise.withResolvers<undefined>()
+  const release = Promise.withResolvers<undefined>()
+  const activate = f.ctx.teamActivations.activate.bind(f.ctx.teamActivations)
+  const hold = vi.spyOn(f.ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+    if (request.teamId === f.child.team.id) { entered.resolve(undefined); await release.promise }
+    return await activate(request)
+  })
+  try {
+    const rejected = expect(f.ctx.teamRuns.startChild(f.request)).rejects.toThrow()
+    await entered.promise
+    f.model.release.resolve(undefined)
+    let closed = false
+    const closing = f.ctx.teamRuns.close().then(() => { closed = true })
+    await Promise.resolve()
+    expect(closed).toBe(false)
+    release.resolve(undefined)
+    await rejected
+    await closing
+    expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).activations).toEqual([])
+    await expect(f.ctx.teamRuns.startChild(f.request)).rejects.toMatchObject({ code: 'TEAM_RUN_DISPOSED' })
+  } finally { release.resolve(undefined); hold.mockRestore(); f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it.each(['missing-result', 'model-error'] as const)('records a child %s after its coordinator turn ends', async (outcome) => {
+  const f = await reservedChild(outcome === 'model-error' ? new FailureAdapter() : new ReplyAdapter())
+  try {
+    await f.ctx.teamRuns.startChild(f.request)
+    const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
+    const agent = owner.handle.coordinatorLease.localAgent!
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Perform the delegated work' }], source: { kind: 'user' } }))
+    await agent.whenIdle()
+    await vi.waitFor(async () => {
+      const state = await f.ctx.teams.getTeam({ teamId: f.child.team.id })
+      if (outcome === 'model-error') expect(state.team.closure).toMatchObject({ kind: 'fail', reason: { code: 'SERVER' } })
+      else expect(state.team.phase).toBe('stalled')
+    })
+  } finally { f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it('retries a child failure after a Team cursor conflict with the same durable failure key', async () => {
+  const f = await reservedChild(new FailureAdapter())
+  const fail = f.ctx.teams.failTeam.bind(f.ctx.teams)
+  const requests: import('@clocky/clocky-team').TeamFailRequest[] = []
+  const conflict = vi.spyOn(f.ctx.teams, 'failTeam').mockImplementation(async (request) => {
+    if (request.teamId === f.child.team.id) {
+      requests.push(request)
+      if (requests.length === 1) throw new TeamError('Concurrent activation status update', 'TEAM_CURSOR_CONFLICT')
+    }
+    return await fail(request)
+  })
+  try {
+    await f.ctx.teamRuns.startChild(f.request)
+    const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
+    const agent = owner.handle.coordinatorLease.localAgent!
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Fail this delegated attempt' }], source: { kind: 'user' } }))
+    await agent.whenIdle()
+    await vi.waitFor(async () => {
+      expect((await f.ctx.teams.getTeam({ teamId: f.child.team.id })).team.closure).toMatchObject({ kind: 'fail' })
+    })
+    expect(requests.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(requests.map(request => request.idempotencyKey)).size).toBe(1)
+    expect(requests[0]!.actor).not.toBe(requests[1]!.actor)
+    await expect(fail(requests[0]!)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { conflict.mockRestore(); f.model.release.resolve(undefined); f.request.authorization.close() }
+})
+
+it.each(['replaced', 'released'] as const)('does not publish a late child failure from a %s local owner', async (lifecycle) => {
+  const f = await reservedChild(new FailureAdapter())
+  await f.ctx.teamRuns.startChild(f.request)
+  const owner = ownedRuns(f.ctx.teamRuns).get(f.child.team.id)!
+  const agent = owner.handle.coordinatorLease.localAgent!
+  const read = f.ctx.teams.getTeam.bind(f.ctx.teams)
+  let retired = false
+  const serviceContext = (f.ctx.teamRuns as unknown as { readonly ctx: Context }).ctx
+  const warning = vi.spyOn(serviceContext.logger, 'warn').mockImplementation(() => {})
+  const fail = vi.spyOn(f.ctx.teams, 'failTeam')
+  const retire = vi.spyOn(f.ctx.teams, 'getTeam').mockImplementation(async (request) => {
+    const state = await read(request)
+    if (!retired && request.teamId === f.child.team.id && agent.session.events.at(-1)?.type === 'turn/end') {
+      retired = true
+      if (lifecycle === 'replaced') ownedRuns(f.ctx.teamRuns).delete(f.child.team.id)
+      else await topologyReleaseInternals(f.ctx.teamRuns).releaseRun(owner)
+    }
+    return state
+  })
+  try {
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'Fail the retired child' }], source: { kind: 'user' } }))
+    await agent.whenIdle()
+    await vi.waitFor(() => { expect(warning).toHaveBeenCalled() })
+    expect(retired).toBe(true)
+    expect(fail).not.toHaveBeenCalled()
+    expect((await read({ teamId: f.child.team.id })).team.closure).toBeUndefined()
+  } finally {
+    retire.mockRestore(); fail.mockRestore(); warning.mockRestore()
+    if (lifecycle === 'replaced') ownedRuns(f.ctx.teamRuns).set(f.child.team.id, owner)
+    f.model.release.resolve(undefined); f.request.authorization.close()
+  }
+})
+
+it.each(['before-activation', 'after-activation'] as const)('drains an accepted coordinator resume %s before disposal returns', async (stage) => {
+  const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 })
+  const original = await ctx.teamRuns.create({ objective: 'Drain resumed activation', cwd: process.cwd() })
+  await original.coordinatorLease.dispose()
+  ownedRuns(ctx.teamRuns).delete(original.teamId)
+  const entered = Promise.withResolvers<undefined>()
+  const release = Promise.withResolvers<undefined>()
+  const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+  const hold = vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+    const lease = stage === 'after-activation' ? await activate(request) : undefined
+    entered.resolve(undefined)
+    await release.promise
+    return lease ?? await activate(request)
+  })
+  const resuming = ctx.teamRuns.resume({ teamId: original.teamId, signal: new AbortController().signal })
+  const rejected = expect(resuming).rejects.toThrow()
+  await entered.promise
+  let closed = false
+  const closing = ctx.teamRuns.close().then(() => { closed = true })
+  try {
+    await new Promise<void>((resolve) => { setImmediate(resolve) })
+    expect(closed).toBe(false)
+  } finally {
+    release.resolve(undefined)
+    await rejected
+    await closing
+    hold.mockRestore()
+  }
+  const state = await ctx.teams.getTeam({ teamId: original.teamId })
+  expect(state.activations.every(binding => binding.activation.status === 'offline' && binding.quiescedAt !== undefined)).toBe(true)
+  expect(state.activations).toHaveLength(stage === 'before-activation' ? 1 : 2)
+  expect(ctx.agents.list()).toEqual([])
+})
+
+it('selects the newest coordinator epoch before attempting another resume', async () => {
+  const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 })
+  const first = await ctx.teamRuns.create({ objective: 'Keep a live successor fenced', cwd: process.cwd() })
+  await first.coordinatorLease.dispose()
+  ownedRuns(ctx.teamRuns).delete(first.teamId)
+  const second = await ctx.teamRuns.resume({ teamId: first.teamId })
+  const retained = ownedRuns(ctx.teamRuns).get(first.teamId)!
+  ownedRuns(ctx.teamRuns).delete(first.teamId)
+  const activate = vi.spyOn(ctx.teamActivations, 'activate')
+  try {
+    await expect(ctx.teamRuns.resume({ teamId: first.teamId })).rejects.toMatchObject({ code: 'TEAM_RUN_START_CONFLICT' })
+    expect(activate).not.toHaveBeenCalled()
+    const current = await ctx.teams.getTeam({ teamId: first.teamId })
+    expect(current.activations).toHaveLength(2)
+    expect(current.activations[1]!.activation.id).toBe(second.coordinatorLease.binding.activation.id)
+    expect(current.activations[1]!.activation.status).toBe('idle')
+  } finally { activate.mockRestore(); ownedRuns(ctx.teamRuns).set(first.teamId, retained) }
+})
+
+it('quiesces retained coordinator leases when the TeamRun plugin fiber is removed', async () => {
+  const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 })
+  const service = ctx.teamRuns
+  const run = await service.create({ objective: 'Unload the owner plugin', cwd: process.cwd() })
+  const runtime = ctx.registry.get(TeamRun)
+  if (runtime === undefined) throw new Error('Fixture TeamRun plugin missing')
+  for (const fiber of [...runtime.fibers]) await fiber.dispose()
+  const state = await ctx.teams.getTeam({ teamId: run.teamId })
+  expect(state.activations).toHaveLength(1)
+  expect(state.activations[0]).toMatchObject({ activation: { status: 'offline' } })
+  expect(state.activations[0]!.quiescedAt).toBeTypeOf('number')
+  expect(ctx.agents.list()).toEqual([])
+  await expect(service.create({ objective: 'Late create', cwd: process.cwd() })).rejects.toMatchObject({ code: 'TEAM_RUN_DISPOSED' })
+  await ctx.plugin(TeamRun, { workerCount: 0, maxWorkerCount: 0 })
+  const resumed = await ctx.teamRuns.resume({ teamId: run.teamId })
+  expect(resumed.coordinatorLease.binding.sessionId).toBe(run.coordinatorLease.binding.sessionId)
+})
+
+it('reports coordinator cleanup failure to both the resume caller and the closing owner', async () => {
+  const ctx = await setup(true, { workerCount: 0, maxWorkerCount: 0 })
+  const original = await ctx.teamRuns.create({ objective: 'Retain failed resume cleanup', cwd: process.cwd() })
+  await original.coordinatorLease.dispose()
+  ownedRuns(ctx.teamRuns).delete(original.teamId)
+  const entered = Promise.withResolvers<TeamActivationLease>()
+  const release = Promise.withResolvers<undefined>()
+  const activate = ctx.teamActivations.activate.bind(ctx.teamActivations)
+  let restore = () => {}
+  const hold = vi.spyOn(ctx.teamActivations, 'activate').mockImplementation(async (request) => {
+    const lease = await activate(request)
+    const dispose = vi.spyOn(lease, 'dispose').mockRejectedValue(new Error('Resume lease cleanup failed'))
+    restore = () => { dispose.mockRestore() }
+    entered.resolve(lease)
+    await release.promise
+    return lease
+  })
+  const resuming = ctx.teamRuns.resume({ teamId: original.teamId })
+  const resumed = resuming.then(() => undefined, (error: unknown) => error)
+  const lease = await entered.promise
+  const closing = ctx.teamRuns.close().then(() => undefined, (error: unknown) => error)
+  try {
+    release.resolve(undefined)
+    expect(await resumed).toBeInstanceOf(AggregateError)
+    expect(await closing).toBeInstanceOf(AggregateError)
+  } finally { restore(); hold.mockRestore(); await lease.dispose() }
 })

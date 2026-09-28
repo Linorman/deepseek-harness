@@ -1,0 +1,7 @@
+- name: '@clocky/clocky-simulation'
+- name: '@clocky/clocky-simulation-local'
+  config:
+    name: local
+    root: !!js process.env.SIMULATION_TEST_ROOT
+    backend: !!js process.env.SIMULATION_TEST_BACKEND
+    replayPageSize: 2

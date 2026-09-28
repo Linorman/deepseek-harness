@@ -1,0 +1,9 @@
+Current candidate typecheck after provider-owned artifact lookup (2026-09-09)
+
+Scope: repository typecheck after adding `TeamRuntime.getArtifact()` and migrating Host/SDK artifact reads.
+
+Command:
+
+`pnpm run typecheck`
+
+Result: exit 0. `build:lib:host` and `typecheck:contracts-ready` both completed; the current candidate host build and client contract faces accepted the new Team service method. This is type/build evidence only and does not claim full repository tests, browser, separate-host, or release closure.

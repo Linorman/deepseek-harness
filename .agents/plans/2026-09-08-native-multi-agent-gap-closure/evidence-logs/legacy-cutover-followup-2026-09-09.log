@@ -1,0 +1,26 @@
+Legacy product/release cutover follow-up (2026-09-09)
+
+Commands:
+
+1. `pnpm exec vitest run packages/core/tools/tests/gen-tool-catalog.spec.ts --pool=forks --maxWorkers=1`
+   Result: 1 file passed; 10 tests passed.
+2. `pnpm run verify-tool-catalog`
+   Result: exit 0; generated product catalog is fresh and omits private compatibility tools.
+3. `pnpm run constraints`
+   Result: exit 0.
+4. `pnpm run verify-runtime-closure`
+   Result: exit 0; 4 presets and 137 runtime workspace packages form a closed carrier graph.
+5. `pnpm exec tsx scripts/release/verify.ts --family clocky`
+   Result: exit 0; 249 public Clocky release members, one reported peer ordering edge.
+6. `CLOCKY_BUILD_CLIENT_PROFILE=official CLOCKY_CLIENT_COMMIT_HASH=fb14b0b pnpm run build`
+   Result: exit 0; official client build record refreshed with 197 client artifacts.
+7. `CLOCKY_CLIENT_COMMIT_HASH=fb14b0b CLOCKY_CLIENT_BUILD_PROFILE=official CLOCKY_CLIENT_TITLE=Clocky pnpm exec tsx scripts/release/pack.ts --family clocky`
+   Result: exit 0; 249 tarballs packed into `dist/npm`.
+8. `pnpm run verify-legacy-cutover`
+   Result: exit 0; 13 private compatibility packages excluded from 249 public members; default configs, product catalog, carrier, explicit compatibility consumers, and packed tarball absence verified.
+9. `node --import tsx/esm scripts/run-oxlint.ts scripts/verify-legacy-cutover.ts scripts/gen-tool-catalog.ts packages/core/tools/tests/gen-tool-catalog.spec.ts scripts/check-workspace-constraints.ts scripts/release/families.ts`
+   Result: exit 0.
+10. `git diff --check`
+    Result: exit 0.
+
+The gate intentionally retains explicit compatibility examples and private test/development consumers; it does not claim that the legacy source packages were deleted or that every cross-platform release consumer has passed.

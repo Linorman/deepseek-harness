@@ -247,3 +247,39 @@ describe('root Team creation authority', () => {
     }
   })
 })
+
+it('reuses only an exact Simulation genesis and rejects foreign source, run and changed payload', async () => {
+  const { ctx } = await setup()
+  try {
+    const { teamIdSchema, teamSystemRootCreationScopeSchema } = await import('@clocky/clocky-team')
+    const input = { ...rootInput('Reserved Simulation root'),
+      rules: { simulationRunId: 'company', activationLifecycleOwner: 'simulation/company' } }
+    const scope = teamSystemRootCreationScopeSchema.parse({ kind: 'simulation-root-create', ...input,
+      runId: 'company', lifecycleOwner: 'simulation/company', teamId: teamIdSchema.parse('reserved-company') })
+    if (scope.kind !== 'simulation-root-create') throw new Error('fixture scope missing')
+    const source = rootCreationAuthority(ctx, 'simulation-team')
+    const wrong = rootCreationAuthority(ctx, 'another-owner').issue(scope)
+    await expect(ctx.teams.createTeam({ ...input, actor: wrong.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const wrongRun = source.issue(teamSystemRootCreationScopeSchema.parse({ ...scope, runId: 'another-run' }))
+    await expect(ctx.teams.createTeam({ ...input, actor: wrongRun.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const good = source.issue(scope)
+    const [first, second] = await Promise.all([
+      ctx.teams.createTeam({ ...input, actor: good.proof }), ctx.teams.createTeam({ ...input, actor: good.proof }),
+    ])
+    expect(first.team.id).toBe(scope.teamId)
+    expect(second).toEqual(first)
+    const changed = { ...input, goal: { objective: 'Changed after creation', budgets: {} } }
+    const changedProof = source.issue({ ...scope, ...changed })
+    await expect(ctx.teams.createTeam({ ...changed, actor: changedProof.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const otherRules = { ...input, rules: { ...input.rules, activationLifecycleOwner: 'another-owner' } }
+    const otherOwner = source.issue({ ...scope, ...otherRules, lifecycleOwner: 'another-owner' })
+    await expect(ctx.teams.createTeam({ ...otherRules, actor: otherOwner.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const revoked = source.issue({ ...scope, teamId: teamIdSchema.parse('revoked-reservation') })
+    ctx.teams.registerPolicy('register', { name: 'revoke-simulation-bootstrap', async apply(_request, next) {
+      revoked.revoke()
+      return await next()
+    } })
+    await expect(ctx.teams.createTeam({ ...input, actor: revoked.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    expect((await ctx.teams.listTeamsPage({ afterCursor: -1, limit: 10 })).items).toHaveLength(1)
+  } finally { await ctx.fiber.dispose() }
+})

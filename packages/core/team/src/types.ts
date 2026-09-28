@@ -926,24 +926,36 @@ export interface TeamRunWorkflowTaskCancelScope extends Omit<TeamRunDefaultWorke
   readonly planId: TeamWorkflowPlanId
 }
 
-/** Closed TeamRun coordinator task-control mutations a system source may select. */
+/** Exact accepted Simulation operation permitted to create one participant task. */
+export interface SimulationTaskCreateScope {
+  readonly kind: 'simulation-task-create'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+  readonly lifecycleOwner: string
+  readonly participantId: ParticipantId
+  readonly publishAllowed: boolean
+  readonly input: Omit<TeamTaskCreateInput, 'expectedCursor'>
+}
+
+/** Closed task mutations that registered system owners may authorize. */
 export type TeamSystemTaskControlScope =
+  | SimulationTaskCreateScope
   | TeamRunDefaultWorkerOwnerProposalScope
   | TeamRunDefaultWorkerCancelScope
   | TeamRunWorkflowTaskCancelScope
 
-/** Immutable source attribution resolved for one TeamRun coordinator task-control proof. */
+/** Immutable source attribution resolved for one system task-control proof. */
 export interface TeamSystemTaskControlProofResolution {
   /** Registered source that retained and resolved the opaque proof. */
   readonly sourceName: string
-  /** Exact default-worker task-control operation supplied by that source. */
+  /** Exact task mutation supplied by that source. */
   readonly scope: TeamSystemTaskControlScope
 }
 
 /**
- * Registration contributed by a TeamRun owner that retains opaque proofs for
- * exact current-coordinator default-worker task controls. A source never
- * receives caller-selected task, coordinator, or proposal attribution.
+ * Registration contributed by a task-control owner retaining proofs for its exact
+ * mutations. TeamRun owns coordinator controls; Simulation owns accepted task
+ * creation. Each source derives identities from its own authoritative state.
  */
 export interface TeamSystemTaskControlProofSource {
   /** Stable nonempty registry identity for the contributing TeamRun owner. */
@@ -975,8 +987,16 @@ export interface TeamRunRootCreationScope extends TeamRootCreateInput {
   readonly kind: 'team-run-root-create'
 }
 
+/** Root identity reserved durably by one Simulation before target creation. */
+export interface SimulationRootCreationScope extends TeamRootCreateInput {
+  readonly kind: 'simulation-root-create'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly lifecycleOwner: string
+  readonly teamId: TeamId
+}
+
 /** Closed root-Team creation mutations a system source may select. */
-export type TeamSystemRootCreationScope = TeamRunRootCreationScope
+export type TeamSystemRootCreationScope = TeamRunRootCreationScope | SimulationRootCreationScope
 
 /** Immutable source attribution resolved for one root-Team creation proof. */
 export interface TeamSystemRootCreationProofResolution {
@@ -1255,8 +1275,15 @@ export interface TeamChannelCloseScope extends ChannelCloseInput {
   readonly kind: 'channel-close'
   readonly teamId: TeamId
 }
+/** Exact run-reserved direct channel, including required canonical Session invitations. */
+export interface SimulationChannelOpenScope extends Omit<TeamChannelOpenScope, 'kind'> {
+  readonly kind: 'simulation-channel-open'
+  readonly runId: string
+  readonly lifecycleOwner: string
+  readonly channelId: ChannelId
+}
 /** Closed generic channel lifecycle mutations a system source may select. */
-export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | TeamChannelCloseScope
+export type TeamSystemChannelLifecycleScope = TeamChannelOpenScope | SimulationChannelOpenScope | TeamChannelCloseScope
 /** Immutable source attribution resolved for one generic channel lifecycle proof. */
 export interface TeamSystemChannelLifecycleProofResolution {
   readonly sourceName: string
@@ -1439,6 +1466,21 @@ export interface TeamRunBootstrapParticipantPhaseScope {
   readonly phase: 'provisioning' | 'active'
 }
 
+/** Run-owned invitation using an identity durably reserved before target IO. */
+export interface SimulationParticipantInviteScope extends Omit<TeamRunBootstrapParticipantInviteScope, 'kind'> {
+  readonly kind: 'simulation-participant-invite'
+  readonly runId: string
+  readonly lifecycleOwner: string
+  readonly participantId: ParticipantId
+}
+
+/** Run-owned membership activation; this does not grant channel consent or model execution. */
+export interface SimulationParticipantPhaseScope extends Omit<TeamRunBootstrapParticipantPhaseScope, 'kind'> {
+  readonly kind: 'simulation-participant-phase'
+  readonly runId: string
+  readonly lifecycleOwner: string
+}
+
 /** Exact TeamRun bootstrap opening of the default human/coordinator direct channel. */
 export interface TeamRunBootstrapChannelOpenScope {
   /** Closed source operation selected by this proof. */
@@ -1568,6 +1610,8 @@ export interface TeamRunReviewerPhaseScope {
 
 /** Closed TeamRun topology mutations a system source may select. */
 export type TeamSystemTopologyScope =
+  | SimulationParticipantInviteScope
+  | SimulationParticipantPhaseScope
   | TeamRunBootstrapParticipantInviteScope
   | TeamRunBootstrapParticipantPhaseScope
   | TeamRunBootstrapChannelOpenScope
@@ -2780,8 +2824,27 @@ export interface TeamDelegationEnvelopePostScope {
   readonly objective: string
 }
 
+/** Exact accepted Simulation intent; the source owns run-journal validation and due-time admission. */
+export interface SimulationOperationEnvelopePostScope {
+  readonly kind: 'simulation-operation'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly decisionId: Branded<'SimulationDecisionId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+  readonly acceptedRevision: number
+  readonly fingerprint: string
+  readonly lifecycleOwner: string
+  readonly teamId: TeamId
+  readonly senderId: ParticipantId
+  readonly recipientId: ParticipantId
+  readonly idempotencyKey: ChannelPostIdempotencyKey
+  readonly draft: TeamEnvelopeDraft
+  /** False permits an exact existing result only, never a new Envelope. */
+  readonly publishAllowed: boolean
+}
+
 /** Closed durable topologies that a system source may select for ordinary Envelope admission. */
 export type TeamSystemEnvelopePostScope =
+  | SimulationOperationEnvelopePostScope
   | TeamDelegationEnvelopePostScope
   | TeamRunHumanInputEnvelopePostScope
   | SchedulerAssignmentEnvelopePostScope
@@ -3468,8 +3531,15 @@ export interface TeamHumanTaskCreator {
   readonly participantId: ParticipantId
 }
 
+/** Durable Simulation operation attribution, independent of any live activation. */
+export interface TeamSimulationTaskCreator extends TeamHumanTaskCreator {
+  readonly kind: 'simulation'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+}
+
 /** Durable source attribution accepted for one task-creation command. */
-export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator
+export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator | TeamSimulationTaskCreator
 
 /** Durable retry identity for one activation- or human-authorized task-creation command. */
 export interface TeamTaskCreateCommand {
@@ -4323,6 +4393,8 @@ export interface ChannelInvitationOptions {
   readonly participantId: ParticipantId
   /** Required members must acknowledge before the channel becomes active. */
   readonly required: boolean
+  /** Freeze an agent endpoint to this Session without requiring a resident activation. */
+  readonly sessionId?: SessionId | undefined
 }
 
 /** Durable consent and endpoint expectations for one immutable channel member. */
@@ -4452,6 +4524,16 @@ export interface SystemChannelInvitationAcknowledgeScope extends ChannelInvitati
   readonly participantId: ParticipantId
 }
 
+/** Canonical Simulation owner consent for a frozen local Session endpoint. */
+export interface SimulationChannelInvitationAcknowledgeScope extends ChannelInvitationAcknowledgeInput {
+  readonly kind: 'simulation-invitation-acknowledge'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly lifecycleOwner: string
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly sessionId: SessionId
+}
+
 /** JSON selection for a bounded channel invitation expiry pass. */
 export interface ChannelInvitationExpireInput {
   /** Owning Team. */
@@ -4473,7 +4555,8 @@ export interface SystemChannelInvitationExpireScope extends ChannelInvitationExp
 }
 
 /** Closed channel-admission operations that named owners may prove. */
-export type TeamSystemChannelAdmissionScope = SystemChannelInvitationAcknowledgeScope | SystemChannelInvitationExpireScope
+export type TeamSystemChannelAdmissionScope
+  = SystemChannelInvitationAcknowledgeScope | SimulationChannelInvitationAcknowledgeScope | SystemChannelInvitationExpireScope
 
 /** Exact named attribution resolved from a runtime-only admission proof. */
 export interface TeamSystemChannelAdmissionProofResolution {
@@ -4622,6 +4705,35 @@ export interface ChannelFinalPostRequest extends ChannelFinalPostInput {
   readonly actor: TeamActorProof
 }
 
+declare const teamDeliveryOwnerProofBrand: unique symbol
+/** Runtime-only authority selecting the dedicated consumer of one activation's delivery. */
+export interface TeamDeliveryOwnerProof { readonly [teamDeliveryOwnerProofBrand]: never }
+/** Exact Simulation recipient and operation; the source owns run-side admission and flush evidence. */
+export interface TeamDeliveryOwnerScope {
+  readonly kind: 'simulation-delivery'
+  readonly operation: 'claim' | 'receipt'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly lifecycleOwner: string
+  readonly teamId: TeamId
+  readonly channelId: ChannelId
+  readonly envelopeId: EnvelopeId
+  readonly participantId: ParticipantId
+  readonly activationId: ActivationId
+  readonly sessionId: SessionId
+  /** Null for a claim; the exact observed channel cursor for a receipt. */
+  readonly cursor: number | null
+}
+/** Effect-scoped owner of non-serializable delivery capabilities. */
+export interface TeamDeliveryOwnerProofSource {
+  readonly name: string
+  /**
+   * Resolve an exact, currently admitted claim or receipt capability.
+   * @param proof - Runtime-only owner token.
+   * @returns current authority, or undefined for an unknown or revoked token.
+   */
+  resolveDeliveryOwnerProof(proof: TeamDeliveryOwnerProof): TeamDeliveryOwnerScope | undefined
+}
+
 /** JSON-only fields that select one accepted Envelope for a recipient receipt. */
 export interface ChannelEnvelopeReceiptInput {
   /** Channel that owns the accepted Envelope. */
@@ -4637,6 +4749,8 @@ export type ChannelEnvelopeReceiptActor = TeamActorProof | TeamSystemFinalReceip
 
 /** Runtime-only request to record one recipient's durable Envelope admission. */
 export interface ChannelEnvelopeReceiptRequest extends ChannelEnvelopeReceiptInput {
+  /** Additional runtime-only capability required by a dedicated delivery owner. */
+  readonly deliveryOwner?: TeamDeliveryOwnerProof
   /** Trusted activation or source-scoped system authority; it never crosses a wire or durable boundary. */
   readonly actor: ChannelEnvelopeReceiptActor
 }
@@ -4651,6 +4765,8 @@ export interface ChannelDeliveryClaimInput {
 
 /** Runtime-only request to atomically claim one delivery through a trusted activation proof. */
 export interface ChannelDeliveryClaimRequest extends ChannelDeliveryClaimInput {
+  /** Additional runtime-only capability required by a dedicated delivery owner. */
+  readonly deliveryOwner?: TeamDeliveryOwnerProof
   /** Trusted activation authority; it never crosses a wire or durable boundary. */
   readonly actor: TeamActorProof
 }
@@ -5645,6 +5761,11 @@ export interface TeamTaskCreateInput {
 export interface TeamTaskCreateRequest extends TeamTaskCreateInput {
   /** Trusted current coordinator or human authority; it never crosses a durable or wire boundary. */
   readonly actor: TeamActorProof | TeamHumanActorProof
+}
+
+/** Source-authorized task creation from a durable Simulation operation. */
+export interface TeamSimulationTaskCreateRequest extends TeamTaskCreateInput {
+  readonly actor: TeamSystemTaskControlProof
 }
 
 /** Request for one detached Team task projection. */

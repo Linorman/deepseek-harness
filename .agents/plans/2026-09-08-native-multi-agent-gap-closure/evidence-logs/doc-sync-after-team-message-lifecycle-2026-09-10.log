@@ -1,0 +1,9 @@
+# Documentation gates after TeamRun non-final message lifecycle — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Command:
+
+    pnpm run doc-sync
+
+Result: exit 1; 26 gates passed and 2 pre-existing gates failed. The remaining failures are the existing corpus translation-pairing drift and existing Markdown hard-wrap set; the updated shipped Team composition Agent Note is absent from both failure sets and its named pair passes.

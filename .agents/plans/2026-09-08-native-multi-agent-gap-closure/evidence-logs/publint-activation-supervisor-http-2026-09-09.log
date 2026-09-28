@@ -1,0 +1,19 @@
+Artifact change:
+  packages/agent-runtime/activation-supervisor-http/tsdown.config.ts now uses
+  `unbundle: true`, producing the stable internal `lib/protocol.js` entry.
+  package.json publishes `lib/protocol.js` explicitly.
+
+Commands:
+  pnpm exec tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false --force
+  pnpm exec tsdown -c packages/agent-runtime/activation-supervisor-http/tsdown.config.ts --no-clean
+  pnpm exec tsx scripts/publint-all.ts
+  node node_modules/publint/src/cli.js run packages/agent-runtime/activation-supervisor-http
+  tar -tzf packages/.tmp/activation-supervisor-http-pack/*.tgz
+  isolated imports of package/lib/index.js, client.js, endpoint.js, invariant.js
+
+Results:
+  Build emits lib/protocol.js; index/client/endpoint import that stable path and
+  no hashed protocol chunk. Repository publint-all exits 0; the package-level
+  publint exits 0 with only the pre-existing dev-only ./src/* warning. The
+  packed tarball contains lib/protocol.js, and all four packed entry imports
+  pass from an extracted package directory.

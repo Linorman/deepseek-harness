@@ -1,0 +1,21 @@
+README Model Experience and bilingual-pair follow-up (2026-09-09)
+
+Scope: complete the current package README acceptance closure for `ui-team` and remove stale tool-catalog links from private compatibility tool READMEs. This is a scoped documentation gate; it does not claim corpus-wide doc-sync, browser, multi-host, coverage, real-model, or release closure.
+
+Changes:
+
+1. `packages/client/ui-team/README.md` and `.zh.md` now use the audited short Model Experience form: one direct `None, as ... .` sentence, one `#### KV Cache effect` field, and one non-empty paragraph. The pair record was refreshed.
+2. `packages/subagent/tool-subagent-control`, `tool-subagent-report`, `tool-subagent`, `workflow/tool-ralph`, and `workflow/tool-workflow` no longer link private compatibility tools to absent generated public-catalog anchors. Their model-experience headings now describe the local tool definition instead of claiming a generated catalog section. Five bilingual pair records were refreshed.
+
+Commands:
+
+1. `pnpm run verify-package-readme-model-experience`
+   Result: exit 0; 260 README(s) checked, all conform (134 structured, 228 model-context entries, 350 KV-cache fields).
+2. `pnpm run verify-package-readme-limitations`
+   Result: exit 0; 260 package READMEs checked, all conform.
+3. `pnpm exec tsx scripts/verify-translation-pairing.ts packages/client/ui-team/README.md packages/subagent/tool-subagent-control/README.md packages/subagent/tool-subagent-report/README.md packages/subagent/tool-subagent/README.md packages/workflow/tool-ralph/README.md packages/workflow/tool-workflow/README.md`
+   Result: exit 0; six named bilingual pairs consistent.
+4. `git diff --check`
+   Result: exit 0.
+
+Known out-of-scope doc-sync findings observed separately: one unrelated broken `team_task` tool-catalog anchor in `packages/team/tool-team-task/README.zh.md` and existing hard-wrapped paragraphs in other package READMEs/Agent Notes. They are not part of this scoped README acceptance record.

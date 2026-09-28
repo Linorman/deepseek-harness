@@ -1,0 +1,410 @@
+{
+  "recordedAt": "2026-09-21T14:46:05.033496+00:00",
+  "layer": "zero-model-storage",
+  "hardware": {
+    "platform": "darwin",
+    "release": "27.0.0",
+    "arch": "arm64",
+    "node": "v25.9.0",
+    "cpus": 12,
+    "cpuModel": "Apple M4 Pro",
+    "memoryBytes": 25769803776
+  },
+  "cases": [
+    {
+      "variant": "baseline",
+      "report": ".tmp-simulation-development/benchmarks/sqlite-ingress-c7ax1F/report.json",
+      "reportSha256": "0c3357433fbb445a85225c770cc0fb373fbb842a5ad2707806fb37857f0b355e",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-ingress-c7ax1F/measurements.jsonl",
+      "rawSha256": "719874aac1dc00bfea09120af193cc88787d51651624e6668b815a9643c5ff24",
+      "sourceDigest": "85c31da7af9d247cee1086d416f19d402f525e624ef8dd04d59de8fce6a7951a",
+      "options": {
+        "backend": "sqlite",
+        "workload": "ingress",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 94.49399999999991,
+        "completed": 1919,
+        "consumed": 1000,
+        "requested": 100000,
+        "throughputPerSecond": 127.89970601084215,
+        "phases": {
+          "write": {
+            "count": 1919,
+            "elapsedMs": 15003.943791999998,
+            "p50Ms": 7.466542000000118,
+            "p95Ms": 14.218417000000045,
+            "p99Ms": 15.750541999999768
+          },
+          "consume": {
+            "count": 10,
+            "elapsedMs": 16253.921833,
+            "p50Ms": 1620.9616669999996,
+            "p95Ms": 1715.5166659999995,
+            "p99Ms": 1715.5166659999995
+          }
+        },
+        "checkpointMs": 131.21091700000397,
+        "restoreMs": 1627.4880420000045,
+        "peakRssBytes": 439418880,
+        "diskBytes": 2523792,
+        "bytesBeforeClose": 6496976,
+        "cpuMicros": {
+          "user": 34031545,
+          "system": 899147
+        },
+        "journalEntries": 5845,
+        "stops": {
+          "work-limit": 10
+        },
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": 4557.699128000002
+    },
+    {
+      "variant": "baseline",
+      "report": ".tmp-simulation-development/benchmarks/json-ingress-tkDKFt/report.json",
+      "reportSha256": "6ac3b6e70ad5cc098af50d49fa7ce22e1d0f82a138fefbebafb4d921443959bc",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-ingress-tkDKFt/measurements.jsonl",
+      "rawSha256": "c92afe83cec674c882a8c3e66daddfbb7f7f9527417589d89a9e2e545c7183fb",
+      "sourceDigest": "b2a950a5094fd3c9262c973168784b7a980011088b38df34c9a03c99aa741029",
+      "options": {
+        "backend": "json",
+        "workload": "ingress",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 137.08279099999982,
+        "completed": 1085,
+        "consumed": 800,
+        "requested": 100000,
+        "throughputPerSecond": 72.27085277208344,
+        "phases": {
+          "write": {
+            "count": 1085,
+            "elapsedMs": 15012.968,
+            "p50Ms": 13.15362500000083,
+            "p95Ms": 17.660499999999956,
+            "p99Ms": 127.16083299999991
+          },
+          "consume": {
+            "count": 8,
+            "elapsedMs": 15943.095582999998,
+            "p50Ms": 1886.0564589999994,
+            "p95Ms": 2673.1662499999984,
+            "p99Ms": 2673.1662499999984
+          }
+        },
+        "checkpointMs": 97.2587080000012,
+        "restoreMs": 610.0373749999999,
+        "peakRssBytes": 411484160,
+        "diskBytes": 2175837,
+        "bytesBeforeClose": 2176439,
+        "cpuMicros": {
+          "user": 18628441,
+          "system": 1943630
+        },
+        "journalEntries": 3977,
+        "stops": {
+          "work-limit": 8
+        },
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": 12700.324268999975
+    },
+    {
+      "variant": "baseline",
+      "report": ".tmp-simulation-development/benchmarks/sqlite-world-jbWalU/report.json",
+      "reportSha256": "1931d69206653ca283c1274ce0635fcf1447b0b9497528278f8d0d593e895d28",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-world-jbWalU/measurements.jsonl",
+      "rawSha256": "f707ac93e9e845bbe30a6ccf008a46d80441d95059fd19ab809cb48b88859bce",
+      "sourceDigest": "b2a950a5094fd3c9262c973168784b7a980011088b38df34c9a03c99aa741029",
+      "options": {
+        "backend": "sqlite",
+        "workload": "world",
+        "entities": 10000,
+        "operations": 1000000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 16351.833375,
+        "completed": 421,
+        "consumed": 0,
+        "requested": 1000000,
+        "throughputPerSecond": 28.012741595647856,
+        "phases": {
+          "write": {
+            "count": 421,
+            "elapsedMs": 15028.875291,
+            "p50Ms": 35.48979200000031,
+            "p95Ms": 37.4419170000001,
+            "p99Ms": 39.09629199999836
+          }
+        },
+        "checkpointMs": 184.9404579999973,
+        "restoreMs": 15463.238042000004,
+        "peakRssBytes": 541573120,
+        "diskBytes": 2806416,
+        "bytesBeforeClose": 6927080,
+        "cpuMicros": {
+          "user": 46721615,
+          "system": 2038018
+        },
+        "journalEntries": 10426,
+        "stops": {},
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": null
+    },
+    {
+      "variant": "baseline",
+      "report": ".tmp-simulation-development/benchmarks/json-world-A9ZInE/report.json",
+      "reportSha256": "ce71e25e0533772aad341b6a78129af19b7d9fba44b782b7c581812791c93ad5",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-world-A9ZInE/measurements.jsonl",
+      "rawSha256": "0f49f182c3088af640b0495ebd3d2eb63ec19b9547cfe4b29569aa4fb7718a85",
+      "sourceDigest": "b2a950a5094fd3c9262c973168784b7a980011088b38df34c9a03c99aa741029",
+      "options": {
+        "backend": "json",
+        "workload": "world",
+        "entities": 10000,
+        "operations": 1000000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 17139.735792,
+        "completed": 301,
+        "consumed": 0,
+        "requested": 1000000,
+        "throughputPerSecond": 20.032343916345198,
+        "phases": {
+          "write": {
+            "count": 301,
+            "elapsedMs": 15025.700499999999,
+            "p50Ms": 49.286958999997296,
+            "p95Ms": 54.909332999999606,
+            "p99Ms": 61.845124999999825
+          }
+        },
+        "checkpointMs": 204.93937500000175,
+        "restoreMs": 15558.29275,
+        "peakRssBytes": 576421888,
+        "diskBytes": 4007383,
+        "bytesBeforeClose": 4007985,
+        "cpuMicros": {
+          "user": 45204611,
+          "system": 2406203
+        },
+        "journalEntries": 10306,
+        "stops": {},
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": null
+    },
+    {
+      "variant": "avoid-unused-snapshots",
+      "report": ".tmp-simulation-development/benchmarks/sqlite-ingress-dMMFql/report.json",
+      "reportSha256": "2bc4c97d5e7819d97cf40d23ba110aa76833473be3df0c22eefeabdbd4b6adee",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-ingress-dMMFql/measurements.jsonl",
+      "rawSha256": "79956007982f9cadc17a351ce545709085cfd2d0c02acf06c28f597c61531c9d",
+      "sourceDigest": "c37da03237c055796d439e327154c021dacc3c4892894d8baf047d84094dac46",
+      "options": {
+        "backend": "sqlite",
+        "workload": "ingress",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 100.2935,
+        "completed": 2469,
+        "consumed": 1200,
+        "requested": 100000,
+        "throughputPerSecond": 164.5275872956415,
+        "phases": {
+          "write": {
+            "count": 2469,
+            "elapsedMs": 15006.601875000002,
+            "p50Ms": 5.818124999999782,
+            "p95Ms": 11.496707999998762,
+            "p99Ms": 12.481959000000643
+          },
+          "consume": {
+            "count": 12,
+            "elapsedMs": 16050.166542000003,
+            "p50Ms": 1305.0153750000027,
+            "p95Ms": 1432.0825409999998,
+            "p99Ms": 1432.0825409999998
+          }
+        },
+        "checkpointMs": 157.9298340000023,
+        "restoreMs": 2745.053208000005,
+        "peakRssBytes": 419676160,
+        "diskBytes": 3109520,
+        "bytesBeforeClose": 7054008,
+        "cpuMicros": {
+          "user": 34610964,
+          "system": 986482
+        },
+        "journalEntries": 7145,
+        "stops": {
+          "work-limit": 12
+        },
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": 2648.0459459999984
+    },
+    {
+      "variant": "avoid-unused-snapshots",
+      "report": ".tmp-simulation-development/benchmarks/json-ingress-X0U43C/report.json",
+      "reportSha256": "7f268ed037ef499561695e08c04169cd82487e9f9e3fd08be9164a9226eb178f",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-ingress-X0U43C/measurements.jsonl",
+      "rawSha256": "f525f78afab66c5bb375c788429f61d6eea0c3f20ee02de494573b156b1dc3ce",
+      "sourceDigest": "c37da03237c055796d439e327154c021dacc3c4892894d8baf047d84094dac46",
+      "options": {
+        "backend": "json",
+        "workload": "ingress",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 120000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks"
+      },
+      "result": {
+        "kind": "result",
+        "completion": "time-budget",
+        "layer": "zero-model-storage",
+        "setupMs": 157.0658330000001,
+        "completed": 1261,
+        "consumed": 800,
+        "requested": 100000,
+        "throughputPerSecond": 84.03955434108774,
+        "phases": {
+          "write": {
+            "count": 1261,
+            "elapsedMs": 15004.839208000001,
+            "p50Ms": 11.841707999999926,
+            "p95Ms": 15.653874999999971,
+            "p99Ms": 22.287749999999505
+          },
+          "consume": {
+            "count": 8,
+            "elapsedMs": 15203.295791,
+            "p50Ms": 1711.0725410000014,
+            "p95Ms": 2510.007207999999,
+            "p99Ms": 2510.007207999999
+          }
+        },
+        "checkpointMs": 106.80687500000204,
+        "restoreMs": 783.6962080000012,
+        "peakRssBytes": 518930432,
+        "diskBytes": 2421342,
+        "bytesBeforeClose": 2421944,
+        "cpuMicros": {
+          "user": 17429565,
+          "system": 2220020
+        },
+        "journalEntries": 4329,
+        "stops": {
+          "work-limit": 8
+        },
+        "residents": 0,
+        "modelCalls": 0,
+        "teamMessages": 0,
+        "modelTokens": 0,
+        "modelCost": 0,
+        "replayEqual": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      },
+      "first1000WritesMs": 11092.812882000006
+    }
+  ],
+  "conclusions": [
+    "All six runs preserve the exact checkpoint projection across restoration; no models, resident actors or Team deliveries are exercised.",
+    "All requested large workloads hit their soft operation-phase time budget. These runs do not prove P13 A/B/C capacity targets.",
+    "Removing discarded internal result snapshots improves both measured ingress runs; raw identical-prefix samples are retained for comparison. These are single-host single-trial observations, not SLOs."
+  ],
+  "remaining": [
+    "Scripted-model concurrency and residency benchmarks",
+    "Real Team message throughput and decision starvation measurements",
+    "Complete 100k/1M targets and 30-day organization workload",
+    "Full acceptance/coverage audit and integration closure"
+  ]
+}

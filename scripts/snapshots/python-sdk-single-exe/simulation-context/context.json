@@ -1,0 +1,180 @@
+{
+  "events": [
+    {
+      "type": "simulation/context-view",
+      "seq": 8,
+      "time": 0,
+      "data": {
+        "version": 1,
+        "runId": "snapshot-run",
+        "entityId": "snapshot-entity",
+        "windowId": "snapshot-window",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "snapshot-context-input",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "1",
+          "policy": "1",
+          "persona": "1",
+          "model": "test-model"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "snapshot-run",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Simulation entity: snapshot-entity."
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "No pending commitments."
+              }
+            ]
+          }
+        ]
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "simulation/context-view",
+      "seq": 24,
+      "time": 0,
+      "data": {
+        "version": 1,
+        "runId": "snapshot-run",
+        "entityId": "snapshot-entity",
+        "windowId": "snapshot-window",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "snapshot-context-input",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "1",
+          "policy": "1",
+          "persona": "1",
+          "model": "test-model"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "snapshot-run",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Simulation entity: snapshot-entity."
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "No pending commitments."
+              }
+            ]
+          }
+        ]
+      },
+      "sourceEventSeqs": [
+        8
+      ],
+      "surfaceOp": {
+        "op": "replace",
+        "start": 8,
+        "end": 8
+      }
+    }
+  ],
+  "modelInputs": [
+    [
+      "Simulation entity: snapshot-entity.No pending commitments."
+    ],
+    [
+      "Simulation entity: snapshot-entity.No pending commitments."
+    ]
+  ],
+  "auxiliaryRequests": [
+    {
+      "type": "compaction/request",
+      "seq": 6,
+      "time": 0,
+      "data": {
+        "compactionId": "sdk-compaction-probe",
+        "startSequence": 5,
+        "request": {
+          "provider": "test-provider",
+          "model": "smoke-model",
+          "messages": [
+            {
+              "id": "{{messageId}}",
+              "role": "user",
+              "source": {
+                "kind": "user"
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Auxiliary source outside the conversation surface."
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "queuedProbe": [
+    {
+      "target": "next-step",
+      "start": 0,
+      "inserted": [
+        {
+          "id": "{{messageId}}",
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Wake checkpoint probe."
+            }
+          ],
+          "source": {
+            "kind": "plugin",
+            "plugin": "simulation-context-snapshot"
+          }
+        }
+      ]
+    }
+  ],
+  "final": "SIMULATION_CONTEXT_OK"
+}

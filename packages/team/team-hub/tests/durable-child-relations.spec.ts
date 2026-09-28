@@ -162,3 +162,96 @@ for (const backend of ['json', 'sqlite'] as const) {
     })
   })
 }
+
+for (const backend of ['json', 'sqlite'] as const) {
+  describe(`durable child identity and progress (${backend})`, () => {
+    it('rejects child usage whose source no longer matches the reserved child', async () => {
+      const charged = childCharge()
+      const checkpoint = checkpointFor([...chargePrefix(), charged])
+      const invalidCharge = { ...charged.charge, sourceTeamId: 'unreserved-child' }
+      const parsed = teamProjectionDataSchema.parse({ ...checkpoint, usageCharges: [invalidCharge] })
+      expect(() => teamProjectionFromData(parsed)).toThrow('has no matching task reservation')
+      const ctx = await recover(backend, [...chargePrefix(), { ...charged, charge: invalidCharge }])
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('has no matching task reservation')
+    })
+
+    it('rejects a descendant grant that omits the parent placement restriction', async () => {
+      const fixture = scopedParticipant()
+      const grant = { ...fixture.member.authorityGrant!, placement: { roles: ['worker'] } }
+      const created = createdTeam({ authorityGrant: grant })
+      const member = { ...fixture.member, authorityGrant: grant }
+      const valid = checkpointFor([created, teamPhase(), { ...fixture.record, participant: member }])
+      const parsed = teamProjectionDataSchema.parse({ ...valid, participants: [fixture.member] })
+      expect(() => teamProjectionFromData(parsed)).toThrow('omits a placement restriction')
+      const ctx = await recover(backend, [created, teamPhase(), fixture.record])
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('omits a placement restriction')
+    })
+
+    it.each(['identity changed', 'timestamp changed', 'completed before admission', 'cursor rewound'])(
+      'rejects child progress with %s', async (variant) => {
+        const prefix = chargePrefix()
+        const last = prefix.at(-1)
+        if (last === undefined || !('task' in last)) throw new Error('Missing reserved child task')
+        const current = teamTaskSnapshotSchema.parse({ ...last.task,
+          delegation: { ...last.task.delegation, childCursor: 2 } })
+        const records = [...prefix.slice(0, -1), { ...last, task: current }]
+        checkpointFor(records)
+        const prior = current.delegation!
+        const next = teamTaskSnapshotSchema.parse({ ...current, revision: 3,
+          ...variant === 'completed before admission' ? { phase: 'completed' } : {},
+          delegation: { ...prior, updatedAt: 17,
+            ...variant === 'identity changed' ? { id: 'other', creation: { ...prior.creation, delegationId: 'other' } } : {},
+            ...variant === 'timestamp changed' ? { updatedAt: 18 } : {},
+            ...variant === 'completed before admission' ? { phase: 'completed' } : {},
+            ...variant === 'cursor rewound' ? { childCursor: 1 } : {},
+          } })
+        const ctx = await recover(backend, [...records, { type: 'task/changed', task: next, createdAt: 17 }])
+        const message = variant === 'identity changed' ? 'changed its exact delegation identity'
+          : variant === 'timestamp changed' ? 'inconsistent delegation time'
+            : variant === 'completed before admission' ? 'invalid delegation transition' : 'rewound its observed child cursor'
+        await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow(message)
+      })
+
+    it('rejects a child reservation whose execution started before its admission record', async () => {
+      const prefix = chargePrefix()
+      const last = prefix.at(-1)
+      if (last === undefined || !('task' in last)) throw new Error('Missing reserved child task')
+      const next = teamTaskSnapshotSchema.parse({ ...last.task,
+        delegation: { ...last.task.delegation, startedAt: 15 } })
+      const ctx = await recover(backend, [...prefix.slice(0, -1), { ...last, task: next }])
+      await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('invalid execution reservation timestamp')
+    })
+  })
+}
+
+it('requires an explicit live activation allowance on a child reserved by a bounded parent', () => {
+  const valid = checkpointFor(chargePrefix())
+  expect(() => teamProjectionFromData(valid)).not.toThrow()
+  const bounded = teamProjectionDataSchema.parse({ ...valid, budgets: { maxLiveActivations: 1 } })
+  expect(() => teamProjectionFromData(bounded)).toThrow('Bounded parent child omits its live Activation allowance')
+})
+
+it('permits unchanged terminal child details but refuses resurrection after task deletion', () => {
+  const prefix = chargePrefix()
+  const last = prefix.at(-1)
+  if (last === undefined || !('task' in last)) throw new Error('Missing reserved child task')
+  const failed = teamTaskSnapshotSchema.parse({ ...last.task, revision: 3, phase: 'failed',
+    delegation: { ...last.task.delegation, phase: 'failed', updatedAt: 17 } })
+  const rows = [...prefix, { type: 'task/changed', task: failed, createdAt: 17 }]
+  checkpointFor(rows)
+  const revised = { ...failed, revision: 4 }
+  checkpointFor([...rows, { type: 'task/changed', task: revised, createdAt: 18 }])
+  const deleted = { ...failed, revision: 4, phase: 'deleted' }
+  const deletedRows = [...rows, { type: 'task/changed', task: deleted, createdAt: 18 }]
+  checkpointFor(deletedRows)
+  expect(() => checkpointFor([...deletedRows, { type: 'task/changed', task: { ...failed, revision: 5 }, createdAt: 19 }]))
+    .toThrow('changed phase without delegation settlement')
+})
+
+it('requires a newly journaled child task to carry its own admission timestamp', () => {
+  const prefix = chargePrefix()
+  const first = prefix.at(-2)
+  if (first === undefined || !('task' in first)) throw new Error('Missing initial child task')
+  const changed = teamTaskSnapshotSchema.parse({ ...first.task, delegation: { ...first.task.delegation, requestedAt: 14, updatedAt: 14 } })
+  expect(() => checkpointFor([...prefix.slice(0, -2), { ...first, task: changed }])).toThrow('must begin with a fresh unreserved delegation')
+})

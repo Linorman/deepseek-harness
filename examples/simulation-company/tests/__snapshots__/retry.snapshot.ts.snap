@@ -1,0 +1,1241 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json conflict retry > replans through real model tools: blocked 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 9,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "kind": "communication/post",
+      "status": "pending",
+    },
+    {
+      "kind": "resource/transfer",
+      "status": "pending",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`json conflict retry > replans through real model tools: bounded 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 12,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:ab263b6f266b15b5ff5991fbe447937d27fa4452c35709d744274a2541989cfb; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:ab263b6f266b15b5ff5991fbe447937d27fa4452c35709d744274a2541989cfb",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`json conflict retry > replans through real model tools: claimed 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "cancelled",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-2",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-2",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 6,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`json conflict retry > replans through real model tools: exhausted 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 0,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [],
+}
+`;
+
+exports[`json conflict retry > replans through real model tools: queued 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-2",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-2",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 6,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`json conflict retry > replans through real model tools: refresh 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 9,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: blocked 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 9,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "kind": "communication/post",
+      "status": "pending",
+    },
+    {
+      "kind": "resource/transfer",
+      "status": "pending",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: bounded 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 12,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:ab263b6f266b15b5ff5991fbe447937d27fa4452c35709d744274a2541989cfb; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:ab263b6f266b15b5ff5991fbe447937d27fa4452c35709d744274a2541989cfb",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: claimed 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "cancelled",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-2",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-2",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 6,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: exhausted 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 0,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: queued 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-2",
+      "status": "accepted",
+    },
+    {
+      "attempt": 2,
+      "id": "retry-2-2",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 6,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+    {
+      "acknowledged": true,
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "exhausted",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+    {
+      "attempt": 2,
+      "microstep": "2",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9; retry 2 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 2,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:f5705dbc7fa8dc10a2b28f75b6937d9ea50368e0780635104bde151d49b728e9",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;
+
+exports[`sqlite conflict retry > replans through real model tools: refresh 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "status": "accepted",
+    },
+    {
+      "attempt": 1,
+      "id": "retry-1-1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": 9,
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "kind": "resource/transfer",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "kind": "resource/transfer",
+      "retry": "scheduled",
+      "status": "rejected",
+    },
+  ],
+  "phase": "running",
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "retries": [
+    {
+      "attempt": 1,
+      "microstep": "1",
+      "status": "consumed",
+    },
+  ],
+  "retryInputs": [
+    {
+      "reason": "Refresh reads after resource conflict simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3; retry 1 of 2. Do not repeat applied effects.",
+      "resources": [
+        {
+          "id": "b-stock",
+          "quantity": "0",
+          "revision": 1,
+        },
+        {
+          "id": "stock",
+          "quantity": "0",
+          "revision": 2,
+        },
+      ],
+      "retry": {
+        "attempt": 1,
+        "kind": "conflict-retry",
+        "operationId": "simulation-operation:8a56ecf2cada24b6a3944e07004efc437eeeadcf1046661c417cb02ea8a7ffa3",
+        "rootDecisionId": "b",
+      },
+    },
+  ],
+}
+`;

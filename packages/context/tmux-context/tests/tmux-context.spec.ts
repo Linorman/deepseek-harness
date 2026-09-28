@@ -99,6 +99,7 @@ function sessionAgent(session: Session, id = 'agent'): Agent {
     inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
     status: 'running',
     ctx: new Context(),
+    wakePending: () => false,
     send: () => {},
     followup: () => {},
     steer: () => {},

@@ -1,0 +1,6 @@
+- id: base
+  name: '@clocky/cordis-plugin-include'
+  config:
+    path: ./cordis.snapshot.yml
+- id: simulation-context-snapshot
+  name: ./tests/fixtures/simulation-context.ts

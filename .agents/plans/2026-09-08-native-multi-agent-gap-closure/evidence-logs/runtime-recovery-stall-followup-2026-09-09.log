@@ -1,0 +1,18 @@
+AgentRuntime recovery-stall follow-up (2026-09-09)
+
+Scope: local activation provider/fencer retirement and fence failure classification.
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/team/team-activation-controller/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-activation-controller/tests/recovery-admission.spec.ts packages/core/team/tests/schema.spec.ts --pool=forks --maxWorkers=1`
+   Result: 2 files passed; 29 tests passed.
+3. `node --import tsx/esm scripts/run-oxlint.ts packages/core/team/src/types.ts packages/core/team/src/schema.ts packages/team/team-hub/src/index.ts packages/team/team-activation-controller/src/index.ts packages/team/team-activation-controller/tests/recovery-admission.spec.ts`
+   Result: exit 0.
+4. `pnpm run verify-translation-pairing --write packages/team/team-activation-controller/README.md`
+   Result: paired English/Chinese README record refreshed.
+5. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: local provider retirement records `AGENT_RUNTIME_PROVIDER_UNAVAILABLE`; a registered provider without its fencer records `AGENT_RUNTIME_FENCER_UNAVAILABLE`; and a fencer exception records `AGENT_RUNTIME_FENCE_FAILED`. Each path leaves the Team stalled and rejects replacement without pretending the old epoch is offline. Supervisor recovery descriptors remain optional for local stalls and existing supervisor codes remain accepted.

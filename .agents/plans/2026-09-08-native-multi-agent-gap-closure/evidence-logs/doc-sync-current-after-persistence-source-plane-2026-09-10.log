@@ -1,0 +1,15 @@
+Current documentation sync after persistence source-plane fix (2026-09-10)
+
+Scope: rerun the repository documentation gates after excluding generated `*.d.ts` artifacts from persistence-catalog source scanning. This records the current gate boundary; remaining translation, wrap, and export-JSDoc issues remain independently owned.
+
+Command:
+
+`pnpm run doc-sync`
+
+Result: exit 1; 25 gates passed, 3 gates failed, and 0 were skipped in 48.56 seconds.
+
+The persistence catalog gate now passes. Remaining failures:
+
+- `verify-translation-pairing`: existing drift in implemented notes, generated catalogs/graphs, Team/SDK/link README pairs.
+- `verify-md-wrap`: existing hard-wrapped Agent Note and Team package README paragraphs.
+- `verify-export-jsdoc`: seven existing declaration/source violations, including generated AgentRuntimeSdkError/ActivationSupervisorError/JsonlSessionPersistence declarations and ModelDirectory methods.

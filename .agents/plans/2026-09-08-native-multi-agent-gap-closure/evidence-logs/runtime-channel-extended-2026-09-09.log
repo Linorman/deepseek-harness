@@ -1,0 +1,18 @@
+Command:
+  pnpm exec vitest run packages/team/team-link-websocket/tests/websocket.spec.ts packages/team/team-link-websocket-hub/tests/edges.spec.ts packages/team/team-link-websocket-hub/tests/server.spec.ts packages/team/team-link-local/tests/composition.spec.ts packages/team/team-agent-client/tests/client.spec.ts packages/team/team-agent-client/tests/fixed-binding-websocket.spec.ts packages/team/tool-team/tests/composition.spec.ts packages/team/team-human-client/tests/closed-outbox.spec.ts --reporter=json --outputFile=.tmp/runtime-channel-extended-current.json --maxWorkers=1
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0.
+
+Summary:
+  Test files: 8 total, 8 passed.
+  Tests: 196 total, 196 passed, 0 failed, 0 skipped.
+
+Covered slices:
+  WebSocket client 30/30; WebSocket Hub protocol edges 38/38; WebSocket Hub
+  real server 30/30; local composition 4/4; Team Agent Client 80/80;
+  fixed-binding WebSocket Agent Client 2/2; tool-team composition 2/2;
+  human completion-time outbox 10/10.
+
+The full-repository lane remains separately tracked because its current 20
+failure files are outside this green runtime/channel slice.

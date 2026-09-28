@@ -1,0 +1,55 @@
+# F-UI-01 bounded Team collections evidence
+
+- Date: 2026-09-09 (Asia/Shanghai)
+- Source plane: `/Volumes/projects-mac/deepseek-harness`
+- Scope: client Team member/task pages and task-derived artifact projection.
+
+## Commands
+
+```text
+pnpm exec tsc -b packages/client/runtime/tsconfig.json --force
+pnpm exec tsc -p packages/client/ui-team/tsconfig.json --pretty false --noEmit
+```
+
+PASS. The runtime source face and UI consumer face compile with the new bounded collection contract.
+
+```text
+pnpm exec vitest run packages/client/runtime/tests/team-tasks.client.spec.ts --reporter=dot --maxWorkers=1
+```
+
+PASS: 1 file, 33 tests passed. The added cases verify independent member/task/artifact page requests, explicit continuation cursor use, merged rows, stale collection response rejection after Team selection changes, failed-page row retention, non-advancing cursor rejection, and `hasNewer` marking.
+
+```text
+pnpm exec tsc -p packages/host/apiproxy/tsconfig.json --pretty false --noEmit
+pnpm exec vitest run packages/host/apiproxy/tests/api-proxy-teams.spec.ts --reporter=dot --maxWorkers=1
+```
+
+PASS: Host artifact-list route compiles and the Team API suite passes 50/50, including private/ambiguous filtering and artifact continuation pages.
+
+```text
+pnpm exec tsc -b packages/sdk/protocol/tsconfig.json --force
+pnpm exec tsc -p packages/sdk/client/tsconfig.json --pretty false --noEmit
+pnpm exec tsc -p packages/sdk/server/tsconfig.json --pretty false --noEmit
+pnpm exec vitest run packages/sdk/protocol/tests/schema.spec.ts packages/sdk/client/tests/sdk-client.spec.ts packages/sdk/server/tests/server.spec.ts --reporter=dot --maxWorkers=1
+PYTHONPATH=python/sdk/src python -m pytest python/sdk/tests/test_client.py -q
+```
+
+PASS: TypeScript SDK artifact-list additions compile and the SDK focused suite passes 3 files / 98 tests; Python client tests pass 45 tests, including `team/artifact-list` forwarding.
+
+Current combined rebind after artifact-list changes: 12 TypeScript test files / 241 tests passed across Host API, client runtime, Team UI, and SDK protocol/client/server, followed by Python client 45/45.
+
+```text
+pnpm exec vitest run packages/client/ui-team/tests --reporter=dot --maxWorkers=1
+```
+
+PASS: 7 files, 60 tests passed. The added UI case verifies bounded member/task rows and explicit Load more actions.
+
+```text
+python /Users/linorman/.codex/plugins/cache/openai-curated-remote/frontend-design-premium/1.4.0/skills/frontend-design-premium/scripts/audit_project.py /Volumes/projects-mac/deepseek-harness --mode strict
+```
+
+PASS: 0 findings.
+
+## Implemented boundary
+
+`TeamTaskRuntime` now owns separate `members`, `tasks`, `workflowPlans`, and provider-owned `artifacts` collection states with independent cursor, loading, loadingMore, error, and hasNewer fields. Member/task/artifact pages use the existing Host list methods with an explicit limit of 64; Host filters private and ambiguous artifact references before the artifact page is exposed. Selection changes and late responses are fenced by the existing selection generation. TeamPage consumes the collection rows when available and retains the authoritative full snapshot for mutation/compatibility fallback. Full browser/GIF coverage remains separate T-06 work.

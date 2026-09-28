@@ -1,0 +1,20 @@
+Durable Team channel-view capacity and composition follow-up (2026-09-09)
+
+Scope: complete the current durable non-direct Team channel-view path and repair its headless capacity fixture. The fixture failure was a real composition defect: it created a direct v4 channel while registering only direct v1–v3 adapters. This record covers the focused source, persistence, Loader, and JSON/SQLite capacity behavior; it does not claim full multi-host, browser, coverage, or release closure.
+
+Change:
+
+`examples/headless-agent/tests/fixtures/headless-channel-view-capacity-driver.ts` now registers `directChannelV4Adapter` alongside the other direct protocol versions.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-agent-client/tests/channel-view.spec.ts packages/team/team-agent-client/tests/client.spec.ts packages/team/team-hub/tests/channel-view-contract.spec.ts packages/core/session/tests/session.spec.ts packages/core/session/tests/surface.spec.ts --no-file-parallelism`
+   Result: exit 0; 5 files and 271 tests passed.
+2. `CLOCKY_SNAPSHOT=replay pnpm exec vitest run --config vitest.snapshot.config.ts examples/headless-agent/tests/team-channel-view.snapshot.ts examples/headless-agent/tests/channel-view-capacity.snapshot.ts --no-file-parallelism`
+   Result: exit 0; 2 files and 3 snapshot tests passed, including the JSON and SQLite capacity cases.
+3. `pnpm exec tsc -p packages/core/session/tsconfig.json --noEmit && pnpm exec tsc -p packages/team/team-agent-client/tsconfig.json --noEmit && pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit`
+   Result: exit 0 for all three source faces.
+4. `git diff --check`
+   Result: exit 0.
+
+The capacity scenario confirms that an oversized immutable rendered source remains pending without a Session view or receipt, while an independent smaller source produces exactly one durable view and receipt after the Session flush.

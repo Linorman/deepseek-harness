@@ -1,0 +1,254 @@
+{
+  "checks": [
+    {
+      "id": "report.exists",
+      "ok": true,
+      "detail": "/Volumes/projects-mac/deepseek-harness/.agents/plans/2026-09-08-native-multi-agent-gap-closure/gap-design.md"
+    },
+    {
+      "id": "report.newline",
+      "ok": true,
+      "detail": "exactly one trailing newline"
+    },
+    {
+      "id": "report.links",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "plan.exists",
+      "ok": true,
+      "detail": "/Volumes/projects-mac/deepseek-harness/.agents/plans/2026-09-08-native-multi-agent-gap-closure/development-plan.md"
+    },
+    {
+      "id": "plan.newline",
+      "ok": true,
+      "detail": "exactly one trailing newline"
+    },
+    {
+      "id": "plan.links",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "old-start.exists",
+      "ok": true,
+      "detail": "/Volumes/projects-mac/deepseek-harness/.agents/plans/2026-09-05-native-multi-agent/start-here.md"
+    },
+    {
+      "id": "old-start.newline",
+      "ok": true,
+      "detail": "exactly one trailing newline"
+    },
+    {
+      "id": "old-start.links",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "ids.report.unique",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "ids.plan.unique",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "id": "ids.report-plan.equal",
+      "ok": true,
+      "detail": {
+        "report": [
+          "F-CH-01",
+          "F-CT-02",
+          "F-CT-03",
+          "F-CT-04",
+          "F-CT-05",
+          "F-CT-06",
+          "F-CT-07",
+          "F-CT-08",
+          "F-RT-01",
+          "F-RT-02",
+          "F-RT-03",
+          "F-SC-01",
+          "F-SC-02",
+          "F-SC-03",
+          "F-WS-01",
+          "F-UI-01",
+          "F-UI-02",
+          "F-UI-03",
+          "F-LG-01",
+          "F-LG-02",
+          "T-01",
+          "T-02",
+          "T-03",
+          "T-04",
+          "T-05",
+          "T-06",
+          "T-07",
+          "T-08",
+          "D-01",
+          "D-02",
+          "D-03",
+          "D-04",
+          "D-05",
+          "D-06",
+          "D-07",
+          "D-08",
+          "D-09",
+          "D-10",
+          "D-15",
+          "D-16",
+          "D-17",
+          "O-01",
+          "O-02",
+          "O-03",
+          "O-04",
+          "O-05",
+          "O-06"
+        ],
+        "plan": [
+          "F-CH-01",
+          "F-CT-02",
+          "F-CT-03",
+          "F-CT-04",
+          "F-CT-05",
+          "F-CT-06",
+          "F-CT-07",
+          "F-CT-08",
+          "F-RT-01",
+          "F-RT-02",
+          "F-RT-03",
+          "F-SC-01",
+          "F-SC-02",
+          "F-SC-03",
+          "F-WS-01",
+          "F-UI-01",
+          "F-UI-02",
+          "F-UI-03",
+          "F-LG-01",
+          "F-LG-02",
+          "T-01",
+          "T-02",
+          "T-03",
+          "T-04",
+          "T-05",
+          "T-06",
+          "T-07",
+          "T-08",
+          "D-01",
+          "D-02",
+          "D-03",
+          "D-04",
+          "D-05",
+          "D-06",
+          "D-07",
+          "D-08",
+          "D-09",
+          "D-10",
+          "D-15",
+          "D-16",
+          "D-17",
+          "O-01",
+          "O-02",
+          "O-03",
+          "O-04",
+          "O-05",
+          "O-06"
+        ]
+      }
+    },
+    {
+      "id": "ids.report.count",
+      "ok": true,
+      "detail": 47
+    },
+    {
+      "id": "ids.functional.status-count",
+      "ok": true,
+      "detail": {
+        "confirmed": 5,
+        "partial": 8,
+        "decision": 7
+      }
+    },
+    {
+      "id": "gaps.G01-G33",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33
+      ]
+    },
+    {
+      "id": "stats.report",
+      "ok": true,
+      "detail": "report count/source/evidence text"
+    },
+    {
+      "id": "stats.plan",
+      "ok": true,
+      "detail": "plan count/source/evidence text"
+    },
+    {
+      "id": "cross-links",
+      "ok": true,
+      "detail": "new documents link to each other"
+    },
+    {
+      "id": "audit-baseline.hashes",
+      "ok": true,
+      "detail": {
+        "count": 64,
+        "failures": []
+      }
+    },
+    {
+      "id": "verification-ledger.logs",
+      "ok": true,
+      "detail": {
+        "count": 30,
+        "failures": []
+      }
+    },
+    {
+      "id": "fact-review.input",
+      "ok": true,
+      "detail": "final source fact review is present"
+    }
+  ],
+  "passed": 21,
+  "failed": 0
+}

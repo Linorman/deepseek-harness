@@ -1,0 +1,23 @@
+Command:
+  pnpm exec vitest run packages/team/team-artifact-local/tests/provider.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 7 tests passed; 0 failed; 0 skipped.
+  The new retention regression supplies two Team pages with the same nextCursor
+  and verifies a named TEAM_CURSOR_CONFLICT instead of a repeated scan.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-artifact-local/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-artifact-local/src/index.ts packages/team/team-artifact-local/tests/provider.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-artifact-local/src/index.ts fc9b123e7a62c95907e4612660250562bae868ec9de4e1b299c298f2d2df2852
+  packages/team/team-artifact-local/tests/provider.spec.ts 6ca8bf87fad6db021a5f766375d1dadd0a5772efab1270217b816b6b4e116830
+
+Boundary:
+  This closes local artifact-retention page continuation safety only. It does
+  not expand multi-host, browser, coverage, performance, or release evidence.

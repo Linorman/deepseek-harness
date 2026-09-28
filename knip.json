@@ -11,7 +11,8 @@
     "sandbox-exec",
     "tar",
     "taskkill",
-    "where.exe"
+    "where.exe",
+    "xcrun"
   ],
   "ignoreWorkspaces": [
     "vendor/*",
@@ -30,6 +31,24 @@
     ]
   },
   "workspaces": {
+    "packages/simulation/simulation-team": {
+      "entry": [
+        "tests/fixtures/recovery.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ]
+    },
+    "packages/simulation/simulation-local": {
+      "entry": [
+        "tests/fixtures/loader.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ]
+    },
     ".": {
       "entry": [
         "scripts/**/*.mjs",
@@ -47,6 +66,30 @@
     },
     "examples": {
       "entry": [
+        "simulation-company/tests/actor-benchmark-scenario.ts",
+        "simulation-company/tests/auxiliary-retirement-scenario.ts",
+        "simulation-company/tests/benchmark-scenario.ts",
+        "simulation-company/tests/benchmark-recovery-scenario.ts",
+        "simulation-company/tests/capacity-scenario.ts",
+        "simulation-company/tests/checkpoint-restore-scenario.ts",
+        "simulation-company/tests/checkpoint-owner-scenario.ts",
+        "simulation-company/tests/checkpoint-startup-scenario.ts",
+        "simulation-company/tests/deterministic-scenario.ts",
+        "simulation-company/tests/ingress-scenario.ts",
+        "simulation-company/tests/knowledge-scenario.ts",
+        "simulation-company/tests/knowledge-depth-scenario.ts",
+        "simulation-company/tests/organization-benchmark-scenario.ts",
+        "simulation-company/tests/live-model-benchmark-scenario.ts",
+        "simulation-company/tests/drive-close-scenario.ts",
+        "simulation-company/tests/outbox-admission-scenario.ts",
+        "simulation-company/tests/policy-knowledge-scenario.ts",
+        "simulation-company/tests/settlement-order-scenario.ts",
+        "simulation-company/tests/message-benchmark-scenario.ts",
+        "simulation-company/tests/population-scenario.ts",
+        "simulation-company/tests/procurement-scenario.ts",
+        "simulation-company/tests/retry-scenario.ts",
+        "simulation-company/tests/scenario.ts",
+        "simulation-company/tests/window-scenario.ts",
         "headless-agent/tests/fixtures/cli-mock-llm.ts",
         "headless-agent/tests/fixtures/semantic-checkpoint-agent.ts",
         "headless-agent/tests/fixtures/subagent-diagnostic-agent.ts",
@@ -59,6 +102,8 @@
         "headless-agent/tests/fixtures/session-telemetry-otel-driver.ts",
         "headless-agent/tests/fixtures/telemetry-redact-rule.ts",
         "headless-agent/tests/fixtures/headless-team-run-llm.ts",
+        "headless-agent/tests/fixtures/headless-team-resume-lifecycle.ts",
+        "headless-agent/tests/fixtures/headless-child-authority-probe.ts",
         "headless-agent/tests/fixtures/headless-final-lifecycle-driver.ts",
         "headless-agent/tests/fixtures/headless-final-restart-driver.ts",
         "headless-agent/tests/fixtures/headless-terminal-restart-driver.ts",
@@ -106,9 +151,18 @@
         "jsonrpc-agent/tests/fixtures/team-final-llm.ts",
         "jsonrpc-agent/tests/fixtures/resume-pending-llm.ts",
         "jsonrpc-agent/tests/fixtures/team-snapshot-finalizer.ts",
+        "jsonrpc-agent/tests/fixtures/simulation-context.ts",
         "jsonrpc-agent/tests/fixtures/sdk-product-principal.ts",
         "*/tests/**/*.e2e.ts",
-        "*/tests/**/*.snapshot.ts"
+        "*/tests/**/*.snapshot.ts",
+        "headless-agent/tests/fixtures/agent-runtime-acp-recovery-driver.ts",
+        "headless-agent/tests/fixtures/channel-task-input-driver.ts",
+        "headless-agent/tests/fixtures/headless-child-delegation-driver.ts",
+        "headless-agent/tests/fixtures/headless-closed-outbox-driver.ts",
+        "headless-agent/tests/fixtures/human-inbox-question-driver.ts",
+        "headless-agent/tests/fixtures/headless-channel-summary-llm.ts",
+        "jsonrpc-agent/tests/fixtures/human-invitations/invitation-llm.ts",
+        "simulation-company/tests/idle-scenario.ts"
       ],
       "project": [
         "**/*.ts"

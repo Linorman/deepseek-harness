@@ -1,0 +1,49 @@
+Environment:
+  platform: Darwin 27.0.0 arm64
+  node: v25.9.0
+  pnpm: 11.19.0
+  credentials: keyless; no real API credential was required
+
+Focused core/in-process command:
+  pnpm exec vitest run packages/core/agent-runtime/tests
+  packages/agent-runtime/agent-runtime-in-process/tests --coverage
+  --coverage.include=packages/core/agent-runtime/src/index.ts
+  --coverage.include=packages/core/agent-runtime/src/error.ts
+  --coverage.include=packages/agent-runtime/agent-runtime-in-process/src/index.ts
+  --coverage.include=packages/agent-runtime/agent-runtime-in-process/src/error.ts
+  --reporter=dot --maxWorkers=1
+
+Focused core/in-process result:
+  PASS — 2 test files, 24 tests passed, 0 failed, 0 skipped.
+  Coverage: statements 100% (208/208), branches 100% (90/90),
+  functions 100% (53/53), lines 100% (194/194).
+  The added exact-fencer-disposer regression covers the final registry branch.
+
+Broader AgentRuntime command:
+  The same coverage lane additionally included agent-runtime-sdk,
+  agent-runtime-acp, and activation-supervisor-http tests and source files.
+  Behavior result: 9 test files, 74 tests passed, 2 skipped, 0 failed.
+  Coverage result: statements 81.73%, branches 68.45%, functions 82.38%,
+  lines 84.88%, so the repository's per-file 100% threshold failed.
+  The remaining uncovered work is concentrated in SDK/ACP/supervisor HTTP
+  lifecycle, transport-loss, termination, and protocol-error branches; this
+  is recorded as evidence for T-02 and is not reported as a coverage PASS.
+
+Source hashes at the focused core/in-process PASS:
+  runtime test 59073b16b74ac0f2061cb6263efd345694036ddea5781f32f530862f51b6260c
+  AgentRuntime source 6b37a5c3eb9761097ab882e316c2e8ee0624eb5989593b40af6f7da15c779b81
+  in-process source 517a11ac15764633b1e6f2fc565f03f6a44542235789160baa748f452e2c92f6
+  SDK source fea786d656271a007a7d06e7399c84fb1e45845d857b454296c6452b9d9793c4
+  ACP source 49296c7919f12b50ad79bb035877821121b116f7e7972c3af3144ae46c2c4f63
+  supervisor HTTP source 7d95bf65a6abfced23d72de0b9f4519ce5a6fc36f4c617b114ffe537e7e4d41d
+
+Static checks:
+  `pnpm exec tsc -p packages/core/agent-runtime/tsconfig.json --noEmit`
+  exited 0; the repository Oxlint entrypoint over the AgentRuntime source and
+  tests exited 0; `git diff --check` exited 0.
+
+Interpretation:
+  Core AgentRuntime and in-process provider now have direct current-candidate
+  100% focused evidence. T-02 remains partial because the SDK/ACP/supervisor
+  provider files still need their per-file branch matrix; no source behavior
+  is hidden behind a coverage exemption in this evidence.

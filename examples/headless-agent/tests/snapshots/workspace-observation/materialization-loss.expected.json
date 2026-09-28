@@ -1,0 +1,9 @@
+{
+  "provider": "materialization-loss",
+  "allocation": "released",
+  "task": "failed",
+  "failure": "WORKSPACE_LOST",
+  "workerRequests": 0,
+  "preparations": 1,
+  "abandoned": 1
+}

@@ -45,6 +45,8 @@ MINIMAL_BASH_COMMAND = (
     "printf 'COUNT=%s CWD=%s\\n' \"$counter\" \"$PWD\"; "
     "if [ \"$counter\" -eq 1 ]; then cd /tmp; fi"
 )
+SIMULATION_PROMPT = "Verify the durable Simulation context."
+SIMULATION_FINAL = "SIMULATION_CONTEXT_OK"
 SNAPSHOT_PROMPT = "Run the advanced packaged-runtime snapshot scenario."
 SNAPSHOT_DIRECT_CHILD_PROMPT = "Reply with exactly DIRECT_CHILD_OK and nothing else."
 SNAPSHOT_WORKFLOW_CHILD_PROMPT = "Reply with exactly WORKFLOW_CHILD_OK and nothing else."
@@ -455,6 +457,8 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
                 "channel_id": channel.group(1), "text": TEAM_CHILD_FINAL,
             })
         if tool_name == "team_final":
+            if call_id == "simulation-final":
+                return text_chunks(SIMULATION_FINAL)
             if any(
                 isinstance(message, dict) and any(prompt in message_text(message.get("content"))
                                                   for prompt in (TEAM_CHILD_PROMPT, TEAM_CHILD_CANCEL_PROMPT))
@@ -513,6 +517,7 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         SNAPSHOT_DIRECT_CHILD_PROMPT,
         SNAPSHOT_WORKFLOW_CHILD_PROMPT,
         SNAPSHOT_PROMPT,
+        SIMULATION_PROMPT,
         TEAM_CHILD_PROMPT,
         TEAM_CHILD_CANCEL_PROMPT,
         CODE_PROMPT,
@@ -555,6 +560,15 @@ def completion_chunks(body: dict[str, object]) -> list[dict[str, object]]:
         return tool_call_chunks("advanced-resume", "snapshot_resume_pending", {})
     if prompt == SNAPSHOT_WORKFLOW_CHILD_PROMPT:
         return text_chunks("WORKFLOW_CHILD_OK")
+    if prompt == SIMULATION_PROMPT:
+        if "Simulation entity: snapshot-entity." not in json.dumps(messages):
+            raise AssertionError("Simulation context was not included in the model request")
+        channel = re.search(r"call team_final with channel_id (\S+) and", json.dumps(body))
+        if channel is None:
+            raise AssertionError("Simulation coordinator has no final channel")
+        return tool_call_chunks("simulation-final", "team_final", {
+            "channel_id": channel.group(1), "text": SIMULATION_FINAL,
+        })
     if prompt == SNAPSHOT_PROMPT:
         assert_advertised_tool(body, "cordis_define")
         return tool_call_chunks(
@@ -899,20 +913,23 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--scenario",
-        choices=("all", "sdk-default", "sdk-custom", "sdk-child-team", "sdk-minimal", "sdk-fs-search", "sdk-mcp", "sdk-snapshot", "direct"),
+        choices=("all", "sdk-default", "sdk-custom", "sdk-child-team", "sdk-minimal", "sdk-fs-search", "sdk-mcp", "sdk-snapshot", "sdk-simulation", "direct"),
         default="all",
     )
     parser.add_argument("--exe", type=Path)
     parser.add_argument("--update-snapshots", action="store_true")
     args = parser.parse_args()
-    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "direct"} and args.exe is None:
+    if args.scenario in {"all", "sdk-custom", "sdk-minimal", "sdk-fs-search", "sdk-snapshot", "sdk-simulation", "direct"} and args.exe is None:
         parser.error("--exe is required for all, custom, minimal, snapshot, and direct scenarios")
-    if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-snapshot"}:
-        parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-snapshot, or all")
+    if args.update_snapshots and args.scenario not in {"all", "sdk-minimal", "sdk-snapshot", "sdk-simulation"}:
+        parser.error("--update-snapshots requires --scenario sdk-minimal, sdk-snapshot, sdk-simulation, or all")
     if args.exe is not None and not args.exe.is_file():
         parser.error(f"runtime executable does not exist: {args.exe}")
 
     with MockModel() as model:
+        if args.scenario in {"all", "sdk-simulation"}:
+            assert args.exe is not None
+            smoke_sdk_simulation(model.url, args.exe.resolve(), args.update_snapshots)
         if args.scenario in {"all", "sdk-default"}:
             smoke_sdk_default(model.url)
         if args.scenario in {"all", "sdk-custom"}:
@@ -1232,6 +1249,83 @@ def smoke_sdk_mcp(base_url: str, executable: Path | None) -> None:
             "tools/call",
         ]
         assert_session_log(sessions, root, MCP_TEXT, "mcp__fixture__add", "42")
+
+
+def smoke_sdk_simulation(base_url: str, executable: Path, update_snapshots: bool) -> None:
+    """Pin required context events and their actual model projection through the packaged runtime."""
+    from clocky import Clocky
+
+    first_request = len(MockModelHandler.requests)
+    repository = Path(__file__).resolve().parent.parent
+    data = json.loads((repository / "examples/jsonrpc-agent/tests/fixtures/simulation-context-data.json").read_text())
+    with project_temporary_directory(prefix="clocky-sdk-simulation-") as temporary:
+        root = Path(temporary).resolve()
+        sessions = root / "sessions"
+        plugin = root / "simulation-context.mjs"
+        plugin.write_text("export const name = 'simulation-context-snapshot';\nexport const inject = ['sessions'];\n"
+            + "export function apply(ctx) { ctx.on('agent/pre-step', async ({agent}, next) => {\n"
+            + "const decision = await next(); if (decision.kind === 'reject') return decision;\n"
+            + "const probe = {id:'sdk-wake-probe',role:'user',content:[{type:'text',text:'Wake checkpoint probe.'}],source:{kind:'plugin',plugin:'simulation-context-snapshot'}};\n"
+            + "if (!agent.session.events.some(e => e.type === 'agent/inbox/spliced' && e.data.inserted.some(m => m.id === probe.id))) {\n"
+            + "agent.send(probe,'next-step',false); await ctx.sessions.flush(agent.session);\n"
+            + "if (!agent.wakePending(probe.id)) throw new Error('Queued wake rejected'); agent.inbox.remove(probe.id); }\n"
+            + "if (!agent.session.events.some(e => e.type === 'compaction/request')) {\n"
+            + "const turn = agent.session.events.findLast(e => e.type === 'turn/start').data.turn;\n"
+            + "const compactionId = 'sdk-compaction-probe';\n"
+            + "const start = agent.session.append('compaction/start', {compactionId,turn});\n"
+            + "agent.session.append('compaction/request', {compactionId,startSequence:start.seq,request:{provider:'test-provider',model:'smoke-model',messages:[{id:'sdk-auxiliary-source',role:'user',source:{kind:'user'},content:[{type:'text',text:'Auxiliary source outside the conversation surface.'}]}]}});\n"
+            + "agent.session.append('compaction/end', {compactionId,turn,error:'Cancelled before dispatch'}); }\n"
+            + "const prior = agent.session.events.findLast(e => e.type === 'simulation/context-view');\n"
+            + "agent.session.append('simulation/context-view', " + json.dumps(data)
+            + ", prior ? {surfaceOp:{op:'replace',start:prior.seq,end:prior.seq},sourceEventSeqs:[prior.seq]} : {surfaceOp:'append'});\n"
+            + "if (!await ctx.sessions.flush(agent.session)) throw new Error('Missing persistence'); return decision; }); }\n")
+        bundled = repository / "python/sdk-runtime/src/clocky_runtime/runtime/cordis.yml"
+        config = root / "cordis.yml"
+        config.write_text(bundled.read_text().replace("baseURL: http://127.0.0.1:9", f"baseURL: {base_url}", 1)
+            + "\n- id: simulation-context-snapshot\n  name: ./simulation-context.mjs\n")
+        credential = "simulation-snapshot-credential"
+        with Clocky(credential=credential, provider="test-provider", model="smoke-model", cwd=str(root),
+                   session_root=str(sessions), cordis=str(config), runtime_bin=str(executable),
+                   env={"CLOCKY_HOME": str(root / ".clocky"), "TEST_API_KEY": "sk-keyless-smoke",
+                        "TEST_MODEL": "smoke-model", "TEST_BASE_URL": base_url,
+                        "CLOCKY_PRODUCT_CREDENTIAL_SHA256": hashlib.sha256(credential.encode()).hexdigest()},
+                   request_timeout_seconds=60) as harness:
+            result = harness.run(SIMULATION_PROMPT)
+        if result.final_response != SIMULATION_FINAL:
+            raise AssertionError(result.final_response)
+        views = [event for event in result.events if event.get("type") == "simulation/context-view"]
+        if not views:
+            raise AssertionError("SDK did not receive the required context view")
+        logs = read_session_logs(sessions)
+        stored = [record for records in logs.values() for record in records if record.get("type") == "simulation/context-view"]
+        if stored != views:
+            raise AssertionError("SDK and persisted context events differ")
+        model_inputs = [[message_text(message.get("content")) for message in request["messages"]
+                         if message.get("role") == "user" and "Simulation entity:" in message_text(message.get("content"))]
+                        for request in MockModelHandler.requests[first_request:]]
+        expected = "".join(block["text"] for section in data["content"] for block in section["blocks"])
+        if not model_inputs or any(inputs != [expected] for inputs in model_inputs):
+            raise AssertionError("Each request must contain exactly one materialized context")
+        queued_probe = [event["data"] for event in result.events if event.get("type") == "agent/inbox/spliced"
+                        and any(message["id"] == "sdk-wake-probe" for message in event["data"]["inserted"])]
+        if len(queued_probe) != 1:
+            raise AssertionError("Waking queued input must not insert it again")
+        if any("Wake checkpoint probe." in json.dumps(request["messages"]) for request in MockModelHandler.requests[first_request:]):
+            raise AssertionError("Discarded wake probe reached the model")
+        auxiliary = [event for event in result.events if event.get("type") == "compaction/request"]
+        persisted_auxiliary = [record for records in logs.values() for record in records
+                               if record.get("type") == "compaction/request"]
+        if len(auxiliary) != 1 or auxiliary != persisted_auxiliary:
+            raise AssertionError("SDK must preserve the exact durable auxiliary request")
+        if any("Auxiliary source outside" in json.dumps(request["messages"])
+               for request in MockModelHandler.requests[first_request:]):
+            raise AssertionError("Log-only auxiliary source entered the conversation surface")
+        value = {"events": normalize_snapshot_value(views, []), "modelInputs": model_inputs,
+                 "auxiliaryRequests": normalize_snapshot_value(auxiliary, []),
+                 "queuedProbe": normalize_snapshot_value(queued_probe, []), "final": result.final_response}
+        files = {"context.json": json.dumps(value, indent=2, ensure_ascii=False) + "\n"}
+        compare_snapshot_files(files, update_snapshots,
+            repository / "scripts/snapshots/python-sdk-single-exe/simulation-context", ("context.json",))
 
 
 def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) -> None:

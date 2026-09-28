@@ -1,0 +1,35 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness/.tmp/team-audit-baseline
+
+ ❯ |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts (17 tests | 1 failed) 4972ms
+     × opens a real review consult and settles the completed attempt from a rework response 1390ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-scheduler-dag/tests/composition.spec.ts > Team DAG scheduler composition > opens a real review consult and settles the completed attempt from a rework response
+AssertionError: expected [ { manifest: { …(6) }, …(3) } ] to have a length of 2 but got 1
+
+- Expected
++ Received
+
+- 2
++ 1
+
+ ❯ packages/team/team-scheduler-dag/tests/composition.spec.ts:702:118
+    700|           const ids = (await ctx.teams.getTeam({ teamId: created.team.…
+    701|           const current = await Promise.all(ids.map(id => ctx.teams.ge…
+    702|           expect(current.filter(channel => channel.manifest.adapter.ty…
+       |                                                                                                                      ^
+    703|         })
+    704|         const ids = (await ctx.teams.getTeam({ teamId: created.team.id…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 141 passed (142)
+      Tests  1 failed | 2032 passed (2033)
+   Start at  19:10:47
+   Duration  54.99s (transform 4.02s, setup 3.36s, import 15.14s, tests 186.02s, environment 7ms)

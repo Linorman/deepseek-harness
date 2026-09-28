@@ -1,0 +1,13 @@
+Command:
+  pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts packages/team/team-activation-controller/tests/closure-recovery.spec.ts packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts --reporter=json --outputFile=.tmp/runtime-recovery-current-2026-09-09.json --maxWorkers=1
+
+Result:
+  3 files, 80 tests: 79 passed, 0 failed, 1 platform skip.
+  The skipped case is the Linux-only real detached-process HTTP fence test;
+  the remaining endpoint, exact-owner, generation, unknown/unreachable,
+  controller-fence, closure-recovery, and startup-selector cases passed.
+
+Scope:
+  This confirms the current local SDK and authenticated HTTP supervisor
+  recovery boundary. It does not prove an independent-host run or ACP
+  process-recovery semantics, which remain outside the current product scope.

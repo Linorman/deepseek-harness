@@ -1,0 +1,19 @@
+README pair target alignment follow-up (2026-09-09)
+
+Scope: align the English Team-task README with the Chinese README after moving both to the existing package-level tool-catalog anchor. This closes the named-pair consistency detail left by the preceding link fix; it does not claim corpus-wide translation or doc-sync closure.
+
+Changes:
+
+1. `packages/team/tool-team-task/README.md` now uses the same `clockyclocky-tool-team-task` catalog target as its Chinese counterpart.
+2. The Team-task pair record was refreshed after both sides carried the same link target.
+
+Commands:
+
+1. `pnpm exec tsx scripts/verify-translation-pairing.ts --write packages/team/tool-team-task/README.md`
+   Result: exit 0; pair record refreshed.
+2. `pnpm exec tsx scripts/verify-translation-pairing.ts packages/team/team-placement-default/README.md packages/team/tool-team-task/README.md packages/client/ui-team/README.md packages/subagent/tool-subagent-control/README.md packages/subagent/tool-subagent-report/README.md packages/subagent/tool-subagent/README.md packages/workflow/tool-ralph/README.md packages/workflow/tool-workflow/README.md`
+   Result: exit 0; eight named bilingual pairs consistent.
+3. `pnpm run verify-md-links`
+   Result: exit 0; 2188 Markdown files checked, all relative links and fragments resolve.
+4. `git diff --check`
+   Result: exit 0.

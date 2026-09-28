@@ -1,0 +1,24 @@
+Command:
+  pnpm exec vitest run packages/team/team-human-client/tests/inbox.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 16 tests passed; 0 failed; 0 skipped.
+  The JSON/SQLite regression drives two repeated Team-list pages and verifies
+  TEAM_CURSOR_CONFLICT instead of another delivery scan. A direct storage-boundary
+  regression also repeats one row sequence and verifies TEAM_INVALID_ARGUMENT.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-human-client/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-human-client/src/index.ts packages/team/team-human-client/tests/inbox.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-human-client/src/index.ts 5d4daac02cfe1f00341177625bf767b176f032accdb57b6bbb9365e0ec9cbf29
+  packages/team/team-human-client/tests/inbox.spec.ts 5399ed6a7cbbd213de030ad2727dd2c62a60311a70e42a55a87ef4e8f6dcd522
+
+Boundary:
+  This closes local principal-inbox Team-list continuation safety only. It does
+  not expand cross-host, browser, coverage, performance, or release evidence.

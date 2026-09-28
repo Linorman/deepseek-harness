@@ -59,6 +59,8 @@ interface SessionEventMap {
    * required because omitting it would change model-history reconstruction.
    */
   'team/channel-view': TeamChannelViewEventData
+  /** Exact supplementary Simulation context; source references do not duplicate Team message content. */
+  'simulation/context-view': SimulationContextViewEventData
   /** Raw stream chunk — token-level replay fidelity. */
   'assistant/chunk': { turn: number; step: number; chunk: StreamChunk }
   /**
@@ -214,7 +216,7 @@ interface RequestContext {
  *
  * The {@link sourceEventSeqs} and {@link surfaceOp} fields are conditional:
  * they only exist on {@link SurfaceEventType} variants (`user/message`,
- * `team/channel-view`, `assistant/message`, `tool/result`).
+ * `team/channel-view`, `simulation/context-view`, `assistant/message`, `tool/result`).
  * Non-surface events (boundary markers, chunks, usage, errors) never carry
  * surface metadata — the compiler enforces this at `Session.append()`
  * call sites.
@@ -237,7 +239,7 @@ type SessionEvent<T extends SessionEventType = SessionEventType> = {
      * defaulting to required means a forgotten marker over-refuses (an
      * inconvenience) rather than silently resuming a gutted session.
      */
-    ignorable?: K extends 'team/channel-view' ? never : true
+    ignorable?: K extends 'team/channel-view' | 'simulation/context-view' ? never : true
   } & (K extends SurfaceEventType ? {
     /**
      * Seq numbers of earlier events that this event cites as sources
@@ -262,7 +264,7 @@ type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 ## Surface 类型
 
-四种产生消息的类型（`SurfaceEventType`：`user/message`、`team/channel-view`、`assistant/message`、`tool/result`）携带 surface 元数据，用来声明它们如何加入有序的派生 surface。见 [session surface Agent Note](../../.agents/notes/implemented/architecture/2026-06-18-session-surface.zh.md)。
+产生消息的类型（`SurfaceEventType`：`user/message`、`team/channel-view`、`simulation/context-view`、`assistant/message`、`tool/result`）携带 surface 元数据，用来声明它们如何加入有序的派生 surface。见 [session surface Agent Note](../../.agents/notes/implemented/architecture/2026-06-18-session-surface.zh.md)。
 
 ### `SurfaceEventType`：事件类型中产生消息的子集
 
@@ -275,6 +277,7 @@ type SessionEvent<T extends SessionEventType = SessionEventType> = {
 type SurfaceEventType =
   | 'user/message'
   | 'team/channel-view'
+  | 'simulation/context-view'
   | 'assistant/message'
   | 'tool/result'
 ```

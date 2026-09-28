@@ -1,0 +1,38 @@
+Command:
+  pnpm exec vitest run packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/tests/edges.spec.ts packages/team/team-workspace-recovery/tests/recovery.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  3 test files passed; 96 tests passed; 0 failed; 0 skipped.
+  The slice includes local and authenticated WebSocket Team-watch cursor regressions
+  plus the workspace-recovery repeated Team-list continuation regression.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-link-local/tsconfig.json --noEmit
+  pnpm exec tsc -p packages/team/team-link-websocket-hub/tsconfig.json --noEmit
+  pnpm exec tsc -p packages/team/team-workspace-recovery/tsconfig.json --noEmit
+  Result: all three commands exited 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-link-local/src/index.ts packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/src/index.ts packages/team/team-link-websocket-hub/tests/edges.spec.ts packages/team/team-workspace-recovery/src/index.ts packages/team/team-workspace-recovery/tests/recovery.spec.ts
+  Result: exit 0.
+
+Behavior:
+  Local and authenticated WebSocket Team Link watchers now reject a changed Team
+  watch result whose cursor does not advance beyond the requested cursor.
+  Workspace release recovery rejects a repeated or rewound Team-list continuation
+  with TEAM_CURSOR_CONFLICT, including when the page reaches maxTeamsPerDrive.
+  Closed watch results and valid equal-cursor empty channel pages retain their
+  existing semantics.
+
+Source SHA-256:
+  packages/team/team-link-local/src/index.ts f8ed1033553329a0c2ce106649c133b3e2fd2bd3cc36f43a8cd08bf874447243
+  packages/team/team-link-local/tests/local.spec.ts 2c50a10859ece9f0c7d5f674aee77074567290e9d25230da950c98a366af0371
+  packages/team/team-link-websocket-hub/src/index.ts 77ec149b5d966f1bf539bc6522f42cdd8e9e9788474b8228a40a40344be22b50
+  packages/team/team-link-websocket-hub/tests/edges.spec.ts 9b2ae46fb13ea82872427d65acbc0d68fbd8556b6f9da8c97b5adcec3403bc99
+  packages/team/team-workspace-recovery/src/index.ts 8e13cdc4a014bbbb4ac4f1ac7afaaa76ae24384dbd28e9bff87853dbb7e29674
+  packages/team/team-workspace-recovery/tests/recovery.spec.ts 0eba39b675f243c452a616470565d8f157ca405426c80ce70133d08ea7637c6e
+
+Boundary:
+  This closes the repeated Team/channel continuation behavior for these local
+  recovery consumers. It does not provide separate-host, provider-loss, browser,
+  coverage, or release evidence; those rows remain independently scoped.

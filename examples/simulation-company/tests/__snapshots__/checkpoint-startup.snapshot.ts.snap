@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json checkpoint startup > settles interrupted startup with crash=released 1`] = `
+{
+  "canonicalSessionPreserved": true,
+  "chargedActors": 0,
+  "startupReleased": true,
+  "unmaterializedAtCut": true,
+}
+`;
+
+exports[`json checkpoint startup > settles interrupted startup with crash=reserved 1`] = `
+{
+  "canonicalSessionPreserved": true,
+  "chargedActors": 0,
+  "startupReleased": true,
+  "unmaterializedAtCut": true,
+}
+`;
+
+exports[`sqlite checkpoint startup > settles interrupted startup with crash=released 1`] = `
+{
+  "canonicalSessionPreserved": true,
+  "chargedActors": 0,
+  "startupReleased": true,
+  "unmaterializedAtCut": true,
+}
+`;
+
+exports[`sqlite checkpoint startup > settles interrupted startup with crash=reserved 1`] = `
+{
+  "canonicalSessionPreserved": true,
+  "chargedActors": 0,
+  "startupReleased": true,
+  "unmaterializedAtCut": true,
+}
+`;

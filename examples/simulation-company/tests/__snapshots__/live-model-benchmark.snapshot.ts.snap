@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json live sample > live-model sample reports calls through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`json live sample > live-model sample reports complete through HTTP and durable owners 1`] = `
+{
+  "calls": 3,
+  "status": "measured",
+}
+`;
+
+exports[`json live sample > live-model sample reports missing-usage through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`json live sample > live-model sample reports no-key through HTTP and durable owners 1`] = `
+{
+  "calls": 0,
+  "status": "failed",
+}
+`;
+
+exports[`json live sample > live-model sample reports overrun through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`json live sample > live-model sample reports tokens through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports calls through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports complete through HTTP and durable owners 1`] = `
+{
+  "calls": 3,
+  "status": "measured",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports missing-usage through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports no-key through HTTP and durable owners 1`] = `
+{
+  "calls": 0,
+  "status": "failed",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports overrun through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;
+
+exports[`sqlite live sample > live-model sample reports tokens through HTTP and durable owners 1`] = `
+{
+  "calls": 1,
+  "status": "failed",
+}
+`;

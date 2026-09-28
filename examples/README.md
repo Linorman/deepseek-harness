@@ -27,3 +27,7 @@ An opt-in Web overlay for durable, Session-local reminders. It supports positive
 ## acp-agent
 
 An Agent Client Protocol automation server for programmatic clients, with session, permission, and cancellation support. See the [ACP example reference](acp-agent/README.md).
+
+## team-evaluation
+
+Six offline Team coordination and social or company simulation cases, each with its own prompt, inputs, and acceptance checks. See the [case index](team-evaluation/README.md).

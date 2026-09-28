@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "oldIds": 47,
+  "registeredIds": 55,
+  "newIds": [
+    "F-CH-02",
+    "F-MX-01",
+    "F-MX-02",
+    "F-RT-04",
+    "F-SC-04",
+    "F-SC-05",
+    "F-UI-04",
+    "T-09"
+  ],
+  "workPackages": 12,
+  "unassignedIds": [],
+  "linksChecked": 35,
+  "scriptNamesChecked": [
+    "build",
+    "doc-sync",
+    "hygiene",
+    "lint",
+    "publint",
+    "test",
+    "test:coverage",
+    "test:e2e",
+    "test:snapshot",
+    "test:web",
+    "test:web:built",
+    "typecheck",
+    "verify-node-next-types"
+  ],
+  "newFilesCheckedWithoutGitIndex": true,
+  "errors": []
+}

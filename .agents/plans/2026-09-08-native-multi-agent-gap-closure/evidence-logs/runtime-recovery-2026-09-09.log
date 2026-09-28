@@ -1,0 +1,9 @@
+Command:
+  node node_modules/vitest/vitest.mjs run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts packages/team/team-activation-controller/tests/recovery-admission.spec.ts packages/team/team-activation-controller/tests/closure-recovery.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts packages/agent-runtime/agent-runtime-acp/tests/termination.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/invariant.spec.ts --reporter=json --outputFile=.tmp/runtime-recovery-current.json
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0.
+
+Summary:
+  Test files: 8 total, 8 passed.
+  Tests: 134 total, 134 passed, 0 failed, 0 skipped.

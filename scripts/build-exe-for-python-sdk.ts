@@ -11,6 +11,7 @@ import { existsSync, statSync } from 'node:fs'
 import { chmod, copyFile, cp, lstat, mkdir, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 import { parseArgs } from 'node:util'
+import { stageWithWorkspaceRestore } from './build-exe-for-python-sdk-deploy.ts'
 import { resolveLinuxNodePtyAddon } from './build-exe-for-python-sdk-native-pty.ts'
 
 const root = resolve(import.meta.dirname, '..')
@@ -248,19 +249,23 @@ class SingleExeBuild {
     }
     if (this.cli.dryRun) console.log(`build-exe-for-python-sdk: [dry-run] rm -rf ${this.staging}`)
     else await rm(this.staging, { recursive: true, force: true })
-    await this.run('deploy', pnpmBin(), [
-      '--filter',
-      DEPLOY_ROOT_PACKAGE,
-      'deploy',
-      '--legacy',
-      '--prod',
-      '--config.node-linker=hoisted',
-      '--config.auto-install-peers=false',
-      '--config.link-workspace-packages=true',
-      this.staging,
-    ])
-    await this.restoreLegacyHoists()
-    await this.materializeStagedLinks()
+    await stageWithWorkspaceRestore(async () => {
+      await this.run('deploy', pnpmBin(), [
+        '--filter',
+        DEPLOY_ROOT_PACKAGE,
+        'deploy',
+        '--legacy',
+        '--prod',
+        '--config.node-linker=hoisted',
+        '--config.auto-install-peers=false',
+        '--config.link-workspace-packages=true',
+        this.staging,
+      ])
+      await this.restoreLegacyHoists()
+      await this.materializeStagedLinks()
+    }, async () => {
+      await this.run('restore workspace dependencies', pnpmBin(), ['install', '--offline', '--frozen-lockfile', '--ignore-scripts'])
+    })
     if (this.cli.dryRun) {
       for (const name of DEPLOY_ONLY_DOCS) console.log(`build-exe-for-python-sdk: [dry-run] rm -f ${join(this.staging, name)}`)
     } else {

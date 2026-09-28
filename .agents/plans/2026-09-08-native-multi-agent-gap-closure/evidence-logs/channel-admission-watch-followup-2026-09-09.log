@@ -1,0 +1,23 @@
+Command:
+  pnpm exec vitest run packages/team/team-channel-admission/tests/admission.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 1 test passed; 0 failed; 0 skipped.
+  The fake admission Consumer returns a repeated changed cursor and verifies
+  that waitUntilActive fails with TEAM_CHANNEL_CURSOR_CONFLICT after one watch.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-channel-admission/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-channel-admission/src/index.ts packages/team/team-channel-admission/tests/admission.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-channel-admission/src/index.ts 9d5bb9fe920bd357071c25aa903460359f9a36e441f765346432750827fef7d5
+  packages/team/team-channel-admission/tests/admission.spec.ts a9f958f4b58648e36ea89a8f90262e62663b6d2d9aa734f3881bc19405b7c1a7
+
+Boundary:
+  This closes local channel-admission wait continuation safety only. It does
+  not expand multi-host, browser, coverage, performance, or release evidence.

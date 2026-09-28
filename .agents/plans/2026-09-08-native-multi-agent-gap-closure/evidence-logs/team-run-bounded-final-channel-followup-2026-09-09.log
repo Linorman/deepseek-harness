@@ -1,0 +1,20 @@
+TeamRun bounded final-channel read follow-up (2026-09-09)
+
+Scope: route product final-output waiting through bounded channel pages instead of the unbounded legacy channel suffix read.
+
+Commands:
+
+1. `pnpm exec tsc -p packages/team/team-run/tsconfig.json --noEmit`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/team/team-run/tests/team-run.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 93 tests passed.
+3. `pnpm exec vitest run packages/team/team-run/tests/team-run.spec.ts --no-file-parallelism -t 're-reads channel records after a changed watch|rejects invalid direct configuration'`
+   Result: 1 file passed; 2 tests passed; 91 skipped by filter.
+4. `pnpm run gen-config-catalog && pnpm run verify-config-catalog`
+   Result: generated config catalog and verification passed.
+5. `pnpm run verify-translation-pairing --write packages/team/team-run/README.md && pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-29-local-team-product-run-owner.md`
+   Result: TeamRun README and product-run Agent Note pair records refreshed; generated config-catalog verification remains source-green while its pre-existing English/Chinese structural drift is not claimed as closed.
+6. `git diff --check -- packages/team/team-run/src/index.ts packages/team/team-run/tests/team-run.spec.ts packages/team/team-run/README.md packages/team/team-run/README.zh.md docs/config-catalog.md`
+   Result: exit 0.
+
+Behavior proved: `waitForFinal()` uses the frozen positive `channelPageSize` (default `128`), advances by `nextCursor` or the observed channel cursor, and preserves the existing channel-watch cursor conflict and final/receipt settlement behavior. Other scheduler/recovery scans retain their explicitly provider-owned legacy reads; this follow-up does not claim cross-host or browser coverage.

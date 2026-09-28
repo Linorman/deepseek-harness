@@ -1,0 +1,19 @@
+README link and language-pair follow-up (2026-09-09)
+
+Scope: close the two directly attributable README acceptance defects found after the Model Experience follow-up: the default-placement English language switcher and the Chinese Team-task tool-catalog anchor. This is a scoped documentation gate; it does not claim corpus-wide translation, graph, wrap, JSDoc, persistence, browser, multi-host, coverage, real-model, or release closure.
+
+Changes:
+
+1. `packages/team/team-placement-default/README.md` now links to its existing Chinese counterpart from the English language switcher.
+2. `packages/team/tool-team-task/README.zh.md` now links `team_worker_pool_set` to the existing Team-task catalog section anchor rather than the absent Chinese per-tool anchor. The bilingual pair record was refreshed.
+
+Commands:
+
+1. `pnpm exec tsx scripts/verify-translation-pairing.ts --write packages/team/team-placement-default/README.md packages/team/tool-team-task/README.md`
+   Result: exit 0; two pair records refreshed.
+2. `pnpm run verify-md-links`
+   Result: exit 0; 2188 Markdown files checked, all relative links and fragments resolve.
+3. `pnpm run verify-package-readme-model-experience && pnpm run verify-package-readme-limitations`
+   Result: exit 0; all 260 package READMEs conform to both gates.
+4. `git diff --check`
+   Result: exit 0.

@@ -1,0 +1,59 @@
+本地世界工具
+
+在本案例目录运行命令，所有路径均相对此目录。node world.mjs help 可以再次查看接口。
+
+node world.mjs init
+创建一次世界。重复 init 只返回已有世界，不重置历史。
+
+node world.mjs overview
+读取公共概况、主体 ID 和当前环境通知，不含各主体的私有动机或账户明细。
+
+node world.mjs view <actor-id>
+输出该主体在当前日、当前版本的可见状态，并把完整 view 保存到 output/views/。决策 JSON 的 viewId 使用返回的 ID。初始主体：coop、rival、supplier、clinic、council、north、west、oldtown、riverside、workers、mutual-aid、press。Team 自行决定谁代表哪些主体以及如何在多主体之间保持独立立场。
+
+node world.mjs act <decision-file.json>
+执行一次决策。文件格式：
+{
+  "id": "由你选择的唯一决策 ID",
+  "actor": "主体 ID",
+  "viewId": "view 返回的 ID",
+  "teamIdentity": "真实负责该决策的 Agent/Session/Task 标识",
+  "rationale": "基于该 view 的决定与取舍，至少 20 字符",
+  "actions": [一个或多个下列行动]
+}
+完全相同的决策重试不重复执行；改变同一 ID 的内容会拒绝。行动数组作为一次交易原子验证，任何一个不合法都不写入世界。
+
+支持的行动：
+transfer: {"kind":"transfer","to":"主体","resource":"cash|food|water|medicine|fuel","quantity":正整数}
+offer: {"kind":"offer","id":"唯一 ID","to":"主体","resource":"food|water|medicine|fuel","quantity":正整数,"unitPrice":非负整数,"leadDays":0至30整数,"expiresDay":当前日或之后}
+accept: {"kind":"accept","offerId":"已看到的邀请 ID"}
+deliver: {"kind":"deliver","orderId":"承诺 ID"}；只能由卖方执行，不能提前于约定日，当前道路中断时拒绝。每笔交付先消耗卖方 1 单位未预留 fuel 与 4 credits 运费，之后才结算托管款。
+cancel-order: {"kind":"cancel-order","orderId":"承诺 ID"}；买方只能在逾期至少 2 日后取消并取回托管款。
+loan-offer: {"kind":"loan-offer","id":"唯一 ID","to":"主体","principal":正整数,"repayAmount":不低于本金的整数,"dueDay":未来日期}；邀请在还款日前一日到期。
+accept-loan: {"kind":"accept-loan","offerId":"借贷邀请 ID"}
+repay: {"kind":"repay","loanId":"已接受借贷 ID"}
+settle-costs: {"kind":"settle-costs"}；支付自己累计的未付经营成本。
+operating: {"kind":"operating","value":true或false,"reason":"原因"}；停止经营不会删除现有承诺或债务。
+create-actor: {"kind":"create-actor","id":"新主体 ID","name":"名称","actorKind":"firm|community|institution|person","purpose":"目标","cash":非负整数,"stocks":{"food":数量,"water":数量,"medicine":数量,"fuel":数量},"dailyCost":非负整数}；启动资产全部从发起者转入，不能凭空创建。
+organization: {"kind":"organization","id":"唯一组织 ID","name":"名称","purpose":"目标"}；创建者自动加入。
+join: {"kind":"join","organizationId":"组织 ID","role":"自己选择的职责"}
+leave: {"kind":"leave","organizationId":"组织 ID"}
+message: {"kind":"message","to":["主体 ID"],"text":"内容","delayDays":0至30整数,"public":true或false}；消息的内容是主体的表述，不自动确认为事实。
+
+node world.mjs advance <目标日>
+环境推进到目标日，最多跨 7 日；记录消耗、补货、外部资金、道路变化和承诺逾期。该命令不替主体买卖、救助或交付。
+
+node world.mjs checkpoint <检查点 ID> <记忆文本文件>
+保存当前状态指纹、日志前缀和你的跨期记忆说明。使用新的 ID，不会覆盖旧检查点。
+
+node world.mjs restore-check <检查点 ID>
+从世界历史重建该检查点，并确认状态与日志前缀一致，不执行新决策。结果写入 output/recovery-checks/。
+
+node world.mjs audit
+检查重放、资源守恒、365 日范围、决策覆盖和检查点覆盖，并写 output/audit.json。审计通过不能单独证明 Agent 的决策质量；真实 Team 记录和最终报告仍须人工核对。
+
+node integrity.mjs
+核对裁判与输入文件是否仍符合 manifest.json 的交付指纹。
+
+node world.mjs unlock
+只在前一个写入进程已死亡并留下 writer.lock 时使用；活进程的锁不能移除。解锁期间不得并发启动其他世界命令。并发的普通命令会拒绝，刷新 view 后重试即可；Team 自行安排谁提交已讨论好的行动。

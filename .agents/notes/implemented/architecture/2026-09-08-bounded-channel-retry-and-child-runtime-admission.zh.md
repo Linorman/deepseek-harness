@@ -16,9 +16,13 @@ Host 与 SDK principal admission Consumer 在根据不可变 membership 和 reta
 
 `team-delegation` 通过 `listTeamsPage` 发现 Team，并在有界 pulse 之间保留 provider-order continuation cursor。事件驱动请求仍会唤醒受影响的 Team 及其 parent；restart discovery 从 `-1` 重建 cursor。
 
+子运行授权固定签发 proof 的完整 scope。每次同步存活检查都比较当前解析出的 scope；即使 proof 对象仍已注册，操作或任务发生变化也会使旧授权失效。异步工作区检查和端点发布在提交前重新验证这一关系。
+
 TeamRun 持久化 complete finalization intent 后，Hub 允许在 Team quiescing 期间读取该 exact final channel 的有界 pending delivery。其他 channel 和 cancellation path 仍保留 active-state 检查。
 
 Shared workspace provider 提供 opt-in periodic observation pulse。每个 pulse 只按配置上限访问 live provider allocation，通过现有 Team proof 和 WAL path 记录明确的 `periodic` observation stage，与 release/publish scan 串行，并在 disposal 时等待已接受的 pulse。默认 interval 为关闭。
+
+子运行的轮次失败处理通过当前本地 activation binding 保留权限，不要求模型轮次仍在运行。释放时撤销证明，Hub 仍校验激活身份。与激活状态写入并发产生的游标冲突在配置上限内使用同一失败键重试；其他错误不重试。 恢复选择最新激活 epoch，并合并调用者取消信号与服务关闭信号。清理通过 `ctx.effect()` 注册：Cordis 按构造函数调用函数插件时，仅返回清理函数不能建立清理归属。关闭在释放证明来源前排空已接受的恢复操作。 恢复已取得的 lease 清理失败时，同时向恢复调用者和并发关闭报告失败；不能将恢复拒绝当作已停稳的证明。
 
 ## Alternatives considered
 

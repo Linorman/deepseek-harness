@@ -1,0 +1,150 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts (4 tests | 4 failed) 23438ms
+     × cancels a workflow branch through tool and completes independent work on json 5940ms
+     × cancels a workflow branch through tool and completes independent work on sqlite 6589ms
+     × cancels a workflow branch through api and completes independent work on json 5815ms
+     × cancels a workflow branch through api and completes independent work on sqlite 5093ms
+ ❯ examples/headless-agent/tests/headless-team-run.snapshot.ts (6 tests | 1 failed) 27091ms
+     × delegates one default-worker task through the assembled headless profile before final receipt 4190ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  examples/headless-agent/tests/headless-team-run.snapshot.ts > headless TeamRun snapshot > delegates one default-worker task through the assembled headless profile before final receipt
+AssertionError: expected 'You are an AI agent running in a plug…' to contain 'at least two independent worker tasks'
+
+- Expected
++ Received
+
+- at least two independent worker tasks
++ You are an AI agent running in a plugin-based harness.
++
++ You are a coding agent powered by the headless-team-task-mock model. Your working directory is /private/var/folders/nr/yjk8zhys5nbcvl3jg7bdtkkc0000gn/T/headless-team-task-profile-YgTt2g.
++
++ Use the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.
++
++ Use the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.
++
++ Use the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.
++
++ Use the glob tool — not shell find — to discover files by path pattern. A pattern with no "/" matches basenames at any depth, so "*" matches every file in the tree rather than its top level. Results are files only, never directories, and include hidden and ignored files: a result that fits comes back in modification-time order, while a larger one keeps the modification-time-ordered head.
++
++ Use the grep tool — not shell grep or rg — to search file contents. Use read on a matched file when you need surrounding context.
++
++ Check the [exit code: N] marker on every bash result; investigate failures before moving on.
++
++ Track every background job id you start. You are notified in-session when a job finishes — do not busy-poll or sleep on one; keep working on independent steps and do not duplicate a running job's work. Before giving a final answer, collect every still-relevant job with job_output (set wait: true only when you are genuinely blocked on it), and job_kill jobs that stopped mattering.
++
++ Use the web_search tool to discover current information on the web. The required queries array accepts 1–4 non-empty search queries; use a one-item array for a single search. It returns an optional answer plus a list of source URLs. Use the returned source snippets when available, and cite the relevant URLs as markdown links.
++
++ You are the commander and coordinator of a Team. Turn the user objective into an executable plan, direct workers, monitor delivery, and synthesize the final result. You are not the default executor for substantive work. First classify the objective and deliverables as research, analysis, writing or editing, planning, data work, operations, coding or building, testing or QA, or a mix. Identify the smallest feasible workstreams, dependencies, acceptance criteria, risks, and the handoff needed between them. Do not assume every request is coding; choose task instructions and validation for the actual domain. For every non-trivial objective with two or more feasible workstreams, set worker_count to useful parallelism within the configured limit, start independent worker tasks, and call team_task_start once per bounded workstream before waiting. Keep independent workstreams running concurrently. Use team_workflow_start when dependencies, fan-in, or ordered stages need a declarative task graph; otherwise start independent default tasks directly. Give every task a self-contained brief with its purpose, inputs, exact deliverable, constraints, validation, and handoff. Assign one owner per task; workers execute their assignment and do not delegate it. Only declare read_scopes or write_scopes when a task touches the shared workspace. For research, analysis, writing, planning, data, or review tasks with no filesystem changes, leave both arrays empty. When a task writes shared files, use narrow workspace-relative scopes with no overlap between concurrent writers; never use a shared project directory or workspace root as a shortcut because overlapping writes are serialized. If one worker must own a shared artifact, assign the other workers read-only research, analysis, or review tasks. Use the current workspace, permission mode, model limits, and available capabilities from runtime context; never invent access. When the pool limit is reached, keep admitting ready tasks so they queue for the next idle worker instead of waiting or doing the work yourself. Monitor with team_task_list, team_task_watch, and team_task_wait; cancel or replace failed work when needed, and use settled worker evidence in your synthesis. You may perform coordination, integration, and final synthesis, but delegate substantive work whenever a worker can make progress. A trivial one-step answer may stay with you. Never claim worker output before its task settles. Use team_task_delegate when a bounded workstream needs its own child Team. Supply an explicit budget and narrow scopes; optional template_id and template_version must be paired. The parent task exposes child_team_id and the admitted delegation_result text and artifact references; wait for its terminal settlement before using it as completed evidence. Finish with team_final using the required channel_id.
++
++ When you have completed the user's objective, call team_final with channel_id channel-cdb0a026-6997-4e07-8afa-834cc0bfd0e5 and your final answer text. Do not present the final answer only as an assistant message.
+
+ ❯ Object.inspect examples/headless-agent/tests/headless-team-run.snapshot.ts:419:12
+    417|         const coordinatorHeader = valueRecord(valueRecord(coordinatorH…
+    418|         expect(valueString(coordinatorHeader['system'], 'coordinator s…
+    419|           .toContain('at least two independent worker tasks')
+       |            ^
+    420|         expect(valueString(coordinatorHeader['system'], 'coordinator s…
+    421|           .toContain('research, analysis, writing or editing')
+ ❯ runLoaderSmoke packages/test-support/loader-smoke/src/index.ts:207:5
+ ❯ examples/headless-agent/tests/headless-team-run.snapshot.ts:308:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts > workflow cancellation through coordinator and Host entry points > cancels a workflow branch through tool and completes independent work on json
+Error: Task cancellation failure evidence: /Volumes/projects-mac/deepseek-harness/.tmp/failed-wtc-zz3GrC
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:58:17
+     56|           const evidence = join(repository, '.tmp', `failed-${basename…
+     57|           await cp(root, evidence, { recursive: true })
+     58|           throw new Error(`Task cancellation failure evidence: ${evide…
+       |                 ^
+     59|         } finally { await rm(root, { recursive: true, force: true }) }
+     60|       }, 45_000)
+
+Caused by: AssertionError: {"timedOut":false,"exitCode":1,"stdout":"","stderr":"Error: Team operation failed: Principal final delivery requires the durable human inbox Consumer\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-zz3GrC/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:130:38)\n    at async AuthenticatedLease.withCall (/Volumes/projects-mac/deepseek-harness/packages/core/product-principal/src/index.ts:194:14)\n    at async call (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-zz3GrC/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:128:5)\n    at async run (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-zz3GrC/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:161:5)\n"}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:46:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts > workflow cancellation through coordinator and Host entry points > cancels a workflow branch through tool and completes independent work on sqlite
+Error: Task cancellation failure evidence: /Volumes/projects-mac/deepseek-harness/.tmp/failed-wtc-SqRPoJ
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:58:17
+     56|           const evidence = join(repository, '.tmp', `failed-${basename…
+     57|           await cp(root, evidence, { recursive: true })
+     58|           throw new Error(`Task cancellation failure evidence: ${evide…
+       |                 ^
+     59|         } finally { await rm(root, { recursive: true, force: true }) }
+     60|       }, 45_000)
+
+Caused by: AssertionError: {"timedOut":false,"exitCode":1,"stdout":"","stderr":"Error: Team operation failed: Principal final delivery requires the durable human inbox Consumer\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-SqRPoJ/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:130:38)\n    at async AuthenticatedLease.withCall (/Volumes/projects-mac/deepseek-harness/packages/core/product-principal/src/index.ts:194:14)\n    at async call (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-SqRPoJ/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:128:5)\n    at async run (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-SqRPoJ/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:161:5)\n"}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:46:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts > workflow cancellation through coordinator and Host entry points > cancels a workflow branch through api and completes independent work on json
+Error: Task cancellation failure evidence: /Volumes/projects-mac/deepseek-harness/.tmp/failed-wtc-AJVKKD
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:58:17
+     56|           const evidence = join(repository, '.tmp', `failed-${basename…
+     57|           await cp(root, evidence, { recursive: true })
+     58|           throw new Error(`Task cancellation failure evidence: ${evide…
+       |                 ^
+     59|         } finally { await rm(root, { recursive: true, force: true }) }
+     60|       }, 45_000)
+
+Caused by: AssertionError: {"timedOut":false,"exitCode":1,"stdout":"","stderr":"Error: Team operation failed: Principal final delivery requires the durable human inbox Consumer\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-AJVKKD/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:130:38)\n    at async AuthenticatedLease.withCall (/Volumes/projects-mac/deepseek-harness/packages/core/product-principal/src/index.ts:194:14)\n    at async call (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-AJVKKD/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:128:5)\n    at async run (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-AJVKKD/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:161:5)\n"}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:46:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts > workflow cancellation through coordinator and Host entry points > cancels a workflow branch through api and completes independent work on sqlite
+Error: Task cancellation failure evidence: /Volumes/projects-mac/deepseek-harness/.tmp/failed-wtc-ieynft
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:58:17
+     56|           const evidence = join(repository, '.tmp', `failed-${basename…
+     57|           await cp(root, evidence, { recursive: true })
+     58|           throw new Error(`Task cancellation failure evidence: ${evide…
+       |                 ^
+     59|         } finally { await rm(root, { recursive: true, force: true }) }
+     60|       }, 45_000)
+
+Caused by: AssertionError: {"timedOut":false,"exitCode":1,"stdout":"","stderr":"Error: Team operation failed: Principal final delivery requires the durable human inbox Consumer\n    at <anonymous> (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-ieynft/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:130:38)\n    at async AuthenticatedLease.withCall (/Volumes/projects-mac/deepseek-harness/packages/core/product-principal/src/index.ts:194:14)\n    at async call (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-ieynft/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:128:5)\n    at async run (/Volumes/projects-mac/deepseek-harness/.tmp/wtc-ieynft/.clocky/profiles/headless/snapshot-fixtures/headless-workflow-task-cancellation-driver.ts:161:5)\n"}: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ examples/headless-agent/tests/workflow-task-cancellation.snapshot.ts:46:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 1 passed (3)
+      Tests  5 failed | 6 passed (11)
+   Start at  17:21:38
+   Duration  27.83s (transform 348ms, setup 274ms, import 235ms, tests 54.45s, environment 0ms)

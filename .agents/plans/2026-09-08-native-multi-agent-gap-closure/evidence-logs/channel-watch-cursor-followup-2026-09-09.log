@@ -1,0 +1,22 @@
+Channel watch cursor safety follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane tests; no credential values or .env contents were read.
+
+Changed-source hashes:
+e697f7b14e7e35d184e99a50ad6398bf37a22d2de67025a4199438dc050698c0  packages/team/team-link-local/src/index.ts
+ac6a401f7cc5347899934f8e7c0d7d956f935c321e45dad4f82630c51e058036  packages/team/team-link-websocket-hub/src/index.ts
+cf7849a5abaa1eac863ca49c7116f5b8254b0d8969e986885c3d273a91aa3fc9  packages/team/team-link-local/tests/local.spec.ts
+
+Behavior: local and authenticated WebSocket Hub Links now reject a fulfilled channel watch whose changed cursor repeats or rewinds the cursor supplied to that watch. Empty pending-delivery pages may still legally return an equal page cursor; only the watch result is fenced, so normal no-delivery polling semantics remain unchanged.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/tests/server.spec.ts --reporter=dot
+Result: PASS — 2 files, 59 tests passed, 0 failed, 0 skipped. The local suite includes the repeated-watch cursor regression.
+
+Command: pnpm exec tsc -b packages/team/team-link-local/tsconfig.json packages/team/team-link-websocket-hub/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec oxlint packages/team/team-link-local/src/index.ts packages/team/team-link-websocket-hub/src/index.ts packages/team/team-link-local/tests/local.spec.ts
+Result: PASS — exit 0.
+
+Scope boundary: this is focused channel transport safety evidence. It does not claim separate-host, credential rotation, provider-loss, browser/GIF, or full T-04 multi-host closure.

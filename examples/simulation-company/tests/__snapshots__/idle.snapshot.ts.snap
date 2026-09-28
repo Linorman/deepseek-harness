@@ -1,0 +1,21 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`closes an idle json composition after repeated startup 1`] = `
+{
+  "commits": 0,
+  "cycles": 3,
+  "modelCalls": 0,
+  "runStorageCreated": false,
+  "sessions": 0,
+}
+`;
+
+exports[`closes an idle sqlite composition after repeated startup 1`] = `
+{
+  "commits": 0,
+  "cycles": 3,
+  "modelCalls": 0,
+  "runStorageCreated": false,
+  "sessions": 0,
+}
+`;

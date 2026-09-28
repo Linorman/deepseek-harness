@@ -1,0 +1,40 @@
+{
+  "candidate": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "date": "2026-09-09",
+  "platform": "macOS",
+  "properties": [
+    {
+      "name": "channel-receipt-interleavings",
+      "file": "packages/team/team-hub/tests/replay-properties.spec.ts",
+      "seed": 20260909,
+      "numRuns": 100,
+      "result": "passed",
+      "minimizedCounterexample": null
+    },
+    {
+      "name": "channel-invitation-revisions",
+      "file": "packages/team/team-hub/tests/replay-properties.spec.ts",
+      "seed": 20260911,
+      "numRuns": 100,
+      "result": "passed",
+      "minimizedCounterexample": null
+    },
+    {
+      "name": "deterministic-owner-ranking",
+      "file": "packages/team/team-scheduler-dag/tests/ranking-properties.spec.ts",
+      "seed": 20260910,
+      "numRuns": 100,
+      "result": "passed",
+      "minimizedCounterexample": null
+    },
+    {
+      "name": "child-reservation-interleavings",
+      "file": "packages/team/team-hub/tests/child-reservation-properties.spec.ts",
+      "seed": 20260912,
+      "numRuns": 100,
+      "result": "passed",
+      "minimizedCounterexample": null
+    }
+  ],
+  "scope": "Seed ledger only; the child reservation entry is a pure model slice. Full ranking restart/no-provider matrix, live JSON/SQLite model agreement, cross-backend child interleavings, and an actual minimized counterexample artifact remain open."
+}

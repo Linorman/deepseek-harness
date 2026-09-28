@@ -31,6 +31,7 @@ function stubAgent(rawId: string, overrides: Partial<Agent> = {}): Agent {
     inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
     status: 'idle',
     ctx: new Context(),
+    wakePending: () => false,
     send: () => {},
     followup: () => {},
     steer: () => ({ outcome: Promise.resolve({ status: 'rejected' as const }) }),
@@ -147,6 +148,32 @@ describe('Inbox', () => {
 })
 
 describe('AgentRegistry', () => {
+  it('keeps stale workspace disposers from clearing a replacement lease and rejects closed writes', () => {
+    const agent = stubAgent('replaced-workspace')
+    const first = openAgentWorkspaceLease(agent)
+    expect(() => openAgentWorkspaceLease(agent)).toThrow(/already has a live workspace lease/)
+    const oldMarker = first.markUnavailable()
+    const newMarker = first.markUnavailable()
+    oldMarker()
+    expect(() => resolveAgentWorkspaceRoot(agent)).toThrow(AgentWorkspaceUnavailableError)
+    newMarker()
+    const oldRoot = first.publishRoot('/old')
+    const newRoot = first.publishRoot('/current')
+    oldRoot()
+    expect(resolveAgentWorkspaceRoot(agent)).toBe('/current')
+    first.dispose()
+    expect(() => first.markUnavailable()).toThrow(/lease is closed/)
+    expect(() => first.publishRoot('/closed')).toThrow(/lease is closed/)
+    const second = openAgentWorkspaceLease(agent)
+    const clear = second.markUnavailable()
+    oldMarker(); newRoot(); first.dispose()
+    expect(() => resolveAgentWorkspaceRoot(agent)).toThrow(AgentWorkspaceUnavailableError)
+    clear()
+    second.publishRoot('/replacement')
+    expect(resolveAgentWorkspaceRoot(agent)).toBe('/replacement')
+    second.dispose()
+  })
+
   it('prefers a live Team workspace allocation over the Session cwd', () => {
     const agent = stubAgent('allocated-workspace', {
       session: Session.create(SessionId('allocated-workspace'), undefined, {

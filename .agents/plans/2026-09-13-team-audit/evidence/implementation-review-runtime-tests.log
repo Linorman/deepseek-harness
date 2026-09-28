@@ -1,0 +1,61 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts (22 tests | 8 failed) 1556ms
+     × rejects unresolved Team resources at the completed journal marker 52ms
+     × rejects unresolved Team resources at the failed journal marker 14ms
+     × rejects unresolved Team resources at the cancelled journal marker 13ms
+     × rejects new epochs, tasks and workflow work after the terminal marker 41ms
+     × rejects unresolved Team resources at the completed journal marker 24ms
+     × rejects unresolved Team resources at the failed journal marker 16ms
+     × rejects unresolved Team resources at the cancelled journal marker 17ms
+     × rejects new epochs, tasks and workflow work after the terminal marker 49ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (json) > rejects unresolved Team resources at the completed journal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (json) > rejects unresolved Team resources at the failed journal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (json) > rejects unresolved Team resources at the cancelled journal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (sqlite) > rejects unresolved Team resources at the completed journal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (sqlite) > rejects unresolved Team resources at the failed journal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (sqlite) > rejects unresolved Team resources at the cancelled journal marker
+AssertionError: expected [Function] to throw error including 'unfinished task' but got 'Terminal Team retains live Activation…'
+
+Expected: "unfinished task"
+Received: "Terminal Team retains live Activation startup or subtree capacity"
+
+ ❯ packages/team/team-hub/tests/durable-terminal-resources.spec.ts:114:53
+    112|             rows.length - 1, f.final === undefined ? [] : [f.final.par…
+    113|           if (f.final !== undefined) { ctx.teams.registerAdapter(consu…
+    114|           await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow(…
+       |                                                     ^
+    115|         }
+    116|       })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (json) > rejects new epochs, tasks and workflow work after the terminal marker
+ FAIL  |thread-safe| packages/team/team-hub/tests/durable-terminal-resources.spec.ts > durable terminal resources (sqlite) > rejects new epochs, tasks and workflow work after the terminal marker
+AssertionError: expected [Function] to throw error including 'without complete quiescence' but got 'Terminal Team retains live Activation…'
+
+Expected: "without complete quiescence"
+Received: "Terminal Team retains live Activation startup or subtree capacity"
+
+ ❯ packages/team/team-hub/tests/durable-terminal-resources.spec.ts:167:51
+    165|       for (const [index, record] of lateRecords.entries()) {
+    166|         const ctx = await recover(backend, [...prefix, record])
+    167|         await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow(me…
+       |                                                   ^
+    168|       }
+    169|     })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+
+ Test Files  1 failed | 59 passed (60)
+      Tests  8 failed | 1016 passed (1024)
+   Start at  19:01:46
+   Duration  31.35s (transform 2.88s, setup 1.50s, import 8.36s, tests 109.21s, environment 3ms)

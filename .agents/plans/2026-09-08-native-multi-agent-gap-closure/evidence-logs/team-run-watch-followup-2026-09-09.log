@@ -1,0 +1,38 @@
+Command:
+  pnpm exec vitest run packages/team/team-run/tests/team-run.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 93 tests passed; 0 failed; 0 skipped.
+  The changed regression covers quiescence wait, workflow-plan wait,
+  completion wait, channel final wait, default-worker child-task wait,
+  and default-worker task watch when the provider repeats the requested cursor.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-run/tsconfig.json --noEmit
+  Result: exit 0.
+
+Behavior:
+  TeamRun now validates every Team watch result used by quiescence, child-task,
+  and default-worker task waits. A repeated or rewound changed cursor returns
+  TEAM_RUN_NOT_QUIESCENT instead of resubmitting the same local watch.
+
+Lint:
+  pnpm exec oxlint packages/team/team-run/src/index.ts packages/team/team-run/tests/team-run.spec.ts
+  Result: non-zero because the package already contains unrelated findings at
+  source lines 964, 1398, 1407, 1902, 4353, 5422 and test lines 1247-1248,
+  1253, 1267, 2377, 2385 and 2391. No finding was reported on the added
+  Team-watch implementation or regression lines after indentation correction.
+  This command is not recorded as a package-wide lint pass.
+
+Source SHA-256:
+  packages/team/team-run/src/index.ts 9eda9a02839522a6fff2d17e0265e658be4d64e49e9720ee6f8058ed23f0badc
+  packages/team/team-run/tests/team-run.spec.ts 364db5dcbfd27180140338c559937ca274b7a609d46491215260c7c68e794853
+
+Boundary:
+  This closes TeamRun's local non-advancing Team-watch handling. It does not
+  expand separate-host, ACP independent-process, browser, coverage, performance,
+  or release evidence.
+
+Combined candidate check:
+  pnpm exec vitest run packages/team/team-link-local/tests/local.spec.ts packages/team/team-link-websocket-hub/tests/edges.spec.ts packages/team/team-workspace-recovery/tests/recovery.spec.ts packages/team/team-run/tests/team-run.spec.ts --reporter=dot --maxWorkers=1
+  Result: 4 test files passed; 187 tests passed; 0 failed; 0 skipped.

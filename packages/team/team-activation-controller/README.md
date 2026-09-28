@@ -6,6 +6,8 @@ English | [中文](README.zh.md)
 
 For a Team with `maxLiveActivations`, `activate()` first commits a Participant startup reservation. The raw binding retains its `reservationId`; a second epoch cannot reuse it. Unpublished starts release capacity only after confirmed cleanup, while bound epochs release through quiescence. Unknown starts retain capacity across restart; closure recovery records `ACTIVATION_STARTUP_UNCONFIRMED`. Failed raw cleanup remains controller-owned for retry even without a capacity ceiling. A confirmed raw termination is retained while reservation release retries; the handle is not disposed twice. Failed close remains retryable with activation admission closed. Known pre-start refusals retain reservation-release ownership through storage failures. A lost bind response is reconciled against the exact durable epoch and settled through quiescence; confirmed raw termination is not repeated when readback or quiescence retries. The plugin registers disposal through `ctx.effect()` so admitted startup and cleanup settle before its proof sources retire.
 
+`stopOwnedActivation()` retires only the exact locally owned activation. A lifecycle owner may provide `checkpoint()` after local work and workspace settlement, before runtime disposal detaches the Session. Failure retains ownership; a successful checkpoint is not repeated after partial runtime disposal.
+
 ## Durable activation
 
 `TeamActivationController.activate()` reads the requested Team cursor and active agent Participant, rejects a resident epoch or another Session before placement, calls the named AgentRuntime provider, verifies that the returned handle owns the requested Session and that any local Agent belongs to that Session, then calls `ctx.teams.bindActivation()`. It returns a `TeamActivationLease` only after the binding commits. If the binding rejects, the controller disposes the raw handle; a cleanup failure is reported together with the binding failure.
@@ -27,6 +29,8 @@ The controller subscribes to the accepted handle's status stream and releases ev
 `disposalTimeoutMs` bounds unload settlement, defaults to `5000`, and cannot exceed Node’s `2147483647` millisecond timer limit. `statusSyncAttempts` bounds cursor-conflict retries for one observed status and defaults to `8`.
 
 `activate()`, `coldReplace()`, `preflightResume()` and `recoverClosure()` capture their target fields before asynchronous work. A human resume authorization must keep naming that same Team at every authorization check, including checks after provider publication and before fencing or durable bind. Editing the caller’s original request cannot redirect an accepted operation to another Team. Controller close retains an accepted stopping-epoch cancellation-stall proof while its policy or append is pending.
+
+A Team's immutable `rules.activationLifecycleOwner` selects a registered `TeamActivationLifecycleOwner`. Missing or retiring owners reject startup and recovery. Coordinated starts always persist a startup reservation, then reserve domain authority before invoking the pinned runtime implementation. Domain binding follows the Hub commit; revocation precedes stopping and release follows quiescence. Owner callbacks run outside Team/channel serializers. Unregister drains accepted starts and activations and retains unresolved ownership on failure. `recoverCoordinatedLocal()` and `recoverCoordinatedReservation()` require independent local termination or no-start evidence from that owner; durable quiescence also permits final domain cleanup.
 
 ## Model Experience
 

@@ -6,6 +6,10 @@
 
 每个固定 delivery Consumer 会在普通 delivery 前接收 `onInvitation()`。它检查当前 Agent/binding、准确的 manifest fingerprint、role 和支持的 adapter version，再调用 `acknowledgeChannelInvitation()`。Task-assignment invitation 还须匹配冻结的 activation 和 Session。确认不会创建模型输入或 Envelope receipt。普通 delivery 仍先 claim 已接纳的 intent，并在 receipt 前 flush Session。
 
+本地发现将带 `rules.simulationRunId` 的 Team 留给专用消费者，不为这些 binding 打开通用投递 Link。Hub 另在 claim 与 receipt 准入处强制检查 owner proof。
+
+`renderDirectV4EnvelopeInput()` 是已接受 direct-v4 内容的共享纯渲染函数；仅渲染消息不会授予 claim 或 receipt 权限。
+
 ## 本地投递
 
 `TeamAgentClient`会先订阅，再扫描已处于 live 状态的 Agent。它会针对每个 Session-header pair 与 `TeamStateSnapshot.activations`同步，只接受该 Session 准确的 `running` 或 `idle` epoch。`starting`、`stopping` 或 `offline` epoch 不会接收 channel 输入。每个已接纳 binding 都会启动 `FixedBindingTeamAgentLinkDelivery`；调用方拥有 binding discovery，而固定消费方拥有 Link connection、notification handling、claim、inbox admission、flush、receipt、soft interrupt、reconnect 和 close。启用 `consumeWorkspace` 后，固定消费方会读取持久 allocation metadata，并观察其准确 binding 的 allocation change。已配置的 Link 拥有 pending-page replay 和 cursor watch。对于 direct v1/v2/v3 单接收者或 v4 子集/广播 `message` Envelope notification，Link 的 `claim()`是最终等待的准入检查，它携带准确的 Team、participant、activation、Session、channel 和 Envelope 身份。`undefined`不会影响本地 inbox。返回的 claim 必须仍与本地 binding、active direct channel、Envelope 和 delivery intent 匹配，client 才会派生确定性的 `team-envelope:<EnvelopeId>` message，并在其上记录 `TeamEnvelopeSource`；source 会保留已接收的 delivery intent，使 Host queue projection 能区分 pending steering 与不唤醒的 Team context。direct v3/v4 会解析有序的 text 与 image-reference block，并在不改变顺序的前提下将它们置于持久 sender prefix 之后。direct v2/v3/v4 的 `final` Envelope 绝不会进入本地 Agent inbox，也不会创建本地 receipt。

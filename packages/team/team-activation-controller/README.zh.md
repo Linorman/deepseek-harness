@@ -6,6 +6,8 @@
 
 Team 设置 `maxLiveActivations` 时，`activate()` 首先提交 Participant 启动预留，raw binding 保留 `reservationId`，第二个 epoch 不能复用。未发布启动只在确认清理后释放额度，已绑定 epoch 通过 quiescence 释放。未知启动跨重启保留额度，关闭恢复记录 `ACTIVATION_STARTUP_UNCONFIRMED`；即使没有容量上限，清理失败的 raw handle 仍归 controller 拥有并重试。reservation release 重试时保留已确认的 raw termination，不重复释放 handle。关闭失败可以重试，但 activation 接纳仍保持关闭。已知 provider 未启动的拒绝在存储失败后仍保留 reservation-release 责任。Bind 响应丢失时按准确的持久 epoch 核对，通过 quiescence 结算；readback 或 quiescence 重试不重复已确认的 raw termination。插件通过 `ctx.effect()` 注册 disposal，等待已接纳的启动和清理完成后再撤销 proof source。
 
+`stopOwnedActivation()` 只退役精确的本地所属激活。生命周期所有者可提供 `checkpoint()`，在本地工作和工作区结算后、运行时销毁分离 Session 前执行。失败保留所有权；成功检查点不会在运行时部分销毁后重复执行。
+
 ## 持久 activation
 
 `TeamActivationController.activate()`读取请求的 Team cursor 和 active agent Participant，在 placement 前拒绝 resident epoch 或另一 Session，调用具名 AgentRuntime provider，验证返回 handle 拥有请求的 Session，且任何 local Agent 都属于该 Session，然后调用 `ctx.teams.bindActivation()`。只有 binding 提交后才返回 `TeamActivationLease`。binding 被拒绝时 controller 会释放 raw handle；清理失败会与 binding 失败一起报告。
@@ -27,6 +29,8 @@ controller 会订阅已接收 handle 的 status stream，并在其 Team 记录�
 `disposalTimeoutMs` 限制卸载结算，默认值为 `5000`，不得超过 Node 的 `2147483647` 毫秒 timer 上限。`statusSyncAttempts`限制一次观测 status 的 cursor-conflict 重试，默认值为 `8`。
 
 `activate()`、`coldReplace()`、`preflightResume()` 和 `recoverClosure()` 在异步工作开始前捕获目标字段。每次校验 human resume authorization 时，它都必须指向同一 Team；provider 发布后以及 fencing 或 durable bind 前的再次校验也遵守这一要求。调用方修改原始 request 不会将已接纳操作转向另一个 Team。Controller close 会保留已接纳的 stopping-epoch cancellation-stall proof，直至对应 policy 或 append 完成。
+
+Team 不可变的 `rules.activationLifecycleOwner` 选择已注册的 `TeamActivationLifecycleOwner`。缺失或正在退役的所有者会拒绝启动和恢复。受协调的启动始终持久预留容量，再预留领域权限，随后调用固定的运行时实现。Hub 提交后才完成领域绑定；停止前撤销，停稳后释放。所有者回调在 Team/channel 串行队列之外运行。注销会排空已受理启动和激活，失败时保留未结算所有权。`recoverCoordinatedLocal()` 与 `recoverCoordinatedReservation()` 要求该所有者提供独立的本地终止或未启动证据；持久停稳证明也允许完成领域清理。
 
 ## 模型体验
 

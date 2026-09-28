@@ -1,0 +1,104 @@
+{
+  "recordedAt": "2026-09-10T12:39:32.623210+00:00",
+  "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "environment": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "node": "v25.9.0",
+    "pnpm": "11.19.0",
+    "model": "Keyless replay through real AgentLoop and tools; no live model claim.",
+    "browser": "Playwright Chromium; Browser plugin not available.",
+    "viewports": [
+      [
+        1440,
+        1000
+      ],
+      [
+        390,
+        844
+      ]
+    ],
+    "credentialPolicy": "Each fixture Host owns an isolated bootstrap state; no credential values retained."
+  },
+  "scope": "F-UI-01/F-UI-03 implementation and full keyless Web regression; not full repository coverage, live-model/GIF, or independent-host proof.",
+  "sourceSha256": {
+    "packages/client/runtime/src/client/teams/service.ts": "6fd35e9a521f6f85254622ddb8b298537377d67db99884a5d4ab6e7796baecf2",
+    "packages/client/runtime/src/client/contract/team-tasks.ts": "06307cd558fcd3ec703912854b14da000a4e99ef6b67fbe14eaef494c0b9657e",
+    "packages/client/ui-team/src/client/TeamPage.tsx": "d1a283c1ca8d904a8e8881815aea87b0db931cf92f7bf3a9ce1ba4b3765335e1",
+    "packages/team/team-run/src/index.ts": "f51adb2be20d7d16e395e525c51aa69478760596983ed624a87e55f7ac7045f6",
+    "packages/client/runtime/tests/team-tasks.client.spec.ts": "ad4dd89a6006f5213c66cb0df3ffcb2f82f973430a8fd5a3a469d253ec8f17f9",
+    "packages/client/ui-team/tests/team-browser.client.spec.tsx": "24206531bf397f440e86474e3bcf901eb8019259c59b4156010345195419b07d",
+    "packages/team/team-run/tests/team-run.spec.ts": "e37904a981f5424e9d6f4d22b6ef97c671be0e6f20e48b12ff90e48957d3c69b",
+    "apps/web/tests/team-collections.snapshot.ts": "a15df6124122ee064174935c46f2c8e2e0a900ed2ab98d5913483f0a0aec339b",
+    "examples/headless-agent/tests/fixtures/team-collections-browser.cordis.yml": "793b30d19a4c6f86786bc88a6bc61b141288ce76f351aa8cc51e499b4855418c",
+    "apps/web/tsconfig.json": "d5815093572d49b2388e34e8395fab2dea90abc00e0f9dac173987d8881a58ef",
+    "tsconfig.host.json": "714d2ca09232e81ccaa36b10e5be8acc54d098fb0b5c1a804cc394e2036e2045",
+    "apps/web/tests/scaffold.ts": "b72754660f87a8e65f3a287501a23bb0e92987b71396cd7bf97f6beb1ee67449",
+    "apps/web/tests/scaffold-hermetic.e2e.ts": "f53f0bbdf7ca5964085adc55ebc501263bb616b1f9ea738bf574563b271352d2",
+    "apps/web/tests/chat-continuous-conversation.e2e.ts": "f858f5012016f4d1045db90adf54aa16787d0a12a1e890fbba177888414f9aa4",
+    "apps/web/tests/lifecycle-chrome.e2e.ts": "5d2c491a25cfbe7c28c75c3fa042b518a58023d92debdd6022e3af0b1a9d938a",
+    "apps/web/tests/workspace-management.e2e.ts": "8f93f40fab9102c6a24ee96ead223de8871f9310f8db92ef1fe018a65c8a4749",
+    "apps/web/tests/replay-round-trip.e2e.ts": "9062df60a5da25bd7c4eaea7d73353a3e22be561de71de89daeab9a7d2e186cd",
+    "apps/web/tests/snapshots/lifecycle-chrome/replay.override.json": "d1e5ef645a7f2d12e204acc75141d9a31a1203d4a23d1ae2641e9503f626422e",
+    "apps/web/tests/snapshots/lifecycle-chrome/hero.expected.md": "eb83939db741f6ac439380bdadf78a649c973de45abf8381ccef74ca2378ce78",
+    "apps/web/tests/snapshots/lifecycle-chrome/plan-active.expected.md": "73a8ecc262aa06da53492c4e3fc2673991ba51c87aeab35912ee1cadff8517fa",
+    "apps/web/tests/snapshots/lifecycle-chrome/reloaded.expected.md": "507fe399b0196249e8955f18981eabe712572e1f08b1e642cc407aac92cc24b8"
+  },
+  "artifactSha256": {
+    "packages/client/ui-team/lib/client.js": "fdac5423479bc4e4610c2b84b804fe37ab432e14139df7e66d28e8a335d174b1",
+    "packages/client/runtime/lib/client.js": "c8af8b138a0ec00c27b1f0dc4b8928f68318fe71ca09b9550f4a47570b9f92ae",
+    "packages/team/team-run/lib/index.js": "6adb6a4da92ee01ca4a74cda9cf5d56fea6f66d031738cf2e3c1572dd55c26d0"
+  },
+  "validation": {
+    "focused": {
+      "files": 5,
+      "passed": 185
+    },
+    "gui": {
+      "files": 292,
+      "passed": 3920,
+      "skipped": 1
+    },
+    "browser": {
+      "files": 72,
+      "filesPassed": 71,
+      "filesSkipped": 1,
+      "passed": 237,
+      "failed": 0,
+      "skipped": 14
+    },
+    "documentation": {
+      "passed": 24,
+      "failed": 4
+    }
+  },
+  "qa": {
+    "identity": "Clocky at the scaffold loopback URL",
+    "meaningfulContent": true,
+    "frameworkOverlay": false,
+    "pageErrors": 0,
+    "desktopAndNarrowPanelBounds": true,
+    "keyboardPaginationAndTaskFocus": true,
+    "newerMarkerAndFailedPageRetention": true,
+    "workflowDependenciesAndCancellation": true,
+    "invalidWorkflowLeavesNoPlan": true
+  },
+  "images": {
+    "workflow-ready-2026-09-10.png": "e66990c0d64acbe4fe42c163c8dab220c2eb713c9712fdf50ecab63a49e26e3d",
+    "collections-narrow-2026-09-10.png": "8b3d81fd5e79ec16ca945f2fdd5fde10777b61ff766798b643fb8300a6fde9d3",
+    "collections-failure-before-2026-09-10.png": "30b5c0a847919b0feaea1b13be4b1f09e59953281ecb0d6c85c7e27a018836d6"
+  },
+  "buildLog": {
+    "path": ".tmp/gap-collections-2026-09-10/build.log",
+    "sha256": "8c6e7ac7219232c5cd0425d664fc7fb9a2b26e5970ebe2785b6d3c8886c77770",
+    "clientArtifacts": 197
+  },
+  "lintScope": "New browser files and changed source lines pass; pre-existing unrelated source-style findings remain in the scoped log.",
+  "remaining": [
+    "T-06 live-model/GIF and independent-host UI acceptance.",
+    "F-RT-03/T-04 independent-host recovery/fault matrix.",
+    "T-02 full changed-source/repository coverage.",
+    "O-02 canonical multiplatform release.",
+    "Four documentation gates: pairing, wrap, Config catalog, persistence catalog."
+  ]
+}

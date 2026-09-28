@@ -1,0 +1,18 @@
+Recovery cancellation and supervisor fence follow-up (2026-09-09)
+
+Scope: cold replacement cancellation propagation and suppression of durable recovery-stall writes for caller-aborted activation recovery.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-activation-controller/tests/recovery-admission.spec.ts packages/team/team-activation-controller/tests/edges.spec.ts --no-file-parallelism`
+   Result: 2 files passed; 43 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-activation-controller/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-activation-controller/src/index.ts packages/team/team-activation-controller/tests/recovery-admission.spec.ts packages/team/team-activation-controller/tests/edges.spec.ts`
+   Result: exit 0.
+4. `pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-08-owned-activation-supervisor-endpoints.md`
+   Result: exit 0; one paired supervisor Agent Note record refreshed.
+5. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: caller abort is checked before fencing, propagated through a supervisor-backed fence, and rethrown without recording `AGENT_RUNTIME_FENCE_FAILED`; normal fence failures continue to produce the existing durable stall classification.

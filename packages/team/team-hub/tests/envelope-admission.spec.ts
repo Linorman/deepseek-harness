@@ -9,7 +9,7 @@ import Storage from '@clocky/clocky-storage'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import * as StorageSqlite from '@clocky/clocky-storage-sqlite'
-import { activationIdSchema, channelInvitationIdempotencyKeySchema, channelPostIdempotencyKeySchema, fingerprintChannelManifest } from '@clocky/clocky-team'
+import { activationIdSchema, teamDeliveryOwnerScopeSchema, teamSystemEnvelopePostScopeSchema, channelInvitationIdempotencyKeySchema, channelPostIdempotencyKeySchema, fingerprintChannelManifest } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
   ChannelDeliveryClaimRequest,
@@ -271,15 +271,15 @@ async function seedParticipantPhase(
 }
 
 /** Create one active Team with two active members and one direct channel. */
-async function openedChannel(ctx: Context) {
-  const created = await createTestRootTeam(ctx, { goal: { objective: 'Route one report', budgets: {} }, rules: {}, budgets: {} })
+async function openedChannel(ctx: Context, version = 1, rules = {}) {
+  const created = await createTestRootTeam(ctx, { goal: { objective: 'Route one report', budgets: {} }, rules, budgets: {} })
   const sender = await activeParticipant(ctx, created.team.id, 'Sender')
   const recipient = await activeParticipant(ctx, created.team.id, 'Recipient')
   const current = await ctx.teams.getTeam({ teamId: created.team.id })
   const channel = await openTestChannel(ctx, {
     teamId: current.team.id,
     expectedCursor: current.team.cursor,
-    adapter: { type: 'direct', version: 1 },
+    adapter: { type: 'direct', version },
     participants: [{ id: sender.id, role: 'sender' }, { id: recipient.id, role: 'recipient' }],
     limits: {},
   })
@@ -456,11 +456,11 @@ function teamRunFinalReceiptAuthority(
 
 /** Register one test-only TeamRun source retaining revocable human-input post proofs. */
 function teamRunEnvelopePostAuthority(
-  ctx: Context,
+  ctx: Context, sourceName = 'team-run',
 ): { issue(scope: TeamSystemEnvelopePostScope): { readonly proof: TeamSystemEnvelopePostProof; revoke(): void } } {
   const proofs = new WeakMap<TeamSystemEnvelopePostProof, TeamSystemEnvelopePostScope>()
   ctx.teams.registerSystemEnvelopePostProofSource({
-    name: 'team-run',
+    name: sourceName,
     resolveEnvelopePostProof: candidate => proofs.get(candidate),
   })
   return Object.freeze({
@@ -2171,4 +2171,122 @@ describe('Envelope admission rejection', () => {
     expect(firstReceipt.cursor).toBe(second.sequence)
     await harness.dispose()
   })
+})
+
+describe.each(['json', 'sqlite'] as const)('%s Simulation post authority', (backend) => {
+  it('pins the complete intent and reconciles an existing result after sender membership ends', async () => {
+    const harness = await setup(backend, recordingAdapter({ version: 4 }))
+    try {
+      const { ctx } = harness
+      const seeded = await openedChannel(ctx, 4, { activationLifecycleOwner: 'simulation/test', simulationRunId: 'run' })
+      const source = teamRunEnvelopePostAuthority(ctx, 'simulation-team')
+      const scope = teamSystemEnvelopePostScopeSchema.parse({ kind: 'simulation-operation',
+        runId: 'run', decisionId: 'decision', operationId: 'operation', acceptedRevision: 9,
+        fingerprint: 'fingerprint', lifecycleOwner: 'simulation/test', teamId: seeded.team.team.id,
+        senderId: seeded.sender.id, recipientId: seeded.recipient.id,
+        idempotencyKey: JSON.stringify(['simulation', 'run', 'operation']), publishAllowed: true,
+        draft: { channelId: seeded.channel.manifest.id, audience: [seeded.recipient.id], kind: 'message',
+          payload: { content: [{ type: 'text', text: 'Accepted message' }] }, delivery: 'context', traceId: 'fingerprint',
+          correlationId: JSON.stringify(['run', 'decision', 'operation', 9]) },
+      })
+      if (scope.kind !== 'simulation-operation') throw new Error('fixture scope mismatch')
+      const issued = source.issue(scope)
+      const request = { actor: issued.proof, expectedCursor: seeded.channel.cursor,
+        idempotencyKey: scope.idempotencyKey, draft: scope.draft }
+      const binding = postBindings.get(String(seeded.sender.id))
+      if (binding === undefined) throw new Error('fixture sender binding missing')
+      const ordinary = ctx.teams.openActivationActorProofIssuer().issue(binding)
+      await expect(ctx.teams.postChannelEnvelope({ ...request, actor: ordinary.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      await expect(ctx.teams.postChannelEnvelope({ ...request, draft: { ...scope.draft, delivery: 'turn' } }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      for (const denied of [
+        { ...scope, lifecycleOwner: 'another-owner' },
+        { ...scope, runId: 'another-run' as typeof scope.runId },
+        { ...scope, recipientId: scope.senderId },
+      ]) {
+        await expect(ctx.teams.postChannelEnvelope({ ...request, actor: source.issue(denied).proof }))
+          .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      }
+      const impostor = teamRunEnvelopePostAuthority(ctx, 'another-source')
+      await expect(ctx.teams.postChannelEnvelope({ ...request, actor: impostor.issue(scope).proof }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      const first = await ctx.teams.postChannelEnvelope(request)
+      const published = await ctx.teams.getChannel({ channelId: seeded.channel.manifest.id })
+      await closeTestChannel(ctx, { channelId: published.manifest.id, expectedCursor: published.cursor })
+      await seedParticipantPhase(ctx, seeded.team.team.id, seeded.sender.id, 'left')
+      const reconciliation = source.issue({ ...scope, publishAllowed: false })
+      expect(await ctx.teams.postChannelEnvelope({ ...request, actor: reconciliation.proof })).toEqual(first)
+      const changed = { ...scope, fingerprint: 'changed', draft: { ...scope.draft, traceId: 'changed' } }
+      await expect(ctx.teams.postChannelEnvelope({ ...request, actor: source.issue(changed).proof, draft: changed.draft }))
+        .rejects.toMatchObject({ code: 'TEAM_CHANNEL_IDEMPOTENCY_CONFLICT' })
+      const newKey = JSON.stringify(['simulation', 'run', 'unpublished'])
+      const newScope = { ...scope, operationId: 'unpublished' as typeof scope.operationId, idempotencyKey: channelPostIdempotencyKeySchema.parse(newKey),
+        publishAllowed: false, draft: { ...scope.draft, correlationId: JSON.stringify(['run', 'decision', 'unpublished', 9]) } }
+      await expect(ctx.teams.postChannelEnvelope({ ...request, actor: source.issue(newScope).proof,
+        idempotencyKey: newScope.idempotencyKey, draft: newScope.draft })).rejects.toMatchObject({ code: 'TEAM_POLICY_DENIED' })
+      reconciliation.revoke()
+      await expect(ctx.teams.postChannelEnvelope({ ...request, actor: reconciliation.proof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    } finally { await harness.dispose() }
+  })
+})
+
+it('requires a dedicated delivery proof for both claim and receipt in a Simulation Team', async () => {
+  const harness = await setup('sqlite', recordingAdapter({ version: 4, deriveDeliveries: true }))
+  try {
+    const { ctx } = harness
+    const seeded = await openedChannel(ctx, 4, { activationLifecycleOwner: 'simulation/test', simulationRunId: 'run' })
+    const posts = teamRunEnvelopePostAuthority(ctx, 'simulation-team')
+    const post = teamSystemEnvelopePostScopeSchema.parse({ kind: 'simulation-operation', runId: 'run', decisionId: 'decision',
+      operationId: 'op', acceptedRevision: 1, fingerprint: 'fp', lifecycleOwner: 'simulation/test', teamId: seeded.team.team.id,
+      senderId: seeded.sender.id, recipientId: seeded.recipient.id, publishAllowed: true,
+      idempotencyKey: JSON.stringify(['simulation', 'run', 'op']), draft: { channelId: seeded.channel.manifest.id,
+        audience: [seeded.recipient.id], kind: 'message', delivery: 'context', payload: { content: [{ type: 'text', text: 'Owned delivery' }] },
+        traceId: 'fp', correlationId: JSON.stringify(['run', 'decision', 'op', 1]) } })
+    if (post.kind !== 'simulation-operation') throw new Error('fixture post scope mismatch')
+    const envelope = await ctx.teams.postChannelEnvelope({ actor: posts.issue(post).proof, expectedCursor: seeded.channel.cursor,
+      idempotencyKey: post.idempotencyKey, draft: post.draft })
+    const binding = postBindings.get(String(seeded.recipient.id))
+    if (binding === undefined) throw new Error('fixture recipient binding missing')
+    const actor = ctx.teams.openActivationActorProofIssuer().issue(binding).proof
+    const input = { actor, channelId: envelope.channelId, envelopeId: envelope.id }
+    await expect(ctx.teams.claimChannelDelivery(input)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const scopes = new WeakMap<import('@clocky/clocky-team').TeamDeliveryOwnerProof, import('@clocky/clocky-team').TeamDeliveryOwnerScope>()
+    const unregister = ctx.teams.registerDeliveryOwnerProofSource({ name: 'simulation-team', resolveDeliveryOwnerProof: proof => scopes.get(proof) })
+    const issue = (operation: 'claim' | 'receipt', cursor: number | null) => {
+      const token: object = { toJSON(): never { throw new TypeError('Delivery owner proof is runtime-only') } }
+      const proof = Object.freeze(token) as import('@clocky/clocky-team').TeamDeliveryOwnerProof
+      scopes.set(proof, teamDeliveryOwnerScopeSchema.parse({ kind: 'simulation-delivery', operation, cursor,
+        runId: 'run', lifecycleOwner: 'simulation/test', teamId: seeded.team.team.id,
+        channelId: envelope.channelId, envelopeId: envelope.id, participantId: seeded.recipient.id,
+        activationId: binding.activation.id, sessionId: binding.sessionId }))
+      return proof
+    }
+    let claimProof = issue('claim', null)
+    const revokeClaim = ctx.teams.registerPolicy('dispatch', { name: 'withdraw-claim-owner', async apply(_request, next) {
+      scopes.delete(claimProof)
+      return await next()
+    } })
+    await expect(ctx.teams.claimChannelDelivery({ ...input, deliveryOwner: claimProof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    revokeClaim()
+    claimProof = issue('claim', null)
+    expect(await ctx.teams.claimChannelDelivery({ ...input, deliveryOwner: claimProof })).toMatchObject({ envelopeId: envelope.id })
+    const channel = await ctx.teams.getChannel({ channelId: envelope.channelId })
+    await expect(ctx.teams.ackChannelEnvelope({ ...input, expectedCursor: channel.cursor }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    await expect(ctx.teams.ackChannelEnvelope({ ...input, expectedCursor: channel.cursor, deliveryOwner: claimProof }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    let receiptProof = issue('receipt', channel.cursor)
+    const revokeReceipt = ctx.teams.registerPolicy('dispatch', { name: 'withdraw-receipt-owner', async apply(_request, next) {
+      scopes.delete(receiptProof)
+      return await next()
+    } })
+    await expect(ctx.teams.ackChannelEnvelope({ ...input, expectedCursor: channel.cursor, deliveryOwner: receiptProof }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    revokeReceipt()
+    receiptProof = issue('receipt', channel.cursor)
+    const receipt = await ctx.teams.ackChannelEnvelope({ ...input, expectedCursor: channel.cursor, deliveryOwner: receiptProof })
+    expect(receipt.envelopeId).toBe(envelope.id)
+    unregister()
+    await expect(ctx.teams.claimChannelDelivery({ ...input, deliveryOwner: claimProof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { await harness.dispose() }
 })

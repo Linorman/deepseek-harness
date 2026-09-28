@@ -25,6 +25,8 @@ agent（智能体）的唯一具体实现插件和循环驱动器。其包内部
 
 配置驱动的 `ctx.agentLoop.create()` 路径让循环 fiber 拥有其 agent（该路径会丢弃 handle）。对于以编程方式创建的 agent，handle 持有者是唯一面向消费方的 teardown 能力；AgentLoop 提供方卸载是一条独立的结构性 teardown 边，而不是向应用代码公开的另一个 handle。
 
+`Agent.wakePending(id)` 原位唤醒既有输入，不新增 splice，并复用 `send()` 的唤醒机制。投递插件拥有调用前所需的持久化屏障。
+
 ### 注入的服务
 
 `agents`、`sessions`、`llm`、`tools`、`systemPrompt`：全部 5 个接口服务。

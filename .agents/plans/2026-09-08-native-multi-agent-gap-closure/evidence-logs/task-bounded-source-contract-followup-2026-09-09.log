@@ -1,0 +1,12 @@
+Task bounded source-contract follow-up (2026-09-09)
+
+Commands:
+
+1. `node node_modules/typescript/bin/tsc -b packages/core/team/tsconfig.json packages/team/team-hub/tsconfig.json packages/team/team-run/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec vitest run packages/core/team/tests/runtime.spec.ts packages/core/team/tests/schema.spec.ts packages/team/team-hub/tests/edge-cases.spec.ts packages/team/team-hub/tests/team-hub.spec.ts packages/team/team-run/tests/team-run.spec.ts --pool=forks --maxWorkers=1`
+   Result: 5 files passed; 275 tests passed.
+3. `pnpm run gen-cordis-api`
+   Result: Cordis catalog/API generated; 103 artifacts computed, 3 written.
+
+Behavior proved: Core/Hub no longer expose unbounded `listTasks()`; TeamRun finalization scans task pages through `listTasksPage()` with cursor advancement validation. Task page consumers and the Cordis API catalog remain synchronized.

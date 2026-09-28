@@ -11,7 +11,7 @@ import type {
   TeamChannelAdapter,
   TeamViewPolicy,
 } from '@clocky/clocky-team'
-import TeamHub from '../../team-hub/src/index.ts'
+import TeamHub from '@clocky/clocky-team-hub'
 import * as Summary from '../src/index.ts'
 import { fingerprintChannelSummarySources } from '@clocky/clocky-team'
 import { createTestRootTeam, inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'

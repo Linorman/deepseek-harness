@@ -29,6 +29,42 @@ export interface LogBackendContractHarness {
  */
 export function runLogBackendContract(label: string, create: () => Promise<LogBackendContractHarness>) {
   describe(`log backend contract: ${label}`, () => {
+    it('rejects sparse append batches without publishing a partial suffix', async () => {
+      const harness = await create()
+      const backend = harness.backend
+      try {
+        const stream = await backend.log!.open(DESCRIPTOR)
+        await stream.append(-1, [{ retained: true }])
+        const sparse = new Array<unknown>(2)
+        sparse[1] = { mustNotCommit: true }
+        await expect(stream.append(0, sparse)).rejects.toMatchObject({ code: 'invalid-value' })
+        expect(stream.tailSequence).toBe(0)
+        expect(await stream.read(-1, 10)).toEqual([{ sequence: 0, value: { retained: true } }])
+        await stream.close(); await backend.close()
+        const reopened = await harness.reopen()
+        try {
+          const restored = await reopened.log!.open(DESCRIPTOR)
+          expect(await restored.read(-1, 10)).toEqual([{ sequence: 0, value: { retained: true } }])
+        } finally { await reopened.close() }
+      } finally { await backend.close() }
+    })
+
+    it('pages relative to the retained first sequence and returns empty pages beyond the tail', async () => {
+      const harness = await create()
+      try {
+        const stream = await harness.backend.log!.open(DESCRIPTOR)
+        await stream.append(-1, Array.from({ length: 20 }, (_, index) => index))
+        expect(await stream.read(8, 2)).toEqual([{ sequence: 9, value: 9 }, { sequence: 10, value: 10 }])
+        await stream.writeCheckpoint({ sequence: 19, value: { count: 20 } })
+        await stream.compact({ throughSequence: 5, expectedCheckpointSequence: 19 })
+        await expect(stream.read(4, 2)).rejects.toMatchObject({ code: 'compacted' })
+        expect(await stream.read(5, 2)).toEqual([{ sequence: 6, value: 6 }, { sequence: 7, value: 7 }])
+        expect(await stream.read(18, 2)).toEqual([{ sequence: 19, value: 19 }])
+        expect(await stream.read(19, 2)).toEqual([])
+        expect(await stream.read(Number.MAX_SAFE_INTEGER, 2)).toEqual([])
+      } finally { await harness.backend.close() }
+    })
+
     it('commits a detached tail summary with the winning batch and preserves it through restart and compaction', async () => {
       const harness = await create()
       const backend = harness.backend
@@ -71,6 +107,7 @@ export function runLogBackendContract(label: string, create: () => Promise<LogBa
     it('serves an empty stream without materializing entries', async () => {
       const { backend } = await create()
       const stream = await backend.log!.open(DESCRIPTOR)
+      expect(stream.tailSequence).toBe(EMPTY_LOG_SEQUENCE)
       expect(stream.firstSequence).toBe(0)
       expect(await stream.read(-1, 10)).toEqual([])
       await expect(stream.readCheckpoint()).resolves.toBeUndefined()

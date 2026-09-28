@@ -567,5 +567,75 @@
         }
       }
     }
+  },
+  {
+    "name": "review cannot be null",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "review": null
+      }
+    }
+  },
+  {
+    "name": "review cannot be an array",
+    "valid": false,
+    "event": {
+      "type": "team/channel-view",
+      "seq": 1,
+      "time": 0,
+      "surfaceOp": "append",
+      "data": {
+        "teamId": "team-view",
+        "channelId": "channel-view",
+        "adapter": {
+          "type": "consult",
+          "version": 1
+        },
+        "viewPolicy": {
+          "type": "directed",
+          "version": 1
+        },
+        "triggeringEnvelopeId": "trigger-view",
+        "sourceEnvelopeIds": [
+          "first-view",
+          "trigger-view"
+        ],
+        "delivery": "context",
+        "content": [
+          {
+            "type": "text",
+            "text": "精确持久内容 / exact stored context."
+          }
+        ],
+        "review": []
+      }
+    }
   }
 ]

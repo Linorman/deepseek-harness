@@ -1,6 +1,8 @@
 /** Workflow plan revisions and task bindings recovered from actual serialized logs. @module */
 
 import { describe, expect, it } from 'vitest'
+import { teamProjectionFromData } from '../src/fold.ts'
+import { teamProjectionDataSchema } from '../src/schema.ts'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
 import { createdTeam, participant, participantChanged, task, taskChanged, taskCreatorActivationId, taskCreatorId,
   taskCreatorSessionId, taskLease, teamId, teamPhase } from './fixtures.ts'
@@ -254,6 +256,9 @@ for (const backend of ['json', 'sqlite'] as const) {
       const prefix = [...readyRows, taskChanged({ task: cancelled, createdAt: 23 })]
       const rows = [...prefix, taskChanged({ task: dependent, createdAt: 24 })]
       const checkpoint = checkpointFor(rows)
+      checkpointFor([...rows, taskChanged({ task: { ...dependent, revision: 3 }, createdAt: 25 })])
+      expect(() => checkpointFor([...rows, taskChanged({ task: { ...dependent, revision: 3,
+        blockedByOutcome: { ...cause, revision: 3 } }, createdAt: 25 })])).toThrow('rewrote its dependency outcome')
       for (const storedCheckpoint of [undefined, checkpoint]) {
         const reader = await recover(backend, rows, storedCheckpoint)
         expect((await reader.teams.getTeam({ teamId })).tasks.find(task => task.id === b.id))
@@ -310,3 +315,31 @@ for (const backend of ['json', 'sqlite'] as const) {
     })
   })
 }
+
+it.each(['json', 'sqlite'] as const)('refuses task creation after its workflow left compilation (%s)', async (backend) => {
+  const { a, readyRows } = workflow()
+  const late = task({ ...a, id: 'late-review', createCommand: { ...a.createCommand, idempotencyKey: 'late-review' } })
+  const ctx = await recover(backend, [...readyRows, taskChanged({ task: late, createdAt: 23 })])
+  await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('left compiling')
+})
+
+it.each(['json', 'sqlite'] as const)('refuses workflow results that disagree with retained task outcomes (%s)', async (backend) => {
+  const { ready, readyRows, a, b } = workflow()
+  const completed = { ...ready, revision: 5, phase: 'completed', result: { kind: 'task-results', tasks: [a, b].map(item => ({
+    templateId: item.workflowTemplateId, taskId: item.id, phase: 'completed', result: { summary: 'Unproven completion' },
+  })) } }
+  const ctx = await recover(backend, [...readyRows, changed(completed, 23)])
+  await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('terminal result differs from its complete task outcomes')
+})
+
+it.each(['cancelled', 'failed'] as const)('retains deleted task bindings on a %s workflow checkpoint', (phase) => {
+  const { ready, readyRows } = workflow()
+  const data = checkpointFor(readyRows)
+  const parsed = teamProjectionDataSchema.parse({ ...data,
+    tasks: data.tasks.map(item => ({ ...item, phase: 'deleted' })),
+    workflowPlans: [{ ...ready, phase, ...phase === 'failed' ? { failure: { code: 'failed', message: 'Compilation stopped' } } : {} }],
+  })
+  expect(() => teamProjectionFromData(parsed)).not.toThrow()
+  const reopening = teamProjectionDataSchema.parse({ ...parsed, workflowPlans: [ready] })
+  expect(() => teamProjectionFromData(reopening)).toThrow('binds missing or deleted task')
+})

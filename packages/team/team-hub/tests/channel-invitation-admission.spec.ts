@@ -212,3 +212,16 @@ describe('durable endpoint channel admission', () => {
     })
   }
 })
+
+it('rejects a live activation whose Session differs from the frozen invitation endpoint', async () => {
+  const f = await setup('json')
+  const { SessionId } = await import('@clocky/clocky-session')
+  const opened = await openTestChannel(f.ctx, { teamId: f.teamId,
+    expectedCursor: (await f.ctx.teams.getTeam({ teamId: f.teamId })).team.cursor,
+    adapter: Direct.DIRECT_CHANNEL_ADAPTER_V4,
+    participants: [f.sender, f.fast].map(participant => ({ id: participant.id, role: participant.role })), limits: {},
+    invitations: [{ participantId: f.sender.id, required: true, sessionId: SessionId('another-session') }] })
+  await expect(acknowledge(f, f.sender, opened.manifest.id)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  expect((await f.ctx.teams.getChannelAdmission({ channelId: opened.manifest.id })).invitations
+    .every(value => value.status === 'pending')).toBe(true)
+})

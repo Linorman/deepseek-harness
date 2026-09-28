@@ -1,0 +1,21 @@
+T-08 child reservation cross-backend follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane tests; no credential values or .env contents were read.
+
+Changed test hash:
+49ebfbc2910fe840d1a7b073505ee8d11753b8d0f9eed5f114b8439018a1712f  packages/team/team-hub/tests/task-delegation.spec.ts
+
+The existing parent child-Team reservation fixture remains the JSON baseline. A new SQLite case now replays the same durable child creation retry and separately exercises pre-child cancellation/settlement, asserting one child identity, no synthetic child stream on cancellation, and zero retained task concurrency after settlement.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/task-delegation.spec.ts --reporter=dot
+Result: PASS — 1 file, 5 tests passed, 0 failed, 0 skipped.
+Command: pnpm exec tsc -b packages/team/team-hub/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests --bail=1 --reporter=dot
+Result: PASS — 50 files, 787 tests passed, 0 failed, 0 skipped. This final Hub directory count includes the invitation property, SQLite child-reservation, durable ranking replay, and failed/cancelled/deleted child dependency additions in the same candidate.
+Additional source hashes: 4cf5e1c9bd1d3b6610289fa96d109359c66ea831b21a12f791139cacd21d7c6f  packages/team/team-hub/tests/replay-properties.spec.ts; e87418c79ec0c14f5d804962f3f34d93d9dea1a419dc2c6ab4598b4e57fd8a90  packages/team/team-hub/src/fold.ts; ff58d24eea2740b2413931ad1a27dbb749cc117de27d5f6ad17e06bb797ae3cb  packages/team/team-hub/src/workflow-outcomes.ts.
+
+Scope boundary: this is a focused JSON/SQLite child reservation slice, not the full T-08 child interleaving matrix. Parent/child process kill points, ranking-version restart/no-provider cases, minimized counterexamples, and the separate multi-host/release gates remain open.

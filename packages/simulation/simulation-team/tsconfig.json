@@ -1,0 +1,60 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cosmokit"
+    },
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../core/agent-runtime"
+    },
+    {
+      "path": "../../agent-runtime/agent-runtime-in-process"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../core/team"
+    },
+    {
+      "path": "../../team/team-activation-controller"
+    },
+    {
+      "path": "../../simulation/simulation"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../team/team-agent-client"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../compaction/compaction"
+    },
+    {
+      "path": "../../session/session-persistence"
+    }
+  ]
+}

@@ -1,0 +1,332 @@
+{
+  "recordedAt": "2026-09-21T15:25:02.798806+00:00",
+  "layer": "scripted-cognition",
+  "hardware": {
+    "platform": "darwin",
+    "release": "27.0.0",
+    "arch": "arm64",
+    "node": "v25.9.0",
+    "cpus": 12,
+    "cpuModel": "Apple M4 Pro",
+    "memoryBytes": 25769803776
+  },
+  "cases": [
+    {
+      "report": ".tmp-simulation-development/benchmarks/sqlite-actors-ILiloJ/report.json",
+      "reportSha256": "387948fb9c5cf1ab2475ff1fe1d84147f3e04335e2db6dce1713a329bb4b8702",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-actors-ILiloJ/measurements.jsonl",
+      "rawSha256": "e6e14729597534b2b8e9a27026a8d323854733bcc2b9596ef3adced72a45920a",
+      "sourceDigest": "9ca22d12cc8f1b7fa9ba3f0125d143c1399c2712d8c6eec7d92727ce9acfe8ac",
+      "options": {
+        "backend": "sqlite",
+        "entities": 40,
+        "operations": 80,
+        "durationMs": 30000,
+        "timeoutMs": 180000,
+        "sampleEvery": 20,
+        "entityBatchSize": 20,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "measured",
+      "timedOut": false,
+      "elapsedMs": 13059.312084000001,
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 80,
+        "windows": 4
+      },
+      "result": {
+        "kind": "result",
+        "layer": "scripted-cognition",
+        "completion": "target-complete",
+        "setupMs": 292.9291660000001,
+        "workMs": 10507.172666,
+        "completed": 80,
+        "requested": 80,
+        "modelCalls": 240,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 7.613846516377405,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 10,
+        "starts": 80,
+        "resumes": 40,
+        "uniqueServed": 40,
+        "neverServed": 0,
+        "maxSelectedWaitRounds": 1,
+        "queuedDecisions": 0,
+        "syntheticUsage": true,
+        "reportedTokens": 3600,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 80,
+            "elapsedMs": 10507.172666,
+            "p50Ms": 1579.2464579999996,
+            "p95Ms": 2307.197833,
+            "p99Ms": 2332.803249999999
+          },
+          "window": {
+            "count": 4,
+            "elapsedMs": 10507.172666,
+            "p50Ms": 2432.188458,
+            "p95Ms": 3476.2700000000004,
+            "p99Ms": 3476.2700000000004
+          },
+          "placement": {
+            "count": 80,
+            "elapsedMs": 2472.452244000003,
+            "p50Ms": 32.488250000000335,
+            "p95Ms": 43.28558299999895,
+            "p99Ms": 57.38479099999995
+          }
+        },
+        "checkpointMs": 457.2945830000008,
+        "restoreMs": 236.6123749999988,
+        "peakRssBytes": 483065856,
+        "diskBytes": 7120978,
+        "bytesBeforeClose": 11262050,
+        "cpuMicros": {
+          "user": 12652725,
+          "system": 1059547
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      }
+    },
+    {
+      "report": ".tmp-simulation-development/benchmarks/json-actors-L2T7OH/report.json",
+      "reportSha256": "48a4027357459c05c1789ea4a147fefa03d614f8232f13ce72f4365b4bb30bd7",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-actors-L2T7OH/measurements.jsonl",
+      "rawSha256": "6ec7163c21d4a05d584d55bdaff003c0367396b4dc5138c87e96dbd3752f3e08",
+      "sourceDigest": "9ca22d12cc8f1b7fa9ba3f0125d143c1399c2712d8c6eec7d92727ce9acfe8ac",
+      "options": {
+        "backend": "json",
+        "entities": 40,
+        "operations": 80,
+        "durationMs": 30000,
+        "timeoutMs": 180000,
+        "sampleEvery": 20,
+        "entityBatchSize": 20,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "measured",
+      "timedOut": false,
+      "elapsedMs": 24407.299208,
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 80,
+        "windows": 4
+      },
+      "result": {
+        "kind": "result",
+        "layer": "scripted-cognition",
+        "completion": "target-complete",
+        "setupMs": 1447.3857079999998,
+        "workMs": 19301.877,
+        "completed": 80,
+        "requested": 80,
+        "modelCalls": 240,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 4.144674634492801,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 10,
+        "starts": 80,
+        "resumes": 40,
+        "uniqueServed": 40,
+        "neverServed": 0,
+        "maxSelectedWaitRounds": 1,
+        "queuedDecisions": 0,
+        "syntheticUsage": true,
+        "reportedTokens": 3600,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 80,
+            "elapsedMs": 19301.877,
+            "p50Ms": 2453.2806249999994,
+            "p95Ms": 3589.6849580000016,
+            "p99Ms": 3753.2791660000003
+          },
+          "window": {
+            "count": 4,
+            "elapsedMs": 19301.877,
+            "p50Ms": 4943.702583,
+            "p95Ms": 6290.942000000001,
+            "p99Ms": 6290.942000000001
+          },
+          "placement": {
+            "count": 80,
+            "elapsedMs": 6502.496001000001,
+            "p50Ms": 79.89770900000076,
+            "p95Ms": 119.8861250000009,
+            "p99Ms": 298.7305839999999
+          }
+        },
+        "checkpointMs": 1894.8033340000002,
+        "restoreMs": 231.73208299999897,
+        "peakRssBytes": 583532544,
+        "diskBytes": 3494807,
+        "bytesBeforeClose": 3495409,
+        "cpuMicros": {
+          "user": 14714730,
+          "system": 2384542
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      }
+    },
+    {
+      "report": ".tmp-simulation-development/benchmarks/sqlite-actors-86iNT7/report.json",
+      "reportSha256": "1314328afaa114da5974bf53e608d70b64b42e714b8f0e90f84b3f3dddcb5697",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-actors-86iNT7/measurements.jsonl",
+      "rawSha256": "5d6d260b0d8db2aa2174619539178881521d987a341092f9ee00a1f81c16c99a",
+      "sourceDigest": "8750482dcfadc3291af2f856efc43c593553b386894733e4c1612b2ff8d55af6",
+      "options": {
+        "backend": "sqlite",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 180000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "measured",
+      "timedOut": false,
+      "elapsedMs": 98077.275625,
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 20,
+        "windows": 1
+      },
+      "result": {
+        "kind": "result",
+        "layer": "scripted-cognition",
+        "completion": "time-budget",
+        "setupMs": 76935.698458,
+        "workMs": 16609.516417000006,
+        "completed": 20,
+        "requested": 100000,
+        "modelCalls": 60,
+        "modelDelayMs": 100,
+        "throughputPerSecond": 1.204128976297576,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "peakQueuedObserved": 10,
+        "starts": 20,
+        "resumes": 0,
+        "uniqueServed": 20,
+        "neverServed": 980,
+        "maxSelectedWaitRounds": 0,
+        "queuedDecisions": 1000,
+        "syntheticUsage": true,
+        "reportedTokens": 900,
+        "modelCost": 0,
+        "teamMessages": 0,
+        "phases": {
+          "decision": {
+            "count": 20,
+            "elapsedMs": 16609.516417000006,
+            "p50Ms": 12967.733791999999,
+            "p95Ms": 13214.012665999995,
+            "p99Ms": 13355.324208999999
+          },
+          "window": {
+            "count": 1,
+            "elapsedMs": 16609.516417000006,
+            "p50Ms": 16609.079457999993,
+            "p95Ms": 16609.079457999993,
+            "p99Ms": 16609.079457999993
+          },
+          "placement": {
+            "count": 20,
+            "elapsedMs": 2159.01879300001,
+            "p50Ms": 104.75008300000627,
+            "p95Ms": 124.11133400000108,
+            "p99Ms": 153.58212499998626
+          }
+        },
+        "checkpointMs": 2016.482707999996,
+        "restoreMs": 905.8011669999978,
+        "peakRssBytes": 574111744,
+        "diskBytes": 14878612,
+        "bytesBeforeClose": 19188484,
+        "cpuMicros": {
+          "user": 96405654,
+          "system": 4691267
+        },
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "acceptedResponsibilitiesPreserved": true,
+        "stalled": null
+      }
+    },
+    {
+      "report": ".tmp-simulation-development/benchmarks/json-actors-SSe5lP/report.json",
+      "reportSha256": "2ac5c3eb3541345b1067b3b37f831076352575c6f6942d7722c170a9ee628c30",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-actors-SSe5lP/measurements.jsonl",
+      "rawSha256": "c2a2f4de7b515651b4dc7b17ab8a47d27759868d3bad66fe65068cd013824ffe",
+      "sourceDigest": "902ca1d381414ca2593db67edc9a4df9b970218601277da50907935e509b1a70",
+      "options": {
+        "backend": "json",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 15000,
+        "timeoutMs": 180000,
+        "sampleEvery": 100,
+        "entityBatchSize": 100,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "actors",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "status": "timeout",
+      "timedOut": true,
+      "elapsedMs": 180014.945917,
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "participants",
+        "participants": 900,
+        "peakRssBytes": 726188032
+      },
+      "result": null
+    }
+  ],
+  "conclusions": [
+    "Both 40-entity runs complete 80 accepted empty-proposal decisions and 240 scripted model/tool requests with observed peaks of 20 resident actors and 10 model streams. Forty resumes preserve canonical Sessions; checkpoint replay and synthetic token accounting agree.",
+    "SQLite provisions 1,000 participants, completes one 20-decision window within the soft workload allowance, retains 1,000 queued future decisions, and restores the checkpoint. This is not a full-workload or starvation certificate.",
+    "The final JSON 1,000-entity run times out during participant provisioning at the 180-second hard limit; its last sample records 900 participants and 726188032 peak RSS bytes. No completed-workload or replay result is available.",
+    "The final JSON timeout ran without concurrent verification jobs. An earlier exploratory timeout overlapped focused observer-fix validation and is excluded from these cases.",
+    "Usage is synthetic and provider delay is explicitly 100 ms. These results do not establish external-model speed/cost, Team message throughput or long-duration capacity."
+  ],
+  "remaining": [
+    "JSON participant-provisioning scalability",
+    "Real Team message delivery benchmark",
+    "Full 100k/1M workloads and 30-day organization scenario",
+    "Complete acceptance/coverage audit and integration closure"
+  ]
+}

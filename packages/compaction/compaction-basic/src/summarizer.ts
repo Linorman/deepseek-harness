@@ -4,6 +4,7 @@
  * @module @clocky/clocky-compaction-basic/summarizer
  */
 
+import { recordCompactionRequest } from '@clocky/clocky-compaction'
 import type { Context } from '@clocky/cordis'
 import { contentHasImage, createUserMessage, BlockAssembler, LlmError } from '@clocky/clocky-llm'
 import type {
@@ -161,7 +162,8 @@ export async function summarizeWithLlm(
     purpose: 'compaction',
     ...signal === undefined ? {} : { signal },
   }
-  for await (const chunk of ctx.llm.stream(options)) assembler.push(chunk)
+  const recorded = recordCompactionRequest(agent.session, options)
+  for await (const chunk of ctx.llm.stream(recorded)) assembler.push(chunk)
   const error = finishError(assembler.finish)
   if (error !== undefined) throw error
 
@@ -174,8 +176,8 @@ export async function summarizeWithLlm(
     summary,
     rawOutput,
     llmStreamCall: true,
-    provider: options.provider,
-    model: options.model,
+    provider: recorded.provider,
+    model: recorded.model,
     maxTokens: config.maxTokens,
     ...(assembler.usage === undefined ? {} : { usage: assembler.usage }),
   }

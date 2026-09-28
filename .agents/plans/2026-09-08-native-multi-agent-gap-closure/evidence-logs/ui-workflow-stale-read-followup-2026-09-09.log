@@ -1,0 +1,16 @@
+Native multi-agent gap closure — bounded workflow-plan stale-read follow-up
+Date: 2026-09-09 (Asia/Shanghai)
+Scope: browser Team collection runtime; no browser/GIF claim.
+
+Implementation:
+- Collection reads capture the selected Team cursor at admission.
+- A late first-page response preserves `hasNewer` when the authoritative selected Team cursor advanced during the read.
+- Continuation reads retain an existing newer marker until an explicit refresh succeeds.
+
+Command: node node_modules/typescript/bin/tsc -b packages/client/runtime/tsconfig.json --pretty false
+Result: PASS (exit 0)
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/client/runtime/tests/team-tasks.client.spec.ts
+Result: PASS — 1 file, 36 passed.
+
+Boundary: this closes the client stale-read marker behavior only. Full browser race/GIF coverage and multi-host UI transport remain outside this focused evidence.

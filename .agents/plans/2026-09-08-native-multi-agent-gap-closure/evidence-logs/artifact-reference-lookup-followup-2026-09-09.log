@@ -1,0 +1,22 @@
+Provider-owned artifact reference lookup follow-up (2026-09-09)
+
+Scope: remove full Team snapshot materialization from Host/SDK artifact reads by adding an authoritative TeamRuntime/Hub lookup for visible, unambiguous artifact references.
+
+Commands:
+
+1. `pnpm exec tsc -b packages/core/team/tsconfig.json --pretty false`
+   Result: exit 0.
+2. `pnpm exec tsc -p packages/team/team-hub/tsconfig.json --noEmit && pnpm exec tsc -p packages/host/apiproxy/tsconfig.json --noEmit && pnpm exec tsc -p packages/sdk/server/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec vitest run packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/sdk/server/tests/server.spec.ts --no-file-parallelism`
+   Result: 2 files passed; 97 tests passed.
+4. `pnpm exec oxlint packages/team/team-hub/src/index.ts packages/host/apiproxy/src/api-proxy.ts packages/sdk/server/src/server.ts`
+   Result: exit 0.
+5. `pnpm run gen-cordis-api && pnpm run verify-cordis-api && pnpm run verify-cordis-catalog`
+   Result: generated API/catalog; 103 generated files/regions up to date.
+6. `pnpm run verify-translation-pairing --write packages/core/team/README.md && pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.md`
+   Result: Core Team README and local Hub Agent Note pair records refreshed.
+7. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: Host and SDK artifact reads now ask the Team provider for one visible, unambiguous reference; private or ambiguous references remain not-found, while provider-unavailable and byte-read failures retain their existing error mapping. The Hub lookup shares the same authoritative reference set as bounded artifact listing. Browser, separate-host, and release-wide documentation scope remains open.

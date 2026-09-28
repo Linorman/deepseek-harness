@@ -1,0 +1,1381 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`'json' model decision window timeout=false limit=1 close=true > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "capacity": {
+    "active": 0,
+    "limit": 1,
+    "queueLimit": 16,
+    "queued": 0,
+  },
+  "closed": true,
+  "modelCalls": 1,
+  "releasedAfterModelExit": true,
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=1 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 1,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=budget 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=cohort 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=reserved 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=submitted 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "id": "a/retry",
+      "slot": "2",
+      "status": "accepted",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 9,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10180,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=tokens 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "id": "a/retry",
+      "slot": "2",
+      "status": "accepted",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=expired 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "timeout",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "timeout",
+      "id": "a/retry",
+      "slot": "2",
+      "status": "cancelled",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 2,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 20120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=submitted 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "timeout",
+      "id": "a/retry",
+      "slot": "2",
+      "status": "cancelled",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 6,
+    "unknown": 1,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 20120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'json' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "timeout",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 3,
+    "unknown": 1,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10060,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=1 close=true > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "capacity": {
+    "active": 0,
+    "limit": 1,
+    "queueLimit": 16,
+    "queued": 0,
+  },
+  "closed": true,
+  "modelCalls": 1,
+  "releasedAfterModelExit": true,
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=1 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 1,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=budget 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=cohort 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=reserved 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=submitted 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "id": "a/retry",
+      "slot": "2",
+      "status": "accepted",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 9,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10180,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=tokens 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "id": "a/retry",
+      "slot": "2",
+      "status": "accepted",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=false limit=2 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "id": "a",
+      "slot": "0",
+      "status": "accepted",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    3,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "a",
+      "status": "applied",
+    },
+    {
+      "code": "SIM_RESOURCE_REVISION_CONFLICT",
+      "entityId": "b",
+      "status": "rejected",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 0,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=expired 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "timeout",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "timeout",
+      "id": "a/retry",
+      "slot": "2",
+      "status": "cancelled",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 6,
+    "unknown": 2,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 20120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=submitted 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "writer-revoked",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "writer-revoked",
+      "id": "b",
+      "slot": "1",
+      "status": "cancelled",
+    },
+    {
+      "cancellation": "timeout",
+      "id": "a/retry",
+      "slot": "2",
+      "status": "cancelled",
+    },
+    {
+      "id": "b/retry",
+      "slot": "3",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 1,
+    "settled": 6,
+    "unknown": 1,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 20120,
+  },
+  "window": "closed",
+}
+`;
+
+exports[`'sqlite' model decision window timeout=true limit=2 close=undefined > keeps the resource outcome with crash=undefined 1`] = `
+{
+  "decisions": [
+    {
+      "cancellation": "timeout",
+      "id": "a",
+      "slot": "0",
+      "status": "cancelled",
+    },
+    {
+      "id": "b",
+      "slot": "1",
+      "status": "accepted",
+    },
+  ],
+  "modelRequests": [
+    1,
+    3,
+  ],
+  "operations": [
+    {
+      "code": "SIM_APPLIED",
+      "entityId": "b",
+      "status": "applied",
+    },
+  ],
+  "peakModelConcurrency": 2,
+  "resources": [
+    {
+      "id": "a-stock",
+      "quantity": "0",
+    },
+    {
+      "id": "b-stock",
+      "quantity": "1",
+    },
+    {
+      "id": "stock",
+      "quantity": "0",
+    },
+  ],
+  "submission": {
+    "effects": "pending",
+    "operationIds": [],
+    "status": "submitted",
+  },
+  "tokenAttempts": {
+    "not-dispatched": 0,
+    "reserved": 0,
+    "settled": 3,
+    "unknown": 1,
+  },
+  "tokens": {
+    "limit": 1000000,
+    "used": 10060,
+  },
+  "window": "closed",
+}
+`;

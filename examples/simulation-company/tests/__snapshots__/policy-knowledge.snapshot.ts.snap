@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json policy knowledge > materializes reports with windowed=false 1`] = `
+{
+  "computations": 1,
+  "ignoredCallerHints": true,
+  "modelCalls": 0,
+  "reportBodyVisible": true,
+  "status": "accepted",
+  "tokens": 0,
+  "wakeCompleted": true,
+  "windowed": false,
+}
+`;
+
+exports[`json policy knowledge > materializes reports with windowed=true 1`] = `
+{
+  "computations": 1,
+  "ignoredCallerHints": true,
+  "modelCalls": 0,
+  "reportBodyVisible": true,
+  "status": "accepted",
+  "tokens": 0,
+  "wakeCompleted": true,
+  "windowed": true,
+}
+`;
+
+exports[`sqlite policy knowledge > materializes reports with windowed=false 1`] = `
+{
+  "computations": 1,
+  "ignoredCallerHints": true,
+  "modelCalls": 0,
+  "reportBodyVisible": true,
+  "status": "accepted",
+  "tokens": 0,
+  "wakeCompleted": true,
+  "windowed": false,
+}
+`;
+
+exports[`sqlite policy knowledge > materializes reports with windowed=true 1`] = `
+{
+  "computations": 1,
+  "ignoredCallerHints": true,
+  "modelCalls": 0,
+  "reportBodyVisible": true,
+  "status": "accepted",
+  "tokens": 0,
+  "wakeCompleted": true,
+  "windowed": true,
+}
+`;

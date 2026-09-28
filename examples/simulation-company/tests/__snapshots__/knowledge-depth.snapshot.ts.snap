@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json deep knowledge authority > retains knowledge authority with crash=linked 1`] = `
+{
+  "computations": 0,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 3,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 256,
+  "revoked": true,
+  "versions": 256,
+}
+`;
+
+exports[`json deep knowledge authority > retains knowledge authority with crash=revoked 1`] = `
+{
+  "computations": 0,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 0,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 256,
+  "revoked": true,
+  "versions": 256,
+}
+`;
+
+exports[`json deep knowledge authority > retains knowledge authority with crash=undefined 1`] = `
+{
+  "computations": 256,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 3,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 0,
+  "revoked": true,
+  "versions": 256,
+}
+`;
+
+exports[`sqlite deep knowledge authority > retains knowledge authority with crash=linked 1`] = `
+{
+  "computations": 0,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 3,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 256,
+  "revoked": true,
+  "versions": 256,
+}
+`;
+
+exports[`sqlite deep knowledge authority > retains knowledge authority with crash=revoked 1`] = `
+{
+  "computations": 0,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 0,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 256,
+  "revoked": true,
+  "versions": 256,
+}
+`;
+
+exports[`sqlite deep knowledge authority > retains knowledge authority with crash=undefined 1`] = `
+{
+  "computations": 256,
+  "depth": 256,
+  "historyPreserved": true,
+  "modelCalls": 3,
+  "observed": true,
+  "ownerReadable": true,
+  "retained": 0,
+  "revoked": true,
+  "versions": 256,
+}
+`;

@@ -49,13 +49,13 @@ import type {
 } from '@clocky/clocky-team'
 
 /** Durable format stamped on every Team journal stream. */
-export const TEAM_JOURNAL_FORMAT_VERSION = 33
+export const TEAM_JOURNAL_FORMAT_VERSION = 35
 /** Durable format stamped on every channel WAL stream. */
 export const CHANNEL_WAL_FORMAT_VERSION = 7
 /** Durable format stamped on every Team or channel audit projection stream. */
 export const AUDIT_PROJECTION_FORMAT_VERSION = 1
 /** Serialization format for Team-journal projection checkpoints. */
-export const TEAM_CHECKPOINT_FORMAT_VERSION = 33
+export const TEAM_CHECKPOINT_FORMAT_VERSION = 35
 /** Serialization format for channel-WAL projection checkpoints. */
 export const CHANNEL_CHECKPOINT_FORMAT_VERSION = 10
 

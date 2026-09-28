@@ -1,0 +1,23 @@
+Commands:
+  node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/channel-open-cleanup.spec.ts --reporter=dot
+  node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/team-hub.spec.ts -t "retained channel implementations" --reporter=dot
+  node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/replay-properties.spec.ts --reporter=dot
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Results:
+  channel-open-cleanup: 32/32 passed.
+  retained channel implementations: 9/9 passed.
+  replay-properties: 2/2 passed.
+  edge-cases: 37/37 passed.
+  interrupt/invariant authority: 7/7 passed.
+  durable workflow selection: 6/6 passed.
+
+The related fold slice is 19/20; its single remaining failure is the task
+execution-statistics checkpoint assertion, not channel admission or WAL shape.
+
+Command:
+  pnpm exec vitest run packages/team/team-hub/tests/team-hub.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  team-hub.spec.ts: 93/93 passed, including durable recovery, command, channel
+  admission, interrupt, closure, summary and bounded-read fixture paths.

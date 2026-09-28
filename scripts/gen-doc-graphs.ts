@@ -95,6 +95,23 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'simulationTeams',
+    pkg: 'simulation-team',
+    title: 'Simulation cognition coordination',
+    mode: 'core',
+    consumers: ['tool-simulation'],
+    note: 'Connects durable entity bindings to controller-owned local activation epochs.',
+  },
+  {
+    key: 'simulations',
+    pkg: 'simulation',
+    title: 'Durable simulation runs',
+    mode: 'seam',
+    implementations: ['simulation-local'],
+    consumers: ['simulation-team'],
+    note: 'Programmatic callers receive exclusively owned durable runs; the local provider owns one retained Storage journal per run.',
+  },
+  {
     key: 'attachments',
     pkg: 'attachment',
     title: 'Durable binary attachment storage',
@@ -109,7 +126,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'LLM adapter registry',
     mode: 'seam',
     implementations: ['llm-pi-ai', 'llm-replay'],
-    consumers: ['agent-loop', 'compaction-basic'],
+    consumers: ['agent-loop', 'compaction-basic', 'simulation-team'],
     note: 'Adapters register provider implementations; the loop and compaction call the provider-neutral stream service.',
   },
   {
@@ -133,7 +150,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'session',
     title: 'In-memory session store',
     mode: 'core',
-    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'compat-subagent-in-process-driver', 'invariants', 'message-feedback'],
+    consumers: ['agent-loop', 'agent', 'session-persistence', 'session-query', 'session-query-sqlite', 'compat-subagent-in-process-driver', 'invariants', 'message-feedback', 'simulation-team'],
     note: 'Owns append-only Session instances and emits the durable session event feed.',
   },
   {
@@ -367,6 +384,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'agent-runtime',
     title: 'Participant activation provider registry',
     mode: 'seam',
+    consumers: ['simulation-team'],
     implementations: ['agent-runtime-in-process', 'agent-runtime-sdk'],
     note: 'Resolves named providers for a Team-resolved Participant activation, verifies returned Team, Participant, and Session identities, and leaves Team journal bindings, remote Links, and delivery separate; the SDK provider uses its status protocol for active remote-agent fresh/resume placement without a local Agent.',
   },
@@ -514,7 +532,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Team work-system Service Definition',
     mode: 'seam',
     implementations: ['team-hub'],
-    consumers: ['team-channel-direct', 'team-channel-task-assignment', 'team-link-local', 'team-link-websocket-hub', 'team-workspace-shared', 'team-agent-client', 'team-activation-recovery', 'command-team-goal', 'tool-team', 'tool-team-goal', 'team-run', 'team-scheduler-dag', 'team-channel-admission', 'team-channel-summary', 'team-delegation'],
+    consumers: ['simulation-team', 'team-channel-direct', 'team-channel-task-assignment', 'team-link-local', 'team-link-websocket-hub', 'team-workspace-shared', 'team-agent-client', 'team-activation-recovery', 'command-team-goal', 'tool-team', 'tool-team-goal', 'team-run', 'team-scheduler-dag', 'team-channel-admission', 'team-channel-summary', 'team-delegation'],
     note: 'Defines independent Team identities, durable provider operations, adapter and policy registration, and post-commit observers; team-hub owns local journals, WALs, fenced task attempts, goal state, admission, receipts, and ephemeral delivery claims, while adapters, workspace providers, local clients, scoped human commands, and scoped report tools consume the public runtime.',
   },
   {
@@ -539,7 +557,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     pkg: 'team-activation-controller',
     title: 'Durable Team activation owner',
     mode: 'core',
-    consumers: ['team-activation-recovery', 'team-run'],
+    consumers: ['simulation-team', 'team-activation-recovery', 'team-run'],
     note: 'Binds one published AgentRuntime handle to the Team journal, mirrors residency, and owns lease disposal; Team-run uses that service instead of recreating placement lifecycle logic.',
   },
   {

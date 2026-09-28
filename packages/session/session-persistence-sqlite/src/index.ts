@@ -119,6 +119,20 @@ export class SqliteSessionPersistence extends SessionPersistence {
     return this.coordinator.inspect(id, signal)
   }
 
+  override isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
+    return this.coordinator.isUnmaterialized(id, signal)
+  }
+
+  override getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal):
+  ReturnType<PersistenceCoordinator['getPersistencePrefix']> {
+    return this.coordinator.getPersistencePrefix(id, throughSequence, signal)
+  }
+
+  override getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal):
+  Promise<import('@clocky/clocky-session-persistence').SessionPersistenceReference> {
+    return this.coordinator.getPersistenceReference(id, expectedSequence, signal)
+  }
+
   readFrom(
     id: SessionId,
     fromSeq: number,

@@ -199,6 +199,20 @@ export class JsonlSessionPersistence extends SessionPersistence implements Persi
 
   // JSONL is sequential media: no loadStoredFrom hook, so the coordinator
   // parses the stored prefix (both encodings) and skips forward to fromSeq.
+  override isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
+    return this.coordinator.isUnmaterialized(id, signal)
+  }
+
+  override getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal):
+  ReturnType<PersistenceCoordinator['getPersistencePrefix']> {
+    return this.coordinator.getPersistencePrefix(id, throughSequence, signal)
+  }
+
+  override getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal):
+  Promise<import('@clocky/clocky-session-persistence').SessionPersistenceReference> {
+    return this.coordinator.getPersistenceReference(id, expectedSequence, signal)
+  }
+
   readFrom(id: SessionId, fromSeq: number, signal?: AbortSignal): Promise<{ meta: SessionHeader; events: SessionEvent[] }> {
     return this.coordinator.readFrom(id, fromSeq, signal)
   }

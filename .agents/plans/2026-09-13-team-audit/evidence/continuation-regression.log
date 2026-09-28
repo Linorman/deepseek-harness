@@ -1,0 +1,26 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ .agents/plans/2026-09-13-team-audit/continuation-regression.spec.ts (2 tests | 1 failed) 1286ms
+     × settles output exhaustion after a distinct continuation turn claims its real inbox message 1117ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  .agents/plans/2026-09-13-team-audit/continuation-regression.spec.ts > Team audit continuation regression > settles output exhaustion after a distinct continuation turn claims its real inbox message
+AssertionError: expected "vi.fn()" to be called 1 times, but got 0 times
+ ❯ .agents/plans/2026-09-13-team-audit/continuation-regression.spec.ts:193:64
+    191|     const secondEnd = mounted.session.append('turn/end', { turn: 2, re…
+    192|     mounted.client.observeTurnEnd(secondEnd)
+    193|     await vi.waitFor(() => { expect(mounted.settleTaskAttempt).toHaveB…
+       |                                                                ^
+    194|     expect(mounted.settleTaskAttempt).toHaveBeenCalledWith(expect.obje…
+    195|       taskId: 'task-output-limit', attemptId: 'attempt-output-limit', …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  17:25:16
+   Duration  1.82s (transform 325ms, setup 149ms, import 275ms, tests 1.29s, environment 0ms)

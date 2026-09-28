@@ -1,0 +1,32 @@
+F-UI-01 newer collection refresh follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless client source-plane tests; no credential values or .env contents were read.
+
+Changed-source hashes:
+4d2e8a376665c0ef8c935f7ca83f4fa2a467368df0f38ad4bfec5c73faca7d89  packages/client/ui-team/src/client/TeamPage.tsx
+a45989f12e8eabd61ee68b6dd6ecd0c403120689642b1c612e85173b0e0dc590  packages/client/ui-team/src/client/locales.ts
+b494cb595e9e1206edc3b70ea1b76b3ba2409146f2d4865f30fd083fad6854c2  packages/client/ui-team/tests/team-browser.client.spec.tsx
+
+Behavior: TeamPage now exposes explicit per-collection refresh actions when the runtime marks members, tasks, workflow plans, or artifacts as newer. Empty workflow/artifact collections remain visible when a newer marker or load state exists, so remote changes are not silently hidden.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/client/ui-team/tests/team-browser.client.spec.tsx --reporter=dot
+Result: PASS — 1 file, 36 tests passed, 0 failed, 0 skipped.
+Command: pnpm exec tsc -b packages/client/ui-team/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Scope boundary: this closes the newer-marker UI action slice only; real browser/GIF, multi-host UI transport, full mutation flow, and release parity remain open.
+
+Runtime refresh retention extension:
+87c99bd47609c3c7422aa9fb5a317d67565c33d545f37971ff6a45faade931d5  packages/client/runtime/src/client/teams/service.ts
+1d41dcb939921445b2dab3c6f0dbdf090dda0b35405f102f476906c8692bfe3a  packages/client/runtime/tests/team-tasks.client.spec.ts
+
+Behavior: refreshing a first collection page now preserves already-loaded continuation rows while replacing same-id rows with newer provider values; the refreshed first-page cursor remains authoritative for later continuation.
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/client/runtime/tests/team-tasks.client.spec.ts --reporter=dot
+Result: PASS — 1 file, 35 tests passed, 0 failed, 0 skipped.
+Command: pnpm exec tsc -b packages/client/runtime/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/client/ui-team/tests --reporter=dot
+Result: PASS — 7 files, 62 tests passed, 0 failed, 0 skipped. Current UI source hashes remain TeamPage `4d2e8a376665c0ef8c935f7ca83f4fa2a467368df0f38ad4bfec5c73faca7d89`, locales `a45989f12e8eabd61ee68b6dd6ecd0c403120689642b1c612e85173b0e0dc590`, and browser tests `b494cb595e9e1206edc3b70ea1b76b3ba2409146f2d4865f30fd083fad6854c2`.

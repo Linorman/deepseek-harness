@@ -1,0 +1,8 @@
+{
+  "provider": "materialization-loss",
+  "allocation": "released",
+  "task": "cancelled",
+  "workerRequests": 0,
+  "preparations": 1,
+  "abandoned": 1
+}

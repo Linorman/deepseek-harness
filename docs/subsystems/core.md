@@ -116,6 +116,13 @@ interface Agent {
   send(message: UserMessage, target: InboxTarget, wakeup: boolean): void
 
   /**
+   * Wake an already queued identity without changing the durable inbox. Callers can flush its insertion first.
+   * @param messageId - Exact pending input to wake.
+   * @returns whether a live, non-disposing actor accepted the wake; false leaves the queue unchanged.
+   */
+  wakePending(messageId: UserMessage['id']): boolean
+
+  /**
    * Queue an ordinary follow-up turn and wake the driver. The item becomes the
    * sole ordinary message of its own turn.
    * @param message - identified prompt content and the source that supplied it.

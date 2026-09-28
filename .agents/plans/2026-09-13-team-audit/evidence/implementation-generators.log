@@ -1,0 +1,9 @@
+$ tsx scripts/gen-config-catalog.ts
+gen-config-catalog: wrote docs/config-catalog.md.
+$ tsx scripts/gen-cordis-catalog.ts
+gen-cordis-catalog: 103 artifact(s) computed, 2 written, 1 pair record(s) refreshed.
+$ tsx scripts/gen-doc-graphs.ts
+gen-doc-graphs: wrote 8 graph doc(s).
+$ tsx scripts/gen-persistence-catalog.ts
+gen-persistence-catalog: wrote docs/persistence-catalog.md.
+gen-persistence-catalog: wrote packages/core/session/src/known-event-types.ts.

@@ -1,0 +1,13 @@
+# Human inbox checkpoint-gated compaction follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Commands:
+
+    env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/team/team-human-client/tests/inbox.spec.ts --no-file-parallelism
+    pnpm exec tsc -b packages/team/team-human-client/tsconfig.json
+    git diff --check
+
+Result: inbox JSON/SQLite suite 22/22 passed; package TypeScript face exited 0; diff check exited 0.
+
+Scope: durable display-checkpoint compaction of an acknowledged prefix, default unread suffix continuation after JSON/SQLite compaction, explicit history rejection, existing restart/authorization/ack semantics, and the package source contract. No automatic retention policy or lossy cleanup is introduced.

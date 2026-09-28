@@ -1,0 +1,19 @@
+Runtime/channel documentation graph follow-up (2026-09-09)
+
+Scope: classify the already-mounted AgentRuntime supervisor, channel-admission/summary/human-delivery, and placement Context services in the source-owned capability graph, then regenerate the graph documents. This closes graph freshness/ownership evidence only; it does not claim corpus-wide bilingual pairing or doc-sync closure.
+
+Changes:
+
+1. `scripts/gen-doc-graphs.ts` now classifies `activationSupervisors`, `teamChannelAdmission`, `teamChannelSummaries`, `teamHumanDelivery`, and `teamPlacement` with their owning packages, implementations, direct consumers, and bounded ownership notes.
+2. The generated graph set was refreshed from the current source catalog.
+
+Commands:
+
+1. `pnpm run gen-doc-graphs`
+   Result: exit 0; eight graph documents regenerated.
+2. `pnpm run verify-doc-graphs`
+   Result: exit 0; eight graph documents are up to date.
+3. `git diff --check`
+   Result: exit 0.
+
+The targeted translation check still reports pre-existing pair-record drift for `docs/capability-seams.md` and `docs/event-producer-consumer.md`; those pair records are intentionally not claimed by this scoped graph result.

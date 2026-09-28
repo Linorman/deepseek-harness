@@ -1,3 +1,5 @@
+import type { SimulationContextViewEventData, SimulationContextMessageSource } from './simulation-context.ts'
+export type { SimulationContextViewEventData, SimulationContextMessageSource, SimulationContextSection, SimulationContextReference } from './simulation-context.ts'
 import type { Branded } from '@clocky/clocky-brand'
 import type {
   AssistantMessage,
@@ -287,6 +289,7 @@ export interface TeamChannelViewMessageSource extends Omit<TeamChannelViewEventD
 declare module '@clocky/clocky-llm' {
   interface MessageSourceMap {
     'team-channel-view': TeamChannelViewMessageSource
+    'simulation-context-view': SimulationContextMessageSource
   }
 }
 
@@ -331,6 +334,8 @@ export interface SessionEventMap {
    * required because omitting it would change model-history reconstruction.
    */
   'team/channel-view': TeamChannelViewEventData
+  /** Exact supplementary Simulation context; source references do not duplicate Team message content. */
+  'simulation/context-view': SimulationContextViewEventData
   /** Raw stream chunk — token-level replay fidelity. */
   'assistant/chunk': { turn: number; step: number; chunk: StreamChunk }
   /**
@@ -416,6 +421,7 @@ export type SessionEventType = keyof SessionEventMap
 export type SurfaceEventType =
   | 'user/message'
   | 'team/channel-view'
+  | 'simulation/context-view'
   | 'assistant/message'
   | 'tool/result'
 
@@ -470,7 +476,7 @@ export interface SurfaceIntent {
  *
  * The {@link sourceEventSeqs} and {@link surfaceOp} fields are conditional:
  * they only exist on {@link SurfaceEventType} variants (`user/message`,
- * `team/channel-view`, `assistant/message`, `tool/result`).
+ * `team/channel-view`, `simulation/context-view`, `assistant/message`, `tool/result`).
  * Non-surface events (boundary markers, chunks, usage, errors) never carry
  * surface metadata — the compiler enforces this at `Session.append()`
  * call sites.
@@ -493,7 +499,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
      * defaulting to required means a forgotten marker over-refuses (an
      * inconvenience) rather than silently resuming a gutted session.
      */
-    ignorable?: K extends 'team/channel-view' ? never : true
+    ignorable?: K extends 'team/channel-view' | 'simulation/context-view' ? never : true
   } & (K extends SurfaceEventType ? {
     /**
      * Seq numbers of earlier events that this event cites as sources

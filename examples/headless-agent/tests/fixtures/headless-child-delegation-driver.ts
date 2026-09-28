@@ -3,12 +3,13 @@ import type { TeamListPageRequest } from '@clocky/clocky-team'
 import assert from 'node:assert/strict'
 import { writeSync } from 'node:fs'
 import type { Context } from '@clocky/cordis'
-import { CallId, LlmAdapter } from '@clocky/clocky-llm'
+import { CallId, LlmAdapter, LlmError } from '@clocky/clocky-llm'
 import type { GenerateOptions, StreamChunk, LlmResolvedModelInfo } from '@clocky/clocky-llm'
 import type {} from '@clocky/clocky-storage-log'
 import { teamIdSchema } from '@clocky/clocky-team'
 import type { ChannelId, TeamAuditEntry, TeamId, TeamStateSnapshot, TeamTaskSnapshot } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team-run'
+import type {} from './headless-child-authority-probe.ts'
 
 const MODEL = 'child-delegation-model'
 const ROOT = 'CHILD_DELEGATION_PARENT_OBJECTIVE'
@@ -60,6 +61,7 @@ async function waitForChild(started: Promise<void>, signal: AbortSignal | undefi
 
 class DelegationModel extends LlmAdapter {
   readonly childStarted = Promise.withResolvers<undefined>()
+  readonly holdRetarget = Promise.withResolvers<undefined>()
   beforeChildWork?: () => Promise<void>
   readonly rootCalls: string[] = []
   readonly childCalls: string[] = []
@@ -74,9 +76,15 @@ class DelegationModel extends LlmAdapter {
     const channel = options.system?.match(/call team_final with channel_id ([^\s]+) and/u)?.[1]
     assert(channel !== undefined)
     const cancelled = process.env.CLOCKY_CHILD_SCENARIO === 'cancel'
+    const failed = process.env.CLOCKY_CHILD_SCENARIO === 'failure'
     if (!parent) {
       if (this.childCalls.length === 0) await this.beforeChildWork?.()
       this.childStarted.resolve(undefined)
+      if (failed) {
+        this.childCalls.push('model-error')
+        yield { type: 'finish', reason: { kind: 'error', failure: { code: 'CHILD_FIXTURE_FAILURE', message: 'Child model rejected the request' } } }
+        return
+      }
       if (cancelled) {
         const signal = options.signal
         assert(signal !== undefined)
@@ -98,6 +106,10 @@ class DelegationModel extends LlmAdapter {
       return
     }
     assert(typeof delegated.task_id === 'string')
+    if (process.env.CLOCKY_CHILD_SCENARIO === 'retarget' || failed) {
+      await waitForChild(this.holdRetarget.promise, options.signal)
+      return
+    }
     if (cancelled && result(options, 'parent-cancel') === undefined) {
       await waitForChild(this.childStarted.promise, options.signal)
       this.rootCalls.push('team_task_cancel')
@@ -110,7 +122,7 @@ class DelegationModel extends LlmAdapter {
       yield* call('parent-wait', 'team_task_wait', { task_id: delegated.task_id })
       return
     }
-    assert.equal(waited.phase, cancelled ? 'cancelled' : 'completed')
+    assert.equal(waited.phase, cancelled ? 'cancelled' : failed ? 'failed' : 'completed')
     if (result(options, 'parent-final') !== undefined) { yield* text(); return }
     this.rootCalls.push('team_final')
     yield* call('parent-final', 'team_final', { channel_id: channel, text: FINAL })
@@ -131,12 +143,66 @@ async function run(ctx: Context, model: DelegationModel) {
     parentArchiveRejected = true
   }
   await ctx.teamRuns.postHumanInput({ teamId: handle.teamId, content: [{ type: 'text', text: ROOT }] })
+  if (process.env.CLOCKY_CHILD_SCENARIO === 'failure') {
+    const signal = AbortSignal.timeout(15_000)
+    let parent = await ctx.teams.getTeam({ teamId: handle.teamId })
+    while (!parent.tasks.some(task => task.execution.kind === 'child-team' && task.phase === 'failed')) {
+      await ctx.teams.watchTeam({ teamId: handle.teamId, afterCursor: parent.team.cursor, signal })
+      parent = await ctx.teams.getTeam({ teamId: handle.teamId })
+    }
+    const task = parent.tasks.find(task => task.execution.kind === 'child-team')!
+    assert(task.delegation?.childTeamId !== undefined)
+    const child = await ctx.teams.getTeam({ teamId: task.delegation.childTeamId })
+    assert.equal(child.team.phase, 'failed')
+    assert.equal(child.team.closure?.reason?.code, 'CHILD_FIXTURE_FAILURE')
+    assert.equal(task.delegation.result, undefined)
+    assert.equal(child.team.childResultAdmission, undefined)
+    assert.equal((await ctx.teams.inspectQuiescence(child.team.id)).quiescent, true)
+    await crossLogEvidence(ctx, parent, child, task)
+    await ctx.teamRuns.cancel(parent.team.id)
+    parent = await ctx.teams.getTeam({ teamId: parent.team.id })
+    assert.equal(parent.team.phase, 'cancelled')
+    return { scenario: 'failure', parent: parent.team.phase, task: task.phase, child: child.team.phase,
+      failureCode: child.team.closure.reason.code, result: null, childQuiescent: true,
+      parentCalls: model.rootCalls, childCalls: model.childCalls }
+  }
+  if (process.env.CLOCKY_CHILD_SCENARIO === 'retarget') {
+    await ctx.childAuthorityProbe.denied
+    let parent = await ctx.teams.getTeam({ teamId: handle.teamId })
+    while (parent.team.phase !== 'stalled') {
+      await ctx.teams.watchTeam({ teamId: parent.team.id, afterCursor: parent.team.cursor })
+      parent = await ctx.teams.getTeam({ teamId: parent.team.id })
+    }
+    const task = parent.tasks.find(value => value.execution.kind === 'child-team')
+    assert(task?.delegation?.childTeamId !== undefined)
+    assert.equal(task.delegation.failure?.code, 'TEAM_ACTOR_PROOF_INVALID')
+    const child = await ctx.teams.getTeam({ teamId: task.delegation.childTeamId })
+    assert.equal(child.team.childRun, undefined)
+    assert.equal(model.childCalls.length, 0)
+    const cancellationDeadline = AbortSignal.timeout(15_000)
+    for (;;) {
+      try { await ctx.teamRuns.cancel(parent.team.id) }
+      catch (error: unknown) {
+        if (!(error instanceof Error && 'code' in error
+          && (error.code === 'TEAM_NOT_QUIESCENT' || error.code === 'TEAM_RUN_NOT_QUIESCENT'))) throw error
+      }
+      parent = await ctx.teams.getTeam({ teamId: parent.team.id })
+      if (parent.team.phase === 'cancelled') break
+      await ctx.teams.watchTeam({ teamId: parent.team.id, afterCursor: parent.team.cursor, signal: cancellationDeadline })
+    }
+    return { scenario: 'retarget', authorityChanged: ctx.childAuthorityProbe.changed, endpointBindingRejected: true,
+      childModelRequests: model.childCalls.length, parent: parent.team.phase,
+      task: parent.tasks.find(value => value.id === task.id)?.phase }
+  }
   const final = await ctx.teamRuns.waitForFinal({
     teamId: handle.teamId, signal: AbortSignal.timeout(15_000),
   }).catch(async (cause: unknown) => {
     const state = await ctx.teams.getTeam({ teamId: handle.teamId })
+    const children = await Promise.all(state.tasks.flatMap(task => task.delegation?.childTeamId === undefined ? []
+      : [ctx.teams.getTeam({ teamId: task.delegation.childTeamId })]))
     throw new Error(`Child scenario did not settle: ${JSON.stringify({ phase: state.team.phase,
-      tasks: state.tasks.map(task => ({ phase: task.phase, delegation: task.delegation })) })}`, { cause })
+      tasks: state.tasks.map(task => ({ phase: task.phase, delegation: task.delegation })),
+      children: children.map(child => ({ phase: child.team.phase, closure: child.team.closure, activations: child.activations })) })}`, { cause })
   })
   assert.equal(final.text, FINAL)
   const parent = await ctx.teams.getTeam({ teamId: handle.teamId })
@@ -417,13 +483,16 @@ async function runRecover(ctx: Context, model: DelegationModel, parentTeamId: st
 /** Loader identity. */
 export const name = 'child-delegation-driver'
 /** Real runtime owners needed by the model-driven scenario. */
-export const inject = ['teamRuns', 'teams', 'llm', 'agents', 'storage']
+export const inject = ['teamRuns', 'teams', 'llm', 'agents', 'storage', 'childAuthorityProbe']
 /** Run the configured child flow after Loader readiness. @param ctx - Loader-owned context. */
 export function apply(ctx: Context): void {
   const model = new DelegationModel()
   ctx.llm.registerAdapter([MODEL], model)
   const failure = Promise.withResolvers<never>()
-  ctx.on('agent/error', ({ error }) => { failure.reject(error) })
+  ctx.on('agent/error', ({ error }) => {
+    if (process.env.CLOCKY_CHILD_SCENARIO === 'failure' && error instanceof LlmError && error.code === 'CHILD_FIXTURE_FAILURE') return
+    failure.reject(error)
+  })
   const exit = ctx.get('appExit')
   assert(exit !== undefined)
   const stage = process.env.CLOCKY_CHILD_RESTART_STAGE

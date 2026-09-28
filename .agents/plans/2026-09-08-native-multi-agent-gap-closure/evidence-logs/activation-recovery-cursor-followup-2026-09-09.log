@@ -1,0 +1,24 @@
+Command:
+  pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts --reporter=dot --maxWorkers=1
+
+Result:
+  1 test file passed; 22 tests passed; 0 failed; 0 skipped.
+  The new regression supplies two consecutive pages with the same nextCursor
+  and verifies that startup recovery rejects the scan with TEAM_CURSOR_CONFLICT.
+
+TypeScript:
+  pnpm exec tsc -p packages/team/team-activation-recovery/tsconfig.json --noEmit
+  Result: exit 0.
+
+Lint:
+  pnpm exec oxlint packages/team/team-activation-recovery/src/index.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts
+  Result: exit 0.
+
+Source SHA-256:
+  packages/team/team-activation-recovery/src/index.ts 1050878af5955d853ea8bce17b48350c3fe892d99adf01180ee43df89b63f2e5
+  packages/team/team-activation-recovery/tests/startup-recovery.spec.ts b9d1a8d9276bb6000eac193b33858e1bfcc8e6d25ebed6a080dc6a3e63760bd3
+
+Boundary:
+  This improves named error classification for local SDK activation recovery.
+  It does not claim ACP independent-host, separate-host, provider-loss, browser,
+  coverage, performance, or release evidence.

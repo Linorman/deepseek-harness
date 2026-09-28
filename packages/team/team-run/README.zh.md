@@ -19,6 +19,8 @@ Principal-owned final 要求挂载[持久 human inbox](../team-human-client/READ
 
 `maxLiveActivations` 冻结 root 的同时启动/epoch 额度；child 请求必须明确分配子额度，包含其 coordinator 和 idle 成员。发行 headless/web root 在 Cordis 配置中设置 `maxChildTeams: 32` 与 `maxLiveActivations: 128`。
 
+子 Team 协调者的模型失败在 Team 失败意图中保留原错误码。轮次结束处理使用仍由本地运行持有的 activation binding，签发证明前复核归属，并在 `receiptRetryAttempts` 内重试游标冲突；公开任务和目标命令仍要求当前协调者轮次。
+
 ## Configuration
 
 `channelPageSize`是正整数配置，默认为 `128`；`waitForFinal()`使用它通过 provider page 有界读取 final-output channel WAL。
@@ -29,7 +31,7 @@ Coordinator 在能节省时间或上下文时委派可独立交付和验证的�
 
 `start()`将 topology 创建与首条可信 human Envelope 组合为一个操作。调用方提供一个 sender-scoped idempotency key；当前本地 owner 可用时，相同请求的 retry 返回同一 Team 与 Envelope，而使用该 key 的不同请求会失败。`postHumanInput()`接受相同的可选 key，并会在中间 receipt 或 reply 改变 channel cursor 后最多按 `humanInputRetryAttempts`重读，因此 retry 不会重复写入持久输入。
 
-`resume({ teamId })`会在之前的 coordinator activation 已离线 settle 后，重新拥有一个 active 或 stalled 的持久默认 Team。对于 stalled Team，它会签发一条 source-scoped phase proof，只能将这支 Team 恢复为 `active`，随后复用持久化的 coordinator Session、model route、preset 和默认 channel，并生成新的 activation epoch；terminal 或 archived Team 不可恢复。
+`resume({ teamId })`会在之前的 coordinator activation 已离线 settle 后，重新拥有一个 active 或 stalled 的持久默认 Team。对于 stalled Team，它会签发一条 source-scoped phase proof，只能将这支 Team 恢复为 `active`，随后复用持久化的 coordinator Session、model route、preset 和默认 channel，并生成新的 activation epoch；terminal 或 archived Team 不可恢复。 恢复选择协调者和 worker 的最新激活记录。关闭会取消并排空已接受的恢复操作，再释放证明来源；插件卸载通过 Cordis effect 注册这段清理，并等待保留的激活停止。 恢复清理失败时，恢复调用和并发关闭调用均拒绝，并保留原错误与清理失败。
 
 `cancel(teamId)`会先携带临时 TeamRun cancellation proof 向 Hub 发送 typed cancellation command。只有该命令持久化地关闭 admission 后，才会释放本地 lease，并为每个可重试的准确 task 或 channel cleanup 使用新的 cancellation-cleanup proof；若不相关的已接纳 Team record 先推进 cursor，它会在 `receiptRetryAttempts`内重读并以同一 idempotency key 和新的 proof 重试。若初始命令未被接受，service 会保留本地 ownership，使调用方可以 retry，而不会留下普通的 quiescing Team。
 

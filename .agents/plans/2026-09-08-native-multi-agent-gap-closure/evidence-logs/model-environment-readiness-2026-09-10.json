@@ -1,0 +1,14 @@
+{
+  "checkedSources": [
+    "process environment",
+    "repository root .env"
+  ],
+  "configured": {
+    "DEEPSEEK_API_KEY": false,
+    "CLOCKY_LOCAL_MODEL_BASE_URL": false,
+    "CLOCKY_LOCAL_MODEL_ID": false
+  },
+  "qualification": "Presence only; no credential values copied. No endpoint could be selected for a current live-model probe.",
+  "result": "BLOCKED_ENV",
+  "nextAction": "Configure the real-model route locally; independent-host acceptance also needs a user-specified target environment."
+}

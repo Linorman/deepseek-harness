@@ -1,0 +1,17 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json checkpoint execution identity > rejects replacing the Team before the first entity binding 1`] = `
+{
+  "canonicalTeamPreserved": true,
+  "completedCheckpoints": 2,
+  "rejectedWritesUnchanged": true,
+}
+`;
+
+exports[`sqlite checkpoint execution identity > rejects replacing the Team before the first entity binding 1`] = `
+{
+  "canonicalTeamPreserved": true,
+  "completedCheckpoints": 2,
+  "rejectedWritesUnchanged": true,
+}
+`;

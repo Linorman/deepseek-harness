@@ -14,6 +14,8 @@ import type { CompactionResult } from './types.ts'
 
 export type { CompactionResult } from './types.ts'
 export { CompactionId } from './brand.ts'
+export { recordCompactionRequest, compactionRequestReference } from './request.ts'
+export type { CompactionRequestReference } from './request.ts'
 export { toolPairingBalancedAfter, toolPairingBalancedBefore } from './tool-pairing.ts'
 // The checkpoint source constructor and predicate are declared on the cordis-free
 // `./checkpoint` leaf so client and wire programs can name them without this

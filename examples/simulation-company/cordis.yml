@@ -1,0 +1,56 @@
+- name: '@clocky/clocky-llm'
+- name: '@clocky/clocky-session'
+- name: '@clocky/clocky-system-prompt'
+- name: '@clocky/clocky-tools'
+  config:
+    mode: native
+- name: '@clocky/clocky-agent'
+- name: '@clocky/clocky-session-persistence-jsonl'
+  config:
+    root: !!js process.env.SIMULATION_COMPANY_ROOT + '/sessions'
+    compression: none
+- name: '@clocky/clocky-agent-loop'
+  config:
+    agents: []
+- name: '@clocky/clocky-storage'
+- name: '@clocky/clocky-storage-json'
+  disabled: !!js process.env.SIMULATION_COMPANY_BACKEND !== 'json'
+  config:
+    root: !!js process.env.SIMULATION_COMPANY_ROOT + '/team-json'
+- name: '@clocky/clocky-storage-sqlite'
+  disabled: !!js process.env.SIMULATION_COMPANY_BACKEND !== 'sqlite'
+  config:
+    path: !!js process.env.SIMULATION_COMPANY_ROOT + '/team.sqlite'
+- name: '@clocky/clocky-storage-log'
+  config:
+    backend: !!js process.env.SIMULATION_COMPANY_BACKEND
+    routes: {}
+- name: '@clocky/clocky-team-hub'
+  # Benchmark history limits are independent of live actor residency.
+  config: !!js JSON.parse(process.env.SIMULATION_BENCHMARK_TEAM_LIMITS || '{}')
+- name: '@clocky/clocky-agent-runtime'
+- name: '@clocky/clocky-agent-runtime-in-process'
+- name: '@clocky/clocky-team-activation-controller'
+- name: '@clocky/clocky-simulation'
+- name: '@clocky/clocky-simulation-local'
+  config:
+    name: local
+    root: !!js process.env.SIMULATION_COMPANY_ROOT + '/simulation'
+    backend: !!js process.env.SIMULATION_COMPANY_BACKEND
+    replayPageSize: !!js Number(process.env.SIMULATION_REPLAY_PAGE_SIZE ?? 4)
+- name: '@clocky/clocky-simulation-team'
+  config:
+    maxContextBytes: 65536
+    deliveryPageSize: 32
+    maxCoordinationRounds: 16
+    maxConcurrentModels: !!js Number(process.env.SIMULATION_MODEL_LIMIT || 2)
+    maxQueuedModels: !!js Number(process.env.SIMULATION_MODEL_QUEUE_LIMIT || 16)
+- name: '@clocky/clocky-tool-simulation'
+- name: '@clocky/clocky-agent-presets'
+  config:
+    default: simulation
+    includeUserRoot: false
+    roots:
+      - path: !!js process.cwd() + '/examples/simulation-company/presets'
+        trust: system
+- name: '@clocky/clocky-team-channel-direct'

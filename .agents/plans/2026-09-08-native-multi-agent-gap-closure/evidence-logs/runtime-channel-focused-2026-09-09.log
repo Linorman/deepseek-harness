@@ -1,0 +1,9 @@
+Command:
+  node node_modules/vitest/vitest.mjs run packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts packages/agent-runtime/agent-runtime-sdk/tests/remote-link.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider.spec.ts packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts packages/team/team-placement-default/tests/placement.spec.ts packages/team/team-delegation/tests/delegation.spec.ts packages/team/team-workspace-shared/tests/provider.spec.ts packages/team/team-run/tests/team-run.spec.ts packages/sdk/server/tests/channel-media.spec.ts packages/host/apiproxy/tests/api-proxy-teams.spec.ts packages/team/team-hub/tests/direct-v4.spec.ts packages/team/team-hub/tests/channel-summary-authority.spec.ts packages/team/team-hub/tests/delivery-view-boundary.spec.ts packages/team/team-hub/tests/load.spec.ts packages/team/team-hub/tests/envelope-admission.spec.ts packages/team/team-hub/tests/terminal-channel-replay.spec.ts --reporter=json --outputFile=.tmp/runtime-channel-focused-current.json
+
+Source/artifact plane: source tests; local workspace runtime; no credentials injected.
+Result: exit 0.
+
+Summary:
+  Test files: 16 total, 16 passed.
+  Tests: 317 total, 316 passed, 0 failed, 1 skipped by platform.

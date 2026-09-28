@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Context } from '@clocky/cordis'
+import { Context } from '@clocky/cordis'
 import { openAgentWorkspaceLease } from '@clocky/clocky-agent'
 import type { Agent } from '@clocky/clocky-agent'
-import { AgentRuntimeTerminationUnconfirmedError } from '@clocky/clocky-agent-runtime'
+import { AgentRuntimeError, AgentRuntimeTerminationUnconfirmedError } from '@clocky/clocky-agent-runtime'
 import type { ActivationHandle, AgentRuntimeFencer } from '@clocky/clocky-agent-runtime'
 import { SessionId } from '@clocky/clocky-session'
 import {
@@ -19,6 +19,7 @@ import type {
   ActivationRecoverySnapshot,
   ActivationStatus,
   ParticipantSnapshot,
+  TeamHumanResumeAuthorization,
   TeamStateSnapshot,
 } from '@clocky/clocky-team'
 import {
@@ -346,6 +347,278 @@ function configureDurableBinding(
 }
 
 describe('Team activation controller edges', () => {
+  it('retains cleanup when readback names another binding and retries only after the exact binding is restored', async () => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('foreign-bind-readback'))
+    const durable = configureDurableBinding(fake, raw)
+    let attempted: ActivationBindingSnapshot | undefined
+    // oxlint-disable-next-line typescript/no-misused-promises -- The fault follows a durable asynchronous bind response.
+    fake.teams.bindActivation.mockImplementationOnce(async ({ binding: value }: { binding: ActivationBindingSnapshot }) => {
+      attempted = value
+      durable.replace({ ...value, sessionId: SessionId('foreign-session') })
+      throw new Error('Binding response lost')
+    })
+    const controller = new TeamActivationController(fake.ctx)
+    try {
+      const failure: unknown = await controller.activate(request(raw.sessionId)).catch((error: unknown) => error)
+      expect(failure).toBeInstanceOf(AggregateError)
+      if (!(failure instanceof AggregateError)) throw new Error('Fixture bind unexpectedly succeeded')
+      expect(failure.errors).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })]))
+      expect(fake.teams.quiesceActivation).not.toHaveBeenCalled()
+      expect(raw.disposeSpy).toHaveBeenCalledOnce()
+      expect(attempted).toBeDefined()
+      durable.replace(attempted)
+    } finally { await controller.close() }
+    expect(fake.teams.quiesceActivation).toHaveBeenCalledOnce()
+    expect(raw.disposeSpy).toHaveBeenCalledOnce()
+  })
+
+  it.each(['AGENT_RUNTIME_PROVIDER_CHANGED', 'AGENT_RUNTIME_PROVIDER_NOT_FOUND'] as const)
+  ('rejects pre-start provider changes without inventing an unreserved activation: %s', async (code) => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('provider-before-start'))
+    configureDurableBinding(fake, raw)
+    const error = new AgentRuntimeError('Provider unavailable', code)
+    fake.agentRuntimes.activate.mockRejectedValueOnce(error)
+    const controller = new TeamActivationController(fake.ctx)
+    try {
+      await expect(controller.activate(request(raw.sessionId))).rejects.toBe(error)
+      expect(fake.teams.bindActivation).not.toHaveBeenCalled()
+      expect(raw.disposeSpy).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it('uses the persisted ACP workspace when replacing a stopped external epoch', async () => {
+    const fake = fakeContext()
+    const sessionId = SessionId('acp-replacement')
+    const recovery: ActivationRecoverySnapshot = { kind: 'acp-local-cold-replace', version: 1,
+      runtimeProvider: 'in-process', profile: 'acp', cwd: '/persisted/workspace',
+      process: { hostId: 'host', pid: 123, started: 'start' } }
+    const old = binding(sessionId, 'offline', { recovery })
+    const raw = rawHandle(sessionId, { local: null, activationId: activationIdSchema.parse('acp-replacement') })
+    const durable = configureDurableBinding(fake, raw)
+    durable.replace(old)
+    fake.agentRuntimes.getFencer.mockReturnValue({ provider: 'in-process', validate() {}, fence: async () => {} } satisfies AgentRuntimeFencer)
+    const controller = new TeamActivationController(fake.ctx)
+    try {
+      const next = await controller.coldReplace({ teamId, participantId: participant.id, activationId: old.activation.id,
+        signal: new AbortController().signal })
+      expect(fake.agentRuntimes.activate).toHaveBeenCalledWith(expect.objectContaining({
+        agent: { cwd: '/persisted/workspace', options: {} }, seed: { kind: 'resume' }, sessionId,
+      }), undefined)
+      await next.dispose()
+    } finally { await controller.close() }
+  })
+
+  it.each([false, true])('requires termination proof unless an exact stale epoch is already fenced (fenced=%s)', async (fenced) => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('stale-proof'))
+    const durable = configureDurableBinding(fake, raw)
+    const old = binding(raw.sessionId, 'offline', fenced ? { fencedAt: 1, recovery: recoveryPlan() } : {})
+    durable.replace(old)
+    const controller = new TeamActivationController(fake.ctx)
+    const selected = { teamId, participantId: participant.id, activationId: old.activation.id,
+      sessionId: old.sessionId, provider: old.provider,
+      authorization: {
+        isLive: () => true, assert: async () => state(durable.cursor(), [old]), close() {},
+      } as TeamHumanResumeAuthorization }
+    try {
+      if (fenced) {
+        await controller.fenceStale(selected)
+        expect(fake.teams.fenceActivation).toHaveBeenCalledOnce()
+      } else {
+        await expect(controller.fenceStale(selected)).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_FENCE_UNAVAILABLE' })
+        expect(fake.teams.fenceActivation).not.toHaveBeenCalled()
+      }
+      expect(fake.agentRuntimes.getFencer).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it('does not clean an unbound start owned by another Team during a terminal notification', async () => {
+    const fake = fakeContext()
+    let rejectDisposal = true
+    const raw = rawHandle(SessionId('unpublished-team'), { dispose: async () => {
+      if (rejectDisposal) throw new Error('Termination unknown')
+    } })
+    const durable = configureDurableBinding(fake, raw)
+    fake.teams.bindActivation.mockRejectedValueOnce(new Error('Binding failed'))
+    const controller = new TeamActivationController(fake.ctx)
+    controller.start()
+    try {
+      await expect(controller.activate(request(raw.sessionId))).rejects.toBeInstanceOf(AggregateError)
+      const calls = raw.disposeSpy.mock.calls.length
+      const terminal = { ...state(durable.cursor(), []).team, id: teamIdSchema.parse('another-team'),
+        closure: { kind: 'fail', requestedAt: 1 } }
+      for (const callback of fake.callbacks.get('team/changed') ?? []) callback({ type: 'team/changed', team: terminal })
+      await Promise.resolve()
+      expect(raw.disposeSpy).toHaveBeenCalledTimes(calls)
+    } finally { rejectDisposal = false; await controller.close() }
+  })
+
+  it.each([false, true])('requires domain termination evidence before fencing a recovered local epoch (confirmed=%s)', async (initiallyConfirmed) => {
+    const scope = new Context()
+    const fake = fakeContext()
+    Reflect.set(fake.ctx, 'effect', scope.effect.bind(scope))
+    const raw = rawHandle(SessionId('domain-local-recovery'))
+    const durable = configureDurableBinding(fake, raw)
+    const old = binding(raw.sessionId)
+    durable.replace(old)
+    // oxlint-disable-next-line typescript/no-misused-promises -- The mocked Team reader has an asynchronous provider contract.
+    fake.teams.getTeam.mockImplementation(async () => ({ ...state(durable.cursor(), [durable.current()!]),
+      rules: { activationLifecycleOwner: 'domain' } }))
+    const controller = new TeamActivationController(fake.ctx)
+    let confirmed = initiallyConfirmed
+    const lease = { get localTerminationConfirmed() { return confirmed }, bind: vi.fn(async () => {}),
+      revoke: vi.fn(async () => {}), release: vi.fn(async () => {}) }
+    const unregister = controller.registerLifecycleOwner({ name: 'domain', reserve: async () => lease,
+      recover: async () => lease, recoverReservation: async () => lease })
+    const identity = { teamId, participantId: participant.id, activationId: old.activation.id }
+    try {
+      if (!confirmed) {
+        await expect(controller.recoverCoordinatedLocal(identity)).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_FENCE_UNAVAILABLE' })
+        expect(fake.teams.fenceActivation).not.toHaveBeenCalled()
+        confirmed = true
+      }
+      await controller.recoverCoordinatedLocal(identity)
+      expect(fake.teams.fenceActivation).toHaveBeenCalledOnce()
+      expect(durable.current()?.quiescenceSource).toBe('fenced')
+      expect(lease.revoke).toHaveBeenCalled()
+      expect(lease.release).toHaveBeenCalledOnce()
+      expect(fake.agentRuntimes.activate).not.toHaveBeenCalled()
+    } finally { await controller.close(); await unregister(); await scope.fiber.dispose() }
+  })
+
+  it.each(['epoch', 'supervisor'] as const)('does not stall a superseded %s while fence availability is being checked', async (change) => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('superseded-fence'))
+    const durable = configureDurableBinding(fake, raw)
+    const supervisor = { name: 'supervisor', version: 1, hostId: 'test-host', endpointId: 'endpoint',
+      generation: raw.activation.id, terminationMode: 'owned-process' as const }
+    const old = binding(raw.sessionId, 'offline', { recovery: { ...recoveryPlan(), ...change === 'supervisor' ? { supervisor } : {} } })
+    durable.replace(old)
+    if (change === 'epoch') {
+      fake.agentRuntimes.getFencer.mockImplementation(() => {
+        durable.append({ ...old, activation: { ...old.activation, id: activationIdSchema.parse('replacement') } })
+        return undefined
+      })
+    } else {
+      const get = Reflect.get(fake.ctx, 'get') as ReturnType<typeof vi.fn>
+      get.mockImplementation(() => {
+        durable.replace(binding(raw.sessionId, 'offline', { recovery: { ...recoveryPlan(),
+          supervisor: { ...supervisor, endpointId: 'replacement-endpoint' } } }))
+        return undefined
+      })
+    }
+    const controller = new TeamActivationController(fake.ctx)
+    try {
+      await expect(controller.coldReplace({ teamId, participantId: participant.id, activationId: old.activation.id,
+        signal: new AbortController().signal })).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_FENCE_UNAVAILABLE' })
+      expect(fake.teams.transitionTeamPhase).not.toHaveBeenCalled()
+      expect(fake.agentRuntimes.activate).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it.each([false, true])('records missing fence authority and retries cursor conflicts (supervisor=%s)', async (supervised) => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('missing-fence'))
+    const durable = configureDurableBinding(fake, raw)
+    const recovery = { ...recoveryPlan(), ...supervised ? { supervisor: {
+      name: 'supervisor', version: 1, hostId: 'test-host', endpointId: 'endpoint',
+      generation: raw.activation.id, terminationMode: 'owned-process' as const,
+    } } : {} }
+    const old = binding(raw.sessionId, 'offline', { recovery })
+    durable.replace(old)
+    fake.teams.transitionTeamPhase.mockRejectedValueOnce(new TeamError('Cursor advanced', 'TEAM_CURSOR_CONFLICT'))
+    const controller = new TeamActivationController(fake.ctx, { statusSyncAttempts: 2 })
+    try {
+      await expect(controller.coldReplace({ teamId, participantId: participant.id, activationId: old.activation.id,
+        signal: new AbortController().signal })).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_FENCE_UNAVAILABLE' })
+      expect(fake.teams.transitionTeamPhase).toHaveBeenCalledTimes(2)
+      expect(fake.teams.transitionTeamPhase.mock.lastCall?.[0]).toMatchObject({ phase: 'stalled',
+        reason: { code: supervised ? 'SUPERVISOR_UNAVAILABLE' : 'AGENT_RUNTIME_FENCER_UNAVAILABLE' } })
+      expect(fake.agentRuntimes.activate).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it.each(['cursor', 'storage'] as const)('preserves the old activation when recording a recovery stall fails: %s', async (failure) => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('failed-stall'))
+    const durable = configureDurableBinding(fake, raw)
+    const old = binding(raw.sessionId, 'offline', { recovery: recoveryPlan() })
+    durable.replace(old)
+    const error = failure === 'cursor' ? new TeamError('Cursor advanced', 'TEAM_CURSOR_CONFLICT') : new Error('Storage unavailable')
+    fake.teams.transitionTeamPhase.mockRejectedValue(error)
+    const controller = new TeamActivationController(fake.ctx, { statusSyncAttempts: 2 })
+    try {
+      await expect(controller.coldReplace({ teamId, participantId: participant.id, activationId: old.activation.id,
+        signal: new AbortController().signal })).rejects.toBe(error)
+      expect(fake.teams.transitionTeamPhase).toHaveBeenCalledTimes(failure === 'cursor' ? 2 : 1)
+      expect(durable.current()).toEqual(old)
+      expect(fake.agentRuntimes.activate).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it('propagates cancellation during fencing without publishing a recovery stall or replacement', async () => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('cancel-fence'))
+    const durable = configureDurableBinding(fake, raw)
+    const old = binding(raw.sessionId, 'offline', { recovery: recoveryPlan() })
+    durable.replace(old)
+    const abort = new AbortController(), reason = new Error('Recovery cancelled')
+    fake.agentRuntimes.getFencer.mockReturnValue({ provider: 'in-process', validate() {}, fence: async () => {
+      abort.abort(reason)
+      throw reason
+    } } satisfies AgentRuntimeFencer)
+    const controller = new TeamActivationController(fake.ctx)
+    try {
+      await expect(controller.coldReplace({ teamId, participantId: participant.id, activationId: old.activation.id,
+        signal: abort.signal })).rejects.toBe(reason)
+      expect(fake.teams.transitionTeamPhase).not.toHaveBeenCalled()
+      expect(fake.teams.fenceActivation).not.toHaveBeenCalled()
+      expect(fake.agentRuntimes.activate).not.toHaveBeenCalled()
+    } finally { await controller.close() }
+  })
+
+  it('rejects stopping a missing or replaced controller epoch', async () => {
+    const fake = fakeContext()
+    const raw = rawHandle(SessionId('stop-exact'))
+    configureDurableBinding(fake, raw)
+    const controller = new TeamActivationController(fake.ctx)
+    const identity = { teamId, participantId: participant.id, activationId: raw.activation.id }
+    try {
+      await expect(controller.stopOwnedActivation(identity)).rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+      await controller.activate(request(raw.sessionId))
+      await expect(controller.stopOwnedActivation({ ...identity, activationId: activationIdSchema.parse('other') }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTIVATION_RECOVERY_CONFLICT' })
+      await controller.stopOwnedActivation(identity)
+      expect(fake.teams.quiesceActivation).toHaveBeenCalledOnce()
+    } finally { await controller.close() }
+  })
+
+  it('refuses an unavailable supervisor and gives unscoped fencing a fresh cancellation signal', async () => {
+    const fake = fakeContext()
+    const controller = new TeamActivationController(fake.ctx)
+    const candidate = binding(SessionId('supervisor-default-signal'), 'offline', { recovery: { ...recoveryPlan(), supervisor: {
+      name: 'supervisor', version: 1, hostId: 'test-host', endpointId: 'endpoint',
+      generation: activationIdSchema.parse('activation-controller-edges'), terminationMode: 'owned-process',
+    } } })
+    const resolve = (controller as unknown as { recoveryFencer(value: ActivationBindingSnapshot): AgentRuntimeFencer | undefined })
+      .recoveryFencer.bind(controller)
+    try {
+      expect(resolve(candidate)).toBeUndefined()
+      const supervisor = { resolve: vi.fn(), fence: vi.fn(async (_binding: ActivationBindingSnapshot, signal: AbortSignal) => {
+        expect(signal).toBeInstanceOf(AbortSignal)
+        expect(signal.aborted).toBe(false)
+      }) }
+      const get = Reflect.get(fake.ctx, 'get') as ReturnType<typeof vi.fn>
+      get.mockReturnValue(supervisor)
+      const fencer = resolve(candidate)
+      expect(fencer).toBeDefined()
+      await fencer!.fence(candidate)
+      expect(supervisor.fence).toHaveBeenCalledOnce()
+    } finally { await controller.close() }
+  })
+
   it('passes the cold-replacement cancellation signal to a supervisor fence', async () => {
     const fake = fakeContext()
     const signal = new AbortController().signal
@@ -418,7 +691,7 @@ describe('Team activation controller edges', () => {
       provider: 'in-process',
       sessionId,
       seed: { kind: 'resume' },
-    }))
+    }), undefined)
     expect(lease.binding.activation.id).toBe(replacementId)
     expect(durable.current()?.activation.id).toBe(replacementId)
     expect(durable.current()?.recovery).toEqual(replacementRecovery)

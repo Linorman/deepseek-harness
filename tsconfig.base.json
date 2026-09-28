@@ -31,6 +31,7 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@clocky/clocky-tool-simulation/role": ["./packages/simulation/tool-simulation/src/role.ts"],
       "@clocky/clocky-activation-supervisor-http/invariant": ["./packages/agent-runtime/activation-supervisor-http/src/invariant.ts"],
       "@clocky/clocky-activation-supervisor-http/endpoint": ["./packages/agent-runtime/activation-supervisor-http/src/endpoint.ts"],
       "@clocky/clocky-activation-supervisor-http/client": ["./packages/agent-runtime/activation-supervisor-http/src/client.ts"],
@@ -162,6 +163,7 @@
         "./packages/credentials/*/src/invariant.ts",
         "./packages/acp/*/src/invariant.ts",
         "./packages/storage/*/src/invariant.ts",
+        "./packages/simulation/*/src/invariant.ts",
         "./packages/workspace/*/src/invariant.ts",
         "./packages/sdk/*/src/invariant.ts",
         "./packages/interaction/*/src/invariant.ts",
@@ -298,6 +300,7 @@
         "./packages/credentials/*/src/index.ts",
         "./packages/acp/*/src/index.ts",
         "./packages/storage/*/src/index.ts",
+        "./packages/simulation/*/src/index.ts",
         "./packages/workspace/*/src/index.ts",
         "./packages/sdk/*/src/index.ts",
         "./packages/interaction/*/src/index.ts",

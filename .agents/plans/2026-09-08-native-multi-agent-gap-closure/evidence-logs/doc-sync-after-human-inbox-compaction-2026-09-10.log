@@ -1,0 +1,9 @@
+# Documentation gates after human inbox compaction contract — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Command:
+
+    pnpm run doc-sync
+
+Result: exit 1; 26 gates passed and 2 gates failed. The remaining failures are the pre-existing corpus translation-pairing drift and pre-existing Markdown hard-wrap set; the edited `team-human-client` README and checkpoint-gated compaction Agent Note are absent from both failure sets and their named pairs pass.

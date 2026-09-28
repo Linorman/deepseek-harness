@@ -1,0 +1,105 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > rejects an older open response without replacing the latest selected Team 6ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > refreshes current detail and keeps offline activations read-only during background refresh 2ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > retains a draft created while a list refresh is in flight 4ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > single-flights list refreshes, retains failures, and refreshes after reconnect 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > loads further Team pages only on request and refreshes the requested page range 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > keeps a configured local draft side-effect free until first input starts a Team 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > carries draft project and model choices into the atomic Team start request 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > deletes a lease-free task and updates the selected Team detail projection 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > cancels a running task and updates the selected Team detail projection 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > polls after task cancellation until the durable lease-free phase is visible 2ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > abandons drafts locally and rejects a submission without one 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > retains a failed draft key for an exact retry and rejects changed retry input 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > retains a draft after a transport failure and ignores draft changes while it starts 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > keeps a retryable draft when a started Team lacks a coordinator transcript 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > opens a durable Team and resolves its coordinator transcript 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > reads the current Team cursor immediately before an actor-free resume request 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > surfaces a fresh-cursor resume conflict without fabricating a retry cursor 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > resolves ownership for every selected Participant Session 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > projects Team-bound approval and question requests and removes them on resolution 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > archives a terminal Team and removes it from the browser list 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > rejects Team selections without a coordinator participant or activation 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > reads bounded Team audit and channel projections through the API owner 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > TeamTaskRuntime > reads a visible artifact through the Host API owner 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Team management reconciliation > refreshes authoritative state after a rejected write while retaining the typed Host error 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Team management reconciliation > does not send a channel mutation outside the selected Team 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Principal inbox runtime > pages the unfiltered global prefix and acknowledges its last loaded item, not the tail cursor 2ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Principal inbox runtime > announces newer deliveries and appends them only after an explicit request 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Principal inbox runtime > does not restore a previous connection inbox from a late display acknowledgement 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Principal inbox runtime > reconciles a historical pending action with its current accepted revision 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-tasks.client.spec.ts > Principal inbox runtime > inspects an offline action Team without starting a replacement activation 0ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > does not reopen an old Team list when its channel mutation finishes after selection changes 5ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > retains a newer-channel notice when an earlier list request finishes afterward 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > loads one page per explicit continuation and refreshes only the requested window 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > preserves loaded channels and the retry cursor after a continuation failure 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > does not replace a newly selected Team with an old list response 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > marks newer loaded-channel activity without growing the page window 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > discards disconnected responses and resumes the retained page window after reconnect 54ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-list.client.spec.ts > authorized channel pages and metadata > shows authorized full metadata when own consent is unavailable and never borrows another endpoint invitation 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-catalog.client.spec.ts > refreshes active catalog registrations after reconnect and discards an older catalog failure 56ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > does not publish an old ACK error after its refresh crosses a channel switch 61ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > retires an old-channel read begun while another Team selection is pending 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-catalog.client.spec.ts > retains a newly committed summary while a prior channel read finishes 55ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel-catalog.client.spec.ts > preserves loaded summary sources after image rejection and after successful summary admission 2ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > keeps reconnect authority pending until both reads settle and retains prior readable facts on failure 107ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > ignores an older pending invitation read after a newer acknowledged read 105ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > ignores an older failure invitation read after a newer acknowledged read 103ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > reads consent without accepting it and retries ambiguous consent with the same exact manifest key 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > requires a fresh click and key after the invitation revision changes 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > updates lifecycle without growing retained history and stops watching terminal channels 52ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > preserves read history across reconnect and retires the old watch 51ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > ignores a replaced read even if its transport returns after abort 1ms
+ ✓ |thread-safe| packages/client/runtime/tests/team-channel.client.spec.ts > runtime channel inspection > retains the visible prefix on pagination failure and exposes newer records without skipping the gap 54ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > keeps the draft workspace selector out of the task list while retaining Add workspace 65ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > groups Teams under registered Workspaces and starts a draft in one folder 10ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > uses the collapsed rail control to request sidebar expansion 2ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > distinguishes a pending list baseline from an empty ready list 1ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > renders every Team phase and resolves selection once while an open is pending 6ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > keeps an open failure beside the Team list 6ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > archives only terminal Teams through the injected owner 6ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > catalog-driven channel creation > allows a direct channel with two humans and no coordinator role 102ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > catalog-driven channel creation > requires explicit distinct consult endpoints 47ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > catalog-driven channel creation > requires discussion limits and preserves the selected participant order 51ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > reports archive and mutation failures while clearing their busy state 19ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > passes optional detail owners to the floating Team overlay 53ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > toggles, resizes, and resets the floating Team detail surface 11ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > keeps the floating surface mounted while a body-level stop confirmation is submitted 18ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > catalog-driven channel creation > refuses a registration removed while its creation form is open 18ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > basic protocol text submission > sends consult text with its protocol-derived audience 10ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > basic protocol text submission > sends discussion text with its protocol-derived audience 11ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > visible summary source selection > keeps the displayed range and inputs after a text-only summary rejection 12ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > visible summary source selection > enforces the actual summary capability and its configured history bound 12ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > visible summary source selection > rejects undisplayed, discontinuous and subset-only ranges without submitting them 21ms
+ ✓ |thread-safe| packages/client/ui-team/tests/channel-protocols.client.spec.tsx > visible summary source selection > retains the exact summary range key across a cursor-conflict retry 13ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > runs stalled-Team actions and renders durable human-attention states 23ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > keeps task details compact and deletes a lease-free task after confirmation 18ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > stops a running task after confirmation without hiding the task state 14ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > exposes participant, channel, task, and audit details through durable owners 28ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > keeps the settled worker owner and assigns review status to the reviewer 3ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > cancels artifact reads when the selected Team changes or the detail unmounts 7ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > TeamBrowser > recovers channel, audit, and artifact reads with bounded previews and downloads 126ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > blocks ACK and basic sending during authority refresh, then keeps sending blocked on metadata failure 20ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > renders only the explicitly loaded channel page and requests continuation on click 3ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > shows all endpoint names and consent status without exposing proof fields or borrowing another invitation 3ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > shows explicit principal consent and prevents another click while it is being acknowledged 3ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > cancels pending opening through the current channel cursor and keeps unrelated read failures nonblocking 13ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > appends channel and audit pages and preserves prior records after a failed continuation 54ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > ignores a replaced channel response even when its transport resolves after abort 16ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Team management and continuation pages > keeps an invite draft after a conflict and submits against the refreshed Team cursor 30ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Task authoring, review, and integration > creates a task with explicit placement, budget, workspace, and review choices 40ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Task authoring, review, and integration > retains dependency edits on rejection and reviews with the current task revision 18ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > Task authoring, review, and integration > requires a target version for integration and retains the exact source attempt 33ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > loads another Team list page only from its continuation control 5ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > requires explicit review of a newer task revision before retaining and submitting edits 11ms
+ ✓ |thread-safe| packages/client/ui-team/tests/team-browser.client.spec.tsx > reads visible artifacts retained after workspace loss without exposing private references 7ms
+
+ Test Files  6 passed (6)
+      Tests  94 passed (94)
+   Start at  19:56:23
+   Duration  2.67s (transform 2.71s, setup 1.09s, import 3.44s, tests 1.72s, environment 1.49s)

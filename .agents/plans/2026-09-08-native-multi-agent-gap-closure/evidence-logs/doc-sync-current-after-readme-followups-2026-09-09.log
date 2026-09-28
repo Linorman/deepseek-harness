@@ -1,0 +1,21 @@
+Current documentation sync after README follow-ups (2026-09-09)
+
+Scope: rerun the repository documentation gate suite after the current README Model Experience, link, and bilingual-pair changes. This is an acceptance snapshot and intentionally preserves unrelated failures rather than claiming release documentation closure.
+
+Command:
+
+`pnpm run doc-sync`
+
+Result: exit 1; 23 gates passed, 5 gates failed, and 0 were skipped in 36.70 seconds.
+
+Passed gates include doc-typecheck, documentation build, Markdown links, type equivalence, Cordis/tool/config/client catalogs, package paths, public repository links, note checks, doc budgets, package README Model Experience/limitations, and documentation site checks.
+
+Remaining failures:
+
+- `verify-doc-graphs`: missing service-role classifications for `activationSupervisors`, `teamChannelAdmission`, `teamChannelSummaries`, `teamHumanDelivery`, and `teamPlacement`.
+- `verify-translation-pairing`: pre-existing drift in exact-single-task-cancellation, config/subsystem/tool catalogs, Core Team/TeamLink, SDK, Team Agent Client, and Team link README pairs.
+- `verify-md-wrap`: existing hard-wrapped prose in the bounded-channel Agent Note and several Team workspace/run/link/inbox/closure/admission/recovery READMEs.
+- `verify-export-jsdoc`: seven existing declaration/source violations, including AgentRuntimeSdkError, ModelDirectory, ActivationSupervisorError, and JsonlSessionPersistence.
+- `verify-persistence-catalog`: duplicate `plan/mode` event declaration in `packages/plan/plan-mode/src/index.ts` and `index.d.ts`.
+
+The previously reported Team-task Markdown anchor and placement language-switcher issues are absent from this run. The five remaining failures are outside the current runtime/channel feature implementation scope.

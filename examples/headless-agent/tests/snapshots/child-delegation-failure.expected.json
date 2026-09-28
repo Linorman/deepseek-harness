@@ -1,0 +1,15 @@
+{
+  "scenario": "failure",
+  "parent": "cancelled",
+  "task": "failed",
+  "child": "failed",
+  "failureCode": "CHILD_FIXTURE_FAILURE",
+  "result": null,
+  "childQuiescent": true,
+  "parentCalls": [
+    "team_task_delegate"
+  ],
+  "childCalls": [
+    "model-error"
+  ]
+}

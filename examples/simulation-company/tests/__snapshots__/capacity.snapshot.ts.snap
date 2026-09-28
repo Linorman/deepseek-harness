@@ -1,0 +1,361 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`'json' 'events' capacity > retains charged capacity with crash=exhausted 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'json' 'events' capacity > retains charged capacity with crash=extended 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'json' 'events' capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'json' 'interactions' capacity > retains charged capacity with crash=exhausted 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'json' 'interactions' capacity > retains charged capacity with crash=extended 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'json' 'interactions' capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'events' capacity > retains charged capacity with crash=exhausted 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'events' capacity > retains charged capacity with crash=extended 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'events' capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 1,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 1,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 16,
+      "used": 0,
+    },
+  },
+  "capacity": "events",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'interactions' capacity > retains charged capacity with crash=exhausted 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'interactions' capacity > retains charged capacity with crash=extended 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;
+
+exports[`'sqlite' 'interactions' capacity > retains charged capacity with crash=undefined 1`] = `
+{
+  "afterApply": {
+    "events": {
+      "limit": 16,
+      "used": 1,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 1,
+    },
+  },
+  "afterCancel": {
+    "events": {
+      "limit": 16,
+      "used": 0,
+    },
+    "interactions": {
+      "limit": 1,
+      "used": 0,
+    },
+  },
+  "capacity": "interactions",
+  "grants": 1,
+  "retainedEvents": 1,
+  "retainedInteractions": 1,
+  "tokenUsage": 0,
+}
+`;

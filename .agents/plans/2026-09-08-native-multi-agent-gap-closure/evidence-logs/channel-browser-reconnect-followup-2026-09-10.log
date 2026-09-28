@@ -1,0 +1,13 @@
+# Channel browser reconnect follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay. Browser plugin was not available, so the repository's Playwright/Vitest runner was used.
+
+Command:
+
+    env CLOCKY_SNAPSHOT=replay CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts apps/web/tests/team-channel.snapshot.ts --no-file-parallelism
+
+Result: exit 0; 1 test file and 4 tests passed in 9.26s after the bounded child-row authority update, explicit task refresh action, and current artifact rebuild.
+
+The direct-v4 scenario now routes the real browser mux/host WebSockets, closes one live socket, holds reconnect attempts, posts `RECONNECT_CONTEXT` through the authenticated Host while the page is disconnected, then releases reconnect. The browser observes the disconnected state, the newer-record notice, and loads the retained WAL prefix through bounded continuation pages until the durable envelope is visible. The same file also passes consult response, round-robin discussion, and free-form discussion paths.
+
+Scope boundary: child navigation, remote lifecycle, GIF, multi-host UI transport, and the complete T-06 matrix remain open.

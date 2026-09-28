@@ -1,0 +1,19 @@
+Scope: AgentRuntime SDK provider coverage extension for the default POSIX process-group health probe.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test addition:
+- The SDK provider test now exercises the default `hasProcessGroup()`/`isErrno()` path with an unreachable POSIX group, alongside the existing injected process-group and Windows fence cases.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts --no-file-parallelism --reporter=dot`: 1 file, 32 tests passed, 0 failed.
+- Same provider test with V8 coverage over `agent-runtime-sdk/src/index.ts` and `error.ts`: 32 tests passed; statements 92.41%, branches 85.48%, functions 98.31%, lines 93.97%. The repository's 100% per-file threshold remains intentionally failing, so T-02 stays partial.
+- `pnpm exec tsc -b packages/agent-runtime/agent-runtime-sdk/tsconfig.json packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/agent-runtime-sdk/src/index.ts`: `bf495c1e2b8cf547548e350dad9f91624ed30cfe43f5f80ef6458004f1e96ce2`
+- `packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts`: `149110e39c627352d1312ad9a706662ffc234baa08338a5247450dcfa5b6d32e`
+
+Boundary: this closes only the default local process-group health probe branch. ACP/supervisor per-file 100%, separate-host recovery, and the full T-02 gate remain open.

@@ -1,0 +1,24 @@
+{
+  "name": "河港社会",
+  "version": 1,
+  "seed": "harbor-year-365-v1",
+  "horizon": 365,
+  "resources": ["food", "water", "medicine", "fuel"],
+  "publicPurpose": "观察居民、企业、供应链与公共机构在一年中的自主协作和冲突，不指定赢家或制度终局",
+  "supplierId": "supplier",
+  "weeklyImports": { "food": 120, "water": 100, "medicine": 8, "fuel": 20 },
+  "actors": [
+    { "id": "coop", "name": "河港供销合作社", "kind": "firm", "cash": 1800, "stocks": {"food":50,"water":35,"medicine":0,"fuel":15}, "dailyCost": 10, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望维持长期供应和成员认可，担心现金不足；可以重组而不必一直坚持原组织形式" },
+    { "id": "rival", "name": "新岸商行", "kind": "firm", "cash": 2000, "stocks": {"food":40,"water":30,"medicine":0,"fuel":10}, "dailyCost": 12, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望争取客户和保持自主经营，不愿无偿承担公共机构的全部责任，但愿为可靠长期合作改变策略" },
+    { "id": "supplier", "name": "上游批发站", "kind": "firm", "cash": 1000, "stocks": {"food":250,"water":200,"medicine":60,"fuel":80}, "dailyCost": 4, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望履约并得到稳定付款；对反复拖欠敏感，但可能接受可信的集体担保" },
+    { "id": "clinic", "name": "河港门诊", "kind": "institution", "cash": 300, "stocks": {"food":0,"water":15,"medicine":12,"fuel":5}, "dailyCost": 2, "monthlyIncome": 300, "dailyNeeds": {"water":2,"medicine":1}, "privatePurpose": "优先维护持续治疗，可能与平均分配诉求冲突；病人个体信息不应被公开" },
+    { "id": "council", "name": "社区议事机构", "kind": "institution", "cash": 5000, "stocks": {"food":0,"water":0,"medicine":0,"fuel":0}, "dailyCost": 5, "monthlyIncome": 1500, "dailyNeeds": {}, "privatePurpose": "希望保障基本生活且让公共资金可解释；内部对补贴企业和直接救助存在分歧" },
+    { "id": "north", "name": "北区居民代表", "kind": "community", "cash": 500, "stocks": {"food":20,"water":25,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 500, "dailyNeeds": {"food":3,"water":4}, "privatePurpose": "希望行动不便者不因排队或登记被排除，对可预期的长期安排比一次性宣传更重视" },
+    { "id": "west", "name": "西区居民代表", "kind": "community", "cash": 600, "stocks": {"food":25,"water":20,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 600, "dailyNeeds": {"food":4,"water":3}, "privatePurpose": "希望资金与需求较高的人群有发言权，反对不说明依据的分配规则" },
+    { "id": "oldtown", "name": "老城居民代表", "kind": "community", "cash": 400, "stocks": {"food":15,"water":15,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 400, "dailyNeeds": {"food":2,"water":2}, "privatePurpose": "希望避免长期负债和被迫公开私人状况；可能选择互助而不是购买所有服务" },
+    { "id": "riverside", "name": "河畔居民代表", "kind": "community", "cash": 450, "stocks": {"food":20,"water":25,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 450, "dailyNeeds": {"food":3,"water":4}, "privatePurpose": "希望远端街区不被遗忘，对邻里传言较敏感但也愿参与核实" },
+    { "id": "workers", "name": "劳动者联络组", "kind": "institution", "cash": 120, "stocks": {"food":0,"water":0,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望企业的经营压力不全部转嫁给劳动者，愿协商新组织和工作方式而非仅提出口号" },
+    { "id": "mutual-aid", "name": "邻里互助组", "kind": "institution", "cash": 200, "stocks": {"food":8,"water":8,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望建立能持续的互助网络，担心被大机构吸收后失去自主性" },
+    { "id": "press", "name": "本地记录员", "kind": "person", "cash": 50, "stocks": {"food":0,"water":0,"medicine":0,"fuel":0}, "dailyCost": 0, "monthlyIncome": 0, "dailyNeeds": {}, "privatePurpose": "希望核实公共表述并保留不同声音；速度与准确性之间需要取舍" }
+  ]
+}

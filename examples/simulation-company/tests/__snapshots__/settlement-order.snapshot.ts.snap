@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json durable settlement order > rejects across-decisions reordering 1`] = `
+{
+  "acceptedIntents": 3,
+  "balancesBeforeCorruption": [
+    "10",
+    "0",
+  ],
+  "invalidOrder": "across-decisions",
+  "rejectedReopens": 2,
+}
+`;
+
+exports[`json durable settlement order > rejects within-decision reordering 1`] = `
+{
+  "acceptedIntents": 3,
+  "balancesBeforeCorruption": [
+    "10",
+    "0",
+  ],
+  "invalidOrder": "within-decision",
+  "rejectedReopens": 2,
+}
+`;
+
+exports[`sqlite durable settlement order > rejects across-decisions reordering 1`] = `
+{
+  "acceptedIntents": 3,
+  "balancesBeforeCorruption": [
+    "10",
+    "0",
+  ],
+  "invalidOrder": "across-decisions",
+  "rejectedReopens": 2,
+}
+`;
+
+exports[`sqlite durable settlement order > rejects within-decision reordering 1`] = `
+{
+  "acceptedIntents": 3,
+  "balancesBeforeCorruption": [
+    "10",
+    "0",
+  ],
+  "invalidOrder": "within-decision",
+  "rejectedReopens": 2,
+}
+`;

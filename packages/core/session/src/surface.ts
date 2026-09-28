@@ -1,3 +1,5 @@
+import { isSimulationContextViewEvent } from './simulation-context.ts'
+export { SIMULATION_CONTEXT_SECTIONS, isSimulationContextView, isSimulationContextViewEvent } from './simulation-context.ts'
 /**
  * Surface layer on top of the session event log: an ordered view of events
  * that produce LLM messages. The append-only log remains the source of truth.
@@ -24,6 +26,7 @@ import type {
 const SURFACE_EVENT_TYPES = new Set<string>([
   'user/message',
   'team/channel-view',
+  'simulation/context-view',
   'assistant/message',
   'tool/result',
 ])
@@ -31,7 +34,7 @@ const SURFACE_EVENT_TYPES = new Set<string>([
 /**
  * Whether an event type can join the model-visible surface.
  * @param type - event type to test.
- * @returns true for one of the four message-producing event types.
+ * @returns true for a registered message-producing event type.
  */
 export function isSurfaceEligibleType(type: string): boolean {
   return SURFACE_EVENT_TYPES.has(type)
@@ -104,6 +107,14 @@ export function deriveEventMessage(event: SessionEvent): Message | null {
     // ../../../../.agents/notes/implemented/simplification/2026-07-20-unwrap-injected-content-envelopes.md
     case 'user/message': {
       return event.data
+    }
+    case 'simulation/context-view': {
+      const { content, ...provenance } = event.data
+      return freezeMessage({
+        id: MessageId(`simulation-context-view:${JSON.stringify([provenance.runId, provenance.entityId, provenance.inputId])}`),
+        role: 'user', content: content.flatMap(section => section.blocks),
+        source: { kind: 'simulation-context-view', ...provenance },
+      })
     }
     case 'team/channel-view': {
       return teamChannelViewMessage(event.data)
@@ -231,6 +242,10 @@ function surfaceOpOf(event: SessionEvent): SurfaceOp | undefined {
   const op = raw.surfaceOp
   if (op === undefined) {
     throw new Error(`session event "${event.type}" is surface-eligible and requires a surfaceOp marker`)
+  }
+  if (event.type === 'simulation/context-view'
+    && !isSimulationContextViewEvent(event)) {
+    throw new Error('simulation/context-view has invalid required context data')
   }
   if (op === 'append') return op
   if (op === null || typeof op !== 'object' || Array.isArray(op)) {
@@ -371,6 +386,13 @@ function planSurfaceEvent(
   }
   const range = replacementRange(state, surfaceOp)
   assertProvenance(event, range.shadowedSeqs)
+  if (event.type === 'simulation/context-view') {
+    const original = events[surfaceOp.start - baseSeq]
+    if (original?.type !== 'simulation/context-view'
+      || original.data.runId !== event.data.runId || original.data.entityId !== event.data.entityId) {
+      throw new Error('simulation/context-view must replace exactly one view of the same run and entity')
+    }
+  }
   assertToolResultRewrite(event, range.shadowedSeqs, events, baseSeq)
   return {
     kind: 'replace',

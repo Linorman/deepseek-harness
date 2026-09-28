@@ -16,6 +16,12 @@ Status: implemented
 
 若 restoration 已返回 handle，但 activation 或 root publication 失败，client 会执行 unpublished-allocation cleanup：记录 release intent、释放准确 handle、确认 release。物理 release 失败时记录 preservation；确认失败时保留 release intent。原始失败和 cleanup 失败都会保持可观察。
 
+物化在输入准入前丢失执行环境时，故障处理复用当前投递操作已持有的 Agent 串行队列，不能再次排到自身之后。已确认终止时释放预留；未确认时保留 unavailable 责任并将 Team 置为 stalled。两条路径都不会发起工作者模型请求。
+
+恢复出的分配若仍存在终止未确认的丢失，即使没有 live provider handle，也必须保留不可用保护。Team 关闭后仍允许为既有分配记录丢失并继续清理，但不能新建分配。
+
+激活的工作区结算先排空该 Agent 已接纳的投递队列，再释放分配。Epoch 进入 stopping 后，由激活控制器结算尚未结束的尝试。
+
 Channel-view retry 按结构比较字段值和有序 content，复用已保存的 Session event 与 pending inbox message。持久 inbox claim 后进入 model step，才能证明此前已消费；未运行的 claim、被取消的 input 或继承的 fork seed，都不能证明当前 Agent 已消费该输入。
 
 内部检查遵循各自 owner：已发布 allocation 与 snapshot 共享私有 map key，Session 的 channel-view projection 始终生成 user message，startup 在 recovery 首次 yield 前验证本地依赖。这些事实不会替代对持久 allocation reference、claim provenance 或 provider failure 的检查。
@@ -39,3 +45,5 @@ Channel-view retry 按结构比较字段值和有序 content，复用已保存�
 ## Verification
 
 Package test 使用真实 Session 和 Inbox log 验证 persistence barrier、claim/step replay、fork seed、cancellation、view 改变拒绝及对象键重排。JSON-backed Hub test 覆盖 restore/activation failure、unpublished-root cleanup、release-confirmation reconciliation、timeout 后的晚到完成、每个异步 setup 阶段的关闭、其他 owner 的并发 preservation、多个 allocation、依赖退休和有界 usage failure。没有新增 coverage exclusion。
+
+[Headless Loader 场景](../../../../examples/headless-agent/tests/workspace-observation.snapshot.ts)验证 JSON 和 SQLite 上的丢失路径：已确认的物化丢失释放分配，替换后的投递消费者保留未确认丢失的保护，Team 关闭后的丢失取消任务而不重试。各路径均不准入工作者 Session 输入或模型请求，provider 会放弃尚未发布的预备分配。

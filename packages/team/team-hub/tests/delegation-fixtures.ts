@@ -6,9 +6,10 @@ import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.
 /** Create a real parent reservation using the same public commands as the Consumer. */
 export async function delegationFixture(ctx: Context, workspacePath: string, budgets: JsonObject = {}, childBudgets: JsonObject = {}) {
   let actualWorkspace = workspacePath
+  let beforeWorkspaceRead: (() => Promise<void>) | undefined
   const proofs = new Map<TeamSystemDelegationProof, TeamSystemDelegationScope>()
   ctx.teams.registerSystemDelegationProofSource({ name: 'team-delegation', resolveDelegationProof: proof => proofs.get(proof),
-    resolveChildWorkspace: async () => actualWorkspace })
+    resolveChildWorkspace: async () => { await beforeWorkspaceRead?.(); return actualWorkspace } })
   const parent = await createTestRootTeam(ctx, { goal: { objective: 'Parent work', budgets: {} }, rules: { workspacePath }, budgets })
   await provisionTestCoordinator(ctx, parent.team.id)
   let state = await ctx.teams.getTeam({ teamId: parent.team.id })
@@ -28,7 +29,9 @@ export async function delegationFixture(ctx: Context, workspacePath: string, bud
   const creation = reserved.delegation!.creation as TeamChildCreateInput
   return { task: reserved, creation, parentId: state.team.id, issue,
     revoke(proof: TeamSystemDelegationProof) { proofs.delete(proof) },
+    replace(proof: TeamSystemDelegationProof, scope: TeamSystemDelegationScope) { proofs.set(proof, scope) },
     moveWorkspace(path: string) { actualWorkspace = path },
+    beforeWorkspaceRead(callback: () => Promise<void>) { beforeWorkspaceRead = callback },
     async current() {
       const latest = await ctx.teams.getTeam({ teamId: state.team.id })
       const task = latest.tasks.find(candidate => candidate.id === reserved.id)!

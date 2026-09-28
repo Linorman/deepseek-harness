@@ -23,6 +23,7 @@ const owner: Agent = {
   inbox: new Inbox(session, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
   status: 'idle',
   ctx: ownerFiber.ctx,
+  wakePending: () => false,
   send() {},
   followup() {},
   steer() {},

@@ -12,6 +12,8 @@
 
 该提供方会拒绝非本地 Participant、无法提供的具名 preset、不匹配的 Session request，以及指向另一 Team participant 的 resume provenance。它不推断 parent-Agent 权限；`parentSession`只保留 fork 谱系含义。
 
+`isInProcessAgentRuntimeProvider()` 识别本插件的真实同进程实现，使生命周期消费方能在预留执行权限前固定该对象。
+
 ## 模型体验
 
 ### 本地 placement

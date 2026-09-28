@@ -1,0 +1,14 @@
+Current client catalog follow-up (2026-09-09)
+
+Scope: regenerate and validate the source-adjacent client slot catalog after current Client/Team surface changes.
+
+Commands:
+
+1. `pnpm run gen-client-catalog`
+   Result: regenerated `packages/extensions/cordis-client-runner/src/client/slot-catalog.ts`.
+2. `pnpm run verify-client-catalog`
+   Result: exit 0; generated catalog is up to date.
+3. `pnpm exec tsc -p packages/extensions/cordis-client-runner/tsconfig.json --noEmit`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.

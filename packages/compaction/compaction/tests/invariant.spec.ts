@@ -36,6 +36,24 @@ function startTurn(session: ReturnType<Context['sessions']['create']>, turn = 1)
 }
 
 describe('compaction invariants', () => {
+  it('requires an active matching compaction transaction and nonempty model request', async () => {
+    const ctx = await setup()
+    const session = ctx.sessions.create()
+    const request = { provider: 'mock', model: 'mock', messages: [createUserMessage({
+      content: [{ type: 'text', text: 'source' }], source: { kind: 'user' },
+    })] }
+    const payload = { compactionId: TEST_COMPACTION_ID, startSequence: 0, request }
+    expect(() => session.append('compaction/request', payload)).toThrow(/active unsummarized/)
+    const start = session.append('compaction/start', { compactionId: TEST_COMPACTION_ID, turn: null })
+    const valid = { ...payload, startSequence: start.seq }
+    expect(() => session.append('compaction/request', { ...valid, startSequence: start.seq + 1 })).toThrow(/active unsummarized/)
+    expect(() => session.append('compaction/request', { ...valid, compactionId: NEXT_COMPACTION_ID })).toThrow(/active unsummarized/)
+    expect(() => session.append('compaction/request', { ...valid, request: { ...request, messages: [] } })).toThrow(/model envelope/)
+    session.append('compaction/request', valid)
+    session.append('compaction/end', { compactionId: TEST_COMPACTION_ID, turn: null, error: 'cancelled' })
+    expect(() => session.append('compaction/request', valid)).toThrow(/active unsummarized/)
+  })
+
   it('accepts successful and failed compaction lifecycles', async () => {
     const ctx = await setup()
     const success = ctx.sessions.create()

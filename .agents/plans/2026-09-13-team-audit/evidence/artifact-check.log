@@ -1,0 +1,5 @@
+PASS: 52 relative Markdown links resolve
+PASS: report and probe files end with exactly one newline
+PASS: 123 source/config fingerprints unchanged
+PASS: git diff --check
+Scope: own audit artifacts; no product source edits

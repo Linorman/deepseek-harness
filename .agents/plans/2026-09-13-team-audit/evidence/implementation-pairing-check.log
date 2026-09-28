@@ -1,0 +1,6 @@
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  docs/capability-seams.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/capability-seams.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/capability-seams.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/config-catalog.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/config-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+[ELIFECYCLE] Command failed with exit code 1.

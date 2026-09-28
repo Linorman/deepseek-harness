@@ -1,0 +1,16 @@
+Local recovery-stall scan follow-up (2026-09-09)
+
+Scope: continue startup recovery after a controller-recorded local AgentRuntime stall while preserving propagation of generic controller failures.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-activation-recovery/tests/startup-recovery.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 25 tests passed.
+2. `pnpm exec tsc -p packages/team/team-activation-recovery/tsconfig.json --noEmit && pnpm exec tsc -p packages/team/team-activation-controller/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-activation-recovery/src/index.ts packages/team/team-activation-recovery/tests/startup-recovery.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+
+Behavior proved: a generic controller/fencer error still aborts the startup scan, while a `TEAM_ACTIVATION_FENCE_FAILED` error is tolerated only after rereading the Team and confirming a durable `AGENT_RUNTIME_*` stall; a later Team is then processed. Supervisor named stalls use the same recorded-stall continuation rule.

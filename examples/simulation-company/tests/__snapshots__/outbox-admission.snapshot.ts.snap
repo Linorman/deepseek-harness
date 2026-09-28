@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json durable outbox admission > rejects prerequisite bypass after process death 1`] = `
+{
+  "dispatchedEffects": 0,
+  "rejectedReopens": 2,
+  "variant": "prerequisite",
+}
+`;
+
+exports[`json durable outbox admission > rejects window bypass after process death 1`] = `
+{
+  "dispatchedEffects": 0,
+  "rejectedReopens": 2,
+  "variant": "window",
+}
+`;
+
+exports[`sqlite durable outbox admission > rejects prerequisite bypass after process death 1`] = `
+{
+  "dispatchedEffects": 0,
+  "rejectedReopens": 2,
+  "variant": "prerequisite",
+}
+`;
+
+exports[`sqlite durable outbox admission > rejects window bypass after process death 1`] = `
+{
+  "dispatchedEffects": 0,
+  "rejectedReopens": 2,
+  "variant": "window",
+}
+`;

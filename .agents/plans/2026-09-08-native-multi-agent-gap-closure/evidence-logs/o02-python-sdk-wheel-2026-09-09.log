@@ -1,0 +1,32 @@
+Commands:
+  python scripts/build-python-release.py --package sdk --output-dir .tmp/python-release
+  uv venv .tmp/clocky-sdk-wheel-venv
+  uv pip install --python .tmp/clocky-sdk-wheel-venv/bin/python --no-deps .tmp/python-release/clocky_sdk-0.1.1rc2-py3-none-any.whl
+  uv pip install --python .tmp/clocky-sdk-wheel-venv/bin/python 'pydantic>=2.12,<3'
+  isolated import of `clocky.Clocky`, `clocky.HarnessClient`, and `clocky.Team`
+
+Results:
+  Built and verified `clocky_sdk-0.1.1rc2-py3-none-any.whl`. The payload has
+  the SDK modules only and no runtime carrier files. Installing the wheel in
+  a fresh Python 3.12 virtual environment with its declared pydantic runtime
+  dependency succeeded; all three public SDK imports passed.
+
+Production carrier checks:
+  `PYTHONPATH=python/sdk/src:python/sdk-runtime/src python scripts/smoke-python-runtime.py --scenario sdk-child-team --exe dist-exe/clocky-jsonrpc-agent-pkg-macos-arm64` passed. The installed SDK/runtime wheel pair in a fresh Python 3.12 venv booted the bundled SEA executable and default config through `Clocky` initialization.
+  The installed SDK wheel itself, paired with the same production executable,
+  also passed the parent-to-child Team smoke.
+  The advanced `sdk-snapshot` scenario passed against the same production SEA
+  executable after refreshing its expected result/session files for the
+  current bundled Team-first and model-visible composition; the replay run
+  passed without snapshot updates.
+
+Boundary:
+  This boundary is now closed for macOS arm64: the production SEA exe was
+  built at `dist-exe/clocky-jsonrpc-agent-pkg-macos-arm64`, the runtime wheel
+  `clocky_runtime_bin-0.1.1rc2-py3-none-macosx_14_0_arm64.whl` was built and
+  installed beside the SDK wheel in a fresh venv, and the installed `Clocky`
+  booted the bundled exe/config successfully. Linux x64/arm64 and Windows
+  consumers remain outside this host's evidence.
+
+Cross-target attempt:
+  The first `CI=true pnpm exec tsx scripts/build-exe-for-python-sdk.ts --skip-build --targets=node24-linux-x64` attempt was stopped by the workspace production-install postinstall; after restoring the workspace, retrying with `CI=true GITHUB_ACTIONS=true` completed the deploy staging and stopped at the script's explicit native-PTY guard: Linux runtime must be built on a Linux target architecture. The macOS production artifacts remained intact after a second `CI=true pnpm install --offline --frozen-lockfile`; no Linux consumer pass is claimed.

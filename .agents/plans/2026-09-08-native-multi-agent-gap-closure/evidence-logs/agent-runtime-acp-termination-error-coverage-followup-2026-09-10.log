@@ -1,0 +1,20 @@
+Scope: AgentRuntime ACP termination-proof error-path coverage follow-up.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test addition:
+- ACP termination proof now has an explicit regression for a child wait failure: the failure is treated as unproven termination, one escalation is attempted, and the named termination error is retained.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/agent-runtime-acp/tests/termination.spec.ts --no-file-parallelism --reporter=dot`: 1 file, 4 tests passed, 0 failed.
+- ACP provider/lifecycle/termination coverage lane: 3 files, 12 tests passed, 1 platform skip; `agent-runtime-acp/src/termination.ts` reaches 100% statements/branches/functions/lines, while the large ACP provider file remains below the per-file gate.
+- `pnpm exec tsc -b packages/agent-runtime/agent-runtime-acp/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/agent-runtime-acp/src/termination.ts`: `cb9896607e22536e9ffc7d745fddce55935f61756efab1357a256f3fb1d79d34`
+- `packages/agent-runtime/agent-runtime-acp/tests/termination.spec.ts`: `052dde3327ca84442e6e8dc0d99687ea4d88e3d6f9037d9ca9708c180af53682`
+- `packages/agent-runtime/agent-runtime-acp/src/index.ts`: `efe43148a068118d5f2a645554b58a4384d134fc2d2d1fc8232a7a5d53ca5d33`
+
+Boundary: this closes the ACP termination helper's wait-failure branch only; the ACP provider per-file gate, real process recovery, supervisor coverage, and separate-host semantics remain open.

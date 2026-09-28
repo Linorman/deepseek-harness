@@ -1,0 +1,335 @@
+{
+  "recordedAt": "2026-09-21T16:34:30.796199+00:00",
+  "layer": "parallel-decision-ordered-delivery",
+  "hardware": {
+    "platform": "darwin",
+    "release": "27.0.0",
+    "arch": "arm64",
+    "node": "v25.9.0",
+    "cpus": 12,
+    "cpuModel": "Apple M4 Pro",
+    "memoryBytes": 25769803776
+  },
+  "cases": [
+    {
+      "report": ".tmp-simulation-development/benchmarks/sqlite-parallel-messages-DCuL0f/report.json",
+      "reportSha256": "a2a2a35ec91475da0c108e4c392155d006f2155d4bc6416bd2cc3fce109c3832",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/sqlite-parallel-messages-DCuL0f/measurements.jsonl",
+      "rawSha256": "3e3f36c9a1e79d27b4e31e33b21cf2ac6d5ca9a8f3430701d5381ea1b2c05b6a",
+      "coldRecoveryOutput": ".tmp-simulation-development/benchmarks/sqlite-parallel-messages-DCuL0f/cold-recovery.jsonl",
+      "coldSha256": "d48e451cd2cf5a2abd90ac003e625a1b2ca4c2a692c2a1afc62be7826ad017b0",
+      "sourceDigest": "b086b7ef4f0ab81bda6262fe8293fd183e3d4fb9c119660960456c916c799a4a",
+      "options": {
+        "backend": "sqlite",
+        "entities": 40,
+        "operations": 80,
+        "durationMs": 60000,
+        "timeoutMs": 180000,
+        "sampleEvery": 10,
+        "entityBatchSize": 20,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "parallel-messages",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "team-delivery",
+        "completion": "target-complete",
+        "setupMs": 721.9119999999998,
+        "workMs": 37488.131,
+        "completed": 80,
+        "parallelWindows": true,
+        "decisionWindows": 16,
+        "transportBatchLimit": 10,
+        "requested": 80,
+        "throughputPerSecond": 2.1340087613330203,
+        "modelCalls": 480,
+        "syntheticUsage": true,
+        "reportedTokens": 7200,
+        "modelCost": 0,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "resumes": 50,
+        "teamMessages": 80,
+        "uniqueEnvelopes": 80,
+        "durableInputs": 80,
+        "modelReadMessages": 80,
+        "walEnvelopes": 80,
+        "walReceipts": 80,
+        "responseLossInjected": false,
+        "duplicateRetriesVerified": 80,
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "phases": {
+          "message": {
+            "count": 80,
+            "elapsedMs": 37488.131,
+            "p50Ms": 4120.016833,
+            "p95Ms": 7386.292875000003,
+            "p99Ms": 7464.660417000003
+          },
+          "transport": {
+            "count": 8,
+            "elapsedMs": 6806.910835000001,
+            "p50Ms": 724.1261670000004,
+            "p95Ms": 1433.2755840000027,
+            "p99Ms": 1433.2755840000027
+          }
+        },
+        "checkpointMs": 664.4495000000024,
+        "restoreMs": 422.6797499999957,
+        "peakRssBytes": 537706496,
+        "diskBytes": 10133046,
+        "cpuMicros": {
+          "user": 40328399,
+          "system": 1850971
+        },
+        "stalled": null
+      },
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 1663.346583,
+        "peakRssBytes": 312918016,
+        "cpuMicros": {
+          "user": 2027675,
+          "system": 345926
+        }
+      },
+      "coldProcessMs": 2055.910082999995
+    },
+    {
+      "report": ".tmp-simulation-development/benchmarks/json-parallel-messages-1xILXq/report.json",
+      "reportSha256": "58feeb3076640662098f2e159c97f6359e6412a26ca3c234611add6b073862b9",
+      "rawMeasurements": ".tmp-simulation-development/benchmarks/json-parallel-messages-1xILXq/measurements.jsonl",
+      "rawSha256": "af4316f801c08a6c37cff1d0ddca61d639005ece5230f4d35a8f9f4e40d097d8",
+      "coldRecoveryOutput": ".tmp-simulation-development/benchmarks/json-parallel-messages-1xILXq/cold-recovery.jsonl",
+      "coldSha256": "8ca11a10e683f567814315d3bdf208204f4dcffd2c656839f8c9026041ca6357",
+      "sourceDigest": "b086b7ef4f0ab81bda6262fe8293fd183e3d4fb9c119660960456c916c799a4a",
+      "options": {
+        "backend": "json",
+        "entities": 40,
+        "operations": 80,
+        "durationMs": 60000,
+        "timeoutMs": 180000,
+        "sampleEvery": 10,
+        "entityBatchSize": 20,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "parallel-messages",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 100
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "team-delivery",
+        "completion": "target-complete",
+        "setupMs": 2598.596208,
+        "workMs": 65830.07529099999,
+        "completed": 80,
+        "parallelWindows": true,
+        "decisionWindows": 16,
+        "transportBatchLimit": 10,
+        "requested": 80,
+        "throughputPerSecond": 1.2152500152303072,
+        "modelCalls": 480,
+        "syntheticUsage": true,
+        "reportedTokens": 7200,
+        "modelCost": 0,
+        "peakModels": 10,
+        "peakResidents": 20,
+        "resumes": 50,
+        "teamMessages": 80,
+        "uniqueEnvelopes": 80,
+        "durableInputs": 80,
+        "modelReadMessages": 80,
+        "walEnvelopes": 80,
+        "walReceipts": 80,
+        "responseLossInjected": false,
+        "duplicateRetriesVerified": 80,
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "phases": {
+          "message": {
+            "count": 80,
+            "elapsedMs": 65830.07529099999,
+            "p50Ms": 6521.153042000002,
+            "p95Ms": 12905.181792000003,
+            "p99Ms": 12979.248875000005
+          },
+          "transport": {
+            "count": 8,
+            "elapsedMs": 12618.702374999999,
+            "p50Ms": 1144.4273329999996,
+            "p95Ms": 2605.2344159999993,
+            "p99Ms": 2605.2344159999993
+          }
+        },
+        "checkpointMs": 1804.4103340000001,
+        "restoreMs": 428.5482079999929,
+        "peakRssBytes": 611614720,
+        "diskBytes": 6835599,
+        "cpuMicros": {
+          "user": 47267240,
+          "system": 4914713
+        },
+        "stalled": null
+      },
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 1775.119375,
+        "peakRssBytes": 308297728,
+        "cpuMicros": {
+          "user": 2096383,
+          "system": 363317
+        }
+      },
+      "coldProcessMs": 2246.6434169999993
+    }
+  ],
+  "conclusions": [
+    "Both 40-entity cases complete 80 messages through 16 sender/recipient decision windows. Observed peaks reach 20 residents and 10 model streams; each case records 480 scripted requests and 50 canonical Session resumes.",
+    "Both cases retain exactly 80 WAL Envelopes, 80 receipts, 80 consumed Session inputs and 80 recipient model observations. Duplicate probes and separate-process replay pass.",
+    "SQLite workload duration is approximately 37.49 seconds and JSON 65.83 seconds. The soft 60-second limit is checked between complete batches, so the final JSON batch may finish after it; the hard process bound still applies.",
+    "Model decisions are concurrent, while publication and receipt follow deterministic coordinator order. This does not demonstrate concurrent transport IO or the full 1,000-entity/100k-message target."
+  ],
+  "remaining": [
+    "JSON large-participant bootstrap scalability",
+    "Full 100k/1M workloads and long-duration organization scenario",
+    "Full acceptance/coverage audit and candidate integration"
+  ],
+  "thousandEntityFollowup": {
+    "report": ".tmp-simulation-development/benchmarks/sqlite-parallel-messages-U7zfBr/report.json",
+    "reportSha256": "e71b09c15c0e03e875e3392f0001a64874a93e5dd8e9daffdfa14825cb6e11b8",
+    "result": {
+      "version": 2,
+      "layer": "team-delivery",
+      "lastPhase": "cold-recovery",
+      "options": {
+        "backend": "sqlite",
+        "entities": 1000,
+        "operations": 100000,
+        "durationMs": 60000,
+        "timeoutMs": 240000,
+        "sampleEvery": 100,
+        "entityBatchSize": 1000,
+        "replayPageSize": 1000,
+        "output": "/Volumes/projects-mac/deepseek-harness/.tmp-simulation-development/benchmarks",
+        "workload": "parallel-messages",
+        "residents": 20,
+        "models": 10,
+        "modelDelayMs": 5
+      },
+      "mode": "src",
+      "hardware": {
+        "platform": "darwin",
+        "release": "27.0.0",
+        "arch": "arm64",
+        "node": "v25.9.0",
+        "cpus": 12,
+        "cpuModel": "Apple M4 Pro",
+        "memoryBytes": 25769803776
+      },
+      "sourceDigest": "2835898665a7225c1d05ca5f8aeb395048c634856d1ff62311f3801f0084511e",
+      "sourceFiles": 3207,
+      "elapsedMs": 239040.373958,
+      "timedOut": false,
+      "interrupted": false,
+      "exitCode": 0,
+      "signal": null,
+      "coldExitCode": 0,
+      "coldSignal": null,
+      "coldProcessMs": 3845.0866249999963,
+      "coldRecovery": {
+        "kind": "cold-recovery",
+        "replayEqual": true,
+        "modelCalls": 0,
+        "publications": 0,
+        "restoreMs": 3329.666667,
+        "peakRssBytes": 391135232,
+        "cpuMicros": {
+          "user": 3682107,
+          "system": 586257
+        }
+      },
+      "status": "measured",
+      "lastProgress": {
+        "kind": "progress",
+        "phase": "restore-start",
+        "completed": 30,
+        "peakRssBytes": 669581312
+      },
+      "result": {
+        "kind": "result",
+        "recoveryMode": "same-process-owner-services",
+        "layer": "team-delivery",
+        "completion": "time-budget",
+        "setupMs": 164663.708417,
+        "workMs": 63689.47200000001,
+        "completed": 30,
+        "parallelWindows": true,
+        "decisionWindows": 6,
+        "transportBatchLimit": 10,
+        "maxRecipientCohort": 10,
+        "requested": 100000,
+        "throughputPerSecond": 0.4710354640716757,
+        "modelCalls": 180,
+        "syntheticUsage": true,
+        "reportedTokens": 2700,
+        "modelCost": 0,
+        "peakModels": 7,
+        "peakResidents": 20,
+        "resumes": 0,
+        "teamMessages": 30,
+        "uniqueEnvelopes": 30,
+        "durableInputs": 30,
+        "modelReadMessages": 30,
+        "walEnvelopes": 30,
+        "walReceipts": 30,
+        "responseLossInjected": false,
+        "duplicateRetriesVerified": 30,
+        "replayEqual": true,
+        "canonicalSessionsPreserved": true,
+        "phaseUnits": {
+          "message": "message",
+          "transport": "delivery-batch"
+        },
+        "phases": {
+          "message": {
+            "count": 30,
+            "elapsedMs": 63689.47200000001,
+            "p50Ms": 20857.42624999999,
+            "p95Ms": 23013.088583000004,
+            "p99Ms": 23044.36595799998
+          },
+          "transport": {
+            "count": 3,
+            "elapsedMs": 6973.614374999976,
+            "p50Ms": 2221.604583999986,
+            "p95Ms": 2740.962333000003,
+            "p99Ms": 2740.962333000003
+          }
+        },
+        "checkpointMs": 2879.9804580000055,
+        "restoreMs": 1624.353959,
+        "peakRssBytes": 708739072,
+        "diskBytes": 29371260,
+        "cpuMicros": {
+          "user": 224064179,
+          "system": 9079463
+        },
+        "stalled": null
+      }
+    },
+    "conclusion": "Measured time-budget sample, not 100k-message acceptance. All 1000 entities and routes initialized; 30 messages passed exact WAL/receipt/input/model-read reconciliation and fresh recovery. Observed peaks were 20 residents and 7 model streams, below the configured 10-model cap. This sample predates the local channel snapshot-read consolidation."
+  }
+}

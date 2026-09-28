@@ -1,0 +1,329 @@
+$ tsx scripts/run-gates.ts doc-sync
+run-gates: doc-sync running 28 gate(s) with 4 worker(s) from 12 available CPU(s), doc-sync cap 4.
+run-gates: start doc-typecheck
+run-gates: start documentation build
+run-gates: start doc graphs
+run-gates: start markdown links
+
+== FAILED doc graphs (5.92s) ==
+command: pnpm run verify-doc-graphs
+outcome: exit 1
+$ tsx scripts/gen-doc-graphs.ts --check
+/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518
+    throw new TypertAnalysisError(
+          ^
+
+TypertAnalysisError: typert(host): packages/core/team/src/human-delivery-types.ts:99:19: reference to TeamChannelViewEventData crosses a package without an explicit package import
+    at FaceAnalyzer.fail (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518:11)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2365:16)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2210:22)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:44)
+    at Array.map (<anonymous>)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:27)
+    at FaceAnalyzer.members (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2026:61)
+    at FaceAnalyzer.ensureDeclaration (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1965:16)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2374:68)
+    at FaceAnalyzer.convertHeritage (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1999:20)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start type equivalence
+
+== FAILED markdown links (6.91s) ==
+command: pnpm run verify-md-links
+outcome: exit 1
+$ tsx scripts/verify-md-links.ts
+verify-md-links: broken relative cross-links found:
+  packages/team/tool-team-task/README.zh.md:46  ../../../docs/tool-catalog.zh.md#team_worker_pool_set  (no such anchor in target)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start cordis catalog
+
+== FAILED type equivalence (6.55s) ==
+command: pnpm run verify-type-equiv
+outcome: exit 1
+$ tsx scripts/verify-type-equiv.ts
+verify-type-equiv: type-equiv verification failed:
+  DRIFT: docs/subsystems/core.md:184 — type-equiv block for CancelOptions does not match packages/core/agent/src/runtime-types.ts.
+    source structure: interface CancelOptions { keepInbox?: boolean | undefined resumePending?: boolean | undefined }
+    doc structure:    interface CancelOptions { keepInbox?: boolean | undefined }
+    source JSDoc:     ["/** Options for {@link Agent.cancel}. */","/** * Preserve queued and steering inbox items instead of discarding them. The * active turn is still aborted, but un-started and pending work survives for a * later turn and no canceled inbox splice is logged. */","/** * With keepInbox, resume pending input that was submitted with wakeup after * the cancelled activity finishes. Pure injected context does not gain a wake. * The default leaves pre-existing pending wakes parked; idle cancellation remains a no-op. */"]
+    doc JSDoc:        ["/** Options for {@link Agent.cancel}. */","/** * Preserve queued and steering inbox items instead of discarding them. The * active turn is still aborted, but un-started and pending work survives for a * later turn and no canceled inbox splice is logged. */"]
+
+(checked 390 primary block(s) across 44 doc(s), 390 paired derivative(s); manifest at scripts/type-equiv.manifest.json)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start verify-mermaid
+
+== FAILED cordis catalog (5.66s) ==
+command: pnpm run verify-cordis-catalog
+outcome: exit 1
+$ tsx scripts/gen-cordis-catalog.ts --check
+/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518
+    throw new TypertAnalysisError(
+          ^
+
+TypertAnalysisError: typert(host): packages/core/team/src/human-delivery-types.ts:99:19: reference to TeamChannelViewEventData crosses a package without an explicit package import
+    at FaceAnalyzer.fail (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2518:11)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2365:16)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2210:22)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:44)
+    at Array.map (<anonymous>)
+    at FaceAnalyzer.convertType (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2217:27)
+    at FaceAnalyzer.members (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2026:61)
+    at FaceAnalyzer.ensureDeclaration (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1965:16)
+    at FaceAnalyzer.targetForReference (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:2374:68)
+    at FaceAnalyzer.convertHeritage (/Volumes/projects-mac/deepseek-harness/packages/typert/generator/src/analyzer.ts:1999:20)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start scoped events
+run-gates: PASS doc-typecheck (17.76s)
+run-gates: start translation pairing
+run-gates: PASS verify-mermaid (7.26s)
+run-gates: start markdown wrap
+run-gates: PASS documentation build (22.82s)
+run-gates: start client catalog
+
+== FAILED client catalog (2.31s) ==
+command: pnpm run verify-client-catalog
+outcome: exit 1
+$ tsx scripts/gen-client-catalog.ts --check
+gen-client-catalog: stale — packages/extensions/cordis-client-runner/src/client/slot-catalog.ts. Run `pnpm run gen-client-catalog` and commit the result.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start export jsdoc
+
+== FAILED markdown wrap (5.68s) ==
+command: pnpm run verify-md-wrap
+outcome: exit 1
+$ tsx scripts/verify-md-wrap.ts
+verify-md-wrap: hard-wrapped prose paragraphs found (write one physical line per paragraph):
+  packages/team/team-run/README.md:9  The service is not an Agent loop. `@clocky/clocky-team-agent-client` delivers th…
+  packages/team/team-run/README.zh.md:9  该 service 不是 Agent loop。`@clocky/clocky-team-agent-client`会将 human Envelope 投递到 …
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start tool catalog
+run-gates: PASS scoped events (12.87s)
+run-gates: start config catalog
+
+== FAILED config catalog (1.34s) ==
+command: pnpm run verify-config-catalog
+outcome: exit 1
+$ tsx scripts/gen-config-catalog.ts --check
+/Volumes/projects-mac/deepseek-harness/scripts/gen-config-catalog.ts:96
+  throw new Error(
+        ^
+
+Error: gen-config-catalog: 14 violation(s):
+  config field 'Config.recoverySupervisor.name' (packages/agent-runtime/agent-runtime-sdk/src/index.ts:96) has no JSDoc prose.
+  config field 'Config.recoverySupervisor.version' (packages/agent-runtime/agent-runtime-sdk/src/index.ts:96) has no JSDoc prose.
+  config field 'Config.recoverySupervisor.endpointId' (packages/agent-runtime/agent-runtime-sdk/src/index.ts:96) has no JSDoc prose.
+  config field 'Config.maxOperationsPerDrive' (packages/team/team-delegation/src/index.ts:20) has no JSDoc prose.
+  config field 'Config.channelPageSize' (packages/team/team-delegation/src/index.ts:21) has no JSDoc prose.
+  config field 'Config.pulseIntervalMs' (packages/team/team-delegation/src/index.ts:22) has no JSDoc prose.
+  config field 'Config.routes' (packages/team/team-placement-default/src/index.ts:41) has no JSDoc prose.
+  config field 'TeamRunMember.displayName' (packages/team/team-run/src/index.ts:260) has no JSDoc prose.
+  config field 'TeamRunMember.kind' (packages/team/team-run/src/index.ts:261) has no JSDoc prose.
+  config field 'TeamRunMember.capabilities' (packages/team/team-run/src/index.ts:262) has no JSDoc prose.
+  config field 'TeamRunMember.modelProvider' (packages/team/team-run/src/index.ts:265) has no JSDoc prose.
+  config field 'TeamRunMember.model' (packages/team/team-run/src/index.ts:266) has no JSDoc prose.
+  config field 'TeamRunMember.preset' (packages/team/team-run/src/index.ts:267) has no JSDoc prose.
+  config field 'TeamRunMember.maxTokens' (packages/team/team-run/src/index.ts:268) has no JSDoc prose.
+    at report (/Volumes/projects-mac/deepseek-harness/scripts/gen-config-catalog.ts:96:9)
+    at collectConfigCatalog (/Volumes/projects-mac/deepseek-harness/scripts/gen-config-catalog.ts:766:3)
+    at main (/Volumes/projects-mac/deepseek-harness/scripts/gen-config-catalog.ts:855:26)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/scripts/gen-config-catalog.ts:879:3)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start persistence catalog
+
+== FAILED persistence catalog (1.11s) ==
+command: pnpm run verify-persistence-catalog
+outcome: exit 1
+$ tsx scripts/gen-persistence-catalog.ts --check
+/Volumes/projects-mac/deepseek-harness/scripts/jsdoc.ts:197
+  throw new Error(
+        ^
+
+Error: gen-persistence-catalog: 1 JSDoc completeness violation(s) (see AGENTS.md):
+  log event 'plan/mode' (packages/plan/plan-mode/src/index.ts:53) is already declared at packages/plan/plan-mode/src/index.d.ts:37; an event type has exactly one declaration.
+    at reportViolations (/Volumes/projects-mac/deepseek-harness/scripts/jsdoc.ts:197:9)
+    at collectLogEvents (/Volumes/projects-mac/deepseek-harness/scripts/gen-persistence-catalog.ts:236:3)
+    at main (/Volumes/projects-mac/deepseek-harness/scripts/gen-persistence-catalog.ts:432:34)
+    at <anonymous> (/Volumes/projects-mac/deepseek-harness/scripts/gen-persistence-catalog.ts:466:3)
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start public repository links
+
+== FAILED translation pairing (10.14s) ==
+command: pnpm run verify-translation-pairing
+outcome: exit 1
+$ tsx scripts/verify-translation-pairing.ts
+verify-translation-pairing: bilingual pairing rules violated (see docs/i18n/README.md):
+  packages/team/team-placement-default/README.md: in-scope documentation must merge bilingual (docs/i18n/README.md); add the counterpart and record the pair
+  .agents/notes/implemented/architecture/2026-08-28-deterministic-team-dag-scheduler.zh.md:13: link target "../../../../packages/team/team-placement-default/README.md" uses the wrong locale; expected "../../../../packages/team/team-placement-default/README.zh.md"
+  .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md: out of sync — content no longer matches the pair's last confirmed-consistent state in .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.i18n.yaml (bring the other side along, then re-record with --write)
+  .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/config-catalog.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/config-catalog.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/team.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/team.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/subsystems/team.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in docs/subsystems/team.i18n.yaml (bring the other side along, then re-record with --write)
+  docs/tool-catalog.md ↔ docs/tool-catalog.zh.md: heading (depth) #96 diverges between the pair: 3 vs 2
+  docs/tool-catalog.md ↔ docs/tool-catalog.zh.md: code block #4 diverges between the pair: "```json\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"command… vs "```json\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"command…
+  docs/tool-catalog.md ↔ docs/tool-catalog.zh.md: link target #70 diverges between the pair: "../packages/team/tool-team-task/src/index.ts" vs "../packages/todo/tool-todo/src/index.ts"
+  packages/core/team/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/core/team/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/core/team/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-channel-direct/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-channel-direct/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-channel-direct/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-channel-direct/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-hub/README.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+  packages/team/team-hub/README.zh.md: out of sync — content no longer matches the pair's last confirmed-consistent state in packages/team/team-hub/README.i18n.yaml (bring the other side along, then re-record with --write)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start doc refs
+
+== FAILED export jsdoc (3.26s) ==
+command: pnpm run verify-export-jsdoc
+outcome: exit 1
+$ tsx scripts/verify-export-jsdoc.ts
+verify-export-jsdoc: 30 JSDoc completeness violation(s) (see AGENTS.md):
+  exported class method 'ModelDirectory.forSession' (packages/client/ui-model-selection/src/client/directory.ts:60) is missing @param sessions.
+  exported class method 'ModelDirectory.forSession' (packages/client/ui-model-selection/src/client/directory.ts:60) is missing @param sessionId.
+  exported class method 'ModelDirectory.forSession' (packages/client/ui-model-selection/src/client/directory.ts:60) is missing @returns (return type: ModelDirectory).
+  exported class method 'ModelDirectory.syncCurrent' (packages/client/ui-model-selection/src/client/directory.ts:139) is missing @param selection.
+  exported class method 'TeamRuntime.bindChildRun' (packages/core/team/src/runtime.ts:620) is missing @param _request.
+  exported class method 'TeamRuntime.bindChildRun' (packages/core/team/src/runtime.ts:620): @param request does not match any parameter (stale tag?).
+  exported class method 'TeamRuntime.admitTaskDelegationResult' (packages/core/team/src/runtime.ts:660) is missing @param _request.
+  exported class method 'TeamRuntime.admitTaskDelegationResult' (packages/core/team/src/runtime.ts:660): @param request does not match any parameter (stale tag?).
+  exported class method 'TeamRuntime.completeChildTeam' (packages/core/team/src/runtime.ts:667) is missing @param _request.
+  exported class method 'TeamRuntime.completeChildTeam' (packages/core/team/src/runtime.ts:667): @param request does not match any parameter (stale tag?).
+  exported class method 'TeamRuntime.cancelChildTeam' (packages/core/team/src/runtime.ts:674) is missing @param _request.
+  exported class method 'TeamRuntime.cancelChildTeam' (packages/core/team/src/runtime.ts:674): @param request does not match any parameter (stale tag?).
+  exported class method 'TeamRuntime.recordChildResultMissing' (packages/core/team/src/runtime.ts:681) is missing @param _request.
+  exported class method 'TeamRuntime.recordChildResultMissing' (packages/core/team/src/runtime.ts:681): @param request does not match any parameter (stale tag?).
+  exported class method 'Clocky.inboxRespond' (packages/sdk/client/src/api.ts:208) is missing @param input.
+  exported class method 'Clocky.inboxRespond' (packages/sdk/client/src/api.ts:208) is missing @returns (return type: Promise<TeamHumanActionResponseResult>).
+  exported class method 'Clocky.inboxRead' (packages/sdk/client/src/api.ts:214) is missing @param input.
+  exported class method 'Clocky.inboxRead' (packages/sdk/client/src/api.ts:214) is missing @returns (return type: Promise<TeamHumanInboxPage>).
+  exported class method 'Clocky.inboxWatch' (packages/sdk/client/src/api.ts:220) is missing @param input.
+  exported class method 'Clocky.inboxWatch' (packages/sdk/client/src/api.ts:220) is missing @returns (return type: Promise<TeamHumanInboxPage>).
+  exported class method 'Clocky.inboxAcknowledge' (packages/sdk/client/src/api.ts:226) is missing @param input.
+  exported class method 'Clocky.inboxAcknowledge' (packages/sdk/client/src/api.ts:226) is missing @returns (return type: Promise<TeamHumanInboxAcknowledgement>).
+  exported class method 'HarnessClient.inboxRead' (packages/sdk/client/src/client.ts:557) is missing @param params.
+  exported class method 'HarnessClient.inboxRead' (packages/sdk/client/src/client.ts:557) is missing @returns (return type: Promise<TeamHumanInboxPage>).
+  exported class method 'HarnessClient.inboxWatch' (packages/sdk/client/src/client.ts:563) is missing @param params.
+  exported class method 'HarnessClient.inboxWatch' (packages/sdk/client/src/client.ts:563) is missing @returns (return type: Promise<TeamHumanInboxPage>).
+  exported class method 'HarnessClient.inboxAcknowledge' (packages/sdk/client/src/client.ts:569) is missing @param params.
+  exported class method 'HarnessClient.inboxAcknowledge' (packages/sdk/client/src/client.ts:569) is missing @returns (return type: Promise<TeamHumanInboxAcknowledgement>).
+  exported class property 'JsonlSessionPersistence.config' (packages/session/session-persistence-jsonl/src/index.d.ts:53) has no JSDoc.
+  exported class method 'TeamActivationController.fenceStale' (packages/team/team-activation-controller/src/index.ts:524) is missing @param input.
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start package paths
+
+== FAILED tool catalog (3.15s) ==
+command: pnpm run verify-tool-catalog
+outcome: exit 1
+$ tsx scripts/gen-tool-catalog.ts --check
+gen-tool-catalog: docs/tool-catalog.md is stale. Run `pnpm run gen-tool-catalog` and commit docs/tool-catalog.md.
+gen-tool-catalog: first difference at line 43
+  committed: "| `@clocky/clocky-tool-team-task` | `team_task_cancel`, `team_task_list`, `team_task_propose_owner`, `team_task_start`, `team_task_wait`, `team_task_watch`, `team_worker_pool_set`, `team_workflow_start`, `team_workflow_task_cancel`, `team_workflow_wait` | `ctx.tools`, `ctx.teamRuns`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `durable default-worker task creation, inspection, owner proposal, cancellation, or Team-journal wait`, `tool/result` | - | team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation. |"
+  generated: "| `@clocky/clocky-tool-team-task` | `team_task_cancel`, `team_task_delegate`, `team_task_list`, `team_task_propose_owner`, `team_task_start`, `team_task_wait`, `team_task_watch`, `team_worker_pool_set`, `team_workflow_start`, `team_workflow_task_cancel`, `team_workflow_wait` | `ctx.tools`, `ctx.teamRuns`, `ctx.agents`, `a live default TeamRun coordinator Agent` | `tool/call`, `durable default-worker task creation, inspection, owner proposal, cancellation, or Team-journal wait`, `tool/result` | - | team_task_start, team_task_wait, team_task_list, team_task_watch, team_task_propose_owner, team_task_cancel, team_workflow_start, and team_workflow_wait are scoped only to the default TeamRun coordinator. The catalog supplies a synthetic authority-approved coordinator to harvest schemas; execution still requires TeamRun to revalidate the exact current activation. |"
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start config source ownership
+run-gates: PASS doc refs (0.90s)
+run-gates: start package README model experience
+run-gates: PASS config source ownership (0.49s)
+run-gates: start agent note classification
+run-gates: PASS package paths (0.94s)
+run-gates: start agent note format
+run-gates: PASS public repository links (1.52s)
+run-gates: start archived agent notes
+run-gates: PASS agent note classification (0.51s)
+run-gates: start skill invocation metadata
+
+== FAILED agent note format (0.58s) ==
+command: pnpm run verify-agent-note-format
+outcome: exit 1
+$ tsx scripts/verify-agent-note-format.ts
+verify-agent-note-format: violations found:
+  format: implemented/feature/2026-09-06-authenticated-human-channel-invitations.md — the first section must be `## Problem` (got "<none>")
+  format: implemented/feature/2026-09-06-authenticated-human-channel-invitations.md — missing the required `## Decision` section
+  format: implemented/feature/2026-09-06-authenticated-human-channel-invitations.md — missing the required `## Consequences` section
+  format: implemented/feature/2026-09-06-authenticated-human-channel-invitations.md — missing `## Alternatives considered` (a pre-format Agent Note whose alternatives are not reconstructible carries the grandfather comment instead — see .agents/notes/README.md § The file format)
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: start translation prompt
+run-gates: PASS archived agent notes (0.59s)
+run-gates: start doc budgets
+run-gates: PASS skill invocation metadata (0.52s)
+run-gates: start documentation site checks
+run-gates: PASS translation prompt (0.49s)
+run-gates: start package README limitations
+run-gates: PASS doc budgets (0.49s)
+
+== FAILED package README model experience (2.13s) ==
+command: pnpm run verify-package-readme-model-experience
+outcome: exit 1
+$ tsx scripts/verify-package-readme-model-experience.ts
+verify-package-readme-model-experience failed:
+  packages/agent-runtime/activation-supervisor-http/README.md: structured Model Experience must ground at least one entry with inline code, a nested `markdown` block, or an anchored tool-catalog link
+  packages/client/ui-team/README.md: must contain exactly one sentence beginning "None, as " and ending with a period, followed by #### KV Cache effect and one non-empty paragraph
+  packages/core/activation-supervisor/README.md: structured Model Experience must ground at least one entry with inline code, a nested `markdown` block, or an anchored tool-catalog link
+  packages/core/team-link/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/core/team/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/sdk/client/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/sdk/protocol/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/sdk/server/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-agent-client/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-channel-admission/README.md: structured Model Experience must ground at least one entry with inline code, a nested `markdown` block, or an anchored tool-catalog link
+  packages/team/team-delegation/README.md: missing package README
+  packages/team/team-hub/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-link-local/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-link-websocket-hub/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-link-websocket/README.md: ## Model Experience and ## Known Limitations and Deferred Work must be the final two H2 sections, in that order
+  packages/team/team-placement-default/README.md: structured Model Experience must ground at least one entry with inline code, a nested `markdown` block, or an anchored tool-catalog link
+[ELIFECYCLE] Command failed with exit code 1.
+
+== FAILED package README limitations (2.13s) ==
+command: pnpm run verify-package-readme-limitations
+outcome: exit 1
+$ tsx scripts/verify-package-readme-limitations.ts
+verify-package-readme-limitations: violations found:
+  packages/agent-runtime/activation-supervisor-http/README.md:29: the `## Known Limitations and Deferred Work` section has no top-level `- ` bullet — state the limitations, or whitelist the package if there are genuinely none
+  packages/core/activation-supervisor/README.md:25: the `## Known Limitations and Deferred Work` section has no top-level `- ` bullet — state the limitations, or whitelist the package if there are genuinely none
+  packages/team/team-delegation/README.md: package manifest has no sibling README with the `## Known Limitations and Deferred Work` section
+[ELIFECYCLE] Command failed with exit code 1.
+run-gates: PASS documentation site checks (4.17s)
+
+run-gates: 14 passed, 14 failed, 0 skipped in 34.26s.
+run-gates: unsuccessful gates:
+  - FAILED doc graphs (5.92s, exit 1)
+    pnpm run verify-doc-graphs
+  - FAILED markdown links (6.91s, exit 1)
+    pnpm run verify-md-links
+  - FAILED type equivalence (6.55s, exit 1)
+    pnpm run verify-type-equiv
+  - FAILED cordis catalog (5.66s, exit 1)
+    pnpm run verify-cordis-catalog
+  - FAILED translation pairing (10.14s, exit 1)
+    pnpm run verify-translation-pairing
+  - FAILED markdown wrap (5.68s, exit 1)
+    pnpm run verify-md-wrap
+  - FAILED client catalog (2.31s, exit 1)
+    pnpm run verify-client-catalog
+  - FAILED export jsdoc (3.26s, exit 1)
+    pnpm run verify-export-jsdoc
+  - FAILED tool catalog (3.15s, exit 1)
+    pnpm run verify-tool-catalog
+  - FAILED config catalog (1.34s, exit 1)
+    pnpm run verify-config-catalog
+  - FAILED persistence catalog (1.11s, exit 1)
+    pnpm run verify-persistence-catalog
+  - FAILED package README model experience (2.13s, exit 1)
+    pnpm run verify-package-readme-model-experience
+  - FAILED agent note format (0.58s, exit 1)
+    pnpm run verify-agent-note-format
+  - FAILED package README limitations (2.13s, exit 1)
+    pnpm run verify-package-readme-limitations
+[ELIFECYCLE] Command failed with exit code 1.

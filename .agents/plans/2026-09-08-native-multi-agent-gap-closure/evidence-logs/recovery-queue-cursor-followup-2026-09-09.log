@@ -1,0 +1,22 @@
+Channel recovery queue/cursor follow-up (2026-09-09)
+
+Scope: Team channel-admission and authenticated human-delivery recovery after transient Team hydration or channel processing failures.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-channel-admission/tests/admission.spec.ts packages/team/team-human-client/tests/inbox.spec.ts --no-file-parallelism`
+   Result: 2 focused files passed; 20 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-channel-admission/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec tsc -p packages/team/team-human-client/tsconfig.json --noEmit`
+   Result: exit 0.
+4. `pnpm exec oxlint packages/team/team-channel-admission/src/index.ts packages/team/team-channel-admission/tests/admission.spec.ts packages/team/team-human-client/src/index.ts packages/team/team-human-client/tests/inbox.spec.ts`
+   Result: exit 0.
+5. `pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-01-bounded-team-control-plane-pages.md`
+   Result: exit 0; one paired Agent Note record refreshed.
+6. `git diff --check`
+   Result: exit 0.
+7. `pnpm exec vitest run packages/team/team-channel-admission/tests packages/team/team-human-client/tests --no-file-parallelism`
+   Result: 3 package test files passed; 30 tests passed; 0 failed.
+
+Behavior proved: Team discovery cursors advance only after page hydration succeeds; selected channel work is requeued before transient recovery errors propagate, so the next bounded pass retries the same Team/channel instead of skipping it.

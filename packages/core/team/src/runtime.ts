@@ -1,3 +1,5 @@
+import { teamDeliveryOwnerScopeSchema } from './schema.ts'
+import type { TeamDeliveryOwnerProof, TeamDeliveryOwnerScope, TeamDeliveryOwnerProofSource } from './types.ts'
 import type { TeamMemberInspectRequest, TeamMemberInspection } from './types.ts'
 import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from './types.ts'
 import type { TeamHumanActionReadRequest } from './types.ts'
@@ -486,6 +488,7 @@ export abstract class TeamRuntime extends Service {
   private readonly humanSinkProofs = new WeakMap<TeamHumanSinkProof, TeamHumanSinkScope>()
   private readonly humanDeliveryProofSources = new Map<string, TeamSystemHumanDeliveryProofSource>()
   private readonly systemFinalReceiptProofSources = new Map<string, TeamSystemFinalReceiptProofSource>()
+  private readonly deliveryOwnerProofSources = new Map<string, TeamDeliveryOwnerProofSource>()
   private readonly systemEnvelopePostProofSources = new Map<string, TeamSystemEnvelopePostProofSource>()
   private readonly systemClosureProofSources = new Map<string, TeamSystemClosureProofSource>()
   private readonly systemClosureDriverProofSources = new Map<string, TeamSystemClosureDriverProofSource>()
@@ -558,11 +561,16 @@ export abstract class TeamRuntime extends Service {
    * @returns immutable operation facts after live-source validation.
    */
   protected resolveChildRunAuthorization(token: TeamChildRunAuthorization): TeamChildRunScope {
+    return this.childRunAuthorizationRecord(token).scope
+  }
+
+  /** Retain the provider-owned record only after its lifetime checks pass. */
+  private childRunAuthorizationRecord(token: TeamChildRunAuthorization) {
     const record = this.childRunAuthorizations.get(token)
     if (record === undefined || record.closed || !record.isLive()) {
       throw new TeamError('Child run authorization is foreign, closed, or retired', 'TEAM_ACTOR_PROOF_INVALID')
     }
-    return record.scope
+    return record
   }
 
   /** Validate provider ownership before calling any capability method supplied by a caller.
@@ -570,9 +578,8 @@ export abstract class TeamRuntime extends Service {
    * @returns current immutable scope after asynchronous parent and workspace validation.
    */
   async assertChildRunAuthorization(token: TeamChildRunAuthorization): Promise<TeamChildRunScope> {
-    const scope = this.resolveChildRunAuthorization(token)
-    const record = this.childRunAuthorizations.get(token)
-    if (record === undefined) throw new TeamError('Child run authorization disappeared', 'TEAM_ACTOR_PROOF_INVALID')
+    const record = this.childRunAuthorizationRecord(token)
+    const scope = record.scope
     const current = await record.assertCurrent()
     if (!isDeepStrictEqual(scope, current)) {
       throw new TeamError('Child run authorization changed its operation or execution root', 'TEAM_ACTOR_PROOF_INVALID')
@@ -585,16 +592,15 @@ export abstract class TeamRuntime extends Service {
    * @returns effect-owned registration disposer.
    */
   registerSystemDelegationProofSource(source: TeamSystemDelegationProofSource): () => void {
-    if (source.name !== 'team-delegation') throw new TeamError('Delegation source must be the canonical team-delegation owner', 'TEAM_ACTOR_PROOF_INVALID')
+    const name = source.name
+    if (name !== 'team-delegation') throw new TeamError('Delegation source must be the canonical team-delegation owner', 'TEAM_ACTOR_PROOF_INVALID')
     // oxlint-disable-next-line typescript/no-misused-promises -- preserve the Cordis effect disposer identity.
     return this.ctx.effect(() => {
-      if (this.systemDelegationProofSources.has(source.name)) {
+      if (this.systemDelegationProofSources.has(name)) {
         throw new TeamError('Delegation source is already registered', 'TEAM_ACTOR_PROOF_INVALID')
       }
-      this.systemDelegationProofSources.set(source.name, source)
-      return () => {
-        if (this.systemDelegationProofSources.get(source.name) === source) this.systemDelegationProofSources.delete(source.name)
-      }
+      this.systemDelegationProofSources.set(name, source)
+      return () => { this.systemDelegationProofSources.delete(name) }
     }, 'teams.registerSystemDelegationProofSource()')
   }
 
@@ -1195,8 +1201,8 @@ export abstract class TeamRuntime extends Service {
   }
 
   /**
-   * Register one TeamRun owner that privately resolves opaque proofs for exact
-   * default-worker owner proposals and current-coordinator cancellations.
+   * Register a task-control owner that privately resolves exact mutation proofs
+   * for coordinator controls or accepted Simulation task creation.
    * Registration is effect-scoped: disposing the contributing fiber
    * immediately invalidates every proof retained by it.
    * @param source - named resolver that owns proof construction and lifetime.
@@ -1234,11 +1240,10 @@ export abstract class TeamRuntime extends Service {
   }
 
   /**
-   * Resolve one current TeamRun default-worker task-control proof. The source
-   * owns the opaque token in its private map; this runtime validates and
-   * freezes the derived exact scope before a provider proposes or cancels a
-   * task.
-   * @param proof - runtime-only proof supplied by a registered TeamRun task-control source.
+   * Resolve a system task-control proof. Its source owns the opaque token; this
+   * runtime validates and freezes the exact scope before the provider applies
+   * the selected task mutation.
+   * @param proof - runtime-only proof supplied by a registered task-control source.
    * @returns immutable source attribution and the exact task-control scope.
    * @throws {@link TeamError} with `TEAM_ACTOR_PROOF_INVALID` when no live source owns the proof or its scope is invalid.
    */
@@ -2100,6 +2105,40 @@ export abstract class TeamRuntime extends Service {
   }
 
   /**
+   * Register one named consumer that owns exact delivery claim and receipt capabilities.
+   * @param source - Resolver whose tokens are invalidated on owner unload.
+   * @returns the effect-scoped registration disposer.
+   */
+  registerDeliveryOwnerProofSource(source: TeamDeliveryOwnerProofSource): () => void {
+    const name = teamSystemEnvelopePostProofSourceNameSchema.parse(source.name)
+    const resolver = source.resolveDeliveryOwnerProof.bind(source)
+    // oxlint-disable-next-line typescript/no-misused-promises -- preserve Cordis registration disposer identity.
+    return this.ctx.effect(() => {
+      if (this.deliveryOwnerProofSources.has(name)) throw new TeamError('Delivery owner is already registered', 'TEAM_INVALID_ARGUMENT')
+      const entry = Object.freeze({ name, resolveDeliveryOwnerProof: resolver })
+      this.deliveryOwnerProofSources.set(name, entry)
+      return () => { this.deliveryOwnerProofSources.delete(name) }
+    })
+  }
+
+  /**
+   * Resolve dedicated consumer authority at the provider's serialization point.
+   * @param proof - Exact non-serializable token.
+   * @returns detached source attribution and recipient operation.
+   */
+  protected requireDeliveryOwnerProof(proof: TeamDeliveryOwnerProof): { sourceName: string; scope: TeamDeliveryOwnerScope } {
+    for (const [sourceName, source] of this.deliveryOwnerProofSources) {
+      let scope: TeamDeliveryOwnerScope | undefined
+      try { scope = source.resolveDeliveryOwnerProof(proof) }
+      catch (cause: unknown) { throw new TeamError('Delivery owner proof could not be resolved', 'TEAM_ACTOR_PROOF_INVALID', { cause }) }
+      if (scope === undefined) continue
+      try { return deepFreeze({ sourceName, scope: teamDeliveryOwnerScopeSchema.parse(structuredClone(scope)) }) }
+      catch (cause: unknown) { throw new TeamError('Delivery owner returned an invalid scope', 'TEAM_ACTOR_PROOF_INVALID', { cause }) }
+    }
+    throw new TeamError('Delivery owner proof is invalid or unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+  }
+
+  /**
    * Register one system owner that privately resolves opaque proofs for exact
    * ordinary Envelope admissions. Registration is effect-scoped: disposing the
    * contributing fiber immediately makes all of its proofs invalid.
@@ -2643,6 +2682,19 @@ export abstract class TeamRuntime extends Service {
    */
   abstract getTeam(request: TeamGetRequest): Promise<TeamStateSnapshot>
 
+  /**
+   * Read actual stream identity and full-projection fingerprint at a caller-observed cursor.
+   * This does not pin history or prevent later writes; collectors must revalidate before publication.
+   * @param request - Exact Team/channel owner, expected current cursor and optional retained prefix cursor.
+   * @returns owner-issued prefix reference; moved current cursors or missing prefixes reject.
+   */
+  getPersistenceReference(request: import('./persistence-reference.ts').TeamPersistenceReferenceRequest):
+  Promise<import('./persistence-reference.ts').TeamPersistenceReference> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not expose checkpoint references', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+
   /** Read one current human action without copying the Team projection.
    * @param request - Exact Team and action identity.
    * @returns the bounded action snapshot; unsupported providers reject.
@@ -3166,6 +3218,17 @@ export abstract class TeamRuntime extends Service {
    * @returns the current task projection.
    */
   abstract getTask(request: TeamTaskGetRequest): Promise<TeamTaskSnapshot>
+
+  /**
+   * Create or reconcile one exact task authorized by a durable Simulation operation.
+   * @param request - Runtime-only system proof and its exact task input.
+   * @returns the original task for retries, or a newly persisted task.
+   */
+  createSimulationTask(request: import('./types.ts').TeamSimulationTaskCreateRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task creation', 'TEAM_INVALID_ARGUMENT'))
+  }
+
 
   /** Reserve one child identity and complete creation payload under parent-task CAS.
    * @param request - exact source-owned reservation and resolved child template.

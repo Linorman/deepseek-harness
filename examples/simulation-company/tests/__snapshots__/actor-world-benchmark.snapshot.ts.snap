@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json combined world and cognition > retains every batched world event while running bounded actors and cold recovery 1`] = `
+{
+  "completed": 8,
+  "modelCalls": 24,
+  "peakResidents": 2,
+  "requestedWorldEvents": 17,
+  "worldBatchSize": 5,
+  "worldBatches": 4,
+  "worldEvents": 17,
+}
+`;
+
+exports[`sqlite combined world and cognition > retains every batched world event while running bounded actors and cold recovery 1`] = `
+{
+  "completed": 8,
+  "modelCalls": 24,
+  "peakResidents": 2,
+  "requestedWorldEvents": 17,
+  "worldBatchSize": 5,
+  "worldBatches": 4,
+  "worldEvents": 17,
+}
+`;

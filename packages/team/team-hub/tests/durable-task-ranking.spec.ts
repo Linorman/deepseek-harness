@@ -50,6 +50,12 @@ for (const backend of ['json', 'sqlite'] as const) {
         const state = await ctx.teams.getTeam({ teamId })
         expect(state.tasks[0]?.phase).toBe('deleted')
         expect(state.participants.find(member => member.id === taskCreatorId)?.stats?.taskOutcomes).toEqual([stats])
+        const reread = await ctx.teams.getTeam({ teamId })
+        expect(reread).toEqual(state)
+        expect(reread).not.toBe(state)
+        expect(reread.participants[0]?.stats?.taskOutcomes).not.toBe(state.participants[0]?.stats?.taskOutcomes)
+        expect(Object.isFrozen(state.rules.taskRanking)).toBe(true)
+        expect(Object.isFrozen(state.participants[0]?.stats?.taskOutcomes)).toBe(true)
       }
     })
 

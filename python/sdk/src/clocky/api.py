@@ -588,6 +588,8 @@ def validated_coordinator_event(notification: Notification) -> JsonObject:
     event = notification.payload.get("event")
     if not isinstance(event, dict) or not isinstance(event.get("type"), str):
         raise SdkProtocolError(f"session.event carried no event envelope: {event!r}")
+    if event["type"] == "simulation/context-view":
+        validate_simulation_context_event(event)
     if event["type"] == "team/channel-view":
         validate_team_channel_view_event(event)
     if event["type"] == "assistant/message":
@@ -600,6 +602,64 @@ def validated_coordinator_event(notification: Notification) -> JsonObject:
         ):
             raise SdkProtocolError(f"assistant/message event carried malformed content: {event!r}")
     return cast(JsonObject, event)
+
+
+def validate_simulation_context_event(event: JsonObject) -> None:
+    """Reject context views that cannot reproduce the exact ordered model input."""
+    def counter(value: object) -> bool:
+        return type(value) in (int, float) and 0 <= value <= MAX_SAFE_INTEGER and value % 1 == 0
+
+    def exact(value: object, keys: set[str]) -> bool:
+        return isinstance(value, dict) and set(value) == keys
+
+    def decimal(value: object) -> bool:
+        return isinstance(value, str) and bool(value) and value.isascii() and value.isdecimal() and (value == "0" or value[0] != "0")
+
+    if (not counter(event.get("seq")) or not counter(event.get("time")) or set(event) - {"type", "seq", "time", "data", "surfaceOp", "sourceEventSeqs"}):
+        raise SdkProtocolError("simulation/context-view has an invalid envelope")
+    sources = event.get("sourceEventSeqs")
+    if "sourceEventSeqs" in event and (not isinstance(sources, list)
+        or not all(counter(seq) and seq < event["seq"] for seq in sources)
+        or len(set(sources)) != len(sources)):
+        raise SdkProtocolError("simulation/context-view has invalid provenance")
+    op = event.get("surfaceOp")
+    if op != "append" and (not exact(op, {"op", "start", "end"}) or op["op"] != "replace"
+        or not counter(op["start"]) or op["start"] != op["end"] or op["start"] >= event["seq"]
+        or not isinstance(sources, list) or op["start"] not in sources):
+        raise SdkProtocolError("simulation/context-view has an invalid surface operation")
+    data = event.get("data")
+    keys = {"version", "runId", "entityId", "windowId", "slot", "epoch", "time", "inputId", "projections", "versions", "sources", "content"}
+    if (not exact(data, keys) or type(data["version"]) not in (int, float) or data["version"] != 1
+        or not all(non_empty_string(data[key]) for key in ("runId", "entityId", "windowId", "inputId"))
+        or not all(decimal(data[key]) for key in ("slot", "epoch", "time")) or data["epoch"] == "0"
+        or not exact(data["projections"], {"run", "entity", "team"}) or not all(counter(v) for v in data["projections"].values())
+        or not exact(data["versions"], {"rules", "policy", "persona", "model"}) or not all(non_empty_string(v) for v in data["versions"].values())
+        or not isinstance(data["sources"], list)):
+        raise SdkProtocolError("simulation/context-view has malformed data")
+    identities = set()
+    for source in data["sources"]:
+        if exact(source, {"kind", "runId", "sequence"}) and source["kind"] == "run-event":
+            if source["runId"] != data["runId"] or not counter(source["sequence"]) or not 0 < source["sequence"] <= data["projections"]["run"]:
+                raise SdkProtocolError("simulation/context-view has an invalid run reference")
+            identity = (source["kind"], source["runId"], source["sequence"])
+        elif exact(source, {"kind", "teamId", "channelId", "envelopeId"}) and source["kind"] == "team-envelope" and all(non_empty_string(source[k]) for k in ("teamId", "channelId", "envelopeId")):
+            identity = (source["kind"], source["teamId"], source["channelId"], source["envelopeId"])
+        else:
+            raise SdkProtocolError("simulation/context-view has malformed source evidence")
+        if identity in identities:
+            raise SdkProtocolError("simulation/context-view has duplicate evidence")
+        identities.add(identity)
+    order = ["identity", "authority", "input", "goals", "commitments", "evidence", "observations", "knowledge", "history"]
+    previous = -1
+    if not isinstance(data["content"], list) or not data["content"]:
+        raise SdkProtocolError("simulation/context-view has no content")
+    for section in data["content"]:
+        if not exact(section, {"kind", "blocks"}) or section["kind"] not in order or not valid_content(section["blocks"]):
+            raise SdkProtocolError("simulation/context-view has malformed content")
+        rank = order.index(section["kind"])
+        if rank <= previous:
+            raise SdkProtocolError("simulation/context-view content is out of order")
+        previous = rank
 
 
 def validate_team_channel_view_event(event: JsonObject) -> None:

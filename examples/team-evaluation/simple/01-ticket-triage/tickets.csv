@@ -1,0 +1,9 @@
+id,severity,affected_customers,data_loss,owner
+T01,3,2,no,API
+T02,5,3,yes,Storage
+T03,2,5,no,Web
+T04,4,1,no,CLI
+T05,5,1,no,Security
+T06,3,4,yes,Session
+T07,1,2,no,Docs
+T08,4,3,yes,Runtime

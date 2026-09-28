@@ -88,6 +88,7 @@ describe.skipIf(!process.env.E2B_API_KEY)('E2B live Loader composition', () => {
         inbox: new Inbox(ownerSession, { inserted: () => {}, discarded: () => {}, claimed: () => {} }),
         status: 'idle',
         ctx,
+        wakePending: () => false,
         send() {},
         followup() {},
         steer() {},

@@ -49,6 +49,7 @@ describe('native child Team delegation across an independent Loader crash', () =
         const target = join(cwd, '.clocky/profiles/headless/snapshot-fixtures')
         await mkdir(target, { recursive: true })
         await copyFile(driver, join(target, 'headless-child-delegation-driver.ts'))
+        await copyFile(join(fixtures, 'headless-child-authority-probe.ts'), join(target, 'headless-child-authority-probe.ts'))
         await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
 
         const first = launch(cwd, 'crash', undefined, crashAt, 'complete', backend)
@@ -118,6 +119,7 @@ describe('native child Team delegation across an independent Loader crash', () =
       const target = join(cwd, '.clocky/profiles/headless/snapshot-fixtures')
       await mkdir(target, { recursive: true })
       await copyFile(driver, join(target, 'headless-child-delegation-driver.ts'))
+      await copyFile(join(fixtures, 'headless-child-authority-probe.ts'), join(target, 'headless-child-authority-probe.ts'))
       await writeFile(join(target, 'package.json'), '{"type":"module"}\n')
 
       const first = launch(cwd, 'crash', undefined, crashAt, 'cancel', backend)

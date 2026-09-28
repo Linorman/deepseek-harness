@@ -1,0 +1,2153 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json knowledge visibility > retains knowledge authority with crash=checkpoint-before-publish 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=checkpoint-published 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=checkpoint-requested 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=compacted 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=management-completed 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=management-pending 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=rebased 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=recorded 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=report-compacted 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "retainedViewDuringCompaction": true,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=report-rebased 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "retainedViewDuringCompaction": true,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=revoked 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=shared 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=summarized 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=task-completed 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "tasks": {
+    "explicit": {
+      "commitment": "open",
+      "task": "completed",
+    },
+    "quiescing": {
+      "reconciled": "applied",
+      "rejected": "blocked-authority",
+      "taskCount": 3,
+    },
+    "task-completed": {
+      "commitment": "fulfilled",
+      "task": "completed",
+    },
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=task-created 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "tasks": {
+    "explicit": {
+      "commitment": "open",
+      "task": "completed",
+    },
+    "quiescing": {
+      "reconciled": "applied",
+      "rejected": "blocked-authority",
+      "taskCount": 3,
+    },
+    "task-completed": {
+      "commitment": "fulfilled",
+      "task": "completed",
+    },
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`json knowledge visibility > retains knowledge authority with crash=undefined 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=checkpoint-before-publish 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=checkpoint-published 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=checkpoint-requested 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=compacted 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=management-completed 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=management-pending 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=rebased 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=recorded 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=report-compacted 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "retainedViewDuringCompaction": true,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=report-rebased 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "rejectedCompactionRoutes": 3,
+  "retainedViewDuringCompaction": true,
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=revoked 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=shared 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=summarized 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=task-completed 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "tasks": {
+    "explicit": {
+      "commitment": "open",
+      "task": "completed",
+    },
+    "quiescing": {
+      "reconciled": "applied",
+      "rejected": "blocked-authority",
+      "taskCount": 3,
+    },
+    "task-completed": {
+      "commitment": "fulfilled",
+      "task": "completed",
+    },
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=task-created 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "tasks": {
+    "explicit": {
+      "commitment": "open",
+      "task": "completed",
+    },
+    "quiescing": {
+      "reconciled": "applied",
+      "rejected": "blocked-authority",
+      "taskCount": 3,
+    },
+    "task-completed": {
+      "commitment": "fulfilled",
+      "task": "completed",
+    },
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;
+
+exports[`sqlite knowledge visibility > retains knowledge authority with crash=undefined 1`] = `
+{
+  "bVisible": [
+    "plan",
+    "public-summary",
+    "report",
+  ],
+  "cVisible": [
+    "plan",
+    "public-summary",
+  ],
+  "checkpoint": {
+    "status": "completed",
+    "unmaterializedSessions": 1,
+    "version": 2,
+  },
+  "observations": {
+    "future-a": {
+      "future": true,
+      "secret": true,
+    },
+    "initial-a": {
+      "future": false,
+      "secret": true,
+    },
+    "initial-b": {
+      "future": false,
+      "secret": false,
+    },
+    "initial-c": {
+      "future": false,
+      "secret": false,
+    },
+    "revoked-b": {
+      "future": false,
+      "secret": false,
+    },
+    "shared-b": {
+      "future": false,
+      "secret": true,
+    },
+    "still-private-c": {
+      "future": false,
+      "secret": false,
+    },
+  },
+  "referenceOwners": {
+    "channel": 1,
+    "run": 1,
+    "sessions": 3,
+    "team": 1,
+  },
+  "runCut": {
+    "phase": "paused",
+    "writersReleased": 3,
+  },
+  "summary": {
+    "source": "summary",
+    "statement": "Plan summary: Delivery planned for time 5",
+  },
+  "time": "5",
+  "versions": 3,
+}
+`;

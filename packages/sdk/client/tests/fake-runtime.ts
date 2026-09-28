@@ -31,6 +31,7 @@
  *   arrives, then poll for the GO file before answering (deterministic
  *   cancel-during-handshake window).
  * - `FAKE_HANG_PROMPT`: never answer `team/create` (for timeout/dispose tests).
+ * - `FAKE_FINAL_NOTIFICATIONS`: batch foreign/coordinator notifications immediately before the final response.
  * - `FAKE_STREAM_THEN_MALFORMED`: stream a text chunk for Team creation, then
  *   answer `{}` — same-pipe ordering makes the chunk arrive
  *   before the protocol failure (partial-output retention probe).
@@ -267,6 +268,18 @@ reader.on('line', (line) => {
       const team = teams.get(teamId)
       if (team === undefined) {
         write({ jsonrpc: '2.0', id: frame.id, error: { code: -32_002, message: `unknown team: ${teamId}` } })
+        return
+      }
+      if (env.FAKE_FINAL_NOTIFICATIONS !== undefined) {
+        const frames = [
+          { jsonrpc: '2.0', method: 'session.status', params: { sessionId: 'foreign-coordinator', status: 'idle' } },
+          { jsonrpc: '2.0', method: 'session.status', params: { sessionId: team.coordinatorSessionId, status: 'running' } },
+          { jsonrpc: '2.0', method: 'session.status', params: { sessionId: team.coordinatorSessionId, status: 'idle' } },
+          { jsonrpc: '2.0', id: frame.id, result: {
+            teamId, channelId: team.channelId, envelopeId: `${teamId}-final`, text: assistantText(),
+          } },
+        ]
+        process.stdout.write(frames.map(value => JSON.stringify(value)).join('\n') + '\n')
         return
       }
       respond({ teamId, channelId: team.channelId, envelopeId: `${teamId}-final`, text: assistantText() })

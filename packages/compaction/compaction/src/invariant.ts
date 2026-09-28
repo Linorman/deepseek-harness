@@ -124,7 +124,7 @@ function applyTurnBoundary(trace: SessionTrace, event: SessionEvent): boolean {
 function validateOwner(
   owner: number | null,
   openTurn: number | null,
-  eventType: 'compaction/start' | 'compaction/summary' | 'compaction/end',
+  eventType: 'compaction/start' | 'compaction/request' | 'compaction/summary' | 'compaction/end',
   fail: InvariantFailure,
 ): void {
   if (owner === null) {
@@ -148,7 +148,8 @@ function validateCompactionEvent(
     validateCheckpoint(trace, event, fail)
     return undefined
   }
-  if (event.type !== 'compaction/start' && event.type !== 'compaction/summary' && event.type !== 'compaction/end') {
+  if (event.type !== 'compaction/start' && event.type !== 'compaction/request'
+    && event.type !== 'compaction/summary' && event.type !== 'compaction/end') {
     return undefined
   }
   const open = trace.compaction
@@ -169,6 +170,19 @@ function validateCompactionEvent(
       startSeq: event.seq,
       turn: event.data.turn,
     }
+  }
+  if (event.type === 'compaction/request') {
+    if (open === undefined || open.compactionId !== event.data.compactionId || open.startSeq !== event.data.startSequence
+      || open.summarized) {
+      fail('compaction/request has no matching active unsummarized transaction')
+    }
+    validateOwner(open.turn, trace.openTurn, event.type, fail)
+    if (typeof event.data.request.provider !== 'string' || event.data.request.provider.length === 0
+      || typeof event.data.request.model !== 'string' || event.data.request.model.length === 0
+      || !Array.isArray(event.data.request.messages) || event.data.request.messages.length === 0) {
+      fail('compaction/request has an invalid model envelope')
+    }
+    return undefined
   }
   if (event.type === 'compaction/summary') {
     validateId(event.data.compactionId, 'compaction/summary compactionId', fail)

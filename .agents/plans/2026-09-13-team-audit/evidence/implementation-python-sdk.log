@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.19, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Volumes/projects-mac/deepseek-harness
+configfile: pytest.ini
+testpaths: python/sdk/tests
+collected 105 items
+
+python/sdk/tests/test_bundled_runtime.py ............                    [ 11%]
+python/sdk/tests/test_channel_view.py ................                   [ 26%]
+python/sdk/tests/test_client.py ........................................ [ 64%]
+.....                                                                    [ 69%]
+python/sdk/tests/test_human_inbox.py ........                            [ 77%]
+python/sdk/tests/test_macos_deployment_target.py ...                     [ 80%]
+python/sdk/tests/test_release_version.py ...........                     [ 90%]
+python/sdk/tests/test_runtime_resolution.py ......                       [ 96%]
+python/sdk/tests/test_smoke_model.py ....                                [100%]
+
+============================= 105 passed in 6.78s ==============================

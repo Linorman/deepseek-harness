@@ -1,0 +1,14 @@
+Supervisor README gates follow-up (2026-09-09)
+
+Scope: complete the activation-supervisor and activation-supervisor-http README model-experience grounding, limitations, and bilingual pairing contracts.
+
+Commands:
+
+1. `pnpm run verify-package-readme-limitations`
+   Result: 260 package READMEs checked; all conform.
+2. `pnpm run verify-translation-pairing --write packages/agent-runtime/activation-supervisor-http/README.md packages/core/activation-supervisor/README.md`
+   Result: exit 0; two README pair records refreshed.
+3. `pnpm run verify-package-readme-model-experience`
+   Result: the two supervisor README violations are gone; remaining failures belong to unrelated current-worktree package README surfaces.
+4. `git diff --check`
+   Result: exit 0.

@@ -1,0 +1,5 @@
+examples/headless-agent/tests/fixtures/headless-child-delegation-driver.ts(260,44): error TS2379: Argument of type '{ teamId: TeamId; channelId: ChannelId | undefined; afterCursor: number; limit: number; }' is not assignable to parameter of type 'TeamAuditReadRequest' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'channelId' are incompatible.
+    Type 'ChannelId | undefined' is not assignable to type 'ChannelId'.
+      Type 'undefined' is not assignable to type 'ChannelId'.
+        Type 'undefined' is not assignable to type 'string'.

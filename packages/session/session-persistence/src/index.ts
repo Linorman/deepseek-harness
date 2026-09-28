@@ -1,3 +1,4 @@
+export { SessionPersistenceReferenceChanged } from './reference-error.ts'
 /**
  * Durable session-persistence Service Definition (`ctx.sessionPersistence`). Backends store
  * {@link SessionEvent}s as the event-sourced log and carry non-replayable
@@ -20,6 +21,15 @@ export interface SessionPersistenceSnapshot {
   header: SessionHeader
   /** Opaque source-qualified token that changes whenever this stored log changes. */
   revision: SessionPersistenceRevision
+}
+
+/** Physical contiguous Session prefix observed without synthetic recovery events. */
+export interface SessionPersistenceReference {
+  readonly retention: 'full' | 'unprotected'
+  readonly header: SessionHeader
+  readonly revision: SessionPersistenceRevision
+  readonly sequence: number
+  readonly fingerprint: import('@clocky/clocky-brand').Branded<'SessionPersistenceFingerprint'>
 }
 
 /** Immutable logical session prepared from persistence or a live owner. */
@@ -207,6 +217,41 @@ export abstract class SessionPersistence extends Service {
    * @returns the validated header and current logical event log.
    */
   abstract inspect(id: SessionId, signal?: AbortSignal): Promise<SessionInspection>
+
+  /**
+   * Check that an identity has no live, tracked, prepared or stored Session owner.
+   * @param id - Reserved Session identity.
+   * @param signal - Optional cancellation of queued storage work.
+   * @returns true only for absence; backend read failures reject.
+   */
+  isUnmaterialized(id: SessionId, signal?: AbortSignal): Promise<boolean> {
+    void id; void signal
+    return Promise.reject(new Error('Session provider does not expose materialization state'))
+  }
+
+  /**
+   * Capture a complete physical prefix and source-qualified revision without performing recovery.
+   * @param id - Exact persisted Session identity.
+   * @param expectedSequence - Expected last event seq, or -1 for a header-only Session.
+   * @param signal - Optional cancellation of queued storage work.
+   * @returns immutable reference; torn or moving sources and cursor mismatches reject.
+   */
+  getPersistenceReference(id: SessionId, expectedSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference> {
+    void id; void expectedSequence; void signal
+    return Promise.reject(new Error('Session provider does not expose checkpoint references'))
+  }
+
+  /**
+   * Read a retained physical prefix and validate the whole stored suffix without repair.
+   * @param id - Exact persisted Session identity.
+   * @param throughSequence - Included last prefix seq, or -1 for the header only.
+   * @param signal - Optional cancellation of queued storage work.
+   * @returns prefix fingerprint and current whole-source revision; missing or torn history rejects.
+   */
+  getPersistencePrefix(id: SessionId, throughSequence: number, signal?: AbortSignal): Promise<SessionPersistenceReference> {
+    void id; void throughSequence; void signal
+    return Promise.reject(new Error('Session provider does not expose retained checkpoint prefixes'))
+  }
 
   /**
    * Read the stored events from `fromSeq` onward — the read-from-seq

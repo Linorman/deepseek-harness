@@ -1,0 +1,71 @@
+{
+  "recordedAt": "2026-09-10T10:01:09.758594+00:00",
+  "head": "fb14b0b9b1d8bfc5abebc22be2574eb691329900",
+  "environment": {
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "node": "v25.9.0",
+    "pnpm": "11.19.0",
+    "macOSSDK": "27.0",
+    "credentials": "Keyless scripted ACP and model replay; no live model key required."
+  },
+  "scope": "Scoped changed-source hashes and final full source regression. Shared dirty worktree retained; this is not a reproducible release archive.",
+  "sourceSha256": {
+    "tsconfig.base.json": "5baaa443efb2deab70c204b198700c65f1a3209b373366bba31d9c0399e27e83",
+    "vitest.config.ts": "e82598defdfca867179cf6b2ca72539d97d480d229e4986fe6769dc856501ce9",
+    "examples/package.json": "f63c6162528940fdeb2410608109553feb739ef8d3724a834b741d930244ee07",
+    "pnpm-lock.yaml": "49e672a1113ab805ec25c2eb582a41bf254329fcbc9ccfaaf603f78173202255",
+    "packages/subprocess/subprocess-local/src/darwin-process-state.ts": "dd4c3451b675ac83964fa3400a0657693d80317d03742101a9131055ad961e48",
+    "packages/subprocess/subprocess-local/src/process-inspector.ts": "7516667b22b0669a42381b96ddd99303d5c7079e8c188f3b2888a4e60ee7fe6c",
+    "packages/subprocess/subprocess-local/tests/darwin-process-state.spec.ts": "21bbe11b9f79d22a12a4105ebbf481b248c9b445ee29a1bba6752c3c58248376",
+    "packages/subprocess/subprocess-local/tests/fixtures/darwin-process-state.c": "6e65d8c5910912053724710cc6b9b6cc97172c50b8865ed6bceb5189bb42bb9b",
+    "packages/subprocess/subprocess-local/tests/process-inspector.spec.ts": "f1b095d97203dfb71fb6fb60bfa394bc7f30d757756a5b458389610d8591c4c9",
+    "scripts/source-entry-resolution.spec.ts": "ea801871dc219e37b11ef80781cb8f3e96dac1b7dd09247db9b1e70a0f23caf1",
+    "packages/agent-runtime/agent-runtime-acp/src/index.ts": "dd0326a840ab2b29f720a30294086ffa4c698feacdf888977ac4011bf7838b74",
+    "packages/agent-runtime/agent-runtime-acp/tests/provider-lifecycle.spec.ts": "1f189c38498172bdb5e21396afe5b673cea90779a3bd967b6e510051cef2f72a",
+    "packages/agent-runtime/agent-runtime-sdk/src/index.ts": "bf495c1e2b8cf547548e350dad9f91624ed30cfe43f5f80ef6458004f1e96ce2",
+    "packages/agent-runtime/agent-runtime-sdk/tests/provider.spec.ts": "892dd1b3b159d3bd00645dedeaef446d565aa0f277ac655c7ef357ce6f6440d0",
+    "packages/agent-runtime/agent-runtime-sdk/tests/remote-link.spec.ts": "a8ff1ca0af3a75a4280ab295b36d789427b415155230784b925f5aae4f6f55c9",
+    "packages/agent-runtime/activation-supervisor-http/src/endpoint.ts": "3d5e825ac29200c0db4c88a9957a5a10401da4cb6a9e89ae9adb150f4a171307",
+    "packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts": "d60d6538ba7ee5500eafe0a07bbb4f704ed648ac7b596b7e10509c88f1c5e45e",
+    "packages/team/team-agent-client/src/index.ts": "3e118b476d903986d57c96ce6d21b0f208c303857ace1031a447609fef795335",
+    "packages/team/team-agent-client/tests/client.spec.ts": "232325d0f20c1d513a5caca899665372970d7e953f61e07bd1dcbcdb5ee16da8",
+    "packages/team/team-scheduler-dag/tests/composition.spec.ts": "b72df1d9f2a8910dfccd54291d9d48faeaaff9f094b4f1bf5814cc1a9e64b53b",
+    "scripts/install-lefthook.spec.ts": "67e79146b1913d8645e7fde8b304053d792426a2b574c20797223dbb996fad47",
+    "scripts/translation-pairing.spec.ts": "412cf050b7d036df4422708c891373821ee9a996915acd576ef47ebc9939d307",
+    "packages/typert/generator/tests/tsdown-plugin.spec.ts": "2bd1e6d365cee0aadbfbeac19c35b0f19b3b17087783b57cd020f33df2e5ca81",
+    "packages/context/agent-instructions/tests/agent-instructions.spec.ts": "b345b57176a40dc6f8eab2599763eb1ccef4f7a3cadddf1390e02e301416da35",
+    "packages/skill/skill-filesystem/tests/skill-filesystem.spec.ts": "19eb84f12e072a925025726d6d15e6d3e07237523fa887c122df4893d9b7b7ac",
+    "packages/host/apiproxy/tests/api-proxy-cold.spec.ts": "dfbd164d62a022d75dcc202d17f88f5693ecc39e17d8dbb394d53b14d9598b06",
+    "examples/headless-agent/tests/agent-runtime-acp-recovery.snapshot.ts": "c51216bd7978765492fa102efaa1b3c7c123c448ddd7744b44226715bc6508bd",
+    "examples/headless-agent/tests/fixtures/agent-runtime-acp-recovery-driver.ts": "66ac5259e2e8525935a563e8bbd704b30bd21451ce1df6971f41a1009cbf8958",
+    "examples/headless-agent/tests/fixtures/agent-runtime-acp-recovery.cordis.yml": "d238d6d2dae65a0bf55efe48186467c7939e4d2a7f795f7a14e3fa863146b662"
+  },
+  "artifactSha256": {
+    "packages/subprocess/subprocess-local/lib/index.js": "357d64abd548956641d33e34f284d5851381a5730c197faf99cb5578f81cc584",
+    "packages/agent-runtime/agent-runtime-acp/lib/index.js": "8062014afac4ac0a31079bfad1d76b2a137c766b64e297edd8bc767677d7071f",
+    "packages/team/team-agent-client/lib/index.js": "da265aa2497729bdc3032b1cefdea4296f7bd168996e3dc349c3b6ef5b4a7cf4"
+  },
+  "fullUnitResultSha256": "b1e5b3b1a65071a0d64c0d8734bf43a6c50e0bdec32545d0a822ccf06cd49b49",
+  "fullUnit": {
+    "files": 1016,
+    "testsPassed": 16143,
+    "testsFailed": 0,
+    "testsSkipped": 114
+  },
+  "hub": {
+    "files": 52,
+    "testsPassed": 799
+  },
+  "nativeReference": "https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/proc_info.h",
+  "remaining": [
+    "Independent-host recovery/fault matrix (F-RT-03/T-04).",
+    "O-03 source-adjacent output hygiene beyond explicit entry resolution.",
+    "Full changed-source/repository per-file coverage (T-02).",
+    "Canonical multiplatform release (O-02)."
+  ],
+  "buildEvidence": {
+    ".tmp/gap-darwin-recovery-2026-09-10/typecheck-final.log": "44a20f13c96f97f515a8580d69db6785c375f2c65c74cb88765b75d53e85a6da",
+    ".tmp/gap-darwin-recovery-2026-09-10/build-final.log": "1a02f56c9b47e19a9dfe0f90eb5087fabb022df65188f8b1c1091d48bd94560c"
+  }
+}

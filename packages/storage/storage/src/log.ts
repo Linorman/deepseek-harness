@@ -133,6 +133,7 @@ export interface LogStream extends LogStreamDescriptor {
    * `expectedSequence`. The complete batch receives contiguous sequences and
    * becomes visible together; a stale expected tail rejects with
    * `sequence-conflict`.
+   * Sparse batches and non-JSON values reject with `invalid-value` before any entry becomes durable.
    * @param expectedSequence - Tail observed by the caller, or -1 for an empty stream.
    * @param values - Non-empty JSON-serializable values to append atomically.
    * @param options - Optional tail summary; omission invalidates the previous summary.

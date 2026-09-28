@@ -85,6 +85,12 @@ interface SdkScenario {
 
 const SCENARIOS: SdkScenario[] = [
   {
+    name: 'simulation-context',
+    prompt: 'Reply with exactly: SDK snapshot OK',
+    configs: { live: join(testsDir, '..', 'simulation-context.snapshot.cordis.yml'),
+      replay: join(testsDir, '..', 'simulation-context.snapshot.cordis.yml') },
+  },
+  {
     name: 'text-turn',
     prompt: 'Reply with exactly: SDK snapshot OK',
   },

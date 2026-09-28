@@ -1,0 +1,68 @@
+Command A:
+  pnpm exec vitest run packages/team/team-delegation/tests/delegation.spec.ts packages/team/team-hub/tests/task-delegation.spec.ts packages/team/team-hub/tests/child-result.spec.ts packages/team/team-hub/tests/durable-child-relations.spec.ts packages/team/team-hub/tests/usage-replay.spec.ts packages/team/team-hub/tests/durable-lifecycle-replay.spec.ts packages/team/team-hub/tests/durable-terminal-resources.spec.ts packages/team/team-hub/tests/closure-authority.spec.ts packages/team/team-artifact-local/tests/provider.spec.ts --reporter=json --outputFile=.tmp/child-kill-point-matrix-current.json --maxWorkers=1
+
+Command B1:
+  pnpm exec vitest run --config vitest.snapshot.config.ts examples/headless-agent/tests/child-delegation.snapshot.ts --reporter=dot --maxWorkers=1
+
+Command B2:
+  pnpm exec vitest run --config vitest.snapshot.config.ts examples/headless-agent/tests/child-delegation-restart.snapshot.ts --reporter=dot --maxWorkers=1
+
+Command C:
+  PYTHONPATH=python/sdk/src:python/sdk-runtime/src python scripts/smoke-python-runtime.py --scenario sdk-child-team --exe python/sdk-runtime/node_modules/.bin/clocky-jsonrpc-agent
+
+Command D:
+  pnpm exec vitest run packages/team/team-delegation/tests/delegation.spec.ts packages/team/team-hub/tests/task-delegation.spec.ts packages/team/team-hub/tests/child-result.spec.ts packages/team/team-hub/tests/durable-child-relations.spec.ts packages/team/team-hub/tests/usage-replay.spec.ts packages/team/team-hub/tests/durable-lifecycle-replay.spec.ts packages/team/team-hub/tests/durable-terminal-resources.spec.ts packages/team/team-hub/tests/closure-authority.spec.ts packages/team/team-artifact-local/tests/provider.spec.ts --reporter=json --outputFile=.tmp/child-kill-point-matrix-current-2026-09-09-expanded.json --maxWorkers=1
+
+Source/artifact plane: source tests plus the real Loader snapshot composition; no credentials injected.
+Results:
+  Command A: 9 files, 258/258 passed.
+  Command B1: 1 file, 2/2 passed (normal complete/cancel Loader flows).
+  Command B2: 1 file, 26/26 passed (13 independent Loader crash windows on
+  both SQLite and JSON backends, including cancellation on both backends).
+  Combined Loader coverage: 2 files, 28/28 passed (complete, cancel, and independent Loader
+  crashes after child creation, child-run binding, child response WAL append,
+  parent result-admission WAL append, child result admission, child response
+  receipt, child closure, child terminal phase, parent charge pending, parent
+  charge accepted, parent charge settled, parent settlement, and child
+  cancellation).
+  Command C: packaged Python SDK child-Team smoke passed (1/1).
+  Command D: 9 files, 258/258 passed after the restart-stall handling change.
+
+Window coverage:
+  reservation/create/bind/start: team-delegation and task-delegation suites;
+  duplicate child identity and partial bootstrap cancellation: task-delegation;
+  result admission, closed consult receipt, missing result, restart with parent/
+  child-admission/service-receipt retention: child-result JSON/SQLite suites;
+  parent-charge ownership and checkpoint recovery: durable-child-relations;
+  terminal settle/closure race and usage provenance: closure-authority,
+  durable-lifecycle-replay, and usage-replay;
+  artifact provenance/read and bounded retention: team-artifact-local;
+  real Loader complete/cancel paths and independent crash/restart paths:
+  child-delegation snapshots; the crash paths kill the first Host with SIGKILL
+  after child creation, child-run binding, child response WAL append, parent
+  result-admission WAL append, child result admission, child response receipt,
+  child closure, child terminal phase, parent charge pending, parent charge
+  accepted, parent charge settled, parent settlement, or child cancellation.
+  Restart proves
+  the result/cancellation intent remains durable without model re-entry; the
+  pre-terminal windows return a named stall for the in-process provider, while
+  child-terminal and parent-settled windows leave the parent task completed and
+  the parent Team active awaiting coordinator finalization.
+  packaged Python SDK create/run/wait path: the parent Team delegates one child
+  Team, the child reaches completed, the result is admitted into the parent
+  task, and the parent final is accepted by the SDK runtime.
+
+Recovery fix validated during this matrix: Team Hub retains in-flight Team
+streams during terminal recovery, so `assertParentResultStored()` reuses the
+already-open parent stream instead of reopening it. This fixes the JSON
+`parent-settled` restart path that previously surfaced `already-open` as a
+malformed completed child journal. Team-Hub tsc, the 9-file/258-test source
+matrix, JSON parent-settled restart, and the full 26-case SQLite/JSON restart
+matrix pass after the fix.
+
+This is a same-candidate matrix evidence slice. It covers thirteen independent
+process crash windows on both SQLite and JSON backends and their restart
+outcomes. Charge-window races may retain the parent result before or after the
+selected charge record depending on append scheduling; both outcomes preserve
+the no-duplicate/no-model-reentry invariant. Multi-host recovery and the
+complete T-03 cross-log matrix remain open.

@@ -16,6 +16,12 @@ The [Agent Client](../../../../packages/team/team-agent-client/README.md) retain
 
 If restoration returns a handle but activation or root publication fails, the client uses its unpublished-allocation cleanup: record release intent, release the exact handle, and confirm release. A failed physical release records preservation; a failed confirmation retains the release intent. The original failure and cleanup failures remain observable.
 
+If materialization loses its execution world before input admission, failure handling runs inside the Agent delivery queue already held by that operation; it must not enqueue behind itself. Confirmed termination releases the reservation. Unconfirmed loss retains unavailable responsibility and stalls the Team. Neither path makes a worker model request.
+
+A recovered allocation with unconfirmed loss keeps the unavailable marker even when no live provider handle remains. Team closure still accepts provider loss as cleanup for an existing allocation; it cannot admit a new allocation.
+
+Activation workspace settlement drains the accepted per-Agent delivery tail before releasing allocations. Once the epoch is stopping, the activation controller settles its outstanding attempt.
+
 Channel-view retries compare field and ordered-content values structurally. They reuse the stored Session event and pending inbox message. Durable inbox claims followed by a model step prove prior consumption; an unrun claim, canceled input, or inherited fork seed does not establish consumption by the current Agent.
 
 Internal checks follow their owners: published allocations and snapshots share private map keys, the Session channel-view projection always produces a user message, and startup validates local dependencies before recovery can yield. These facts do not replace checks on durable allocation references, claim provenance, or provider failures.
@@ -39,3 +45,5 @@ The [shared-root decision](../architecture/2026-08-28-shared-team-workspace-root
 ## Verification
 
 Package tests use real Session and Inbox logs for persistence barriers, claim/step replay, fork seeds, cancellation, changed-view rejection, and object-key reordering. JSON-backed Hub tests cover restore/activation failures, unpublished-root cleanup, release-confirmation reconciliation, late completion after timeout, closure at each asynchronous setup stage, concurrent external preservation, multiple allocations, retired dependencies, and bounded usage failures. No new coverage exclusions are used.
+
+The [Headless Loader scenario](../../../../examples/headless-agent/tests/workspace-observation.snapshot.ts) verifies JSON and SQLite loss paths: confirmed materialization loss releases the allocation, a replacement delivery consumer retains unconfirmed loss protection, and loss after Team closure cancels the task without retry. No path admits worker Session input or a model request; the provider abandons its unpublished preparation.

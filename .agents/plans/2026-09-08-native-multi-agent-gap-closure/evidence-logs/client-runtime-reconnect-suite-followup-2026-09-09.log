@@ -1,0 +1,9 @@
+Client runtime reconnect-suite follow-up (2026-09-09)
+
+Scope: full client runtime regression after reconnect bounded-collection refresh and collection-generation invalidation.
+
+Command:
+
+`pnpm exec vitest run packages/client/runtime/tests --no-file-parallelism`
+
+Result: 28 files passed; 368 tests passed; 0 failed. Channel watch/catalog, inbox, selection races, Team collections, workflow projection, reconnect, and stale-response cases remain green on the current candidate.

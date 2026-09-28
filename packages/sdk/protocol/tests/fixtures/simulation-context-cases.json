@@ -1,0 +1,2934 @@
+[
+  {
+    "name": "append",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "replace",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": {
+        "op": "replace",
+        "start": 1,
+        "end": 1
+      },
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "sourceEventSeqs": [
+        1
+      ]
+    }
+  },
+  {
+    "name": "version-2",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 2,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "version-True",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": true,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "slot-01",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "01",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "epoch-0",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "0",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "time--1",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "-1",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "time-\uff11",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "\uff11",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "entityId-",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "runId-False",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": false,
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "content-[]",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": []
+      }
+    }
+  },
+  {
+    "name": "sources-None",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": null,
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "extra-1",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ],
+        "extra": 1
+      }
+    }
+  },
+  {
+    "name": "missing-version",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-runId",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-entityId",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-windowId",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-slot",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-epoch",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-time",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-inputId",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-projections",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-versions",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-sources",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "missing-content",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "envelope-surfaceOp-None",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": null,
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "envelope-ignorable-True",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "ignorable": true
+    }
+  },
+  {
+    "name": "envelope-ignorable-False",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "ignorable": false
+    }
+  },
+  {
+    "name": "envelope-sourceEventSeqs-None",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "sourceEventSeqs": null
+    }
+  },
+  {
+    "name": "envelope-sourceEventSeqs-[4]",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "sourceEventSeqs": [
+        4
+      ]
+    }
+  },
+  {
+    "name": "envelope-sourceEventSeqs-[1, 1]",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "sourceEventSeqs": [
+        1,
+        1
+      ]
+    }
+  },
+  {
+    "name": "envelope-seq--1",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": -1,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "envelope-time-1.5",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 1.5,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "envelope-extra-True",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      },
+      "extra": true
+    }
+  },
+  {
+    "name": "envelope-surfaceOp-{'op': 'replace', 'start': 0, 'end': 2}",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": {
+        "op": "replace",
+        "start": 0,
+        "end": 2
+      },
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "unordered",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          },
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "duplicate-section",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "future-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 10
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "foreign-run",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "other",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "duplicate-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          },
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "bad-block",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {}
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "bad-counter",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": true,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "unknown-source",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "other",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "noncanonical-time-newline",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "1\n",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "invalid-content-item",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          null
+        ]
+      }
+    }
+  },
+  {
+    "name": "invalid-sources-item",
+    "valid": false,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          null
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "integral-json-numbers",
+    "valid": true,
+    "event": {
+      "type": "simulation/context-view",
+      "seq": 4.0,
+      "time": 100,
+      "surfaceOp": "append",
+      "data": {
+        "version": 1.0,
+        "runId": "run-1",
+        "entityId": "entity-1",
+        "windowId": "window-1",
+        "slot": "0",
+        "epoch": "1",
+        "time": "10",
+        "inputId": "input-1",
+        "projections": {
+          "run": 9.0,
+          "entity": 3,
+          "team": 5
+        },
+        "versions": {
+          "rules": "r1",
+          "policy": "p1",
+          "persona": "persona1",
+          "model": "model1"
+        },
+        "sources": [
+          {
+            "kind": "run-event",
+            "runId": "run-1",
+            "sequence": 8
+          },
+          {
+            "kind": "team-envelope",
+            "teamId": "team-1",
+            "channelId": "channel-1",
+            "envelopeId": "envelope-1"
+          }
+        ],
+        "content": [
+          {
+            "kind": "identity",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Entity 1"
+              }
+            ]
+          },
+          {
+            "kind": "commitments",
+            "blocks": [
+              {
+                "type": "text",
+                "text": "Deliver 2 units."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

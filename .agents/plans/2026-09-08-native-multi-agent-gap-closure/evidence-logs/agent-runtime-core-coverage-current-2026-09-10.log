@@ -1,0 +1,13 @@
+# AgentRuntime core coverage current-candidate follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless.
+
+Command:
+
+    env TSX_DISABLE_CACHE=1 pnpm exec vitest run packages/core/agent-runtime/tests --coverage --coverage.include=packages/core/agent-runtime/src/index.ts --coverage.include=packages/core/agent-runtime/src/error.ts --coverage.reporter=text --reporter=dot --maxWorkers=1
+    pnpm exec tsc -p packages/core/agent-runtime/tsconfig.json --noEmit
+    git diff --check
+
+Result: exit 0; 1 test file and 11 tests passed. Current core AgentRuntime source coverage is statements 100% (99/99), branches 100% (46/46), functions 100% (21/21), and lines 100% (92/92). The added regression exercises a provider status observed before initial publication. TypeScript and diff checks pass.
+
+Scope boundary: SDK/ACP/supervisor provider files remain below the repository per-file 100% gate; this is a focused core coverage PASS, not a T-02 closure.

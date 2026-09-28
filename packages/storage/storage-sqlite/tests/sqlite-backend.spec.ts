@@ -247,6 +247,42 @@ describe('sqlite backend specifics', () => {
     }
   })
 
+  it('rejects an interior sequence gap even when the stored tail still matches', async () => {
+    const path = await freshDbPath()
+    const backend = backendAt(path)
+    const stream = await backend.log.open({ name: 'gap', version: 1 })
+    await stream.append(-1, ['first', 'middle', 'last'])
+    await backend.close()
+    const raw = new DatabaseSync(path)
+    try { raw.prepare('DELETE FROM log_entries WHERE stream = ? AND sequence = ?').run('gap', 1) }
+    finally { raw.close() }
+    const reopened = backendAt(path)
+    try { await expect(reopened.log.open({ name: 'gap', version: 1 })).rejects.toMatchObject({ code: 'malformed-medium' }) }
+    finally { await reopened.close() }
+  })
+
+  it.each(['removed', 'reversioned'])('refuses compaction after live stream metadata is %s', async (change) => {
+    const path = await freshDbPath()
+    const backend = backendAt(path)
+    try {
+      const stream = await backend.log.open({ name: 'changed', version: 1 })
+      await stream.append(-1, ['first', 'last'])
+      await stream.writeCheckpoint({ sequence: 1, value: { retained: true } })
+      const raw = new DatabaseSync(path)
+      try {
+        if (change === 'removed') {
+          raw.prepare('DELETE FROM log_entries WHERE stream = ?').run('changed')
+          raw.prepare('DELETE FROM log_checkpoints WHERE stream = ?').run('changed')
+          raw.prepare('DELETE FROM log_streams WHERE name = ?').run('changed')
+          expect(stream.tailSequence).toBe(-1)
+        }
+        else raw.prepare('UPDATE log_streams SET version = ? WHERE name = ?').run(2, 'changed')
+      } finally { raw.close() }
+      await expect(stream.compact({ throughSequence: 0, expectedCheckpointSequence: 1 }))
+        .rejects.toMatchObject({ code: 'checkpoint-conflict' })
+    } finally { await backend.close() }
+  })
+
   it('rechecks live stream metadata inside an append transaction', async () => {
     const path = await freshDbPath()
     const backend = backendAt(path)

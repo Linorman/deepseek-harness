@@ -1,0 +1,28 @@
+Native multi-agent gap closure — frozen omitted-placement defaults follow-up
+Date: 2026-09-09 (Asia/Shanghai)
+Scope: TeamRun product-template defaults and Hub task admission; explicit placement remains authoritative.
+
+Implementation:
+- TeamRun accepts optional JSON-friendly `placementDefaults` and freezes it into root/child product-template rules.
+- Hub resolves omitted placement exactly once before policy/admission for participant tasks.
+- The resolved placement is persisted on the task; explicit placement overrides the template default.
+- Missing template defaults retain the explicit absence/no-extra-constraint semantics.
+
+Command: node node_modules/typescript/bin/tsc -b packages/team/team-run/tsconfig.json packages/team/team-hub/tsconfig.json --pretty false
+Result: PASS (exit 0)
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/team/team-run/tests/team-run.spec.ts -t 'resolves only the selected child template version'
+Result: PASS — 1 test passed; product-template placement defaults are retained in the child template descriptor.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run --reporter=dot packages/team/team-hub/tests/edge-cases.spec.ts -t 'freezes omitted task placement'
+Result: PASS — 1 test passed; omitted placement inherits the default and explicit placement wins.
+
+Focused grant narrowing regression: 1 additional edge test passed; an explicit placement outside the creator's authority grant is rejected with `TEAM_GRANT_DENIED`.
+
+Combined regression command: `packages/team/team-hub/tests/edge-cases.spec.ts packages/team/team-run/tests/team-run.spec.ts`
+Result: PASS — 2 files, 135 tests passed.
+
+Final combined regression command: `packages/team/team-hub/tests/edge-cases.spec.ts packages/team/team-run/tests/team-run.spec.ts packages/core/team/tests/schema.spec.ts`
+Result: PASS — 3 files, 142 tests passed.
+
+Boundary: this closes the local template-default semantics; hierarchy-wide ceilings and non-shared child placement remain decision items.

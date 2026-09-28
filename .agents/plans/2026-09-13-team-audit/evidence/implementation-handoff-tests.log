@@ -1,0 +1,28 @@
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+ ❯ |thread-safe| packages/team/tool-team-task/tests/tool-team-task.spec.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |thread-safe| packages/team/tool-team-task/tests/tool-team-task.spec.ts [ packages/team/tool-team-task/tests/tool-team-task.spec.ts ]
+Error: Cannot find module './workflow-schema.ts' imported from /Volumes/projects-mac/deepseek-harness/packages/team/tool-team-task/src/index.ts
+ ❯ packages/team/tool-team-task/src/index.ts:33:1
+     31| } from '@clocky/clocky-team-run'
+     32| import { defineTool } from '@clocky/clocky-tools'
+     33| import { WORKFLOW_PLAN_PARAMETER } from './workflow-schema.ts'
+       | ^
+     34| import type { GenericCallView, ToolRunContext } from '@clocky/clocky-t…
+     35|
+ ❯ packages/team/tool-team-task/tests/tool-team-task.spec.ts:18:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  159 passed (159)
+   Start at  17:43:29
+   Duration  15.93s (transform 1.01s, setup 334ms, import 1.29s, tests 20.18s, environment 0ms)

@@ -1,0 +1,1 @@
+examples/headless-agent/tests/child-delegation.snapshot.ts:21:24: error @stylistic(arrow-parens): Expected parentheses around arrow function argument having a body with curly braces.

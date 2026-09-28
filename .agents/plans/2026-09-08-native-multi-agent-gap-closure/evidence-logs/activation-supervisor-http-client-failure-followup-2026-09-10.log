@@ -1,0 +1,20 @@
+Scope: authenticated activation-supervisor HTTP client fail-closed coverage.
+Date: 2026-09-10 Asia/Shanghai
+Candidate: fb14b0b9b1 (dirty shared worktree; source hashes below bind the changed slice)
+Environment: macOS 27.0 arm64; Node v25.9.0; pnpm 11.19.0; no API credential required.
+
+Implementation/test additions:
+- Added client boundary tests for secure URL/credential validation, transport health/fence mapping, HTTP rejection, 409 typed errors, malformed observations, and request payload bounds.
+
+Commands and results:
+- `env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts --no-file-parallelism --reporter=dot`: 2 files, 14 tests passed, 1 platform skip.
+- Same endpoint/protocol lane with V8 coverage: client.ts statements 95.34%, branches 90%, functions 100%, lines 100%; protocol.ts remains 100% across all metrics. endpoint.ts remains at 70.92% statements / 64.36% branches / 73.33% functions / 79.43% lines.
+- `pnpm exec tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --pretty false`: exit 0.
+- `git diff --check`: exit 0.
+
+Source SHA-256:
+- `packages/agent-runtime/activation-supervisor-http/src/client.ts`: `1ada13c54126ec34312860ac6f2aa07bb2349e27cf130767cde3031ba602b927`
+- `packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts`: `15415de6dc24b8a6375d324e64735b9bd3347111260ed17dc31d06e844ee2432`
+- `packages/agent-runtime/activation-supervisor-http/tests/protocol.spec.ts`: `0f67971f4ac5aeacf200424a7fa42cb1853c234d162f1842afde9b389a6a2057`
+
+Boundary: this improves remote supervisor client/protocol coverage only. The endpoint provider's durable ownership/HTTP listener matrix, ACP provider coverage, and separate-host recovery remain open.

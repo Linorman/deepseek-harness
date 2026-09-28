@@ -1,26 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
 import { FiberState, type Context } from '@clocky/cordis'
 import type { Agent, PreStepDecision } from '@clocky/clocky-agent'
-import type { UserMessage } from '@clocky/clocky-llm'
+import { createUserMessage, type UserMessage } from '@clocky/clocky-llm'
 import { SessionId } from '@clocky/clocky-session'
+import type { SessionEvent } from '@clocky/clocky-session'
+import { TeamLinkConnectionError } from '@clocky/clocky-team-link'
 import type {
   TeamLink,
   TeamLinkConnectRequest,
   TeamLinkDeliveryId,
   TeamLinkInterruptNotification,
   TeamLinkTaskCancellationNotification,
+  TeamLinkInvitationNotification,
 } from '@clocky/clocky-team-link'
 import {
   activationBindingSnapshotSchema,
   activationIdSchema,
   channelDeliveryClaimSchema,
   channelSnapshotSchema,
+  channelInvitationSnapshotSchema,
+  fingerprintChannelManifest,
   participantSnapshotSchema,
   participantInterruptSnapshotSchema,
   participantIdSchema,
   teamEnvelopeSchema,
   teamIdSchema,
   teamStateSnapshotSchema,
+  taskAttemptIdSchema,
+  teamTaskIdSchema,
+  teamTaskSnapshotSchema,
 } from '@clocky/clocky-team'
 import type {
   ActivationBindingSnapshot,
@@ -134,6 +142,7 @@ type TestLink = TeamLink & {
   readonly acknowledge: ReturnType<typeof vi.fn>
   readonly acknowledgeInterrupt: ReturnType<typeof vi.fn>
   readonly acknowledgeTaskCancellation: ReturnType<typeof vi.fn>
+  readonly acknowledgeChannelInvitation: ReturnType<typeof vi.fn>
   readonly close: ReturnType<typeof vi.fn>
   readonly onNotify: ReturnType<typeof vi.fn>
   readonly onInterrupt: ReturnType<typeof vi.fn>
@@ -141,6 +150,7 @@ type TestLink = TeamLink & {
   emit(envelope: TeamEnvelope): Promise<void>
   emitInterrupt(notification: TeamLinkInterruptNotification): Promise<void>
   emitTaskCancellation(notification: TeamLinkTaskCancellationNotification): Promise<void>
+  emitInvitation(notification: TeamLinkInvitationNotification): Promise<void>
   listenerCount(): number
   interruptListenerCount(): number
 }
@@ -186,13 +196,18 @@ function link(binding: ActivationBindingSnapshot): TestLink {
   const listeners = new Set<(envelope: TeamEnvelope) => Promise<void>>()
   const interruptListeners = new Set<(notification: TeamLinkInterruptNotification) => Promise<void>>()
   const cancellationListeners = new Set<(notification: TeamLinkTaskCancellationNotification) => Promise<void>>()
+  const invitationListeners = new Set<(notification: TeamLinkInvitationNotification) => Promise<void>>()
   const terminal = Promise.withResolvers<undefined>()
   const subject = {
     provider: 'local',
     binding,
     done: terminal.promise,
     terminal,
-    onInvitation: vi.fn(() => () => {}),
+    onInvitation: vi.fn((listener: (notification: TeamLinkInvitationNotification) => Promise<void>) => {
+      invitationListeners.add(listener)
+      return () => { invitationListeners.delete(listener) }
+    }),
+    acknowledgeChannelInvitation: vi.fn(async () => ({})),
     onNotify: vi.fn((listener: (envelope: TeamEnvelope) => Promise<void>) => {
       listeners.add(listener)
       let disposed = false
@@ -229,6 +244,9 @@ function link(binding: ActivationBindingSnapshot): TestLink {
     },
     async emitTaskCancellation(notification: TeamLinkTaskCancellationNotification): Promise<void> {
       for (const listener of cancellationListeners) await listener(notification)
+    },
+    async emitInvitation(notification: TeamLinkInvitationNotification): Promise<void> {
+      for (const listener of invitationListeners) await listener(notification)
     },
     async emitInterrupt(notification: TeamLinkInterruptNotification): Promise<void> {
       for (const listener of interruptListeners) await listener(notification)
@@ -1667,4 +1685,231 @@ it('rejects an owner acknowledgement without exact stopped-task Session evidence
   expect(target.spies.whenIdle).not.toHaveBeenCalled()
   expect(connected.acknowledgeTaskCancellation).not.toHaveBeenCalled()
   await client.close()
+})
+
+/** Parse a pending wire invitation for the exact frozen channel manifest. */
+function invitationNotification(selected: ChannelSnapshot): TeamLinkInvitationNotification {
+  const recipient = selected.manifest.participants.find(member => member.id === recipientId)!
+  return { channel: selected, invitation: channelInvitationSnapshotSchema.parse({
+    participantId: recipientId, role: recipient.role, visibility: 'channel', required: true, deadline: 100,
+    endpoint: { kind: 'activation' }, revision: 1, manifestFingerprint: fingerprintChannelManifest(selected.manifest), status: 'pending',
+  }) }
+}
+
+describe('fixed delivery invitation and cancellation admission', () => {
+  it.each(['foreign participant', 'foreign fingerprint', 'another task activation', 'unsupported protocol'] as const)(
+    'refuses an invitation selecting %s', async (variant) => {
+      const fake = fakeContext()
+      const target = agent('agent-invitation-integrity')
+      const durable = activation(target.session.id)
+      fake.agents.get.mockReturnValue(target)
+      const { client, internal, binding: local } = fixed(fake, target, durable)
+      const connected = await connect(internal, fake, local)
+      let selected = channel()
+      if (variant === 'another task activation') {
+        const valid = taskAssignmentChannel(durable)
+        selected = channel({ manifest: { ...valid.manifest, limits: { ...valid.manifest.limits, activationId: 'other-epoch' } } })
+      }
+      if (variant === 'unsupported protocol') selected = channel({ manifest: { ...selected.manifest, adapter: { type: 'other', version: 1 } } })
+      const valid = invitationNotification(selected)
+      const notification = { ...valid, invitation: channelInvitationSnapshotSchema.parse({ ...valid.invitation,
+        ...variant === 'foreign participant' ? { participantId: senderId } : {},
+        ...variant === 'foreign fingerprint' ? { manifestFingerprint: `sha256:${'0'.repeat(64)}` } : {},
+      }) }
+      try {
+        await expect(connected.emitInvitation(notification)).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+        expect(connected.acknowledgeChannelInvitation).not.toHaveBeenCalled()
+      } finally { await client.close() }
+    })
+
+  it('does not acknowledge an invitation after the Agent object is replaced', async () => {
+    const fake = fakeContext()
+    const target = agent('agent-invitation-replaced')
+    const durable = activation(target.session.id)
+    fake.agents.get.mockReturnValue(target)
+    const { client, internal, binding: local } = fixed(fake, target, durable)
+    const connected = await connect(internal, fake, local)
+    fake.agents.get.mockReturnValue(agent(target.id))
+    await connected.emitInvitation(invitationNotification(channel()))
+    expect(connected.acknowledgeChannelInvitation).not.toHaveBeenCalled()
+    await client.close()
+  })
+
+  it.each(['another epoch', 'non-attempt', 'lost during flush'] as const)('does not acknowledge task cancellation with %s ownership', async (variant) => {
+    const fake = fakeContext()
+    const target = agent('agent-task-cancel-integrity')
+    const durable = activation(target.session.id)
+    fake.agents.get.mockReturnValue(target)
+    const { client, internal, binding: local } = fixed(fake, target, durable)
+    const connected = await connect(internal, fake, local)
+    const notification: TeamLinkTaskCancellationNotification = {
+      taskId: teamTaskIdSchema.parse('task'), revision: 3, phase: 'assigned',
+      cancellation: { requestedRevision: 2, requestedBy: senderId, requestedAt: 1,
+        target: variant === 'non-attempt' ? { kind: 'pending' } : { kind: 'attempt', attemptId: taskAttemptIdSchema.parse('attempt'),
+          participantId: recipientId, activationId: variant === 'another epoch' ? activationIdSchema.parse('other') : durable.activation.id } },
+    }
+    // oxlint-disable-next-line typescript/no-misused-promises -- The mocked Session flush is asynchronous.
+    if (variant === 'lost during flush') fake.sessions.flush.mockImplementationOnce(async () => {
+      internal.disconnect(internal.connections.get(key(teamId, recipientId))!)
+      return true
+    })
+    try {
+      await connected.emitTaskCancellation(notification)
+      expect(connected.acknowledgeTaskCancellation).not.toHaveBeenCalled()
+      expect(target.spies.cancel).not.toHaveBeenCalled()
+    } finally { await client.close() }
+  })
+})
+
+it.each(['invalid content', 'invalid audience', 'sender is this recipient'] as const)('rejects direct-v4 %s before admitting model input', async (variant) => {
+  const fake = fakeContext()
+  const target = agent('agent-direct-v4-invalid')
+  const durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const { client, internal, binding: local } = fixed(fake, target, durable)
+  const connected = link(durable)
+  const current = connection(local, connected)
+  internal.connections.set(key(teamId, recipientId), current)
+  const accepted = envelope({ payload: { content: [{ type: 'text', text: 'Body' }] },
+    ...variant === 'invalid content' ? { payload: { content: [] } } : {},
+    ...variant === 'invalid audience' ? { audience: [senderId] } : {},
+    ...variant === 'sender is this recipient' ? { senderId: recipientId, audience: [senderId] } : {},
+  })
+  connected.claim.mockResolvedValueOnce(deliveryClaim(durable, accepted, {
+    channel: channel({ manifest: { ...channel().manifest, adapter: { type: 'direct', version: 4 } } }),
+  }))
+  try {
+    await internal.deliver(current, accepted)
+    expect(connected.claim).toHaveBeenCalledOnce()
+    expect(target.inputCalls).toEqual([])
+    expect(connected.acknowledge).not.toHaveBeenCalled()
+    if (variant === 'invalid content') expect(fake.warn).toHaveBeenCalledWith(expect.stringContaining('no admissible message payload'))
+  } finally { await client.close() }
+})
+
+it('rolls back discovery and usage ownership when workspace startup lacks its registry', async () => {
+  const fake = fakeContext()
+  const target = agent('startup-rollback')
+  const durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  Object.assign(fake.ctx, { get: (name: string) => name === 'teams' ? fake.teams : undefined })
+  const client = new TeamAgentClient(fake.ctx, { consumeWorkspace: true })
+  const internal = client as unknown as DiscoveryInternals
+  expect(() => { internal.bind(target, teamId, recipientId, durable) }).toThrow('requires a registered workspace registry')
+  expect(internal.bindings.size).toBe(0)
+  expect(internal.deliveries.size).toBe(0)
+  expect(fake.usageProofLeases[0]?.revoke).toHaveBeenCalledOnce()
+  await vi.waitFor(() => { expect(fake.ctx.teamLinks.getBoundLinkBorrower(target)).toBeUndefined() })
+  await client.close()
+})
+
+/** Select the fixture task attempt through the same typed notification used by a Link provider. */
+function cancellationNotification(durable: ActivationBindingSnapshot, phase: 'assigned' | 'running'): TeamLinkTaskCancellationNotification {
+  return { taskId: teamTaskIdSchema.parse('task-edges'), revision: 4, phase,
+    cancellation: { requestedRevision: 3, requestedBy: senderId, requestedAt: 1,
+      target: { kind: 'attempt', attemptId: taskAttemptIdSchema.parse('attempt-edges'), participantId: recipientId,
+        activationId: durable.activation.id } } }
+}
+
+it('abandons queued cancellation when its Link is revoked before the serialization slot opens', async () => {
+  const fake = fakeContext(), target = agent('queued-cancel-revocation'), durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const { client, internal, binding: local } = fixed(fake, target, durable)
+  const connected = await connect(internal, fake, local)
+  const gate = Promise.withResolvers<undefined>()
+  internal.deliveryTails.set(target.id, gate.promise)
+  const cancellation = connected.emitTaskCancellation(cancellationNotification(durable, 'assigned'))
+  internal.disconnect(internal.connections.get(key(teamId, recipientId))!)
+  gate.resolve(undefined)
+  await cancellation
+  expect(fake.sessions.flush).not.toHaveBeenCalled()
+  expect(connected.acknowledgeTaskCancellation).not.toHaveBeenCalled()
+  await client.close()
+})
+
+it.each([false, true])('refuses cancellation acknowledgement before the claimed turn ends (foreign completion=%s)', async (foreignCompletion) => {
+  const fake = fakeContext(), target = agent('open-cancel-revocation'), durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const accepted = taskAssignmentEnvelope(durable)
+  const message = createUserMessage({ content: [{ type: 'text', text: 'Task input' }], source: {
+    kind: 'team-task-assignment', teamId, channelId: accepted.channelId, envelopeId: accepted.id,
+    taskId: teamTaskIdSchema.parse('task-edges'), attemptId: taskAttemptIdSchema.parse('attempt-edges'),
+    assignedRevision: 1, runningRevision: 2, activationId: durable.activation.id,
+  } })
+  const events: SessionEvent[] = [
+    { type: 'agent/inbox/spliced', seq: 0, time: 0, data: { target: 'next-turn', start: 0, inserted: [message] } },
+    { type: 'turn/start', seq: 1, time: 1, data: { turn: 1 } },
+    { type: 'agent/inbox/spliced', seq: 2, time: 2, data: { target: 'next-turn', start: 0, removedCount: 1, inserted: [] } },
+  ]
+  if (foreignCompletion) events.push({ type: 'turn/end', seq: 3, time: 3, data: { turn: 99, reason: { kind: 'completed' } } })
+  Object.assign(target.session, { events })
+  const { client, internal, binding: local } = fixed(fake, target, durable)
+  const connected = await connect(internal, fake, local)
+  const cancellation = connected.emitTaskCancellation(cancellationNotification(durable, 'running'))
+  const outcome = cancellation.then(() => undefined, (error: unknown) => error)
+  await vi.waitFor(() => { expect(target.spies.cancel).toHaveBeenCalledOnce() })
+  internal.disconnect(internal.connections.get(key(teamId, recipientId))!)
+  expect(await outcome).toMatchObject({ message: 'task cancellation lost its active Link before target-turn settlement' })
+  expect(connected.acknowledgeTaskCancellation).not.toHaveBeenCalled()
+  await client.close()
+})
+
+it('does not reconnect an established Link after a provider-declared permanent failure', async () => {
+  const fake = fakeContext(), target = agent('permanent-link-failure'), durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const { client, internal, binding: local } = fixed(fake, target, durable, { reconnectDelayMs: 1 })
+  const connected = await connect(internal, fake, local)
+  connected.terminal.reject(new TeamLinkConnectionError('Binding retired', false))
+  await vi.waitFor(() => { expect(internal.connections.size).toBe(0) })
+  expect(internal.reconnectTimers.size).toBe(0)
+  expect(fake.teamLinks.connect).toHaveBeenCalledOnce()
+  await client.close()
+})
+
+it.each([null, [recipientId]])('admits valid direct-v4 content for audience %j', async (audience) => {
+  const fake = fakeContext(), target = agent('direct-v4-recipient'), durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const { client, internal, binding: local } = fixed(fake, target, durable)
+  const connected = link(durable), current = connection(local, connected)
+  internal.connections.set(key(teamId, recipientId), current)
+  const accepted = envelope({ audience, payload: { content: [{ type: 'text', text: 'Verified content' }] } })
+  connected.claim.mockResolvedValueOnce(deliveryClaim(durable, accepted, {
+    channel: channel({ manifest: { ...channel().manifest, adapter: { type: 'direct', version: 4 } } }),
+  }))
+  try {
+    await internal.deliver(current, accepted)
+    expect(target.spies.inject).toHaveBeenCalledOnce()
+    expect(connected.acknowledge).toHaveBeenCalledOnce()
+    expect(fake.sessions.flush).toHaveBeenCalled()
+  } finally { await client.close() }
+})
+
+it('carries the retained reviewer decision into a replacement attempt input', async () => {
+  const fake = fakeContext(), target = agent('review-handoff'), durable = activation(target.session.id)
+  fake.agents.get.mockReturnValue(target)
+  const { client, internal, binding: local } = fixed(fake, target, durable)
+  const connected = link(durable), current = connection(local, connected)
+  internal.connections.set(key(teamId, recipientId), current)
+  const accepted = taskAssignmentEnvelope(durable, { payload: { ...taskAssignmentEnvelope(durable).payload, assignedRevision: 5 } })
+  const task = teamTaskSnapshotSchema.parse({ id: 'task-edges', teamId, revision: 6, execution: { kind: 'participant' },
+    createCommand: { creator: { teamId, participantId: senderId }, idempotencyKey: 'handoff' },
+    subject: 'Revise the report', description: 'Use the prior review.', phase: 'running', blockedBy: [], requiredCapabilities: [],
+    priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, maxAttempts: 2, attemptCount: 2,
+    reviewPolicy: { kind: 'participant', reviewerId: senderId },
+    reviewHistory: [{ attemptId: 'prior-attempt', reviewerId: senderId, nextPhase: 'pending', reason: 'Add measured evidence', decidedAt: 3 }],
+    attemptHistory: [{ id: 'prior-attempt', teamId, taskId: 'task-edges', ordinal: 1, participantId: recipientId,
+      activationId: durable.activation.id, assignedAt: 0, startedAt: 1, leaseExpiresAt: 10, settledAt: 2,
+      outcome: { kind: 'completed', result: { summary: 'Draft report' } } }],
+    lease: { attemptId: 'attempt-edges', assignedRevision: 5, ordinal: 2, participantId: recipientId,
+      activationId: durable.activation.id, wakeChannelId: accepted.channelId,
+      assignedAt: 4, startedAt: 5, renewedAt: 4, durationMs: 96, expiresAt: 100 },
+  })
+  connected.claim.mockResolvedValueOnce(deliveryClaim(durable, accepted, { channel: taskAssignmentChannel(durable) }))
+  connected.claimTaskAttemptStart.mockResolvedValueOnce(task)
+  try {
+    await internal.deliver(current, accepted)
+    expect(target.spies.followup).toHaveBeenCalledOnce()
+    expect(JSON.stringify(target.inputCalls)).toContain('Add measured evidence')
+    expect(JSON.stringify(target.inputCalls)).toContain('Draft report')
+  } finally { await client.close() }
 })

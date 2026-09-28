@@ -1,0 +1,135 @@
+{
+  "recordedAt": "2026-09-13T10:00:27.362570+00:00",
+  "scope": "Two new internal planning documents and historical-entry banners only. No product implementation, product test, release or source cleanup performed by this documentation task.",
+  "localValidation": {
+    "status": "PASS",
+    "oldIds": 47,
+    "registeredIds": 55,
+    "newIds": [
+      "F-CH-02",
+      "F-MX-01",
+      "F-MX-02",
+      "F-RT-04",
+      "F-SC-04",
+      "F-SC-05",
+      "F-UI-04",
+      "T-09"
+    ],
+    "workPackages": 12,
+    "unassignedIds": [],
+    "linksChecked": 35,
+    "scriptNamesChecked": [
+      "build",
+      "doc-sync",
+      "hygiene",
+      "lint",
+      "publint",
+      "test",
+      "test:coverage",
+      "test:e2e",
+      "test:snapshot",
+      "test:web",
+      "test:web:built",
+      "typecheck",
+      "verify-node-next-types"
+    ],
+    "newFilesCheckedWithoutGitIndex": true,
+    "errors": []
+  },
+  "docSync": {
+    "command": "env TMPDIR=\"$PWD/.tmp/native-multi-agent-plan-review\" TSX_DISABLE_CACHE=1 pnpm run doc-sync",
+    "exitCode": 1,
+    "passed": 21,
+    "failed": 7,
+    "skipped": 0,
+    "durationSeconds": 43.69,
+    "log": "evidence/doc-sync.log",
+    "logSha256": "eb8dc189e700d666dec8dc34c08a7fcdf3de12fbe71ed06c412b7483a741c389",
+    "failures": [
+      {
+        "gate": "doc graphs",
+        "reason": "event-producer-consumer generated output stale",
+        "ids": [
+          "D-06",
+          "D-04"
+        ],
+        "owner": "graph generator and changed event consumers"
+      },
+      {
+        "gate": "cordis catalog",
+        "reason": "api-catalog.ts and Team Link subsystem generated output stale",
+        "ids": [
+          "D-03",
+          "O-05"
+        ],
+        "owner": "Cordis catalog and Team Link source owner"
+      },
+      {
+        "gate": "translation pairing",
+        "reason": "existing UI Note locale links and generated/document pairs differ",
+        "ids": [
+          "D-15",
+          "D-02",
+          "D-04",
+          "D-07",
+          "D-08"
+        ],
+        "owner": "owning README/Note/catalog pair owners"
+      },
+      {
+        "gate": "markdown wrap",
+        "reason": "existing Team runtime/recovery README paragraphs are hard wrapped",
+        "ids": [
+          "D-01",
+          "D-09",
+          "D-10"
+        ],
+        "owner": "owning package README authors"
+      },
+      {
+        "gate": "tool catalog",
+        "reason": "generated tool descriptions differ from current task tool source",
+        "ids": [
+          "D-08",
+          "F-MX-02"
+        ],
+        "owner": "tool-team-task and tool catalog generator"
+      },
+      {
+        "gate": "config catalog",
+        "reason": "Config catalog stale",
+        "ids": [
+          "D-07"
+        ],
+        "owner": "Config declaration and catalog generator"
+      },
+      {
+        "gate": "persistence catalog",
+        "reason": "Persistence catalog stale",
+        "ids": [
+          "D-08"
+        ],
+        "owner": "persistence declarations and catalog generator"
+      }
+    ],
+    "planFilesReportedByGate": false,
+    "qualification": "Repository gate failure remains open. Plans are outside some Markdown scanners and were separately checked; global failure is not a local PASS or product release claim."
+  },
+  "whitespace": {
+    "command": "git diff --no-index --check /dev/null <each authored Markdown>; git diff --check -- <scoped paths>",
+    "result": "PASS",
+    "evidence": "evidence/whitespace-check.json"
+  },
+  "sourceDriftAfterCapture": [
+    "packages/team/team-scheduler-dag/tests/scheduler.spec.ts",
+    "packages/team/tool-team-task/src/index.ts",
+    "packages/team/tool-team-task/src/workflow-schema.ts"
+  ],
+  "documentHashes": {
+    ".agents/plans/2026-09-13-native-multi-agent-gap-closure/gap-design.md": "0f959310b17ffa070a34fd5b7420787644e52acad61fedec9b92de73d10a3b13",
+    ".agents/plans/2026-09-13-native-multi-agent-gap-closure/development-plan.md": "da5d5efd25a4ec5ce00ec30554e5406aab2097f09126ce0e8ffff0e6138cc9b4",
+    ".agents/plans/2026-09-08-native-multi-agent-gap-closure/gap-design.md": "676d4bf49d3bcf73e2a46ae4f2aaf711952b67c1d28371c9d478ee4585b55b89",
+    ".agents/plans/2026-09-08-native-multi-agent-gap-closure/development-plan.md": "448664210cdc6620bdd0fc896918033504c1bc10e78babfcf69c0579d0ba440f"
+  },
+  "overall": "DOCUMENTS_VALIDATED_REPOSITORY_DOC_GATES_BLOCKED"
+}

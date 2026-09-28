@@ -1,0 +1,11 @@
+# Discussion channel browser follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay. Browser plugin was not available, so the repository's Playwright/Vitest runner was used.
+
+Command:
+
+    env CLOCKY_SNAPSHOT=replay CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts apps/web/tests/team-channel.snapshot.ts --no-file-parallelism
+
+Result: exit 0; 1 test file and 3 tests passed in 7.32s. Direct-v4 and consult response scenarios remain green; the discussion scenario creates and ACKs a round-robin channel, sends the human first turn, replays a coordinator `team_message`, verifies WAL sender order `[human, coordinator]`, protocol turnCount `2/3`, next speaker human, console health, and cancellation cleanup.
+
+Scope boundary: selected direct/consult/discussion paths are covered; free-form variants, reconnect races, child navigation, remote lifecycle, GIF, multi-host UI transport, and the complete T-06 matrix remain open.

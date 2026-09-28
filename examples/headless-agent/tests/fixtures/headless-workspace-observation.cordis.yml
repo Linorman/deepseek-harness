@@ -10,6 +10,7 @@
     model: workspace-observation-model
 # Observation is exercised with no artifactProvider or integrationRoot.
 - id: team-workspace-shared
+  disabled: !!js process.env.CLOCKY_OBSERVATION_LOSS === '1'
   config:
     root: !!js process.cwd()
     observationMaxEntries: 64
@@ -31,3 +32,7 @@
         root: !!js clockyHomePath('team-storage-json')
     - id: workspace-observation-driver
       name: './snapshot-fixtures/headless-workspace-observation-driver.ts'
+      config:
+        materializationLoss: !!js process.env.CLOCKY_OBSERVATION_LOSS === '1'
+        unconfirmedRecovery: !!js process.env.CLOCKY_OBSERVATION_UNCONFIRMED === '1'
+        closureLoss: !!js process.env.CLOCKY_OBSERVATION_CLOSURE === '1'

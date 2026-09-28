@@ -1,0 +1,13 @@
+# T-04 same-machine independent-process transport evidence
+
+- Date: 2026-09-09 (Asia/Shanghai)
+- Tier: same-machine independent processes; this is not actual separate-host evidence.
+- Source plane: `/Volumes/projects-mac/deepseek-harness`
+
+```text
+pnpm exec vitest run packages/team/team-link-websocket-hub/tests/server.spec.ts packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts --reporter=dot --maxWorkers=1 -t "separate Hub processes|restarted authoritative Hub|real child-process Link|authenticated supervisor endpoint|persists owner admission|requires authentication"
+```
+
+PASS: 2 files, 8 tests passed, 27 filtered tests skipped.
+
+The selected cases cover independent Hub-process persistence/replay, real child-process Link lifecycle, authenticated HTTP supervisor health/fence and endpoint restart behavior. They provide same-machine process evidence for T-04, but do not establish two-host network identity, credential rotation across hosts, provider loss, or actual remote runner semantics; T-04 remains unverified.

@@ -1,0 +1,18 @@
+Supervisor fence cancellation follow-up (2026-09-09)
+
+Scope: propagate the caller-owned cold-replacement AbortSignal through the activation controller's supervisor-backed fencer.
+
+Commands:
+
+1. `pnpm exec vitest run packages/team/team-activation-controller/tests/edges.spec.ts --no-file-parallelism`
+   Result: 1 file passed; 20 tests passed; 0 failed.
+2. `pnpm exec tsc -p packages/team/team-activation-controller/tsconfig.json --noEmit`
+   Result: exit 0.
+3. `pnpm exec oxlint packages/team/team-activation-controller/src/index.ts packages/team/team-activation-controller/tests/edges.spec.ts`
+   Result: exit 0.
+4. `git diff --check`
+   Result: exit 0.
+5. `pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-08-owned-activation-supervisor-endpoints.md`
+   Result: exit 0; one paired supervisor Agent Note record refreshed.
+
+Behavior proved: supervisor-backed `coldReplace()` fencing receives the same cancellation signal selected by the recovery caller instead of an uncancellable replacement signal.

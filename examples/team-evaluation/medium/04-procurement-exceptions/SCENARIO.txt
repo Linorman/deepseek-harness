@@ -1,0 +1,1 @@
+公司有 CEO、Warehouse、Purchasing、Finance、Supplier 五个角色；初始 supplier-stock=10、warehouse-stock=0。正常采购报价是 2 件商品与 20 credits。财务拒付变体的 cash 仅 10 credits；交付逾期变体的 cash 为 100 credits，但预订后未按承诺时间完成交付。场景走真实的 Simulation 决策、成员通信、审批、资源守恒、承诺和 CEO 汇报。run.sh 选用 SQLite 预期快照中这两个无进程崩溃的变体。

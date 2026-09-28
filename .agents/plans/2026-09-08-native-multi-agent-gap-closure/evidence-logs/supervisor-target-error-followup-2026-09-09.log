@@ -1,0 +1,20 @@
+F-RT-03 supervisor target error follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane tests; no credential values or .env contents were read.
+
+Changed-source hashes:
+bd78610aa9ffbdf0384e27ee074016863597b8352bfd5450c740dc31dcd164f1  packages/agent-runtime/activation-supervisor-http/src/protocol.ts
+62ef19223c1f51901d41ce624b21719e47d8700d4ecae63169e311726392f734  packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts
+
+Behavior: HTTP supervisor target validation now preserves typed error semantics: missing descriptor is `SUPERVISOR_UNAVAILABLE`, generation or execution-host mismatch is `SUPERVISOR_GENERATION_MISMATCH`, and configured endpoint mismatch is `SUPERVISOR_INVALID`. This prevents direct client validation from degrading an old epoch into a generic Error while keeping the wire endpoint fail-closed.
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts --reporter=dot
+Result: PASS — 1 file, 5 tests passed, 1 Linux-only test skipped, 0 failed.
+Command: pnpm exec tsc -b packages/agent-runtime/activation-supervisor-http/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec oxlint packages/agent-runtime/activation-supervisor-http/src/protocol.ts packages/agent-runtime/activation-supervisor-http/tests/endpoint.spec.ts
+Result: PASS — exit 0.
+
+Scope boundary: this closes only the typed local/HTTP target-validation slice. It does not claim ACP independent-host recovery, credential rotation, separate-host execution, provider-loss settlement, or full T-04 closure.

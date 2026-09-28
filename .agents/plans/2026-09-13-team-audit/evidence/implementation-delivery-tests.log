@@ -1,0 +1,51 @@
+native/landlock-run/packages/linux-arm64 | [WARN] Unsupported platform: wanted: {"cpu":["arm64"],"os":["linux"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+native/landlock-run/packages/linux-x64   | [WARN] Unsupported platform: wanted: {"cpu":["x64"],"os":["linux"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+Scope: all 279 workspace projects
+[WARN] There are cyclic workspace dependencies: /Volumes/projects-mac/deepseek-harness/packages/api/gateway, /Volumes/projects-mac/deepseek-harness/packages/client/connection, /Volumes/projects-mac/deepseek-harness/packages/host/apiproxy, /Volumes/projects-mac/deepseek-harness/packages/api/remotes; /Volumes/projects-mac/deepseek-harness/packages/client/ui-renderer, /Volumes/projects-mac/deepseek-harness/packages/test-support/client-runtime; /Volumes/projects-mac/deepseek-harness/packages/sandbox/sandbox-local, /Volumes/projects-mac/deepseek-harness/packages/sandbox/sandbox-windows-acl; /Volumes/projects-mac/deepseek-harness/packages/subagent/subagent-spawn-in-process, /Volumes/projects-mac/deepseek-harness/packages/subagent/tool-subagent; /Volumes/projects-mac/deepseek-harness/packages/team/team-activation-controller, /Volumes/projects-mac/deepseek-harness/packages/team/team-agent-client, /Volumes/projects-mac/deepseek-harness/packages/team/team-scheduler-dag, /Volumes/projects-mac/deepseek-harness/packages/team/team-placement-default; /Volumes/projects-mac/deepseek-harness/vendor/cordis, /Volumes/projects-mac/deepseek-harness/vendor/include
+✓ Lockfile passes supply-chain policies (verified 3d ago)
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 6, reused 6, downloaded 0, added 0
+Progress: resolved 7, reused 6, downloaded 0, added 0
+Progress: resolved 56, reused 56, downloaded 0, added 0
+Progress: resolved 58, reused 58, downloaded 0, added 0
+Progress: resolved 61, reused 61, downloaded 0, added 0
+
+   ╭─────────────────────────────────────────╮
+   │                                         │
+   │   Update available! 11.19.0 → 12.4.1.   │
+   │   Changelog: https://pnpm.io/v/12.4.1   │
+   │    To update, run: pnpm add -g pnpm     │
+   │                                         │
+   ╰─────────────────────────────────────────╯
+
+Progress: resolved 69, reused 69, downloaded 0, added 0
+Progress: resolved 79, reused 77, downloaded 0, added 0
+Progress: resolved 103, reused 103, downloaded 0, added 0
+Progress: resolved 105, reused 105, downloaded 0, added 0
+Progress: resolved 106, reused 105, downloaded 0, added 0
+Progress: resolved 106, reused 106, downloaded 0, added 0
+Progress: resolved 107, reused 106, downloaded 0, added 0
+Progress: resolved 1114, reused 866, downloaded 0, added 0
+Progress: resolved 1179, reused 917, downloaded 0, added 0
+[WARN] 4 deprecated subdependencies found: glob@10.5.0, glob@11.1.0, node-domexception@1.0.0, tsconfck@3.1.6
+Progress: resolved 1198, reused 936, downloaded 0, added 0
+Already up to date
+Progress: resolved 1198, reused 936, downloaded 0, added 0, done
+packages/subprocess/subprocess-local postinstall$ node scripts/ensure-spawn-helper.mjs
+packages/subprocess/subprocess-local postinstall: Done
+. postinstall$ node scripts/install-lefthook.mjs
+. postinstall: sync hooks: ✔️(pre-commit, pre-push, pre-merge-commit)
+. postinstall: Done
+
+Done in 18.7s using pnpm v11.19.0
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+
+ RUN  v4.1.8 /Volumes/projects-mac/deepseek-harness
+
+
+ Test Files  2 passed (2)
+      Tests  128 passed (128)
+   Start at  18:17:29
+   Duration  16.63s (transform 919ms, setup 265ms, import 981ms, tests 19.02s, environment 0ms)

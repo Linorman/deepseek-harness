@@ -1,0 +1,9 @@
+# Documentation gates after bounded child-row authority follow-up — 2026-09-10
+
+Command:
+
+    pnpm run doc-sync
+
+Result: exit 1; 26 gates passed and 2 gates failed. The edited bounded-channel/child-runtime Agent Note pair is individually consistent and no longer appears in the Markdown-wrap failure set. Remaining failures are the pre-existing corpus-wide translation-pairing drift and Markdown hard-wrap set in unrelated notes, generated docs, and package READMEs.
+
+The current source/doc-typecheck, documentation build, graphs, links, type-equivalence, catalogs, export-JSDoc, Agent Note format/classification, budgets, package README, and site checks passed.

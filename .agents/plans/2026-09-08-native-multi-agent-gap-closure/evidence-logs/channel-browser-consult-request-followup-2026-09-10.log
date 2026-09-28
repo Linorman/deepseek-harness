@@ -1,0 +1,11 @@
+# Consult channel browser request follow-up — 2026-09-10
+
+Platform: macOS arm64; source plane; keyless replay. Browser plugin was not available, so the repository's Playwright/Vitest runner was used.
+
+Command:
+
+    env CLOCKY_SNAPSHOT=replay CLOCKY_EXAMPLE_MODE=lib CLOCKY_SNAPSHOT_MAX_CONCURRENCY=1 pnpm exec vitest run --config vitest.snapshot.config.ts apps/web/tests/team-channel.snapshot.ts --no-file-parallelism
+
+Result: exit 0; 1 test file and 2 tests passed in 5.95s. The direct-v4 scenario passed its complete WAL/model/viewport path; the consult scenario created and ACKed a consult channel, sent a human request, replayed a dynamic `team_message` tool-call whose channel id was extracted from the live request, verified the response Envelope and coordinator follow-up, and completed Team cancellation cleanup.
+
+Scope boundary: consult response is now covered through the dynamic tool-call replay; discussion turns, child navigation, remote lifecycle, GIF, multi-host UI transport, and full CP-E01/T-06 closure remain open.

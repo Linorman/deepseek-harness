@@ -1,0 +1,8 @@
+{
+  "qualification": "Scoped final source manifest for the complete enhanced crash matrix, not a full repository candidate.",
+  "files": {
+    "examples/headless-agent/tests/fixtures/headless-child-delegation-driver.ts": "b5b2e4684c2d0d7fc5570620086ee0e98ed967826c9c5e6f74c90d172d54c9bf",
+    "examples/headless-agent/tests/child-delegation-restart.snapshot.ts": "9ba0d818c43109f8baa32405bba9f9e0a97baaed152e27f53b830581986b84d7",
+    "examples/headless-agent/tests/fixtures/headless-child-delegation.cordis.yml": "c34b5581f0059d1a4a51bb5bf4fbeb83cf003d936a186b066f70c3e55712fad8"
+  }
+}

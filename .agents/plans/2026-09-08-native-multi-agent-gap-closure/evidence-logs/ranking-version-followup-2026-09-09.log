@@ -1,0 +1,30 @@
+T-08 ranking candidate/version follow-up
+Date: 2026-09-09 Asia/Shanghai
+Candidate HEAD: fb14b0b9b1d8bfc5abebc22be2574eb691329900 (shared dirty worktree)
+Platform: macOS; Node v25.9.0; pnpm 11.19.0
+Credential policy: keyless source-plane property test; no credential values or .env contents were read.
+
+Changed test hash:
+c67085507e94b277b59b2a16a295cc4e723da7a8abfce7f6c118972f6b72139d  packages/team/team-scheduler-dag/tests/ranking-properties.spec.ts
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-scheduler-dag/tests/ranking-properties.spec.ts --reporter=dot
+Result: PASS — 1 file, 2 tests passed, 0 failed, 0 skipped; the generated property runs 100 cases with fixed seed `20260910`.
+
+Model coverage: identical frozen capability requirements are rank-stable under input reordering; repeated evaluation over structured-cloned task/participant/binding/rules is identical; changing only the frozen policy changes the explicit bucket; a constrained task with no retained recovery route ranks in the final unknown-cost bucket even when a non-authoritative activation selection hint exists.
+
+Command: pnpm exec tsc -b packages/team/team-scheduler-dag/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+Command: pnpm exec oxlint packages/team/team-scheduler-dag/tests/ranking-properties.spec.ts
+Result: PASS — exit 0.
+
+Durable replay extension hash:
+e8c2db2d2fb99ec09bb60e83061479fb78c49283b62d0a2f8450bafa7bf37071  packages/team/team-hub/tests/durable-task-ranking.spec.ts
+
+Command: env TMPDIR="$PWD/.tmp/verification-runtime" TSX_DISABLE_CACHE=1 node node_modules/vitest/vitest.mjs run packages/team/team-hub/tests/durable-task-ranking.spec.ts --reporter=dot
+Result: PASS — 1 file, 4 tests passed, 0 failed, 0 skipped, covering JSON and SQLite checkpoint/replay. The replayed candidate tuple is identical, and a constrained task without retained recovery facts stays in the unknown-cost bucket despite a selection hint.
+Command: pnpm exec tsc -b packages/team/team-hub/tsconfig.json packages/team/team-scheduler-dag/tsconfig.json --force --pretty false
+Result: PASS — exit 0.
+
+Scope boundary: this adds ranking property evidence but does not close T-08. Full ranking-version/restart/no-provider matrix, child reservation model, cross-backend agreement, seed retention, and minimized counterexample artifacts remain open.
+
+Failure reporting: the ranking property uses `fc.check` and serializes the complete fast-check run details, including seed, counterexample path, and minimized counterexample, if a future run fails.

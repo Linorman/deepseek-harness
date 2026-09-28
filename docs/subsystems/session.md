@@ -59,6 +59,8 @@ interface SessionEventMap {
    * required because omitting it would change model-history reconstruction.
    */
   'team/channel-view': TeamChannelViewEventData
+  /** Exact supplementary Simulation context; source references do not duplicate Team message content. */
+  'simulation/context-view': SimulationContextViewEventData
   /** Raw stream chunk — token-level replay fidelity. */
   'assistant/chunk': { turn: number; step: number; chunk: StreamChunk }
   /**
@@ -214,7 +216,7 @@ A proper discriminated union over `type` (not independent `type`/`data` unions),
  *
  * The {@link sourceEventSeqs} and {@link surfaceOp} fields are conditional:
  * they only exist on {@link SurfaceEventType} variants (`user/message`,
- * `team/channel-view`, `assistant/message`, `tool/result`).
+ * `team/channel-view`, `simulation/context-view`, `assistant/message`, `tool/result`).
  * Non-surface events (boundary markers, chunks, usage, errors) never carry
  * surface metadata — the compiler enforces this at `Session.append()`
  * call sites.
@@ -237,7 +239,7 @@ type SessionEvent<T extends SessionEventType = SessionEventType> = {
      * defaulting to required means a forgotten marker over-refuses (an
      * inconvenience) rather than silently resuming a gutted session.
      */
-    ignorable?: K extends 'team/channel-view' ? never : true
+    ignorable?: K extends 'team/channel-view' | 'simulation/context-view' ? never : true
   } & (K extends SurfaceEventType ? {
     /**
      * Seq numbers of earlier events that this event cites as sources
@@ -260,7 +262,7 @@ For `assistant/message`, a present `sourceEventSeqs: []` is a complete known-emp
 
 ## Surface types
 
-The four message-producing types (`SurfaceEventType` — `user/message`, `team/channel-view`, `assistant/message`, `tool/result`) carry surface metadata declaring how they join the ordered derived surface. See the [session surface Agent Note](../../.agents/notes/implemented/architecture/2026-06-18-session-surface.md).
+The message-producing types (`SurfaceEventType` — `user/message`, `team/channel-view`, `simulation/context-view`, `assistant/message`, `tool/result`) carry surface metadata declaring how they join the ordered derived surface. See the [session surface Agent Note](../../.agents/notes/implemented/architecture/2026-06-18-session-surface.md).
 
 ### `SurfaceEventType` — the message-producing subset of event types
 
@@ -273,6 +275,7 @@ The four message-producing types (`SurfaceEventType` — `user/message`, `team/c
 type SurfaceEventType =
   | 'user/message'
   | 'team/channel-view'
+  | 'simulation/context-view'
   | 'assistant/message'
   | 'tool/result'
 ```

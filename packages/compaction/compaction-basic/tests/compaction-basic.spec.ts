@@ -1138,7 +1138,7 @@ class ScriptedAdapter extends LlmAdapter {
 }
 
 class ExposedCompactionEngine extends BasicCompactionEngine {
-  runSummarize(
+  async runSummarize(
     input: SummarizationInput,
     owner: Agent,
     signal?: AbortSignal,
@@ -1150,7 +1150,10 @@ class ExposedCompactionEngine extends BasicCompactionEngine {
     maxTokens?: number
     usage?: TokenUsage
   }> {
-    return this.summarize(input, owner, signal)
+    const compactionId = CompactionId(`test-summary-${owner.session.events.length}`)
+    owner.session.append('compaction/start', { compactionId, turn: null })
+    try { return await this.summarize(input, owner, signal) }
+    finally { owner.session.append('compaction/end', { compactionId, turn: null }) }
   }
 }
 
