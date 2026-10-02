@@ -1,3 +1,15 @@
+import { MemberInspector } from './member-inspector.ts'
+import { ArtifactInspector } from './artifact-inspector.ts'
+import { TaskReferences } from './task-references.ts'
+import { isTeamAuthorizationError } from './access.ts'
+import { IdentityResolver, type TeamIdentityOptions } from './identity-resolver.ts'
+import type { HostDescription, ParticipantId } from '@clocky/clocky-client-connection/client'
+import { ExecutionProfiles } from './execution-profiles.ts'
+import { MemberReadiness } from './member-readiness.ts'
+import { TaskCapabilities } from './task-capabilities.ts'
+import { TaskQuery } from './task-query.ts'
+import { ActionInspector } from './action-inspector.ts'
+import { AttentionQuery } from './attention-query.ts'
 import { WorkflowInspector } from './workflow-inspector.ts'
 import { TaskInspector } from './task-inspector.ts'
 /** Browser-owned Team task list, selection, and first-input draft service. */
@@ -5,7 +17,6 @@ import { TaskInspector } from './task-inspector.ts'
 import type { Context } from '@clocky/cordis'
 import type {
   ChannelId, ChannelPostIdempotencyKey, ChannelReadPageResult, IApiClient, MuxFrame, RpcError, RpcRequest, RpcResponse, SessionId,
-  TeamArtifactReadResult,
   TeamArtifactReference,
   TeamAuditList,
   TeamHumanActionSnapshot,
@@ -51,11 +62,24 @@ export class TeamTaskStartError extends Error {
 export class TeamTaskRuntime implements ITeamTasks {
   /** UI-facing Team product projection. */
   readonly list: SnapshotStore<TeamTaskListState & { readonly inbox: TeamInboxState }>
+  private readonly identities: IdentityResolver
+  private authorizationGeneration = 0
   private readonly workflowInspector: WorkflowInspector
+  private readonly executionProfiles: ExecutionProfiles
+  private readonly memberReadiness: MemberReadiness
+  private readonly taskCapabilities: TaskCapabilities
+  private readonly attentionPreview: AttentionQuery
+  private readonly memberInspector: MemberInspector
+  private readonly artifactInspector: ArtifactInspector
+  private readonly actionInspector: ActionInspector
+  private readonly attention: AttentionQuery
+  private readonly taskQuery: TaskQuery
+  private readonly dependencyQuery: TaskQuery
+  private readonly taskReferences: TaskReferences
   private readonly taskInspector: TaskInspector
   private refreshing: Promise<void> | undefined
   private continuing: Promise<void> | undefined
-  private starting: Promise<TeamTaskSelection> | undefined
+  private starting: Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }> | undefined
   private selectionGeneration = 0
   private inboxGeneration = 0
   private inboxContinuation: Promise<void> | undefined
@@ -80,10 +104,57 @@ export class TeamTaskRuntime implements ITeamTasks {
       pendingHumanActions: [],
       inbox: emptyInboxState(),
     })
+    this.identities = new IdentityResolver(api, (identities) => {
+      this.list.set({ ...this.list.getSnapshot(), identities })
+    }, () => { this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.identities.dispose() })
+    this.executionProfiles = new ExecutionProfiles(api, (executionProfiles) => {
+      this.list.set({ ...this.list.getSnapshot(), executionProfiles })
+    })
+    ctx.effect(() => () => { this.executionProfiles.close() })
+    this.memberReadiness = new MemberReadiness(api, (memberReadiness) => {
+      this.list.set({ ...this.list.getSnapshot(), memberReadiness })
+    })
+    ctx.effect(() => () => { this.memberReadiness.close() })
+    this.taskCapabilities = new TaskCapabilities(api, (taskCapabilities) => {
+      this.list.set({ ...this.list.getSnapshot(), taskCapabilities })
+    })
+    ctx.effect(() => () => { this.taskCapabilities.close() })
+    this.memberInspector = new MemberInspector(api, (memberDetail) => {
+      this.list.set({ ...this.list.getSnapshot(), memberDetail })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.memberInspector.close() })
+    this.artifactInspector = new ArtifactInspector(api, (artifactDetail) => {
+      this.list.set({ ...this.list.getSnapshot(), artifactDetail })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.artifactInspector.close() })
+    this.actionInspector = new ActionInspector(api, (actionDetail) => {
+      this.list.set({ ...this.list.getSnapshot(), actionDetail })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.actionInspector.close() })
+    this.attentionPreview = new AttentionQuery(api, (attentionPreview) => {
+      this.list.set({ ...this.list.getSnapshot(), attentionPreview })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    this.attention = new AttentionQuery(api, (attention) => {
+      this.list.set({ ...this.list.getSnapshot(), attention })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.attentionPreview.close(); this.attention.close() })
+    this.taskQuery = new TaskQuery(api, TEAM_COLLECTION_PAGE_LIMIT, (taskQuery) => {
+      this.list.set({ ...this.list.getSnapshot(), taskQuery })
+    })
+    ctx.effect(() => () => { this.taskQuery.close() })
+    this.dependencyQuery = new TaskQuery(api, TEAM_COLLECTION_PAGE_LIMIT, (dependencyQuery) => {
+      this.list.set({ ...this.list.getSnapshot(), dependencyQuery })
+    })
+    ctx.effect(() => () => { this.dependencyQuery.close() })
     this.workflowInspector = new WorkflowInspector(api, (workflowDetail) => {
       this.list.set({ ...this.list.getSnapshot(), workflowDetail })
     })
     ctx.effect(() => () => { this.workflowInspector.close() })
+    this.taskReferences = new TaskReferences(api, (taskReferences) => {
+      this.list.set({ ...this.list.getSnapshot(), taskReferences })
+    }, (teamId) => { if (this.list.getSnapshot().current === teamId) this.clearAuthorizedTeamData() })
+    ctx.effect(() => () => { this.taskReferences.close() })
     this.taskInspector = new TaskInspector(api, (taskDetail) => {
       this.list.set({ ...this.list.getSnapshot(), taskDetail })
     })
@@ -95,7 +166,11 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Enter a local first-input draft without allocating a durable Team or Session. */
   startDraft(options: TeamTaskDraftOptions = {}): void {
     if (this.starting !== undefined) return
-    this.taskInspector.close()
+    this.taskInspector.close(); this.taskReferences.close()
+    this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
+    this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+    this.artifactInspector.close()
+    this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close()
     this.workflowInspector.close()
     this.closeChannelView()
     this.resetChannelList()
@@ -163,15 +238,18 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Replace the Team window with its next page; a failure preserves the current window. */
   loadMore(): Promise<void> {
     if (this.continuing !== undefined) return this.continuing
+    const generation = this.authorizationGeneration
     const pendingRefresh = this.refreshing
     this.continuing = (async () => {
       await pendingRefresh
+      if (generation !== this.authorizationGeneration) return
       const current = this.list.getSnapshot()
       const afterCursor = current.nextCursor
       if (afterCursor === undefined) return
       this.list.set({ ...current, loadingMore: true, error: null })
       try {
         const result = (await this.api.teams.list({ afterCursor })).result
+        if (generation !== this.authorizationGeneration) return
         if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
         if (result.value.nextCursor !== undefined && result.value.nextCursor === afterCursor) {
           throw new TeamTaskStartError('Team list returned a non-advancing page cursor')
@@ -183,10 +261,11 @@ export class TeamTaskRuntime implements ITeamTasks {
           state: 'idle', error: null,
         })
       } catch (error: unknown) {
+        if (generation !== this.authorizationGeneration) return
         this.list.set({ ...this.list.getSnapshot(), state: 'error', error: error instanceof TeamTaskStartError && error.rpcError !== undefined
           ? error.rpcError : { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} } })
       } finally {
-        this.list.set({ ...this.list.getSnapshot(), loadingMore: false })
+        if (generation === this.authorizationGeneration) this.list.set({ ...this.list.getSnapshot(), loadingMore: false })
       }
     })().finally(() => { this.continuing = undefined })
     return this.continuing
@@ -200,8 +279,9 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Resolve a Team and explicitly resume its offline coordinator when needed. */
-  async open(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
+  async open(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }> {
     const selected = await this.inspect(teamId, signal)
+    requireCoordinator(selected)
     if (!['completed', 'failed', 'cancelled'].includes(selected.state.team.phase)
       && selected.state.coordinator.kind === 'bound' && selected.state.coordinator.binding.activation.status === 'offline') {
       return this.resume(teamId, signal)
@@ -212,15 +292,29 @@ export class TeamTaskRuntime implements ITeamTasks {
   /** Select bounded Team data without creating or resuming an activation. */
   async inspect(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
     if (this.list.getSnapshot().current !== teamId) {
-      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+      this.taskInspector.close(); this.taskReferences.close()
+      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
+      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+      this.artifactInspector.close()
+      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
+      this.closeChannelView(); this.resetChannelList()
     }
     const generation = ++this.selectionGeneration
     const response = await this.api.teams.selection({ teamId, includeMetadata: true }, signal)
     this.assertCurrentSelectionRequest(generation, signal)
-    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    if (!response.result.ok) {
+      if (this.list.getSnapshot().current === teamId
+        && (isTeamAuthorizationError(response.result.error) || response.result.error.code === 'TEAM_POLICY_DENIED')) this.clearAuthorizedTeamData()
+      throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    }
     const selection = selectionOf(response.result.value)
     if (this.list.getSnapshot().current !== teamId) {
-      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+      this.taskInspector.close(); this.taskReferences.close()
+      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
+      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+      this.artifactInspector.close()
+      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
+      this.closeChannelView(); this.resetChannelList()
     }
     this.assertCurrentSelectionRequest(generation, signal)
     const current = this.list.getSnapshot()
@@ -239,7 +333,12 @@ export class TeamTaskRuntime implements ITeamTasks {
     const result = response.result
     if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
     if (this.list.getSnapshot().current === teamId) {
-      this.taskInspector.close(); this.workflowInspector.close(); this.closeChannelView(); this.resetChannelList()
+      this.taskInspector.close(); this.taskReferences.close()
+      this.dependencyQuery.close(); this.taskQuery.close(); this.taskCapabilities.close()
+      this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+      this.artifactInspector.close()
+      this.memberReadiness.close(); this.executionProfiles.close(); this.identities.close(); this.workflowInspector.close()
+      this.closeChannelView(); this.resetChannelList()
     }
     const next = this.list.getSnapshot()
     this.list.set({
@@ -328,7 +427,7 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Re-attach one durable Team and return its coordinator transcript selection. */
-  async resume(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection> {
+  async resume(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }> {
     const current = this.list.getSnapshot().items.find(item => item.id === teamId) ?? this.currentSelection(teamId)?.state.team
     if (current === undefined) throw new TeamTaskStartError(`Team '${teamId}' is not in the current list`)
     const generation = ++this.selectionGeneration
@@ -338,7 +437,9 @@ export class TeamTaskRuntime implements ITeamTasks {
     const response = await this.api.teams.resume({ teamId, expectedCursor: state.result.value.team.cursor }, signal)
     this.assertCurrentSelectionRequest(generation, signal)
     if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    return this.inspect(teamId, signal)
+    const selection = await this.inspect(teamId, signal)
+    requireCoordinator(selection)
+    return selection
   }
 
   /** Post one human-authored content batch through the durable Team channel. */
@@ -461,6 +562,7 @@ export class TeamTaskRuntime implements ITeamTasks {
     const action = response.result.value
     if (action.teamId !== teamId || action.id !== actionId) throw new TeamTaskStartError('Action response belongs to a different Team or action')
     this.publishInboxAction(action)
+    this.actionInspector.observe(action)
     if (this.list.getSnapshot().current === teamId) await this.refreshCurrentSelection(signal)
     return action
   }
@@ -474,6 +576,7 @@ export class TeamTaskRuntime implements ITeamTasks {
       if (generation !== this.inboxGeneration) throw new DOMException('Inbox connection changed', 'AbortError')
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       this.publishInboxAction(response.result.value.action)
+      this.actionInspector.observe(response.result.value.action)
       return response.result.value
     } finally { await this.refresh() }
   }
@@ -511,6 +614,8 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Apply one authenticated management command and reconcile success or conflict with the Host. */
   async manage(teamId: TeamId, command: TeamManagementCommand, signal?: AbortSignal): Promise<void> {
+    const authorizationGeneration = this.authorizationGeneration
+    const selectedTeam = this.list.getSnapshot().current
     if ('channelId' in command.input && (this.list.getSnapshot().channel?.admission?.channel.manifest.id !== command.input.channelId
       || this.list.getSnapshot().channel?.admission?.channel.manifest.teamId !== teamId)) {
       const admission = await this.api.teams.channelAdmission({ teamId, channelId: command.input.channelId }, signal)
@@ -543,7 +648,33 @@ export class TeamTaskRuntime implements ITeamTasks {
           break
         }
         case 'taskCreate': response = await this.api.teams.taskCreate({ ...command.input, teamId }, signal); break
-        case 'taskUpdate': response = await this.api.teams.taskUpdate({ ...command.input, teamId }, signal); break
+        case 'taskUpdate': {
+          const current = () => !signal?.aborted && authorizationGeneration === this.authorizationGeneration
+            && this.list.getSnapshot().current === selectedTeam
+          if (!current()) throw new Error('Task update response authority changed')
+          let updated
+          try { updated = await this.api.teams.taskUpdate({ ...command.input, teamId }, signal) }
+          catch (cause: unknown) {
+            if (!current()) throw new Error('Task update response authority changed')
+            throw cause
+          }
+          if (!current()) throw new Error('Task update response authority changed')
+          response = updated
+          if (!updated.result.ok && updated.result.error.code === 'team-task-update-rejected') {
+            const refusal = updated.result.error.details.rejection
+            if (refusal.teamId !== teamId || refusal.taskId !== command.input.taskId
+              || refusal.commandId !== command.input.commandId || refusal.expectedRevision !== command.input.expectedRevision) {
+              throw new Error('Task update refusal does not match its original command identity')
+            }
+            if (!signal?.aborted && authorizationGeneration === this.authorizationGeneration) {
+              this.taskInspector.changed(teamId, command.input.taskId, refusal.observedRevision)
+            }
+          }
+          if (updated.result.ok && !signal?.aborted && authorizationGeneration === this.authorizationGeneration) {
+            this.taskInspector.changed(teamId, command.input.taskId, updated.result.value.task.revision)
+          }
+          break
+        }
         case 'taskReview': response = await this.api.teams.taskReview({ ...command.input, teamId }, signal); break
         default: assertNever(command)
       }
@@ -554,6 +685,8 @@ export class TeamTaskRuntime implements ITeamTasks {
       }
     } finally {
       await this.refreshCurrentSelection()
+      if (command.operation === 'memberInvite' || command.operation === 'memberActivate'
+        || command.operation === 'memberRemove' || command.operation === 'memberInterrupt') await this.readCollections(teamId, 'members', 'refresh')
       if (command.operation === 'channelOpen' || command.operation === 'channelClose') await this.readChannels(teamId)
       if (command.operation === 'channelSummarize') {
         const channel = this.list.getSnapshot().channel
@@ -876,12 +1009,12 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Read one visible Team artifact through the Host provider boundary. */
-  async readArtifact(teamId: TeamId, artifactId: string, signal?: AbortSignal): Promise<TeamArtifactReadResult> {
-    const response = await this.api.teams.artifactRead({ teamId, artifactId }, signal)
-    const result = response.result
-    if (!result.ok) throw new TeamTaskStartError(result.error.message, result.error)
-    return result.value
+  async readArtifact(teamId: TeamId, artifactId: string, signal?: AbortSignal): Promise<void> {
+    if (teamId !== this.list.getSnapshot().current) return
+    await this.artifactInspector.read(teamId, artifactId, signal)
   }
+  /** Retire the current byte window when its consumer is dismissed. */
+  closeArtifactDetail(): void { this.artifactInspector.close() }
 
   /** Read one task without expanding its complete Team history.
    * @param teamId - Selected Team.
@@ -894,6 +1027,217 @@ export class TeamTaskRuntime implements ITeamTasks {
     if (this.list.getSnapshot().current !== teamId) return
     await this.taskInspector.read(teamId, taskId, section, mode)
   }
+
+  /** Observe names only for the references displayed by the selected Team view.
+   * @param teamId - Selected Team.
+   * @param ids - Visible member references.
+   * @param options - Validated public polling and cache limits.
+   * @returns disposer for this view's identity requests.
+   */
+  watchIdentities(teamId: TeamId, ids: readonly ParticipantId[], options: TeamIdentityOptions): () => void {
+    if (teamId !== this.list.getSnapshot().current) return () => {}
+    return this.identities.watch(teamId, ids, options)
+  }
+
+  /** Retry the current view's identity lookup. */
+  async refreshIdentities(): Promise<void> { await this.identities.refresh() }
+
+  /** Remove server-owned Team projections before any new-principal data is admitted. */
+  private clearAuthorizedTeamData(): void {
+    this.authorizationGeneration++
+    this.handleDisconnected()
+    this.inboxGeneration++
+    this.channelInvitationGeneration++
+    this.channelAdmissionGeneration++
+    this.identities.close()
+    this.taskInspector.close(); this.taskReferences.close(); this.workflowInspector.close()
+    this.dependencyQuery.close(); this.taskQuery.close()
+    this.attentionPreview.close(); this.attention.close(); this.actionInspector.close(); this.memberInspector.close()
+    this.artifactInspector.close()
+    this.taskCapabilities.close(); this.memberReadiness.close(); this.executionProfiles.close()
+    const draft = this.list.getSnapshot().draft
+    this.list.set({ items: [], current: undefined, selected: undefined, phase: 'ready', state: 'error',
+      error: { code: 'PRODUCT_AUTH_INVALID', message: 'Team access changed; reopen an authorized Team', details: {} },
+      draft, pendingHumanActions: [], inbox: emptyInboxState() })
+    this.identities.reconnect(); this.taskCapabilities.reconnect(); this.memberReadiness.reconnect()
+    this.executionProfiles.reconnect()
+    void this.attentionPreview.reconnect(); void this.attention.reconnect(); void this.actionInspector.reconnect()
+    void this.memberInspector.reconnect()
+    void this.taskQuery.reconnect(); void this.dependencyQuery.reconnect()
+    void this.taskInspector.reconnect(); this.taskReferences.reconnect()
+    void this.workflowInspector.reconnect()
+  }
+
+  /** Retire principal-scoped Team data and local input after an explicit product access refusal. */
+  clearAuthorization(): void {
+    this.clearAuthorizedTeamData()
+    this.list.set({ ...this.list.getSnapshot(), draft: undefined })
+  }
+
+  /** Observe the current invitation's deployment choices.
+   * @param input - Team, member kind, page cursor and selected identity.
+   * @param intervalMs - Validated deployment refresh interval.
+   * @returns disposer for the current form's observation.
+   */
+  watchExecutionProfiles(input: Parameters<NonNullable<ITeamTasks['watchExecutionProfiles']>>[0], intervalMs: number): () => void {
+    if (input.teamId !== this.list.getSnapshot().current) return () => {}
+    return this.executionProfiles.watch(input, intervalMs)
+  }
+
+  /** Retry deployment choices without changing invitation fields. */
+  async refreshExecutionProfiles(): Promise<void> { await this.executionProfiles.refresh() }
+
+  /** Observe only the member identities currently displayed by the caller.
+   * @param input - Team and finite visible member set.
+   * @param intervalMs - Validated deployment refresh interval.
+   * @returns disposer for the selected observation lifetime.
+   */
+  watchMemberReadiness(input: Parameters<NonNullable<ITeamTasks['watchMemberReadiness']>>[0], intervalMs: number): () => void {
+    if (input.teamId !== this.list.getSnapshot().current) return () => {}
+    return this.memberReadiness.watch(input, intervalMs)
+  }
+
+  /** Retry the displayed member set without changing list pagination. */
+  async refreshMemberReadiness(): Promise<void> { await this.memberReadiness.refresh() }
+
+  /** Observe a form's real Host capabilities at a configured cadence.
+   * @param input - Selected Team and authored scope paths.
+   * @param intervalMs - Validated public deployment interval.
+   * @returns disposer for this form's watcher.
+   */
+  watchTaskCapabilities(input: Parameters<NonNullable<ITeamTasks['watchTaskCapabilities']>>[0], intervalMs: number): () => void {
+    if (input.teamId !== this.list.getSnapshot().current) return () => {}
+    return this.taskCapabilities.watch(input, intervalMs)
+  }
+
+  /** Retry the current form's observation without changing its draft. */
+  async refreshTaskCapabilities(): Promise<void> { await this.taskCapabilities.refresh() }
+
+  /** Query original update acceptance under the current selected-Team authority.
+   * @param input - Original retained Team/task/command identity.
+   * @param signal - Current form IO lifetime.
+   * @returns authorized original admission or absence; no write occurs.
+   */
+  async lookupTaskUpdate(input: import('@clocky/clocky-client-connection/client').TeamTaskUpdateLookupInput,
+    signal?: AbortSignal): Promise<import('@clocky/clocky-client-connection/client').TeamTaskUpdateLookup> {
+    const generation = this.authorizationGeneration
+    if (this.list.getSnapshot().current !== input.teamId) throw new Error('Task update lookup does not belong to the selected Team')
+    const current = () => !signal?.aborted && generation === this.authorizationGeneration
+      && this.list.getSnapshot().current === input.teamId
+    if (!current()) throw new Error('Task update lookup authority changed')
+    let response
+    try {
+      response = await this.api.teams.taskUpdateResult(input, signal)
+    } catch (cause: unknown) {
+      if (!current()) throw new Error('Task update lookup authority changed')
+      throw cause
+    }
+    if (!current()) throw new Error('Task update lookup authority changed')
+    if (!response.result.ok) {
+      if (isTeamAuthorizationError(response.result.error)) this.clearAuthorizedTeamData()
+      throw new TeamTaskStartError(response.result.error.message, response.result.error)
+    }
+    const value = response.result.value
+    let identity: typeof input
+    switch (value.kind) {
+      case 'applied': identity = value.receipt; break
+      case 'rejected': identity = value.rejection; break
+      case 'not-found': identity = value; break
+      /* v8 ignore next 2 -- API lookup schemas accept only the three closed outcome tags. */
+      default: return assertNever(value)
+    }
+    if (identity.teamId !== input.teamId || identity.taskId !== input.taskId || identity.commandId !== input.commandId) {
+      throw new Error('Task update lookup does not match its original command identity')
+    }
+    if (value.kind === 'applied') this.taskInspector.changed(input.teamId, input.taskId, value.receipt.appliedRevision)
+    if (value.kind === 'rejected') this.taskInspector.changed(input.teamId, input.taskId, value.rejection.observedRevision)
+    return value
+  }
+
+  /** Observe a form's exact dependency facts without using candidate-page membership.
+   * @param teamId - Currently selected Team.
+   * @param taskIds - Explicit current/draft references.
+   * @param options - Consumer-resolved resource bounds.
+   * @returns disposer for this form only.
+   */
+  watchTaskReferences(teamId: TeamId, taskIds: readonly TeamTaskId[], options: import('./task-references.ts').TaskReferencesOptions): () => void {
+    if (teamId !== this.list.getSnapshot().current) return () => {}
+    const stop = this.taskReferences.watch(teamId, taskIds, options)
+    const selected = this.list.getSnapshot().selected
+    if (selected !== undefined) this.taskReferences.changed(teamId, selected.state.team.cursor)
+    return stop
+  }
+
+  /** Refresh the current dependency reference set. */
+  async refreshTaskReferences(): Promise<void> { await this.taskReferences.refresh() }
+
+  /** Read candidates without changing task-table pagination or the selected task.
+   * @param teamId - Selected Team.
+   * @param query - Committed dependency search and excluded task identity.
+   * @param mode - Restart or advance this query only.
+   */
+  async readDependencies(teamId: TeamId, query: Parameters<NonNullable<ITeamTasks['readDependencies']>>[1],
+    mode: 'first' | 'next' = 'first'): Promise<void> {
+    if (this.list.getSnapshot().current === teamId) await this.dependencyQuery.read(teamId, query, mode)
+  }
+
+  /** Observe the overview's bounded pending preview independently of the full-list page.
+   * @param teamId - Selected Team.
+   * @param options - UI-resolved preview row allowance and interval.
+   * @returns disposer for this preview only.
+   */
+  watchAttention(teamId: TeamId, options: { readonly limit: number; readonly refreshMs: number }): () => void {
+    const selected = this.currentSelection(teamId)
+    if (this.list.getSnapshot().current !== teamId || selected === undefined) return () => {}
+    return this.attentionPreview.watch({ teamId, limit: options.limit, minimumCursor: selected.state.team.cursor }, options.refreshMs)
+  }
+
+  /** Read one selected-Team pending page and preserve it on ordinary IO failure.
+   * @param teamId - Selected Team.
+   * @param limit - UI-resolved row allowance.
+   * @param mode - First page or exact successor.
+   */
+  async readAttention(teamId: TeamId, limit: number, mode: 'first' | 'next' = 'first'): Promise<void> {
+    const selected = this.currentSelection(teamId)
+    if (this.list.getSnapshot().current !== teamId || selected === undefined) return
+    await this.attention.read({ teamId, limit, minimumCursor: selected.state.team.cursor }, mode)
+  }
+
+  /** Inspect an exact current-Team request without accepting an answer.
+   * @param teamId - Selected Team.
+   * @param actionId - Retained request identity.
+   * @returns the currently accepted inspection, or undefined after failure or selection replacement.
+   */
+  async inspectAction(teamId: TeamId, actionId: TeamActionResponseInput['actionId']): Promise<import('@clocky/clocky-client-connection/client').TeamActionInspection | undefined> {
+    if (this.list.getSnapshot().current === teamId) return await this.actionInspector.read(teamId, actionId)
+  }
+
+  /** Release only the focused human-request inspection. */
+  closeActionDetail(): void { this.actionInspector.close() }
+
+  /** Stop full pending-list IO without deleting its retained navigation state. */
+  pauseAttention(): void { this.attention.pause() }
+
+  /** Refresh only the overview's independent pending preview. */
+  async refreshAttentionPreview(): Promise<void> { await this.attentionPreview.refresh() }
+
+  /** Read a main-table page without changing dependency candidates or task inspection.
+   * @param teamId - Selected Team.
+   * @param query - Committed title and phase filter.
+   * @param mode - First matching page or the current page's exact successor.
+   */
+  async readTaskQuery(teamId: TeamId, query: Parameters<NonNullable<ITeamTasks['readTaskQuery']>>[1],
+    mode: 'first' | 'next' = 'first'): Promise<void> {
+    if (this.list.getSnapshot().current === teamId) await this.taskQuery.read(teamId, {
+      search: query.search, ...query.phase === undefined ? {} : { phase: query.phase },
+    }, mode)
+  }
+
+  /** Stop table reads without discarding the retained filter and page. */
+  pauseTaskQuery(): void { this.taskQuery.pause() }
+
+  /** Release only the dependency editor's bounded query. */
+  closeDependencies(): void { this.dependencyQuery.close() }
 
   /** Release the selected task's reads and bounded inspection data. */
   closeTaskDetail(): void { this.taskInspector.close() }
@@ -989,21 +1333,13 @@ export class TeamTaskRuntime implements ITeamTasks {
     ])
   }
 
-  /** Read one member detail without selecting or resuming a Team. */
-  async inspectMember(input: Parameters<IApiClient['teams']['memberInspect']>[0], signal?: AbortSignal):
-  Promise<Extract<Awaited<ReturnType<IApiClient['teams']['memberInspect']>>['result'], { ok: true }>['value']> {
-    const response = await this.api.teams.memberInspect(input, signal)
-    signal?.throwIfAborted()
-    if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
-    const value = response.result.value
-    if (value.record.teamId !== input.teamId || value.record.id !== input.participantId
-      || value.startCursor !== (input.afterCursor ?? -1)
-      || input.expectedTeamCursor !== undefined && value.teamCursor !== input.expectedTeamCursor
-      || input.limit !== undefined && value.items.length > input.limit) {
-      throw new TeamTaskStartError('Member inspection belongs to another selection or exceeds the requested page')
-    }
-    return value
+  /** Read the selected member through its runtime-owned page lifetime. */
+  async readMemberDetail(teamId: TeamId, participantId: ParticipantId, mode: 'first' | 'refresh' | 'next' = 'first'): Promise<void> {
+    if (this.list.getSnapshot().current === teamId) await this.memberInspector.read(teamId, participantId, mode)
   }
+
+  /** Release the selected member page. */
+  closeMemberDetail(): void { this.memberInspector.close() }
 
   /** Resolve a member's published Session through the owning Team, without loading or activating the Team. */
   async participantSession(teamId: TeamId, participantId: Parameters<NonNullable<ITeamTasks['participantSession']>>[1], signal?: AbortSignal): Promise<SessionId> {
@@ -1020,7 +1356,7 @@ export class TeamTaskRuntime implements ITeamTasks {
   }
 
   /** Start one drafted Team through the Host's idempotent create-and-admit operation. */
-  start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection> {
+  start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }> {
     const draft = this.requireDraft()
     const resolvedInput = resolveStartInput(input, draft)
     const fingerprint = startFingerprint(resolvedInput)
@@ -1033,7 +1369,8 @@ export class TeamTaskRuntime implements ITeamTasks {
       ...current,
       draft: { ...draft, fingerprint, phase: 'starting', error: undefined, message: undefined },
     })
-    this.starting = (async (): Promise<TeamTaskSelection> => {
+    const authorizationGeneration = this.authorizationGeneration
+    this.starting = (async (): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }> => {
       try {
         const response = await this.api.teams.start({
           objective: resolvedInput.text.trim(),
@@ -1043,6 +1380,7 @@ export class TeamTaskRuntime implements ITeamTasks {
           ...resolvedInput.agentPreset === undefined ? {} : { agentPreset: resolvedInput.agentPreset },
           ...resolvedInput.selection === undefined ? {} : { selection: resolvedInput.selection },
         }, signal)
+        if (authorizationGeneration !== this.authorizationGeneration) throw new DOMException('Product authentication changed', 'AbortError')
         const result = response.result
         if (!result.ok) {
           const current = this.list.getSnapshot()
@@ -1053,8 +1391,10 @@ export class TeamTaskRuntime implements ITeamTasks {
           throw new TeamTaskStartError(result.error.message, result.error)
         }
         const selected = await this.api.teams.selection({ teamId: result.value.state.team.id, includeMetadata: true }, signal)
+        if (authorizationGeneration !== this.authorizationGeneration) throw new DOMException('Product authentication changed', 'AbortError')
         if (!selected.result.ok) throw new TeamTaskStartError(selected.result.error.message, selected.result.error)
         const selection = selectionOf(selected.result.value)
+        requireCoordinator(selection)
         if (this.list.getSnapshot().current !== selection.teamId) { this.closeChannelView(); this.resetChannelList() }
         const current = this.list.getSnapshot()
         this.list.set({
@@ -1066,6 +1406,7 @@ export class TeamTaskRuntime implements ITeamTasks {
         if (result.value.state.humanActions?.some(action => action.phase === 'pending')) this.updateInbox({ hasNewer: true })
         return selection
       } catch (error: unknown) {
+        if (authorizationGeneration !== this.authorizationGeneration) throw error
         if (error instanceof TeamTaskStartError && error.rpcError !== undefined) throw error
         const message = error instanceof Error ? error.message : String(error)
         const current = this.list.getSnapshot()
@@ -1113,7 +1454,15 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Retain visible records while invalidating all requests from the lost connection. */
   handleDisconnected(): void {
-    this.taskInspector.disconnect()
+    this.artifactInspector.disconnect()
+    this.identities.disconnect()
+    this.executionProfiles.disconnect()
+    this.memberReadiness.disconnect()
+    this.taskCapabilities.disconnect()
+    this.attentionPreview.disconnect(); this.attention.disconnect(); this.actionInspector.disconnect(); this.memberInspector.disconnect()
+    this.taskQuery.disconnect()
+    this.dependencyQuery.disconnect()
+    this.taskInspector.disconnect(); this.taskReferences.disconnect()
     this.workflowInspector.disconnect()
     this.selectionGeneration += 1
     this.collectionOperations.clear()
@@ -1134,9 +1483,20 @@ export class TeamTaskRuntime implements ITeamTasks {
     if (channels !== undefined) this.publishChannelList({ ...channels, loading: false, loadingMore: false, hasNewer: true })
   }
 
-  /** Refresh after a new connection generation becomes available. */
-  handleConnected(): void {
-    void this.taskInspector.reconnect()
+  /** Refresh after a new connection generation becomes available.
+   * @param scope - Principal-generation cache discriminator from the completed Host handshake.
+   */
+  handleConnected(scope?: HostDescription['authorizationScope']): void {
+    if (this.identities.authorize(scope)) this.clearAuthorizedTeamData()
+    this.identities.reconnect()
+    void this.artifactInspector.reconnect()
+    this.executionProfiles.reconnect()
+    this.memberReadiness.reconnect()
+    this.taskCapabilities.reconnect()
+    void this.attentionPreview.reconnect(); void this.attention.reconnect(); void this.actionInspector.reconnect()
+    void this.memberInspector.reconnect()
+    void this.taskQuery.reconnect(); void this.dependencyQuery.reconnect()
+    void this.taskInspector.reconnect(); this.taskReferences.reconnect()
     void this.workflowInspector.reconnect()
     if (this.list.getSnapshot().channelCatalog !== undefined) void this.readChannelCatalog()
     const channels = this.list.getSnapshot().channels
@@ -1178,6 +1538,11 @@ export class TeamTaskRuntime implements ITeamTasks {
    */
   handleMuxEnvelope(envelope: RpcRequest<MuxFrame> | MuxFrame): void {
     const frame = isMuxRequest(envelope) ? envelope.payload : envelope
+    if (frame.type === 'team/access-revoked') {
+      if (this.list.getSnapshot().current === frame.teamId) this.clearAuthorizedTeamData()
+      else this.list.set({ ...this.list.getSnapshot(), items: this.list.getSnapshot().items.filter(item => item.id !== frame.teamId) })
+      return
+    }
     this.handleHumanActionFrame(frame)
     if (frame.type === 'team/changed' && frame.event.type === 'human-action/changed') {
       this.publishInboxAction(frame.event.action)
@@ -1249,6 +1614,12 @@ export class TeamTaskRuntime implements ITeamTasks {
 
   /** Replace cached business state and report whether the Host projection is at least as current. */
   private publishRefreshedSelection(state: TeamTaskSelection['state']): boolean {
+    this.attentionPreview.changed(state.team.id, state.team.cursor); this.attention.changed(state.team.id, state.team.cursor)
+    this.actionInspector.changed(state.team.id, state.team.cursor)
+    this.memberInspector.changed(state.team.id, state.team.cursor)
+    this.taskReferences.changed(state.team.id, state.team.cursor)
+    this.taskQuery.changed(state.team.id, state.team.cursor)
+    this.dependencyQuery.changed(state.team.id, state.team.cursor)
     const previous = this.currentSelection(state.team.id)
     if (previous !== undefined && state.team.cursor < previous.state.team.cursor) return false
     const channels = this.list.getSnapshot().channels
@@ -1269,15 +1640,21 @@ export class TeamTaskRuntime implements ITeamTasks {
           artifacts: { ...current.collections.artifacts, hasNewer: true } }
         : current.collections
       this.list.set({ ...current, selected: selection, collections, error: null })
+      const readiness = this.list.getSnapshot().memberReadiness
+      if (readiness?.input.teamId === selection.teamId && readiness.value !== undefined && readiness.value.teamCursor < state.team.cursor) {
+        void this.memberReadiness.refresh()
+      }
     }
     return true
   }
 
   private async load(requestedStart?: NonNullable<TeamTaskListState['nextCursor']> | -1): Promise<void> {
+    const generation = this.authorizationGeneration
     this.list.set({ ...this.list.getSnapshot(), state: 'loading', error: null })
     try {
       const afterCursor = requestedStart ?? this.list.getSnapshot().startCursor ?? -1
       const response = await this.api.teams.list({ afterCursor })
+      if (generation !== this.authorizationGeneration) return
       if (!response.result.ok) throw new TeamTaskStartError(response.result.error.message, response.result.error)
       const page = response.result.value
       if (page.nextCursor !== undefined && page.nextCursor === afterCursor) {
@@ -1292,6 +1669,7 @@ export class TeamTaskRuntime implements ITeamTasks {
         error: null,
       })
     } catch (error: unknown) {
+      if (generation !== this.authorizationGeneration) return
       const message = error instanceof Error ? error.message : String(error)
       const current = this.list.getSnapshot()
       this.list.set({
@@ -1352,10 +1730,17 @@ function emptyCollections(teamId: TeamId): TeamCollectionsState {
     artifacts: emptyCollectionPage() }
 }
 
-/** Extract the active coordinator Session from a default Team state. */
+/** Select readable Team data without requiring a coordinator execution topology. */
 function selectionOf(state: TeamTaskSelection['state']): TeamTaskSelection {
+  return Object.freeze({ teamId: state.team.id, state,
+    ...state.coordinator.kind === 'bound' ? { coordinatorSessionId: state.coordinator.binding.sessionId } : {} })
+}
+
+/** Starting or explicitly resuming an ordinary Team still requires its coordinator transcript. */
+function requireCoordinator(selection: TeamTaskSelection): asserts selection is TeamTaskSelection
+  & { readonly coordinatorSessionId: SessionId } {
+  const { state } = selection
   if (state.coordinator.kind !== 'bound') throw new TeamTaskStartError(`Team '${state.team.id}' coordinator is unavailable: ${state.coordinator.reason}`)
-  return Object.freeze({ teamId: state.team.id, state, coordinatorSessionId: state.coordinator.binding.sessionId })
 }
 
 /** Distinguish the connection stream envelope from a bare frame test helper. */

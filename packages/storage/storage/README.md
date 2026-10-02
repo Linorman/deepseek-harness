@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+`LogReadLimits` and `LogReadSnapshot` define bounded detached history for consumers that must not acquire writer handles. The JSON and SQLite providers export medium-specific readers; descriptor/config validation precedes IO, and complete returned JSON plus retained-row allowances reject overflow. These observations grant no application authorization or compaction authority.
+
 Storage hub (`ctx.storage`) for non-session data: a named backend registry plus mounted data-form facilities. The hub performs no IO itself — backends own media, and data forms own semantics. The [storage family overview](../README.md) maps those packages; the [domain KV storage Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md) records the design rationale.
 
 ## Shape

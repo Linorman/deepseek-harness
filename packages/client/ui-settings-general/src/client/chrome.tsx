@@ -2,11 +2,12 @@
  * Shell chrome content registered into the shell's trigger/header seats: the
  * trigger row icon + label (figma sidebar foot) and the panel title text.
  * The shell renders the surrounding chrome (button, nav heading row) and
- * reads each entry's `label` option for aria text.
+ * derives accessible names from content, including the hidden rail label.
  */
 import { IconSettingsOutline14, IconSettingsOutline16 } from '@clocky/clocky-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@clocky/clocky-client-ui-slots'
 import css from './chrome.module.css'
+import shellCss from './SettingsRoot.module.css'
 
 /** Trigger content props: the sidebar column state + the standard locale seat. */
 export type TriggerContentProps = PropsRuntime<'settings.trigger'> & PropsLocale<'settings'>
@@ -15,7 +16,7 @@ export type TriggerContentProps = PropsRuntime<'settings.trigger'> & PropsLocale
 export type HeaderContentProps = PropsRuntime<'settings.header'> & PropsLocale<'settings'>
 
 /**
- * Render the trigger row content (icon; label only in the wide column).
+ * Render the trigger icon and a localized label, visually hidden in the rail.
  * @param props - composed slot props.
  * @returns the trigger content fragment.
  */
@@ -23,7 +24,7 @@ export function TriggerContent({ wide, t }: TriggerContentProps) {
   return (
     <>
       {wide ? <IconSettingsOutline16 size={16} /> : <IconSettingsOutline14 size={18} />}
-      {wide && <span className={css.triggerLabel}>{t('trigger')}</span>}
+      <span className={wide ? css.triggerLabel : shellCss.hiddenLabel}>{t('trigger')}</span>
     </>
   )
 }

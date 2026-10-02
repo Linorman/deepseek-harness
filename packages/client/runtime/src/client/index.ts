@@ -1,3 +1,9 @@
+export type { TeamMemberDetailState, TeamArtifactDetailState } from './contract/team-tasks.ts'
+export type { TeamTaskUpdateLookup, TeamTaskUpdateLookupInput, TeamTaskUpdateCommandId } from './contract/team-tasks.ts'
+export type { TaskReferencesState, TaskReferencesOptions, TeamTaskReferencesPage, TeamTaskReference } from './contract/team-tasks.ts'
+export type { TeamActionDetailState, TeamActionInspection, TeamAttentionHandling } from './contract/team-tasks.ts'
+export { isTeamAuthorizationError } from './teams/access.ts'
+export type { TeamIdentityState, TeamIdentityOptions, TeamIdentityItem } from './teams/identity-resolver.ts'
 /** Browser runtime services for slots, Teams, Sessions, Workspaces, and connection-stream delivery. */
 import type { Context } from '@clocky/cordis'
 import type { ConnectionHandle, SessionId } from '@clocky/clocky-api-remotes/client'
@@ -12,6 +18,9 @@ import { SessionRuntime } from './sessions/service.ts'
 import type { SessionListState } from './sessions/service.ts'
 import { WorkspaceRuntime } from './workspaces/service.ts'
 import { TeamTaskRuntime } from './teams/service.ts'
+import { SimulationRuntime } from './simulations/service.ts'
+export { SimulationRuntime, simulationRecordsScope } from './simulations/service.ts'
+export type * from './simulations/service.ts'
 import type { ConversationSnapshot } from './sessions/conversation.ts'
 import type { UseProjection } from './sessions/projection-store.ts'
 import { ConversationEventRegistry } from './conversation/event-registry.ts'
@@ -47,6 +56,7 @@ export type { AgentScopeHandle } from './agents/scope.ts'
 export { DirectoryBrowseError, WorkspaceCreateError, WorkspaceRuntime } from './workspaces/service.ts'
 export { TeamTaskRuntime, TeamTaskStartError } from './teams/service.ts'
 export { abbreviateHomePath, resolveWorkspacePath } from './workspaces/path.ts'
+export type { TeamAttentionState, TeamAttentionPage, TeamAttentionReadInput, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from './contract/team-tasks.ts'
 // Contract only: the scope implementation and its Host transport belong to
 // clocky-client-ui-settings (see that package's settings-scope.ts).
 export type {
@@ -59,7 +69,10 @@ export type { IWorkspaces } from './contract/workspaces.ts'
 export type {
   TeamWorkflowSummary, TeamWorkflowInspection, TeamWorkflowDetailReadMode, TeamWorkflowDetailState,
   TeamTaskSummary, TeamMemberSummary, TeamTaskInspection, TeamTaskRecord, TeamTaskAttempt,
-  TeamTaskDetailState, TeamTaskDetailPart, TeamTaskDetailReadMode,
+  TeamMemberReadinessInput, TeamMemberReadinessState, TeamMemberReadinessRecord, TeamMemberReadinessValue,
+  TeamExecutionProfilesInput, TeamExecutionProfilesValue, TeamExecutionProfilesState,
+  TeamTaskCapabilitiesInput, TeamTaskCapabilitiesValue, TeamTaskCapabilitiesState,
+  TeamTaskDetailState, TeamTaskDetailPart, TeamTaskDetailReadMode, TeamTaskQuery, TeamTaskQueryPage, TeamTaskQueryState,
   ITeamTasks, TeamHumanAction, TeamInboxPage, TeamInboxState, TeamActionResponseInput, TeamActionResponseResult,
   TeamChannelState, TeamChannelInvitation, TeamChannelAdmission, TeamChannelListPage, TeamChannelListState, TeamCollectionKind,
   TeamCollectionReadMode, TeamCollectionPage, TeamCollectionsState, TeamManagementCommand, TeamManagementOperation,
@@ -196,6 +209,8 @@ declare module '@clocky/cordis' {
     workspaces: import('./contract/workspaces.ts').IWorkspaces
     /** The outward Team product face; Session transcripts remain descendants. */
     teamTasks: import('./contract/team-tasks.ts').ITeamTasks
+    /** Bounded authenticated Simulation product reads, without execution controls. */
+    simulationRuns: import('./simulations/service.ts').SimulationRuntime
   }
 }
 
@@ -218,10 +233,17 @@ export function apply(ctx: Context): void {
   })
   const workspaces = new WorkspaceRuntime(ctx, connection.api, sessions)
   const teamTasks = new TeamTaskRuntime(ctx, connection.api)
+  const simulationRuns = new SimulationRuntime(ctx, connection.api)
   sessions.clear()
   teamTasks.startDraft()
   const loop = connection.start({
     onMuxEnvelope: (envelope) => {
+      if (envelope.payload.type === 'team/access-revoked') {
+        const teamId = envelope.payload.teamId
+        simulationRuns.revokeSourceAccess()
+        workspaces.revokeSessionReferences(Object.values(sessions.list.getSnapshot().byId)
+          .filter(session => session.team?.teamId === teamId).map(session => session.id))
+      }
       sessions.handleMuxEnvelope(envelope)
       teamTasks.handleMuxEnvelope(envelope)
     },
@@ -235,10 +257,18 @@ export function apply(ctx: Context): void {
       const frame = envelope.payload
       if (frame.type === 'host/remote-event') ctx.remote.$dispatch(frame.event, frame.args)
     },
-    onConnected: () => {
-      sessions.handleConnected()
-      workspaces.handleConnected()
-      teamTasks.handleConnected()
+    onConnected: (description) => {
+      sessions.handleConnected(description.authorizationScope)
+      workspaces.handleConnected(description.authorizationScope)
+      teamTasks.handleConnected(description.authorizationScope)
+      simulationRuns.connected(description.authorizationScope)
+      ctx.emit('connection/reset')
+    },
+    onAuthorizationLost: () => {
+      sessions.clearAuthorization()
+      workspaces.clearAuthorization()
+      teamTasks.clearAuthorization()
+      simulationRuns.clearAuthorization()
       ctx.emit('connection/reset')
     },
     onStateChange: (state) => {
@@ -248,8 +278,14 @@ export function apply(ctx: Context): void {
       if (state === 'reconnecting') {
         sessions.handleDisconnected()
         teamTasks.handleDisconnected()
+        simulationRuns.disconnected()
       }
     },
   })
   ctx.effect(() => () => { loop.stop() }, 'runtime: connection stream loop')
 }
+
+export { SimulationAdministrationRuntime, simulationCommandKey } from './simulations/administration.ts'
+export type { SimulationCommandKey, SimulationCommand, SimulationCommandState, SimulationCommandReceipt, SimulationAdministrationState, SimulationAdministrationOptions } from './simulations/administration.ts'
+export type { SimulationRecordExportOptions, SimulationRecordExportState, SimulationRecordDownload } from './simulations/records-export.ts'
+export { simulationSourceScope } from './simulations/source-reader.ts'

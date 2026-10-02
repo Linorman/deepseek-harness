@@ -176,3 +176,11 @@
 .overlayLayer > * {
   pointer-events: auto;
 }
+
+.unavailable {
+  padding: 32px;
+  color: var(--clocky-alias-text-primary);
+}
+
+.productStage { display: flex; flex: 1; min-width: 0; min-height: 0; }
+.productStage[hidden] { display: none; }

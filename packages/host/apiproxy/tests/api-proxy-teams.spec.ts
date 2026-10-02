@@ -1,3 +1,7 @@
+import { teamTaskUpdateCommandIdSchema } from '@clocky/clocky-team'
+import * as TeamPlacement from '@clocky/clocky-team-placement-default'
+import TeamWorkspaceRegistry from '@clocky/clocky-team-workspace'
+import * as SharedWorkspace from '@clocky/clocky-team-workspace-shared'
 import { task as inspectionTaskFixture, settledAttempt as inspectionAttemptFixture } from '../../../team/team-hub/tests/fixtures.ts'
 import * as BasicChannel from '@clocky/clocky-team-channel-basic'
 import * as ChannelSummary from '@clocky/clocky-team-channel-summary'
@@ -26,6 +30,10 @@ import { AttachmentError } from '@clocky/clocky-attachment'
 import { SessionId } from '@clocky/clocky-session'
 import JsonlSessionPersistence from '@clocky/clocky-session-persistence-jsonl'
 import Storage from '@clocky/clocky-storage'
+import { DomainFacility } from '@clocky/clocky-storage-domain'
+import WorkspaceRegistry from '@clocky/clocky-workspace'
+import SessionQuerySqlite from '@clocky/clocky-session-query-sqlite'
+import { unzipSync, strFromU8 } from 'fflate'
 import * as StorageJson from '@clocky/clocky-storage-json'
 import * as StorageLog from '@clocky/clocky-storage-log'
 import ProductPrincipalRegistry from '@clocky/clocky-product-principal'
@@ -33,7 +41,7 @@ import TeamChannelAdmission from '@clocky/clocky-team-channel-admission'
 import TeamHub from '@clocky/clocky-team-hub'
 import TeamClosureDriverHub from '@clocky/clocky-team-closure-driver/hub'
 import TeamClosureDriveBackendRegistry from '@clocky/clocky-team-closure-driver/registry'
-import { TeamError, channelIdSchema, channelPostIdempotencyKeySchema, teamClosureIdempotencyKeySchema, teamIdSchema, teamTaskCreateIdempotencyKeySchema } from '@clocky/clocky-team'
+import { TeamError, jsonObjectSchema, channelPostIdempotencyKeySchema, teamClosureIdempotencyKeySchema, teamIdSchema, teamTaskCreateIdempotencyKeySchema } from '@clocky/clocky-team'
 import type { ActivationBindingSnapshot, ParticipantSnapshot, TeamId, TeamStateSnapshot, TeamSystemClosureProof, TeamSystemClosureScope } from '@clocky/clocky-team'
 import * as TeamActivationController from '@clocky/clocky-team-activation-controller'
 import * as TeamAgentClient from '@clocky/clocky-team-agent-client'
@@ -185,6 +193,12 @@ function value<T>(response: RpcResponse<T>): T {
   return response.result.value
 }
 
+async function nextMux(iterator: AsyncIterator<import('../src/api/rpc.ts').RpcRequest<MuxFrame>, unknown>): Promise<MuxFrame> {
+  const entry = await iterator.next()
+  if (entry.done) throw new Error('Event stream ended before the expected frame')
+  return entry.value.payload
+}
+
 function expectTeamActorUnavailable<T>(response: RpcResponse<T>, teamId?: TeamId): void {
   expect(response.result).toEqual({
     ok: false,
@@ -268,6 +282,63 @@ async function failHumanTeam(ctx: Context, operation: 'close' | 'send'): Promise
 }
 
 describe('Team API', () => {
+  it('keeps a Simulation Team inspectable but refuses ordinary human execution and management', async () => {
+    let selected: TeamStateSnapshot | undefined
+    let humanId: ParticipantSnapshot['id'] | undefined
+    const ctx = await setup(new GateAdapter(), async (seed) => {
+      const fiber = await seed.plugin({ name: 'simulation-inspector-fixture', inject: ['teams'], async apply(fixture: Context) {
+        const created = await createTestRootTeam(fixture, {
+          goal: { objective: 'Inspect Simulation ownership.', budgets: {} },
+          rules: { simulationRunId: 'private-run', activationLifecycleOwner: 'simulation/owner' }, budgets: {},
+        })
+        let state = await fixture.teams.getTeam({ teamId: created.team.id })
+        const human = await inviteBootstrapParticipant(fixture, {
+          teamId: created.team.id, expectedCursor: state.team.cursor, kind: 'human', displayName: 'Inspector',
+          role: 'owner', capabilities: [], owner: { kind: 'product-principal', principalId: authenticatedProductCall.principal.id },
+          authorityGrant: { operations: ['activate', 'close', 'task-mutate', 'goal-mutate', 'invite', 'channel-open'],
+            workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} },
+        })
+        state = await fixture.teams.getTeam({ teamId: created.team.id })
+        await transitionBootstrapParticipant(fixture, { teamId: state.team.id, participantId: human.id,
+          expectedCursor: state.team.cursor, phase: 'provisioning' })
+        state = await fixture.teams.getTeam({ teamId: created.team.id })
+        await transitionBootstrapParticipant(fixture, { teamId: state.team.id, participantId: human.id,
+          expectedCursor: state.team.cursor, phase: 'active' })
+        selected = await fixture.teams.getTeam({ teamId: created.team.id })
+        humanId = human.id
+      } })
+      await fiber.dispose()
+    })
+    if (selected === undefined || humanId === undefined) throw new Error('Simulation Team fixture was not created')
+    const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
+      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd(),
+    })))
+    const teamId = selected.team.id
+    const expectedCursor = selected.team.cursor
+    const selection = value(await client.teams.selection({ teamId }))
+    expect(selection).toMatchObject({ readAccess: 'member', executionManagement: 'simulation-managed' })
+    expect(selection).not.toHaveProperty('rules')
+    expect(value(await client.teams.list({})).items).toContainEqual(expect.objectContaining({ id: teamId,
+      executionManagement: 'simulation-managed' }))
+    expect(value(await client.teams.browse({ teamId, kind: 'tasks' }))).toMatchObject({ total: 0 })
+    expect(value(await client.teams.memberInspect({ teamId, participantId: humanId }))).toMatchObject({ record: { teamId } })
+    const cancelRun = vi.spyOn(ctx.teamRuns, 'cancel')
+    const responses = await Promise.all([
+      client.teams.resume({ teamId, expectedCursor }),
+      client.teams.cancel({ teamId }),
+      client.teams.goalUpdate({ teamId, expectedRevision: selected.goal.revision, objective: 'Bypass the owner' }),
+      client.teams.taskCreate({ teamId, expectedCursor, idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('bypass'),
+        subject: 'Bypass', description: 'Bypass the Simulation owner.', blockedBy: [], requiredCapabilities: [], priority: 0,
+        readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 }),
+      client.teams.memberInvite({ teamId, expectedCursor, kind: 'local-agent', displayName: 'Bypass', role: 'worker', capabilities: [] }),
+      client.teams.channelOpen({ teamId, expectedCursor, adapter: { type: 'direct', version: 1 },
+        participants: [{ id: humanId, role: 'owner' }], limits: {} }),
+    ])
+    for (const response of responses) expect(response.result).toMatchObject({ ok: false, error: { code: 'TEAM_POLICY_DENIED' } })
+    expect(cancelRun).not.toHaveBeenCalled()
+    expect((await ctx.teams.getTeam({ teamId })).team.cursor).toBe(expectedCursor)
+  })
+
   it('refuses TeamRun mutations without a runtime product call before TeamRun work begins', async () => {
     const ctx = await setup(new GateAdapter())
     const api = createApiProxy(ctx, {
@@ -346,6 +417,43 @@ describe('Team API', () => {
         expect(action?.kind).toBe(kind)
       })
       const current = required(action, 'inbox action')
+      const inspected = value(await client.teams.actionInspect({ teamId: state.team.id, actionId: current.id }))
+      expect(inspected.action).toEqual(current)
+      expect(inspected.handling).toEqual({ kind: 'actionable' })
+      expect((await foreign.teams.actionInspect({ teamId: state.team.id, actionId: current.id })).result)
+        .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+      const inspectionInput = { teamId: state.team.id, actionId: current.id }
+      const inspectCurrent = ctx.teams.inspectHumanAction.bind(ctx.teams)
+      const inspectSpy = vi.spyOn(ctx.teams, 'inspectHumanAction')
+      const anonymous = new InProcessApiClient(toFetchHandler(api))
+      expect((await anonymous.teams.actionInspect(inspectionInput)).result)
+        .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+      expect((await foreign.teams.actionInspect(inspectionInput)).result)
+        .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+      expect(inspectSpy).not.toHaveBeenCalled()
+      for (const fail of [false, true]) {
+        const controller = new AbortController()
+        inspectSpy.mockImplementationOnce(async (request) => {
+          const result = await inspectCurrent(request)
+          controller.abort()
+          if (fail) throw new Error('Private request inspection diagnostic')
+          return result
+        })
+        const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+        const withheld = (await revoked.teams.actionInspect(inspectionInput)).result
+        expect(withheld).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+        expect(JSON.stringify(withheld)).not.toContain('Private request inspection diagnostic')
+      }
+      inspectSpy.mockRestore()
+      const pending = value(await client.teams.attentionRead({ teamId: state.team.id, limit: 1 }))
+      expect(pending.counts.humanActions).toBe(1)
+      expect(pending.items).toMatchObject([{ kind: 'human-action', id: current.id, actionKind: kind,
+        handling: { kind: 'actionable' } }])
+      expect(JSON.stringify(pending)).not.toContain('Continue?')
+      const acknowledged = value(await client.teams.inboxRead({}))
+      value(await client.teams.inboxAcknowledge({ throughCursor: required(acknowledged.items.at(-1), 'last inbox item').sequence }))
+      expect(value(await client.teams.inboxRead({})).items).toEqual([])
+      expect(value(await client.teams.attentionRead({ teamId: state.team.id })).counts.humanActions).toBe(1)
       const answer: import('@clocky/clocky-team').TeamHumanActionAnswer = kind === 'approval'
         ? { kind: 'approval', outcome: 'allowed-once' }
         : { kind: 'question', answers: [{ id: 'continue', selected: ['Proceed'] }] }
@@ -360,6 +468,10 @@ describe('Team API', () => {
       await vi.waitFor(async () => {
         expect((await ctx.teams.getTeam({ teamId: state.team.id })).humanActions?.find(value => value.id === current.id)?.phase).toBe('resolved')
       })
+      expect(value(await client.teams.attentionRead({ teamId: state.team.id })).counts.humanActions).toBe(0)
+      const finished = value(await client.teams.actionInspect({ teamId: state.team.id, actionId: current.id }))
+      expect(finished.action.phase).toBe('resolved')
+      expect(finished.handling).toEqual({ kind: 'waiting', reason: 'already-processed' })
       const stream = required(ctx.storageLog.get(`team/${state.team.id}`), 'Team journal')
       let projection: ReturnType<typeof foldTeamRecord> | undefined
       let rejectedMissingAcceptance = false
@@ -657,8 +769,8 @@ describe('Team API', () => {
     const missing = await client.teams.get({ teamId: 'missing-team' as never })
     expect(missing.result.ok).toBe(false)
     if (missing.result.ok) throw new Error('unreachable')
-    expect(missing.result.error.code).toBe('team-not-found')
-    expect(missing.result.error.message).toContain('missing-team')
+    expect(missing.result.error.code).toBe('TEAM_HUMAN_ACTOR_FORBIDDEN')
+    expect(missing.result.error.message).toBe('Authenticated principal cannot inspect this Team')
     expect(missing.result.error.details).toEqual({ teamId: 'missing-team' })
 
     phase = 'create cancellable'
@@ -1193,9 +1305,25 @@ describe('Team API', () => {
     expect(unauthenticated.result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
     expect(createTask).not.toHaveBeenCalled()
 
+    for (const denied of [{ workspaceMode: 'worktree' as const }, { readScopes: ['src'] }, { writeScopes: ['src'] }]) {
+      const response = await client.teams.taskCreate({ ...initial, ...denied })
+      expect(response.result).toMatchObject({ ok: false, error: { code: 'TEAM_GRANT_DENIED', details: { teamId } } })
+    }
+
     const task = value(await client.teams.taskCreate(initial))
     expect(task).toMatchObject({ teamId, subject: initial.subject, phase: 'pending' })
     expect(task.createCommand.creator).toEqual({ teamId, participantId: human.id })
+    const query = { search: 'Authenticated task' }
+    const queried = value(await client.teams.browse({ teamId, kind: 'tasks', query, limit: 1 }))
+    expect(queried).toMatchObject({ kind: 'tasks', query, total: 1, items: [{ id: task.id }] })
+    expect(value(await client.teams.browse({ teamId, kind: 'tasks', query: { ...query, excludeTaskId: task.id } })))
+      .toMatchObject({ total: 0, items: [] })
+    expect((await client.teams.browse({ teamId, kind: 'tasks', query: { search: '😀'.repeat(513) } })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-invalid-argument' } })
+    expect((await client.teams.browse({ teamId, kind: 'tasks', query,
+      queryCursor: { teamId, teamCursor: queried.teamCursor - 1, query, order: 'task-insertion-v1', afterCursor: 0 } })).result)
+      .toMatchObject({ ok: false, error: { code: 'team-cursor-conflict' } })
+
     const inspected = value(await client.teams.taskInspect({ teamId, taskId: task.id, section: 'record' }))
     expect(inspected).toMatchObject({ section: 'record', revision: task.revision, task: { id: task.id, subject: task.subject } })
     expect(inspected).not.toHaveProperty('task.attemptHistory')
@@ -1219,21 +1347,21 @@ describe('Team API', () => {
     readTask.mockRestore()
 
     const updated = value(await client.teams.taskUpdate({
-      teamId,
+      commandId: teamTaskUpdateCommandIdSchema.parse('api-proxy-teams.spec-update-1'),teamId,
       taskId: task.id,
       expectedRevision: task.revision,
       subject: 'Updated authenticated task',
     }))
-    expect(updated).toMatchObject({ revision: task.revision + 1, subject: 'Updated authenticated task' })
+    expect(updated.task).toMatchObject({ revision: task.revision + 1, subject: 'Updated authenticated task' })
 
     const cancelled = value(await client.teams.taskCancel({
       teamId,
-      taskId: updated.id,
-      expectedRevision: updated.revision,
+      taskId: updated.task.id,
+      expectedRevision: updated.task.revision,
       reason: 'Only this task.',
     }))
     expect(cancelled.phase).toBe('cancelled')
-    expect(cancelled.cancellation).toMatchObject({ requestedRevision: updated.revision, requestedBy: human.id, reason: 'Only this task.', target: { kind: 'pending' } })
+    expect(cancelled.cancellation).toMatchObject({ requestedRevision: updated.task.revision, requestedBy: human.id, reason: 'Only this task.', target: { kind: 'pending' } })
     expect((await ctx.teams.getTeam({ teamId })).team.phase).toBe('active')
 
     const current = await ctx.teams.getTeam({ teamId })
@@ -1420,7 +1548,7 @@ describe('Team API', () => {
     }))
     value(await client.teams.cancel({ teamId: created.team.id }))
     await expect(client.teams.taskUpdate({
-      teamId: task.teamId,
+      commandId: teamTaskUpdateCommandIdSchema.parse('api-proxy-teams.spec-update-2'),teamId: task.teamId,
       taskId: task.id,
       expectedRevision: task.revision,
       subject: 'Forbidden terminal update',
@@ -1472,7 +1600,7 @@ describe('Team API', () => {
     expect((await client.teams.channelAttachment({ ...selection, envelopeSequence: 0 })).result)
       .toMatchObject({ ok: false, error: { code: 'attachment-error' } })
     expect((await foreign.teams.channelAttachment(selection)).result)
-      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' } })
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
     const other = value(await client.teams.create({ objective: 'Another media Team.', cwd: process.cwd() }))
     expect((await client.teams.channelAttachment({ ...selection, teamId: other.team.id })).result.ok).toBe(false)
     expect(read).not.toHaveBeenCalled()
@@ -1678,7 +1806,7 @@ describe('Team API', () => {
     expect(last.items.map(channel => channel.manifest.id)).toEqual([added[1]])
     expect(last.nextCursor).toBeUndefined()
     expect((await foreign.teams.channelList({ teamId: created.team.id })).result)
-      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' } })
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
     expect((await client.teams.channelList({ teamId: created.team.id, limit: 0 })).result)
       .toMatchObject({ ok: false, error: { code: 'bad-request' } })
     const forged = await authenticatedFetch(api).fetch(new Request('http://x/api/team.channel.list', {
@@ -2220,7 +2348,9 @@ describe('Team API', () => {
     )
     const queueAbort = new AbortController()
     const queued = (async (): Promise<Extract<MuxFrame, { type: 'session/queue' }>> => {
-      for await (const envelope of api.events.mux({ rpcId: RpcId('team-queue-mux'), payload: {} }, queueAbort.signal)) {
+      const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+        api.events.mux({ rpcId: RpcId('team-queue-mux'), payload: {} }, queueAbort.signal))
+      for await (const envelope of stream) {
         const frame = envelope.payload
         if (frame.type === 'session/queue' && frame.sessionId === binding.sessionId && frame.items.length > 0) {
           queueAbort.abort()
@@ -2326,23 +2456,27 @@ describe('Team API', () => {
 
   it('allows model metadata reads for a live Team worker without granting coordinator controls', async () => {
     const adapter = new GateAdapter()
-    const ctx = await setup(adapter, undefined, false)
+    const ctx = await setup(adapter)
     const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
       defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
       cwd: process.cwd(),
     })))
-    const worker = await ctx.agents.create({
-      sessionId: SessionId('team-worker-model-read'),
-      meta: { teamId: 'team-worker-model-read', participantId: 'participant-worker' },
-      agentOptions: { provider: 'mock', model: 'mock' },
-    })
-    const models = await client.sessions.models({ sessionId: worker.agent.session.id })
+    const root = value(await client.teams.create({ objective: 'Read worker model metadata', cwd: process.cwd() }))
+    const cursor = async () => (await ctx.teams.getTeam({ teamId: root.team.id })).team.cursor
+    const member = value(await client.teams.memberInvite({ teamId: root.team.id, expectedCursor: await cursor(),
+      kind: 'local-agent', role: 'model-reader', displayName: 'Model reader', capabilities: [] }))
+    value(await client.teams.memberActivate({ teamId: root.team.id, participantId: member.id, expectedCursor: await cursor() }))
+    const worker = await ctx.teamActivations.activate({ teamId: root.team.id, participantId: member.id,
+      expectedCursor: await cursor(), provider: 'in-process', sessionId: SessionId('team-worker-model-read'),
+      seed: { kind: 'fresh' }, agent: { options: { provider: 'mock', model: 'mock' } }, signal: new AbortController().signal })
+    if (worker.localAgent === undefined) throw new Error('Worker model reader has no local Agent')
+    const models = await client.sessions.models({ sessionId: worker.localAgent.session.id })
     expect(models.result).toMatchObject({
       ok: true,
       value: { current: { provider: 'mock', model: 'mock' }, routable: true },
     })
     await expect(client.sessions.selectModel({
-      sessionId: worker.agent.session.id,
+      sessionId: worker.localAgent.session.id,
       provider: 'mock',
       model: 'mock',
     })).resolves.toMatchObject({ result: { ok: false, error: { code: 'team-run-unavailable' } } })
@@ -2467,8 +2601,12 @@ describe('Team API', () => {
 
   it('preserves compaction error codes and retained cursors across the Host boundary', async () => {
     const ctx = await setup(new GateAdapter())
-    const teamId = teamIdSchema.parse('team-compaction-error')
-    const channelId = channelIdSchema.parse('channel-compaction-error')
+    const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
+      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd(),
+    })))
+    const created = value(await client.teams.create({ objective: 'Compacted authorized reads', cwd: process.cwd() }))
+    const teamId = created.team.id
+    const channelId = required(created.channelIds[0], 'default channel')
     vi.spyOn(ctx.teams, 'readChannelPage').mockRejectedValueOnce(new TeamError(
       'channel no longer retains the requested cursor',
       'TEAM_CHANNEL_COMPACTED',
@@ -2479,11 +2617,6 @@ describe('Team API', () => {
       'TEAM_AUDIT_COMPACTED',
       { details: { teamId, channelId, firstCursor: 7 } },
     ))
-    const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
-      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
-      cwd: process.cwd(),
-    })))
-
     await expect(client.teams.channelRead({ channelId, afterCursor: -1, limit: 4 })).resolves.toMatchObject({
       result: {
         ok: false,
@@ -2505,14 +2638,13 @@ describe('Team API', () => {
   })
 
   it('reads only visible durable Team artifacts through their named provider', async () => {
-    let state: TeamStateSnapshot | undefined
-    const ctx = await setup(new GateAdapter(), async (seed) => {
-      state = await createTestRootTeam(seed, {
-        goal: { objective: 'Read one visible artifact.', budgets: {} },
-        rules: {}, budgets: {},
-      })
+    const ctx = await setup(new GateAdapter())
+    const api = createApiProxy(ctx, {
+      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
+      cwd: process.cwd(),
     })
-    if (state === undefined) throw new Error('artifact Team fixture was not created')
+    const client = new InProcessApiClient(authenticatedFetch(api))
+    const state = value(await client.teams.create({ objective: 'Read one visible artifact.', cwd: process.cwd() }))
     const visible = {
       id: 'local:visible-report', provider: 'local', kind: 'report' as const,
       uri: 'artifact-local://local/visible-report', visibility: 'team' as const,
@@ -2557,12 +2689,9 @@ describe('Team API', () => {
       getProvider: (name: string) => name === 'local' ? { name } : undefined,
       read,
     } as never)
-    const api = createApiProxy(ctx, {
-      defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
-      cwd: process.cwd(),
-    })
     if (api.teams === undefined) throw new Error('Team API was not composed')
-    const projection = await api.teams.get({ rpcId: RpcId('artifact-projection'), payload: { teamId: state.team.id } })
+    const projection = await withAuthenticatedProductCall(authenticatedProductCall, () =>
+      api.teams!.get({ rpcId: RpcId('artifact-projection'), payload: { teamId: state.team.id } }))
     if (!projection.result.ok) throw new Error(projection.result.error.message)
     const projectedResult = projection.result.value.tasks[0]?.attemptHistory[0]?.outcome
     if (projectedResult?.kind !== 'completed') throw new Error('artifact projection fixture was not retained')
@@ -2570,8 +2699,6 @@ describe('Team API', () => {
     if (projection.result.ok) {
       expect(projection.result.value.workspaceAllocations[0]?.loss?.artifacts.map(reference => reference.id)).toEqual(['retained-loss-report'])
     }
-    const client = new InProcessApiClient(authenticatedFetch(api))
-
     await expect(client.teams.artifactRead({ teamId: state.team.id, artifactId: visible.id })).resolves.toMatchObject({
       result: {
         ok: true,
@@ -2612,14 +2739,10 @@ describe('Team API', () => {
   })
 
   it('reports unavailable providers and maps an aborted artifact read to cancellation', async () => {
-    let state: TeamStateSnapshot | undefined
-    const ctx = await setup(new GateAdapter(), async (seed) => {
-      state = await createTestRootTeam(seed, {
-        goal: { objective: 'Exercise artifact read failure boundaries.', budgets: {} },
-        rules: {}, budgets: {},
-      })
-    })
-    if (state === undefined) throw new Error('artifact failure Team fixture was not created')
+    const ctx = await setup(new GateAdapter())
+    const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
+    const client = new InProcessApiClient(authenticatedFetch(api))
+    const state = value(await client.teams.create({ objective: 'Exercise artifact read failure boundaries.', cwd: process.cwd() }))
     const artifact = {
       id: 'remote:report', provider: 'remote', kind: 'report' as const,
       uri: 'artifact://remote/report', visibility: 'human' as const,
@@ -2631,10 +2754,9 @@ describe('Team API', () => {
       getProvider: () => providerAvailable ? { name: 'remote' } : undefined,
       read: async (_provider: string, request: { readonly signal?: AbortSignal }) => await readImplementation(request),
     } as never)
-    const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
     if (api.teams === undefined) throw new Error('Team API was not composed')
     const teams = api.teams
-    await expect(teams.artifactRead({ rpcId: RpcId('artifact-unavailable'), payload: { teamId: state.team.id, artifactId: artifact.id } }, new AbortController().signal)).resolves.toMatchObject({
+    await expect(withAuthenticatedProductCall(authenticatedProductCall, () => teams.artifactRead({ rpcId: RpcId('artifact-unavailable'), payload: { teamId: state.team.id, artifactId: artifact.id } }, new AbortController().signal))).resolves.toMatchObject({
       result: { ok: false, error: { code: 'team-artifact-unavailable' } },
     })
 
@@ -2647,7 +2769,7 @@ describe('Team API', () => {
       }
       signal?.addEventListener('abort', () => { reject(new Error('read aborted')) }, { once: true })
     })
-    const pending = teams.artifactRead({ rpcId: RpcId('artifact-cancel'), payload: { teamId: state.team.id, artifactId: artifact.id } }, controller.signal)
+    const pending = withAuthenticatedProductCall(authenticatedProductCall, () => teams.artifactRead({ rpcId: RpcId('artifact-cancel'), payload: { teamId: state.team.id, artifactId: artifact.id } }, controller.signal))
     controller.abort()
     await expect(pending).resolves.toMatchObject({ result: { ok: false, error: { code: 'cancelled' } } })
   })
@@ -2681,4 +2803,1006 @@ describe('Team API', () => {
       'roster-default',
     ])
   })
+})
+
+
+it('observes actual grants, providers and scheduler support without changing Team facts or copying its full state', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  if (api.teams === undefined) throw new Error('Missing Team API')
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Observe authoring permissions', cwd: process.cwd() }))
+  const input = { teamId: created.team.id, integration: false, readScopes: [], writeScopes: [] }
+  expect((await api.teams.capabilities({ rpcId: RpcId('no-capability-auth'), payload: input })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.capabilities(input)).result).toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  const noProvider = value(await client.teams.capabilities(input))
+  expect(noProvider.create.allowed).toBe(true)
+  expect(value(await client.teams.capabilities({ ...input, integration: true })).create).toEqual({ allowed: false, reasons: ['not-authorized'] })
+  expect(noProvider.workspaceModes.find(item => item.mode === 'shared')).toMatchObject({ allowed: false,
+    reasons: ['provider-unavailable', 'scheduler-unavailable'] })
+  expect(noProvider.readScopes).toEqual({ editable: false, accepted: true })
+  expect(noProvider.writeScopes).toEqual({ editable: false, accepted: true })
+  expect(noProvider).not.toHaveProperty('authorityGrant')
+  await ctx.plugin(TeamWorkspaceRegistry)
+  const workspace = await ctx.plugin(SharedWorkspace, { root: await freshRoot() })
+  const scheduler = ctx.on('team/task-scheduling-modes', async (_teamId, next) => [...await next(), 'shared'])
+  const snapshot = vi.spyOn(ctx.teams, 'getTeam')
+  const available = value(await client.teams.capabilities(input))
+  expect(snapshot).not.toHaveBeenCalled()
+  snapshot.mockRestore()
+  expect(available.workspaceModes.find(item => item.mode === 'shared')).toEqual({ mode: 'shared', allowed: true, reasons: [] })
+  expect(available.workspaceModes.find(item => item.mode === 'worktree')?.reasons).toContain('not-authorized')
+  expect(available.teamCursor).toBe(noProvider.teamCursor)
+  expect(available.observationId).not.toBe(noProvider.observationId)
+  expect(value(await client.teams.capabilities({ ...input, readScopes: ['private'], writeScopes: ['private'] })))
+    .toMatchObject({ readScopes: { editable: false, accepted: false }, writeScopes: { editable: false, accepted: false } })
+  await workspace.dispose()
+  const unloaded = value(await client.teams.capabilities(input))
+  expect(unloaded.workspaceModes.find(item => item.mode === 'shared')?.reasons).toEqual(['provider-unavailable'])
+  expect(unloaded.teamCursor).toBe(available.teamCursor)
+  scheduler()
+  expect(value(await client.teams.capabilities(input)).workspaceModes.find(item => item.mode === 'shared')?.reasons)
+    .toContain('scheduler-unavailable')
+  await expect(ctx.teams.getTaskCapabilities({ ...input, actor: {} as never })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  await expect(ctx.teamHumanActors.withProof(authenticatedProductCall, { teamId: input.teamId, operation: 'task-capabilities-read',
+    fence: { kind: 'read' }, payload: input }, async actor => await ctx.teams.getTaskCapabilities({ ...input, actor, writeScopes: ['changed'] })))
+    .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+
+})
+
+
+it('reads bounded member readiness from real ownership and route registrations without activating members', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Read readiness without starting actors', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const cursor = async () => (await ctx.teams.getTeam({ teamId })).team.cursor
+  const member = value(await client.teams.memberInvite({ teamId, expectedCursor: await cursor(), kind: 'remote-agent',
+    displayName: 'Routed member', role: 'custom-readiness', provider: 'readiness-runtime', model: 'mock/mock', capabilities: [] }))
+  const read = async () => value(await client.teams.memberReadiness({ teamId, participantIds: [member.id] }))
+  expect((await read()).items[0]).toMatchObject({ participation: 'invited', state: 'not-applicable' })
+  await client.teams.memberActivate({ teamId, participantId: member.id, expectedCursor: await cursor() })
+  expect((await read()).items[0]).toMatchObject({ participation: 'active', state: 'route-unavailable', reasons: ['route-unavailable'] })
+  const activate = vi.fn(async () => { throw new Error('Readiness must not start an actor') })
+  const unregister = ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const, name: 'readiness-runtime', terminationMode: 'cooperative', activate })
+  const placement = await ctx.plugin(TeamPlacement, { routes: [{ provider: 'readiness-runtime', roles: ['custom-readiness'],
+    model: 'mock/mock', modelProvider: 'mock', modelId: 'mock', cwd: process.cwd(), maxTokens: 1000 }],
+  maxActivationsPerDrive: 1, maxCursorRetries: 2 })
+  const before = await cursor()
+  const snapshot = vi.spyOn(ctx.teams, 'getTeam')
+  const ready = await read()
+  expect(ready.items[0]).toMatchObject({ state: 'ready', reasons: [] })
+  expect(snapshot).not.toHaveBeenCalled()
+  snapshot.mockRestore()
+  expect(activate).not.toHaveBeenCalled()
+  unregister()
+  const missingProvider = await read()
+  expect(missingProvider.items[0]).toMatchObject({ state: 'route-unavailable', reasons: ['provider-unavailable'] })
+  expect(missingProvider.teamCursor).toBe(before)
+  expect(missingProvider.observationId).not.toBe(ready.observationId)
+  await placement.dispose()
+  expect((await read()).items[0]?.reasons).toEqual(['route-unavailable'])
+  const coordinator = required(created.participants.find(item => item.role === 'coordinator'), 'coordinator')
+  expect(value(await client.teams.memberReadiness({ teamId, participantIds: [coordinator.id] })).items[0])
+    .toMatchObject({ state: 'resident', configuration: 'team-run' })
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.memberReadiness({ teamId, participantIds: [member.id] })).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await client.teams.memberReadiness({ teamId, participantIds: ['foreign-member' as never] })).result)
+    .toMatchObject({ ok: false, error: { code: 'team-member-not-found' } })
+  expect((await client.teams.memberReadiness({ teamId, participantIds: [member.id], expectedTeamCursor: before - 1 })).result)
+    .toMatchObject({ ok: false, error: { code: 'team-cursor-conflict' } })
+})
+
+it.each([false, true])('withholds task capability hints when membership ends during scheduling observation (failure: %s)', async (fail) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Withdraw authoring permission during observation', cwd: process.cwd() }))
+  const human = required(created.participants.find(member => member.kind === 'human'), 'human')
+  const dispose = ctx.on('team/task-scheduling-modes', async (teamId, next) => {
+    const modes = await next()
+    value(await client.teams.memberRemove({ teamId, participantId: human.id,
+      expectedCursor: (await ctx.teams.getTeam({ teamId })).team.cursor }))
+    if (fail) throw new Error('Private post-revocation scheduling diagnostic')
+    return modes
+  })
+  try {
+    const result = (await client.teams.capabilities({ teamId: created.team.id, integration: false,
+      readScopes: [], writeScopes: [] })).result
+    expect(result).toMatchObject({ ok: false, error: { code: 'TEAM_ACTOR_PROOF_INVALID' } })
+    expect(result).not.toHaveProperty('value')
+  } finally { dispose() }
+})
+
+it('lists live deployment profiles and revalidates a selected invitation after asynchronous policy work', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Choose execution profiles', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const input = { teamId, kind: 'local-agent' as const }
+  expect((await required(api.teams, 'teams API').executionProfiles({ rpcId: RpcId('unauthenticated-profiles'), payload: input })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.executionProfiles(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' } })
+  const activate = vi.fn(async () => { throw new Error('Catalog reads must not start an actor') })
+  const unregister = ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent'], name: 'profile-runtime', terminationMode: 'cooperative', activate })
+  const routes = { routes: [{ provider: 'profile-runtime', roles: ['profile-worker'], model: 'mock/mock',
+    modelProvider: 'mock', modelId: 'mock', cwd: process.cwd(), maxTokens: 1000 }], maxActivationsPerDrive: 1, maxCursorRetries: 2 }
+  let placement = await ctx.plugin(TeamPlacement, routes)
+  const page = value(await client.teams.executionProfiles(input))
+  const profile = required(page.items.find(item => item.role === 'profile-worker'), 'profile')
+  expect(page.allowed).toBe(true)
+  expect(profile.available).toBe(true)
+  expect(profile).not.toHaveProperty('cwd')
+  expect(profile).not.toHaveProperty('maxTokens')
+  expect(value(await client.teams.executionProfiles({ ...input, kind: 'remote-agent' })).items[0])
+    .toMatchObject({ available: false, reasons: ['participant-kind-unsupported'] })
+  expect(activate).not.toHaveBeenCalled()
+  const before = (await ctx.teams.getTeam({ teamId })).team.cursor
+  const invitation = { teamId, kind: profile.kind, role: profile.role, provider: profile.provider, model: profile.model,
+    executionProfileId: profile.id, displayName: 'Profile worker', capabilities: [], expectedCursor: before }
+  expect((await client.teams.memberInvite({ ...invitation, role: 'tampered' })).result)
+    .toMatchObject({ ok: false, error: { code: 'team-invalid-argument' } })
+  const policy = ctx.teams.registerPolicy('invite', { name: 'remove-selected-profile', async apply(_request, next) {
+    await placement.dispose()
+    return await next()
+  } })
+  expect((await client.teams.memberInvite(invitation)).result)
+    .toMatchObject({ ok: false, error: { code: 'team-profile-unavailable' } })
+  expect((await ctx.teams.getTeam({ teamId })).team.cursor).toBe(before)
+  policy()
+  expect(value(await client.teams.executionProfiles(input)).items).toEqual([])
+  placement = await ctx.plugin(TeamPlacement, routes)
+  const replacement = value(await client.teams.executionProfiles(input)).items[0]!
+  expect(replacement.id).toBe(profile.id)
+  const member = value(await client.teams.memberInvite(invitation))
+  expect(member.role).toBe(profile.role)
+  expect(member).not.toHaveProperty('executionProfileId')
+  unregister()
+  expect(value(await client.teams.executionProfiles({ ...input, selectedId: profile.id })).selected)
+    .toMatchObject({ available: false, reasons: ['provider-unavailable'] })
+  await placement.dispose()
+})
+
+it('resolves only requested names under active human authority and changes cache scope with credentials', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Resolve referenced members', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const human = required(created.participants.find(member => member.kind === 'human'), 'human')
+  const input = { teamId, participantIds: [human.id, 'unknown' as never, human.id] }
+  const get = vi.spyOn(ctx.teams, 'getTeam')
+  const before = value(await client.teams.identityResolve(input))
+  expect(get).not.toHaveBeenCalled()
+  get.mockRestore()
+  expect(before.items).toEqual([
+    { participantId: human.id, state: 'resolved', displayName: { text: human.displayName, truncated: false }, phase: 'active' },
+    { participantId: 'unknown', state: 'unavailable' },
+  ])
+  expect(before.authorizationScope).toMatch(/^[a-f0-9]{64}$/)
+  expect(value(await client.host.describe({})).authorizationScope).toBe(before.authorizationScope)
+  expect(value(await client.teams.identityResolve(input)).authorizationScope).toBe(before.authorizationScope)
+  const rotated = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall,
+    credentialGeneration: authenticatedProductCall.credentialGeneration + 1 }))
+  expect(value(await rotated.teams.identityResolve(input)).authorizationScope).not.toBe(before.authorizationScope)
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.identityResolve(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await required(api.teams, 'teams API').identityResolve({ rpcId: RpcId('unauthenticated-identities'), payload: input })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  await expect(ctx.teamHumanActors.withProof(authenticatedProductCall, { teamId, operation: 'identity-resolve-read',
+    fence: { kind: 'read' }, payload: jsonObjectSchema.parse({ teamId, participantIds: [human.id] }) },
+  async actor => await ctx.teams.resolveIdentities({ teamId, participantIds: ['unknown' as never], actor })))
+    .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  const controller = new AbortController()
+  const revocable = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  const resolve = ctx.teams.resolveIdentities.bind(ctx.teams)
+  const pending = vi.spyOn(ctx.teams, 'resolveIdentities').mockImplementation(async (request) => {
+    const page = await resolve(request)
+    controller.abort()
+    return page
+  })
+  expect((await revocable.teams.identityResolve(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  pending.mockRestore()
+})
+
+it.each(['unaccepted', 'settled', 'unexpected'] as const)('reports cancellation from its durable intent after a %s cleanup result', async (outcome) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Cancellation admission outcome', cwd: process.cwd() }))
+  const original = ctx.teamRuns.cancel.bind(ctx.teamRuns)
+  vi.spyOn(ctx.teamRuns, 'cancel').mockImplementationOnce(async (teamId, owner) => {
+    if (outcome !== 'unaccepted') await original(teamId, owner)
+    if (outcome === 'unexpected') throw new Error('Cancellation bookkeeping failed')
+    throw new TeamError('Cancellation still has cleanup work', 'TEAM_NOT_QUIESCENT')
+  })
+  const result = (await client.teams.cancel({ teamId: created.team.id })).result
+  if (outcome === 'settled') expect(result).toEqual({ ok: true, value: { accepted: true, phase: 'cancelled' } })
+  else expect(result).toMatchObject({ ok: false, error: { code: 'internal' } })
+  expect((await ctx.teams.getTeam({ teamId: created.team.id })).team.phase).toBe(outcome === 'unaccepted' ? 'active' : 'cancelled')
+})
+
+it('protects member details before reading and revalidates authority before returning them', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Authorized member details', cwd: process.cwd() }))
+  const member = required(created.participants.find(item => item.role === 'coordinator'), 'coordinator')
+  const input = { teamId: created.team.id, participantId: member.id }
+  const inspect = vi.spyOn(ctx.teams, 'inspectMember')
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.memberInspect(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await required(api.teams, 'teams API').memberInspect({ rpcId: RpcId('no-detail-auth'), payload: input })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  expect(inspect).not.toHaveBeenCalled()
+  expect(value(await client.teams.memberInspect(input)).record.id).toBe(member.id)
+  inspect.mockRestore()
+  const controller = new AbortController()
+  const original = ctx.teams.inspectMember.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'inspectMember').mockImplementation(async (request) => {
+    const result = await original(request)
+    controller.abort()
+    return result
+  })
+  const revocable = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  expect((await revocable.teams.memberInspect(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+})
+
+it('denies pending readers before the provider and rejects caller-authored handling hints', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Private pending items', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const anonymous = new InProcessApiClient(toFetchHandler(api))
+  const read = vi.spyOn(ctx.teams, 'getTeamAttention')
+  expect((await foreign.teams.attentionRead({ teamId })).result).toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await anonymous.teams.attentionRead({ teamId })).result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  expect(read).not.toHaveBeenCalled()
+  expect(value(await client.teams.attentionRead({ teamId })).counts.total).toBe(0)
+  const response = await authenticatedFetch(api).fetch(new Request('http://x/api/team.attention.read', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', method: 'team.attention.read',
+      rpcId: 'forged-pending-status', payload: { teamId, handling: { kind: 'actionable' } } }) }))
+  expect(await response.json()).toMatchObject({ result: { ok: false, error: { code: 'bad-request' } } })
+})
+
+it.each([false, true])('withholds pending results when authentication retires during provider IO (failure: %s)', async (fail) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Pending authority lifetime', cwd: process.cwd() }))
+  const controller = new AbortController()
+  const read = ctx.teams.getTeamAttention.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'getTeamAttention').mockImplementationOnce(async (input) => {
+    const page = await read(input)
+    controller.abort()
+    if (fail) throw new Error('Private provider diagnostic')
+    return page
+  })
+  const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  const result = (await revoked.teams.attentionRead({ teamId: created.team.id })).result
+  expect(result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  expect(JSON.stringify(result)).not.toContain('Private provider diagnostic')
+})
+
+it.each([false, true])('withholds exact dependency facts if authentication retires during IO (failure: %s)', async (fail) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Current dependency authority', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const controller = new AbortController()
+  const read = ctx.teams.resolveTaskReferences.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'resolveTaskReferences').mockImplementationOnce(async (input) => {
+    const result = await read(input)
+    controller.abort()
+    if (fail) throw new Error('Private dependency diagnostic')
+    return result
+  })
+  const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  const result = (await revoked.teams.taskReferences({ teamId, taskIds: ['private-task' as never] })).result
+  expect(result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  expect(JSON.stringify(result)).not.toContain('Private dependency diagnostic')
+})
+
+it.each([false, true])('withholds original update outcomes if authentication retires during IO (failure: %s)', async (fail) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Current update authority', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const controller = new AbortController()
+  const read = ctx.teams.getTaskUpdateResult.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'getTaskUpdateResult').mockImplementationOnce(async (input) => {
+    const result = await read(input)
+    controller.abort()
+    if (fail) throw new Error('Private update diagnostic')
+    return result
+  })
+  const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  const result = (await revoked.teams.taskUpdateResult({ teamId, taskId: 'private-task' as never, commandId: 'original' as never })).result
+  expect(result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  expect(JSON.stringify(result)).not.toContain('Private update diagnostic')
+})
+
+it.each(['attention', 'update-result', 'dependencies'] as const)('withholds %s when durable human membership ends during its read', async (section) => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Revoke durable Team read authority', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const human = required(created.participants.find(member => member.kind === 'human'), 'human')
+  const task = value(await client.teams.taskCreate({ teamId, expectedCursor: created.team.cursor,
+    idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('durable-revocation-task'), subject: 'Private original task',
+    description: 'Private retained instructions', blockedBy: [], requiredCapabilities: ['manual-only'], priority: 0,
+    readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 }))
+  const update = { teamId, taskId: task.id, commandId: teamTaskUpdateCommandIdSchema.parse('durable-revocation-update'),
+    expectedRevision: task.revision, description: 'Private updated instructions' }
+  value(await client.teams.taskUpdate(update))
+  const revoke = async () => {
+    const current = await ctx.teams.getTeam({ teamId })
+    value(await client.teams.memberRemove({ teamId, participantId: human.id, expectedCursor: current.team.cursor }))
+  }
+  if (section === 'attention') {
+    const read = ctx.teams.getTeamAttention.bind(ctx.teams)
+    vi.spyOn(ctx.teams, 'getTeamAttention').mockImplementationOnce(async (input) => { const result = await read(input); await revoke(); return result })
+  } else if (section === 'update-result') {
+    const read = ctx.teams.getTaskUpdateResult.bind(ctx.teams)
+    vi.spyOn(ctx.teams, 'getTaskUpdateResult').mockImplementationOnce(async (input) => { const result = await read(input); await revoke(); return result })
+  } else {
+    const read = ctx.teams.resolveTaskReferences.bind(ctx.teams)
+    vi.spyOn(ctx.teams, 'resolveTaskReferences').mockImplementationOnce(async (input) => { const result = await read(input); await revoke(); return result })
+  }
+  const result = (await (section === 'attention' ? client.teams.attentionRead({ teamId })
+    : section === 'update-result' ? client.teams.taskUpdateResult({ teamId, taskId: task.id, commandId: update.commandId })
+      : client.teams.taskReferences({ teamId, taskIds: [task.id] }))).result
+  expect(result).toMatchObject({ ok: false, error: { code: 'TEAM_ACTOR_PROOF_INVALID' } })
+  expect(JSON.stringify(result)).not.toContain('Private')
+  expect((await client.teams.taskUpdate({ ...update, commandId: teamTaskUpdateCommandIdSchema.parse('revoked-new-command'),
+    expectedRevision: task.revision + 1 })).result).toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' } })
+  expect((await ctx.teams.getTask({ teamId, taskId: task.id })).revision).toBe(task.revision + 1)
+  expect(await ctx.teams.getTaskUpdateResult({ teamId, taskId: task.id, commandId: update.commandId }))
+    .toMatchObject({ kind: 'applied', receipt: { appliedRevision: task.revision + 1 } })
+})
+
+it('returns a durable original refusal through the real fetch carrier and accepts only the corrected new command', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Original refusal recovery', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const create = async (subject: string, blockedBy: readonly import('@clocky/clocky-team').TeamTaskId[]) => value(await client.teams.taskCreate({
+    teamId, expectedCursor: value(await client.teams.get({ teamId })).team.cursor,
+    idempotencyKey: subject as never, subject, description: `Instructions for ${subject}`, blockedBy,
+    requiredCapabilities: ['refusal-fixture-only'], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+    budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+  }))
+  const original = await create('Original task', [])
+  const dependent = await create('Dependent task', [original.id])
+  const input = { teamId, taskId: original.id, commandId: 'fetch-rejected-cycle' as never,
+    expectedRevision: original.revision, blockedBy: [dependent.id] }
+  const refused = (await client.teams.taskUpdate(input)).result
+  expect(refused).toMatchObject({ ok: false, error: { code: 'team-task-update-rejected', details: { rejection: {
+    teamId, taskId: original.id, commandId: input.commandId, expectedRevision: original.revision,
+    observedRevision: original.revision, reason: 'invalid-edit',
+  } } } })
+  const lookup = { teamId, taskId: original.id, commandId: input.commandId }
+  const observed = value(await client.teams.taskUpdateResult(lookup))
+  expect(observed).toMatchObject({ kind: 'rejected' })
+  expect(JSON.stringify(observed)).not.toContain('Instructions')
+  expect((await client.teams.taskUpdate(input)).result).toEqual(refused)
+  expect(value(await client.teams.taskGet({ teamId, taskId: original.id })).revision).toBe(original.revision)
+  const accepted = value(await client.teams.taskUpdate({ ...input, commandId: 'fetch-corrected-update' as never, blockedBy: [] }))
+  expect(accepted.task.revision).toBe(original.revision + 1)
+  expect(value(await client.teams.taskUpdateResult(lookup))).toEqual(observed)
+})
+
+it('retains active-execution task edit refusal through the Host without replacing an assigned attempt', async () => {
+  const ctx = await setup(new GateAdapter())
+  const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
+    defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd(),
+  })))
+  const created = value(await client.teams.create({ objective: 'Keep assigned execution fenced', cwd: process.cwd() }))
+  const binding = required(created.activations[0], 'coordinator activation')
+  const task = value(await client.teams.taskCreate({ teamId: created.team.id, expectedCursor: created.team.cursor,
+    idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('active-execution-edit'), subject: 'Assigned task', description: 'Keep original work.',
+    blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+    budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1 }))
+  const assigned = await assignTestTask(ctx, { teamId: task.teamId, taskId: task.id, expectedRevision: task.revision,
+    participantId: binding.activation.participantId, activationId: binding.activation.id, leaseDurationMs: 60_000 })
+  const command = { teamId: task.teamId, taskId: task.id, commandId: teamTaskUpdateCommandIdSchema.parse('active-execution-refusal'),
+    expectedRevision: assigned.revision, description: 'This edit must not replace live execution.' }
+  const result = (await client.teams.taskUpdate(command)).result
+  expect(result).toMatchObject({ ok: false, error: { code: 'team-task-update-rejected', details: { rejection: { reason: 'active-execution' } } } })
+  const original = value(await client.teams.taskUpdateResult({ teamId: task.teamId, taskId: task.id, commandId: command.commandId }))
+  expect(original).toMatchObject({ kind: 'rejected', rejection: { reason: 'active-execution', observedRevision: assigned.revision } })
+  expect((await client.teams.taskUpdate(command)).result).toEqual(result)
+  expect(value(await client.teams.taskGet({ teamId: task.teamId, taskId: task.id }))).toEqual(assigned)
+})
+
+it('rejects an existing cross-Team dependency and preserves the exact terminal refusal without changing either task', async () => {
+  const ctx = await setup(new GateAdapter())
+  const client = new InProcessApiClient(authenticatedFetch(createApiProxy(ctx, {
+    defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd(),
+  })))
+  const roots = await Promise.all(['dependency-owner', 'dependency-foreign'].map(async objective =>
+    value(await client.teams.create({ objective, cwd: process.cwd() }))))
+  const tasks = await Promise.all(roots.map(async root => value(await client.teams.taskCreate({
+    teamId: root.team.id, expectedCursor: root.team.cursor, idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse(root.goal.objective),
+    subject: root.goal.objective, description: 'Retain original Team ownership.', blockedBy: [], requiredCapabilities: ['manual-only'],
+    priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
+  }))))
+  const own = required(tasks[0], 'owner task'), foreign = required(tasks[1], 'foreign dependency')
+  const command = { teamId: own.teamId, taskId: own.id, commandId: teamTaskUpdateCommandIdSchema.parse('cross-Team-dependency'),
+    expectedRevision: own.revision, blockedBy: [foreign.id] }
+  expect((await client.teams.taskUpdate(command)).result)
+    .toMatchObject({ ok: false, error: { code: 'team-task-update-rejected', details: { rejection: { reason: 'invalid-edit' } } } })
+  expect(value(await client.teams.taskUpdateResult({ teamId: own.teamId, taskId: own.id, commandId: command.commandId })))
+    .toMatchObject({ kind: 'rejected', rejection: { reason: 'invalid-edit', observedRevision: own.revision } })
+  for (const task of tasks) expect(value(await client.teams.taskGet({ teamId: task.teamId, taskId: task.id }))).toEqual(task)
+  expect(value(await client.teams.taskUpdateResult({ teamId: foreign.teamId, taskId: foreign.id, commandId: command.commandId })))
+    .toMatchObject({ kind: 'not-found', teamId: foreign.teamId, taskId: foreign.id })
+})
+
+it('protects selected-Team reads before their storage work and rejects caller-authored access metadata', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Private Team inspection', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const participantId = required(created.participants.find(member => member.role === 'coordinator'), 'coordinator').id
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const anonymous = new InProcessApiClient(toFetchHandler(api))
+  const selections = [
+    { method: 'getTeam' as const, read: (reader: InProcessApiClient) => reader.teams.get({ teamId }) },
+    { method: 'getTeamSelection' as const, read: (reader: InProcessApiClient) => reader.teams.selection({ teamId }) },
+    { method: 'getMemberSession' as const, read: (reader: InProcessApiClient) => reader.teams.memberSession({ teamId, participantId }) },
+    { method: 'resolveTaskReferences' as const, read: (reader: InProcessApiClient) => reader.teams.taskReferences({ teamId, taskIds: ['private-task' as never] }) },
+    { method: 'getTaskUpdateResult' as const, read: (reader: InProcessApiClient) => reader.teams.taskUpdateResult({
+      teamId, taskId: 'private-task' as never, commandId: 'private-command' as never,
+    }) },
+    { method: 'inspectTask' as const, read: (reader: InProcessApiClient) => reader.teams.taskInspect({ teamId, taskId: 'private-task' as never, section: 'record' }) },
+    { method: 'browse' as const, read: (reader: InProcessApiClient) => reader.teams.browse({ teamId, kind: 'members' }) },
+    { method: 'getHumanAction' as const, read: (reader: InProcessApiClient) => reader.teams.actionRead({ teamId, actionId: 'private-action' as never }) },
+    { method: 'inspectQuiescence' as const, read: (reader: InProcessApiClient) => reader.teams.quiescence({ teamId }) },
+    { method: 'readAudit' as const, read: (reader: InProcessApiClient) => reader.teams.auditRead({ teamId }) },
+    { method: 'listArtifactsPage' as const, read: (reader: InProcessApiClient) => reader.teams.artifactList({ teamId }) },
+    { method: 'listParticipantsPage' as const, read: (reader: InProcessApiClient) => reader.teams.memberList({ teamId }) },
+    { method: 'getTask' as const, read: (reader: InProcessApiClient) => reader.teams.taskGet({ teamId, taskId: 'private-task' as never }) },
+    { method: 'listTasksPage' as const, read: (reader: InProcessApiClient) => reader.teams.taskList({ teamId }) },
+    { method: 'inspectWorkflowPlan' as const, read: (reader: InProcessApiClient) => reader.teams.workflowPlanInspect({ teamId, planId: 'private-plan' as never }) },
+    { method: 'listWorkflowPlansPage' as const, read: (reader: InProcessApiClient) => reader.teams.workflowPlanList({ teamId }) },
+    { method: 'watchTeam' as const, read: (reader: InProcessApiClient) => reader.teams.taskWatch({ teamId, afterCursor: -1 }) },
+  ]
+  for (const selection of selections) {
+    const storage = vi.spyOn(ctx.teams, selection.method)
+    try {
+      expect((await selection.read(foreign)).result, selection.method)
+        .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+      expect((await selection.read(anonymous)).result, selection.method)
+        .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+      expect(storage, selection.method).not.toHaveBeenCalled()
+    } finally { storage.mockRestore() }
+  }
+  expect(value(await client.teams.selection({ teamId })).readAccess).toBe('member')
+  const response = await authenticatedFetch(api).fetch(new Request('http://x/api/team.selection', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'client-request', method: 'team.selection',
+      rpcId: 'forged-access', payload: { teamId, readAccess: 'member' } }) }))
+  expect(await response.json()).toMatchObject({ result: { ok: false, error: { code: 'bad-request' } } })
+})
+
+it('discovers only current-principal metadata through encrypted continuations and rejects cross-scope reuse', async () => {
+  const adapter = new GateAdapter()
+  const ctx = await setup(adapter)
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const own = value(await client.teams.create({ objective: 'Owned directory entry', cwd: process.cwd() }))
+  const other = value(await foreign.teams.create({ objective: 'Private directory entry', cwd: process.cwd() }))
+  const stream = vi.spyOn(adapter, 'stream')
+  let afterCursor: import('@clocky/clocky-team').TeamProductDiscoveryCursor | -1 = -1
+  const rows: import('@clocky/clocky-team').TeamProductSummary[] = []
+  let firstCursor: import('@clocky/clocky-team').TeamProductDiscoveryCursor | undefined
+  for (let pageIndex = 0; pageIndex < 100; pageIndex++) {
+    const page: import('@clocky/clocky-team').TeamProductDirectoryPage = value(await client.teams.list({ afterCursor, limit: 1 }))
+    expect(page).not.toHaveProperty('scanned')
+    expect(Buffer.byteLength(JSON.stringify(page))).toBeLessThanOrEqual(16384)
+    rows.push(...page.items)
+    if (page.nextCursor === undefined) break
+    firstCursor ??= page.nextCursor
+    expect(page.nextCursor).not.toContain(own.team.id)
+    expect(page.nextCursor).not.toContain(other.team.id)
+    afterCursor = page.nextCursor
+    if (pageIndex === 99) throw new Error('Bounded directory continuation did not finish')
+  }
+  expect(rows.map(row => row.id)).toEqual([own.team.id])
+  expect(rows[0]).not.toHaveProperty('authorityGrant')
+  expect(rows[0]?.goal).not.toHaveProperty('budgets')
+  expect(rows[0]?.readAccess).toBe('member')
+  expect(stream).not.toHaveBeenCalled()
+  if (firstCursor === undefined) throw new Error('Two independent Teams must require directory continuation')
+  expect((await foreign.teams.list({ afterCursor: firstCursor, limit: 1 })).result)
+    .toMatchObject({ ok: false, error: { code: 'team-discovery-expired' } })
+  const controller = new AbortController()
+  const original = ctx.teams.listHumanTeamsPage.bind(ctx.teams)
+  vi.spyOn(ctx.teams, 'listHumanTeamsPage').mockImplementationOnce(async (request) => {
+    const result = await original(request)
+    controller.abort()
+    return result
+  })
+  const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  expect((await revoked.teams.list({ limit: 1 })).result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+})
+
+it('protects raw channels and artifact bytes, including authority loss after the provider read', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const created = value(await client.teams.create({ objective: 'Private channel and bytes', cwd: process.cwd() }))
+  const channelId = required(created.channelIds[0], 'channel')
+  const channel = vi.spyOn(ctx.teams, 'readChannelPage')
+  const watch = vi.spyOn(ctx.teams, 'watchChannel')
+  const artifact = vi.spyOn(ctx.teams, 'getArtifact')
+  for (const [index, result] of [await foreign.teams.channelRead({ channelId }),
+    await foreign.teams.channelWatch({ channelId, afterCursor: 1000000 }),
+    await foreign.teams.artifactRead({ teamId: created.team.id, artifactId: 'private-artifact' })].entries()) {
+    expect(result.result).toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+    if (result.result.ok) throw new Error('Private read was accepted')
+    if (index < 2) expect(JSON.stringify(result.result.error)).not.toContain(created.team.id)
+  }
+  expect(channel).not.toHaveBeenCalled()
+  expect(watch.mock.calls.filter(args => args[0].afterCursor === 1000000)).toHaveLength(0)
+  expect(artifact).not.toHaveBeenCalled()
+  const controller = new AbortController()
+  const original = ctx.teams.readChannelPage.bind(ctx.teams)
+  channel.mockImplementationOnce(async (request) => { const value = await original(request); controller.abort(); return value })
+  const revoked = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  expect((await revoked.teams.channelRead({ channelId })).result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  const bytesController = new AbortController()
+  artifact.mockResolvedValueOnce({ id: 'secret-bytes', provider: 'scoped', kind: 'report', uri: 'artifact://scoped/secret', visibility: 'team' })
+  ctx.root.provide('teamArtifacts', { getProvider: () => ({ name: 'scoped' }), read: async () => {
+    bytesController.abort()
+    return new TextEncoder().encode('Private bytes must not be returned')
+  } } as never)
+  const byteReader = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: bytesController.signal }))
+  const withheld = await byteReader.teams.artifactRead({ teamId: created.team.id, artifactId: 'secret-bytes' })
+  expect(withheld.result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  expect(JSON.stringify(withheld)).not.toContain('Private bytes')
+})
+
+it('authorizes filtered task reads before inspection and refuses revoked successful or failed results', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const created = value(await client.teams.create({ objective: 'Authorized task query', cwd: process.cwd() }))
+  const teamId = created.team.id
+  const input = { teamId, kind: 'tasks' as const, query: { search: 'visible' } }
+  const original = ctx.teams.browse.bind(ctx.teams)
+  const browse = vi.spyOn(ctx.teams, 'browse')
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  expect((await foreign.teams.browse(input)).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await required(api.teams, 'teams API').browse({ rpcId: RpcId('unauthenticated-query'), payload: input })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_REQUIRED' } })
+  expect(browse).not.toHaveBeenCalled()
+  expect(value(await client.teams.browse(input))).toMatchObject({ kind: 'tasks', query: input.query, items: [], total: 0 })
+  for (const fail of [false, true]) {
+    const controller = new AbortController()
+    browse.mockImplementationOnce(async (request) => {
+      const result = await original(request)
+      controller.abort()
+      if (fail) throw new Error('Private diagnostic from the revoked read')
+      return result
+    })
+    const revocable = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+    expect((await revocable.teams.browse(input)).result).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  }
+  expect(browse).toHaveBeenCalledTimes(3)
+})
+
+it('isolates Team Session reads and queued mux frames between current principals', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const own = value(await client.teams.create({ objective: 'Owned Session scope', cwd: process.cwd() }))
+  const other = value(await foreign.teams.create({ objective: 'Private Session scope', cwd: process.cwd() }))
+  const ownSession = required(own.activations[0], 'own binding').sessionId
+  const otherSession = required(other.activations[0], 'private binding').sessionId
+  for (const result of [await client.sessions.history({ sessionId: otherSession }),
+    await client.sessions.models({ sessionId: otherSession }),
+    await client.sessions.attachment({ sessionId: otherSession, attachmentId: 'private-image' as never })]) {
+    expect(result.result).toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+    expect(JSON.stringify(result)).not.toContain(other.team.id)
+  }
+  const visible = value(await client.sessions.list({}))
+  expect(visible.items.some(item => item.sessionId === ownSession)).toBe(true)
+  expect(visible.items.some(item => item.sessionId === otherSession)).toBe(false)
+  const controller = new AbortController()
+  const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+    api.events.mux({ rpcId: RpcId('scoped-mux'), payload: {} }, controller.signal))
+  const iterator = stream[Symbol.asyncIterator]()
+  const first = await nextMux(iterator)
+  expect(first).toMatchObject({ type: 'session/subscribed', sessionId: ownSession })
+  const next = nextMux(iterator)
+  const changedOther = value(await foreign.teams.goalUpdate({ teamId: other.team.id, expectedRevision: other.goal.revision,
+    objective: 'Private change must never be published' }))
+  expect(changedOther.goal.objective).toBe('Private change must never be published')
+  value(await client.teams.goalUpdate({ teamId: own.team.id, expectedRevision: own.goal.revision, objective: 'Owned marker' }))
+  const received = await next
+  expect(received).toMatchObject({ type: 'team/changed', event: { type: 'goal/changed', goal: { teamId: own.team.id } } })
+  expect(JSON.stringify(received)).not.toContain('Private change')
+  controller.abort()
+  expect((await iterator.next()).done).toBe(true)
+})
+
+it('withholds completed Session history after credential revocation and rejects fabricated member provenance', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const root = value(await client.teams.create({ objective: 'History authority lifetime', cwd: process.cwd() }))
+  const binding = required(root.activations[0], 'binding')
+  const controller = new AbortController()
+  const original = ctx.teams.assertHumanSessionRead.bind(ctx.teams)
+  let reads = 0
+  vi.spyOn(ctx.teams, 'assertHumanSessionRead').mockImplementation(async (input) => {
+    await original(input)
+    if (++reads === 2) controller.abort()
+  })
+  const revocable = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: controller.signal }))
+  expect((await revocable.sessions.history({ sessionId: binding.sessionId })).result)
+    .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+  const fabricated = await ctx.agents.create({ sessionId: SessionId('unbound-member-provenance'), meta: {
+    teamId: root.team.id, participantId: binding.activation.participantId },
+  agentOptions: { provider: 'mock', model: 'mock' } })
+  try {
+    expect((await client.sessions.history({ sessionId: fabricated.agent.session.id })).result)
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  } finally { await fabricated.dispose() }
+})
+
+it('reads a cold bound Team Session without a project directory while withholding unbound and ordinary locationless logs', async () => {
+  const root = await freshRoot()
+  const ctx = await setup(new GateAdapter(), async (seed) => {
+    await seed.plugin(AttachmentLocal, { clockyHome: root })
+  }, true, root)
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd(), coldBlankProbeMaxBytes: 0 })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const team = value(await client.teams.create({ objective: 'Inspect a retired actor', cwd: process.cwd() }))
+  const binding = required(team.activations[0], 'binding')
+  const session = required(ctx.sessions.get(binding.sessionId), 'Session')
+  const image = await ctx.attachments.saveImage({ data: Buffer.from(CHANNEL_MEDIA_PNG, 'base64'), mediaType: 'image/png' })
+  session.append('turn/start', { turn: 1 })
+  session.append('user/message', { id: MessageId('retired-actor-image'), role: 'user',
+    content: [{ type: 'image', attachment: image }], source: { kind: 'user' } }, { surfaceOp: 'append' })
+  await ctx.sessions.flush(session)
+  const ordinary = ctx.sessions.create(SessionId('ordinary-locationless'))
+  const unbound = ctx.sessions.create(SessionId('unbound-locationless'), { meta: {
+    teamId: team.team.id, participantId: binding.activation.participantId } })
+  ordinary.append('turn/start', { turn: 1 })
+  unbound.append('turn/start', { turn: 1 })
+  await ctx.sessions.flush(ordinary)
+  await ctx.sessions.flush(unbound)
+  const retired = new Set([binding.sessionId, ordinary.id, unbound.id])
+  const list = ctx.sessionPersistence.list.bind(ctx.sessionPersistence)
+  const inspect = ctx.sessionPersistence.inspect.bind(ctx.sessionPersistence)
+  const retained = { meta: session.header, events: [...session.events] }
+  const get = ctx.sessions.get.bind(ctx.sessions)
+  const attached = ctx.sessions.list.bind(ctx.sessions)
+  // Retain the real durable Team binding while modeling a retired actor's cwd-less native header.
+  const withoutCwd = <T extends { cwd?: string }>(meta: T): Omit<T, 'cwd'> => {
+    const { cwd: _cwd, ...retained } = meta
+    return retained
+  }
+  vi.spyOn(ctx.sessions, 'get').mockImplementation(id => retired.has(id) ? undefined : get(id))
+  vi.spyOn(ctx.sessions, 'list').mockImplementation(() => attached().filter(item => !retired.has(item.id)))
+  vi.spyOn(ctx.sessionPersistence, 'list').mockImplementation(async signal => (await list(signal))
+    .map(meta => retired.has(meta.id) ? withoutCwd(meta) : meta))
+  const reads = vi.spyOn(ctx.sessionPersistence, 'inspect').mockImplementation(async (id) => {
+    const result = id === binding.sessionId ? retained : await inspect(id)
+    return retired.has(id) ? { ...result, meta: withoutCwd(result.meta) } : result
+  })
+  const create = vi.spyOn(ctx.agents, 'create')
+  try {
+    const listed = value(await client.sessions.list({})).items
+    expect(listed.find(item => item.sessionId === binding.sessionId)).toMatchObject({
+      running: false, team: { teamId: team.team.id, participantId: binding.activation.participantId } })
+    expect(listed.find(item => item.sessionId === binding.sessionId)).not.toHaveProperty('cwd')
+    expect(listed.some(item => item.sessionId === ordinary.id || item.sessionId === unbound.id)).toBe(false)
+    expect(value(await foreign.sessions.list({})).items.some(item => item.sessionId === binding.sessionId)).toBe(false)
+    expect(value(await client.sessions.history({ sessionId: binding.sessionId })).events
+      .some(entry => entry.event.type === 'user/message' && entry.event.data.id === MessageId('retired-actor-image'))).toBe(true)
+    expect(value(await client.sessions.attachment({ sessionId: binding.sessionId, attachmentId: image.attachmentId })).data)
+      .toBe(CHANNEL_MEDIA_PNG)
+    expect((await foreign.sessions.history({ sessionId: binding.sessionId })).result)
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+    expect((await client.sessions.history({ sessionId: unbound.id })).result)
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+    expect((await client.sessions.history({ sessionId: ordinary.id })).result)
+      .toMatchObject({ ok: false, error: { code: 'session-not-found' } })
+    expect(create).not.toHaveBeenCalled()
+    const revoked = new AbortController()
+    reads.mockImplementationOnce(async (id) => {
+      const result = id === binding.sessionId ? retained : await inspect(id)
+      revoked.abort()
+      return { ...result, meta: withoutCwd(result.meta) }
+    })
+    const revocable = new InProcessApiClient(authenticatedFetch(api, { ...authenticatedProductCall, signal: revoked.signal }))
+    expect((await revocable.sessions.history({ sessionId: binding.sessionId })).result)
+      .toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+    reads.mockImplementationOnce(async (id) => {
+      const result = id === binding.sessionId ? retained : await inspect(id)
+      return { ...result, meta: { ...withoutCwd(result.meta), id: unbound.id } }
+    })
+    expect((await client.sessions.history({ sessionId: binding.sessionId })).result.ok).toBe(false)
+  } finally { vi.restoreAllMocks() }
+})
+
+it('ends waiting event readers on credential revocation and rejects a configured backlog overflow', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  value(await client.teams.create({ objective: 'Bound event buffering', cwd: process.cwd() }))
+  const credentials = new AbortController()
+  const request = new AbortController()
+  const call = { ...authenticatedProductCall, signal: credentials.signal }
+  const stream = await withAuthenticatedProductCall(call, async () =>
+    api.events.mux({ rpcId: RpcId('credential-bound-stream'), payload: {} }, request.signal))
+  const iterator = stream[Symbol.asyncIterator]()
+  expect((await nextMux(iterator)).type).toBe('session/subscribed')
+  const waiting = iterator.next()
+  credentials.abort()
+  expect((await waiting).done).toBe(true)
+  for (const limits of [{ maxPendingEventFrames: 1, maxPendingEventBytes: 1024 },
+    { maxPendingEventFrames: 4096, maxPendingEventBytes: 1 }]) {
+    const boundedCtx = await setup(new GateAdapter())
+    const bounded = createApiProxy(boundedCtx, { defaultModelSelection: () => boundedCtx.agentDefaultModel.currentSelection(),
+      cwd: process.cwd(), ...limits })
+    const boundedClient = new InProcessApiClient(authenticatedFetch(bounded))
+    value(await boundedClient.teams.create({ objective: 'First bounded source', cwd: process.cwd() }))
+    value(await boundedClient.teams.create({ objective: 'Second bounded source', cwd: process.cwd() }))
+    const overflow = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+      bounded.events.mux({ rpcId: RpcId('bounded-stream'), payload: {} }, new AbortController().signal))
+    await expect(overflow[Symbol.asyncIterator]().next()).rejects.toThrow(/backlog exceeded/)
+  }
+  for (const limit of [0, -1, 1.5, Number.POSITIVE_INFINITY]) {
+    expect(() => createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd(), maxPendingEventFrames: limit }))
+      .toThrow(/positive safe integers/)
+    expect(() => createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd(), maxPendingEventBytes: limit }))
+      .toThrow(/positive safe integers/)
+  }
+})
+
+it('announces revocation only for a previously visible Team without publishing its changed data', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(), cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const root = value(await client.teams.create({ objective: 'Visible before withdrawal', cwd: process.cwd() }))
+  const signal = new AbortController()
+  const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+    api.events.mux({ rpcId: RpcId('revoked-team-stream'), payload: {} }, signal.signal))
+  const iterator = stream[Symbol.asyncIterator]()
+  expect((await nextMux(iterator)).type).toBe('session/subscribed')
+  const denied = vi.spyOn(ctx.teams, 'resolveHumanReadAuthority')
+    .mockRejectedValue(new TeamError('Membership was withdrawn', 'TEAM_HUMAN_ACTOR_FORBIDDEN'))
+  try {
+    const next = nextMux(iterator)
+    value(await client.teams.goalUpdate({ teamId: root.team.id, expectedRevision: root.goal.revision,
+      objective: 'Private changed objective' }))
+    expect(await next).toEqual({ type: 'team/access-revoked', teamId: root.team.id })
+  } finally { denied.mockRestore(); signal.abort(); await iterator.return?.() }
+})
+
+it('filters workspace and archive references at unary and queued-frame publication', async () => {
+  const ctx = await setup(new GateAdapter(), async (seed) => {
+    const domains = new DomainFacility(seed, { backend: 'json', routes: {} })
+    seed.storage.mount('domain', domains)
+    seed.provide('storageDomain', domains)
+    seed.effect(() => () => domains.closeAll())
+    await seed.plugin(WorkspaceRegistry)
+  })
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const own = value(await client.teams.create({ objective: 'Workspace account owner', cwd: process.cwd() }))
+  const other = value(await foreign.teams.create({ objective: 'Private workspace account', cwd: process.cwd() }))
+  const ownId = required(own.activations[0], 'own binding').sessionId
+  const otherId = required(other.activations[0], 'private binding').sessionId
+  const entry = await ctx.workspaceRegistry.create(process.cwd())
+  await entry.attachSession(otherId)
+  await entry.attachSession(ownId)
+  await ctx.workspaceRegistry.archiveSession(otherId)
+  const list = value(await client.workspace.list({}))
+  expect(list.items.find(item => item.workspaceId === entry.id)?.sessionIds).toContain(ownId)
+  expect(JSON.stringify(list)).not.toContain(otherId)
+  expect((await client.workspace.archiveSession({ sessionId: otherId })).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  expect((await client.workspace.insertSessionBefore({ workspaceId: entry.id, sessionId: ownId, beforeSessionId: otherId })).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  const renamed = value(await client.workspace.rename({ workspaceId: entry.id, title: 'Scoped workspace' }))
+  expect(renamed.workspace.sessionIds).toContain(ownId)
+  expect(renamed.workspace.sessionIds).not.toContain(otherId)
+  const abort = new AbortController()
+  const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+    api.events.host({ rpcId: RpcId('scoped-workspace-stream'), payload: {} }, abort.signal))
+  const iterator = stream[Symbol.asyncIterator]()
+  const pending = iterator.next()
+  await entry.setTitle('Queued workspace marker')
+  const changed = await pending
+  expect(changed.done).toBe(false)
+  if (changed.done) throw new Error('Workspace stream ended')
+  expect(changed.value.payload).toMatchObject({ type: 'host/workspace-changed', workspace: { sessionIds: [ownId] } })
+  expect(JSON.stringify(changed.value.payload)).not.toContain(otherId)
+  const archived = iterator.next()
+  await ctx.workspaceRegistry.archiveSession(ownId)
+  const increment = await archived
+  if (increment.done) throw new Error('Archive stream ended')
+  expect(increment.value.payload).toMatchObject({ type: 'host/archived-sessions-changed', archivedSessionIds: [ownId] })
+  abort.abort()
+  expect((await iterator.next()).done).toBe(true)
+})
+
+it('authorizes ZIP logs, descendants and media through their own current Session authority', async () => {
+  const root = await freshRoot()
+  const ctx = await setup(new GateAdapter(), async (seed) => {
+    await seed.plugin(AttachmentLocal, { clockyHome: root })
+    await seed.plugin(SessionQuerySqlite, { path: join(root, 'product-query.sqlite'), openAt: 'never' })
+  }, true, root)
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const own = value(await client.teams.create({ objective: 'ZIP owner', cwd: process.cwd() }))
+  const other = value(await foreign.teams.create({ objective: 'Private ZIP owner', cwd: process.cwd() }))
+  const ownId = required(own.activations[0], 'own binding').sessionId
+  const otherId = required(other.activations[0], 'private binding').sessionId
+  const child = ctx.sessions.create(SessionId('owned-zip-descendant'), { meta: { cwd: process.cwd(), parentSession: ownId } })
+  child.append('turn/start', { turn: 1 })
+  const image = await ctx.attachments.saveImage({ data: Buffer.from(CHANNEL_MEDIA_PNG, 'base64'), mediaType: 'image/png' })
+  child.append('user/message', { id: MessageId('export-image-message'), role: 'user',
+    content: [{ type: 'image', attachment: image }], source: { kind: 'user' } }, { surfaceOp: 'append' })
+  const raw = vi.spyOn(ctx.sessionPersistence, 'readRaw')
+  const privateHandler = authenticatedFetch(api)
+  expect((await privateHandler.fetch(new Request(`http://host/api/session.export?sessionId=${otherId}`))).status).toBe(403)
+  expect(raw).not.toHaveBeenCalled()
+  const missing = await privateHandler.fetch(new Request('http://host/api/session.export?sessionId=unknown-private-id'))
+  expect(missing.status).toBe(403)
+  const descendantList = value(await client.sessions.list({})).items.find(item => item.sessionId === child.id)
+  expect(descendantList?.team).toEqual({ teamId: own.team.id, participantId: own.activations[0]?.activation.participantId })
+  expect((await foreign.sessions.history({ sessionId: child.id })).result)
+    .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  const response = await privateHandler.fetch(new Request(`http://host/api/session.export?sessionId=${ownId}&includeDescendants=true`))
+  expect(response.status).toBe(200)
+  const files = unzipSync(new Uint8Array(await response.arrayBuffer()))
+  expect(strFromU8(required(files['session.jsonl'], 'root log'))).toContain(ownId)
+  expect(strFromU8(required(files[`subagents/${child.id}/session.jsonl`], 'descendant log'))).toContain(child.id)
+  expect(Object.keys(files).some(path => path.startsWith('media/'))).toBe(true)
+  expect(raw.mock.calls.map(([id]) => id)).not.toContain(otherId)
+  raw.mockRestore()
+  const credentials = new AbortController()
+  const original = ctx.sessionPersistence.readRaw.bind(ctx.sessionPersistence)
+  const duringRead = vi.spyOn(ctx.sessionPersistence, 'readRaw').mockImplementation(async (id, signal) => {
+    const result = await original(id, signal)
+    credentials.abort()
+    return result
+  })
+  const revocable = authenticatedFetch(api, { ...authenticatedProductCall, signal: credentials.signal })
+  try {
+    const revoked = await revocable.fetch(new Request(`http://host/api/session.export?sessionId=${ownId}`))
+    expect(revoked.status).toBe(403)
+    expect(await revoked.text()).not.toContain(ownId)
+    expect(duringRead).toHaveBeenCalledOnce()
+  } finally { duringRead.mockRestore() }
+  const mediaCredentials = new AbortController()
+  const originalImage = ctx.attachments.readImage.bind(ctx.attachments)
+  const mediaRead = vi.spyOn(ctx.attachments, 'readImage').mockImplementation(async (ref, signal) => {
+    const stored = await originalImage(ref, signal)
+    mediaCredentials.abort()
+    return stored
+  })
+  try {
+    const handler = authenticatedFetch(api, { ...authenticatedProductCall, signal: mediaCredentials.signal })
+    const mediaResponse = await handler.fetch(new Request(`http://host/api/session.export?sessionId=${ownId}&includeDescendants=true`))
+    expect(mediaResponse.status).toBe(200)
+    await expect(mediaResponse.arrayBuffer()).rejects.toThrow('Session log export was interrupted')
+    expect(mediaRead).toHaveBeenCalledOnce()
+  } finally { mediaRead.mockRestore() }
+})
+
+it('refuses missing or cyclic Session ancestry before transcript IO', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const missing = ctx.sessions.create(SessionId('missing-parent-child'), { meta: { parentSession: SessionId('absent-parent') } })
+  const first = ctx.sessions.create(SessionId('cycle-first'), { meta: { parentSession: SessionId('cycle-second') } })
+  const second = ctx.sessions.create(SessionId('cycle-second'), { meta: { parentSession: first.id } })
+  const inspect = vi.spyOn(ctx.sessionPersistence, 'inspect')
+  for (const session of [missing, first, second]) {
+    expect((await client.sessions.history({ sessionId: session.id })).result)
+      .toMatchObject({ ok: false, error: { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN' } })
+  }
+  expect(inspect).not.toHaveBeenCalled()
+})
+
+it('counts a frame awaiting authorization against the backlog and withholds it after overflow', async () => {
+  const ctx = await setup(new GateAdapter())
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd(), maxPendingEventFrames: 1 })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const team = value(await client.teams.create({ objective: 'Authorization backlog', cwd: process.cwd() }))
+  let entered!: () => void
+  let release!: () => void
+  const started = new Promise<void>((resolve) => { entered = resolve })
+  const blocked = new Promise<void>((resolve) => { release = resolve })
+  const original = ctx.teams.assertHumanSessionRead.bind(ctx.teams)
+  const check = vi.spyOn(ctx.teams, 'assertHumanSessionRead').mockImplementationOnce(async (input) => {
+    entered()
+    await blocked
+    await original(input)
+  })
+  try {
+    const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+      api.events.mux({ rpcId: RpcId('authorization-backlog'), payload: {} }, new AbortController().signal))
+    const waiting = stream[Symbol.asyncIterator]().next()
+    await started
+    value(await client.teams.goalUpdate({ teamId: team.team.id, expectedRevision: team.goal.revision, objective: 'Overflow marker' }))
+    release()
+    await expect(waiting).rejects.toThrow('backlog exceeded')
+  } finally { release(); check.mockRestore() }
+})
+
+it('filters every Session-owned forwarded event for the current principal', async () => {
+  const ctx = await setup(new GateAdapter(), async (seed) => {
+    const domains = new DomainFacility(seed, { backend: 'json', routes: {} })
+    seed.storage.mount('domain', domains)
+    seed.provide('storageDomain', domains)
+    seed.effect(() => () => domains.closeAll())
+    await seed.plugin(WorkspaceRegistry)
+  })
+  const api = createApiProxy(ctx, { defaultModelSelection: () => undefined, cwd: process.cwd() })
+  const client = new InProcessApiClient(authenticatedFetch(api))
+  const foreign = new InProcessApiClient(authenticatedFetch(api, foreignAuthenticatedProductCall))
+  const own = value(await client.teams.create({ objective: 'Forwarded event owner', cwd: process.cwd() }))
+  const other = value(await foreign.teams.create({ objective: 'Private forwarded owner', cwd: process.cwd() }))
+  const ownId = required(own.activations[0], 'own binding').sessionId
+  const otherId = required(other.activations[0], 'private binding').sessionId
+  const abort = new AbortController()
+  const stream = await withAuthenticatedProductCall(authenticatedProductCall, async () =>
+    api.events.host({ rpcId: RpcId('forwarded-owner-stream'), payload: {} }, abort.signal))
+  const iterator = stream[Symbol.asyncIterator]()
+  const events = ['agent-preset/selected', 'cordis/request-run', 'cordis/request-run-resolved', 'cordis/dynamic-package',
+    'cordis/dynamic-retract', 'cordis/inspect-query', 'cordis/inspect-query-resolved'] as const
+  for (const event of events) {
+    const waiting = iterator.next()
+    for (const id of [otherId, ownId]) {
+      if (event === 'agent-preset/selected') ctx.emit(event, id, 'preset-marker')
+      else ctx.emit(event, { agentId: id, requestId: 'request-marker' as never, pluginId: 'plugin-marker' as never,
+        packageId: 'package-marker' as never, pluginRunId: 'run-marker' as never, name: 'Owned marker', purpose: 'Owned marker',
+        mode: 'run', requiresApproval: true, outcome: 'approved', provider: 'provider-marker', method: 'method-marker' } as never)
+    }
+    const entry = await waiting
+    if (entry.done) throw new Error('Forwarded stream ended')
+    expect(entry.value.payload).toMatchObject({ type: 'host/remote-event', event })
+    expect(JSON.stringify(entry.value.payload)).toContain(ownId)
+    expect(JSON.stringify(entry.value.payload)).not.toContain(otherId)
+  }
+  const global = iterator.next()
+  ctx.emit('commands/change')
+  const unchanged = await global
+  if (unchanged.done) throw new Error('Global stream ended')
+  expect(unchanged.value.payload).toMatchObject({ type: 'host/remote-event', event: 'commands/change', args: [] })
+  abort.abort()
+  expect((await iterator.next()).done).toBe(true)
 })

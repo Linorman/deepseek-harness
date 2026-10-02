@@ -14,7 +14,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { hasClass, installAssembledBootEnv, mountAssembledApp, REFRESHING_GOLDEN } from './assembled-boot.ts'
+import { openAssembledCoordinator, hasClass, installAssembledBootEnv, mountAssembledApp, REFRESHING_GOLDEN } from './assembled-boot.ts'
 
 const EXPECTED = join(process.cwd(), 'apps/web/tests/snapshots/todo-row/parallel-plan.expected.txt')
 
@@ -44,8 +44,9 @@ describe('assembled todo surfaces', () => {
   it('renders the parallel plan as a row summary, a separate active count, and the dock plan strip', async () => {
     mountAssembledApp()
 
-    const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+    const tasks = await screen.findByRole('region', { name: 'Team directory' }, { timeout: 10_000 })
     fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+    await openAssembledCoordinator()
     await waitFor(() => {
       expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
     }, { timeout: 10_000 })

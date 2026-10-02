@@ -11,7 +11,7 @@ import {
   teamTaskIdSchema,
   participantIdSchema,
   envelopeIdSchema,
-  taskAttemptIdSchema,
+  taskAttemptIdSchema, activationIdSchema,
   teamWorkflowPlanIdSchema,
   teamWorkflowTaskTemplateIdSchema,
   teamClosureIdempotencyKeySchema,
@@ -221,6 +221,14 @@ class FakeTeamRuntime extends TeamRuntime {
   humanDeliveryProof(proof: import('../src/types.ts').TeamSystemHumanDeliveryProof) { return this.requireSystemHumanDeliveryProof(proof) }
   humanSink<T>(scope: import('../src/types.ts').TeamHumanSinkScope,
     action: (proof: import('../src/types.ts').TeamHumanSinkProof) => Promise<T>) { return this.withHumanSinkProof(scope, action) }
+  override resolveHumanActor(): Promise<never> { return Promise.reject(new Error('Fake runtime has no human lookup')) }
+  override resolveHumanReadAuthority(): Promise<never> { return Promise.reject(new Error('Fake runtime has no human read authority')) }
+  override listHumanTeamsPage(): Promise<never> { return Promise.reject(new Error('Fake runtime has no human discovery')) }
+  override assertHumanSessionRead(): Promise<never> { return Promise.reject(new Error('Fake runtime has no Session reads')) }
+  override getExecutionProfiles(): Promise<never> { return Promise.reject(new Error('Fake runtime has no profiles')) }
+  override resolveIdentities(): Promise<never> { return Promise.reject(new Error('Fake runtime has no identity resolution')) }
+  override getMemberReadiness(): Promise<never> { return Promise.reject(new Error('Fake runtime has no member readiness')) }
+  override getTaskCapabilities(): Promise<never> { return Promise.reject(new Error('Fake runtime has no task capabilities')) }
   override inspectTask(): Promise<never> { return Promise.reject(new Error('Fake runtime has no task inspection')) }
   createTeam(_request: TeamCreateRequest): Promise<TeamStateSnapshot> {
     throw new Error('FakeTeamRuntime does not persist Teams')
@@ -342,7 +350,7 @@ class FakeTeamRuntime extends TeamRuntime {
     throw new Error('FakeTeamRuntime does not persist tasks')
   }
 
-  updateTaskDetails(_request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot> {
+  updateTaskDetails(_request: TeamTaskDetailsUpdateRequest): Promise<import('../src/types.ts').TeamTaskDetailsUpdateResult> {
     throw new Error('FakeTeamRuntime does not persist tasks')
   }
 
@@ -453,6 +461,8 @@ class FakeTeamRuntime extends TeamRuntime {
   getChannel(_request: ChannelGetRequest): Promise<ChannelSnapshot> {
     throw new Error('FakeTeamRuntime does not persist channels')
   }
+
+  override getChannelOwner(): Promise<never> { return Promise.reject(new Error('Fake runtime has no channel ownership')) }
 
   readChannel(_request: ChannelReadRequest): Promise<ChannelReadResult> {
     throw new Error('FakeTeamRuntime does not persist channels')
@@ -942,6 +952,9 @@ describe('TeamRuntime service definition', () => {
     const unsupported: Array<() => Promise<unknown>> = [
       () => ctx.teams.getPersistenceReference({ kind: 'team', teamId, expectedCursor: 1 }),
       () => ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('action-1') }),
+      () => ctx.teams.inspectHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('action-1'), actor: humanActor }),
+      () => ctx.teams.resolveTaskReferences({ teamId, taskIds: [] }),
+      () => ctx.teams.getTaskUpdateResult({ teamId, taskId, commandId: 'unsupported-update' as never }),
       () => ctx.teams.acceptHumanActionResponse({ ...cursor, actor: systemHumanActionProof() }),
       () => ctx.teams.unavailableHumanAction({ ...cursor, actor: systemHumanActionProof() }),
       () => ctx.teams.inspectWorkflowPlan({ teamId, planId }),
@@ -1034,7 +1047,8 @@ describe('TeamRuntime service definition', () => {
     const goal = { teamId: 'team-1', revision: 2, objective: 'Settle every owner.', phase: 'complete', budgets: {} }
     const creator = { teamId: 'team-1', participantId: 'coordinator-1', activationId: 'activation-1',
       sessionId: 'session-1', provider: 'in-process' }
-    const task = { id: 'task-1', teamId: 'team-1', revision: 2, subject: 'Review', description: 'Review the result.',
+    const task = {
+      createdAt: 0, id: 'task-1', teamId: 'team-1', revision: 2, subject: 'Review', description: 'Review the result.',
       execution: { kind: 'participant' as const },
       phase: 'cancelled', blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [],
       workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, reviewHistory: [],
@@ -3716,6 +3730,19 @@ it('refuses child and Simulation creation effects on a provider without those ca
       teamId: binding.parentTeamId, taskId: binding.parentTaskId, childTeamId: binding.childTeamId,
       delegationId: binding.delegationId, expectedCursor: 1, expectedRevision: 1, responseEnvelopeId: 'result',
     }), actor: retainedProof() as import('../src/types.ts').TeamSystemDelegationProof })).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.startSimulationTaskAttempt({ teamId: binding.parentTeamId, taskId: binding.parentTaskId,
+      expectedRevision: 1, attemptId: taskAttemptIdSchema.parse('unsupported-start'),
+      actor: retainedProof() as import('../src/types.ts').TeamSystemTaskControlProof }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.settleSimulationTaskAttempt({ teamId: binding.parentTeamId, taskId: binding.parentTaskId,
+      expectedRevision: 1, attemptId: taskAttemptIdSchema.parse('unsupported-settle'), outcome: { kind: 'cancelled' },
+      actor: retainedProof() as import('../src/types.ts').TeamSystemTaskControlProof }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(runtime.assignSimulationTask({ teamId: binding.parentTeamId, taskId: binding.parentTaskId,
+      expectedRevision: 1, participantId: binding.coordinatorId,
+      activationId: activationIdSchema.parse('unsupported-activation'), attemptId: taskAttemptIdSchema.parse('unsupported-attempt'),
+      leaseDurationMs: 1000, actor: retainedProof() as import('../src/types.ts').TeamSystemTaskControlProof }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
     await expect(runtime.createSimulationTask({ ...teamTaskCreateInputSchema.parse({ teamId: binding.parentTeamId,
       expectedCursor: 1, createCommand: { idempotencyKey: 'create' }, subject: 'Task', description: 'Requested task',
       blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',

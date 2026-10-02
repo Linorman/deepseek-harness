@@ -8,14 +8,15 @@
 // intake chain (paste → ordered thumbnail rail → image-only send enablement → remove).
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
+import { openAssembledCoordinator, installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
 
 installAssembledBootEnv()
 
 /** Open the fixture Team coordinator transcript. */
 async function openFixtureCoordinator(): Promise<void> {
-  const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+  const tasks = await screen.findByRole('region', { name: 'Team directory' }, { timeout: 10_000 })
   fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+  await openAssembledCoordinator()
   await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })
@@ -69,11 +70,11 @@ it('renders the history image pair through the authorized attachment route and o
   const frame = userImage.closest('button')
   if (frame === null) throw new Error('image frame button missing')
   fireEvent.click(frame)
-  const lightbox = await screen.findByRole('dialog')
+  const lightbox = await screen.findByRole('dialog', { name: 'Original image preview' })
   expect(within(lightbox).getByRole('img').getAttribute('src')?.split(':')[0]).toBe('blob')
   fireEvent.click(within(lightbox).getByRole('button', { name: /Close/ }))
   await waitFor(() => {
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('dialog', { name: 'Original image preview' })).toBeNull()
   })
 })
 

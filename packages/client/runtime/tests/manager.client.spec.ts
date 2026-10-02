@@ -23,6 +23,24 @@ function summary(sessionId: SessionId, over: SummaryOver = {}) {
 }
 
 describe('instances', () => {
+  it('retires summaries, windows, jobs and old list responses when authentication changes', async () => {
+    const api = new FakeApiClient()
+    api.onList = async () => ok({ items: [summary(S1)] as never[] })
+    const manager = new SessionManager(api, fakeRemote())
+    await manager.refreshList()
+    const previous = manager.get(S1)
+    const pending = deferred<Awaited<ReturnType<typeof api.onList>>>()
+    api.onList = async () => await pending.promise
+    const oldRead = manager.refreshList()
+    manager.clearAuthorization()
+    api.onList = async () => ok({ items: [summary(S2)] as never[] })
+    await manager.refreshList()
+    pending.resolve(ok({ items: [summary(S1)] as never[] }))
+    await oldRead
+    expect(manager.get(S1)).not.toBe(previous)
+    expect(manager.getListSnapshot().items.map(item => item.sessionId)).toEqual([S2])
+  })
+
   it('lazily builds one resident instance per id and syncs the running bit from the list', async () => {
     const api = new FakeApiClient()
     api.onList = () => Promise.resolve(ok({ items: [summary(S1, { running: true })] as never[] }))

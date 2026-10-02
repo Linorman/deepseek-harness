@@ -30,6 +30,8 @@ Team activation controller 会通过与本地 placement 相同的持久事务绑
 
 ## Consequences
 
+[SDK 通知决策](2026-09-29-sdk-principal-notification-ownership.zh.md) 负责当前凭据检查，以及按主体发布精确 activation 和 Session 事件。
+
 SDK process 可以托管带有 fresh/resume provenance 和准确生命周期观察的 durable-bound remote Participant epoch。持久 binding 提交后，它可以经 activation-local 固定 Link 接收 direct 和 task-assignment input、flush Session source、确认持久 delivery、报告 task outcome 并提交显式 final output。同主机部署可在 Hub 重启后冷替换已 fence 的 child。显式 startup-recovery Consumer 会扫描最新且匹配、未完成或 `fenced` 的 SDK epoch 以替换，并且只为本地 `quiesced` epoch 重试 wake cleanup；远程监督由[带版本的 endpoint 决策](2026-09-08-owned-activation-supervisor-endpoints.zh.md)拥有。
 
 [AgentRuntime Service Definition 决策](2026-08-27-agent-runtime-service-definition.zh.md)仍是注册表和进程内 provider 的权威。[持久 activation binding 决策](2026-08-28-durable-local-activation-binding.zh.md)仍是 Team journal admission 的权威。[原生多 agent 工作系统提案](../../proposed/architecture/2026-08-27-native-multi-agent-work-system.zh.md)仍为 proposed，因为投递、调度、workspace 和产品阶段尚未完成。

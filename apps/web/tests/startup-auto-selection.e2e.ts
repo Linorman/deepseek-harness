@@ -28,7 +28,7 @@ describe('web e2e: Team draft startup', () => {
 
   it('renders an enabled Team draft and no Session browser', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-team-draft-startup'))
-    await page.getByRole('region', { name: 'Tasks' }).waitFor({ timeout: 30_000 })
+    await page.getByRole('region', { name: 'Team directory' }).waitFor({ timeout: 30_000 })
     expect(await page.locator('div[data-phase]').first().getAttribute('data-phase')).toBe('hero')
     const textarea = page.getByPlaceholder('Describe what you want to build')
     await textarea.waitFor({ timeout: 30_000 })

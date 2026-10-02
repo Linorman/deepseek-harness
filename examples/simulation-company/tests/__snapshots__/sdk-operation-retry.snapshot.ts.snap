@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`grants and reconciles an unknown outbox operation through actual SDK stdio (json) 1`] = `
+{
+  "coldReadsAcquireOwner": false,
+  "explicitResume": "completed",
+  "grantAndQueryInference": false,
+  "grantPublishesTarget": false,
+  "inventoryTransfers": 1,
+  "observedAttemptCounts": [
+    1,
+    2,
+  ],
+  "oldGrantAllocatesAnotherBudget": false,
+  "originalGrantResponse": "lost",
+  "originalInputRetained": true,
+  "originalOperationIdentity": true,
+  "restoreInference": false,
+  "targetEnvelopes": 1,
+}
+`;
+
+exports[`grants and reconciles an unknown outbox operation through actual SDK stdio (sqlite) 1`] = `
+{
+  "coldReadsAcquireOwner": false,
+  "explicitResume": "completed",
+  "grantAndQueryInference": false,
+  "grantPublishesTarget": false,
+  "inventoryTransfers": 1,
+  "observedAttemptCounts": [
+    1,
+    2,
+  ],
+  "oldGrantAllocatesAnotherBudget": false,
+  "originalGrantResponse": "lost",
+  "originalInputRetained": true,
+  "originalOperationIdentity": true,
+  "restoreInference": false,
+  "targetEnvelopes": 1,
+}
+`;

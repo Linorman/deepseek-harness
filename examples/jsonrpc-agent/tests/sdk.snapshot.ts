@@ -338,6 +338,19 @@ async function runScenario(scenario: SdkScenario): Promise<{
       { onNotification: (notification) => { notifications.push(notification) } },
     )
     if (scenario.name === 'team-final') {
+      await expect(harness.client.initialize({ credential: 'jsonrpc-snapshot-product-credential', cwd,
+        provider: 'test-provider', model: 'test-model' })).resolves.toMatchObject({ serverInfo: { name: 'clocky-sdk-runtime' } })
+      const directory = await harness.listTeams({ limit: 8 })
+      const summary = directory.items.find(item => item.id === result.teamId)
+      expect(summary).toBeDefined()
+      expect(summary?.readAccess).toBe('member')
+      expect(summary).not.toHaveProperty('authorityGrant')
+      expect(summary?.goal).not.toHaveProperty('budgets')
+      expect(directory).not.toHaveProperty('scanned')
+      const selection = await harness.getTeamSelection(result.teamId)
+      expect(selection.selection.readAccess).toBe('member')
+      const command = { teamId: result.teamId, taskId: 'unsubmitted-task', commandId: 'unsubmitted-update' }
+      expect(await harness.client.getTeamTaskUpdateResult(command)).toEqual({ kind: 'not-found', ...command })
       const inbox = await harness.inboxRead({ limit: 1 })
       expect(inbox.items).toMatchObject([{ kind: 'final', teamId: result.teamId, envelopeId: result.final.envelopeId, text: result.finalResponse }])
       expect(inbox.displayCursor).toBe(-1)

@@ -1,11 +1,10 @@
-- banner:
-  - text: CJK strong emphasis
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: CJK strong emphasis
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: Render adjacent CJK strong emphasis. {{clock}}
 - button "Copy":
   - img

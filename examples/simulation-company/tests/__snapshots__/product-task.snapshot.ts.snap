@@ -1,0 +1,881 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`runs actual 'json' 'deterministic' product tasks through '' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": false,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'assigned' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'created' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'decision' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'effect' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'input' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'observed' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'reserved' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'result' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'deterministic' product tasks through 'settled' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through '' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": false,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'assigned' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'created' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'decision' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'effect' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'input' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'observed' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'reserved' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'result' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'json' 'model' product tasks through 'settled' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through '' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": false,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'assigned' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'created' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'decision' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'effect' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'input' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'observed' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'reserved' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'result' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'deterministic' product tasks through 'settled' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 0,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through '' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": false,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'assigned' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'created' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'decision' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'effect' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'input' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'observed' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'reserved' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'result' process exit 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "continuation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 1,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;
+
+exports[`runs actual 'sqlite' 'model' product tasks through 'settled' process exit 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "continuation": "obligation",
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "originalEffects": 1,
+  "phase": "paused",
+  "recovered": true,
+  "retired": 0,
+  "scopedToolsOnly": true,
+  "task": "completed",
+  "taskInputsRecorded": true,
+  "tasks": 1,
+  "transferRequests": 3,
+}
+`;

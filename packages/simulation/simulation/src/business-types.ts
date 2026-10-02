@@ -2,7 +2,7 @@
 import type { SimulationOutbox } from './outbox-types.ts'
 import type { z } from 'zod'
 import type {
-  simulationDecisionIdSchema, simulationDecisionSlotSchema, simulationGrantIdSchema, simulationOperationIdSchema,
+  simulationGrantIdSchema,
   simulationFulfillmentSchema, simulationOperationSchema, simulationProposalSchema, simulationQuantitySchema, simulationResourceIdSchema,
   simulationResourceSpecSchema, simulationTransactionSchema,
 } from './business.ts'
@@ -11,13 +11,9 @@ import type { SimulationWriterEpoch } from './writer-types.ts'
 import type { simulationInteractionIdSchema, simulationCommitmentIdSchema } from './interaction.ts'
 import type { SimulationEventId } from './scheduler-types.ts'
 import type { SimTime } from './types.ts'
+import type { SimulationDecisionId, SimulationDecisionSlot, SimulationOperationId } from './identities.ts'
+export type { SimulationDecisionId, SimulationDecisionSlot, SimulationOperationId } from './identities.ts'
 
-/** Stable business-decision identity. */
-export type SimulationDecisionId = z.infer<typeof simulationDecisionIdSchema>
-/** Durable serial decision position. */
-export type SimulationDecisionSlot = z.infer<typeof simulationDecisionSlotSchema>
-/** Stable operation retry identity. */
-export type SimulationOperationId = z.infer<typeof simulationOperationIdSchema>
 /** Run-owned resource identity. */
 export type SimulationResourceId = z.infer<typeof simulationResourceIdSchema>
 /** Run-owned resource permission identity. */

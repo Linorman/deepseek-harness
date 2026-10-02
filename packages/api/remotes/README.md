@@ -12,7 +12,7 @@ This package contains no transport or Host service discovery logic. Its Client f
 
 ## Forwarded Host events
 
-`src/remote-events.ts` holds `API_REMOTE_FORWARDED_EVENTS`, the allowlist of Host cordis events this application forwards to consumers verbatim — no projection, no redaction, no renaming — and therefore the legal key set of `ctx.remote.$on`; the type-only `src/types.ts` derives its selection face. Forwarding one more event is an entry in that array and nothing else: the type projection, the consumer key face, and the Host forwarding loop all derive from it.
+`src/remote-events.ts` holds `API_REMOTE_FORWARDED_EVENTS`, the legal event vocabulary of `ctx.remote.$on`; the type-only `src/types.ts` derives its selection face. Arguments and event names are forwarded unchanged. Host delivery independently classifies Session ownership and checks current product read authority. Adding an event requires an ownership decision in the Host's exhaustive classifier. Command, credential-reference, adapter and settings notifications retain their Host metadata semantics.
 
 The listener signature is not restated here. Each allowlisted event's cordis `Events` declaration lives in its owner package's client-safe `./types` export (`clocky-agent-presets`, `clocky-commands`, `clocky-credentials`, `clocky-llm`, `clocky-settings`), and both faces of this package pull those declarations in, so "forwarded verbatim" holds by construction rather than by proof. The Host face additionally asserts the list against `TypertForwardableEvent`, which rejects a name that is not a declared event, one that binds an AgentScope, and one whose shape is not one-way.
 

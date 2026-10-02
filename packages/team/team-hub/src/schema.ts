@@ -1,3 +1,4 @@
+import { teamTaskUpdateCommandReceiptSchema, teamTaskUpdateCommandRejectionSchema, teamTaskUpdateCommandSchema } from '@clocky/clocky-team'
 import { teamChildResultAdmissionSchema } from '@clocky/clocky-team'
 import { channelInvitationSnapshotSchema } from '@clocky/clocky-team'
 /** Runtime parsers for Team-Hub journal and checkpoint values. @module @clocky/clocky-team-hub/schema */
@@ -187,9 +188,17 @@ export const participantChangedJournalRecordSchema = z.object({
 /** Parse one whole task snapshot record. */
 export const taskChangedJournalRecordSchema = z.object({
   type: z.literal('task/changed'),
+  detailsCommand: teamTaskUpdateCommandReceiptSchema.optional(),
   task: teamTaskSnapshotSchema,
   createdAt: nonNegativeSafeIntegerSchema,
 }).strict() satisfies z.ZodType<TaskChangedJournalRecord>
+
+/** Parse a terminal original-command refusal without publishing a replacement task. */
+export const taskUpdateRejectedJournalRecordSchema = z.object({ type: z.literal('task/update-rejected'),
+  command: teamTaskUpdateCommandRejectionSchema, createdAt: nonNegativeSafeIntegerSchema,
+}).strict().refine(record => record.createdAt === record.command.rejectedAt, {
+  message: 'Task update refusal timestamp must equal its journal timestamp',
+}) satisfies z.ZodType<import('./types.ts').TaskUpdateRejectedJournalRecord>
 
 /** Parse one whole durable workspace allocation lifecycle revision. */
 export const workspaceAllocationChangedJournalRecordSchema = z.object({
@@ -329,6 +338,7 @@ export const teamJournalRecordSchema: z.ZodType<TeamJournalRecord> = z.union([
   goalChangedJournalRecordSchema,
   participantChangedJournalRecordSchema,
   taskChangedJournalRecordSchema,
+  taskUpdateRejectedJournalRecordSchema,
   workspaceAllocationChangedJournalRecordSchema,
   workspaceObservedJournalRecordSchema,
   activationChangedJournalRecordSchema,
@@ -353,6 +363,7 @@ export const teamProjectionDataSchema = z.object({
   budgets: jsonObjectSchema,
   participants: z.array(participantSnapshotSchema),
   tasks: z.array(teamTaskSnapshotSchema),
+  taskUpdateCommands: z.array(teamTaskUpdateCommandSchema),
   taskExecutionStats: z.array(teamTaskExecutionStatsSchema).optional(),
   workspaceAllocations: z.array(teamWorkspaceAllocationSnapshotSchema),
   activations: z.array(activationBindingSnapshotSchema),

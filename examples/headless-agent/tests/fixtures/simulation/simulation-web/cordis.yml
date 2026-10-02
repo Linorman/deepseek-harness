@@ -1,0 +1,172 @@
+[
+  {
+    "insert": [
+      {
+        "name": "@clocky/clocky-simulation"
+      },
+      {
+        "name": "@clocky/clocky-simulation-local",
+        "config": {
+          "name": "local",
+          "root": ".clocky-simulations",
+          "backend": "json",
+          "replayPageSize": 2
+        }
+      },
+      {
+        "name": "@clocky/clocky-simulation-product",
+        "config": {
+          "directoryStream": "simulation-products",
+          "imports": [
+            {
+              "id": "a",
+              "name": "\u7269\u6d41\u4eff\u771f",
+              "provider": "local",
+              "ownerPrincipalId": "simulation-browser-user",
+              "spec": {
+                "maxQueuedDecisions": 1000,
+                "maxDispatchWaitRounds": 8,
+                "maxTokensPerInterval": 1000000,
+                "tokensPerModelRequest": 10000,
+                "budgetInterval": "100",
+                "maxDecisionsPerInterval": 1000,
+                "maxMessagesPerInterval": 1000,
+                "maxPendingEvents": 1000,
+                "maxPendingInteractions": 1000,
+                "maxKnowledgeBytes": 65536,
+                "maxKnowledgePerQuery": 32,
+                "maxEntities": 1000,
+                "maxResidentActors": 16,
+                "maxIngressBytes": 65536,
+                "maxConflictRetries": 2,
+                "decisionTimeoutMs": 60000,
+                "maxDecisionsPerWindow": 16,
+                "runId": "web-simulation",
+                "tickUnit": "minute",
+                "origin": "0",
+                "maxTime": "100000000000000000000",
+                "rulesVersion": "1",
+                "policyVersion": "1",
+                "outboxMaxAttempts": 3,
+                "outboxRetryDelayMs": 10,
+                "maxDriveSteps": 16,
+                "maxMicrostepsPerTime": 32,
+                "phaseOrder": [
+                  "delivery",
+                  "decision",
+                  "deadline"
+                ],
+                "maxOperationsPerDecision": 8,
+                "maxResourceQuantity": "1000000",
+                "relationRules": []
+              }
+            },
+            {
+              "id": "b",
+              "name": "\u573a\u666f b",
+              "provider": "local",
+              "ownerPrincipalId": "simulation-browser-user",
+              "spec": {
+                "maxQueuedDecisions": 1000,
+                "maxDispatchWaitRounds": 8,
+                "maxTokensPerInterval": 1000000,
+                "tokensPerModelRequest": 10000,
+                "budgetInterval": "100",
+                "maxDecisionsPerInterval": 1000,
+                "maxMessagesPerInterval": 1000,
+                "maxPendingEvents": 1000,
+                "maxPendingInteractions": 1000,
+                "maxKnowledgeBytes": 65536,
+                "maxKnowledgePerQuery": 32,
+                "maxEntities": 1000,
+                "maxResidentActors": 16,
+                "maxIngressBytes": 65536,
+                "maxConflictRetries": 2,
+                "decisionTimeoutMs": 60000,
+                "maxDecisionsPerWindow": 16,
+                "runId": "absent-b",
+                "tickUnit": "minute",
+                "origin": "0",
+                "maxTime": "100000000000000000000",
+                "rulesVersion": "1",
+                "policyVersion": "1",
+                "outboxMaxAttempts": 3,
+                "outboxRetryDelayMs": 10,
+                "maxDriveSteps": 16,
+                "maxMicrostepsPerTime": 32,
+                "phaseOrder": [
+                  "delivery",
+                  "decision",
+                  "deadline"
+                ],
+                "maxOperationsPerDecision": 8,
+                "maxResourceQuantity": "1000000",
+                "relationRules": []
+              }
+            },
+            {
+              "id": "c",
+              "name": "\u573a\u666f c",
+              "provider": "local",
+              "ownerPrincipalId": "simulation-browser-user",
+              "spec": {
+                "maxQueuedDecisions": 1000,
+                "maxDispatchWaitRounds": 8,
+                "maxTokensPerInterval": 1000000,
+                "tokensPerModelRequest": 10000,
+                "budgetInterval": "100",
+                "maxDecisionsPerInterval": 1000,
+                "maxMessagesPerInterval": 1000,
+                "maxPendingEvents": 1000,
+                "maxPendingInteractions": 1000,
+                "maxKnowledgeBytes": 65536,
+                "maxKnowledgePerQuery": 32,
+                "maxEntities": 1000,
+                "maxResidentActors": 16,
+                "maxIngressBytes": 65536,
+                "maxConflictRetries": 2,
+                "decisionTimeoutMs": 60000,
+                "maxDecisionsPerWindow": 16,
+                "runId": "absent-c",
+                "tickUnit": "minute",
+                "origin": "0",
+                "maxTime": "100000000000000000000",
+                "rulesVersion": "1",
+                "policyVersion": "1",
+                "outboxMaxAttempts": 3,
+                "outboxRetryDelayMs": 10,
+                "maxDriveSteps": 16,
+                "maxMicrostepsPerTime": 32,
+                "phaseOrder": [
+                  "delivery",
+                  "decision",
+                  "deadline"
+                ],
+                "maxOperationsPerDecision": 8,
+                "maxResourceQuantity": "1000000",
+                "relationRules": []
+              }
+            }
+          ],
+          "maxPageSize": 2
+        }
+      },
+      {
+        "name": "@clocky/clocky-client-ui-simulation",
+        "config": {
+          "pageSize": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "modules",
+    "config": {
+      "browserConfig": {
+        "@clocky/clocky-client-ui-simulation": {
+          "pageSize": 2
+        }
+      }
+    }
+  }
+]

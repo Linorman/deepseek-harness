@@ -1,4 +1,16 @@
 from __future__ import annotations
+from .simulation import SimulationTasksInput, SimulationTasksPage, SimulationTaskCancelInput
+from .simulation import SimulationRequestsInput, SimulationRequestsPage, SimulationRetryRequestInput
+from .simulation import SimulationPreflightInput, SimulationPreflightResult
+from .simulation import SimulationOperationRetryInput
+from .simulation import SimulationRunStatusesInput, SimulationRunStatusesPage
+from .simulation import SimulationTaskReviewListInput, SimulationTaskReviewPage, SimulationTaskReviewResolveInput
+
+from .simulation import SimulationSourceInput, SimulationSourceInspection, SimulationWatchInput, SimulationWatchResult, SimulationRecordsInput, SimulationRecordsPage
+
+from .simulation import (SimulationControlInput, SimulationControl, SimulationManageInput, SimulationManageResult, SimulationManagementInput, SimulationManagementResult, SimulationCheckpointInput, SimulationRequestReceipt, SimulationRestoreInput, SimulationIngressInput, SimulationIngressReceipt, SimulationIngressQuery, SimulationIngressResult)
+
+from .simulation import (SimulationBrowseInput, SimulationCatalog, SimulationCollectionPage, SimulationCreateInput, SimulationInspectInput, SimulationInspection, SimulationListInput, SimulationObjectInput, SimulationObjectInspection, SimulationPrepareInput, SimulationRequestInput, SimulationRequestReceipt, SimulationRequestResult, SimulationRunPage)
 
 import hashlib
 import json
@@ -66,6 +78,8 @@ from .models import (
     TeamWorkflowPlanListResponse,
     TeamArtifactListResponse,
     TeamTaskResponse,
+    TaskDetailsUpdateResponse,
+    TaskUpdateLookup,
     TeamChannelReadResponse,
 )
 
@@ -243,6 +257,198 @@ class HarnessClient:
             response_model=TeamResumeResponse,
         )
 
+    def get_simulation_control(self, request: SimulationControlInput) -> SimulationControl:
+        """Read current scheduling ownership and preconditions without opening or advancing a run."""
+        result = self.request("simulation/runs-control", request.model_dump(exclude_none=True), response_model=SimulationControl)
+        if result.runId != request.runId:
+            raise SdkProtocolError("simulation/runs-control response belongs to a different selection or command")
+        return result
+
+    def manage_simulation(self, request: SimulationManageInput) -> SimulationManageResult:
+        """Submit an original scheduling intent; exact retries retain its result without undoing later intent."""
+        result = self.request("simulation/runs-manage", request.model_dump(exclude_none=True), response_model=SimulationManageResult)
+        if result.runId != request.runId or result.operation.managementId != request.managementId or result.operation.phase != request.phase:
+            raise SdkProtocolError("simulation/runs-manage response belongs to a different selection or command")
+        return result
+
+    def get_simulation_management(self, request: SimulationManagementInput) -> SimulationManagementResult:
+        """Query an original scheduling outcome; absence does not establish failure."""
+        result = self.request("simulation/management-get", request.model_dump(exclude_none=True), response_model=SimulationManagementResult)
+        if result.runId != request.runId or result.managementId != request.managementId:
+            raise SdkProtocolError("simulation/management-get response belongs to a different selection or command")
+        return result
+
+    def list_simulation_tasks(self, request: SimulationTasksInput) -> SimulationTasksPage:
+        """Read bounded canonical run-owned task controls without private task bodies or inference."""
+        result = self.request("simulation/tasks-list", request.model_dump(exclude_none=True), response_model=SimulationTasksPage)
+        if result.runId != request.runId or (request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision) or (request.limit is not None and len(result.items) > request.limit):
+            raise SdkProtocolError("Simulation task page belongs to another selection")
+        return result
+
+    def cancel_simulation_task(self, request: SimulationTaskCancelInput) -> SimulationRequestReceipt:
+        """Submit the original revision/attempt-fenced cancellation; null is preserved as an explicit no-lease fence."""
+        result = self.request("simulation/tasks-cancel", request.model_dump(), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "cancel-task":
+            raise SdkProtocolError("Simulation cancellation receipt belongs to another original command")
+        return result
+
+    def list_simulation_task_reviews(self, request: SimulationTaskReviewListInput) -> SimulationTaskReviewPage:
+        """Read exact run-owned review metadata without opening execution or disclosing task bodies."""
+        result = self.request("simulation/task-reviews-list", request.model_dump(exclude_none=True), response_model=SimulationTaskReviewPage)
+        if result.runId != request.runId or (request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision) or (request.limit is not None and len(result.items) > request.limit):
+            raise SdkProtocolError("Simulation review page belongs to another selection")
+        return result
+
+    def resolve_simulation_task_review(self, request: SimulationTaskReviewResolveInput) -> SimulationRequestReceipt:
+        """Submit one original scene review intent; requests-get reconciles response loss."""
+        result = self.request("simulation/task-reviews-resolve", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "review":
+            raise SdkProtocolError("Simulation review receipt belongs to another original command")
+        return result
+
+    def checkpoint_simulation(self, request: SimulationCheckpointInput) -> SimulationRequestReceipt:
+        """Request a full checkpoint; accepted work outlives its waiter and remains paused after completion."""
+        result = self.request("simulation/runs-checkpoint", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "checkpoint":
+            raise SdkProtocolError("simulation/runs-checkpoint response belongs to a different selection or command")
+        return result
+
+    def restore_simulation(self, request: SimulationRestoreInput) -> SimulationRequestReceipt:
+        """Verify checkpoint history and current suffix, then acquire a paused owner without rollback or inference."""
+        result = self.request("simulation/runs-restore", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "restore" or result.checkpointId != request.checkpointId:
+            raise SdkProtocolError("simulation/runs-restore response belongs to a different selection or command")
+        return result
+
+    def ingress_simulation(self, request: SimulationIngressInput) -> SimulationIngressReceipt:
+        """Submit one attributed entity input with its original identity and exact simulated time."""
+        result = self.request("simulation/runs-ingress", request.model_dump(exclude_none=True), response_model=SimulationIngressReceipt)
+        if result.runId != request.runId or result.ingressId != request.ingressId or result.entityId != request.entityId or result.availableAt != request.availableAt:
+            raise SdkProtocolError("simulation/runs-ingress response belongs to a different selection or command")
+        return result
+
+    def get_simulation_ingress(self, request: SimulationIngressQuery) -> SimulationIngressResult:
+        """Query original input assignment and consumption independently of scheduling."""
+        result = self.request("simulation/ingress-get", request.model_dump(exclude_none=True), response_model=SimulationIngressResult)
+        if result.runId != request.runId or result.ingressId != request.ingressId:
+            raise SdkProtocolError("simulation/ingress-get response belongs to a different selection or command")
+        return result
+
+    def simulation_catalog(self) -> SimulationCatalog:
+        """Read bounded authorized metadata without starting inference."""
+        result = self.request("simulation/catalog", {}, response_model=SimulationCatalog)
+        return result
+
+    def retry_simulation_operation(self, request: SimulationOperationRetryInput) -> SimulationRequestReceipt:
+        """Grant one existing bounded outbox retry budget; publication and scheduling remain separate explicit actions."""
+        result = self.request("simulation/operation-retry", request.model_dump(), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId or result.kind != "retry-operation":
+            raise SdkProtocolError("Simulation operation retry response belongs to another original command")
+        return result
+
+    def get_simulation_run_statuses(self, request: SimulationRunStatusesInput) -> SimulationRunStatusesPage:
+        """Read one exact bounded authorized batch without acquiring execution or inferring unavailable usage."""
+        result = self.request("simulation/runs-statuses", request.model_dump(exclude_none=True), response_model=SimulationRunStatusesPage)
+        if [item.run.id for item in result.items] != request.runIds:
+            raise SdkProtocolError("Simulation status response belongs to another exact run batch")
+        return result
+
+    def list_simulations(self, request: SimulationListInput | None = None) -> SimulationRunPage:
+        """Read bounded authorized metadata without starting inference."""
+        request = request or SimulationListInput()
+        result = self.request("simulation/runs-list", request.model_dump(exclude_none=True), response_model=SimulationRunPage)
+        return result
+
+    def inspect_simulation(self, request: SimulationInspectInput) -> SimulationInspection:
+        """Read bounded authorized metadata without starting inference."""
+        result = self.request("simulation/runs-inspect", request.model_dump(exclude_none=True), response_model=SimulationInspection)
+        if result.run.id != request.runId:
+            raise SdkProtocolError("simulation/runs-inspect response belongs to a different selection or command")
+        return result
+
+    def browse_simulation(self, request: SimulationBrowseInput) -> SimulationCollectionPage:
+        """Read bounded authorized metadata without starting inference."""
+        result = self.request("simulation/collections-list", request.model_dump(exclude_none=True), response_model=SimulationCollectionPage)
+        if result.runId != request.runId or result.collection != request.collection:
+            raise SdkProtocolError("simulation/collections-list response belongs to a different selection or command")
+        return result
+
+    def inspect_simulation_source(self, request: SimulationSourceInput) -> SimulationSourceInspection:
+        """Read an exact frozen Envelope source under separate Simulation and Team authority."""
+        result = self.request("simulation/sources-inspect", request.model_dump(exclude_none=True), response_model=SimulationSourceInspection)
+        if (result.runId != request.runId or result.decisionId != request.decisionId or result.sourceIndex != request.sourceIndex
+            or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision
+            or request.envelopeSequence is not None and result.envelope is not None and result.envelope.sequence != request.envelopeSequence
+            or request.limit is not None and len(result.items) > request.limit):
+            raise SdkProtocolError("Simulation source response does not match its selection")
+        return result
+
+    def read_simulation_records(self, request: SimulationRecordsInput) -> SimulationRecordsPage:
+        """Read bounded original journal metadata or separately authorized historical JSON text."""
+        result = self.request("simulation/records-list", request.model_dump(exclude_none=True), response_model=SimulationRecordsPage)
+        if (result.runId != request.runId or result.mode != request.mode
+            or result.selection.kind != request.kind or result.selection.sequence != request.sequence
+            or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision
+            or request.sequence is not None and any(item.sequence != request.sequence for item in result.items)
+            or request.limit is not None and len(result.items) > request.limit):
+            raise SdkProtocolError("simulation/records-list response belongs to a different selection or exceeds its page")
+        return result
+
+    def watch_simulation(self, request: SimulationWatchInput) -> SimulationWatchResult:
+        """Observe invalidation only; the caller chooses whether to wait again or refresh."""
+        result = self.request("simulation/changes-watch", request.model_dump(exclude_none=True), response_model=SimulationWatchResult)
+        if result.runId != request.runId:
+            raise SdkProtocolError("simulation/changes-watch response belongs to a different run")
+        return result
+
+    def inspect_simulation_object(self, request: SimulationObjectInput) -> SimulationObjectInspection:
+        """Read bounded authorized metadata without starting inference."""
+        result = self.request("simulation/objects-inspect", request.model_dump(exclude_none=True), response_model=SimulationObjectInspection)
+        if (result.runId, result.selection.collection, result.selection.id, result.selection.section) != (request.runId, request.collection, request.id, request.section) or (request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision) or result.selection.reference != request.reference:
+            raise SdkProtocolError("simulation/objects-inspect response belongs to a different selection or command")
+        return result
+
+    def preflight_simulation(self, request: SimulationPreflightInput) -> SimulationPreflightResult:
+        """Resolve an allowlisted creation draft without allocating or preparing a run."""
+        return self.request("simulation/runs-preflight", request.model_dump(exclude_none=True), response_model=SimulationPreflightResult)
+
+    def create_simulation(self, request: SimulationCreateInput) -> SimulationRequestReceipt:
+        """Use the original durable command identity; absence does not establish failure."""
+        result = self.request("simulation/runs-create", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.commandId != request.commandId or result.kind != "create":
+            raise SdkProtocolError("simulation/runs-create response belongs to a different selection or command")
+        return result
+
+    def prepare_simulation(self, request: SimulationPrepareInput) -> SimulationRequestReceipt:
+        """Use the original durable command identity; absence does not establish failure."""
+        result = self.request("simulation/runs-prepare", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.commandId != request.commandId or result.kind != "prepare" or result.runId != request.runId:
+            raise SdkProtocolError("simulation/runs-prepare response belongs to a different selection or command")
+        return result
+
+    def list_simulation_requests(self, request: SimulationRequestsInput) -> SimulationRequestsPage:
+        """Read one exact original receipt metadata page; private inputs and scheduling authority are withheld."""
+        result = self.request("simulation/requests-list", request.model_dump(exclude_none=True), response_model=SimulationRequestsPage)
+        if (result.runId != request.runId
+            or request.expectedRevision is not None and result.snapshotRevision != request.expectedRevision
+            or request.limit is not None and len(result.items) > request.limit):
+            raise SdkProtocolError("simulation/requests-list response belongs to a different selection or exceeds its page")
+        return result
+
+    def retry_simulation_request(self, request: SimulationRetryRequestInput) -> SimulationRequestReceipt:
+        """Retry only backend-retained original input; never allocate a fresh identity or retry automatically."""
+        result = self.request("simulation/requests-retry", request.model_dump(exclude_none=True), response_model=SimulationRequestReceipt)
+        if result.runId != request.runId or result.commandId != request.commandId:
+            raise SdkProtocolError("simulation/requests-retry response belongs to a different original request")
+        return result
+
+    def get_simulation_request(self, request: SimulationRequestInput) -> SimulationRequestResult:
+        """Use the original durable command identity; absence does not establish failure."""
+        result = self.request("simulation/requests-get", request.model_dump(exclude_none=True), response_model=SimulationRequestResult)
+        if (result.request.commandId if result.request is not None else result.commandId) != request.commandId:
+            raise SdkProtocolError("simulation/requests-get response belongs to a different selection or command")
+        return result
+
     def list_teams(self, after_cursor: str | Literal[-1] | None = None, limit: int | None = None) -> TeamListResponse:
         """Read one bounded page of durable Teams visible to the runtime."""
         payload: JsonObject = {}
@@ -282,16 +488,25 @@ class HarnessClient:
         return result
 
     def browse_team(self, team_id: str, kind: Literal["tasks", "members", "workflowPlans"], *,
-                    after_cursor: int | None = None, limit: int | None = None) -> TeamBrowseResponse:
+                    after_cursor: int | None = None, limit: int | None = None,
+                    query: JsonObject | None = None, query_cursor: JsonObject | None = None) -> TeamBrowseResponse:
         """Read bounded display summaries without task or workflow history."""
         params: JsonObject = {"teamId": team_id, "kind": kind}
         if after_cursor is not None:
             params["afterCursor"] = after_cursor
         if limit is not None:
             params["limit"] = limit
+        if query is not None:
+            params["query"] = query
+        if query_cursor is not None:
+            params["queryCursor"] = query_cursor
         result = self.request("team/browse", params, response_model=TeamBrowseResponse)
         if result.page.teamId != team_id or result.page.kind != kind:
             raise SdkProtocolError("team/browse response belongs to a different Team or collection")
+        if query is not None:
+            returned_query = getattr(result.page, "query", None)
+            if returned_query is None or returned_query.model_dump(exclude_none=True) != query:
+                raise SdkProtocolError("team/browse response belongs to a different task query")
         return result
 
     def inspect_workflow_plan(self, team_id: str, plan_id: str, *, expected_revision: int | None = None,
@@ -544,9 +759,24 @@ class HarnessClient:
         """Read one durable Team task."""
         return self.request("team/task-get", {"teamId": team_id, "taskId": task_id}, response_model=TeamTaskResponse)
 
-    def update_team_task(self, payload: JsonObject) -> TeamTaskResponse:
+    def get_team_task_update_result(self, team_id: str, task_id: str, command_id: str) -> TaskUpdateLookup:
+        """Query original update admission without resending the operation."""
+        result = self.request("team/task-update-result", {
+            "teamId": team_id, "taskId": task_id, "commandId": command_id,
+        }, response_model=TaskUpdateLookup)
+        identity = result.receipt if result.kind == "applied" else result.rejection if result.kind == "rejected" else result
+        if identity is None or (identity.teamId, identity.taskId, identity.commandId) != (team_id, task_id, command_id):
+            raise SdkProtocolError("Task update lookup does not match its original command identity")
+        return result
+
+    def update_team_task(self, payload: JsonObject) -> TaskDetailsUpdateResponse:
         """Update one Team task through the initialized connection's authenticated human route."""
-        return self.request("team/task-update", payload, response_model=TeamTaskResponse)
+        result = self.request("team/task-update", payload, response_model=TaskDetailsUpdateResponse)
+        receipt = result.value.receipt
+        if (receipt.teamId, receipt.taskId, receipt.commandId, receipt.expectedRevision) != (
+                payload.get("teamId"), payload.get("taskId"), payload.get("commandId"), payload.get("expectedRevision")):
+            raise SdkProtocolError("Task update receipt does not match its original command identity")
+        return result
 
     def cancel_team_task(self, payload: JsonObject) -> TeamTaskResponse:
         """Request one task stop with teamId, taskId, expectedRevision, and optional reason.

@@ -139,7 +139,7 @@ function liveProvider(ctx: Context, dispose: () => Promise<void>) {
   const subscriptions = new Map<TeamId, Set<(status: ActivationHandle['activation']) => void>>()
   const handles: ActivationHandle[] = []
   const interrupt = vi.fn()
-  ctx.agentRuntimes.registerProvider({
+  ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'recovery-runtime',
     terminationMode: 'cooperative',
     async activate(request) {

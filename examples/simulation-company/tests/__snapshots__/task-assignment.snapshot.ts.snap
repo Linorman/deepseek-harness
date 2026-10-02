@@ -1,0 +1,145 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json production Simulation task assignment > retains exact responsibility with crash=assigned 1`] = `
+{
+  "attemptCount": 2,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": true,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`json production Simulation task assignment > retains exact responsibility with crash=observed 1`] = `
+{
+  "attemptCount": 2,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": true,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`json production Simulation task assignment > retains exact responsibility with crash=reserved 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": false,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`json production Simulation task assignment > retains exact responsibility with crash=undefined 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`sqlite production Simulation task assignment > retains exact responsibility with crash=assigned 1`] = `
+{
+  "attemptCount": 2,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": true,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`sqlite production Simulation task assignment > retains exact responsibility with crash=observed 1`] = `
+{
+  "attemptCount": 2,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": true,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`sqlite production Simulation task assignment > retains exact responsibility with crash=reserved 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "original": {
+    "assigned": false,
+    "retired": true,
+  },
+  "phase": "paused",
+  "replacement": true,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;
+
+exports[`sqlite production Simulation task assignment > retains exact responsibility with crash=undefined 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "controllerEvidence": "quiesced",
+  "exactAttempt": true,
+  "interrupted": "failed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+}
+`;

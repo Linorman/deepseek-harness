@@ -4,6 +4,8 @@
 
 `@clocky/clocky-agent-runtime`定义了用于 Participant 绑定 Agent 激活的具名 `ctx.agentRuntimes` 注册表。它将稳定的 Team 成员关系与由 provider 拥有的激活 epoch 分开，并且不导入 Team Hub、模型工具、subagent runtime 或具体 Agent loop。
 
+Provider 声明 `participantKinds`；registry 在调用 `activate()` 前，以 `AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED` 拒绝其他机制。Team 就绪度使用同一事实。In-process 声明 local agent，SDK 和 ACP 声明 remote agent；provider 名称不代表兼容性。
+
 ## Provider 约定
 
 `AgentRuntimeProvider`以一个 placement 名称注册，并接收已解析的 Team、participant、Session、fresh/fork/resume seed 模式、Agent 组合与发布前取消信号。fork seed 包含其源 Session id 与复制事件。其 `activate()` 只有在激活已发布后才返回 `ActivationHandle`；加入同一 epoch 的并发调用会返回完全相同的 handle。该句柄报告当前不可变 health projection，让调用方订阅之后的不可变 status 变更，拥有该 epoch 的中断和静默释放；它不决定 Team 成员关系、task 分配、channel 投递或父级权限。

@@ -171,6 +171,7 @@ function lease(
 /** Build one valid Team task with a caller-selected task identity. */
 function task(id: string, overrides: Record<string, unknown> = {}): TeamTaskSnapshot {
   return teamTaskSnapshotSchema.parse({
+    createdAt: 0,
     id: teamTaskIdSchema.parse(id),
     teamId,
     revision: 1,

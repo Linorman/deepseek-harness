@@ -136,6 +136,10 @@
     "@clocky/clocky-team-delegation": "workspace:^",
     "@clocky/clocky-team-channel-summary": "workspace:^",
     "@clocky/clocky-activation-supervisor": "workspace:^",
-    "@clocky/clocky-team-workspace-shared": "workspace:^"
+    "@clocky/clocky-team-workspace-shared": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^"
   }
 }

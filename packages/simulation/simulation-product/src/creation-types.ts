@@ -1,0 +1,52 @@
+/** Private product creation intent and attempt history; never a browser-selected native run configuration. */
+import type { SimulationProductCheckpointInput, SimulationProductRestoreInput } from './maintenance-types.ts'
+import type { SimulationProductTaskReviewResolveInput } from './review-types.ts'
+import type { SimulationProductTaskCancelInput } from './task-control-types.ts'
+import type { SimulationProductOperationRetryInput } from './operation-retry-types.ts'
+import type { ProductPrincipalId } from '@clocky/clocky-product-principal'
+import type { SimulationRunSpec } from '@clocky/clocky-simulation'
+import type { SimulationCompanyPreparation } from './company-preparation.ts'
+import type { SimulationCompanyDriverConfig } from './company-driver.ts'
+import type { SimulationProductCreateInput, SimulationProductPrepareInput, SimulationProductRequestReceipt,
+  SimulationProductTemplateId, SimulationProductLimits } from './administration-types.ts'
+import type { SimulationProductRecord } from './registration-types.ts'
+
+/** Trusted installed template; native run identity is allocated separately by the product owner. */
+export interface SimulationCompanyTemplate {
+  readonly id: SimulationProductTemplateId
+  readonly version: '1'
+  readonly name: string
+  readonly provider: string
+  readonly spec: Omit<SimulationRunSpec, 'runId'>
+  readonly preset: string
+  readonly objective: string
+  readonly driver: SimulationCompanyDriverConfig
+  readonly checkpoint: { readonly maxDrainRounds: number; readonly maxAttempts: number }
+  /** Explicit deployment allowlist; omitted fields retain the installed immutable specification. */
+  readonly editableLimits?: readonly (keyof SimulationProductLimits)[] | undefined
+}
+/** Exact original deployment resolution stored before any native creation IO. */
+export interface SimulationCompanyCreation {
+  readonly record: SimulationProductRecord
+  readonly request: SimulationProductCreateInput
+  readonly preparation: SimulationCompanyPreparation
+  readonly driver: SimulationCompanyDriverConfig
+}
+/** Queued/terminal request identity; later attempts never replace this result. */
+export type SimulationCreationCommand = {
+  readonly ownerPrincipalId: ProductPrincipalId
+  readonly receipt: SimulationProductRequestReceipt
+} & (
+  | { readonly kind: 'create'; readonly input: SimulationProductCreateInput; readonly creation: SimulationCompanyCreation }
+  | { readonly kind: 'prepare'; readonly input: SimulationProductPrepareInput }
+  | { readonly kind: 'checkpoint'; readonly input: SimulationProductCheckpointInput }
+  | { readonly kind: 'restore'; readonly input: SimulationProductRestoreInput }
+  | { readonly kind: 'review'; readonly input: SimulationProductTaskReviewResolveInput }
+  | { readonly kind: 'cancel-task'; readonly input: SimulationProductTaskCancelInput }
+  | { readonly kind: 'retry-operation'; readonly input: SimulationProductOperationRetryInput }
+)
+/** Entire bounded replay projection, independent of native world phase/effects. */
+export interface SimulationCreationBook {
+  readonly commands: ReadonlyMap<string, SimulationCreationCommand>
+  readonly creations: ReadonlyMap<string, SimulationCompanyCreation>
+}

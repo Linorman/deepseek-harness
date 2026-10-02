@@ -2,12 +2,13 @@
 
 import type { ApiProxy, HostFrame, MuxFrame, RpcRequest, ServerRequest } from './api.ts'
 import { AbstractApiClient } from './api.ts'
+import { ApiAccessDeniedError, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from '@clocky/clocky-host-apiproxy/api'
 import { hostFrameSchema, muxFrameSchema } from '@clocky/clocky-host-apiproxy/api/events.schema'
 import { serverRequestSchema } from '@clocky/clocky-host-apiproxy/api/rpc.schema'
 import { HOST_EVENTS_PATH, MUX_EVENTS_PATH } from '../api-path.ts'
 import { waitForProductAuthBootstrap } from './product-auth-bootstrap.ts'
 
-type SocketItem<F> = { kind: 'frame'; envelope: RpcRequest<F> } | { kind: 'end' }
+type SocketItem<F> = { kind: 'frame'; envelope: RpcRequest<F> } | { kind: 'end' } | { kind: 'denied' }
 type Parser<F> = { parse(value: unknown): F }
 
 /** Browser platform subclass: unary/respond use fetch; mux/host use downlink-only WebSockets. */
@@ -65,7 +66,12 @@ export class WebApiClient extends AbstractApiClient {
       this.onEnvelope(full)
       enqueue({ kind: 'frame', envelope: { rpcId: full.rpcId, payload: frame } })
     }
-    const handleClose = (): void => { enqueue({ kind: 'end' }) }
+    const handleClose = (event: CloseEvent): void => {
+      if (event.code === PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE) {
+        inbox.length = 0
+        enqueue({ kind: 'denied' })
+      } else enqueue({ kind: 'end' })
+    }
     const handleAbort = (): void => {
       if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) socket.close()
     }
@@ -79,6 +85,7 @@ export class WebApiClient extends AbstractApiClient {
         while (inbox.length > 0) {
           const item = inbox.shift() as SocketItem<F>
           if (item.kind === 'end') return
+          if (item.kind === 'denied') throw new ApiAccessDeniedError(path, 401)
           yield item.envelope
         }
         await new Promise<void>((resolve) => { wake = resolve })

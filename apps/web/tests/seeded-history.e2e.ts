@@ -329,7 +329,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
     // the routed id and the seat resolves it against an advertised row.
     await page.getByRole('button', { name: /^Select model, current/ })
       .waitFor({ timeout: 10_000 })
-    const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
+    const snapshot = (await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd))
       .split(SEED_ID).join('{{seededId}}')
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
   })
@@ -483,7 +483,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
     await expect.poll(() => row.count(), { timeout: 10_000 }).toBe(1)
     expect(await row.getByText('permission', { exact: true }).count()).toBe(1)
     expect(await row.getByText('/permission read-only', { exact: true }).count()).toBe(0)
-    const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
+    const snapshot = (await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd))
       .split(SEED_ID).join('{{seededId}}')
     await compareOrRefreshGolden(COMMAND_ROW_EXPECTED, snapshot, MODE)
   }, 60_000)
@@ -509,7 +509,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
         `Feedback recorded for session ${SEED_ID}. Session sharing is not configured.`,
       )
 
-      const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
+      const snapshot = (await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd))
         .split(SEED_ID).join('{{seededId}}')
       await compareOrRefreshGolden(FEEDBACK_ROW_EXPECTED, snapshot, MODE)
     } finally {

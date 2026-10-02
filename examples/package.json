@@ -152,7 +152,10 @@
     "@clocky/clocky-simulation-team": "workspace:^",
     "@clocky/clocky-storage-sqlite": "workspace:^",
     "@clocky/clocky-tool-simulation": "workspace:^",
-    "@clocky/clocky-agent-presets": "workspace:^"
+    "@clocky/clocky-persona": "workspace:^",
+    "@clocky/clocky-agent-presets": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-client-ui-simulation": "workspace:^"
   },
   "devDependencies": {
     "typescript": "^6.0.3"

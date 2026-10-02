@@ -1,0 +1,29 @@
+- name: '@clocky/clocky-storage'
+- name: '@clocky/clocky-storage-json'
+  disabled: !!js process.env.SIMULATION_TEST_BACKEND !== 'json'
+  config:
+    root: !!js process.env.SIMULATION_PRODUCT_DIRECTORY
+- name: '@clocky/clocky-storage-sqlite'
+  disabled: !!js process.env.SIMULATION_TEST_BACKEND !== 'sqlite'
+  config:
+    path: !!js process.env.SIMULATION_PRODUCT_DIRECTORY + '/directory.sqlite'
+- name: '@clocky/clocky-storage-log'
+  config:
+    backend: !!js process.env.SIMULATION_TEST_BACKEND
+- name: '@clocky/clocky-product-principal'
+- name: '@clocky/clocky-host-product-principal-local'
+  config:
+    path: !!js process.env.SIMULATION_PRODUCT_DIRECTORY + '/principal.json'
+- name: '@clocky/clocky-user-questions'
+- name: '@clocky/clocky-simulation'
+- name: '@clocky/clocky-simulation-local'
+  config:
+    name: local
+    root: !!js process.env.SIMULATION_TEST_ROOT
+    backend: !!js process.env.SIMULATION_TEST_BACKEND
+    replayPageSize: 2
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: simulation-products
+    imports: !!js JSON.parse(process.env.SIMULATION_PRODUCT_IMPORTS)
+    maxPageSize: 1

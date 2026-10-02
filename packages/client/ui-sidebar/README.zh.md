@@ -2,15 +2,17 @@
 
 [English](README.md) | 中文
 
-侧边栏外壳插件：负责品牌行、New Task 操作、布局持有的折叠控件、可感知滚动的 Team 区域，以及固定在底部的 Settings seat。[ui-team](../ui-team/README.zh.md) 持有渲染到 `sidebar.teamTasks` 的 Team 导航器；可选的 `sidebar.workspaces` seat 只供显式 custom composition 挂载 legacy Workspace／Session 浏览器。本包不派生 Team 行，也不持有其视图偏好。折叠到布局拥有的 56px 轨道仍属于本地呈现行为。约定：[slot 系统标准](../../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.zh.md)。
+`sidebar.workspaceNavigation` 列表位于目录上方，由 Team 和已安装的 Simulation UI 各自提供入口；框架传入当前 `workspace` 与列几何。选择仿真时隐藏仍保持挂载的 Team 目录，保留其浏览状态。紧凑轨道中的团队入口会按需展开侧栏。设置独立于目录可见性，位于外壳底部；短视口允许外壳纵向滚动，以保持所有控件可达。
 
-展开品牌行分别渲染 `sidebar.brand.mark` 和 `sidebar.brand.name` 两个 single slot，收起轨道复用同一个标记 slot。没有占用者时显示机器人标记和 Clocky 文字，构建版本通过名称提示显示。部署插件可以分别替换标记或名称，而无需替换新任务操作或轨道几何；声明感知的 `slots.inject()` 支持部署插件在侧边栏前后激活。
+侧边栏外壳插件：负责品牌行、New team work 操作、布局持有的折叠控件、可感知滚动的 Team 区域，以及固定在底部的 Settings seat。[ui-team](../ui-team/README.zh.md) 持有渲染到 `sidebar.teamTasks` 的 Team 导航器；可选的 `sidebar.workspaces` seat 只供显式 custom composition 挂载 legacy Workspace／Session 浏览器。本包不派生 Team 行，也不持有其视图偏好。折叠到布局拥有的 56px 轨道仍属于本地呈现行为。约定：[slot 系统标准](../../../.agents/notes/implemented/architecture/2026-07-22-slot-type-chain-implementation.zh.md)。
 
-New Task 只创建页面局部 Team 草稿并清空当前转录选择；在首条输入由 `team.start` 接纳之前，它既不会创建 Team，也不会创建 Session。Team 专属导航由 ui-team 持有。
+展开品牌行分别渲染 `sidebar.brand.mark` 和 `sidebar.brand.name` 两个 single slot，收起轨道复用同一个标记 slot。没有占用者时显示机器人标记和 Clocky 文字，构建版本通过名称提示显示。部署插件可以分别替换标记或名称，而无需替换新建团队工作操作或轨道几何；声明感知的 `slots.inject()` 支持部署插件在侧边栏前后激活。
 
-`SidebarRootComponentProps` 组合布局 owner share、全局 Session 与 Workspace 钩子、已声明的品牌、`sidebar.teamTasks`、可选的 `sidebar.workspaces`、`sidebar.settings` 与页脚子 slot，以及注入的 `startTask` 与侧边栏切换回调。这里没有插件 store。
+New team work 只创建页面局部 Team 草稿并清空当前转录选择；在首条输入由 `team.start` 接纳之前，它既不会创建 Team，也不会创建 Session。Team 专属导航由 ui-team 持有。
 
-实时收起时，外壳会把展开内容固定在当前宽度，并用 150ms 将其淡出。随后，上方控件——外壳的侧边栏切换、New Task 与 Team 轨道控件——共用一次 150ms 的淡入和 49px 左移，在布局的 300ms 栏滑动结束时一起进入 56px 轨道；每个 36px 控件盒都会沿同一条路径到达轨道左侧 10px 的内边距。固定在底部的 `sidebar.settings` 控件只共用淡入时序，不发生横向位移。页面初始即为收起状态时会静态渲染轨道；减少动态效果模式会禁用两段过渡。
+`SidebarRootComponentProps` 组合布局 owner share、全局 Session 与 Workspace 钩子、已声明的品牌、`sidebar.workspaceNavigation`、`sidebar.teamTasks`、可选的 `sidebar.workspaces`、`sidebar.settings` 与页脚子 slot，以及注入的 `startTask` 与侧边栏切换回调。这里没有插件 store。
+
+实时收起时，外壳会把展开内容固定在当前宽度，并用 150ms 将其淡出。随后，上方控件——外壳的侧边栏切换、New team work 与 Team 轨道控件——共用一次 150ms 的淡入和 49px 左移，在布局的 300ms 栏滑动结束时一起进入 56px 轨道；每个 36px 控件盒都会沿同一条路径到达轨道左侧 10px 的内边距。固定在底部的 `sidebar.settings` 控件只共用淡入时序，不发生横向位移。页面初始即为收起状态时会静态渲染轨道；减少动态效果模式会禁用两段过渡。
 
 栏内的滚动条是一种指针可供性：只要指针不在栏内，外壳就把 ui-theme 的[滚动条间接层](../ui-theme/README.zh.md)重新绑定为 `transparent`；指针离开后滑块再保留 2 秒，因此没人指向的列表不会带着滚动条。可滚动的 Team 区域自行预留 gutter，因此显示滑块不会引起行重排。
 

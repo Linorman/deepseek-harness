@@ -1,0 +1,14 @@
+- name: cordis:include
+  config:
+    path: ../product-control/cordis.yml
+- name: ../sdk-maintenance/release-model.ts
+- name: ./target-fault.ts
+- name: '@clocky/clocky-product-principal'
+- name: ./server.ts
+- name: '@clocky/clocky-agent-default-model'
+  config:
+    model: company/scripted
+- name: '@clocky/clocky-team-channel-admission'
+- name: '@clocky/clocky-team-run'
+- name: ../sdk-product/principal.ts
+- name: '@clocky/clocky-team-human-actor'

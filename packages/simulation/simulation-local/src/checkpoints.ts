@@ -2,15 +2,16 @@
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
 import { simulationCheckpointRequestSchema, simulationCheckpointIdSchema, simulationCheckpointManifestSchema,
-  checkpointState, assertCanonicalTeam } from '@clocky/clocky-simulation'
+  checkpointState, assertCanonicalTeam, simulationCheckpointDiagnosticSchema } from '@clocky/clocky-simulation'
 import type { SimulationSnapshot } from '@clocky/clocky-simulation'
 import { businessFingerprint } from './business.ts'
 
 /** Checkpoint requests and their terminal outcomes are durable run events. */
 export const checkpointRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('checkpoint/requested'), request: simulationCheckpointRequestSchema }),
-  z.strictObject({ kind: z.literal('checkpoint/failed'), id: simulationCheckpointIdSchema, error: z.string().min(1) }),
-  z.strictObject({ kind: z.literal('checkpoint/published'), manifest: simulationCheckpointManifestSchema }),
+  z.strictObject({ kind: z.literal('checkpoint/failed'), id: simulationCheckpointIdSchema, error: z.string().min(1),
+    diagnostic: simulationCheckpointDiagnosticSchema.optional() }),
+  z.strictObject({ kind: z.literal('checkpoint/published'), publishedAt: z.number().int().nonnegative(), manifest: simulationCheckpointManifestSchema }),
 ])
 /** Validated checkpoint state transition. */
 export type CheckpointRecord = z.infer<typeof checkpointRecordSchema>
@@ -38,6 +39,7 @@ export function foldCheckpoint(state: SimulationSnapshot, record: CheckpointReco
   if (operation?.status !== 'in-progress') throw new Error('Checkpoint outcome has no pending request')
   if (record.kind === 'checkpoint/failed') return { ...state, checkpoints: { ...state.checkpoints, [id]: {
     ...operation, status: 'failed', finishedSequence: sequence, error: record.error,
+    ...record.diagnostic === undefined ? {} : { diagnostic: record.diagnostic },
   } } }
   const manifest = record.manifest
   if (state.teamReservation?.confirmed === false || state.phase === 'running' || state.activeDecisionId !== undefined || state.activeWindowId !== undefined
@@ -61,6 +63,6 @@ export function foldCheckpoint(state: SimulationSnapshot, record: CheckpointReco
     throw new Error('Checkpoint cannot omit an executed Session history')
   }
   return { ...state, latestCheckpointId: id, checkpoints: { ...state.checkpoints, [id]: {
-    ...operation, status: 'completed', finishedSequence: sequence, manifest,
+    ...operation, status: 'completed', finishedSequence: sequence, publishedAt: record.publishedAt, manifest,
   } } }
 }

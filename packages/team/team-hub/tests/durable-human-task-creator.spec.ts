@@ -16,8 +16,8 @@ function human(id: string) {
     owner: { kind: 'product-principal', principalId: `principal-${id}` } })
 }
 
-function humanTask(id: string, creator: ParticipantSnapshot, idempotencyKey: string) {
-  return task({ id, createCommand: { creator: { teamId, participantId: creator.id }, idempotencyKey } })
+function humanTask(id: string, creator: ParticipantSnapshot, idempotencyKey: string, createdAt: number) {
+  return task({ id, createdAt, createCommand: { creator: { teamId, participantId: creator.id }, idempotencyKey } })
 }
 
 for (const backend of ['json', 'sqlite'] as const) {
@@ -26,7 +26,7 @@ for (const backend of ['json', 'sqlite'] as const) {
       const creator = human('human-author')
       const agent = participant({ id: 'agent-member', role: 'worker' })
       const prefix = [createdTeam(), teamPhase(), ...activeMemberRecords(creator, 12), ...activeMemberRecords(agent, 15)]
-      const initial = humanTask('human-task', creator, 'human-create-a')
+      const initial = humanTask('human-task', creator, 'human-create-a', 18)
       const rows = [...prefix, taskChanged({ task: initial, createdAt: 18 })]
       const checkpoint = checkpointFor(rows)
       const valid = await recover(backend, rows, checkpoint)
@@ -43,7 +43,7 @@ for (const backend of ['json', 'sqlite'] as const) {
 
     it('retains a departed historical human creator but refuses new tasks attributed to that participant', async () => {
       const creator = human('human-author')
-      const initial = humanTask('retained-task', creator, 'historical-human-create')
+      const initial = humanTask('retained-task', creator, 'historical-human-create', 15)
       const prefix = [createdTeam(), teamPhase(), ...activeMemberRecords(creator, 12),
         taskChanged({ task: initial, createdAt: 15 }),
         participantChanged({ participant: { ...creator, phase: 'left' }, createdAt: 16 })]
@@ -56,15 +56,15 @@ for (const backend of ['json', 'sqlite'] as const) {
         expect(state.tasks).toEqual([edited])
         expect(state.participants.find(member => member.id === creator.id)?.phase).toBe('left')
       }
-      const unauthorized = humanTask('new-task', creator, 'new-human-create')
+      const unauthorized = humanTask('new-task', creator, 'new-human-create', 18)
       const invalid = await recover(backend, [...rows, taskChanged({ task: unauthorized, createdAt: 18 })])
       await expect(invalid.teams.getTeam({ teamId })).rejects.toThrow('invalid human task-creation command relation')
     })
 
     it('rejects one human creation command assigned to two task identities and restores distinct checkpoint keys', async () => {
       const creator = human('human-author')
-      const first = humanTask('task-a', creator, 'human-create-a')
-      const second = humanTask('task-b', creator, 'human-create-b')
+      const first = humanTask('task-a', creator, 'human-create-a', 15)
+      const second = humanTask('task-b', creator, 'human-create-b', 16)
       const prefix = [createdTeam(), teamPhase(), ...activeMemberRecords(creator, 12),
         taskChanged({ task: first, createdAt: 15 })]
       const rows = [...prefix, taskChanged({ task: second, createdAt: 16 })]
@@ -82,8 +82,8 @@ for (const backend of ['json', 'sqlite'] as const) {
     it('keeps identical creation keys distinct when their human participant attribution differs', async () => {
       const firstCreator = human('human-author-a')
       const secondCreator = human('human-author-b')
-      const first = humanTask('task-a', firstCreator, 'shared-command-key')
-      const second = humanTask('task-b', secondCreator, 'shared-command-key')
+      const first = humanTask('task-a', firstCreator, 'shared-command-key', 18)
+      const second = humanTask('task-b', secondCreator, 'shared-command-key', 19)
       const rows = [createdTeam(), teamPhase(), ...activeMemberRecords(firstCreator, 12),
         ...activeMemberRecords(secondCreator, 15), taskChanged({ task: first, createdAt: 18 }),
         taskChanged({ task: second, createdAt: 19 })]

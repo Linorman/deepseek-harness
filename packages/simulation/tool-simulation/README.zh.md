@@ -6,7 +6,7 @@
 
 `simulation-team` 从实际 Agent 及其已消费的准备输入推导 run、实体、writer 和决策。其执行守卫拒绝 Simulation 角色调用其他工具。暂存只属于当前 writer epoch。writer 替换会取消未接受决策；已收集的窗口提案保留在 run 历史中。已接受决策及操作独立于旧 writer 保留。
 
-作用域入口 `@clocky/clocky-tool-simulation/role` 只选择已注册的三个 Simulation 工具，并固定为原生工具展示。宿主须先加载基础工具插件，缺少任一工具会拒绝挂载 preset。[公司模拟 preset](../../../examples/simulation-company/presets/simulation/agent.cordis.yml) 使用此入口；首次激活和恢复激活都通过 `agent.preset` 传入其名称。
+作用域 `@clocky/clocky-tool-simulation/role` 入口选择三种已安装 Simulation 工具，强制原生展示，并在 actor 自有工具后来登记时仍过滤最终装配请求 schema。原生模型 owner 在分发或 token 准入前独立拒绝决策权限之外的公开能力，执行 guard 仍拒绝外部工具调用。先加载基础工具及 system-prompt owner。[公司 preset](../../../examples/simulation-company/presets/simulation/agent.cordis.yml)提供完整 Simulation persona，不包含文件系统变量或无关运行时上下文。新建及恢复激活均经 `agent.preset` 选择此 preset。
 
 ## Model Experience
 

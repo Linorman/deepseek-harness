@@ -1,18 +1,22 @@
-- button "New task"
+- button "New team work"
 - button "Collapse sidebar":
   - img
-- button "New task":
+- button "New team work":
   - img
-  - text: New Task
-- region "Tasks":
-  - img
-  - text: Tasks
-  - button "Inbox"
-  - text: Workspaces
-  - button "Add workspace":
+  - text: New team work
+- navigation "Workspaces":
+  - button "Team work":
     - img
-    - text: Add workspace
-  - text: No tasks yet
+    - text: Team work
+- region "Team directory":
+  - img
+  - text: Team directory
+  - button "Inbox"
+  - text: Working folders
+  - button "Add working folder":
+    - img
+    - text: Add working folder
+  - text: No team work yet
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -32,7 +36,7 @@
 - button "Settings":
   - img
   - text: Settings
-- banner:
+- region "Execution record":
   - text: {{workspace}}
   - button "Session log":
     - text: Session log
@@ -40,15 +44,12 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
-- textbox "describe your task to generate plan"
-- button "Commands":
-  - img
-- 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Plan mode on, press to turn off": Plan
-- button "Select model, current Test Model":
-  - text: Test Model
-  - img
-- button "Send message" [disabled]
-- text: Details
-- button "Close details"
-- text: Click a tool row in the message flow to view its details
+  - textbox "describe your task to generate plan"
+  - button "Commands":
+    - img
+  - 'button "Access mode, current: Workspace Write"': Workspace Write
+  - button "Plan mode on, press to turn off": Plan
+  - button "Select model, current Test Model":
+    - text: Test Model
+    - img
+  - button "Send message" [disabled]

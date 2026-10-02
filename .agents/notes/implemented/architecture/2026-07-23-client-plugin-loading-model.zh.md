@@ -68,6 +68,8 @@ vendored Loader 经其 `internal` 约定消费模块系统——唯一调用点�
 4. `settled` = 每个 entry 已创建 + `loader.await()` 完全停稳 + 一次全 ACTIVE 扫描。扫描列出每个 import 失败、FAILED 或 PENDING 的 fiber 及其缺失的服务。它存在的理由：cordis 的 inject 等待没有超时——这次扫描就是大声失败的兜底线。
 5. 不依赖框架的 loading 页经 `internal/status` 投影真实 fiber 状态。检查完成后，内核调用 `ctx.uiRenderer.mount(container)`，一次切换到真实 UI。
 
+Host graph 仅包含启用且当前 fiber 为 `ACTIVE` 的 entry。包属于名册，不代表必需服务可用。构造／销毁与 `internal/status` 事件复用按名称合并的 dirty set 和 microtask flush；必需服务丢失移除条目，成功重新激活恢复单个条目并保留 bundle hash。消费者在 `loader.await()` 后读取。[Node 半生命周期测试](../../../../packages/client/modules/tests/node-half.client.spec.ts) 通过真实 Loader 与延迟 apply，验证 pending／loading 不发布、依赖丢失、重挂、effect 单次退休，以及每次成员变化恰好一次 graph 通知。这避免发布不可用产品，也不增加第二份功能可用性权威状态。
+
 ### 热重载：一个驱动插件，自行监视的 bundle
 
 热重载是一项组合决策：web 组合包无条件挂载 `client-hmr` 行（一个常规的插件包），其 node 半带来 bundle 监视与 SSE（Server-Sent Events）通道；没有重建 watcher 改写客户端 bundle 时链路保持空闲。不应暴露它的组合可以禁用该行。

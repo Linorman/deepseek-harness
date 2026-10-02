@@ -21,7 +21,7 @@ function selectedWorkflow() {
       channel: { participantRoles: ['coordinator', 'human'], graph: { initial: { kind: 'participant', role: 'coordinator' },
         transitions: [{ condition: { kind: 'always' }, target: { kind: 'terminate' } }], maxTurns: 1 } },
       result: { kind: 'task-results', taskTemplateIds: ['review'] } } }
-  const created = task({ ...template, id: 'selected-task', workflowPlanId: plan.id, workflowTemplateId: template.id })
+  const created = task({ ...template, id: 'selected-task', createdAt: 17, workflowPlanId: plan.id, workflowTemplateId: template.id })
   const bound = { ...plan, revision: 2, taskBindings: [{ templateId: template.id, taskId: created.id }] }
   const ready = { ...bound, revision: 3, phase: 'ready', channelId: 'selection-channel' }
   const prefix = [createdTeam(), teamPhase(), participantChanged({ participant: member, createdAt: 12 }),

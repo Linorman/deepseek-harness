@@ -16,7 +16,7 @@ it('masks existing and later global tools only for the role and removes its scop
       output: { schema: { type: 'boolean' }, render: () => [] }, execute: async () => true }))
     register('private_probe')
     const key = {}
-    const fiber = ctx.plugin(Object.assign((child: Context) => { role.apply(createScope(child, key).ctx) }, { inject: ['tools'] }))
+    const fiber = ctx.plugin(Object.assign((child: Context) => { role.apply(createScope(child, key).ctx) }, { inject: ['tools', 'systemPrompt'] }))
     await fiber
     register('later_probe')
     expect(ctx.tools.schemas(key).map(tool => tool.name).sort()).toEqual(['simulation_observe', 'simulation_stage', 'simulation_submit'])
@@ -44,6 +44,32 @@ it('rejects a preset whose required global Simulation tools are missing', async 
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(Object.assign((child: Context) => {
       expect(() => { role.apply(createScope(child, {}).ctx) }).toThrow(/unknown global tool/)
-    }, { inject: ['tools'] }))
+    }, { inject: ['tools', 'systemPrompt'] }))
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('filters later actor-owned tools from assembled requests without changing another scope or registry execution rules', async () => {
+  const ctx = new Context()
+  const key = {}
+  try {
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    simulationTools.apply(ctx)
+    const register = (target: Context, name: string) => target.tools.register(defineTool({ name, description: 'Actor-owned tool',
+      parameters: {}, output: { schema: { type: 'boolean' }, render: () => [] }, execute: async () => true }))
+    const fiber = ctx.plugin(Object.assign((child: Context) => {
+      const scoped = createScope(child, key).ctx
+      role.apply(scoped)
+      register(scoped, 'team_message')
+    }, { inject: ['tools', 'systemPrompt'] }))
+    await fiber
+    expect(ctx.tools.schemas(key).map(tool => tool.name)).toContain('team_message')
+    const filtered = await ctx.systemPrompt.assemble({ scope: key })
+    expect(filtered.tools.map(tool => tool.name).sort()).toEqual(['simulation_observe', 'simulation_stage', 'simulation_submit'])
+    const other = await ctx.systemPrompt.assemble({ scope: {} })
+    expect(other.tools.map(tool => tool.name)).not.toContain('team_message')
+    await fiber.dispose()
+    expect((await ctx.systemPrompt.assemble({ scope: key })).tools.map(tool => tool.name).sort())
+      .toEqual(['simulation_observe', 'simulation_stage', 'simulation_submit'])
   } finally { await ctx.fiber.dispose() }
 })

@@ -4,13 +4,14 @@ English | [中文](README.zh.md)
 
 `ctx.productPrincipals` is the authenticated product-principal seam. A transport selects a named provider at its credential boundary, receives a revocable lease, and runs each protected dispatch through a fresh runtime-only `AuthenticatedProductCall`.
 
-Providers expose only non-secret principal facts: a branded stable id, issuer, subject, assurance, and credential generation. The registry never serializes credentials or provider errors; it stops new work when a provider retires and revokes each lease after its admitted calls settle.
+Providers expose only non-secret principal facts: a branded stable id, issuer, subject, assurance, and credential generation. The registry never serializes credentials or provider errors; it aborts lease and active-call signals immediately when a credential or provider retires, stops new work, and releases provider resources after admitted calls settle.
 
 ## API
 
 - `registerProvider(provider)` contributes an effect-scoped named authenticator.
 - `bootstrapCredential(provider)` returns a provider-owned bootstrap secret only to a trusted transport owner.
 - `authenticate({ provider, credential, signal? })` returns an `AuthenticatedProductPrincipalLease`.
+- `lease.signal` reports credential/provider retirement even between calls; it contains no principal or credential.
 - `lease.withCall(operation, signal?)` supplies the only `AuthenticatedProductCall` a protected dispatcher should receive.
 
 ## Model Experience

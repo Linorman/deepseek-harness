@@ -2,6 +2,28 @@
 
 [English](README.md) | 中文
 
+`resolveSimulationTaskReview()` 仅接受当前有效的 `simulation-team` proof，选择原生已记录的完成结果及任务配置的 Participant reviewer。调用方不能选择 actor，reviewer 无需 activation。`TeamTaskReviewDecision.simulationCommand` 保留运行内 command 身份、原 task/create operation 与选定任务 revision。相同的授权重试返回保留该历史决定的当前任务；变更载荷会拒绝，不能审核后续 attempt。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
+
+任务详情更新要求调用方提供 `commandId`。`TeamTaskDetailsUpdateResult` 将原受理信息与当前任务分开。提供方提交语义拒绝后才抛出 `TeamTaskUpdateRejectedError`；解析、权限、容量或存储失败本身不能证明拒绝。`getTaskUpdateResult()` 返回 `applied`、`rejected` 或 `not-found`。原生读取方负责鉴权；未找到不能确定延迟请求的结果。参见[更新身份决策](../../../.agents/notes/implemented/architecture/2026-09-29-task-update-command-admission.zh.md)。
+
+`resolveTaskReferences()` 在同一 Team cursor 下解析明确的依赖 ID，使用 provider 行数／标题／完整字节额度。保留的 tombstone 公开删除状态，未知和其他 Team 的 ID 无法区分。原生调用者与任务检查一样负责授权。
+
+`inspectHumanAction()` 在同一 Team cursor 和精确 `attention-read` proof 下读取一个保留请求及其当前处理状态。已处理请求仍可检查，其处理状态禁止再次答复。完整响应使用 `maxSelectionBytes`。
+
+产品目录使用 `TeamHumanReaderProof` 与 `TeamProductDiscoveryRequest`。`listHumanTeamsPage()` 返回 `TeamProductDirectoryPage`：带截断标记的有界标题、当前读取状态，以及绑定 reader 的加密续页；不包含 grant、goal budget 正文和物理扫描计数。`getChannelOwner()` 只返回已挂载频道／Team 元组，供消费者在读取字节或等待前鉴权。
+
+`withoutPrivateTeamArtifacts()`、`withoutPrivateTaskHistoryArtifacts()` 与 `withoutPrivateWorkflowArtifacts()` 共用私有产物引用的纯产品投影。Host 与 SDK reader 对相同结果载体应用这些函数；内部 provider 快照保留权威内容。
+
+`assertHumanSessionRead()` 要求当前 `session-content-read` proof 绑定准确的 Team／成员／Session 元组。Agent 成员必须拥有该 Session 的持久 activation binding 或 activation reservation；仅有 header 不授予访问。历史绑定仍可检查。`TeamHumanReaderLease` 让流消费者观察认证或 source 退役，并关闭主体 reader。
+
+`resolveHumanReadAuthority()` 沿经过验证的父任务 reservation，返回最近的 active、由当前主体拥有的人工成员及其所属 Team。只有获支持的读取 proof 可以使用该祖先关系；目标 Team 的修改与同意仍独立鉴权。`getTeamSelection()` 可在完整字节额度内包含进程内 `readAccess` 元数据，产品及 SDK 请求解析器不接受该元数据。见[检查决策](../../../.agents/notes/implemented/architecture/2026-09-28-parent-team-product-inspection.zh.md)。
+
+`getTeamSelection()` 与授权目录摘要在不可变 `rules.simulationRunId` 将执行交给 Simulation 时返回 `executionManagement: "simulation-managed"`。普通 Team 省略该标记；有界投影不暴露运行身份或规则正文。标记不授予读取或修改权限。
+
+`resolveIdentities()` 在活跃人工成员证明下读取去重后的有限引用集合，只返回有界名称和成员阶段，保留请求顺序，并拒绝跨 Team 版本续页；不扫描成员集合。
+
+`registerExecutionProfile()` 通过调用插件的上下文拥有公开描述注册。`getExecutionProfiles()` 使用活跃人工成员读取证明并返回有界当前选项；选择配置的邀请在提交前复查精确描述和可用性。见[配置选择决策](../../../.agents/notes/implemented/architecture/2026-09-28-team-execution-profile-selection.zh.md)。
+
 Team 工作系统的 Service Definition。它提供独立的 Team、带 revision 的 goal、participant、activation、channel、envelope、task 和 task-attempt 身份；Team、goal、task 和 channel 记录的解析器；不可变的协议词汇；抽象的 `ctx.teams` 提供方约定；带版本的 channel 适配器注册表；以及类型化的 Team 策略 waterfall。
 
 创建频道时可用显式 `sessionId` 冻结 Agent 邀请端点。Simulation 邀请 scope 另行绑定 run、生命周期所有者、Team、参与者与 Session；只有注册的 `simulation-team` 所有者可在没有驻留 activation 时确认该精确 direct-v4 端点。
@@ -19,6 +41,12 @@ Team 工作系统的 Service Definition。它提供独立的 Team、带 revision
 成员详情通过`team.member.inspect`读取准确身份、角色、非敏感 placement 信息及一页 capability。续页使用已观察的 Team cursor，冲突后需要刷新。页面不包含 grant、启动配置或 attempt 统计，并受 Hub 响应字节额度限制。
 
 专用 Simulation 的 claim 与 receipt 请求还携带仅运行时存在的 `TeamDeliveryOwnerProof`。注册来源绑定 run、操作、channel、Envelope 和精确 activation/Session；提供方在等待 dispatch policy 后再次校验。
+
+`resolveHumanActor()` 仅为受信任 proof 签发者返回唯一的 active principal-owned 成员身份及操作名称。`getTaskCapabilities()` 要求有效的成员资格 proof，并检查输入路径而不返回 grant 正文。它报告观察时的创建限制、各模式授权和尝试次数上限，Host 再补充 provider 与 scheduler 可用性。这些读取不会授权后续写入。
+
+`getMemberReadiness()` 接收有界的明确成员集合及有效成员资格 proof。分页保留请求顺序，续页绑定 Team cursor。投影读取当前参与资格、attempt、容量和 binding 证据，再通过 `team/member-execution-observe` 查询 live 所有权。监听器不得重新进入 Hub 读取或改变执行。响应不含 grant、启动配置或完整历史。
+
+`getTeamAttention()` 通过当前 human 或规范父团队权限读取精确的 Team 待处理总量与 revision 固定的摘要页。恢复事项优先，其次为人工请求和任务审核；创建时间与不透明 ID 决定同级顺序。处理提示只公开原因，不返回 grant，也不授权写操作。完整页面使用 provider 的 selection 字节／文本额度。
 
 ## Provider contract
 
@@ -48,7 +76,7 @@ Soft interrupt 也按 owner 分开。`team-run`只能通过 `TeamSystemInterrupt
 
 `archiveTeam()`将 JSON-only `TeamArchiveInput`与 runtime-only system 或 authenticated-human proof 分开。`team-run`可以在结算 own Team 后保留一条 in-memory terminal owner；其准确 system scope 包含 Team 与 observed cursor。authenticated human proof 将相同完整 input 绑定到拥有 `close` authority 的一个 active human Participant，因此 detached 或 restart 后的终态 Team 仍可归档，而无需重建 TeamRun owner。provider 会在加载 Team 前、在 Team lock 内（包括已经归档的 idempotent read）以及 `close` policy 后、追加未改变的 `team/archived` record 前再次解析 proof。Team id、archived snapshot、roster data 或 restart 都不能重建任一 proof；proof 绝不写入 journal、checkpoint 或 wire request。
 
-Participant 邀请会冻结去重后的 capability 列表，供后续 scheduler 判断资格。`ParticipantInviteInput` 与 `ParticipantPhaseTransitionInput` 只包含 JSON 字段；受信 topology source 使用 `TeamSystemTopologyProof`，authenticated product call 则为非 human participant 的 invite 与 phase mutation 使用 `TeamHumanActorProof`。human participant 的创建仍仅限受信 topology/bootstrap source，Host/SDK wire 不提供 owner。`team-run` source 只能在发布 Run 前签发 bootstrap invite/phase scope，在发布后为已声明 worker 签发 `provisioning` 到 `active` 的 scope，并为惰性 provision 的 reviewer 签发 invite/phase scope。同一 proof 只能打开首个 direct-v3 human/coordinator channel。通用的非 workflow channel open 与普通 close 都需要准确的 `TeamSystemChannelLifecycleProof`；其 runtime-only dispatch marker 选择通用途径，而已注册 source 会绑定完整 JSON payload。provider 会在 topology 或 human scope 的 policy 前解析它们，并在 Team serializer 内再次解析后才追加记录，因此 raw participant ingress 会 fail closed。Task 创建会冻结祖先 task、所需 capability、priority、文件系统 scope、workspace mode、budget、封闭的 review route（`none`或一个 participant）以及 `maxAttempts`。每次 Task 创建都携带含幂等 key 的 retry `createCommand` 和 runtime proof。coordinator proof 派生 activation creator；authenticated-human proof 绑定完整 parsed input，并派生只含 Team 与 Participant id 的 durable human creator。provider 会在 replay、policy 或 append 前重新验证 proof，wire input 不包含 creator identity 或 proof。workflow-plan admission 同样使用 coordinator proof 并派生 durable actor。Task 可以保留 advisory `proposedOwnerId`；它只是 scheduler hint，绝不会授予 authority。task 要么没有 lease，要么为一个 `assigned` 或 `running` attempt 保留当前 lease。assigned lease 没有 start time，running lease 必须有 start time。其 `attemptCount` 等于已结算 attempt history 加上该 lease；其中 task-local ordinal 和 id 永不复用。lease 会保留其 assignment revision，并可保留一个已附加的 wake channel。agent-owned lease 保留 `ActivationId`；human 和 service lease 省略它。owner 操作会重复该精确 epoch，因此 stale residency 不能续期或结算较新的 lease。
+Participant 邀请会冻结去重后的 capability 列表，供后续 scheduler 判断资格。`ParticipantInviteInput` 与 `ParticipantPhaseTransitionInput` 只包含 JSON 字段；受信 topology source 使用 `TeamSystemTopologyProof`，authenticated product call 则为非 human participant 的 invite 与 phase mutation 使用 `TeamHumanActorProof`。human participant 的创建仍仅限受信 topology/bootstrap source，Host/SDK wire 不提供 owner。`team-run` source 只能在发布 Run 前签发 bootstrap invite/phase scope，在发布后为已声明 worker 签发 `provisioning` 到 `active` 的 scope，并为惰性 provision 的 reviewer 签发 invite/phase scope。同一 proof 只能打开首个 direct-v3 human/coordinator channel。通用的非 workflow channel open 与普通 close 都需要准确的 `TeamSystemChannelLifecycleProof`；其 runtime-only dispatch marker 选择通用途径，而已注册 source 会绑定完整 JSON payload。provider 会在 topology 或 human scope 的 policy 前解析它们，并在 Team serializer 内再次解析后才追加记录，因此 raw participant ingress 会 fail closed。Task 创建会冻结祖先 task、所需 capability、priority、文件系统 scope、workspace mode、budget、封闭的 review route（`none`或一个 participant）以及 `maxAttempts`。每次 Task 创建都携带含幂等 key 的 retry `createCommand` 和 runtime proof。coordinator proof 派生 activation creator；authenticated-human proof 绑定完整 parsed input，并派生只含 Team 与 Participant id 的 durable human creator。provider 会在 replay、policy 或 append 前重新验证 proof，wire input 不包含 creator identity 或 proof。workflow-plan admission 同样使用 coordinator proof 并派生 durable actor。Task 可以保留 advisory `proposedOwnerId`；它只是 scheduler hint，绝不会授予 authority。task 在编辑、attempt、review 和删除后仍保留 Hub 写入的不可变 `createdAt`。task 要么没有 lease，要么为一个 `assigned` 或 `running` attempt 保留当前 lease。assigned lease 没有 start time，running lease 必须有 start time。其 `attemptCount` 等于已结算 attempt history 加上该 lease；其中 task-local ordinal 和 id 永不复用。lease 会保留其 assignment revision，并可保留一个已附加的 wake channel。agent-owned lease 保留 `ActivationId`；human 和 service lease 省略它。owner 操作会重复该精确 epoch，因此 stale residency 不能续期或结算较新的 lease。
 
 `assignTask()`创建 lease，并可保留一个已附加的 wake channel；`startTaskAttempt()`要求精确的 revision、attempt id、Participant 和适用的 activation。`heartbeatTaskAttempt()`和`settleTaskAttempt()`接受一个不透明 `TeamActorProof`以及只含 JSON 的 task、attempt 和 revision identity；settlement 额外只接受 `released`、`failed`、`completed`或`cancelled`。在 Team/task serializer 内，提供方会解析并重新校验该 binding，然后派生 Team、Participant、activation 和 Session，再续期或结算 lease。`claimTaskAttemptStart()`只接受一个不透明 `TeamActorProof`以及只含 JSON 的 task、attempt、assignment-revision、wake-channel 和已接收 task-Envelope identity。在 Team/channel serializer 内，提供方会解析并重新校验该 binding，派生 Team、Participant、activation 和 Session，然后绑定 assignment delivery；对同一当前 claim 的重复调用会返回 running task，而不会再写入一条 journal record。`expireTaskAttempt()`在 deadline 后要求 revision 和 attempt id。completed attempt 保留 summary，failed attempt 保留 code 和 message；artifact reference 不属于此定义。`none` review route 可以直接完成已接收的 attempt；participant route 会为每个 completed attempt 保留 reviewer decision，包括非空 reason 以及所选 `completed`或`pending` phase。只有 task 处于 `review`时，它才保留恰好一条未解决的 completed attempt。`resolveTaskReview()`要求配置的 reviewing Participant，并通过 `task-mutate` policy 记录该决定。`proposeTaskOwner()`只会修改无 lease pending task 的 advisory proposal，验证被命名的 Participant 属于该 Team；如果该 Participant 其他方面不合格，scheduler 会继续选择其他候选者。`deleteTask()`会拒绝等待 review 的 task，因此不能丢弃未解决的 completed attempt。`updateTaskDetails()`只在提供方验证没有当前 lease 后修改 instructions 和 dependencies；它不能重写 task phase、scheduler facts 或 attempt state。
 
@@ -90,11 +118,17 @@ Local Hub 的 metrics 会在现有 counter 之外提供 pending-delivery depth�
 
 `browse()`在整页字节上限内返回具名的任务、成员和工作流摘要，与完整记录 API 分开。显示文本前缀明确标记截断，id 与协议角色保持准确；角色超出整行预算时明确拒绝。省略的行数限制由 provider 配置解析。Host 使用`team.browse`，TS/Python SDK 使用`team/browse`。Ordinal 前缀工作计入`scanned`；冷 hydration 仍在内部执行。
 
+仅任务支持 `query`，按不区分大小写的字面标题文本、可选状态和排除任务 ID 筛选；已删除任务不匹配。`queryCursor`/`nextQueryCursor` 包含准确的 Team、查询、日志水位和 `task-insertion-v1` 排序。查询变化以 `TEAM_INVALID_ARGUMENT` 拒绝，Team 水位变化以 `TEAM_CURSOR_CONFLICT` 拒绝；查询不能混用 ordinal `afterCursor` 与查询续页。`total` 为匹配数，`sourceTotal` 为全部任务数，`scanned` 记录为计算匹配数进行的全 map 扫描。内存仅保留一页和一个前瞻引用，查询不复制完整任务历史。搜索文本受 `maxSelectionTextBytes` 限制，包含续页信息的完整响应受 `maxSelectionBytes` 限制。未筛选集合仍使用 ordinal cursor 语义。
+
 `inspectTask()`选择`record`、`attempts`或`reviews`。`record`省略两类历史数组并返回计数；历史页按数组下标续读，可用`expectedRevision`锁定任务版本。Hub 对完整结果应用`recoveryPageSize`与`maxSelectionBytes`。单个记录超限时明确拒绝，历史页仍可独立读取。任务结果、子团队结果和 integration 中的私有产物引用不会返回。Host 路由为`team.task.inspect`，TS/Python SDK 路由为`team/task-inspect`。
 
 `inspectWorkflowPlan()`返回当前元数据和一页锁定版本的任务/依赖引用，省略说明、协议图和结果正文。整份响应受`maxSelectionBytes`限制，`scanned`报告模板和绑定查找工作量。Host 使用`team.workflow.plan.inspect`，TS/Python SDK 使用`team/workflow-plan-inspect`；内部完整读取仍显式调用`getWorkflowPlan()`。
 
 `simulation-team` 拓扑 proof 只能在匹配的 run 与生命周期所有者内邀请已预留的本地参与者、推进成员状态。重复邀请先核对原始持久描述，再返回既有成员。其频道 scope 预留 direct-v4 身份及必需 Session 邀请；匹配的孤立 WAL 可通过该实时权限继续挂接，保留原始截止时间。
+
+`cancelRuntimeTask()` 只接受当前 `simulation-team` 来源 proof，绑定不可变 run／任务创建 operation 和精确任务。必填且可为空的 attempt fence 必须匹配当前 lease 或最初保留的取消目标；`null` 选择无 lease 工作。它复用普通取消 policy、intent 与清理语义：live lease 等物理 owner 结算后释放，review 结果和 attempt 上限保留，相同重试不替换原因或目标；不会开放普通 human／模型取消旁路。
+
+`assignSimulationTask()` 仅接受 `simulation-team` owner 对 run 已保留 attempt 的精确来源 proof。scope 绑定规范创建、任务 revision、所选 activation／Session、ordinal 与 lease 时长，不授予频道唤醒或发送权限。Provider 保留原分配约束，拒绝过期或撤销的来源权限。`TaskAttemptSnapshot.retirement` 保留与终态尝试原子配对的 controller quiescence；普通任务结果请求不能提供该字段。
 
 ## Model Experience
 

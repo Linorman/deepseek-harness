@@ -6,7 +6,9 @@ import WebSocket from 'ws'
 import type {
   ApiProxy, HostFrame, MuxFrame, RpcRequest, ServerRequest,
 } from '@clocky/clocky-host-apiproxy/api'
-import { RpcId } from '@clocky/clocky-host-apiproxy/api'
+import { RpcId, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from '@clocky/clocky-host-apiproxy/api'
+import { currentAuthenticatedProductCall } from '@clocky/clocky-host-apiproxy'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 import { HOST_EVENTS_PATH, MUX_EVENTS_PATH } from '../src/api-path.ts'
 import { WebSocketDownlinks } from '../src/websocket-downlink.ts'
 
@@ -44,10 +46,13 @@ async function serve(downlinks: WebSocketDownlinks, productSignal?: AbortSignal)
   close: () => Promise<void>
 }> {
   const server = createServer()
+  const call: AuthenticatedProductCall | undefined = productSignal === undefined ? undefined
+    : { principal: { id: 'ws-principal' as never, issuer: 'test', subject: 'user', assurance: 'test', credentialGeneration: 1 },
+      credentialGeneration: 1, signal: productSignal }
   server.on('upgrade', (request, socket, head) => {
     const pathname = new URL(request.url ?? '/', 'http://clocky.internal').pathname
-    if (pathname === MUX_EVENTS_PATH) void downlinks.handleMux(request, socket, head, productSignal)
-    else if (pathname === HOST_EVENTS_PATH) void downlinks.handleHost(request, socket, head, productSignal)
+    if (pathname === MUX_EVENTS_PATH) void downlinks.handleMux(request, socket, head, call)
+    else if (pathname === HOST_EVENTS_PATH) void downlinks.handleHost(request, socket, head, call)
     else socket.destroy()
   })
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
@@ -76,6 +81,26 @@ async function acceptedSocket(downlinks: WebSocketDownlinks): Promise<WebSocket>
 }
 
 describe('WebSocket downlinks', () => {
+  it('opens both event sources under the authenticated product principal', async () => {
+    const seen: (AuthenticatedProductCall | undefined)[] = []
+    const source = api(idle, idle)
+    source.events.mux = (_request, signal) => { seen.push(currentAuthenticatedProductCall()); return idle(signal) }
+    source.events.host = (_request, signal) => { seen.push(currentAuthenticatedProductCall()); return idle(signal) }
+    const productAuth = new AbortController()
+    const host = await serve(new WebSocketDownlinks(source), productAuth.signal)
+    running.push(host.close)
+    const mux = new WebSocket(`${host.origin}${MUX_EVENTS_PATH}`)
+    const info = new WebSocket(`${host.origin}${HOST_EVENTS_PATH}`)
+    await Promise.all([once(mux, 'open'), once(info, 'open')])
+    await vi.waitFor(() => { expect(seen).toHaveLength(2) })
+    expect(seen.map(call => call?.principal.id)).toEqual(['ws-principal', 'ws-principal'])
+    expect(seen.every(call => call?.signal === productAuth.signal)).toBe(true)
+    expect(currentAuthenticatedProductCall()).toBeUndefined()
+    const closed = Promise.all([once(mux, 'close'), once(info, 'close')])
+    mux.close(); info.close()
+    await closed
+  })
+
   it('carries mux and host over independent downstream sockets and cancels each source on close', async () => {
     let muxAborted = false
     let hostAborted = false
@@ -216,7 +241,8 @@ describe('WebSocket downlinks', () => {
     await once(socket, 'open')
     const closed = once(socket, 'close')
     productAuth.abort()
-    await closed
+    const closedEvent: unknown[] = await closed
+    expect(closedEvent[0]).toBe(PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE)
     expect(aborted).toBe(true)
   })
 

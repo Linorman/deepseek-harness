@@ -33,6 +33,10 @@ from clocky import (
     TeamWorkflowInspection,
     TeamBrowseResponse,
     TeamMemberSessionResponse,
+    TaskUpdateReceipt,
+    TaskDetailsUpdateResponse,
+    TaskUpdateLookup,
+    TaskUpdateRejection,
     TeamGoalBlocker,
     TeamGoalTransitionInput,
     TeamGoalTransitionRequest,
@@ -122,6 +126,9 @@ def test_team_task_helpers_keep_the_handle_team_id() -> None:
         def create_team_task(self, payload: JsonObject) -> None:
             calls.append(("create", payload))
 
+        def get_team_task_update_result(self, team_id: str, task_id: str, command_id: str) -> None:
+            calls.append(("update-result", {"teamId": team_id, "taskId": task_id, "commandId": command_id}))
+
         def update_team_task(self, payload: JsonObject) -> None:
             calls.append(("update", payload))
 
@@ -166,9 +173,10 @@ def test_team_task_helpers_keep_the_handle_team_id() -> None:
     team.remove_member({"teamId": "team-untrusted", "participantId": "participant", "expectedCursor": 1})
     team.interrupt_member({"teamId": "team-untrusted", "participantId": "participant", "expectedCursor": 1})
     team.open_channel({"teamId": "team-untrusted", "expectedCursor": 1})
+    team.update_result("task", "original-command")
 
     assert [name for name, _payload in calls] == [
-        "create", "update", "cancel", "delete", "review", "invite", "activate", "remove", "interrupt", "open-channel",
+        "create", "update", "cancel", "delete", "review", "invite", "activate", "remove", "interrupt", "open-channel", "update-result",
     ]
     assert all(payload["teamId"] == "team-bound" for _name, payload in calls)
     assert calls[2][1]["reason"] == "Only this task."
@@ -470,7 +478,7 @@ for line in sys.stdin:
         }, open(os.environ["CAPTURE"], "w"))
         result = {"serverInfo": {"name": "fake-runtime"}}
     elif method == "team/list":
-        result = {"items": [], "scanned": 0}
+        result = {"items": []}
     elif method == "shutdown":
         json.dump(requests, open(os.environ["REQUESTS"], "w"))
         result = {}
@@ -583,7 +591,7 @@ for line in sys.stdin:
         print(REJECTED_CREDENTIAL, file=sys.stderr, flush=True)
         result = {"serverInfo": {"name": "fake-runtime"}}
     elif message.get("method") == "team/list":
-        result = {"items": [], "scanned": 0}
+        result = {"items": []}
     elif message.get("method") == "shutdown":
         result = {}
     else:
@@ -875,6 +883,54 @@ def test_task_inspection_keeps_exact_selection_and_history_accounting(monkeypatc
             TeamTaskInspectResponse.model_validate({"inspection": {**record["inspection"], "task": {**record["inspection"]["task"], **task_patch}}})
 
 
+def test_task_update_receipts_and_lookups_retain_exact_original_identity(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = HarnessClient(HarnessConfig())
+    identity = {"teamId": "team", "taskId": "task", "commandId": "update"}
+    receipt = {**identity, "expectedRevision": 1, "appliedRevision": 2, "appliedAt": 20}
+    response = {"value": {"receipt": receipt, "task": {"id": "task", "teamId": "team", "revision": 4}}}
+    calls = []
+
+    def request(method, params, **kwargs):
+        calls.append((method, params))
+        return kwargs["response_model"].model_validate(response)
+
+    monkeypatch.setattr(client, "request", request)
+    payload = {**identity, "expectedRevision": 1, "subject": "Updated name"}
+    assert client.update_team_task(payload).value.receipt.appliedRevision == 2
+    assert calls[-1] == ("team/task-update", payload)
+    for patch in [{"teamId": "foreign"}, {"taskId": "foreign"}, {"commandId": "foreign"}, {"expectedRevision": 3}]:
+        response = {"value": {"receipt": receipt, "task": {"id": "task", "teamId": "team", "revision": 4}}}
+        with pytest.raises(SdkProtocolError, match="original command identity"):
+            client.update_team_task({**payload, **patch})
+    for patch in [{"expectedRevision": True}, {"appliedAt": -1}, {"appliedRevision": 4}, {"commandId": ""}]:
+        with pytest.raises(ValidationError):
+            TaskUpdateReceipt.model_validate({**receipt, **patch})
+    for patch in [{"teamId": "foreign"}, {"id": "foreign"}, {"revision": True}, {"revision": 1}]:
+        with pytest.raises(ValidationError):
+            TaskDetailsUpdateResponse.model_validate({"value": {"receipt": receipt,
+                "task": {"id": "task", "teamId": "team", "revision": 4, **patch}}})
+    refusal = {**identity, "expectedRevision": 1, "observedRevision": 2, "rejectedAt": 20, "reason": "stale-revision"}
+    for kind in ["applied", "rejected", "not-found"]:
+        response = {"kind": kind, "receipt": receipt} if kind == "applied" else {"kind": kind, "rejection": refusal} if kind == "rejected" else {"kind": kind, **identity}
+        assert client.get_team_task_update_result("team", "task", "update").kind == kind
+        assert calls[-1] == ("team/task-update-result", identity)
+        for patch in [{"teamId": "foreign"}, {"taskId": "foreign"}, {"commandId": "foreign"}]:
+            response = {"kind": kind, "receipt": {**receipt, **patch}} if kind == "applied" else {"kind": kind, "rejection": {**refusal, **patch}} if kind == "rejected" else {"kind": kind, **identity, **patch}
+            with pytest.raises(SdkProtocolError, match="original command identity"):
+                client.get_team_task_update_result("team", "task", "update")
+    for response in [{"kind": "applied"}, {"kind": "not-found", "receipt": receipt}, {"kind": "not-found", **identity, "commandId": ""}]:
+        with pytest.raises(ValidationError):
+            TaskUpdateLookup.model_validate(response)
+    for patch in [{"expectedRevision": True}, {"observedRevision": 1}, {"rejectedAt": -1}, {"reason": "unknown"}]:
+        with pytest.raises(ValidationError):
+            TaskUpdateRejection.model_validate({**refusal, **patch})
+    for response in [{"kind": "rejected"}, {"kind": "rejected", "receipt": receipt},
+                     {"kind": "applied", "receipt": receipt, "rejection": refusal},
+                     {"kind": "not-found", **identity, "rejection": refusal}]:
+        with pytest.raises(ValidationError):
+            TaskUpdateLookup.model_validate(response)
+
+
 def test_member_inspection_checks_exact_identity_and_window(monkeypatch: pytest.MonkeyPatch) -> None:
     raw = {"detail": {"record": {"id": "member", "teamId": "team", "kind": "local-agent", "phase": "active",
                                "displayName": "Member", "role": "worker"}, "teamCursor": 3, "startCursor": -1,
@@ -930,7 +986,7 @@ for line in sys.stdin:
     if method == "initialize":
         result = {"serverInfo": {"name": "paged-runtime"}}
     elif method == "team/list":
-        result = {"items": [], "scanned": 1, "nextCursor": "next-team-page"}
+        result = {"items": [], "nextCursor": "next-team-page"}
     elif method == "team/member-session":
         result = {"binding": {"activation": {"id": "epoch", "teamId": msg["params"]["teamId"], "participantId": msg["params"]["participantId"], "status": "offline"}, "sessionId": "session", "provider": "test"}}
     elif method == "team/task-inspect":
@@ -1916,3 +1972,21 @@ def test_workflow_inspection_rejects_wrong_identity_and_impossible_windows(monke
     for patch in [{"phase": "failed"}, {"phase": "completed"}, {"resultTaskCount": 1}]:
         with pytest.raises(ValidationError):
             TeamWorkflowInspection.model_validate({**raw, "record": {**raw["record"], **patch}})
+
+
+def test_task_query_response_binds_cursor_and_filters() -> None:
+    query = {"search": "Report"}
+    row = {"id": "task-a", "teamId": "team-a", "revision": 1, "phase": "pending",
+           "subject": {"text": "Report A", "truncated": False}, "executionKind": "participant",
+           "priority": 0, "attemptCount": 0, "maxAttempts": 1, "dependencyCount": 0, "reviewCount": 0,
+           "hasLease": False, "cancellationRequested": False}
+    cursor = {"teamId": "team-a", "teamCursor": 2, "query": query, "order": "task-insertion-v1", "afterCursor": 0}
+    page = {"kind": "tasks", "teamId": "team-a", "teamCursor": 2, "total": 2, "sourceTotal": 4,
+            "scanned": 4, "items": [row], "query": query, "nextQueryCursor": cursor}
+    result = TeamBrowseResponse.model_validate({"page": page})
+    assert result.page.query.search == "Report"
+    for patch in [{"query": {"search": "Other"}}, {"teamId": "other-team"}, {"teamCursor": 3}]:
+        with pytest.raises(ValueError):
+            TeamBrowseResponse.model_validate({"page": {**page, "nextQueryCursor": {**cursor, **patch}}})
+    with pytest.raises(ValueError):
+        TeamBrowseResponse.model_validate({"page": {**page, "items": [{**row, "phase": "deleted"}]}})

@@ -1,0 +1,67 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json production task completion > waits for actual transfer and settles the original task exactly once 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interrupted": "completed",
+  "modelCalls": 2,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 2,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`sqlite production task completion > waits for actual transfer and settles the original task exactly once 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interrupted": "completed",
+  "modelCalls": 2,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 2,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;

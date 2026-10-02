@@ -7,7 +7,9 @@ import WebSocket, { WebSocketServer } from 'ws'
 import type {
   ApiProxy, HostFrame, MuxFrame, RpcRequest, ServerRequest,
 } from '@clocky/clocky-host-apiproxy/api'
-import { RpcId } from '@clocky/clocky-host-apiproxy/api'
+import { RpcId, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from '@clocky/clocky-host-apiproxy/api'
+import { withAuthenticatedProductCall } from '@clocky/clocky-host-apiproxy'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 
 type Frame = MuxFrame | HostFrame
 
@@ -65,13 +67,13 @@ export class WebSocketDownlinks {
    * @param req - HTTP upgrade request.
    * @param socket - Raw socket transferred by the HTTP server.
    * @param head - Bytes already read after the upgrade headers.
-   * @param productSignal - aborts when the authenticated product connection is revoked.
+   * @param productCall - authenticated principal and retirement signal retained by this downlink.
    */
-  handleMux(req: IncomingMessage, socket: Duplex, head: Buffer, productSignal?: AbortSignal): Promise<void> {
-    return this.upgrade(req, socket, head, signal => this.api.events.mux({
+  handleMux(req: IncomingMessage, socket: Duplex, head: Buffer, productCall?: AuthenticatedProductCall): Promise<void> {
+    return this.upgrade(req, socket, head, signal => withAuthenticatedProductCall(productCall, () => this.api.events.mux({
       rpcId: RpcId(randomUUID()),
       payload: {},
-    }, signal), productSignal)
+    }, signal)), productCall?.signal)
   }
 
   /**
@@ -79,13 +81,13 @@ export class WebSocketDownlinks {
    * @param req - HTTP upgrade request.
    * @param socket - Raw socket transferred by the HTTP server.
    * @param head - Bytes already read after the upgrade headers.
-   * @param productSignal - aborts when the authenticated product connection is revoked.
+   * @param productCall - authenticated principal and retirement signal retained by this downlink.
    */
-  handleHost(req: IncomingMessage, socket: Duplex, head: Buffer, productSignal?: AbortSignal): Promise<void> {
-    return this.upgrade(req, socket, head, signal => this.api.events.host({
+  handleHost(req: IncomingMessage, socket: Duplex, head: Buffer, productCall?: AuthenticatedProductCall): Promise<void> {
+    return this.upgrade(req, socket, head, signal => withAuthenticatedProductCall(productCall, () => this.api.events.host({
       rpcId: RpcId(randomUUID()),
       payload: {},
-    }, signal), productSignal)
+    }, signal)), productCall?.signal)
   }
 
   /**
@@ -134,7 +136,7 @@ export class WebSocketDownlinks {
           const abort = new AbortController()
           const abortProductCall = (): void => {
             abort.abort()
-            websocket.terminate()
+            websocket.close(PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE, 'product authentication retired')
           }
           productSignal?.addEventListener('abort', abortProductCall, { once: true })
           websocket.once('close', () => { abort.abort() })

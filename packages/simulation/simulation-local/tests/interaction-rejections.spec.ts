@@ -1,5 +1,6 @@
 import { afterEach, expect, it } from 'vitest'
 import { simulationChangeSchema } from '@clocky/clocky-simulation'
+import { createTaskReceipt } from './task-evidence-fixture.ts'
 import { createBusinessHarness } from './business-harness.ts'
 
 const cleanups: Array<() => Promise<void>> = []
@@ -92,8 +93,10 @@ it.each(['explicit', 'transfer'] as const)('keeps linked task progress independe
   await h.apply(h.buyer.lease, 'request', { ...h.request, fulfillment: kind === 'explicit' ? { kind } : h.request.fulfillment })
   await h.apply(h.seller.lease, 'accept', { kind: 'interaction/accept', id: 'order', expectedRevision: 1 })
   const interaction = Object.values(h.run.snapshot().interactions)[0]!
+  const operationId = await createTaskReceipt(h, h.buyer.lease, 'work')
   await h.run.reconcileTask(simulationTaskReconcileRequestSchema.parse({ interactionId: interaction.id, expectedRevision: 2,
-    task: { teamId: 'company', taskId: 'work', revision: 1, phase: 'running' } }))
+    task: { operationId, teamId: 'company', taskId: 'work', revision: 1, phase: 'running',
+      executor: { participantId: 'seller', attemptId: 'seller-attempt', ordinal: 1 } } }))
   if (kind === 'explicit') {
     expect(await h.apply(h.buyer.lease, 'confirm', { kind: 'interaction/confirm', id: 'order', expectedRevision: 3 }))
       .toMatchObject({ status: 'applied' })

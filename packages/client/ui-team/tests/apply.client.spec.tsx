@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
-import { fireEvent, waitFor } from '@testing-library/react'
+import { act, fireEvent, waitFor } from '@testing-library/react'
+import type { HostDescription } from '@clocky/clocky-client-connection/client'
 import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
-import type { ChannelId, SessionId, TeamArtifactReadResult, TeamAuditList, TeamId, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
+import type { ChannelId, SessionId, TeamAuditList, TeamId, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
+import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 import { SlotTestRuntime } from '@clocky/clocky-client-test-runtime'
 import { apply as applySidebar, inject as sidebarInject } from '@clocky/clocky-client-ui-sidebar/client'
 import type { TeamBrowserInjected } from '../src/client/TeamBrowser.tsx'
@@ -13,9 +15,51 @@ import { apply, inject } from '../src/client/index.ts'
 const coordinator = 'team-coordinator' as SessionId
 
 describe('ui-team apply', () => {
+  it('preserves a deep link until the authenticated handshake and cancels restoration on disconnect', async () => {
+    const runtime = await SlotTestRuntime.create()
+    const originalUrl = window.location.href
+    const hostDescription = createSnapshotStore<HostDescription | undefined>(undefined)
+    runtime.provide('connection', { hostDescription })
+    runtime.provide('layout', { showWorkspace: vi.fn(), toggleSidebar: vi.fn() })
+    const locale = new LocaleRuntime(runtime.ctx)
+    runtime.provide('locale', locale)
+    runtime.slots.installLocale(locale)
+    await runtime.root.declare({ 'team.workspace': { kind: 'single', scope: 'root' } },
+      ({ renderSlot }) => renderSlot('team.workspace', {}))
+    const url = '?team=deferred-team&view=tasks&q=%E6%8E%A5%E5%8F%A3&status=review'
+    window.history.replaceState(null, '', url)
+    let pendingSignal: AbortSignal | undefined
+    let finish: ((selection: TeamTaskSelection) => void) | undefined
+    runtime.teamTasks.stub('inspect', (_id, signal) => {
+      pendingSignal = signal
+      return new Promise((resolve) => { finish = resolve })
+    })
+    try {
+      await runtime.mount({ inject: [...inject], apply })
+      runtime.renderRoot()
+      expect(runtime.teamTasks.calls.some(call => call.method === 'inspect')).toBe(false)
+      expect(window.location.search).toBe(url)
+      await act(async () => { hostDescription.set({ version: 'test', cwd: '/', attachedSessions: 0, home: '/', canOpenPath: false,
+        authorizationScope: 'a'.repeat(64) as HostDescription['authorizationScope'] }) })
+      await waitFor(() => { expect(pendingSignal).toBeDefined() })
+      expect(window.location.search).toBe(url)
+      await act(async () => { hostDescription.set(undefined) })
+      expect(pendingSignal?.aborted).toBe(true)
+      if (finish === undefined) throw new Error('Deferred route inspection did not begin')
+      await act(async () => { finish!({ teamId: 'deferred-team' as TeamId, coordinatorSessionId: coordinator,
+        state: {} as TeamTaskSelection['state'] }) })
+      expect(window.location.search).toBe(url)
+      expect(runtime.teamTasks.calls.filter(call => call.method === 'inspect')).toHaveLength(1)
+    } finally {
+      await runtime.dispose()
+      window.history.replaceState(null, '', originalUrl)
+    }
+  })
+
   it('registers the Team workspace and selects a Team without opening a Session', async () => {
     const runtime = await SlotTestRuntime.create()
-    runtime.provide('layout', { toggleSidebar: vi.fn() })
+    runtime.provide('connection', { hostDescription: createSnapshotStore(undefined) })
+    runtime.provide('layout', { toggleSidebar: vi.fn(), showWorkspace: vi.fn() })
     const locale = new LocaleRuntime(runtime.ctx)
     locale.setLocale('en')
     runtime.provide('locale', locale)
@@ -24,7 +68,7 @@ describe('ui-team apply', () => {
       'sidebar': { kind: 'single', scope: 'root' },
       'team.workspace': { kind: 'single', scope: 'root' },
     }, ({ renderSlot }) => createElement('div', null,
-      renderSlot('sidebar', { collapsed: false, width: 300 }), renderSlot('team.workspace', {})))
+      renderSlot('sidebar', { workspace: 'team', collapsed: false, width: 300 }), renderSlot('team.workspace', {})))
     await runtime.mount({ inject: [...sidebarInject], apply: applySidebar })
     await runtime.sessions.add({ id: coordinator, summary: { displayTitle: 'Coordinator' } }, { current: false })
     const selection = {
@@ -37,9 +81,10 @@ describe('ui-team apply', () => {
       ...runtime.teamTasks.list.getSnapshot(),
       items: [{
         id: selection.teamId,
+        readAccess: 'member', objectiveTruncated: false,
         depth: 0,
         maxTeamDepth: 4,
-        goal: { teamId: selection.teamId, revision: 1, objective: 'Open this Team', phase: 'active', budgets: {} },
+        goal: { teamId: selection.teamId, revision: 1, objective: 'Open this Team', phase: 'active' },
         phase: 'active',
         cursor: 1,
         createdAt: 1,
@@ -64,7 +109,8 @@ describe('ui-team apply', () => {
 
   it('forwards optional Team detail operations and fails closed when a reader is unavailable', async () => {
     const runtime = await SlotTestRuntime.create()
-    runtime.provide('layout', { toggleSidebar: vi.fn() })
+    runtime.provide('connection', { hostDescription: createSnapshotStore(undefined) })
+    runtime.provide('layout', { toggleSidebar: vi.fn(), showWorkspace: vi.fn() })
     const locale = new LocaleRuntime(runtime.ctx)
     locale.setLocale('en')
     runtime.provide('locale', locale)
@@ -73,7 +119,7 @@ describe('ui-team apply', () => {
       'sidebar': { kind: 'single', scope: 'root' },
       'team.workspace': { kind: 'single', scope: 'root' },
     }, ({ renderSlot }) => createElement('div', null,
-      renderSlot('sidebar', { collapsed: false, width: 300 }), renderSlot('team.workspace', {})))
+      renderSlot('sidebar', { workspace: 'team', collapsed: false, width: 300 }), renderSlot('team.workspace', {})))
     await runtime.mount({ inject: [...sidebarInject], apply: applySidebar })
     await runtime.sessions.add({ id: coordinator, summary: { displayTitle: 'Coordinator' } }, { current: false })
 
@@ -91,17 +137,13 @@ describe('ui-team apply', () => {
       participantSession: ((id: TeamId, participant: never, signal?: AbortSignal) => Promise<SessionId>) | undefined
       readAudit: ((id: TeamId, options?: Record<string, unknown>, signal?: AbortSignal) => Promise<TeamAuditList>) | undefined
       readChannel: ((id: ChannelId, afterCursor?: number, signal?: AbortSignal) => Promise<unknown>) | undefined
-      readArtifact: ((id: TeamId, artifactId: string, signal?: AbortSignal) => Promise<TeamArtifactReadResult>) | undefined
+      readArtifact: ((id: TeamId, artifactId: string, signal?: AbortSignal) => Promise<void>) | undefined
     }
     teamTasks.watch = vi.fn(() => watchStop)
     teamTasks.participantSession = vi.fn(async () => coordinator)
     teamTasks.readAudit = vi.fn(async (): Promise<TeamAuditList> => ({ teamId, items: [] }))
     teamTasks.readChannel = vi.fn(async () => ({ records: [] }))
-    teamTasks.readArtifact = vi.fn(async (): Promise<TeamArtifactReadResult> => ({
-      artifact: { id: 'artifact-forwarding', provider: 'local', kind: 'report', uri: 'artifact://forwarding', visibility: 'team' },
-      bytes: 0,
-      data: '',
-    }))
+    teamTasks.readArtifact = vi.fn(async (): Promise<void> => {})
     runtime.teamTasks.stub('inspect', vi.fn(async () => selection))
     runtime.teamTasks.stub('archive', vi.fn(async () => ({} as import('@clocky/clocky-client-connection/client').TeamStateSnapshot)))
     runtime.teamTasks.stub('cancel', vi.fn(async (): Promise<'cancelled'> => 'cancelled'))

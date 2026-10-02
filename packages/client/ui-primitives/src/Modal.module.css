@@ -119,3 +119,35 @@
 .dialog:not([open]) {
   display: none;
 }
+
+/* Long configuration forms retain their heading/actions while only fields scroll. */
+.formDialog {
+  --clocky-scrollbar-thumb: var(--clocky-alias-scrollbar-bg-l2);
+  --clocky-scrollbar-thumb-hover: var(--clocky-alias-scrollbar-hover-l2);
+  box-sizing: border-box;
+  max-width: none;
+  width: min(800px, calc(100% - 32px));
+  height: min(800px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+  border-radius: 12px;
+}
+.formDialog .content { flex: 1; }
+.formDialog .body { flex: 1; overflow: auto; scrollbar-gutter: stable; }
+.formDialog .body > * { flex-shrink: 0; }
+.formDialog .body > button { align-self: flex-start; }
+.formDialog .footer { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .formDialog { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; box-sizing: border-box; }
+  .formDialog .content { flex: 1; }
+  .formDialog .header { padding: 16px; }
+  .formDialog .body, .formDialog .footer { padding-inline: 16px; }
+  .formDialog .body { margin-top: 8px; }
+}
+
+/* At extreme zoom or short heights, one scrollable card keeps fields and actions reachable. */
+@media (max-height: 420px) {
+  .dialog { display: block; overflow: auto; }
+  .dialog .content { display: block; max-height: none; overflow: visible; }
+  .dialog .body { max-height: none; overflow: visible; }
+  .dialog .footer { flex-wrap: wrap; margin-top: 20px; }
+}

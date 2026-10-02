@@ -18,6 +18,25 @@ import type { ChannelId, TeamId, TeamTaskId } from '@clocky/clocky-team/types'
  */
 export type RpcId = Branded<'rpc-id'>
 
+/** Opaque principal-generation discriminator; possession grants no authorization. */
+export type ProductAuthorizationScope = Branded<'ProductAuthorizationScope'>
+
+/** Private WebSocket protocol code for retirement of an authenticated product call. */
+export const PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE = 4001
+
+/** Structured transport denial which consumers can distinguish from ordinary network failure. */
+export class ApiAccessDeniedError extends Error {
+  /** Stable product-access classification shared by physical carriers. */
+  readonly code = 'PRODUCT_AUTH_INVALID'
+  /**
+   * @param path - Logical transport path without request data.
+   * @param status - HTTP denial status.
+   */
+  constructor(path: string, readonly status: 401 | 403) {
+    super(`transport failure for ${path}: HTTP ${status}`)
+  }
+}
+
 /**
  * Brands a string as RpcId (same precedent as core `SessionId()`). Minted by the initiator:
  * client-request → client mints; server-request → host mints (answerable frames get a stable
@@ -90,6 +109,10 @@ export interface RpcErrorDetailsMap {
   'TEAM_HUMAN_ACTOR_AMBIGUOUS': { teamId?: TeamId }
   /** The selected human participant's immutable grant denies this operation. */
   'TEAM_HUMAN_ACTOR_FORBIDDEN': { teamId?: TeamId }
+  /** The actor grant excludes a requested workspace mode, path scope, or budget. */
+  'TEAM_GRANT_DENIED': { teamId?: TeamId }
+  /** Immutable Team rules require the dedicated execution owner for this product mutation. */
+  'TEAM_POLICY_DENIED': { teamId?: TeamId }
   /** A runtime-only Team actor proof is forged, stale, revoked, or outside its payload fence. */
   'TEAM_ACTOR_PROOF_INVALID': { teamId?: TeamId }
   'team-service-unavailable': {}
@@ -99,9 +122,26 @@ export interface RpcErrorDetailsMap {
   'team-start-conflict': {}
   /** A Team cursor moved between the caller's read and its mutation. */
   'team-cursor-conflict': { teamId?: TeamId }
+  /** Product discovery continuation expired; restart at the first page without changing the selected Team. */
+  'team-discovery-expired': {}
   /** A task changed after its inspection or mutation revision was selected. */
+  'team-task-update-conflict': { teamId?: TeamId }
+  /** Simulation product opt-in is absent; read requests cannot open native execution as a fallback. */
+  'simulation-product-unavailable': {}
+  /** The current principal cannot read this registered product identity. */
+  'simulation-product-forbidden': {}
+  /** Simulation directory query or continuation no longer satisfies its declared observation. */
+  'simulation-product-invalid': {}
+  /** Selected world revision, object section or authenticated continuation expired; refresh the first page. */
+  'simulation-product-stale': {}
+  /** The provider durably refused this original update; the command cannot execute later. */
+  'team-task-update-rejected': { rejection: import('@clocky/clocky-team').TeamTaskUpdateRejection }
   'team-task-stale-revision': { teamId?: TeamId; taskId?: TeamTaskId }
   /** The selected Team has no task with this identity. */
+  /** A requested member does not belong to the selected Team. */
+  'team-profile-stale': { teamId?: TeamId }
+  'team-profile-unavailable': { teamId?: TeamId }
+  'team-member-not-found': { teamId?: TeamId }
   'team-task-not-found': { teamId?: TeamId; taskId?: TeamTaskId }
   /** A channel cursor or invitation revision moved before its mutation. */
   'team-invalid-argument': { teamId?: TeamId }

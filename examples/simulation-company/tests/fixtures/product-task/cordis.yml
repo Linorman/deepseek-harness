@@ -1,0 +1,15 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../product-control-model.ts
+- name: '@clocky/clocky-user-questions'
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: control-directory
+    imports: []
+- name: '@clocky/clocky-simulation-product/administration'
+  config:
+    journalStream: control-commands
+    templates: !!js JSON.parse(process.env.COMPANY_PRODUCT_TEMPLATES)
+    driverIntervalMs: 5
+    driverRetryMs: 10

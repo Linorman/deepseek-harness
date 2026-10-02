@@ -1,4 +1,6 @@
 import { projectHumanAction } from '@clocky/clocky-team/selection'
+import { fingerprintTeamHumanActorPayload, jsonObjectSchema } from '@clocky/clocky-team'
+import type { TeamHumanActorProof, TeamHumanActorScope } from '@clocky/clocky-team'
 import { teamHumanActionIdSchema, teamHumanActionSnapshotSchema, teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
 /** Human-action admission and late settlement across durable Team closure. @module */
 
@@ -149,4 +151,44 @@ it.each(['json', 'sqlite'] as const)('rejects an oversized durable action (%s)',
   const ctx = await recoverHuman(backend, records, [])
   await expect(ctx.teams.getHumanAction({ teamId, actionId: teamHumanActionIdSchema.parse('question-a') }))
     .rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+})
+
+it.each(['json', 'sqlite'] as const)('inspects retained request handling under exact human read proofs (%s)', async (backend) => {
+  const human = participant({ id: 'detail-reader', kind: 'human', role: 'human', phase: 'active',
+    owner: { kind: 'product-principal', principalId: 'reader' }, authorityGrant: {
+      operations: ['human-action'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {},
+    } })
+  const expected = teamHumanActionSnapshotSchema.parse(action())
+  const fixtureValue = fixture('fail', true)
+  const records = [...fixtureValue.closing]
+  const position = records.findIndex(record => record.type === 'activation/changed')
+  records.splice(position, 0, ...(['invited', 'provisioning', 'active'] as const).map(phase =>
+    participantChanged({ participant: { ...human, phase }, createdAt: 14 })))
+  let ctx = await recoverHuman(backend, records, [])
+  const scopes = new Map<TeamHumanActorProof, TeamHumanActorScope>()
+  const dispose = ctx.teams.registerHumanActorProofSource({ name: 'request-detail', resolveHumanActorProof: actor => scopes.get(actor) })
+  const inspect = async (actionId = expected.id, revoke = false) => {
+    const input = { teamId, actionId }
+    const actor = Object.freeze({}) as TeamHumanActorProof
+    const bound = { teamId, operation: 'attention-read' as const, fence: { kind: 'read' as const }, payload: jsonObjectSchema.parse(input) }
+    scopes.set(actor, { teamId, participantId: human.id, operation: bound.operation, fence: bound.fence,
+      payloadFingerprint: fingerprintTeamHumanActorPayload(bound) })
+    if (revoke) scopes.delete(actor)
+    try { return await ctx.teams.inspectHumanAction({ ...input, actor }) }
+    finally { scopes.delete(actor) }
+  }
+  const before = await ctx.teams.getTeam({ teamId })
+  const detail = await inspect()
+  expect(detail).toEqual({ teamId, teamCursor: before.team.cursor, action: expected,
+    handling: { kind: 'waiting', reason: 'closure-in-progress' } })
+  expect(Object.isFrozen(detail)).toBe(true)
+  expect(await ctx.teams.getTeam({ teamId })).toEqual(before)
+  await expect(inspect(teamHumanActionIdSchema.parse('missing'))).rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+  await expect(inspect(expected.id, true)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  dispose()
+  ctx = await recoverHuman(backend, records.map(record => record.type === 'human-action/changed'
+    ? { ...record, action: { ...action(), details: { prompt: 'x'.repeat(20000) } } } : record), [])
+  const releaseLarge = ctx.teams.registerHumanActorProofSource({ name: 'request-detail-large', resolveHumanActorProof: actor => scopes.get(actor) })
+  await expect(inspect()).rejects.toMatchObject({ code: 'TEAM_CHANNEL_BACKPRESSURE' })
+  releaseLarge()
 })

@@ -333,7 +333,7 @@ function configureDurableBinding(
     return state(currentCursor, current === undefined ? [] : [current], teamOverrides, participants)
   })
   fake.agentRuntimes.activate.mockResolvedValue(raw)
-  fake.agentRuntimes.getProvider.mockReturnValue({
+  fake.agentRuntimes.getProvider.mockReturnValue({ participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'in-process', terminationMode: 'owned-process', activate: fake.agentRuntimes.activate,
   })
   return {

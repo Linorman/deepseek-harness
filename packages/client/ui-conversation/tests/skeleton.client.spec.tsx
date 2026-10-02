@@ -8,7 +8,7 @@ import {
   createSnapshotStore, EMPTY_CHAT_SNAPSHOT, EMPTY_CONVERSATION_VIEWS,
 } from '@clocky/clocky-client-runtime/client'
 import type {
-  ConversationSnapshot, SessionId, SessionListState, WorkspaceListState,
+  ConversationSnapshot, SessionId, SessionListState, WorkspaceListState, TeamTaskListState, TeamTaskSelection, TeamId,
 } from '@clocky/clocky-client-runtime/client'
 import type { ConversationRootProps } from '../src/client/skeleton/ConversationRoot.tsx'
 import type { ClientContext } from '@clocky/clocky-client-runtime/client'
@@ -86,6 +86,9 @@ function mount(
     composerBlock?: { reason: string }
     /** Mutable view ledger used by registration-order regressions. */
     viewTabs?: ViewTab[]
+    /** Current Team authority is independent of the Session summary provenance. */
+    simulationManaged?: boolean
+    sessionTeamId?: TeamId
   } = {},
 ) {
   const root = sid('root')
@@ -93,6 +96,7 @@ function mount(
   const childRow = {
     id: SID, displayTitle: 'Child',
     cwd: '/projects/one', running: false, blank: options.summaryBlank ?? false, updatedAt: 3,
+    ...options.sessionTeamId === undefined ? {} : { team: { teamId: options.sessionTeamId, participantId: 'member' as never } },
   }
   const listed = options.omitSummaryRow !== true
   const sessions = createSnapshotStore<SessionListState>({
@@ -105,6 +109,13 @@ function mount(
     phase: 'ready', jobsBySession: {},
   })
   const workspaces = createSnapshotStore<WorkspaceListState>(workspaceState())
+  const selectedTeamId = 'simulation-team' as TeamId
+  // The skeleton reads only these selection authority fields; the Team workspace owns all other sections.
+  const selected = { teamId: selectedTeamId, coordinatorSessionId: sid('coordinator'),
+    state: { executionManagement: options.simulationManaged ? 'simulation-managed' : undefined, readAccess: 'member',
+      team: { phase: 'active' }, goal: { objective: { text: 'Current Team objective' } } } } as unknown as TeamTaskSelection
+  const teams = createSnapshotStore<TeamTaskListState>({ items: [], current: selectedTeamId, selected,
+    phase: 'ready', state: 'idle', error: null, draft: undefined })
   const session = createSnapshotStore<ConversationSnapshot>(snapshot)
   const useSession = bindSnapshotSelector(session)
   const chat = createChatStore().create()
@@ -227,6 +238,7 @@ function mount(
     sessionId: SID,
     SessionProvider: ({ children }) => children(SID),
     useSession,
+    useTeamTasks: bindSnapshotSelector(teams),
     useSessions: bindSnapshotSelector(sessions),
     useWorkspaces: bindSnapshotSelector(workspaces),
     useProjection: (() => undefined),
@@ -239,7 +251,7 @@ function mount(
   }
   const view = render(<ConversationRoot {...props} />)
   return {
-    view, chat, sink, session, slotCalls, seatOwners,
+    view, chat, sink, session, slotCalls, seatOwners, teams, sessions, wiring,
     rerender: () => { view.rerender(<ConversationRoot {...props} />) },
   }
 }
@@ -263,6 +275,46 @@ describe('Hero chrome', () => {
 })
 
 describe('ConversationRoot resident composer', () => {
+  it('uses the selected Team context for a blank coordinator and keeps worker records free of direct input', () => {
+    const b = mount(conversationSnapshot({ composerPhase: 'blank', blank: true }))
+    const state = b.teams.getSnapshot()
+    if (state.selected === undefined) throw new Error('Fixture Team selection is missing')
+    act(() => { b.teams.set({ ...state, selected: { ...state.selected!, coordinatorSessionId: SID } }) })
+    expect(b.view.getByText('Current Team objective')).toBeTruthy()
+    expect(b.view.queryByText(zh['hero.headline'])).toBeNull()
+    expect(b.view.getByRole('textbox').getAttribute('placeholder')).toBe(zh['placeholder.coordinator'])
+    act(() => { b.teams.set({ ...state, memberSession: { teamId: state.selected!.teamId, participantId: 'worker' as never,
+      sessionId: SID } }) })
+    expect(b.view.getByText(zh['session.workerReadOnly'])).toBeTruthy()
+    expect(b.view.queryByRole('textbox')).toBeNull()
+    expect(b.view.queryByText(zh['hero.headline'])).toBeNull()
+  })
+
+  it('keeps Simulation records and the input machine draft while removing composer and interaction controls', () => {
+    const b = mount(conversationSnapshot(), { simulationManaged: true, sessionTeamId: 'simulation-team' as TeamId, overlayTakeover: true })
+    expect(b.view.getByText(zh['session.simulationReadOnly'])).toBeTruthy()
+    expect(b.view.getByTestId('view-chat')).toBeTruthy()
+    expect(b.view.queryByRole('textbox')).toBeNull()
+    expect(b.view.queryByTestId('composer-takeover')).toBeNull()
+    expect(b.slotCalls).not.toContain('conversation.composer.bar')
+    expect(b.slotCalls).not.toContain('conversation.input.dock')
+    expect(b.wiring.state.getSnapshot().draft).toBe('ordinary draft')
+    expect(b.sink).not.toHaveBeenCalled()
+    act(() => { b.teams.set({ ...b.teams.getSnapshot(), selected: undefined }) })
+    expect((b.view.getByRole('textbox', { hidden: true }) as HTMLTextAreaElement).value).toBe('ordinary draft')
+    expect(b.view.getByTestId('composer-takeover')).toBeTruthy()
+  })
+
+  it('does not apply another Team’s Simulation authority to an unrelated Session', () => {
+    const b = mount(conversationSnapshot(), { simulationManaged: true, sessionTeamId: 'other-team' as TeamId })
+    expect(b.view.queryByText(zh['session.simulationReadOnly'])).toBeNull()
+    expect(b.view.getByRole('textbox')).toBeTruthy()
+    act(() => { b.teams.set({ ...b.teams.getSnapshot(), memberSession: {
+      teamId: 'simulation-team' as TeamId, participantId: 'member' as never, sessionId: SID } }) })
+    expect(b.view.getByText(zh['session.simulationReadOnly'])).toBeTruthy()
+    expect(b.view.queryByRole('textbox')).toBeNull()
+  })
+
   it('renders the composer inert with the blocker\u2019s own reason', () => {
     const b = mount(conversationSnapshot(), {
       composerBlock: { reason: 'select a model first' },

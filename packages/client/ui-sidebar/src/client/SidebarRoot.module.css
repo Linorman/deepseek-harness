@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-y: auto;
   padding: 6px var(--clocky-sidebar-inline-padding);
   box-sizing: border-box;
   background: var(--clocky-specific-sidebar-fill);
@@ -70,6 +71,7 @@
 }
 
 .railIn .footArea {
+  margin-top: auto;
   animation: rail-fade-in 150ms var(--ds-ease-in-out) backwards;
 }
 
@@ -293,6 +295,7 @@
 /* Footer seats: additive actions stack above Settings. Each occupant owns its
    button geometry and hover chrome. */
 .footArea {
+  margin-top: auto;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -310,6 +313,7 @@
 }
 
 .collapsed .footArea {
+  margin-top: auto;
   align-items: center;
 }
 
@@ -331,3 +335,9 @@
     animation: none;
   }
 }
+
+.productNavigation { display: grid; gap: 4px; padding: 8px 0; }
+.productNavigation button { width: 100%; justify-content: flex-start; gap: 8px; }
+.productNavigation button[aria-current] { background: var(--clocky-alias-interactive-bg-active); font-weight: 600; }
+.collapsed .productNavigation button { justify-content: center; padding-inline: 0; }
+.regionArea[hidden] { display: none; }

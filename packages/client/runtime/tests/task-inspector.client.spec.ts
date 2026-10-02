@@ -10,7 +10,7 @@ const teamId = 'inspector-team' as TeamId
 
 function task(id: string, count = 100): TeamTaskSnapshot {
   const taskId = id as TeamTaskId
-  return { id: taskId, teamId, revision: 1, subject: id, description: `Instructions ${id}`, execution: { kind: 'participant' },
+  return { id: taskId, teamId, createdAt: 0, revision: 1, subject: id, description: `Instructions ${id}`, execution: { kind: 'participant' },
     createCommand: { creator: { teamId, participantId: 'human' as never }, idempotencyKey: id as never },
     phase: count === 0 ? 'pending' : 'completed', blockedBy: [], requiredCapabilities: [], priority: 0,
     readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, reviewHistory: [],

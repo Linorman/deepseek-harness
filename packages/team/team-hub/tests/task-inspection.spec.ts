@@ -143,7 +143,7 @@ describe('bounded task inspection', () => {
 
   it.each(['json', 'sqlite'] as const)('reads a replayed task without an Agent and enforces its revision (%s)', async (backend) => {
     const member = participant({ id: taskCreatorId, role: 'coordinator' })
-    const row = task()
+    const row = task({ createdAt: 16 })
     const ctx = await recover(backend, [createdTeam(), teamPhase(),
       ...(['invited', 'provisioning', 'active'] as const).map((phase, index) =>
         participantChanged({ participant: { ...member, phase }, createdAt: 12 + index })),

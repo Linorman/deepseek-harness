@@ -2,6 +2,20 @@
 
 [English](README.md) | 中文
 
+`budgetInterval()` 与 `budgetUsage()` 从保留的 Native 事实派生当前区间准入、显式追加额度与已计费 token；本地 provider 与产品读取复用同一函数。`simulationTokenCount()` 与 token 总计费精确求和，超出安全整数范围时拒绝。unknown 或 reserved attempt 至少保留预留额度及更高的已观察用量；不可用的算术不能显示为零。
+
+`simulationResidentSlots()` 拥有与本地 writer 准入及 `population()` 共用的预留谓词：reserved、active 与 revoked writer 在 release 前均占用容量。恢复数量包含非 active writer，以及无所有者或所有权证据不可用时保留的 writer。这是已占用准入容量，不是进程存活证明。`simulationRuntimeMetrics()` 额外提供区间宽度、unknown token attempt、open／submitted decision 加 queued／reserved nomination、未结算外部意图及明确 unknown outcome；只读取权威状态，不执行、恢复或披露上下文。浏览器 DTO 可通过 `./metrics-types` 导入纯类型声明。
+
+`SimulationInspectionSelection.includeRecords` 请求在 `SimulationRunObservation.records` 中返回经回放验证的原始日志条目。不传时保持仅元数据／snapshot 的检查。这个受信任原生选项不授予产品权限，消费者必须分别授权并删节原始值；读取不打开 writer，也不改变模拟时间。
+
+浏览器 DTO 可从 `./time-types` 导入 `SimTime` 品牌类型；此仅类型时钟声明不包含 provider、Session 或 Cordis 扩展。根 API 保留相同的品牌类型导出。
+
+`./identities` 同样提供不含运行时声明的原生 entity、decision、decision-slot、operation、checkpoint 和 writer-epoch 品牌类型。现有根/schema 导出保留相同类型和持久编码。
+
+检查点失败可保留 `SimulationCheckpointDiagnostic`：固定的管线阶段、规则类别及规范 run／Team／频道／Session／实体／检查点对象。公开读取方从 `./checkpoint-diagnostics-types` 导入声明，从 `./checkpoint-diagnostics-schema` 导入严格解析器；这两个入口均不挂载服务。`SimulationCheckpointError` 将这些事实与私有 message／cause 分开，`SimulationCheckpointCleanupError` 保留两项原错误并独立标明清理未确认。任意 provider 消息或属性不能确定公开类别；读取方仍须在读取关联对象正文前鉴权。
+
+`resolveInspection()` 在 `inspect()` 读取现有历史前校验 provider 支持和不可变 expected spec。可选的 provider inspection 不会回退到 `open()`，并区分缺失状态。`SimulationRunObservation` 包含完整可信原生状态及所有权观察；读取方负责鉴权和公开删节。它不恢复 writer 状态，不改 run phase，也不执行运行。
+
 `ctx.simulations` 注册具名的持久 run 提供方。调用 `resolve(request)` 时显式指定提供方、create/open 模式、run 身份、时钟单位/原点/最大值及规则/策略版本，再将结果传给 `open()`。提供方返回由调用者持有的句柄，支持 `snapshot()`、校验 revision 的 `setPhase()` 和排空操作的 `close()`。注册受 effect 作用域约束；缺失或重复的提供方会被拒绝。
 
 `inspectEntity(id)` 返回独立的实体快照及同次观察的 run 身份和全局 revision，不复制无关历史。未知身份不包含实体；写入仍校验预期 revision 和权限。
@@ -20,7 +34,7 @@
 
 `openWindow()` 通过一次追加冻结有序角色集合、一个 run revision 及全部授权上下文。角色独立持久提交提案；`commitWindow()` 按 slot 顺序接受，并在首个未完成 slot 处停止。世界操作与时钟推进等待窗口关闭。取消保留 slot 并将其 wake 归还 pending；writer 退役会取消未接受提案。
 
-`communication/post` 将接收者、频道、文本和 `deliverAt` 固定在已接受意图中。`dispatchOperation()` 仅在就绪后调用可信且幂等的 `SimulationTeamTransport`，校验精确回执，并按显式 `outboxMaxAttempts`/`outboxRetryDelayMs` 持久记录现实时间尝试。预算耗尽会记录未知结果并停滞；`retryOutbox()` 记录新的重试预算，不改变身份或 payload。已到期但尚未确认发布的消息会阻止接收者打开新决策。
+`communication/post` 将接收者、频道、文本和 `deliverAt` 固定在已接受意图中。`dispatchOperation()` 仅在就绪后调用可信且幂等的 `SimulationTeamTransport`，校验精确回执，并按显式 `outboxMaxAttempts`/`outboxRetryDelayMs` 持久记录现实时间尝试。预算耗尽会记录未知结果并停滞。`retryOutbox(request, authorize?)` 为准确的当前 unknown 外部意图及正数 attempt-count fence 记录一次原始有界额度。不可变请求保留稳定 grant id、operation id、规范化 reason 及原受理现实时间。相同重试在后续 attempt、结果、phase 或冷重放后返回原 grant，变更载荷则拒绝。grant 保留 operation 身份与 fingerprint，不发布或恢复调度。已到期但尚未确认发布的消息会阻止接收者打开新决策。
 
 模型决策在首次请求前记录一个现实时间截止点。完成时间与提案提交或接受共用批次。未完成决策到期后变为 `cancelled`，原因是 `timeout`；其 wake 回到 pending，窗口后续 slot 可继续。回放使用已记录时间，不启动计时器。
 
@@ -37,6 +51,8 @@
 `queueUsage()` 计入待处理事件及 pending/claimed wake，以及未解决的交互。仅回复过期不释放未解决交互；完成、取消或拒绝会释放容量。`maxPendingEvents` 和 `maxPendingInteractions` 限制这两类积压。容量失败记录 `SIM_QUEUE_CAPACITY`，不会部分发布业务效果及其衍生事件。释放容量或幂等 `extendCapacity()` 后可显式恢复；历史记录仍保留。
 
 `recordKnowledge()` 保留归属与类别不变的观察、已接收报告、推断、配置化信念和策略派生摘要版本。`queryKnowledge()` 结合固定游标／时间与历史及当前读者权限，并以非递归遍历检查全部推断与摘要前提。候选选择优先使用显式 id，并在取得指定数量的授权结果后停止。`prepareContext()` 可指定知识 id 和必需／可选标记；按决策归属及快照选择，再使用现有字节预算。撤权拒绝后续检索／提交，不删除已保留的 Session 历史。报告要求特定接收者回执及精确正文；推断要求前提确实选入其已接受决策。
+
+`SimulationTaskExecutionRequest.interaction.execution` 区分 `obligation` 与 `continuation`。前者要求已接受的开放承诺。后者只允许对已兑现转移继续处理，且完整证据须来自同一任务、assignee 和规范 Session 的已物理退休旧 attempt。它不改写交互或承诺。新 attempt 记录并消费自己的输入，受理无提案的决策；任何世界提案均被拒绝。只有完成这次确认后，结果才可引用精确原转移证据。已取消承诺、无关证据、仍存活旧 writer 及复用 epoch 均拒绝。
 
 ## Model Experience
 

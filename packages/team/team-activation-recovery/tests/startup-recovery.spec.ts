@@ -388,7 +388,7 @@ async function realRecoveryContext(root: string) {
   await ctx.plugin(TeamActivationController)
   const activations: AgentRuntimeActivationRequest[] = []
   const fences: ActivationBindingSnapshot[] = []
-  const provider: AgentRuntimeProvider = {
+  const provider: AgentRuntimeProvider = { participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'sdk',
     terminationMode: 'owned-process',
     async activate(request) {

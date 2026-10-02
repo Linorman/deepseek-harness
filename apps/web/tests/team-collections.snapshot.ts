@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { chromium } from 'playwright'
 import type { Route } from 'playwright'
 import { expect, it } from 'vitest'
-import type { TeamStateSnapshot, TeamWorkflowPlanSnapshot } from '@clocky/clocky-team'
+import type { TeamStateSnapshot, TeamTaskSnapshot, TeamWorkflowPlanSnapshot } from '@clocky/clocky-team'
 import { launchWebScaffold, watchConsole } from './scaffold.ts'
 
 it('retains bounded task and member pages after failed continuation reads and offers a current refresh', async () => {
@@ -49,6 +49,7 @@ it('retains bounded task and member pages after failed continuation reads and of
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' })
   const errors = watchConsole(page)
   let created: TeamStateSnapshot | undefined
+  let primaryFailure: unknown
   async function rpc<T>(method: string, payload: unknown): Promise<T> {
     const response = await scaffold.authenticatedRpc<T>(method, payload)
     if (!response.result.ok) throw new Error(`${method}: ${response.result.error.message}`)
@@ -73,6 +74,22 @@ it('retains bounded task and member pages after failed continuation reads and of
     })
     for (let index = 0; index < 65; index++) await createTask(`分页任务 ${String(index).padStart(2, '0')}`)
     for (let index = created.participants.length; index < 65; index++) await invite(`分页成员 ${String(index).padStart(2, '0')}`)
+    const beforeEdit = await state()
+    const pending = await rpc<import('@clocky/clocky-team').TeamAttentionPage>('team.attention.read', { teamId, limit: 1 })
+    expect(pending.teamId).toBe(teamId)
+    expect(pending.counts.total).toBe(pending.counts.recovery + pending.counts.humanActions + pending.counts.reviews)
+    expect(pending.items.length).toBeLessThanOrEqual(1)
+    expect((await rpc<import('@clocky/clocky-team').TeamSelectionSnapshot>('team.selection', { teamId })).attentionCounts).toEqual(pending.counts)
+    const editable = beforeEdit.tasks.find(task => task.subject === '分页任务 00')!
+    const offPageDependency = beforeEdit.tasks.find(task => task.subject === '分页任务 64')!
+    expect(beforeEdit.tasks.every(task => Number.isSafeInteger(task.createdAt)
+      && task.createdAt >= beforeEdit.team.createdAt && task.createdAt <= beforeEdit.team.updatedAt)).toBe(true)
+    expect(offPageDependency.createdAt).toBeGreaterThan(editable.createdAt)
+    await createTask('分页任务 00')
+    const afterRetry = await state()
+    expect(afterRetry.tasks.filter(task => task.subject === editable.subject)).toHaveLength(1)
+    expect(afterRetry.tasks.find(task => task.id === editable.id)?.createdAt).toBe(editable.createdAt)
+    await rpc('team.task.update', {  commandId: 'team-collections.snapshot-update-1',teamId, taskId: editable.id, expectedRevision: editable.revision, blockedBy: [offPageDependency.id] })
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.getByRole('button', { name: `${objective} 进行中`, exact: true }).click()
     const panel = page.locator('[data-team-workspace-page]')
@@ -81,11 +98,20 @@ it('retains bounded task and member pages after failed continuation reads and of
       await navigation.locator('button[aria-expanded]').click()
       await page.getByRole('menuitem', { name: '工作流', exact: true }).click()
     }
+    await navigation.getByRole('button', { name: '产物', exact: true }).click()
+    await panel.getByText('暂无产物，任务发布结果后会出现在这里。', { exact: true }).waitFor()
+    await panel.getByRole('button', { name: '刷新产物', exact: true }).click()
+    await panel.getByText('暂无产物，任务发布结果后会出现在这里。', { exact: true }).waitFor()
+    await page.screenshot({ path: join(output, 'empty-artifacts.png') })
+    await showWorkflows()
+    await panel.getByText('暂无工作流，创建后会出现在这里。', { exact: true }).waitFor()
+    await panel.getByRole('button', { name: '刷新工作流', exact: true }).click()
+    await page.screenshot({ path: join(output, 'empty-workflows.png') })
     await navigation.getByRole('button', { name: '任务', exact: true }).click()
     const tasks = panel.getByRole('region', { name: '执行任务', exact: true })
-    const firstTaskPage = await rpc<TeamBrowsePage>('team.browse', { teamId, kind: 'tasks', afterCursor: -1, limit: 64 })
-    if (firstTaskPage.kind !== 'tasks' || firstTaskPage.nextCursor === undefined) throw new Error('Expected task summary continuation')
-    const secondTaskPage = await rpc<TeamBrowsePage>('team.browse', { teamId, kind: 'tasks', afterCursor: firstTaskPage.nextCursor, limit: 64 })
+    const firstTaskPage = await rpc<TeamBrowsePage>('team.browse', { teamId, kind: 'tasks', query: { search: '分页任务' }, limit: 64 })
+    if (firstTaskPage.kind !== 'tasks' || firstTaskPage.nextQueryCursor === undefined) throw new Error('Expected task summary continuation')
+    const secondTaskPage = await rpc<TeamBrowsePage>('team.browse', { teamId, kind: 'tasks', query: { search: '分页任务' }, queryCursor: firstTaskPage.nextQueryCursor, limit: 64 })
     const firstTaskCount = firstTaskPage.items.length
     const secondTaskCount = secondTaskPage.items.length
     expect(firstTaskCount).toBeGreaterThan(0)
@@ -93,17 +119,73 @@ it('retains bounded task and member pages after failed continuation reads and of
     expect(Buffer.byteLength(JSON.stringify(firstTaskPage))).toBeLessThanOrEqual(16384)
 
     const members = panel.getByRole('region', { name: '参与者', exact: true })
-    await expect.poll(() => tasks.locator('tbody tr').count()).toBe(firstTaskCount)
-    const taskSearch = tasks.getByRole('textbox', { name: '仅搜索已加载任务' })
+    const taskSearch = tasks.getByRole('textbox', { name: '搜索整个团队的任务' })
+    await taskSearch.fill('分页任务 64')
+    expect(new URL(page.url()).searchParams.has('q')).toBe(false)
+    await taskSearch.press('Enter')
+    await expect.poll(() => tasks.locator('tbody tr').count()).toBe(1)
+    await tasks.getByRole('button', { name: '分页任务 64', exact: true }).waitFor()
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('分页任务 64')
+    await page.reload({ waitUntil: 'load' })
+    await tasks.getByRole('button', { name: '分页任务 64', exact: true }).waitFor()
+    expect(await taskSearch.inputValue()).toBe('分页任务 64')
+    expect(await tasks.locator('tbody tr').count()).toBe(1)
+    await page.screenshot({ path: join(output, 'whole-team-search.png') })
+    await tasks.getByRole('button', { name: '清除任务搜索', exact: true }).click()
+    expect(await taskSearch.evaluate(element => element === document.activeElement)).toBe(true)
+    await expect.poll(() => new URL(page.url()).searchParams.has('q')).toBe(false)
+    await taskSearch.fill('无匹配的草稿')
+    await taskSearch.dispatchEvent('compositionstart')
+    await taskSearch.press('Enter')
+    expect(new URL(page.url()).searchParams.has('q')).toBe(false)
+    await taskSearch.dispatchEvent('compositionend')
+    await taskSearch.press('Enter')
+    await tasks.getByText('没有符合条件的任务', { exact: true }).waitFor()
+    await tasks.getByRole('button', { name: '清除任务搜索', exact: true }).click()
     await taskSearch.fill('分页任务')
+    await taskSearch.press('Enter')
+    await expect.poll(() => tasks.locator('tbody tr').count()).toBe(firstTaskCount)
     await tasks.getByRole('button', { name: '分页任务 00', exact: true }).click()
     const selectedTask = panel.getByRole('complementary', { name: '任务摘要' })
     await selectedTask.waitFor()
+    await selectedTask.getByRole('button', { name: '更多操作', exact: true }).click()
+    await page.getByRole('menuitem', { name: '编辑任务', exact: true }).click()
+    const edit = page.getByRole('dialog', { name: '编辑任务', exact: true })
+    const selectedDependencies = edit.getByRole('group', { name: '已选依赖', exact: true })
+    // Exact dependency reads resolve this reference without loading its task-list page.
+    const retainedDependency = selectedDependencies.getByRole('checkbox', { name: offPageDependency.subject, exact: true })
+    await retainedDependency.waitFor()
+    expect(await selectedDependencies.getByRole('checkbox').count()).toBe(1)
+    await retainedDependency.click()
+    await retainedDependency.waitFor({ state: 'detached' })
+    const candidateSearch = edit.getByRole('textbox', { name: '搜索此团队的任务标题', exact: true })
+    await candidateSearch.fill('分页任务 64')
+    await candidateSearch.press('Enter')
+    const candidates = edit.getByRole('group', { name: '添加依赖', exact: true })
+    await candidates.getByRole('checkbox', { name: '分页任务 64', exact: true }).click()
+    await selectedDependencies.getByRole('checkbox', { name: '分页任务 64', exact: true }).waitFor()
+    await edit.getByRole('button', { name: '清除搜索', exact: true }).click()
+    expect(await candidateSearch.evaluate(element => element === document.activeElement)).toBe(true)
+    await edit.getByRole('button', { name: '下一页候选', exact: true }).click()
+    expect(await selectedDependencies.getByRole('checkbox').count()).toBe(1)
+    await selectedDependencies.getByRole('checkbox').click()
+    await selectedDependencies.getByText('尚未选择依赖。', { exact: true }).waitFor()
+
+    await page.screenshot({ path: join(output, 'off-page-dependency-edit.png') })
+    await edit.getByRole('button', { name: '编辑任务', exact: true }).click()
+    await edit.waitFor({ state: 'hidden' })
+    expect((await state()).tasks.find(task => task.id === editable.id)?.blockedBy).toEqual([])
+    expect((await state()).tasks.find(task => task.id === editable.id)?.createdAt).toBe(editable.createdAt)
+
+    await tasks.getByRole('button', { name: '刷新到第一页', exact: true }).click()
+    await expect.poll(() => tasks.getByRole('button', { name: '下一页任务', exact: true }).isEnabled()).toBe(true)
     await tasks.getByRole('button', { name: '下一页任务', exact: true }).click()
     await expect.poll(() => tasks.locator('tbody tr').count()).toBe(secondTaskCount)
     expect(await taskSearch.inputValue()).toBe('分页任务')
     await selectedTask.getByRole('heading', { name: '分页任务 00', exact: true }).waitFor()
-    await tasks.getByRole('button', { name: '刷新任务', exact: true }).click()
+    await tasks.getByRole('button', { name: '刷新到第一页', exact: true }).click()
+    await expect.poll(() => tasks.locator('tbody tr').count()).toBe(firstTaskCount)
+    await tasks.getByRole('button', { name: '下一页任务', exact: true }).click()
     await expect.poll(() => tasks.locator('tbody tr').count()).toBe(secondTaskCount)
     await page.screenshot({ path: join(output, 'collections-current-window.png') })
     await page.setViewportSize({ width: 390, height: 844 })
@@ -134,6 +216,10 @@ it('retains bounded task and member pages after failed continuation reads and of
       if (collection === 'member') {
         await members.getByRole('button', { name: '刷新成员', exact: true }).click()
         await expect.poll(() => members.getByRole('button', { name: '刷新成员', exact: true }).isEnabled()).toBe(true)
+      }
+      if (collection === 'task') {
+        await tasks.getByRole('button', { name: '刷新到第一页', exact: true }).click()
+        await expect.poll(() => tasks.getByRole('button', { name: '下一页任务', exact: true }).isEnabled()).toBe(true)
       }
       const reached = Promise.withResolvers<undefined>()
       const release = Promise.withResolvers<undefined>()
@@ -167,6 +253,11 @@ it('retains bounded task and member pages after failed continuation reads and of
       await page.screenshot({ path: join(output, `collections-${collection}-failure.png`) })
       expect(await section.locator(collection === 'task' ? 'tbody tr' : 'li').count()).toBe(collection === 'task' ? firstTaskCount : 64)
       if (collection === 'member') await members.getByRole('button', { name: '刷新成员', exact: true }).waitFor()
+      if (collection === 'task') {
+        expect(await moreButton.isDisabled()).toBe(true)
+        await tasks.getByRole('button', { name: '刷新到第一页', exact: true }).click()
+        await expect.poll(() => moreButton.isEnabled()).toBe(true)
+      }
       await section.getByRole('button', { name: collection === 'task' ? '下一页任务' : '下一页成员', exact: true }).click()
       await expect.poll(() => section.locator(collection === 'task' ? 'tbody tr' : 'li').count()).toBe(collection === 'task' ? secondTaskCount : 3)
       expect(await section.getByRole('alert').count()).toBe(0)
@@ -181,6 +272,16 @@ it('retains bounded task and member pages after failed continuation reads and of
     expect(plans.items).toHaveLength(1)
     const plan = plans.items[0]
     if (plan === undefined) throw new Error('The actual workflow tool did not admit a plan')
+    const ownedTaskId = plan.taskBindings[0]?.taskId
+    if (ownedTaskId === undefined) throw new Error('Production workflow did not retain its task identity')
+    const ownedTask = await rpc<TeamTaskSnapshot>('team.task.get', { teamId, taskId: ownedTaskId })
+    const refusalCommand = { teamId, taskId: ownedTask.id, commandId: 'team-collections-workflow-owned-edit',
+      expectedRevision: ownedTask.revision, description: 'Must preserve workflow ownership.' }
+    expect((await scaffold.authenticatedRpc('team.task.update', refusalCommand)).result)
+      .toMatchObject({ ok: false, error: { code: 'team-task-update-rejected', details: { rejection: { reason: 'workflow-owned' } } } })
+    expect(await rpc('team.task.update.result', { teamId, taskId: ownedTask.id, commandId: refusalCommand.commandId }))
+      .toMatchObject({ kind: 'rejected', rejection: { reason: 'workflow-owned', expectedRevision: ownedTask.revision } })
+    expect(await rpc<TeamTaskSnapshot>('team.task.get', { teamId, taskId: ownedTask.id })).toEqual(ownedTask)
     const coordinatorId = created.participants.find(member => member.role === 'coordinator')?.id
     const coordinatorBinding = created.activations.find(candidate => candidate.activation.participantId === coordinatorId)
     if (coordinatorBinding === undefined) throw new Error('The coordinator binding is missing')
@@ -209,7 +310,23 @@ it('retains bounded task and member pages after failed continuation reads and of
     await expect.poll(() => new URL(page.url()).searchParams.get('plan')).toBe(plan.id)
     await workflows.getByText('依赖: 准备数据', { exact: true }).waitFor()
     await workflows.screenshot({ path: join(output, 'workflow-ready.png') })
+    const handshake = Promise.withResolvers<undefined>()
+    const releaseHandshake = Promise.withResolvers<undefined>()
+    const continuedHandshake = Promise.withResolvers<undefined>()
+    const delayHandshake = async (route: Route) => {
+      handshake.resolve(undefined)
+      await releaseHandshake.promise
+      await route.continue()
+      continuedHandshake.resolve(undefined)
+    }
+    await page.route('**/api/host.describe', delayHandshake)
     await page.reload({ waitUntil: 'load' })
+    await handshake.promise
+    expect(new URL(page.url()).searchParams.get('plan')).toBe(plan.id)
+    expect(await page.getByRole('alert').count()).toBe(0)
+    releaseHandshake.resolve(undefined)
+    await continuedHandshake.promise
+    await page.unroute('**/api/host.describe', delayHandshake)
     await workflows.getByText('依赖: 准备数据', { exact: true }).waitFor()
     expect(new URL(page.url()).searchParams.get('plan')).toBe(plan.id)
     const reportId = plan.taskBindings.find(item => item.templateId === 'report')?.taskId
@@ -245,6 +362,7 @@ it('retains bounded task and member pages after failed continuation reads and of
     }).toBe(true)
     await page.screenshot({ path: join(output, 'collections-narrow.png') })
   } catch (error: unknown) {
+    primaryFailure = error
     await page.screenshot({ path: join(output, 'collections-diagnostic.png') })
     await writeFile(join(output, 'browser-diagnostic.json'), JSON.stringify({
       failure: error instanceof Error ? error.message : String(error),
@@ -259,6 +377,18 @@ it('retains bounded task and member pages after failed continuation reads and of
         const current = await rpc<TeamStateSnapshot>('team.get', { teamId: created.team.id })
         if (!['completed', 'failed', 'cancelled'].includes(current.team.phase)) await rpc('team.cancel', { teamId: created.team.id })
       }
-    } finally { await scaffold.close() }
+    } finally {
+      try { await scaffold.close() } catch (cleanupError) {
+        await writeFile(join(output, 'cleanup-diagnostic.txt'), describeFailure(cleanupError) + '\n')
+        if (primaryFailure !== undefined) throw new AggregateError([primaryFailure, cleanupError], 'Collection scenario and cleanup failed')
+        throw cleanupError
+      }
+    }
   }
 }, 180_000)
+
+/** Keep nested disposal and replay failures inspectable beside the browser evidence. */
+function describeFailure(error: unknown): string {
+  if (error instanceof AggregateError) return [error.stack ?? error.message, ...error.errors.map(describeFailure)].join('\n')
+  return error instanceof Error ? error.stack ?? error.message : String(error)
+}

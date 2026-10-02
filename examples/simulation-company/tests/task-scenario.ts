@@ -18,7 +18,7 @@ import { assignTestTask, seedTeamPhase } from '../../../packages/team/team-hub/t
  */
 export async function taskScenario(ctx: Context, run: SimulationRun, connection: SimulationTeamConnection,
   requester: SimulationEntityId, assignee: SimulationEntityId, hold: (stage: string) => Promise<void>) {
-  const outcomes: Record<string, { task: string; commitment: string }> = {}
+  const outcomes: Record<string, { task: string; commitment: string; source: { creation: string; executor: string; attempt: string } }> = {}
   for (const kind of ['explicit', 'task-completed'] as const) {
     const id = simulationInteractionIdSchema.parse(`task-${kind}`)
     const apply = async (actor: SimulationEntityId, label: string, action: unknown) => {
@@ -78,7 +78,12 @@ export async function taskScenario(ctx: Context, run: SimulationRun, connection:
     const commitment = run.snapshot().commitments[interaction.commitmentId!]!
     assert.equal(commitment.phase, kind === 'explicit' ? 'open' : 'fulfilled')
     assert.equal(interaction.task?.revision, task.revision)
-    outcomes[kind] = { task: interaction.task.phase, commitment: commitment.phase }
+    assert.equal(interaction.task.operationId, operationId)
+    assert.equal(interaction.task.executor?.participantId, worker.activation.participantId)
+    assert.equal(interaction.task.executor?.outcome, 'completed')
+    assert.equal(interaction.task.executor?.attemptId, task.attemptHistory.at(-1)!.id)
+    outcomes[kind] = { task: interaction.task.phase, commitment: commitment.phase,
+      source: { creation: 'accepted', executor: 'assignee', attempt: interaction.task.executor.outcome } }
   }
   const page = await ctx.teams.listTasksPage({ teamId: run.snapshot().entities[requester]!.binding!.teamId, afterCursor: -1, limit: 10 })
   assert.equal(page.items.length, 2)

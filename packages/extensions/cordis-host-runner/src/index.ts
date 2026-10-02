@@ -422,7 +422,7 @@ export class DynamicCordisRunnerService extends TypertRemoteService {
       && plugin?.run?.pluginRunId !== resolution.pluginRunId) return { accepted: false }
     this.registry.claimRequest(requestId)
     const settled = await this.settleActivation(plugin, resolution, requestId)
-    this.announceResolved(requestId, resolution, pending.requiresApproval ? undefined : 'completed')
+    this.announceResolved(requestId, pending, resolution, pending.requiresApproval ? undefined : 'completed')
     this.steerRunOutcome(pending, settled)
     return { accepted: true }
   }
@@ -855,6 +855,7 @@ export class DynamicCordisRunnerService extends TypertRemoteService {
     }
     plugin.run = run
     this.ctx.emit('cordis/dynamic-package', {
+      agentId: plugin.sessionId,
       pluginId: plugin.pluginId,
       packageId: definition.packageId,
       pluginRunId: run.pluginRunId,
@@ -1009,11 +1010,12 @@ export class DynamicCordisRunnerService extends TypertRemoteService {
 
   private announceResolved(
     requestId: ApprovalRequestId,
+    pending: DynamicCordisPendingRequest,
     resolution: DynamicCordisRunResolution,
     override?: RequestRunOutcome,
   ): void {
     const outcome = override ?? (resolution.ok ? 'approved' : resolution.reason === 'rejected' ? 'rejected' : 'failed')
-    this.ctx.emit('cordis/request-run-resolved', { requestId, outcome })
+    this.ctx.emit('cordis/request-run-resolved', { requestId, agentId: pending.agentId, outcome })
   }
 
   private steerRunOutcome(
@@ -1168,7 +1170,7 @@ export class DynamicCordisRunnerService extends TypertRemoteService {
       delete plugin.latestRun.approvalRequestId
       delete plugin.latestRun.requiresApproval
     }
-    this.announceResolved(requestId, { ok: false, reason: 'rejected' }, 'cancelled')
+    this.announceResolved(requestId, pending, { ok: false, reason: 'rejected' }, 'cancelled')
   }
 
   private createAttempt(plan: ActivationPlan): DynamicCordisRunAttempt {
@@ -1223,6 +1225,7 @@ export class DynamicCordisRunnerService extends TypertRemoteService {
     for (const dispose of run.handlerDisposers.splice(0)) dispose()
     if (run.fiber !== undefined) await run.fiber.dispose()
     this.ctx.emit('cordis/dynamic-retract', {
+      agentId: plugin.sessionId,
       pluginId: plugin.pluginId,
       packageId: run.packageId,
       pluginRunId: run.pluginRunId,

@@ -23,6 +23,8 @@ export type {
 } from './log.ts'
 export { parseLogSummary } from './summary.ts'
 export { assertLogCompactionBounds, assertLogCompactionRequest } from './compaction.ts'
+export { assertLogReadRequest, boundedLogReadSnapshot } from './readonly-log.ts'
+export type { LogReadLimits, LogReadSnapshot } from './readonly-log.ts'
 
 /**
  * Derive the Cordis lifecycle service that one named backend plugin provides.

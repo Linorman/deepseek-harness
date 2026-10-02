@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+The [Simulation preset](presets/simulation/agent.cordis.yml) owns a complete participant persona and suppresses unrelated deployment runtime context. Its native tool role filters final model schemas, including later actor-owned Team tools. The native dispatcher and executor independently enforce decision authority. This permits the same actors to run in a Web coding deployment without inheriting an unowned filesystem `cwd` or ordinary Team model capabilities.
+
 This opt-in composition runs a buyer and supplier through real Agent turns with a scripted model. They request one inventory unit, wait for delayed delivery, accept a commitment, transfer inventory, send evidence and observe the result. The role preset exposes only Simulation tools.
 
 Run the keyless scenario from the repository root:
@@ -65,6 +67,10 @@ Model streams run concurrently; publication and receipt still follow the coordin
 ```sh
 pnpm run benchmark:simulation --backend sqlite --workload organization --entities 570 --departments 20 --managers 50 --days 30 --operations 15000 --residents 20 --duration-ms 60000 --timeout-ms 180000 --sample-every 100 --entity-batch-size 100 --replay-page-size 1000 --output .tmp-simulation-development/benchmarks
 ```
+
+The [product driver scenario](tests/product-driver-scenario.ts) consumes the bounded production driver. It verifies real model/tool procurement with a one-actor residency limit, interrupted submission/acceptance/effect recovery, explicit paused startup and completed retry without inference. Only the external model is scripted; the fixture does not complete business operations directly.
+
+The [initial product preparation scenario](tests/product-preparation-scenario.ts) consumes the production company helper. It reconciles interrupted native topology without inference, publishes a complete initial checkpoint and validates restoration to paused state. This scenario does not implement public product creation commands or a background driver.
 
 ## Budgeted live-model sample
 

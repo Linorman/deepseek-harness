@@ -194,6 +194,16 @@ export class ProductAuthSessions {
       return this.invalidBootstrap(401)
     }
     this.consumedBootstrapGenerations.add(generation)
+    const previousToken = cookieToken(request.headers.get('cookie') ?? undefined)
+    const previous = previousToken === undefined ? undefined : this.sessions.get(previousToken)
+    if (previousToken !== undefined && previous !== undefined) {
+      try { await this.drop(previousToken, previous) }
+      catch (error: unknown) { await lease.revoke(); throw error }
+    }
+    if (this.isClosedOrAborted(request.signal)) {
+      await lease.revoke()
+      return this.invalidBootstrap(401)
+    }
     const token = mintCookieToken()
     const session: ProductAuthSession = { lease, controller: new AbortController() }
     this.sessions.set(token, session)

@@ -35,8 +35,9 @@ export function TeamHeader({ state, view, onViewChange, translate: t, onCancel, 
   }, [objective, expandedGoal])
   const coordinatorBinding = state.coordinator.kind === 'bound' ? state.coordinator.binding : undefined
   const terminal = ['completed', 'failed', 'cancelled'].includes(team.phase)
-  const canResume = onResume !== undefined && !terminal && (team.phase === 'stalled' || coordinatorBinding?.activation.status === 'offline')
-  const canCancel = onCancel !== undefined && state.cancellation === undefined && ['active', 'quiescing', 'stalled'].includes(team.phase)
+  const simulationManaged = state.executionManagement === 'simulation-managed'
+  const canResume = !simulationManaged && onResume !== undefined && !terminal && (team.phase === 'stalled' || coordinatorBinding?.activation.status === 'offline')
+  const canCancel = !simulationManaged && onCancel !== undefined && state.cancellation === undefined && ['active', 'quiescing', 'stalled'].includes(team.phase)
   const run = async (operation: () => Promise<void>) => {
     setBusy(true)
     setError(undefined)
@@ -65,13 +66,14 @@ export function TeamHeader({ state, view, onViewChange, translate: t, onCancel, 
           data-phase={team.phase}>{t(teamPhaseKey[team.phase])}</span></div>
       <div className={css.headerActions}>
         {canResume && <Button variant="outline" disabled={busy} onClick={() => { void run(onResume) }}>{t('resume')}</Button>}
-        {openCoordinator !== undefined && <Button variant="outline" disabled={busy} onClick={() => { void run(openCoordinator) }}>{t('workspace.openCoordinator')}</Button>}
+        {openCoordinator !== undefined && <Button variant="outline" disabled={busy} onClick={() => { void run(openCoordinator) }}>{t(state.readAccess === 'member' && !simulationManaged && !terminal ? 'workspace.openCoordinator' : 'workspace.inspectCoordinator')}</Button>}
         {canCancel && <Menu open={teamMenu} portal align="end" onClose={() => { setTeamMenu(false) }}
           anchor={<Button aria-label={t('workspace.teamActions')} aria-expanded={teamMenu} onClick={() => { setTeamMenu(value => !value) }}><IconEllipsisOutline16 /></Button>}
           items={[{ id: 'cancel', label: t('workspace.stopTeam'), danger: true }]}
           onSelect={() => { setTeamMenu(false); setError(undefined); setConfirmCancel(true) }} />}
       </div>
     </div>
+    {simulationManaged && <p className={css.breadcrumb} role="status">{t('workspace.simulationManaged')}</p>}
     {state.stallReason !== undefined && <p className={css.headerError} role="alert">{state.stallReason.message.text}</p>}
     {state.cancellation !== undefined && <p className={css.breadcrumb} role="status">{state.cancellation.reason.text}</p>}
     {error !== undefined && !confirmCancel && <p className={css.headerError} role="alert">{error}</p>}
@@ -79,11 +81,12 @@ export function TeamHeader({ state, view, onViewChange, translate: t, onCancel, 
       {(['overview', 'tasks', 'channels', 'members', 'artifacts'] as const).map(item => <button type="button" key={item}
         aria-current={view === item ? 'page' : undefined} onClick={() => { onViewChange(item) }}>{t(`workspace.${item}`)}</button>)}
       <Menu open={viewMenu} portal items={[
+        { id: 'attention', label: t('workspace.attention') },
         { id: 'workflows', label: t('workspace.workflows') }, { id: 'audit', label: t('workspace.audit') },
       ]} onClose={() => { setViewMenu(false) }}
-      anchor={<button type="button" aria-expanded={viewMenu} aria-current={view === 'workflows' || view === 'audit' ? 'page' : undefined}
-        onClick={() => { setViewMenu(value => !value) }}>{view === 'workflows' || view === 'audit' ? t(`workspace.${view}`) : t('workspace.more')}<IconChevronDownOutline14 /></button>}
-      onSelect={(id) => { setViewMenu(false); if (id === 'workflows' || id === 'audit') onViewChange(id) }} />
+      anchor={<button type="button" aria-expanded={viewMenu} aria-current={view === 'workflows' || view === 'audit' || view === 'attention' ? 'page' : undefined}
+        onClick={() => { setViewMenu(value => !value) }}>{view === 'workflows' || view === 'audit' || view === 'attention' ? t(`workspace.${view}`) : t('workspace.more')}<IconChevronDownOutline14 /></button>}
+      onSelect={(id) => { setViewMenu(false); if (id === 'workflows' || id === 'audit' || id === 'attention') onViewChange(id) }} />
     </nav>}
     <Modal open={confirmCancel} title={t('workspace.stopTeam')} description={t('workspace.stopDescription', { objective: objective })}
       closeLabel={t('detail.task.stopCancel')} onClose={() => { if (!busy) setConfirmCancel(false) }}

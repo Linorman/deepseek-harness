@@ -1,3 +1,6 @@
+export type { TeamTaskDetailsUpdateResult, TeamTaskUpdateLookupInput, TeamTaskUpdateLookup, TeamTaskUpdateCommandId } from './teams.ts'
+export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference } from './teams.ts'
+export type { TeamActionInspection, TeamActionInspectInput, TeamAttentionHandling } from './teams.ts'
 /**
  * apiproxy contract-layer barrel. api/ has zero Node dependencies and is
  * importable from the browser; the TS interfaces are the authoritative contract, while HTTP,
@@ -5,6 +8,8 @@
  */
 
 import type { SessionsApi } from './sessions.ts'
+import type { SimulationsApi } from './simulations.ts'
+export type { SimulationsApi } from './simulations.ts'
 import type { HostApi } from './host.ts'
 import type { WorkspaceApi } from './workspace.ts'
 import type { AgentPresetsApi } from './agent-presets.ts'
@@ -34,6 +39,8 @@ export interface ApiProxy {
    * returns `team-service-unavailable` instead of silently omitting a call.
    */
   teams?: TeamsApi
+  /** Simulation product reads require an explicitly composed product directory. */
+  simulations?: SimulationsApi
   /** Host-only download surfaces (GET, no wire envelope); absent from IApiClient. */
   downloads: DownloadsApi
   /**
@@ -60,6 +67,7 @@ export type { SettingsApi, SettingsNamespaceView, SettingsPathOpView, SettingsSe
 export type { CredentialsApi, CredentialView } from './credentials.ts'
 export type { ConfigurableProviderView, DiscoveredModelView, LlmApi } from './llm.ts'
 export type { TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamInputReceipt, TeamList, TeamMemberList, TeamStartResult, TeamTaskList, TeamWorkflowPlanList, TeamsApi } from './teams.ts'
+export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from './teams.ts'
 export type { DownloadsApi } from './downloads.ts'
 export type { ApprovalResponsePayload } from './approvals.ts'
 
@@ -79,7 +87,7 @@ export type {
 } from './rpc.ts'
 
 // ---- Errors and ids ----
-export { RpcId, transportError } from './rpc.ts'
+export { RpcId, transportError, ApiAccessDeniedError, PRODUCT_AUTHENTICATION_RETIRED_CLOSE_CODE } from './rpc.ts'
 export type { RpcError, RpcErrorCode, RpcErrorDetailsMap, RpcResult } from './rpc.ts'
 export {
   clientRequestSchema,

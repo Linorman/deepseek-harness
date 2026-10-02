@@ -60,7 +60,7 @@ function handle(overrides: Partial<ActivationHandle> = {}): ActivationHandle {
 }
 
 function provider(overrides: Partial<AgentRuntimeProvider> = {}): AgentRuntimeProvider {
-  return {
+  return { participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'in-process',
     terminationMode: 'cooperative',
     async activate() { return handle() },
@@ -298,4 +298,16 @@ it('rejects a replaced implementation before invoking it and accepts an exact pr
     expect(replacementActivate).not.toHaveBeenCalled()
     await expect(ctx.agentRuntimes.activate(request(), replacement)).resolves.toMatchObject({ sessionId: request().sessionId })
   } finally { await fiber.dispose() }
+})
+
+
+it('enforces the advertised participant mechanism before provider startup', async () => {
+  const { ctx, fiber } = await setup()
+  const activate = vi.fn(async () => handle())
+  const implementation = provider({ participantKinds: ['remote-agent'], activate })
+  ctx.agentRuntimes.registerProvider(implementation)
+  await expect(ctx.agentRuntimes.activate(request())).rejects.toMatchObject({ code: 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED' })
+  expect(activate).not.toHaveBeenCalled()
+  expect(ctx.agentRuntimes.getProvider(implementation.name)?.participantKinds).toEqual(['remote-agent'])
+  await fiber.dispose()
 })

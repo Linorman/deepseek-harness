@@ -51,11 +51,12 @@ describe('sessions.list cold merge', () => {
     const metas = [
       header('small-blank', 100),
       header('small-conversation', 200),
-      header('large-unknown', 300, { teamId: 'cold-team', participantId: 'cold-member' }),
+      header('large-unknown', 300),
       header('cached-nonblank', 400),
       header('locationless', 500, { parentSession: sid('session-parent') }),
       header('vanished', 600),
       header('read-failure', 700),
+      { version: 0, id: sid('session-parent'), createdAt: 0 },
     ]
     const readFrom = vi.fn(async (id: SessionId) => {
       if (id === sid('small-blank')) {
@@ -113,8 +114,7 @@ describe('sessions.list cold merge', () => {
     expect(byId['small-blank']).toMatchObject({ blank: true, updatedAt: 100, running: false })
     // A stale true hint cannot hide the turn found in the bounded read.
     expect(byId['small-conversation']).toMatchObject({ blank: false, updatedAt: 1200 })
-    expect(byId['large-unknown']).toMatchObject({ blank: false, updatedAt: 300,
-      team: { teamId: 'cold-team', participantId: 'cold-member' } })
+    expect(byId['large-unknown']).toMatchObject({ blank: false, updatedAt: 300 })
     // false is monotonic, so this row skips stat/read and keeps cached recency.
     expect(byId['cached-nonblank']).toMatchObject({ blank: false, updatedAt: 1000 })
     expect(byId['locationless']).toMatchObject({ blank: false, updatedAt: 500 })
@@ -451,7 +451,7 @@ describe('subagent ownership fence', () => {
     ] as SessionEvent[]
     const inspect = vi.fn(() => Promise.resolve({ meta, events }))
     ctx.provide('sessionPersistence', {
-      list: () => Promise.resolve([meta]),
+      list: () => Promise.resolve([meta, { version: 0, id: sid('session-parent'), createdAt: 0 }]),
       inspect,
       locate: () => undefined,
     } as never)

@@ -122,6 +122,7 @@ export class SessionManager {
   private listPhase: SessionListPhase = 'pending'
   private listError: RpcError | null = null
   private listInflight: Promise<void> | null = null
+  private authorizationGeneration = 0
   /** Mutations arriving after a list request starts are replayed over its response. */
   private listMutations: SessionListMutation[] | null = null
   /**
@@ -265,8 +266,10 @@ export class SessionManager {
     this.listMutations = mutations
     this.notifier.markDirty()
     this.listInflight = (async () => {
+      const generation = this.authorizationGeneration
       try {
         const { result } = await this.api.sessions.list({})
+        if (generation !== this.authorizationGeneration) return
         if (result.ok) {
           const baseline = this.listPhase === 'pending'
             ? result.value.items
@@ -315,14 +318,17 @@ export class SessionManager {
           this.listError = result.error
         }
       } catch (error) {
+        if (generation !== this.authorizationGeneration) return
         this.listState = 'error'
         const folded = transportError<never>(error)
         /* v8 ignore next -- the `? null` arm is unreachable: transportError always returns ok:false. */
         this.listError = folded.ok ? null : folded.error
       } finally {
-        this.listMutations = null
-        this.listInflight = null
-        this.notifier.markDirty()
+        if (generation === this.authorizationGeneration) {
+          this.listMutations = null
+          this.listInflight = null
+          this.notifier.markDirty()
+        }
       }
     })()
     return this.listInflight
@@ -424,6 +430,7 @@ export class SessionManager {
    */
   handleMuxEnvelope(envelope: RpcRequest<MuxFrame>): void {
     const frame = envelope.payload
+    if (frame.type === 'team/access-revoked') { this.revokeTeam(frame.teamId); return }
     if (frame.type === 'stream/error') return // Controller already treats this as stream failure
     if (frame.type === 'team/changed' || frame.type === 'channel/changed') return
     if (
@@ -549,18 +556,10 @@ export class SessionManager {
         return
       }
       case 'host/session-removed': {
-        this.recordMutation({ kind: 'remove', sessionId: frame.sessionId })
-        this.sessions.get(frame.sessionId)?.handleRemoved()
-        this.pendingBuffers.delete(frame.sessionId) // a removed session's buffered frames must not replay on a future instantiation
-        this.pendingInteractions.delete(frame.sessionId) // a removed session cannot wait on anyone
-        // Owner disposal already dropped these registry-side, but that lands on
-        // the mux stream while this frame rides the host stream, so the two have
-        // no relative order. Clearing here makes a detached Activation's rows
-        // disappear whichever arrives first.
-        this.jobsBySession.delete(frame.sessionId)
-        this.projectionStores.delete(frame.sessionId)
+        this.removeSession(frame.sessionId)
         return
       }
+
       case 'host/session-status': {
         this.recordMutation({ kind: 'status', sessionId: frame.sessionId, running: frame.running })
         this.sessions.get(frame.sessionId)?.handleRunning(frame.running)
@@ -573,6 +572,19 @@ export class SessionManager {
       default:
         return // stream/error ignored; unknown frames ignored (documented default)
     }
+  }
+
+  private removeSession(sessionId: SessionId): void {
+    this.recordMutation({ kind: 'remove', sessionId: sessionId })
+    this.sessions.get(sessionId)?.handleRemoved()
+    this.pendingBuffers.delete(sessionId) // a removed session's buffered frames must not replay on a future instantiation
+    this.pendingInteractions.delete(sessionId) // a removed session cannot wait on anyone
+    // Owner disposal already dropped these registry-side, but that lands on
+    // the mux stream while this frame rides the host stream, so the two have
+    // no relative order. Clearing here makes a detached Activation's rows
+    // disappear whichever arrives first.
+    this.jobsBySession.delete(sessionId)
+    this.projectionStores.delete(sessionId)
   }
 
   /**
@@ -602,6 +614,36 @@ export class SessionManager {
   handleConnected(): void {
     void this.refreshList()
     for (const session of this.sessions.values()) void session.resync()
+  }
+
+  /** Retire every old-principal business source before admitting a new authenticated baseline. */
+  clearAuthorization(): void {
+    this.authorizationGeneration++
+    this.sessions.clear()
+    this.pendingBuffers.clear()
+    this.pendingInteractions.clear()
+    this.completedNotifications.clear()
+    this.prevRunning.clear()
+    this.projectionStores.clear()
+    this.jobsBySession.clear()
+    this.summaries = []
+    this.entryCache.clear()
+    this.itemsCache = []
+    this.selected = undefined
+    this.listInflight = null
+    this.listMutations = null
+    this.listState = 'idle'
+    this.listPhase = 'pending'
+    this.listError = null
+    this.notifier.markDirty()
+  }
+
+  /** Drop a previously visible Team's bodies and metadata after the Host withdraws its authority.
+   * @param teamId - Identity already known to this connection, never a new private object discovery.
+   */
+  revokeTeam(teamId: import('@clocky/clocky-client-connection/client').TeamId): void {
+    const ids = this.summaries.filter(item => item.team?.teamId === teamId).map(item => item.sessionId)
+    for (const sessionId of ids) this.removeSession(sessionId)
   }
 
   /**

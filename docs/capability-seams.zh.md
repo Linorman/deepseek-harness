@@ -9,6 +9,10 @@
 
 ```mermaid
 flowchart LR
+  pkg_simulation_product["simulation-product"]
+  svc_simulationAdministration["ctx.simulationAdministration<br/>Persistent company creation owner"]
+  pkg_host_apiproxy["host-apiproxy"]
+  svc_simulationProducts["ctx.simulationProducts<br/>Simulation product registration and reads"]
   pkg_simulation_team["simulation-team"]
   svc_simulationTeams["ctx.simulationTeams<br/>Simulation cognition coordination"]
   pkg_tool_simulation["tool-simulation"]
@@ -61,7 +65,6 @@ flowchart LR
   pkg_host_product_principal_local["host-product-principal-local"]
   pkg_host_product_principal_digest["host-product-principal-digest"]
   pkg_connection["connection"]
-  pkg_host_apiproxy["host-apiproxy"]
   pkg_sdk_client["sdk-client"]
   pkg_sdk_server["sdk-server"]
   pkg_team_human_actor["team-human-actor"]
@@ -349,6 +352,8 @@ flowchart LR
   pkg_shell_env --> svc_shellEnv
   pkg_simulation --> svc_simulations
   pkg_simulation_local --> svc_simulations
+  pkg_simulation_product --> svc_simulationAdministration
+  pkg_simulation_product --> svc_simulationProducts
   pkg_simulation_team --> svc_simulationTeams
   pkg_skill --> svc_skills
   pkg_skill_filesystem --> svc_skills
@@ -475,7 +480,10 @@ flowchart LR
   svc_shell --> pkg_tool_pwsh
   svc_shellEnv --> pkg_tool_bash
   svc_shellEnv --> pkg_tool_pwsh
+  svc_simulationAdministration --> pkg_host_apiproxy
+  svc_simulationProducts --> pkg_host_apiproxy
   svc_simulationTeams --> pkg_tool_simulation
+  svc_simulations --> pkg_simulation_product
   svc_simulations --> pkg_simulation_team
   svc_skills --> pkg_tool_skill
   svc_spillStore --> pkg_spill_policy
@@ -572,8 +580,10 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.simulationAdministration` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | 保留已认证原分配和不可变准备结果，登记发现，拥有 paused 原生句柄。 |
+| `ctx.simulationProducts` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | 登记不可变的主体所有元数据，并投影已认证原生历史，不取得执行所有权。 |
 | `ctx.simulationTeams` | `core` | [`simulation-team`](../packages/simulation/simulation-team) | - | [`tool-simulation`](../packages/simulation/tool-simulation) | - | 将持久实体绑定连接到控制器持有的本地 activation epoch。 |
-| `ctx.simulations` | `seam` | [`simulation`](../packages/simulation/simulation) | [`simulation-local`](../packages/simulation/simulation-local) | [`simulation-team`](../packages/simulation/simulation-team) | - | 程序化调用者取得排他持有的持久 run；本地提供方为每个 run 拥有一个保留历史的 Storage 日志。 |
+| `ctx.simulations` | `seam` | [`simulation`](../packages/simulation/simulation) | [`simulation-local`](../packages/simulation/simulation-local) | [`simulation-team`](../packages/simulation/simulation-team), [`simulation-product`](../packages/simulation/simulation-product) | - | 程序化调用者取得排他持有的持久 run；本地提供方为每个 run 拥有一个保留历史的 Storage 日志。 |
 | `ctx.attachments` | `seam` | [`attachment`](../packages/attachment/attachment) | [`attachment-local`](../packages/attachment/attachment-local) | `host-runtime`, [`llm-pi-ai`](../packages/llm/llm-pi-ai) | - | The host commits accepted images before session events; provider adapters resolve authorized durable references into provider-native content. |
 | `ctx.llm` | `seam` | [`llm`](../packages/llm/llm) | [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`llm-replay`](../packages/test-support/llm-replay) | [`agent-loop`](../packages/core/agent-loop), [`compaction-basic`](../packages/compaction/compaction-basic), [`simulation-team`](../packages/simulation/simulation-team) | - | Adapters register provider implementations; the loop and compaction call the provider-neutral stream service. |
 | `ctx.tokenMeter` | `core` | [`token-meter`](../packages/llm/token-meter) | - | [`compaction-basic`](../packages/compaction/compaction-basic) | - | Owns isolated per-session replay folds; pressure consumers share immutable revisioned measurements. |

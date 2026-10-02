@@ -1,16 +1,34 @@
+import type { TeamTaskDetailsUpdateInput, TeamTaskDetailsUpdateResult, TeamTaskUpdateLookupInput, TeamTaskUpdateLookup } from '@clocky/clocky-team/types'
+export type { TeamTaskDetailsUpdateResult, TeamTaskUpdateLookupInput, TeamTaskUpdateLookup, TeamTaskUpdateCommandId } from '@clocky/clocky-team/types'
+import type { TeamTaskReferencesInput, TeamTaskReferencesPage } from '@clocky/clocky-team/types'
+export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference } from '@clocky/clocky-team/types'
+import type { TeamActionInspectInput, TeamActionInspection } from '@clocky/clocky-team'
+export type { TeamActionInspectInput, TeamActionInspection, TeamAttentionHandling } from '@clocky/clocky-team'
+import type { ProductAuthorizationScope } from './rpc.ts'
+import type { TeamIdentityResolveInput, TeamIdentityResolvePage } from '@clocky/clocky-team'
+import type { TeamAttentionReadInput, TeamAttentionPage } from '@clocky/clocky-team'
+export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from '@clocky/clocky-team'
+import type { TeamExecutionProfileId, TeamExecutionProfilesInput, TeamExecutionProfilesPage } from '@clocky/clocky-team'
+import type { TeamMemberReadinessInput, TeamMemberReadinessPage } from '@clocky/clocky-team'
+import type { TeamCapabilityObservationId, TeamTaskCapabilitiesInput, TeamTaskCapabilities } from '@clocky/clocky-team'
 import type { TeamMemberInspectRequest, TeamMemberInspection } from '@clocky/clocky-team'
 import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from '@clocky/clocky-team'
 import type { TeamHumanActionReadRequest, TeamHumanActionSnapshot } from '@clocky/clocky-team'
 import type { TeamSelectionRequest } from '@clocky/clocky-team'
 import type { TeamTaskInspectRequest, TeamTaskInspection } from '@clocky/clocky-team'
-import type { TeamBrowsePage, TeamBrowseKind } from '@clocky/clocky-team'
+import type { TeamBrowsePage, TeamBrowseRequest } from '@clocky/clocky-team'
 import type { TeamMemberSessionRequest, TeamMemberSessionSnapshot } from '@clocky/clocky-team'
 import type { TeamSelectionSnapshot } from '@clocky/clocky-team/types'
-import type { TeamDiscoveryCursor } from '@clocky/clocky-team/types'
+import type { TeamProductDiscoveryCursor, TeamProductDirectoryPage } from '@clocky/clocky-team/types'
 import type { AttachmentIdType, ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { TeamHumanActionResponseInput, TeamHumanActionResponseResult } from '@clocky/clocky-team/types'
 import type { TeamHumanInboxReadInput, TeamHumanInboxPage, TeamHumanInboxAcknowledgeInput, TeamHumanInboxAcknowledgement } from '@clocky/clocky-team/types'
 /** Browser-safe Team product-domain contract. */
+
+/** Authorized Team projection; ancestry permits inspection while mutations retain local membership checks. */
+export interface TeamProductSelection extends TeamSelectionSnapshot {
+  readonly readAccess: 'member' | 'parent-inspection'
+}
 
 import type {
   ChannelId,
@@ -37,7 +55,6 @@ import type {
   TeamAdapterRef,
   TeamAuditEntry,
   TeamId,
-  TeamListPage,
   TeamStateSnapshot,
   TeamQuiescenceSnapshot,
   TeamMetricsSnapshot,
@@ -112,7 +129,7 @@ export interface TeamStartResult {
 }
 
 /** Bounded visible Team-summary page returned by the management surface. */
-export type TeamList = TeamListPage
+export type TeamList = TeamProductDirectoryPage
 
 /** Explicit final result accepted from the default coordinator channel. */
 export interface TeamFinal {
@@ -178,19 +195,44 @@ export interface TeamArtifactReadResult {
   readonly data: string
 }
 
+/** Host capability observation includes independently changing runtime/provider facts. */
+export interface TeamTaskCapabilitiesObservation extends TeamTaskCapabilities {
+  readonly observationId: TeamCapabilityObservationId
+  readonly observedAt: number
+}
+
 /** Team-oriented unary methods exposed by the Host. */
 export interface TeamsApi {
+  /** Current human request body and server-calculated handling at one Team revision. */
+  actionInspect(request: RpcRequest<TeamActionInspectInput>): Promise<RpcResponse<TeamActionInspection>>
+  /** Authorized Team pending counts and a revision-pinned summary page. */
+  attentionRead(request: RpcRequest<TeamAttentionReadInput>): Promise<RpcResponse<TeamAttentionPage>>
+  /** Read authenticated deployment profiles without executing or granting a route. */
+  executionProfiles(request: RpcRequest<TeamExecutionProfilesInput>): Promise<RpcResponse<TeamExecutionProfilesPage>>
+
+  /** Resolve a finite set of authorized member names independently of member-list pagination. */
+  identityResolve(request: RpcRequest<TeamIdentityResolveInput>): Promise<RpcResponse<TeamIdentityResolution>>
+
+  /** Read participation and current execution readiness without starting work. */
+  memberReadiness(request: RpcRequest<TeamMemberReadinessInput>): Promise<RpcResponse<TeamMemberReadinessPage>>
+
+  /** Inspect authorized authoring choices; no work or model execution starts. */
+  capabilities(request: RpcRequest<TeamTaskCapabilitiesInput>): Promise<RpcResponse<TeamTaskCapabilitiesObservation>>
+
   /** Read non-secret member metadata and one capability page without activation. */
   memberInspect(request: RpcRequest<TeamMemberInspectRequest>): Promise<RpcResponse<TeamMemberInspection>>
 
   /** Read one bounded current human action without the complete Team state. */
   actionRead(request: RpcRequest<TeamHumanActionReadRequest>): Promise<RpcResponse<TeamHumanActionSnapshot>>
   /** Read bounded current task fields or one attempt/review history page. */
+  /** Resolve exact authorized dependency identities and current status. */
+  taskReferences(request: RpcRequest<TeamTaskReferencesInput>): Promise<RpcResponse<TeamTaskReferencesPage>>
+
   taskInspect(request: RpcRequest<TeamTaskInspectRequest>): Promise<RpcResponse<TeamTaskInspection>>
 
   /** List display summaries without task, grant or workflow history bodies. */
   browse(
-    request: RpcRequest<{ teamId: TeamId; kind: TeamBrowseKind; afterCursor?: number; limit?: number }>,
+    request: RpcRequest<TeamBrowseRequest>,
   ): Promise<RpcResponse<TeamBrowsePage>>
 
   /** Read the exact member's latest published Session binding without activating it. */
@@ -206,10 +248,10 @@ export interface TeamsApi {
   inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>
 
   /** Lists durable Team summaries without requiring a local TeamRun owner. */
-  list(request: RpcRequest<{ afterCursor?: TeamDiscoveryCursor | -1; limit?: number }>): Promise<RpcResponse<TeamList>>
+  list(request: RpcRequest<{ afterCursor?: TeamProductDiscoveryCursor | -1; limit?: number }>): Promise<RpcResponse<TeamList>>
 
   /** Reads bounded initial Team metadata and exact coordinator identity without activating an Agent. */
-  selection(request: RpcRequest<TeamSelectionRequest>): Promise<RpcResponse<TeamSelectionSnapshot>>
+  selection(request: RpcRequest<Pick<TeamSelectionRequest, 'teamId' | 'includeMetadata'>>): Promise<RpcResponse<TeamProductSelection>>
 
   /** Reads one complete durable Team state without activating an Agent. */
   get(request: RpcRequest<{ teamId: TeamId }>): Promise<RpcResponse<TeamStateSnapshot>>
@@ -294,6 +336,7 @@ export interface TeamsApi {
   /** Invites one participant with explicit role and capability claims. */
   memberInvite(
     request: RpcRequest<{
+      executionProfileId?: TeamExecutionProfileId
       teamId: TeamId
       expectedCursor: number
       kind: Exclude<ParticipantKind, 'human'>
@@ -411,16 +454,9 @@ export interface TeamsApi {
   ): Promise<RpcResponse<TeamWorkflowPlanList>>
 
   /** Edits one lease-free task's subject, description, or dependencies. */
-  taskUpdate(
-    request: RpcRequest<{
-      teamId: TeamId
-      taskId: TeamTaskId
-      expectedRevision: number
-      subject?: string
-      description?: string
-      blockedBy?: readonly TeamTaskId[]
-    }>,
-  ): Promise<RpcResponse<TeamTaskSnapshot>>
+  taskUpdate(request: RpcRequest<TeamTaskDetailsUpdateInput>): Promise<RpcResponse<TeamTaskDetailsUpdateResult>>
+  /** Query original task-update admission without resending the operation. */
+  taskUpdateResult(request: RpcRequest<TeamTaskUpdateLookupInput>): Promise<RpcResponse<TeamTaskUpdateLookup>>
 
   /** Requests one task cancellation through its revision fence while the Team continues. */
   taskCancel(
@@ -442,4 +478,9 @@ export interface TeamsApi {
     request: RpcRequest<{ teamId: TeamId; afterCursor?: number }>,
     signal: AbortSignal,
   ): Promise<RpcResponse<TeamWatchResult>>
+}
+
+/** Identity display response bound to the authenticated principal generation. */
+export interface TeamIdentityResolution extends TeamIdentityResolvePage {
+  readonly authorizationScope: ProductAuthorizationScope
 }

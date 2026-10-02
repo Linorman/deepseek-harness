@@ -904,7 +904,7 @@ describe('SDK AgentRuntime provider', () => {
     controller.abort(new Error('test pre-abort'))
     const cases: readonly [AgentRuntimeActivationRequest, string][] = [
       [request(SessionId('sdk-inactive'), { participant: inactive }), 'AGENT_RUNTIME_SDK_PARTICIPANT_UNSUPPORTED'],
-      [request(SessionId('sdk-local'), { participant: local }), 'AGENT_RUNTIME_SDK_PARTICIPANT_UNSUPPORTED'],
+      [request(SessionId('sdk-local'), { participant: local }), 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED'],
       [request(SessionId('sdk-fork'), { seed: { kind: 'fork', sourceSessionId: SessionId('source'), events: [] } }), 'AGENT_RUNTIME_SDK_SEED_UNSUPPORTED'],
       [request(SessionId('sdk-preset'), { agent: { preset: 'remote', options: { provider: 'p', model: 'm' } } }), 'AGENT_RUNTIME_SDK_PRESET_UNSUPPORTED'],
       [request(SessionId('sdk-no-provider'), { agent: { options: { model: 'm' } } }), 'AGENT_RUNTIME_SDK_AGENT_OPTIONS_INVALID'],

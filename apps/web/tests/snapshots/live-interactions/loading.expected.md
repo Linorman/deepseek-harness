@@ -1,11 +1,10 @@
-- banner:
-  - text: Reply with a one-sentence description
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: Reply with a one-sentence description
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: Reply with a one-sentence description of event sourcing, then stop. {{clock}}
 - button "Copy":
   - img

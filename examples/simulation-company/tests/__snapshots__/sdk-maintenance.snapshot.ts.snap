@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`controls, checkpoints and restores company runs through the SDK (json) 1`] = `
+{
+  "checkpoint": "completed",
+  "coldReadsAcquireOwner": false,
+  "consumptionDecision": true,
+  "input": "consumed",
+  "originalStartRetainedAfterPause": true,
+  "privateInput": "withheld",
+  "recoveredOwner": "held",
+  "recoveredPhase": "paused",
+  "recoveryInference": false,
+  "rollback": false,
+}
+`;
+
+exports[`controls, checkpoints and restores company runs through the SDK (sqlite) 1`] = `
+{
+  "checkpoint": "completed",
+  "coldReadsAcquireOwner": false,
+  "consumptionDecision": true,
+  "input": "consumed",
+  "originalStartRetainedAfterPause": true,
+  "privateInput": "withheld",
+  "recoveredOwner": "held",
+  "recoveredPhase": "paused",
+  "recoveryInference": false,
+  "rollback": false,
+}
+`;

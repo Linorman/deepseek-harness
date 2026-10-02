@@ -12,13 +12,15 @@ Status: implemented
 
 [根指令](../../../../AGENTS.md#agent-workflow-gpt-6-astra)根据 2026-09-05 查阅的[官方 GPT-6 Astra 提示指南](https://developers.openai.com/api/docs/guides/latest-model?model=gpt-6-astra#prompting-best-practices)调整贡献者行为，规定完成任务、沿用授权、从上下文确定范围、有界委派、简洁沟通和相关验证。系统与开发者指令仍具有优先权；用户指令优先于 skill 指导。
 
+依据 2026-09-30 查阅的[官方指令维护建议](https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra)，常驻指令保留项目特有规则，详细流程通过链接按需读取。运行时结构变更查阅架构文档，无须为每次包内编辑加载它。skill 描述明确具体触发条件；文档归属、文字覆盖要求和记录生命周期各有一个维护位置。贡献者命令归开发指南维护。Client 指令根据当前消费方和所属设计决策确定公开能力；日常实现不会仅因新增导出就要求另行批准。用户已有授权仍界定任务的允许范围。
+
 专门工作流界定适用操作。文字编辑 skill 推断请求范围，不擅自扩展为文档集审计。动画审计请求保持只读，规划请求直接产出有依据的计划，不插入选择确认；明确的实现请求通过相应动画 skill 继续执行。除非用户已授权代选，原型集成仍需用户选择。审查格式根据发现的问题和用户要求调整。
 
 文档编辑保留 doc-sync（文档同步门禁）与空白检查。代码、JSDoc 或 lint 配置发生变化时执行 lint；归档验证器实现变化时运行其测试。贡献者指令编辑使用 skill 元数据与 Markdown 验证；产品可见提示仍须满足可运行示例快照要求。只有输入未变时才能复用已通过的验证证据。
 
 仅显式调用的原型、库选择和动画审查 skill 在 Codex 元数据中设置 `policy.allow_implicit_invocation: false`，依照[官方 skill 策略](https://developers.openai.com/codex/skills/#optional-metadata)，与既有 frontmatter 及描述保持一致。
 
-本策略补充[常规翻译决策](2026-08-08-lightweight-routine-documentation-translation.zh.md)和[显式变更范围报告](2026-07-27-explicit-change-scope-report.zh.md)。两者继续有效：常规翻译仍由当前 agent（智能体）直接完成，使用范围报告命令时仍须提供已验证的基准。没有既有决策被完全替代。这些指令约束贡献者，不选择运行时 provider、不更改模型默认值，也不迁移 Clocky 的 API 请求。
+本策略补充[常规翻译决策](2026-08-08-lightweight-routine-documentation-translation.zh.md)和[显式变更范围报告](2026-07-27-explicit-change-scope-report.zh.md)。两者继续有效：常规翻译仍由当前 agent（智能体）直接完成，使用范围报告命令时仍须提供已验证的基准。这些指令约束贡献者，不选择运行时 provider、不更改模型默认值，也不迁移 Clocky 的 API 请求。
 
 ## Alternatives considered
 

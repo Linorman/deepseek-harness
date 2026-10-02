@@ -213,7 +213,7 @@ describe('Team browse summaries', () => {
       { type: 'activation/changed', createdAt: 15, binding: {
         activation: { id: taskCreatorActivationId, teamId, participantId: taskCreatorId, status: 'idle' },
         sessionId: taskCreatorSessionId, provider: 'in-process',
-      } }, ...tasks.map((item, index) => taskChanged({ task: item, createdAt: 16 + index })),
+      } }, ...tasks.map((item, index) => taskChanged({ task: { ...item, createdAt: 16 + index }, createdAt: 16 + index })),
       { type: 'workflow-plan/changed', plan, createdAt: 18 },
     ])
     const before = (await ctx.teams.getTeam({ teamId })).team.cursor
@@ -225,8 +225,78 @@ describe('Team browse summaries', () => {
       .toMatchObject({ items: [{ id: tasks[1]!.id }], teamCursor: before })
     expect(await ctx.teams.browse({ teamId, kind: 'members' })).toMatchObject({ items: [{ id: member.id }], teamCursor: before })
     expect(await ctx.teams.browse({ teamId, kind: 'workflowPlans' })).toMatchObject({ items: [{ id: plan.id }], teamCursor: before })
+    const filtered = await ctx.teams.browse({ teamId, kind: 'tasks', query: { search: '' }, limit: 1 })
+    if (filtered.kind !== 'tasks' || filtered.nextQueryCursor === undefined) throw new Error('Missing filtered continuation')
+    expect(filtered.items[0]?.id).toBe(tasks[0]!.id)
+    expect(await ctx.teams.browse({ teamId, kind: 'tasks', query: { search: '' }, queryCursor: filtered.nextQueryCursor }))
+      .toMatchObject({ items: [{ id: tasks[1]!.id }] })
+    await expect(ctx.teams.browse({ teamId, kind: 'tasks', query: { search: 'different' }, queryCursor: filtered.nextQueryCursor }))
+      .rejects.toMatchObject({ code: 'TEAM_INVALID_ARGUMENT' })
+    await expect(ctx.teams.browse({ teamId, kind: 'tasks', query: { search: '' },
+      queryCursor: { ...filtered.nextQueryCursor, teamCursor: before - 1 } })).rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
     const open = vi.spyOn(ctx.storageLog, 'open')
     await expect(ctx.teams.browse({ teamId, kind: 'tasks', limit: 0 })).rejects.toThrow()
     expect(open).not.toHaveBeenCalled()
+  })
+})
+
+describe('independent task queries', () => {
+  it('searches the full Team, excludes deleted/self tasks, and binds continuation to the same query and revision', () => {
+    const projection = source()
+    for (let index = 0; index < 12; index++) {
+      const value = task({ id: `query-${index}`, subject: `项目 ${index}`, phase: index === 3 ? 'deleted' : 'pending' })
+      projection.tasks.set(value.id, value)
+    }
+    const request = { teamId, kind: 'tasks' as const, afterCursor: -1, limit: 2,
+      query: { search: '项目', excludeTaskId: 'query-1' as never } }
+    const first = projectTeamBrowse(projection, request, 512, 16384)
+    if (!first.ok || first.value.kind !== 'tasks') throw new Error('Missing query page')
+    expect(first.value.items.map(item => item.id)).toEqual(['query-0', 'query-2'])
+    expect(first.value.total).toBe(10)
+    expect(first.value.nextCursor).toBeUndefined()
+    expect(teamBrowsePageSchema.parse(first.value)).toEqual(first.value)
+    const cursor = first.value.nextQueryCursor!
+    const next = { ...request, afterCursor: cursor.afterCursor, queryCursor: cursor }
+    const second = projectTeamBrowse(projection, next, 512, 16384)
+    expect(second).toMatchObject({ ok: true, value: { items: [{ id: 'query-4' }, { id: 'query-5' }] } })
+    expect(projectTeamBrowse(projection, { ...next, query: { search: 'different' } }, 512, 16384))
+      .toEqual({ ok: false, reason: 'query' })
+    expect(projectTeamBrowse(projection, { ...next, queryCursor: { ...cursor, teamId: 'foreign' as never } }, 512, 16384))
+      .toEqual({ ok: false, reason: 'query' })
+    expect(projectTeamBrowse({ ...projection, team: { ...projection.team, cursor: projection.team.cursor + 1 } }, next, 512, 16384))
+      .toEqual({ ok: false, reason: 'revision' })
+    expect(projectTeamBrowse(projection, { ...request, query: { search: '项目 11' } }, 512, 16384))
+      .toMatchObject({ ok: true, value: { total: 1, items: [{ id: 'query-11' }] } })
+    expect(projectTeamBrowse(projection, { ...request, query: { search: '项目', phase: 'review' } }, 512, 16384))
+      .toMatchObject({ ok: true, value: { total: 0, items: [] } })
+  })
+
+  it('bounds complete query responses, rejects malformed query cursors, and retains every matching row across byte-limited pages', () => {
+    const projection = source()
+    for (let index = 0; index < 15; index++) {
+      const value = task({ id: `bytes-${index}`, subject: '中文😀'.repeat(100) })
+      projection.tasks.set(value.id, value)
+    }
+    const request = { teamId, kind: 'tasks' as const, afterCursor: -1, limit: 15, query: { search: '😀' } }
+    const ids: string[] = []
+    let queryCursor: import('@clocky/clocky-team').TeamTaskQueryCursor | undefined
+    do {
+      const result = projectTeamBrowse(projection, { ...request, queryCursor, afterCursor: queryCursor?.afterCursor ?? -1 }, 128, 1000)
+      if (!result.ok || result.value.kind !== 'tasks') throw new Error('Missing bounded query page')
+      expect(Buffer.byteLength(JSON.stringify(result.value))).toBeLessThanOrEqual(1000)
+      expect(teamBrowsePageSchema.parse(result.value)).toEqual(result.value)
+      ids.push(...result.value.items.map(item => item.id))
+      queryCursor = result.value.nextQueryCursor
+    } while (queryCursor !== undefined)
+    expect(ids).toEqual([...projection.tasks.keys()])
+    const complete = projectTeamBrowse(projection, request, 128, 100000)
+    if (!complete.ok) throw new Error('Missing complete page')
+    expect(projectTeamBrowse(projection, request, 128, Buffer.byteLength(JSON.stringify(complete.value)))).toEqual(complete)
+
+    expect(projectTeamBrowse(projection, request, 128, 1)).toEqual({ ok: false, reason: 'metadata' })
+    expect(projectTeamBrowse(projection, request, 128, 300)).toEqual({ ok: false, reason: 'row' })
+    expect(teamBrowseRequestSchema.safeParse({ teamId, kind: 'members', query: { search: '' } }).success).toBe(false)
+    expect(teamBrowseRequestSchema.safeParse({ ...request }).success).toBe(false)
+    expect(teamBrowseRequestSchema.safeParse({ teamId, kind: 'tasks', query: { search: '', phase: 'deleted' } }).success).toBe(false)
   })
 })

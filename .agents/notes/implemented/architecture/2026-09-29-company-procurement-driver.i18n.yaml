@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-29-company-procurement-driver.md
+2026-09-29-company-procurement-driver.md: 870c19e5bc51f04567a216324401a8d9fbb08525
+2026-09-29-company-procurement-driver.zh.md: 12d226b14b27803958add7726a8b0a9acae568e2

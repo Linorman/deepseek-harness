@@ -1,0 +1,295 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json company product preparation > reconciles crash=channel before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=checkpoint before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=entity before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=participant before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=resource before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=team before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`json company product preparation > reconciles crash=undefined before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=channel before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=checkpoint before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=entity before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=participant before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=resource before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=team before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;
+
+exports[`sqlite company product preparation > reconciles crash=undefined before inference 1`] = `
+{
+  "channels": 1,
+  "entities": [
+    "buyer",
+    "supplier",
+  ],
+  "modelCalls": 0,
+  "phase": "paused",
+  "preservedReservations": true,
+  "resourceQuantities": [
+    "2",
+    "0",
+  ],
+  "restoredInitialCheckpoint": true,
+  "retriedWithoutWrites": true,
+  "teamParticipants": 2,
+  "unmaterializedSessions": 2,
+}
+`;

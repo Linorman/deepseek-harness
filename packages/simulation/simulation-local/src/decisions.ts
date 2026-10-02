@@ -1,10 +1,11 @@
+import { taskExecutionRecordSchema, foldTaskExecution, assertTaskExecutions } from './task-execution.ts'
 import { isOutboxAction } from './outbox.ts'
 import { taskRecordSchema, foldTaskEvidence, assertTaskEvidence } from './task-evidence.ts'
 /** Serial decision slots, atomic intent acceptance, and immutable operation outcomes. @module @clocky/clocky-simulation-local/decisions */
 import { z } from 'zod'
 import { knowledgeRecordSchema, foldKnowledge, assertKnowledgeProjection } from './knowledge.ts'
 import { isDeepStrictEqual } from 'node:util'
-import { simulationPolicyRefSchema } from '@clocky/clocky-simulation'
+import { simulationPolicyRefSchema, taskDecision, taskContinuationEvidence, taskReportContinuationEvidence } from '@clocky/clocky-simulation'
 import { capacityRecordSchema, foldCapacity, assertCapacityProjection } from './capacity.ts'
 import { tokenRecordSchema, foldTokens, assertTokenProjection } from './tokens.ts'
 import { assertBudget, budgetRecordSchema, foldBudget, assertBudgetProjection } from './budget.ts'
@@ -32,6 +33,7 @@ export const businessRecordSchema = z.discriminatedUnion('kind', [
   ...capacityRecordSchema.options,
   knowledgeRecordSchema,
   taskRecordSchema,
+  ...taskExecutionRecordSchema.options,
   z.strictObject({ kind: z.literal('deterministic/selected'), id: simulationDecisionIdSchema, policy: simulationPolicyRefSchema }),
   z.strictObject({ kind: z.literal('deterministic/result'), id: simulationDecisionIdSchema, proposals: z.array(simulationProposalSchema) }),
   ...tokenRecordSchema.options,
@@ -105,6 +107,14 @@ export function currentDecision(state: SimulationSnapshot, decision: SimulationD
  */
 export function foldBusinessRecord(state: SimulationSnapshot, record: BusinessRecord, sequence: number): SimulationSnapshot {
   switch (record.kind) {
+    case 'task/execution-policy':
+    case 'task/cancellation':
+    case 'task/execution-result':
+    case 'task/execution-decision':
+    case 'task/execution-input':
+    case 'task/execution-reserved':
+    case 'task/execution-observed':
+    case 'task/execution-retired': return foldTaskExecution(state, record, sequence)
     case 'task/reconciled': return foldTaskEvidence(state, record)
     case 'knowledge/recorded': return foldKnowledge(state, record, sequence)
     case 'capacity/extended': case 'capacity/exhausted': return foldCapacity(state, record)
@@ -373,6 +383,18 @@ export function foldBusinessRecord(state: SimulationSnapshot, record: BusinessRe
 export function acceptanceRecords(
   state: SimulationSnapshot, decision: SimulationDecision, proposals: readonly SimulationProposal[],
 ): BusinessRecord[] {
+  const task = taskDecision(state, decision.id)
+  if (task !== undefined && state.taskCancellations?.[task.execution.request.operationId] !== undefined) {
+    throw new Error('Simulation cancelled task cannot accept additional decision proposals')
+  }
+  if (task?.execution.request.reportContinuation !== undefined
+    && (proposals.length !== 0 || taskReportContinuationEvidence(state, task.execution.request) === undefined)) {
+    throw new Error('Simulation report continuation accepts only acknowledgement of its original persisted report')
+  }
+  if (task?.execution.request.interaction?.execution === 'continuation'
+    && (proposals.length !== 0 || taskContinuationEvidence(state, task.execution.request) === undefined)) {
+    throw new Error('Simulation task continuation accepts only an acknowledgement of its original fulfilled effects')
+  }
   if (decision.deterministic !== undefined && !isDeepStrictEqual(decision.deterministic.proposals, proposals)) {
     throw new Error('Simulation deterministic submission differs from its recorded output')
   }
@@ -402,7 +424,7 @@ export function assertBusinessProjection(state: SimulationSnapshot): void {
   assertTokenProjection(state)
   assertCapacityProjection(state)
   assertKnowledgeProjection(state)
-  assertTaskEvidence(state)
+  assertTaskEvidence(state); assertTaskExecutions(state)
   if (state.activeWindowId !== undefined && !Object.hasOwn(state.windows ?? {}, state.activeWindowId)) {
     throw new Error('Simulation active window has no durable opening')
   }

@@ -967,3 +967,18 @@ describe('Team DAG scheduler composition', () => {
     })
   })
 })
+
+
+it('advertises live scheduling modes and removes the observation listener when its plugin unloads', async () => {
+  const ctx = await setup()
+  const teamId = 'observation-team' as import('@clocky/clocky-team').TeamId
+  const observe = async () => await ctx.waterfall(ctx.teams, 'team/task-scheduling-modes', teamId, () => Promise.resolve([]))
+  expect(await observe()).toEqual([])
+  const fiber = await ctx.plugin(TeamSchedulerDag, config({ permittedWorkspaceModes: ['shared', 'worktree'], allowNonSharedWorkspaceModes: true }))
+  expect(await observe()).toEqual(['shared', 'worktree'])
+  await fiber.dispose()
+  expect(await observe()).toEqual([])
+  const replacement = await ctx.plugin(TeamSchedulerDag, config())
+  expect(await observe()).toEqual(['shared'])
+  await replacement.dispose()
+})

@@ -27,6 +27,7 @@ export interface WorkspaceView {
   /**
    * Sessions accounted under this workspace, in manually owned order
    * (attach prepends, insertSessionBefore reorders; activity never does).
+   * Product responses include only references currently readable by the caller.
    */
   sessionIds: SessionId[]
   /** ISO-8601 creation instant. */

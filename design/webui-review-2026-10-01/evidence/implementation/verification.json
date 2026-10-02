@@ -1,0 +1,308 @@
+{
+  "date": "2026-10-02",
+  "timezone": "Asia/Shanghai",
+  "head": "dbfb6e25b915bf573fd68223f4c1c5ee1ba3b03b",
+  "source": "Existing working tree plus this goal’s incremental changes; not a clean HEAD build.",
+  "browser": "Project Playwright Chromium; Browser plugin unavailable.",
+  "data": "Isolated real Host fixtures; scripted/keyless model execution where the owning scenario runs a model.",
+  "screenshots": [
+    {
+      "file": "team-overview.png",
+      "source": ".tmp/team-workspace-implementation/browser/01-overview.png",
+      "viewport": [
+        1440,
+        1000
+      ],
+      "locale": "zh",
+      "theme": "light",
+      "nativeZoom": 1,
+      "sha256": "edc58e8f27e841cb89745e4d24bf92ca59297bdcb285573948bd8838e2736848"
+    },
+    {
+      "file": "simulation-detail-320.png",
+      "source": ".tmp-simulation-plan/web-browser/json-entities-zh-light-320x844-100percent.png",
+      "viewport": [
+        320,
+        844
+      ],
+      "locale": "zh",
+      "theme": "light",
+      "nativeZoom": 1,
+      "sha256": "3cf3fb209a7e64ea3c7e1929bb35169d789374b8d9070930f397d9d8b1435bff"
+    },
+    {
+      "file": "simulation-detail-400percent.png",
+      "source": ".tmp-simulation-plan/web-browser/json-entities-zh-light-1280x720-400percent.png",
+      "viewport": [
+        1280,
+        720
+      ],
+      "locale": "zh",
+      "theme": "light",
+      "nativeZoom": 4,
+      "sha256": "065bf7428c596015ca355368f0fbab296e8dedcf19f9d0af02a7aa221668ec27"
+    },
+    {
+      "file": "creation-narrow.png",
+      "source": ".tmp-simulation-plan/web-administration/json/tasks/00-task-template-narrow.png",
+      "viewport": [
+        390,
+        844
+      ],
+      "locale": "zh",
+      "theme": "light",
+      "nativeZoom": 1,
+      "sha256": "8616871a84753f23d4967b6df78527f341078ed2b1468c8de2131b3066782816"
+    }
+  ],
+  "checks": {
+    "baseline": "build and 3 Team/Simulation browser tests passed",
+    "unit": "101 request/Team tests plus 6 request-recovery tests passed; earlier GUI lane 4423 passed, 1 failed scrollbar gate corrected by 21 passing owning tests",
+    "focusedBrowser": "24/28 passed, then channel/review 6 passed; cold recovery remains intermittent and unclosed",
+    "reflow": "Both backends passed: Chinese/English, light/dark, 320px, 390px, desktop, native 200% and 400%",
+    "wholeWeb": "210 passed / 70 failed / 14 skipped; see local web-all.log. No whole-suite pass claimed."
+  },
+  "round2": {
+    "checkedPlanItems": 20,
+    "browser": "Navigation, preserved cross-workspace creation input, Team drafts/attention/child navigation, coordinator/worker Session flows, both-backend restarts and native 400% Settings reachability passed in focused suites.",
+    "unit": "752 conversation/layout/sidebar/Team tests; 275 Team/sidebar/Simulation tests; additional targeted controls/late-settlement and Settings tests passed. Counts overlap.",
+    "logs": [
+      "round2-browser.log",
+      "domain-draft-browser.log",
+      "worker-record-browser.log",
+      "control-restart-browser.log",
+      "round2-checkpoint-browser.log"
+    ],
+    "newScreenshots": [
+      {
+        "file": "simulation-overview-round2.png",
+        "sha256": "92b4a4a6e9ce1ec506c0980a6592ef7ec7ed060837d4d14285ccc88e08b29c86"
+      },
+      {
+        "file": "simulation-directory-320.png",
+        "sha256": "e3e514cb8370137fa55e6de46a01499f3267be4c002bc7cc2e8d446748dd1574"
+      },
+      {
+        "file": "worker-record.png",
+        "sha256": "81d540c8db2ff76c43d5f33e32c93cff55ac864cd67db1c2a2b1f722e851e5eb"
+      },
+      {
+        "file": "team-overview.png",
+        "sha256": "16ed91fdee8e5c8cda39ba844c6a2a9071e0cb37678045faeadafe9a5ac66248"
+      }
+    ],
+    "remaining": "Execution-mode projection, unified requests entry, source focus/denial matrix, object/record hierarchy, scroll/performance and final acceptance remain open.",
+    "latestVisualCheck": "round2-checkpoint-browser.log: both storage backends passed, including physically scrolling to the named Settings control at native 400% zoom."
+  },
+  "round3": {
+    "checkedPlanItems": 31,
+    "scope": "Collection frame, domain detail hierarchy, exact record kinds, source navigation errors/focus/drafts, run directory, immutable per-run execution mode.",
+    "browser": "directory-browser.log: 6 passed; source-focus-browser.log Team workspace passed; source-focus-recheck.log channel 4 passed; execution-browser.log: 4 passed. Network failure, exact historical binding rejection and Team revocation tested with real Host in both storage backends.",
+    "unit": "source-focus-unit2.log:112 passed; directory-unit.log:99 passed; execution-unit.log:74 passed. Counts overlap.",
+    "screenshots": [
+      {
+        "file": "simulation-directory-round3.png",
+        "source": ".tmp-simulation-plan/web-browser/01-runs-desktop.png",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "locale": "zh",
+        "theme": "light",
+        "sha256": "0e526f8c9ff918c07b28f9cb0305d708eb34df213679be9170ded912270b0fb4"
+      },
+      {
+        "file": "simulation-detail-round3-320.png",
+        "source": ".tmp-simulation-plan/web-browser/json-entities-zh-light-320x844-100percent.png",
+        "viewport": [
+          320,
+          844
+        ],
+        "locale": "zh",
+        "theme": "light",
+        "sha256": "e6b864fab7fc6b6229a0b6889ac649bd5a9b657331a25b0206611d132d119327"
+      },
+      {
+        "file": "historical-binding-refused.png",
+        "source": ".tmp/simulation-source-ui/json/historical-binding-refused.png",
+        "viewport": [
+          1440,
+          1000
+        ],
+        "locale": "zh",
+        "theme": "light",
+        "sha256": "6721f6266e714c38270674eaafce5ee0ee483e8f6e78f4170607ce1c1fd4a8b5"
+      }
+    ],
+    "remaining": "Unified request entry and bounded reconciliation fallback; final cross-page, accessibility and performance acceptance; final documentation. The earlier whole-Web failures are not a current whole-suite pass.",
+    "docs": "round3-docs.log:28 gates passed; stale Cordis catalog regenerated and independent verification passed (execution-catalog.log). Scoped lint and git diff --check passed."
+  },
+  "round4": {
+    "checkedPlanItems": 35,
+    "scope": "Unified secondary Request history; bounded reconciliation failure; narrow header spacing.",
+    "browser": "requests-final-browser.log:8 passed; request-layout-browser.log:6 passed. Real original recovery and process death across both backends; zh/en, light/dark, native200/400 and 390px module entrance within240px.",
+    "unit": "requests-entry-unit.log:109 passed; latest scoped typecheck and authored-source lint passed.",
+    "docs": "requests-final-docs.log:29 passed; git diff --check passed.",
+    "screenshots": [
+      {
+        "file": "request-history-narrow.png",
+        "sha256": "a857f6d3a41dae92e5d4daff9959c11691362620a620d35f43c86c4ad363d1a9"
+      },
+      {
+        "file": "request-history-desktop.png",
+        "sha256": "38c27757367ae70ef581b89cb915ae4304f800a28f760b5b73476aae7c454b01"
+      },
+      {
+        "file": "request-history-400percent.png",
+        "sha256": "f171bcba89e71a4a0b592e4aa0b64a5e4c6779a696583621ff51bf50cc44fa83"
+      }
+    ],
+    "measurements": "request-history-measurements.json",
+    "remaining": "Final multi-page acceptance, performance/read-count scale, accessibility closure, stale whole-Web fixture/golden attribution, final docs and evidence. Goal not complete."
+  },
+  "round5": {
+    "checkedPlanItems": 40,
+    "browser": "modal-layer-browser.log:9 passed; final-simulation-acceptance.log:9 passed; session-replay-validation.log:40 passed/1 failed then authenticated model query fixed and default-model-recheck.log:2 passed; lifecycle-route-recheck.log:7 passed; refreshed13 remaining conversation suites:29 passed/1 skipped. Full replay is currently running in final-web-all.log.",
+    "unit": "final-layout-owner-unit.log:82 passed; modal-layer-unit.log:35 passed; late-team-start-unit.log:7 passed.",
+    "scope": "Stable form action position, one-card scroll at short heights, native image modal above Session, initial composer region semantics, hidden collapsed details, explicit source context and safe route identity disclosure, preserved late Team-start inspection, fixture scope/labels updated to intended flow.",
+    "performance": "reading-scale.json:20/200 entities render16 rows/119 table nodes, one initial collection call and0 row inspect calls. Repeated navigation remains bounded.",
+    "static": "final-static-ui-audit.json:0 violations; no static audit used as a substitute for runtime.",
+    "screenshots": [
+      {
+        "file": "creation-fields-400percent.png",
+        "sha256": "8c4f7fdaca514da5171b6a6bd1f758829e6b50a6d569b8f630f19f0b8cbb7399"
+      },
+      {
+        "file": "image-preview-return.png",
+        "sha256": "459516f68c2d28a2c4d5e37e40a3c676681f742d72a41d7f3334ceeef9026064"
+      }
+    ],
+    "remaining": "Final whole-Web attribution, final acceptance matrix/document closure; no goal completion claimed.",
+    "wholeWeb": "The subsequent final-web-confirmation.log completed with282passed14skipped, no failures. See final.",
+    "docs": "final-docs.log:29passed; final-static-ui-audit.json:0findings."
+  },
+  "final": {
+    "date": "2026-10-02",
+    "timezone": "Asia/Shanghai",
+    "baselineHead": "dbfb6e25b915bf573fd68223f4c1c5ee1ba3b03b",
+    "workingTree": "Existing user work preserved; no commit, push, PR or deployment.",
+    "wholeWeb": {
+      "command": "CLOCKY_SNAPSHOT=replay pnpm run test:web",
+      "filesPassed": 94,
+      "filesSkipped": 1,
+      "testsPassed": 282,
+      "testsSkipped": 14,
+      "failed": 0
+    },
+    "cleanup": "Only unreferenced Team CSS removed after full replay; fresh build and owning Team browser scenario passed.",
+    "buildRecord": "final-client-build.json",
+    "plan": {
+      "numberedTasks": 46,
+      "phaseAcceptances": 8,
+      "milestones": 3,
+      "checkedItems": 57
+    },
+    "notes": {
+      "implemented": "2026-10-01-webui-workspace-hierarchy",
+      "retained": [
+        "2026-09-11-team-workspace-ui: independent Team composition and authority rationale",
+        "2026-09-29-simulation-browser-viewing: independent read families, recovery and permission contracts"
+      ],
+      "archived": [],
+      "rejected": []
+    },
+    "conditionalDeliverables": {
+      "liveProviderGif": "Not applicable: no GUI PR was created or published. Any later GUI PR retains its live-provider recording requirement."
+    },
+    "limits": [
+      "Chromium coverage; no cross-browser or manual screen-reader certification claimed.",
+      "Real Host, isolated data, scripted external inference where needed; no production load or live-provider throughput claim.",
+      "Viewport/language/theme/state combinations selected by risk, not every Cartesian combination.",
+      "Private drafts survive supported navigation/disconnect; reload persistence is not promised."
+    ],
+    "logs": [
+      {
+        "localLog": ".tmp-webui-improvement/final-web-confirmation.log",
+        "sha256": "bd2e7be623c81c82d15c4b429e3ae732aae9957d85db89f2adcc00d266f41142",
+        "bytes": 368309
+      },
+      {
+        "localLog": ".tmp-webui-improvement/cleanup-build.log",
+        "sha256": "fed6b245b59883cdc7dd57ca70476af957894ee4591f8e4eff54be6d822a94e3",
+        "bytes": 368516
+      },
+      {
+        "localLog": ".tmp-webui-improvement/cleanup-browser.log",
+        "sha256": "33c1575a16790035244fa1ec8772a3778cbfaaf5228a1c08c59f41b7181598f4",
+        "bytes": 536
+      },
+      {
+        "localLog": ".tmp-webui-improvement/full-regression-fixes-browser.log",
+        "sha256": "b793e8a571577f7da109ad868abd11294697e73f5455c082e26f6d461c5dc7c3",
+        "bytes": 765
+      },
+      {
+        "localLog": ".tmp-webui-improvement/modal-layer-browser.log",
+        "sha256": "939251c15ee50fecb943e674053f0c58501030cc74dfb9f126ca3d162b60c1ff",
+        "bytes": 657
+      },
+      {
+        "localLog": ".tmp-webui-improvement/final-simulation-acceptance.log",
+        "sha256": "34204d4cf2a84c587b3d53c08aa4e9ff8e197666f669d28c9b4ce142e20dbf1c",
+        "bytes": 711
+      },
+      {
+        "localLog": ".tmp-webui-improvement/late-team-start-unit.log",
+        "sha256": "8c536a828d6ce8795fed636cfbff7f62217a3e4a8dbf230e655554a73d6f0d94",
+        "bytes": 910
+      },
+      {
+        "localLog": ".tmp-webui-improvement/final-static-ui-audit.json",
+        "sha256": "be1c0f730c60cc832bf793928c36b343b939ad53206787a4e18100a3f7d6cfc0",
+        "bytes": 235
+      },
+      {
+        "localLog": ".tmp-webui-improvement/final-ownership-lint.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "localLog": ".tmp-webui-improvement/request-owner-lint.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    ],
+    "screenshots": [
+      {
+        "file": "team-overview-final.png",
+        "sha256": "4e3de907d0e5a842d831dd9a1a53c876f9a8e8264b877815cb7fb59434dd319a"
+      },
+      {
+        "file": "creation-desktop-final.png",
+        "sha256": "84ba52bbaf7e977773bb7f8f2c8df6a6992050148ae1a106d13ee637bcb607a2"
+      },
+      {
+        "file": "creation-fields-400percent.png",
+        "sha256": "8c4f7fdaca514da5171b6a6bd1f758829e6b50a6d569b8f630f19f0b8cbb7399"
+      },
+      {
+        "file": "request-history-desktop.png",
+        "sha256": "38c27757367ae70ef581b89cb915ae4304f800a28f760b5b73476aae7c454b01"
+      },
+      {
+        "file": "request-history-narrow.png",
+        "sha256": "a857f6d3a41dae92e5d4daff9959c11691362620a620d35f43c86c4ad363d1a9"
+      },
+      {
+        "file": "image-preview-return.png",
+        "sha256": "459516f68c2d28a2c4d5e37e40a3c676681f742d72a41d7f3334ceeef9026064"
+      }
+    ],
+    "documentation": {
+      "command": "pnpm run doc-sync",
+      "passed": 29,
+      "failed": 0,
+      "logSha256": "b11b6166965379619d9a7a1b6e8e9c5ba9aefa6b5fbb3d34fb6bd8c3d6ee8762"
+    }
+  }
+}

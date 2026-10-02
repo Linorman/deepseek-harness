@@ -20,6 +20,8 @@ TeamRun and model tools expose bounded cancellation progress; Host and both SDKs
 
 Task terminal commits also cancel still-pending human actions bound to that task in the same journal batch, with an explicit `task-cancelled` business outcome. Already-settled Host decisions and Session `approval/decided` events remain unchanged.
 
+`cancelRuntimeTask()` gives the Simulation task owner a separate closed `simulation-task-cancel` proof. The Hub binds it to immutable run/task-create provenance, creator and lifecycle owner before target lookup, under the Team queue, and after policy IO. Its nullable attempt fence selects the current lease or original retained cancellation target; lease-free pending/review work selects `null`. This source does not depend on a live writer and cannot change the first intent, ordinary attempt limits, completed review result or physical termination responsibility. Ordinary human and TeamRun cancellation proofs retain their existing entry and cannot use this one. The [native review decision](2026-10-01-simulation-task-review-authority.md) keeps independent reviewer/result authority.
+
 ## Alternatives considered
 
 **Immediate terminal cancellation.** Rejected because task state could claim resource release while its owner still executes.
@@ -27,6 +29,8 @@ Task terminal commits also cancel still-pending human actions bound to that task
 **Soft participant interruption.** Rejected because it lacks a task-attempt fence and does not prove completion of the stop.
 
 **A separate cancellation registry.** Rejected because it would duplicate durable Task authority.
+
+**Ordinary human cancellation of Simulation tasks.** Rejected because Team membership does not establish ownership of the accepted native operation or its exact reserved attempt.
 
 ## Consequences
 
@@ -37,3 +41,5 @@ Cancellation can remain non-terminal after the lease deadline or a failed alloca
 Keyless examples exercise an actual filesystem approval wait and an actual participant review, cancellation through model tools, and successful subsequent work in the same Team. Owning tests cover retained deadlines, activation fences, durable replay, old-attempt acknowledgements, and Local/WebSocket reconnect.
 
 Both SDK owning snapshots also preserve a real child's aborted tool turn and its subsequent turn from retained waking input, while the coordinator returns an explicit Team final. TypeScript verifies source and built runtimes; the Python advanced scenario verifies the built workspace runtime, with single-executable validation remaining a release check.
+
+[Scoped Simulation cancellation tests](../../../../packages/team/team-hub/tests/runtime-task-cancellation.spec.ts) cover JSON/SQLite pending, assigned, running and review work, preserved lease/result/attempt limits, exact original retry and checkpoint replay, substituted selectors, wrong attempt, missing or revoked source, and policy-await revocation. These tests verify the Hub authority and intent; production executor cancellation and Web orchestration retain their own end-to-end verification.

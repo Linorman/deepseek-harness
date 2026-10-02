@@ -49,6 +49,14 @@ export interface ConnectionSinks {
   /** Coarse state transitions (deduplicated: fires only on change). The initial pre-connect
    *  span reports nothing — the UI treats "no state yet" as connecting, not as an outage. */
   onStateChange?: (state: ConnectionState) => void
+  /** Current transport or handshake explicitly denied product access; retire principal-scoped data. */
+  onAuthorizationLost?: () => void
+}
+
+/** Recognize explicit access refusals without treating network loss as a permission change. */
+function authorizationLost(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error
+    && (error.code === 'PRODUCT_AUTH_INVALID' || error.code === 'PRODUCT_AUTH_REQUIRED')
 }
 
 /**
@@ -109,6 +117,15 @@ export class ConnectionController {
       const gen = ++this.generation
       const ac = new AbortController()
       this.current = ac
+      let releaseReady!: () => void
+      const ready = new Promise<void>((resolve) => { releaseReady = resolve })
+      ac.signal.addEventListener('abort', releaseReady, { once: true })
+      let denied = false
+      const reportDenial = (error: unknown): void => {
+        if (gen !== this.generation || !this.running || denied || !authorizationLost(error)) return
+        denied = true
+        this.callSink(() => { this.sinks.onAuthorizationLost?.() })
+      }
 
       /* v8 ignore next -- initializer placeholder: the Promise executor
        * below runs synchronously and replaces it before anyone can call it. */
@@ -121,12 +138,15 @@ export class ConnectionController {
       ])
 
       const failed = new Promise<void>((resolve) => {
-        const settle = (): void => {
+        const settle = (error?: unknown): void => {
+          reportDenial(error)
           if (gen === this.generation && !ac.signal.aborted) ac.abort()
           resolve()
         }
-        void this.pumpStream(this.api.events.mux({}, ac.signal, muxOpened), this.sinks.onMuxEnvelope, settle)
-        void this.pumpStream(this.api.events.host({}, ac.signal, hostOpened), this.sinks.onHostEnvelope, settle)
+        void this.pumpStream(this.api.events.mux({}, ac.signal, muxOpened), this.sinks.onMuxEnvelope, settle, ready,
+          () => this.isGenerationActive(ac))
+        void this.pumpStream(this.api.events.host({}, ac.signal, hostOpened), this.sinks.onHostEnvelope, settle, ready,
+          () => this.isGenerationActive(ac))
       })
 
       try {
@@ -143,7 +163,7 @@ export class ConnectionController {
         timeout.abort()
         const descriptionResult = description.result
         if (!descriptionResult.ok) {
-          throw new Error(`host.describe failed: ${descriptionResult.error.code}: ${descriptionResult.error.message}`)
+          throw Object.assign(new Error(`host.describe failed: ${descriptionResult.error.code}`), { code: descriptionResult.error.code })
         }
         if (ac.signal.aborted) throw new Error('generation aborted during readiness handshake')
         this.attempt = 0
@@ -153,10 +173,14 @@ export class ConnectionController {
         if (this.isGenerationActive(ac)) {
           this.callSink(() => { this.sinks.onConnected?.(descriptionResult.value) })
         }
-      } catch {
+        if (this.isGenerationActive(ac)) releaseReady()
+      } catch (error: unknown) {
+        reportDenial(error)
         // Transport failure: treat as generation failure, fall through to the shared backoff.
         if (!ac.signal.aborted) ac.abort()
       }
+
+      ac.signal.removeEventListener('abort', releaseReady)
 
       await failed
       if (!this.isRunning()) return
@@ -178,15 +202,25 @@ export class ConnectionController {
   private async pumpStream<F extends { type: string }>(
     stream: AsyncIterable<RpcRequest<F>>,
     sink: ((envelope: RpcRequest<F>) => void) | undefined,
-    onEnd: () => void,
+    onEnd: (error?: unknown) => void,
+    ready: Promise<void>,
+    active: () => boolean,
   ): Promise<void> {
     try {
       for await (const envelope of stream) {
-        if (envelope.payload.type === 'stream/error') break
+        if (envelope.payload.type === 'stream/error') {
+          const frame = envelope.payload
+          onEnd('error' in frame ? frame.error : undefined)
+          return
+        }
+        await ready
+        if (!active()) { onEnd(); return }
         if (sink !== undefined) this.callSink(() => { sink(envelope) })
       }
-    } catch {
+    } catch (error: unknown) {
       // Stream loss: converge on onEnd, which triggers the shared reconnect.
+      onEnd(error)
+      return
     }
     onEnd()
   }

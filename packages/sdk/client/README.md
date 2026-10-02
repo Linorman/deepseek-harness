@@ -2,7 +2,33 @@
 
 English | [中文](README.zh.md)
 
+`listSimulationRequests()` discovers bounded original receipt metadata after reconnecting; `retrySimulationRequest()` retries only the backend-retained original identified by run and command. Both public clients validate the returned run, original command, requested revision and page size. They never traverse pages or retry automatically, accept no replacement command payload and preserve immutable terminal receipts. A stale continuation requires an explicit first-page read.
+
+`preflightSimulation()` on `Clocky` and `HarnessClient` validates an allowlisted creation draft without allocating a command or run. It returns resolved immutable allowances or safe field issues and reserves no resources. Both SDK clients validate input and result before use; unknown native configuration rejects. Retain `maxTime` as an exact decimal string and pass the same draft into creation with a newly retained command identity; create rechecks current deployment readiness.
+
+Failed checkpoint/restore receipts and checkpoint reference details may include a typed `diagnostic` with stage, fixed public code, canonical subject and independent unconfirmed-cleanup marker. These fields preserve source identity across original-result queries; raw provider text, filesystem paths and arbitrary cause fields are rejected.
+
+`retrySimulationOperation()` grants one extra existing bounded outbox retry budget for the exact unknown operation and observed attempt count. The caller retains the original command and reason; `getSimulationRequest()` returns its normalized `retryOperation` intent and immutable receipt. The client verifies run/command/family, rejects malformed original inputs and never silently changes the target or count. Grant and query do not publish or start models; explicit scheduling performs target reconciliation. `not-found` remains uncertainty.
+
+`getSimulationRunStatuses({ runIds })` reads one exact bounded authorized batch. Native metrics report simulated interval charges, retained resident slots and pending work; shared model-pool permits use real time and remain separate from configured budget caps. Current administrative metadata includes only trusted scenario versions and owner/driver/stop/retry facts. The client verifies every returned ID in request order and never opens or restores a run for observation.
+
+`listSimulationTaskReviews()` and `resolveSimulationTaskReview()` expose bounded canonical metadata and original scene review commands. Review authority comes from the trusted template and authenticated run owner. Clients correlate run/revision/page or original command/kind, and `getSimulationRequest()` retains the exact original review input after response loss. See [administrative review](../../simulation/simulation-product/README.md).
+
+`inspectSimulationSource()` follows a frozen decision source ordinal. A searching reply continues lookup with its cursor; a found reply continues text with its cursor and exact `envelope.sequence`. Responses are correlated to run, decision, source, revision and requested page size. Text requires both the Simulation source grant and current Team readership.
+
+`readSimulationRecords()` reads `simulation/records-list` with exact run, kind/sequence filters and metadata/original mode. It validates echoed filters, revision and page size. Original JSON text needs an independent whole-run historical-content grant; record count and text-part count differ. Consumers retain the original cursor and policy version when reconstructing a record or exporting a pinned observation.
+
+Knowledge sections preserve exact decision references and current audience checks; optional `reference` is correlated across request, selection and result. Report source bodies require explicit Host knowledge/source grants.
+
+`watchSimulation()` performs one bounded invalidation wait with an explicit prior cursor or zero-wait probe; it returns no body and starts no execution. A reset invalidates old policy/body responses. Clients never start a recurring watch automatically.
+
+`Clocky` and `HarnessClient` expose product metadata, original creation/preparation requests, `getSimulationControl()`, `manageSimulation()`, `getSimulationManagement()`, `checkpointSimulation()`, `restoreSimulation()`, `ingressSimulation()` and `getSimulationIngress()`. The caller retains the original command, management or ingress ID and payload across uncertain outcomes; `not-found` neither establishes failure nor creates another identity. Creation prepares a paused run without inference. Old scheduling retry returns its original intent without undoing later pause; full checkpoint/restore leave a paused owner, and restore validates the current suffix without rollback or inference. Input assignment and consumption are separate facts. Clients validate public DTOs and exact selection/revision, command kind, restore target, scheduling phase and ingress target/time. These methods require the [product composition](../../simulation/simulation-product/README.md) and never automatically retry commands or traverse pages. `inspectSimulationObject()` supports independently paged entity relationships and frozen decision context. Body permission comes from the Host; source references grant no Team/Session access, and the context view is not the complete model request.
+
+Retain `commandId` and original fields for `updateTeamTask()` or `HarnessTeam.updateTask()`. Accepted retries return original receipt and current task; refused retries preserve the original failure after conditions change. `getTeamTaskUpdateResult()` and `HarnessTeam.updateResult()` read acceptance, terminal refusal or current absence without writing. The client checks exact Team/task/command identity across every outcome. `not-found` leaves the original operation unresolved.
+
 The TypeScript client SDK for driving a Clocky runtime as a subprocess over stdio JSON-RPC — the design twin of the [Python SDK](../../../python/README.md) (`clocky`), sharing the same runtime peer, protocol, and layering: `Clocky` is the high-level owned-run API, `HarnessClient` the lower-level protocol client. The package root enumerates the consumer interface: the two client layers, caller-facing types, and `JsonRpcResponseError`; source modules, normalization helpers, and subscription-delivery machinery are not consumer imports. A pure library: it registers nothing on a Cordis context; the runtime process it spawns is a complete harness whose composition its own `cordis.yml` decides.
+
+`listTeams()` reads one authorized safe directory page without scan counts or grant bodies. Keep its encrypted `nextCursor` only within the current principal generation; expired continuations require an explicit first-page read. `getTeamSelection()` reports member or parent-inspection access; reads do not start or resume a Team.
 
 Unlike the Python SDK, the launch spec is fully explicit (`command`/`args`): this package is for repo-adjacent TypeScript consumers — including the [`clocky-subagent-clocky-sdk`](../../compat/subagent-clocky-sdk/README.md) backend and automation — that know which runtime they are launching. Bundled-runtime resolution (finding a packaged executable) remains the Python distribution's concern.
 
@@ -10,6 +36,9 @@ Unlike the Python SDK, the launch spec is fully explicit (`command`/`args`): thi
 `Clocky` and `HarnessClient` expose `inboxRead({ afterCursor?, limit? })`, `inboxWatch(...)`, and `inboxAcknowledge({ throughCursor })`. They select the initialized principal's durable final inbox without accepting caller identity. Omitted read cursors resume after the shared display position; display acknowledgement never creates a channel receipt. The [inbox Consumer](../../team/team-human-client/README.md) owns persistence, permissions, bounds, and current limitations.
 
 Team-list continuations are opaque strings, with `-1` selecting a fresh scan. `scanned` accounts for discovery work; follow `nextCursor` even when `items` is empty. On `TEAM_DISCOVERY_CURSOR_EXPIRED`, begin a fresh scan. Member, task and channel cursors remain numeric.
+
+
+`listSimulationTasks()` reads bounded canonical run-owned task controls. `cancelSimulationTask()` retains one source operation, task revision, command ID and exact attempt ID; an explicit `null` requires no active attempt lease. The client rejects another run, command or receipt family. `getSimulationRequest()` returns the original `cancellation` only for `cancel-task`; query and exact retry allocate no new command. These methods neither grant general Team writes nor start inference.
 
 ## Clocky
 

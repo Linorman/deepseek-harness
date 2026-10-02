@@ -7,7 +7,6 @@ import type {
   ChannelReadPageResult,
   ObservableSnapshot,
   ParticipantId,
-  TeamArtifactReadResult,
   TeamAuditList,
   TeamId,
   TeamCollectionKind,
@@ -26,7 +25,8 @@ import { TeamInboxDialog, type TeamInboxControls } from './TeamInboxDialog.tsx'
 
 /** Browser-private actions and observable Team product state. */
 export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
-  inspectMember?: import('@clocky/clocky-client-runtime/client').ITeamTasks['inspectMember']
+  closeMemberDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['closeMemberDetail']
+  readMemberDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readMemberDetail']
   readWorkflowDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readWorkflowDetail']
   closeWorkflowDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['closeWorkflowDetail']
   /** Read one additional Team page on explicit request. */
@@ -64,10 +64,32 @@ export interface TeamBrowserInjected extends Partial<TeamInboxControls> {
   /** Resolve registered protocol and view choices for channel creation. */
   readChannelCatalog?: () => Promise<void>
   /** Read and verify one visible Team artifact. */
-  readArtifact?: (teamId: TeamId, artifactId: string, signal?: AbortSignal) => Promise<TeamArtifactReadResult>
+  readArtifact?: (teamId: TeamId, artifactId: string, signal?: AbortSignal) => Promise<void>
   /** Load one bounded member or task collection page for the selected Team. */
   readCollections?: (teamId: TeamId, collection: TeamCollectionKind, mode?: 'refresh' | 'next' | 'first', signal?: AbortSignal) => Promise<void>
   /** Read current task data or replace one bounded history window. */
+  watchIdentities?: ((teamId: import('@clocky/clocky-client-runtime/client').TeamId, ids: readonly import('@clocky/clocky-client-runtime/client').ParticipantId[]) => () => void) | undefined
+  refreshIdentities?: (() => Promise<void>) | undefined
+  watchExecutionProfiles?: ((input: import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesInput) => () => void) | undefined
+  refreshExecutionProfiles?: (() => Promise<void>) | undefined
+  watchMemberReadiness?: ((input: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessInput) => () => void) | undefined
+  refreshMemberReadiness?: import('@clocky/clocky-client-runtime/client').ITeamTasks['refreshMemberReadiness']
+  watchTaskCapabilities?: ((input: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesInput) => () => void) | undefined
+  refreshTaskCapabilities?: import('@clocky/clocky-client-runtime/client').ITeamTasks['refreshTaskCapabilities']
+  watchAttention?: ((teamId: TeamId) => () => void) | undefined
+  readAttention?: ((teamId: TeamId, mode?: 'first' | 'next') => Promise<void>) | undefined
+  refreshAttentionPreview?: ((teamId: TeamId) => Promise<void>) | undefined
+  pauseAttention?: (() => void) | undefined
+  inspectAction?: import('@clocky/clocky-client-runtime/client').ITeamTasks['inspectAction']
+  closeActionDetail?: (() => void) | undefined
+  openPendingAction?: ((teamId: TeamId, id: import('@clocky/clocky-client-runtime/client').TeamActionResponseInput['actionId']) => Promise<void>) | undefined
+  readTaskQuery?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readTaskQuery']
+  pauseTaskQuery?: import('@clocky/clocky-client-runtime/client').ITeamTasks['pauseTaskQuery']
+  lookupTaskUpdate?: import('@clocky/clocky-client-runtime/client').ITeamTasks['lookupTaskUpdate']
+  watchTaskReferences?: ((teamId: TeamId, taskIds: readonly import('@clocky/clocky-client-runtime/client').TeamTaskId[]) => () => void) | undefined
+  refreshTaskReferences?: (() => Promise<void>) | undefined
+  readDependencies?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readDependencies']
+  closeDependencies?: import('@clocky/clocky-client-runtime/client').ITeamTasks['closeDependencies']
   readTaskDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readTaskDetail']
   /** Release task inspection reads and data. */
   closeTaskDetail?: () => void
@@ -100,7 +122,6 @@ export type TeamBrowserProps =
  */
 export function TeamBrowser({
   wide,
-  expandSidebar,
   openTeam,
   recoverInbox, refreshInbox, loadMoreInbox, watchInbox, acknowledgeInbox, readAction, respondAction, openActionContext,
   loadMoreTeams, firstTeamPage,
@@ -128,13 +149,7 @@ export function TeamBrowser({
   const [workspacePicking, setWorkspacePicking] = useState(false)
   const visibleError = error ?? state.error?.message
 
-  if (!wide) {
-    return (
-      <button type="button" className={css.rail} aria-label={t('rail.expand')} onClick={expandSidebar}>
-        <IconGoalOutline16 size={18} />
-      </button>
-    )
-  }
+  if (!wide) return null
 
   const select = async (teamId: TeamId): Promise<void> => {
     setOpening(teamId)
@@ -184,11 +199,15 @@ export function TeamBrowser({
     }).finally(() => { setWorkspacePicking(false) })
   }
 
-  type SidebarTeam = Pick<TeamTaskListState['items'][number], 'id' | 'phase' | 'workspacePath'> & { readonly goal: { readonly objective: string } }
+  type SidebarTeam = Pick<TeamTaskListState['items'][number], 'id' | 'phase' | 'workspacePath' | 'objectiveTruncated' | 'readAccess' | 'executionManagement'>
+    & { readonly goal: { readonly objective: string } }
   const selected = state.selected?.teamId === state.current ? state.selected : undefined
   const selectedRow: SidebarTeam | undefined = selected === undefined ? undefined : {
     ...selected.state.team, goal: { objective: selected.state.metadata?.kind === 'available'
       ? selected.state.metadata.goal.objective : selected.state.goal.objective.text },
+    objectiveTruncated: selected.state.metadata?.kind === 'available' ? false : selected.state.goal.objective.truncated,
+    readAccess: selected.state.readAccess,
+    executionManagement: selected.state.executionManagement,
   }
   const rows: readonly SidebarTeam[] = selectedRow === undefined || state.items.some(item => item.id === selectedRow.id)
     ? state.items : [selectedRow, ...state.items]
@@ -199,13 +218,13 @@ export function TeamBrowser({
         className={`${css.row}${team.id === state.current ? ` ${css.selected}` : ''}`}
         aria-current={team.id === state.current ? 'page' : undefined}
         disabled={opening !== undefined || archiving !== undefined || mutating !== undefined}
-        title={team.goal.objective}
+        title={`${team.goal.objective}${team.objectiveTruncated ? '…' : ''}`}
         onClick={() => { void select(team.id) }}
       >
-        <span className={css.objective}>{team.goal.objective}</span>
+        <span className={css.objective}>{team.goal.objective}{team.objectiveTruncated ? '…' : ''}</span>
         <span className={css.phase}>{t(teamPhaseKey[team.phase])}</span>
       </button>
-      {(team.phase === 'completed' || team.phase === 'failed' || team.phase === 'cancelled') && (
+      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'completed' || team.phase === 'failed' || team.phase === 'cancelled') && (
         <button
           type="button"
           className={css.archive}
@@ -217,13 +236,13 @@ export function TeamBrowser({
           <span aria-hidden="true">×</span>
         </button>
       )}
-      {team.phase === 'stalled' && resumeTeam !== undefined && (
+      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && team.phase === 'stalled' && resumeTeam !== undefined && (
         <button type="button" className={css.archive} aria-label={`${t('resume')} ${team.goal.objective}`} title={t('resume')}
           disabled={mutating !== undefined} onClick={() => { void mutate(team.id, resumeTeam) }}>
           <span aria-hidden="true">↻</span>
         </button>
       )}
-      {(team.phase === 'active' || team.phase === 'quiescing' || team.phase === 'stalled') && cancelTeam !== undefined && (
+      {team.readAccess === 'member' && team.executionManagement !== 'simulation-managed' && (team.phase === 'active' || team.phase === 'quiescing' || team.phase === 'stalled') && cancelTeam !== undefined && (
         <button type="button" className={css.archive} aria-label={`${t('cancel')} ${team.goal.objective}`} title={t('cancel')}
           disabled={mutating !== undefined} onClick={() => { void mutate(team.id, cancelTeam) }}>
           <span aria-hidden="true">×</span>

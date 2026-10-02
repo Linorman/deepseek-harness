@@ -1,6 +1,6 @@
 ---
 name: dsh-prose-standard
-description: Use when writing, reviewing, restoring, trimming, or auditing prose in the deepseek-harness repo, including deciding where documentation or comments are required across Markdown, JSDoc, code and test comments, prompts, descriptions, diagnostics, and CLI or UI strings.
+description: Use when writing or reviewing deepseek-harness prose for complete contracts, required coverage, accuracy, and concision.
 ---
 
 # DeepSeek Harness Prose Standard

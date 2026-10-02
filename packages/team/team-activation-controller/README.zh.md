@@ -8,6 +8,8 @@ Team 设置 `maxLiveActivations` 时，`activate()` 首先提交 Participant 启
 
 `stopOwnedActivation()` 只退役精确的本地所属激活。生命周期所有者可提供 `checkpoint()`，在本地工作和工作区结算后、运行时销毁分离 Session 前执行。失败保留所有权；成功检查点不会在运行时部分销毁后重复执行。
 
+带作用域的成员观察监听器报告保留的所有权、待启动操作及未完成的终止／清理，不调用 health、recovery 或 activation。单独的持久 binding 不证明 live 所有权。Registry 的成员类型拒绝是确定的启动前失败，因此可释放其 startup reservation，不必按未知启动隔离。
+
 ## 持久 activation
 
 `TeamActivationController.activate()`读取请求的 Team cursor 和 active agent Participant，在 placement 前拒绝 resident epoch 或另一 Session，调用具名 AgentRuntime provider，验证返回 handle 拥有请求的 Session，且任何 local Agent 都属于该 Session，然后调用 `ctx.teams.bindActivation()`。只有 binding 提交后才返回 `TeamActivationLease`。binding 被拒绝时 controller 会释放 raw handle；清理失败会与 binding 失败一起报告。

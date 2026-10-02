@@ -4,6 +4,8 @@ import { z } from 'zod'
 import {
   simulationOperationIdSchema, simulationDispatchOutcomeSchema, simulationWallTimeSchema,
   simulationWriterEpochSchema, simulationEventIdSchema,
+  simulationOutboxRetryRequestSchema,
+  simulationOutboxRetryCapability,
 } from '@clocky/clocky-simulation'
 import type {
   SimulationOperation, SimulationOperationId, SimulationOutbox, SimulationOutboundMessage,
@@ -27,7 +29,7 @@ export const outboxRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('outbox/blocked'), id: simulationOperationIdSchema,
     code: z.enum(['SIM_DEPENDENCY_FAILED', 'SIM_ENTITY_UNAVAILABLE']) }),
   z.strictObject({ kind: z.literal('outbox/retry-authorized'), id: simulationOperationIdSchema,
-    at: simulationWallTimeSchema, reason: z.string().min(1) }),
+    request: simulationOutboxRetryRequestSchema }),
 ])
 /** Parsed outbox event. */
 export type OutboxRecord = z.infer<typeof outboxRecordSchema>
@@ -150,9 +152,16 @@ export function foldOutboxRecord(state: SimulationSnapshot, record: OutboxRecord
       sessionId: recipient.binding.sessionId, sequence, time: state.time } })
   }
   if (record.kind === 'outbox/retry-authorized') {
-    if (operation.status !== 'outcome-unknown' || operation.result !== undefined) throw new Error('Only an unknown outbox outcome can receive a retry budget')
+    const request = record.request
+    if (request.operationId !== operation.id || operation.status !== 'outcome-unknown' || operation.result !== undefined
+      || request.expectedAttemptCount !== outbox.attempts.length || !simulationOutboxRetryCapability(state, operation.id).allowed
+      || Object.values(state.operations).some(value => Object.hasOwn(value.outbox?.retryAuthorizations ?? {}, request.id))) {
+      throw new Error('Only the exact current unknown due outbox attempt can receive an original retry allowance')
+    }
+    const grant = { request, sequence, time: state.time, budgetStart: outbox.attempts.length, maxAttempts: state.spec.outboxMaxAttempts }
     return replace(state, { ...operation, status: 'pending', outbox: {
-      ...outbox, budgetStart: outbox.attempts.length, nextAttemptAt: record.at,
+      ...outbox, budgetStart: outbox.attempts.length, nextAttemptAt: request.authorizedAt,
+      retryAuthorizations: { ...outbox.retryAuthorizations, [request.id]: grant },
     } })
   }
   if (operation.result !== undefined || operation.status === 'outcome-unknown') throw new Error('Simulation outbox result is already retained or needs recovery')

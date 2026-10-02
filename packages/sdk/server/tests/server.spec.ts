@@ -140,7 +140,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     const release = vi.fn(async () => { invalid = true; controller.abort() })
     const authenticate = vi.fn(async ({ credential }: { readonly credential: string }) => {
       if (credential !== SDK_TEST_CREDENTIAL) throw new Error(credential)
-      return { withCall, revoke: release }
+      return { signal: controller.signal, withCall, revoke: release }
     })
     const teams = { getMetrics: vi.fn(() => ({ activeAdmissions: 0 })) }
     const inbox = { read: vi.fn(async () => ({ items: [], displayCursor: -1, cursor: -1 })),
@@ -169,7 +169,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     })).resolves.toMatchObject({ serverInfo: { name: 'clocky-sdk-runtime' } })
     await expect(server.handleRequest('team/metrics', {})).resolves.toEqual({ activeAdmissions: 0 })
     expect(authenticate).toHaveBeenCalledWith({ provider: 'local', credential: SDK_TEST_CREDENTIAL })
-    expect(withCall).toHaveBeenCalledOnce()
+    expect(withCall).toHaveBeenCalledTimes(2)
     await expect(server.handleRequest('team/inbox-read', {})).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-watch', { afterCursor: -1, limit: 1 })).resolves.toEqual({ items: [], displayCursor: -1, cursor: -1 })
     await expect(server.handleRequest('team/inbox-acknowledge', { throughCursor: 2 })).resolves.toEqual({ displayCursor: 2 })
@@ -213,6 +213,7 @@ describe('HarnessSdkJsonRpcServer', () => {
       const controller = new AbortController()
       let revoked = false
       return {
+        signal: controller.signal,
         async withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>): Promise<T> {
           if (revoked || controller.signal.aborted) {
             throw new ProductPrincipalError('Product authentication is invalid', 'PRODUCT_AUTH_INVALID')
@@ -673,7 +674,9 @@ describe('HarnessSdkJsonRpcServer', () => {
     }
     const teams = {
       createTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-create', ...request })),
-      updateTaskDetails: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-update', ...request })),
+      updateTaskDetails: vi.fn(async (request: Record<string, unknown>) => ({ task: { id: 'task-update', attemptHistory: [], reviewHistory: [], ...request },
+        receipt: { teamId: request.teamId, taskId: request.taskId, commandId: request.commandId,
+          expectedRevision: request.expectedRevision, appliedRevision: Number(request.expectedRevision) + 1, appliedAt: 1 } })),
       cancelTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-cancel', ...request })),
       deleteTask: vi.fn(async (request: Record<string, unknown>) => ({ id: 'task-delete', ...request })),
       resolveTaskReview: vi.fn(async (request: Record<string, unknown>) => {
@@ -702,8 +705,9 @@ describe('HarnessSdkJsonRpcServer', () => {
       workspaceMode: 'shared', budget: { turns: 2 }, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
     })).resolves.toMatchObject({ value: { id: 'task-create' } })
     await expect(server.handleRequest('team/task-update', {
+      commandId: 'server-update',
       teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised', blockedBy: ['task-0'],
-    })).resolves.toMatchObject({ value: { id: 'task-update' } })
+    })).resolves.toMatchObject({ value: { task: { id: 'task-update' } } })
     await expect(server.handleRequest('team/task-cancel', {
       teamId: 'team-1', taskId: 'task-1', expectedRevision: 3, reason: 'Only this task.',
     })).resolves.toMatchObject({ value: { id: 'task-cancel' } })
@@ -912,7 +916,7 @@ describe('HarnessSdkJsonRpcServer', () => {
         teamId: 'team-1', expectedCursor: 1, idempotencyKey: 'sdk-task-create-missing-binder', subject: 'Task', description: 'Do the task.',
         blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
       }],
-      ['team/task-update', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised' }],
+      ['team/task-update', { commandId: 'server-update', teamId: 'team-1', taskId: 'task-1', expectedRevision: 2, subject: 'Task revised' }],
       ['team/task-cancel', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 3 }],
       ['team/task-delete', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 4 }],
       ['team/task-review', { teamId: 'team-1', taskId: 'task-1', expectedRevision: 5, decision: 'accepted', reason: 'Reviewed.' }],
@@ -1040,7 +1044,9 @@ describe('HarnessSdkJsonRpcServer', () => {
 
   it('forwards every bounded Team page cursor and limit to the provider', async () => {
     const teams = {
-      listTeamsPage: vi.fn(async (request: unknown) => ({ items: [], scanned: 1, nextCursor: 'next', request })),
+      resolveIdentities: vi.fn(async () => ({ items: [] })),
+      getChannelOwner: vi.fn(async () => ({ teamId: 'team', channelId: 'channel' })),
+      listHumanTeamsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 'next', request })),
       listParticipantsPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 5, request })),
       readChannelPage: vi.fn(async (request: unknown) => ({ channel: {}, records: [], nextCursor: 6, request })),
       listTasksPage: vi.fn(async (request: unknown) => ({ items: [], nextCursor: 7, request })),
@@ -1054,14 +1060,15 @@ describe('HarnessSdkJsonRpcServer', () => {
       teamRuns: {},
       get: (name: string) => name === 'teams'
         ? teams
-        : name === 'productPrincipals'
-          ? testProductPrincipals()
-          : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+        : name === 'teamHumanActors' ? readerFixture()
+          : name === 'productPrincipals'
+            ? testProductPrincipals()
+            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
     await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
 
-    await expect(server.handleRequest('team/list', { afterCursor: 'previous', limit: 3 })).resolves.toMatchObject({ items: [], scanned: 1, nextCursor: 'next' })
+    await expect(server.handleRequest('team/list', { afterCursor: 'previous', limit: 3 })).resolves.toMatchObject({ items: [], nextCursor: 'next' })
     await expect(server.handleRequest('team/member-list', { teamId: 'team', afterCursor: 3, limit: 4 })).resolves.toMatchObject({ items: [], nextCursor: 5 })
     await expect(server.handleRequest('team/channel-read', { channelId: 'channel', afterCursor: 4, limit: 5 })).resolves.toMatchObject({ value: { records: [], nextCursor: 6 } })
     await expect(server.handleRequest('team/task-list', { teamId: 'team', afterCursor: 5, limit: 6 })).resolves.toMatchObject({ items: [], nextCursor: 7 })
@@ -1069,7 +1076,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     await expect(server.handleRequest('team/artifact-list', { teamId: 'team', afterCursor: 7, limit: 8 })).resolves.toMatchObject({ items: [] })
     await expect(server.handleRequest('team/audit-read', { teamId: 'team', afterCursor: 6, limit: 7 }))
       .resolves.toMatchObject({ teamId: 'team', firstCursor: 8, items: [], nextCursor: 9 })
-    expect(teams.listTeamsPage).toHaveBeenCalledWith({ afterCursor: 'previous', limit: 3 })
+    expect(teams.listHumanTeamsPage).toHaveBeenCalledWith(expect.objectContaining({ afterCursor: 'previous', limit: 3 }))
     expect(teams.listParticipantsPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 3, limit: 4 })
     expect(teams.readChannelPage).toHaveBeenCalledWith({ channelId: 'channel', afterCursor: 4, limit: 5 })
     expect(teams.listTasksPage).toHaveBeenCalledWith({ teamId: 'team', afterCursor: 5, limit: 6 })
@@ -1088,6 +1095,8 @@ describe('HarnessSdkJsonRpcServer', () => {
       ['child-report', { ...visible, id: 'child-report' }],
     ])
     const teams = {
+      resolveIdentities: vi.fn(async () => ({ items: [] })),
+      getChannelOwner: vi.fn(async () => ({ teamId: 'team', channelId: 'channel' })),
       getArtifact: vi.fn(async ({ artifactId }: { readonly artifactId: string }) => artifactsById.get(artifactId)),
     }
     const artifacts = {
@@ -1102,9 +1111,10 @@ describe('HarnessSdkJsonRpcServer', () => {
         ? teams
         : name === 'teamArtifacts'
           ? artifacts
-          : name === 'productPrincipals'
-            ? testProductPrincipals()
-            : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
+          : name === 'teamHumanActors' ? readerFixture()
+            : name === 'productPrincipals'
+              ? testProductPrincipals()
+              : { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] },
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport())
     await server.initialize({ credential: SDK_TEST_CREDENTIAL, cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
@@ -1576,7 +1586,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     })
   })
 
-  it('forwards whole-agent status without attributing a turn outcome', async () => {
+  it('withholds whole-agent status before connection authentication', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
     await ctx.plugin(AgentRegistry)
@@ -1592,10 +1602,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     ctx.emit('agent/status', { agent, status: 'idle' })
 
     expect(transport.notifications.filter(notification => notification.method === 'session.status'))
-      .toEqual([
-        { method: 'session.status', params: { sessionId: 'message-outcome', status: 'running' } },
-        { method: 'session.status', params: { sessionId: 'message-outcome', status: 'idle' } },
-      ])
+      .toEqual([])
     await server.shutdown()
     await ctx.fiber.dispose()
   })
@@ -2134,3 +2141,16 @@ describe('HarnessSdkJsonRpcServer', () => {
     expect(on).toHaveBeenCalledTimes(5)
   })
 })
+
+/** Authority issuer for parameter-forwarding fixtures; actual Hub authorization is exercised by reader integration tests. */
+function readerFixture() {
+  return {
+    withProof: async <T>(_call: AuthenticatedProductCall, input: import('@clocky/clocky-team').TeamHumanActorProofInput,
+      operation: (actor: import('@clocky/clocky-team').TeamHumanActorProof,
+        teamId: import('@clocky/clocky-team').TeamId) => Promise<T>): Promise<T> =>
+      await operation(Object.freeze({}) as import('@clocky/clocky-team').TeamHumanActorProof, input.teamId),
+    withReader: async <T>(_call: AuthenticatedProductCall,
+      operation: (reader: import('@clocky/clocky-team').TeamHumanReaderProof) => Promise<T>): Promise<T> =>
+      await operation(Object.freeze({}) as import('@clocky/clocky-team').TeamHumanReaderProof),
+  }
+}

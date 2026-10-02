@@ -53,6 +53,7 @@ export const muxFrameSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('question/requested'), sessionId: sessionIdSchema, questions: z.array(askUserQuestionItemSchema).min(1), teamId: teamIdSchema.optional(), participantId: participantIdSchema.optional(), taskId: teamTaskIdSchema.optional() }),
   z.object({ type: z.literal('question/resolved'), sessionId: sessionIdSchema, questionRpcId: rpcIdSchema, outcome: z.union([z.literal('answered'), z.literal('cancelled')]) }),
   z.object({ type: z.literal('team/changed'), event: teamEventSchema }),
+  z.object({ type: z.literal('team/access-revoked'), teamId: teamIdSchema }),
   z.object({ type: z.literal('channel/changed'), event: channelEventSchema }),
   z.object({
     type: z.literal('session/queue'),

@@ -2,9 +2,13 @@
 
 [English](README.md) | 中文
 
+每个路由角色注册本地与远程 agent 类型的公开执行配置。可用性检查已注册 provider 支持的成员类型；卸载 placement 会移除配置。ID 只描述公开成员字段，私有启动选项变化不承诺冻结执行规格。
+
 `ctx.teamPlacement.prepare(teamId)` 会为 ready task 启动显式路由的 active Agent participant，之后由 DAG scheduler 分配 lease。同一 Team 的调用会合并；activation controller 负责 participant/session 唯一性与持久发布。已取消或删除的 work 不会保留启动过程中发布但已无用的 activation。
 
 `ctx.teamPlacement.prepareRoles(teamId, roles)` 在任务就绪前准备已授权的 workflow 角色。每个角色必须唯一对应一个 active 成员；没有驻留 epoch 的 Agent 角色必须匹配唯一配置路由。启动前会对整个批次检查 `maxActivationsPerDrive`。stopping 或未确认停止的 epoch 返回 `TEAM_ACTIVATION_RECOVERY_CONFLICT`，断线不能充当终止证据。恢复角色复用原 Session，任务分配仍必须检查 workspace eligibility。
+
+只读成员观察匹配相同的显式路由字段，并检查实际 runtime provider 及其接受的成员类型，不调用 prepare 或 activate。受管 TeamRun 所有者优先，配置所有者冲突会被拒绝。诊断返回的配置位置为 `team-placement-default.routes`。
 
 ## Configuration
 

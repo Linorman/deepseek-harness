@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+`readJsonLogSnapshot(root, descriptor, limits)` opens only an existing atomic log document with a read-only file descriptor. Missing roots/streams remain absent, no backend owner is acquired, and encoded-document/returned JSON bytes plus retained-row count are bounded. Parsed stream versions and sequence continuity remain mandatory; an in-place size change rejects rather than yielding mixed data.
+
 JSON backend for the [storage hub](../storage/README.md): human-readable KV-unit and append-log files under a configured root, registered as backend `json`. Design: [domain KV storage Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
 
 The log facet scans one directory entry per yield and decodes canonical stream names without reading journal bodies. Entries outside the requested prefix still consume scan work. Stream opening retains full format validation; discovery does not certify body integrity or promise a stable directory snapshot.

@@ -1,0 +1,139 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`keeps 'json' 'explicit' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "explicit",
+  "fulfillmentBeforeConfirm": "open",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`keeps 'json' 'task-completed' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "task-completed",
+  "fulfillmentBeforeConfirm": "fulfilled",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`keeps 'json' 'transfer' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "transfer",
+  "fulfillmentBeforeConfirm": "fulfilled",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`keeps 'sqlite' 'explicit' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "explicit",
+  "fulfillmentBeforeConfirm": "open",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`keeps 'sqlite' 'task-completed' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "task-completed",
+  "fulfillmentBeforeConfirm": "fulfilled",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`keeps 'sqlite' 'transfer' fulfillment distinct from task completion in production execution 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "completionDoesNotBypassCreditor": true,
+  "computations": 1,
+  "fulfillment": "transfer",
+  "fulfillmentBeforeConfirm": "fulfilled",
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;

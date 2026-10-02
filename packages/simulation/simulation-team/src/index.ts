@@ -1,9 +1,18 @@
+import { completeTask } from './task-completion.ts'
+import { SimulationTaskReviewAuthority } from './task-review.ts'
+import { executeTaskDecision } from './task-decision.ts'
+import { taskDecision } from '@clocky/clocky-simulation'
+import { retireTaskExecutions } from './task-retirement.ts'
+import { assignSimulationTask } from './task-assignment.ts'
+import { projectTaskEvidence } from './task-evidence.ts'
 import { addAbortListener } from 'node:events'
 import { validateCheckpointOwners } from './restore.ts'
 import { simulationCheckpointRestoreRequestSchema } from '@clocky/clocky-simulation'
 import { simulationCheckpointRequestSchema, assertCanonicalTeam } from '@clocky/clocky-simulation'
 import { collectCheckpoint } from './checkpoint.ts'
 import { SimulationTaskAuthority } from './task-transport.ts'
+import { checkpointRule, checkpointSource } from './checkpoint-failure.ts'
+import { checkpointDiagnostic, SimulationCheckpointCleanupError } from '@clocky/clocky-simulation'
 import { compactionStream } from './compaction.ts'
 import { compactionRequestReference } from '@clocky/clocky-compaction'
 import { meteredStream } from './metered-stream.ts'
@@ -37,7 +46,7 @@ import type { Agent } from '@clocky/clocky-agent'
 import type { AgentRuntimeProvider } from '@clocky/clocky-agent-runtime'
 import type { ActivationBindingSnapshot, TeamId } from '@clocky/clocky-team'
 import type { TeamActivationCoordinationLease, TeamActivationLifecycleOwner } from '@clocky/clocky-team-activation-controller'
-import type { SimulationDecisionId, SimulationEntity, SimulationEntityId, SimulationRun, SimulationWriterActivation, SimulationWriterLease } from '@clocky/clocky-simulation'
+import type { SimulationDecision, SimulationDecisionId, SimulationEntity, SimulationEntityId, SimulationRun, SimulationWriterActivation, SimulationWriterLease } from '@clocky/clocky-simulation'
 import type { SimulationInputDispatch, SimulationTeamConnection, SimulationModelRequest, SimulationModelResult } from './types.ts'
 export type * from './types.ts'
 export { SIMULATION_MODEL_TOOLS } from './model.ts'
@@ -67,6 +76,9 @@ export class SimulationTeams extends Service {
     maxConcurrentModels: z.number().min(1).step(1).required(), maxQueuedModels: z.number().min(0).step(1).required(),
     deliveryPageSize: z.number().min(1).step(1).required(), maxCoordinationRounds: z.number().min(1).step(1).required() })
   private taskAuthority?: SimulationTaskAuthority
+  private taskReviewAuthority?: SimulationTaskReviewAuthority
+  private readonly taskCompletionPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId,
+    import('@clocky/clocky-simulation').SimulationTaskCompletionPolicy>()
   private readonly summaryPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId, import('@clocky/clocky-simulation').SimulationSummaryPolicy>()
   private readonly deterministicPolicies = new Map<import('@clocky/clocky-simulation').SimulationPolicyId, import('@clocky/clocky-simulation').SimulationDeterministicPolicy>()
   private readonly bootstrap: SimulationBootstrapAuthority
@@ -125,19 +137,22 @@ export class SimulationTeams extends Service {
     const check = (): void => { this.assertOpen(); signal?.throwIfAborted() }
     const work = (async () => {
       check()
-      const run = await this.ctx.simulations.open(selection)
+      const run = await checkpointSource('restore', { kind: 'run' }, () => this.ctx.simulations.open(selection))
       try {
         check()
         const operation = run.snapshot().checkpoints?.[accepted.id]
-        if (operation?.status !== 'completed') throw new Error('Checkpoint restoration requires a completed manifest')
+        if (operation?.status !== 'completed') throw checkpointRule('Checkpoint restoration requires a completed manifest',
+          'restore', 'manifest-mismatch', { kind: 'checkpoint', checkpointId: accepted.id })
         const manifest = operation.manifest
-        if (manifest.implementationVersion !== accepted.implementationVersion) throw new Error('Checkpoint implementation version differs')
+        if (manifest.implementationVersion !== accepted.implementationVersion) throw checkpointRule('Checkpoint implementation version differs',
+          'restore', 'version-mismatch', { kind: 'checkpoint', checkpointId: accepted.id })
         const ownerName = await validateCheckpointOwners(this.ctx, run, manifest, accepted.maxAttempts, check, signal)
         check()
         if (run.snapshot().phase !== 'paused') await run.setPhase('paused', run.snapshot().revision)
         check()
-        const connection = await this.attach(run, manifest.team.owner.teamId, ownerName)
-        const team = await this.ctx.teams.getTeam({ teamId: manifest.team.owner.teamId })
+        const teamSubject = { kind: 'team' as const, teamId: manifest.team.owner.teamId }
+        const connection = await checkpointSource('restore', teamSubject, () => this.attach(run, manifest.team.owner.teamId, ownerName))
+        const team = await checkpointSource('restore', teamSubject, () => this.ctx.teams.getTeam({ teamId: manifest.team.owner.teamId }))
         for (const entity of Object.values(run.snapshot().entities)) {
           check()
           if (entity.binding === undefined) continue
@@ -148,7 +163,7 @@ export class SimulationTeams extends Service {
               && !team.activations.some(value => value.reservationId === reserved.id)
             || team.activations.some(value => value.activation.participantId === entity.binding?.participantId
               && value.quiescedAt === undefined)) {
-            await connection.recover(entity.id)
+            await checkpointSource('retire', { kind: 'entity', entityId: entity.id }, () => connection.recover(entity.id))
           }
         }
         check()
@@ -158,14 +173,17 @@ export class SimulationTeams extends Service {
           if (window === undefined || window.request.decisions.some((slot) => {
             const status = settled.decisions[slot.id]?.status
             return status !== 'accepted' && status !== 'cancelled'
-          })) throw new Error('Checkpoint recovery retains an unsettled decision window')
-          await run.commitWindow(window.id)
+          })) throw checkpointRule('Checkpoint recovery retains an unsettled decision window', 'retire', 'owner-not-quiescent', { kind: 'run' })
+          await checkpointSource('retire', { kind: 'run' }, () => run.commitWindow(window.id))
           check()
         }
         return { run, connection, manifest }
       } catch (error: unknown) {
         try { await run.close() }
-        catch (cleanup: unknown) { throw new AggregateError([error, cleanup], 'Checkpoint recovery cleanup failed') }
+        catch (cleanup: unknown) {
+          const diagnostic = checkpointDiagnostic(error, { stage: 'restore', code: 'unavailable', subject: { kind: 'run' } })
+          throw new SimulationCheckpointCleanupError([error, cleanup], diagnostic)
+        }
         throw error
       }
     })()
@@ -194,6 +212,23 @@ export class SimulationTeams extends Service {
     this.assertOpen()
     if (this.attached.has(run)) return Promise.reject(new Error('Simulation bootstrap requires an unattached run'))
     return this.bootstrap.ensure(run, creation, ownerName)
+  }
+
+  /**
+   * Register one trusted bounded pure task completion rule; source disposal retires future evaluation.
+   * @param policy - Exact policy generation and deterministic world-effect evaluator.
+   * @returns HMR-safe disposer; accepted result retries use the recorded result without re-evaluation.
+   */
+  registerTaskCompletionPolicy(policy: import('@clocky/clocky-simulation').SimulationTaskCompletionPolicy): () => void {
+    this.assertOpen()
+    const selected = simulationPolicyRefSchema.parse({ id: policy.id, version: policy.version })
+    const entry = { ...selected, evaluate: policy.evaluate }
+    // oxlint-disable-next-line typescript/no-misused-promises -- Cordis effect preserves the registration disposer.
+    return this.ctx.effect(() => {
+      if (this.taskCompletionPolicies.has(selected.id)) throw new Error('Simulation task completion policy is already registered')
+      this.taskCompletionPolicies.set(selected.id, entry)
+      return () => { if (this.taskCompletionPolicies.get(selected.id) === entry) this.taskCompletionPolicies.delete(selected.id) }
+    })
   }
 
   /**
@@ -336,9 +371,19 @@ export class SimulationTeams extends Service {
             || (epoch.activation.status !== 'idle' && epoch.activation.status !== 'running')) {
             throw new Error('Simulation decision authority is no longer active')
           }
+          const selected = Object.values(run.snapshot().decisions).find(value => value.entityId === entity.id && value.status === 'open')
+          const task = selected === undefined ? undefined : taskDecision(run.snapshot(), selected.id)
+          if (task !== undefined) {
+            const target = current.tasks.find(value => value.id === task.execution.request.taskId)
+            if (target?.lease?.attemptId !== task.execution.request.attemptId || target.lease.activationId !== actual.activation.id
+              || target.cancellation !== undefined || target.phase !== 'assigned' && target.phase !== 'running'
+              || target.lease.expiresAt <= Date.now() || target.revision < task.decision.request.task.revision
+              || target.subject !== task.decision.request.task.subject || target.description !== task.decision.request.task.description) throw new Error('Simulation task decision no longer owns its live attempt')
+          }
+
         })
         writers.set(entity.id, writer)
-        const scoped = coordination(writer, provider)
+        const scoped = coordination(writer, provider, () => retireTaskExecutions(ctx, run, teamId, entity.id))
         return { ...scoped,
           bind: async (binding, local) => {
             await scoped.bind(binding, local)
@@ -375,7 +420,7 @@ export class SimulationTeams extends Service {
         const entity = entityFor(binding.activation.participantId, binding.sessionId)
         runtime(binding.provider)
         const writer = await run.recoverWriter(entity.id, activationFacts(binding))
-        return coordination(writer)
+        return coordination(writer, undefined, () => retireTaskExecutions(ctx, run, teamId, entity.id))
       },
       recoverReservation: async (reservation) => {
         if (reservation.teamId !== teamId) throw new Error('Simulation lifecycle owner cannot recover another Team')
@@ -385,7 +430,7 @@ export class SimulationTeams extends Service {
           teamId, participantId: reservation.participantId, sessionId: reservation.sessionId,
           provider: reservation.provider, reservationId: reservation.reservationId,
         })
-        if (writer !== undefined) return coordination(writer)
+        if (writer !== undefined) return coordination(writer, undefined, () => retireTaskExecutions(ctx, run, teamId, entity.id))
         return {
           localTerminationConfirmed: true,
           // No writer reservation exists, so this startup never passed the controller's domain admission.
@@ -409,7 +454,7 @@ export class SimulationTeams extends Service {
       const writer = writers.get(entity.id)
       const id = Object.values(run.snapshot().decisions).find(decision => decision.entityId === entity.id && decision.status === 'open')?.id
       if (writer === undefined || id === undefined) throw new Error('Simulation model request has no current decision owner')
-      if (run.snapshot().decisions[id]?.deterministic !== undefined) throw new Error('Simulation deterministic decisions cannot request inference')
+      if (run.snapshot().decisions[id]?.deterministic !== undefined || taskDecision(run.snapshot(), id)?.decision.request.policy !== undefined) throw new Error('Simulation deterministic decisions cannot request inference')
       let prepared = await writer.readPreparedContext(id)
       if (prepared.maxBytes !== this.config.maxContextBytes) throw new Error('Simulation context policy changed; cancel the decision before preparing another')
       const decision = await next()
@@ -484,6 +529,16 @@ export class SimulationTeams extends Service {
             || !isDeepStrictEqual(options.tools ?? [], header.tools ?? [])) {
             throw new Error('Simulation model request differs from its recorded request header')
           }
+          if (options.tools?.some(tool => !allowedTools.has(tool.name))) {
+            throw new Error('Simulation model request advertises tools outside its decision authority')
+          }
+          const task = taskDecision(run.snapshot(), id)
+          if (task !== undefined && (task.execution.retired !== undefined || task.execution.task?.phase !== 'running'
+            || run.snapshot().taskCancellations?.[task.execution.request.operationId] !== undefined
+            || task.execution.task.executor?.attemptId !== task.execution.request.attemptId
+            || task.decision.input?.id !== prepared.view.inputId)) {
+            throw new Error('Simulation model request requires its started task and recorded input')
+          }
           assertReportReferences(run.snapshot(), prepared.referencedReports ?? [], options.messages)
           const views = session.surface.nodes.map(seq => session.events[seq]).filter(event => event?.type === 'simulation/context-view')
           const view = views[0]
@@ -517,11 +572,34 @@ export class SimulationTeams extends Service {
         } finally { release() }
       })()
     }, { prepend: true })
+    const taskCompletions = new Map<import('@clocky/clocky-team').TaskAttemptId,
+      { policy: import('@clocky/clocky-simulation').SimulationPolicyRef; work: Promise<import('./types.ts').SimulationTaskCompletionResult> }>()
+    const taskDecisions = new Set<Promise<SimulationDecision>>()
+    const taskAssignments = new Set<Promise<import('@clocky/clocky-simulation').SimulationTaskExecution>>()
+    const taskReviews = new Set<Promise<import('@clocky/clocky-team').TeamTaskSnapshot>>()
+    const taskCancellations = new Set<Promise<import('@clocky/clocky-team').TeamTaskSnapshot>>()
     const taskReconciliations = new Set<Promise<import('@clocky/clocky-simulation').SimulationInteraction>>()
     const modelDecisions = new Map<Promise<import('@clocky/clocky-simulation').SimulationDecision>, Agent>()
     const summaries = new Set<Promise<import('@clocky/clocky-simulation').SimulationKnowledge>>()
     const deterministicRuns = new Map<SimulationEntityId, { id: SimulationDecisionId; wakeId: import('@clocky/clocky-simulation').SimulationEventId | undefined; policy: import('@clocky/clocky-simulation').SimulationPolicyRef; work: Promise<import('@clocky/clocky-simulation').SimulationDecision> }>()
     const inputs = new Map<SimulationEntityId, { id: SimulationDecisionId; work: Promise<SimulationInputDispatch> }>()
+    const startTaskInput = async (id: SimulationDecisionId,
+      writer: SimulationWriterLease, check: () => void): Promise<void> => {
+      const task = taskDecision(run.snapshot(), id)
+      if (task === undefined) return
+      const prepared = await writer.readPreparedContext(id)
+      check()
+      await run.recordTaskInput({ attemptId: task.execution.request.attemptId, decisionId: id, inputId: prepared.view.inputId })
+      this.taskAuthority ??= new SimulationTaskAuthority(this.ctx)
+      const started = await this.taskAuthority.start(run, task.execution.request.attemptId, id, ownerName, () => {
+        try { check(); return true }
+        catch { return false } // Task authority ends when actor or connection admission closes.
+      })
+      await run.observeTaskExecution({ attemptId: task.execution.request.attemptId,
+        task: projectTaskEvidence(run.snapshot(), started) })
+      await writer.readPreparedContext(id)
+      check()
+    }
     const dispatchInput = async (entityId: SimulationEntityId, id: SimulationDecisionId): Promise<SimulationInputDispatch> => {
       assertActorAdmission(entityId)
       const writer = writers.get(entityId)
@@ -529,7 +607,7 @@ export class SimulationTeams extends Service {
       const agent = binding === undefined ? undefined : ctx.agents.get(binding.sessionId)
       if (agent === undefined) throw new Error('Simulation input has no current local actor')
       const recorded = run.snapshot().decisions[id]
-      if (recorded?.deterministic !== undefined) throw new Error('Simulation deterministic decisions cannot dispatch model input')
+      if (recorded?.deterministic !== undefined || taskDecision(run.snapshot(), id)?.decision.request.policy !== undefined) throw new Error('Simulation deterministic decisions cannot dispatch model input')
       if (recorded?.entityId !== entityId || recorded.context?.status !== 'prepared') throw new Error('Simulation input has no owned prepared decision')
       const input = decisionInput(recorded.context.view)
       if (inputState(agent, input) === 'consumed') {
@@ -552,6 +630,7 @@ export class SimulationTeams extends Service {
         await writer.readPreparedContext(id)
         signal.throwIfAborted()
         assertActorAdmission(entityId)
+        await startTaskInput(id, writer, () => { signal.throwIfAborted(); assertActorAdmission(entityId) })
         if (!agent.wakePending(input.id)) throw new Error('Simulation queued input is no longer available to wake')
         return { status: 'queued', inputId: prepared.view.inputId }
       })
@@ -633,7 +712,9 @@ export class SimulationTeams extends Service {
             candidate?.release()
             const prior = run.snapshot().checkpoints?.[accepted.id]
             if (prior?.status === 'completed') return prior
-            return await run.failCheckpoint(accepted.id, error instanceof Error ? error.message : String(error))
+            const diagnostic = checkpointDiagnostic(error, { stage: 'collect', code: signal?.aborted ? 'cancelled' : 'unavailable',
+              subject: { kind: 'team', teamId } })
+            return await run.failCheckpoint(accepted.id, error instanceof Error ? error.message : String(error), diagnostic)
           } finally { candidate?.release() }
         })()
         checkpointRequests.set(accepted.id, { request: accepted, work })
@@ -672,7 +753,7 @@ export class SimulationTeams extends Service {
             for (let attempt = 0; ; attempt += 1) {
               check()
               const revision = run.snapshot().revision
-              try { await run.setPhase('paused', revision); break }
+              try { await checkpointSource('retire', { kind: 'run' }, () => run.setPhase('paused', revision)); break }
               catch (error: unknown) { if (attempt + 1 >= maxAttempts || run.snapshot().revision === revision) throw error }
             }
             await waitAccepted(Promise.allSettled([...placements.values(), ...activations, ...recoveries]))
@@ -684,32 +765,38 @@ export class SimulationTeams extends Service {
             }
             await waitAccepted(Promise.allSettled([...receiving.values(), ...[...inputs.values()].map(value => value.work), ...summaries,
               ...[...sleeping.values()].flatMap(value => value.work === undefined ? [] : [value.work]),
-              ...taskReconciliations, ...deliveryReconciliations, ...dispatches, ...modelDecisions.keys(),
+              ...[...taskCompletions.values()].map(value => value.work),
+              ...taskDecisions, ...taskAssignments, ...taskReconciliations, ...taskReviews, ...taskCancellations,
+              ...deliveryReconciliations, ...dispatches,
+              ...modelDecisions.keys(),
               ...[...deterministicRuns.values()].map(value => value.work),
               ...residentDrive === undefined ? [] : [residentDrive], ...driving === undefined ? [] : [driving.work]]))
             check()
-            const teamState = await ctx.teams.getTeam({ teamId })
+            const teamState = await checkpointSource('retire', { kind: 'team', teamId }, () => ctx.teams.getTeam({ teamId }))
             check()
             for (const entity of Object.values(run.snapshot().entities)) {
+              const subject = { kind: 'entity' as const, entityId: entity.id }
               const reservation = teamState.participants.find(value => value.id === entity.binding?.participantId)?.activationReservation
               const unpublished = reservation !== undefined && reservation.releasedAt === undefined
                 && !teamState.activations.some(value => value.reservationId === reservation.id)
               if (entity.writer === undefined || entity.writer.phase === 'released') {
-                if (unpublished) { await recoverEntity(entity.id, check); check() }
+                if (unpublished) { await checkpointSource('retire', subject, () => recoverEntity(entity.id, check)); check() }
                 continue
               }
-              if (entity.binding === undefined) throw new Error('Checkpoint writer has no canonical binding')
-              if (ctx.agents.get(entity.binding.sessionId) === undefined) {
-                await recoverEntity(entity.id, check)
+              const binding = entity.binding
+              if (binding === undefined) throw checkpointRule('Checkpoint writer has no canonical binding', 'retire', 'binding-mismatch', subject)
+              if (ctx.agents.get(binding.sessionId) === undefined) {
+                await checkpointSource('retire', subject, () => recoverEntity(entity.id, check))
                 check()
                 if (run.inspectEntity(entity.id).entity?.writer?.phase !== 'released') {
-                  throw new Error('Checkpoint writer recovery has not confirmed release')
+                  throw checkpointRule('Checkpoint writer recovery has not confirmed release', 'retire', 'owner-not-quiescent', subject)
                 }
                 continue
               }
-              if (entity.writer.activationId === undefined) throw new Error('Checkpoint actor has no recorded activation')
-              await ctx.teamActivations.stopOwnedActivation({ teamId: entity.binding.teamId, participantId: entity.binding.participantId,
-                activationId: entity.writer.activationId })
+              const activationId = entity.writer.activationId
+              if (activationId === undefined) throw checkpointRule('Checkpoint actor has no recorded activation', 'retire', 'binding-mismatch', subject)
+              await checkpointSource('retire', subject, () => ctx.teamActivations.stopOwnedActivation({ teamId: binding.teamId,
+                participantId: binding.participantId, activationId }))
               check()
             }
             await waitAccepted(Promise.all([this.participants.drain(run), this.channels.drain(run), this.invitationAuthority.drain(run)]))
@@ -718,8 +805,8 @@ export class SimulationTeams extends Service {
               if (entity.writer?.phase === 'released') sleeping.delete(entity.id)
             }
             const window = run.snapshot().activeWindowId
-            if (window !== undefined) await run.commitWindow(window)
-            cut = await run.acquireCheckpointCut(maxDrainRounds, signal)
+            if (window !== undefined) await checkpointSource('retire', { kind: 'run' }, () => run.commitWindow(window))
+            cut = await checkpointSource('retire', { kind: 'run' }, () => run.acquireCheckpointCut(maxDrainRounds, signal))
             check()
             const collection = await collectCheckpoint(ctx, run, cut, teamId, ownerName, maxAttempts, check, release, signal)
             check()
@@ -845,7 +932,24 @@ export class SimulationTeams extends Service {
         const work = executeDeterministic(run, connection, actor, writer, entityId, id, context, selected, resolve, () => {
           assertActorAdmission(entityId)
           if (ctx.agents.get(actor.id) !== actor || writers.get(entityId) !== writer) throw new Error('Simulation deterministic actor is no longer current')
-        }, () => ctx.sessions.flush(actor.session), wakeId).then(async (decision) => {
+        }, () => ctx.sessions.flush(actor.session), async (checkTask) => {
+          if (taskDecision(run.snapshot(), id) === undefined) return
+          const prepared = await writer.readPreparedContext(id)
+          checkTask()
+          const views = actor.session.surface.nodes.map(seq => actor.session.events[seq])
+            .filter(event => event?.type === 'simulation/context-view')
+          const current = views[0]
+          if (current?.type !== 'simulation/context-view' || !isDeepStrictEqual(current.data, prepared.view)) {
+            actor.session.append('simulation/context-view', prepared.view, current === undefined ? { surfaceOp: 'append' } : {
+              surfaceOp: { op: 'replace', start: current.seq, end: current.seq }, sourceEventSeqs: [current.seq],
+            })
+          }
+          const input = decisionInput(prepared.view)
+          if (inputState(actor, input) === 'absent') actor.session.append('user/message', input, { surfaceOp: 'append' })
+          if (!await ctx.sessions.flush(actor.session)) throw new Error('Simulation deterministic task input requires durable Session storage')
+          checkTask()
+          await startTaskInput(id, writer, checkTask)
+        }, wakeId).then(async (decision) => {
           if (decision.status === 'accepted') {
             await this.deliveryAuthority.restorePending(run, entityId, teamId, canPublish)
           }
@@ -855,6 +959,99 @@ export class SimulationTeams extends Service {
         void work.then(() => { deterministicRuns.delete(entityId) }, () => { deterministicRuns.delete(entityId) })
         return work
       },
+      assignTask: (request) => {
+        this.assertOpen(); assertAdmitted()
+        this.taskAuthority ??= new SimulationTaskAuthority(this.ctx)
+        const work = assignSimulationTask(ctx, run, this.taskAuthority, ownerName, request,
+          () => { this.assertOpen(); assertAdmitted() })
+        taskAssignments.add(work)
+        void work.then(() => { taskAssignments.delete(work) }, () => { taskAssignments.delete(work) })
+        return work
+      },
+      cancelTask: (request, authorize) => {
+        this.assertOpen(); assertAdmitted(); authorize?.()
+        this.taskAuthority ??= new SimulationTaskAuthority(this.ctx)
+        const authority = this.taskAuthority, selected = { ...request }
+        const work = (async () => {
+          const task = await authority.cancel(run, ownerName, selected, () => {
+            try { this.assertOpen(); assertAdmitted(); authorize?.(); return true }
+            catch { return false } // Already accepted canonical intent still owns cleanup after caller or admission retirement.
+          })
+          if (task.cancellation === undefined || selected.expectedAttemptId === null) return task
+          const execution = run.snapshot().taskExecutions?.[selected.expectedAttemptId]
+          if (execution === undefined) throw new Error('Simulation task cancellation lost its original execution')
+          const source = execution.request, entity = run.snapshot().entities[source.entityId]
+          if (entity?.writer?.phase === 'active' && entity.writer.epoch === source.epoch
+            && entity.writer.activationId === source.activationId && execution.retired === undefined) {
+            ctx.agents.get(source.sessionId)?.cancel({ kind: 'hook', reason: 'Simulation task cancellation' })
+            await ctx.teamActivations.stopOwnedActivation({ teamId: source.teamId, participantId: source.participantId,
+              activationId: source.activationId })
+          }
+          const state = run.snapshot(), window = state.activeWindowId === undefined ? undefined : state.windows?.[state.activeWindowId]
+          if (window !== undefined && window.request.decisions.every(value =>
+            state.decisions[value.id]?.status === 'cancelled' || state.decisions[value.id]?.status === 'accepted')) {
+            await run.commitWindow(window.id)
+          }
+          const current = await ctx.teams.getTask({ teamId: source.teamId, taskId: source.taskId })
+          const evidence = projectTaskEvidence(run.snapshot(), current)
+          if (evidence.executor?.attemptId === source.attemptId) {
+            await run.observeTaskExecution({ attemptId: source.attemptId, task: evidence })
+          }
+          return current
+        })()
+        taskCancellations.add(work)
+        void work.then(() => { taskCancellations.delete(work) }, () => { taskCancellations.delete(work) })
+        return work
+      },
+      executeTaskDecision: (request) => {
+        const work = executeTaskDecision(ctx, run, connection, request, () => { this.assertOpen(); assertAdmitted() })
+        taskDecisions.add(work)
+        void work.then(() => { taskDecisions.delete(work) }, () => { taskDecisions.delete(work) })
+        return work
+      },
+      completeTask: (request) => {
+        this.assertOpen(); assertAdmitted()
+        this.taskAuthority ??= new SimulationTaskAuthority(this.ctx)
+        const attemptId = request.attemptId
+        const selected = simulationPolicyRefSchema.parse(request.policy)
+        const pending = taskCompletions.get(attemptId)
+        if (pending !== undefined) {
+          if (!isDeepStrictEqual(pending.policy, selected)) return Promise.reject(new Error('Simulation task has another completion policy in flight'))
+          return pending.work
+        }
+        const work = completeTask(ctx, run, this.taskAuthority, ownerName, { attemptId, policy: selected }, () => {
+          const policy = this.taskCompletionPolicies.get(selected.id)
+          if (policy?.version !== selected.version) throw new Error('Simulation task completion policy generation is not registered')
+          return policy
+        }, () => { this.assertOpen(); assertAdmitted() })
+        taskCompletions.set(attemptId, { policy: selected, work })
+        void work.then(() => { taskCompletions.delete(attemptId) }, () => { taskCompletions.delete(attemptId) })
+        return work
+      },
+      reviewTask: (request, authorize) => {
+        const check = (): void => { this.assertOpen(); assertAdmitted(); authorize?.() }
+        check()
+        this.taskReviewAuthority ??= new SimulationTaskReviewAuthority(this.ctx)
+        const selected = { ...request }
+        const authority = this.taskReviewAuthority
+        const work = (async () => {
+          const task = await authority.review(run, ownerName, selected, () => {
+            try { check(); return true }
+            catch { return false } // Connection or caller admission retirement withdraws the opaque proof.
+          })
+          check()
+          const evidence = projectTaskEvidence(run.snapshot(), task)
+          // A historical command retry must not attach a later attempt to its original execution.
+          if (evidence.executor?.attemptId === selected.attemptId) {
+            await run.observeTaskExecution({ attemptId: selected.attemptId, task: evidence })
+            check()
+          }
+          return task
+        })()
+        taskReviews.add(work)
+        void work.then(() => { taskReviews.delete(work) }, () => { taskReviews.delete(work) })
+        return work
+      },
       reconcileTask: (interactionId, expectedRevision, taskId) => {
         this.assertOpen(); assertAdmitted()
         const work = (async () => {
@@ -862,7 +1059,7 @@ export class SimulationTeams extends Service {
           this.assertOpen(); assertAdmitted()
           if (task.teamId !== teamId || task.id !== taskId) throw new Error('Simulation task owner returned another task')
           return await run.reconcileTask({ interactionId, expectedRevision,
-            task: { teamId: task.teamId, taskId: task.id, revision: task.revision, phase: task.phase } })
+            task: projectTaskEvidence(run.snapshot(), task) })
         })()
         taskReconciliations.add(work)
         void work.then(() => { taskReconciliations.delete(work) }, () => { taskReconciliations.delete(work) })
@@ -1045,7 +1242,8 @@ export class SimulationTeams extends Service {
           this.participants.drain(run), this.channels.drain(run),
           this.invitationAuthority.drain(run), deadlines.close(),
           Promise.allSettled([...summaries]),
-          Promise.allSettled([...taskReconciliations]),
+          Promise.allSettled([...[...taskCompletions.values()].map(value => value.work),
+            ...taskDecisions, ...taskAssignments, ...taskReconciliations, ...taskReviews, ...taskCancellations]),
           Promise.allSettled([...modelDecisions.keys()]),
           Promise.allSettled([...receiving.values(), ...deliveryReconciliations, ...recoveries]),
           Promise.allSettled([...sleeping.values()].flatMap(value => value.work === undefined ? [] : [value.work])),
@@ -1083,7 +1281,8 @@ function activationFacts(binding: ActivationBindingSnapshot): SimulationWriterAc
     sessionId: binding.sessionId, activationId: binding.activation.id,
     reservationId: binding.reservationId, provider: binding.provider }
 }
-function coordination(writer: SimulationWriterLease, provider?: AgentRuntimeProvider): TeamActivationCoordinationLease {
+function coordination(writer: SimulationWriterLease, provider?: AgentRuntimeProvider,
+  afterRelease?: () => Promise<void>): TeamActivationCoordinationLease {
   return {
     ...provider === undefined ? {} : { runtimeProvider: provider },
     localTerminationConfirmed: writer.priorCoordinatorExited,
@@ -1095,7 +1294,7 @@ function coordination(writer: SimulationWriterLease, provider?: AgentRuntimeProv
       }
       await writer.activate(activationFacts(binding))
     },
-    revoke: () => writer.revoke(), release: () => writer.release(),
+    revoke: () => writer.revoke(), release: async () => { await writer.release(); await afterRelease?.() },
   }
 }
 export default SimulationTeams

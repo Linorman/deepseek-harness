@@ -1,3 +1,55 @@
+export type { TeamTaskUpdateLookup, TeamTaskUpdateLookupInput, TeamTaskUpdateCommandId } from '@clocky/clocky-client-connection/client'
+export type { TeamTaskReferencesPage, TeamTaskReference } from '@clocky/clocky-client-connection/client'
+export type { TaskReferencesState, TaskReferencesOptions } from '../teams/task-references.ts'
+import type { TeamIdentityState, TeamIdentityOptions } from '../teams/identity-resolver.ts'
+export type { TeamActionInspection, TeamAttentionHandling } from '@clocky/clocky-client-connection/client'
+
+/** One verified artifact byte window; view components retain selection and feedback only. */
+export interface TeamArtifactDetailState {
+  readonly teamId: TeamId
+  readonly artifactId: string
+  readonly value: TeamArtifactReadResult | undefined
+  readonly loading: boolean
+  readonly disconnected: boolean
+  readonly stale: boolean
+  readonly error?: string | undefined
+}
+
+/** Exact member metadata and a single bounded capability page, owned by runtime. */
+export interface TeamMemberDetailState {
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly value: Extract<Awaited<ReturnType<IApiClient['teams']['memberInspect']>>['result'], { ok: true }>['value'] | undefined
+  readonly loading: boolean
+  readonly disconnected: boolean
+  readonly hasNewer: boolean
+  readonly error?: string
+}
+
+/** Exact current request inspection owned by the runtime, independent of UI drafts. */
+export interface TeamActionDetailState {
+  readonly teamId: import('@clocky/clocky-client-connection/client').TeamId
+  readonly actionId: import('@clocky/clocky-client-connection/client').TeamHumanActionId
+  readonly value?: import('@clocky/clocky-client-connection/client').TeamActionInspection | undefined
+  readonly loading: boolean
+  readonly error?: string | undefined
+  readonly hasNewer: boolean
+  readonly disconnected: boolean
+}
+export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from '@clocky/clocky-client-connection/client'
+import type { TeamAttentionPage, TeamAttentionCursor } from '@clocky/clocky-client-connection/client'
+
+/** One retained Team pending page and its independent request state. */
+export interface TeamAttentionState {
+  readonly teamId: import('@clocky/clocky-client-connection/client').TeamId
+  readonly limit: number
+  readonly startCursor?: TeamAttentionCursor | undefined
+  readonly page?: TeamAttentionPage | undefined
+  readonly loading: boolean
+  readonly error?: string | undefined
+  readonly hasNewer: boolean
+  readonly disconnected: boolean
+}
 /** Bounded identity, scalar metadata and counts returned by the Team selection endpoint. */
 export type TeamSelectionView = Extract<Awaited<ReturnType<IApiClient['teams']['selection']>>['result'], { ok: true }>['value']
 /** Browser Team-task product state and operations. */
@@ -119,6 +171,58 @@ export interface TeamWorkflowDetailState {
   readonly error?: string | undefined
 }
 
+/** Exact form scopes sent for an authenticated Host observation. */
+export type TeamTaskCapabilitiesInput = Parameters<IApiClient['teams']['capabilities']>[0]
+/** Allowed choices and independently versioned Host execution availability. */
+export type TeamTaskCapabilitiesValue = Extract<Awaited<ReturnType<IApiClient['teams']['capabilities']>>['result'], { ok: true }>['value']
+/** One live, replaceable Team observation; presentation drafts belong elsewhere. */
+export interface TeamObservationState<Input, Value> {
+  readonly input: Input
+  readonly value?: Value | undefined
+  readonly loading: boolean
+  readonly error?: string | undefined
+  readonly disconnected: boolean
+}
+/** A form keeps its draft separately from this live business observation. */
+export type TeamTaskCapabilitiesState = TeamObservationState<TeamTaskCapabilitiesInput, TeamTaskCapabilitiesValue>
+/** Selected member kind and one bounded deployment-profile window. */
+export type TeamExecutionProfilesInput = Parameters<IApiClient['teams']['executionProfiles']>[0]
+/** Public descriptors and current permission observation returned by the Host. */
+export type TeamExecutionProfilesValue = Extract<Awaited<ReturnType<IApiClient['teams']['executionProfiles']>>['result'], { ok: true }>['value']
+/** Catalog data belongs to the runtime; selected identity and descriptor drafts belong to the form. */
+export type TeamExecutionProfilesState = TeamObservationState<TeamExecutionProfilesInput, TeamExecutionProfilesValue>
+/** Current visible member identities, without collection traversal. */
+export type TeamMemberReadinessInput = Pick<Parameters<IApiClient['teams']['memberReadiness']>[0], 'teamId' | 'participantIds'>
+/** Host observation page, before the runtime assembles the selected member set. */
+export type TeamMemberReadinessPage = Extract<Awaited<ReturnType<IApiClient['teams']['memberReadiness']>>['result'], { ok: true }>['value']
+/** Every member retains the version and time of its own bounded page. */
+export type TeamMemberReadinessRecord = TeamMemberReadinessPage['items'][number] & Pick<TeamMemberReadinessPage, 'observationId' | 'observedAt'>
+/** Atomic client publication of the requested set; independently observed owners remain versioned per row. */
+export interface TeamMemberReadinessValue {
+  readonly teamId: TeamId
+  readonly teamCursor: number
+  readonly items: readonly TeamMemberReadinessRecord[]
+}
+/** Runtime-owned readiness polling, separate from the member list's cursor and form drafts. */
+export type TeamMemberReadinessState = TeamObservationState<TeamMemberReadinessInput, TeamMemberReadinessValue>
+
+/** Literal Host task-title query, independent from any collection page. */
+export type TeamTaskQuery = NonNullable<Parameters<IApiClient['teams']['browse']>[0]['query']>
+/** One server-filtered task page with revision-bound continuation. */
+export type TeamTaskQueryPage = Extract<Extract<Awaited<ReturnType<IApiClient['teams']['browse']>>['result'], { ok: true }>['value'], { kind: 'tasks' }>
+/** Business state for one independently paged task query. */
+export interface TeamTaskQueryState {
+  /** Cursor that produced the retained page; absent for the first page. */
+  readonly startCursor?: TeamTaskQueryPage['nextQueryCursor']
+  readonly teamId: TeamId
+  readonly query: TeamTaskQuery
+  readonly page?: TeamTaskQueryPage | undefined
+  readonly loading: boolean
+  readonly error?: string | undefined
+  readonly hasNewer: boolean
+  readonly disconnected: boolean
+}
+
 /** One selected Team owns each independently loaded collection. */
 export interface TeamCollectionsState {
   readonly teamId: TeamId
@@ -209,7 +313,7 @@ export interface TeamTaskListState {
     readonly sessionId: SessionId
   } | undefined
   /** Durable Team summaries returned by the Host. */
-  readonly items: readonly TeamSnapshot[]
+  readonly items: TeamList['items']
   /** Exclusive continuation cursor for the next unloaded Team page. */
   readonly nextCursor?: TeamList['nextCursor']
   /** Whether an explicit continuation read is pending. */
@@ -228,6 +332,8 @@ export interface TeamTaskListState {
   readonly draft: TeamTaskDraft | undefined
   /** Principal-wide inbox retained by the browser owner, independent of Team selection. */
   readonly inbox?: TeamInboxState
+  /** Independently selected provider bytes, retired on Team or authority replacement. */
+  readonly artifactDetail?: TeamArtifactDetailState | undefined
   /** Selected channel's retained records and live observation, independent of the dialog lifetime. */
   readonly channel?: TeamChannelState | undefined
   /** Only channel pages explicitly requested for the selected Team. */
@@ -237,6 +343,17 @@ export interface TeamTaskListState {
   readonly collections?: TeamCollectionsState | undefined
   /** Independently read current task and history windows. */
   readonly taskDetail?: TeamTaskDetailState | undefined
+  readonly identities?: TeamIdentityState | undefined
+  readonly executionProfiles?: TeamExecutionProfilesState | undefined
+  readonly memberReadiness?: TeamMemberReadinessState | undefined
+  readonly taskCapabilities?: TeamTaskCapabilitiesState | undefined
+  readonly taskQuery?: TeamTaskQueryState | undefined
+  readonly attentionPreview?: TeamAttentionState | undefined
+  readonly attention?: TeamAttentionState | undefined
+  readonly memberDetail?: TeamMemberDetailState | undefined
+  readonly actionDetail?: TeamActionDetailState | undefined
+  readonly taskReferences?: import('../teams/task-references.ts').TaskReferencesState | undefined
+  readonly dependencyQuery?: TeamTaskQueryState | undefined
   /** Pending action previews derived only from the current principal inbox page. */
   readonly pendingHumanActions?: readonly TeamHumanAction[]
 }
@@ -288,25 +405,27 @@ export interface TeamTaskDraftOptions {
   readonly selection?: ModelSelection
 }
 
-/** Selected Team state plus the Session transcript owned by its coordinator Participant. */
+/** Selected Team data; coordinator-free Teams remain inspectable through member-owned Sessions. */
 export interface TeamTaskSelection {
   /** Selected durable Team identity. */
   readonly teamId: TeamId
   /** Complete Team projection used by Team product consumers. */
   readonly state: TeamSelectionView
-  /** Local coordinator transcript selected only as a Participant descendant. */
-  readonly coordinatorSessionId: SessionId
+  /** Coordinator transcript, absent when the Team has no currently bound coordinator. */
+  readonly coordinatorSessionId?: SessionId | undefined
 }
 
 /** Browser Team-task state and Host operations. */
 export interface ITeamTasks {
-  /** Read one exact member and a capability window; the caller owns cancellation and displayed detail.
-   * @param input - Team/member identity and optional cursor-pinned continuation.
-   * @param signal - Inspection lifetime.
-   * @returns bounded member metadata and capabilities.
+  /** Read a runtime-owned bounded member page without activating execution.
+   * @param teamId - Selected Team.
+   * @param participantId - Exact member.
+   * @param mode - First, current or next capability page.
+   * @returns completion after the read settles; failures remain in memberDetail.
    */
-  inspectMember?(input: Parameters<IApiClient['teams']['memberInspect']>[0], signal?: AbortSignal):
-  Promise<Extract<Awaited<ReturnType<IApiClient['teams']['memberInspect']>>['result'], { ok: true }>['value']>
+  readMemberDetail?(teamId: TeamId, participantId: ParticipantId, mode?: 'first' | 'refresh' | 'next'): Promise<void>
+  /** Release selected member data and cancel outstanding reads. */
+  closeMemberDetail?(): void
 
   /** Resolve the current coordinator without a historical route cache.
    * @param sessionId - Target Session.
@@ -350,12 +469,12 @@ export interface ITeamTasks {
   /** Start a bounded live Team-list refresh loop; the returned disposer is local-only. */
   watch?(intervalMs?: number): () => void
   /**
-   * Select a durable Team and resolve its coordinator transcript.
+   * Select a durable Team and resume an offline coordinator through the legacy explicit open route.
    * @param teamId - durable Team identity to open.
    * @param signal - optional cancellation for the Host read.
-   * @returns selected Team state plus its coordinator transcript identity.
+   * @returns selected Team state with its required coordinator transcript; coordinator-free inspection uses inspect().
    */
-  open(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection>
+  open(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }>
   /** Select durable Team state for descendant inspection without resuming an offline activation. */
   inspect?(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection>
   /**
@@ -374,7 +493,7 @@ export interface ITeamTasks {
   /** Delete one lease-free Team task through its revision fence. */
   deleteTask?(teamId: TeamId, taskId: TeamTaskId, expectedRevision: number, signal?: AbortSignal): Promise<TeamTaskSnapshot>
   /** Re-attach a Team whose coordinator activation is offline or stalled. */
-  resume(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection>
+  resume(teamId: TeamId, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }>
   /** Post human content to the selected Team channel instead of bypassing the Hub through Session.prompt. */
   postInput(teamId: TeamId, content: readonly Record<string, unknown>[], delivery?: 'context' | 'turn' | 'steer', signal?: AbortSignal): Promise<void>
   /** Read an initial unread or historical inbox page, preserving prior content on failure. */
@@ -423,11 +542,79 @@ export interface ITeamTasks {
   readChannelAttachment?(input: TeamChannelAttachmentInput, signal?: AbortSignal): Promise<TeamChannelAttachmentResult>
   /** Refresh the active registration catalog before opening a channel. */
   readChannelCatalog?(): Promise<void>
-  /** Read and verify one visible Team artifact's bytes for the detail view. */
-  readArtifact?(teamId: TeamId, artifactId: string, signal?: AbortSignal): Promise<TeamArtifactReadResult>
-  /** Read one retained collection window: refresh its cursor, advance, or return to the first page.
-   * Failure and cancellation preserve the prior window.
+  /** Read one visible artifact into the runtime's exact byte window.
+   * @param teamId - Selected owning Team.
+   * @param artifactId - Exact provider reference.
+   * @param signal - Caller read cancellation.
+   * @returns settlement after publishing authorized content or its read state.
    */
+  readArtifact?(teamId: TeamId, artifactId: string, signal?: AbortSignal): Promise<void>
+  /** Dismiss the selected artifact and cancel its byte read. */
+  closeArtifactDetail?(): void
+  /** Read the dependency editor's independent task query; rejected continuation preserves the prior page. */
+  watchMemberReadiness?(input: TeamMemberReadinessInput, intervalMs: number): () => void
+  /** Recheck the currently observed member set. */
+  refreshMemberReadiness?(): Promise<void>
+  /** Observe only referenced member names with explicit polling and cache limits. */
+  watchIdentities?(teamId: TeamId, ids: readonly ParticipantId[], options: TeamIdentityOptions): () => void
+  /** Retry the current identity references without changing navigation. */
+  refreshIdentities?(): Promise<void>
+  /** Observe one member-registration catalog window. */
+  watchExecutionProfiles?(input: TeamExecutionProfilesInput, intervalMs: number): () => void
+  /** Retry the current deployment-profile window. */
+  refreshExecutionProfiles?(): Promise<void>
+  /** Observe the current form's authoring capabilities. */
+  watchTaskCapabilities?(input: TeamTaskCapabilitiesInput, intervalMs: number): () => void
+  /** Retry the current form's capability observation. */
+  refreshTaskCapabilities?(): Promise<void>
+  /** Read the main table's server-filtered task page independently of dependency candidates. */
+  readTaskQuery?(teamId: TeamId, query: Pick<TeamTaskQuery, 'search' | 'phase'>, mode?: 'first' | 'next'): Promise<void>
+  /** Cancel table requests when its view closes while retaining its current page. */
+  pauseTaskQuery?(): void
+  /** Observe the Team overview's independent bounded pending preview.
+   * @param teamId - Currently selected Team.
+   * @param options - UI-resolved row allowance and refresh interval.
+   * @returns disposer which stops this preview without changing full-list pagination.
+   */
+  watchAttention?(teamId: TeamId, options: { readonly limit: number; readonly refreshMs: number }): () => void
+  /** Read the first pending page or its exact continuation.
+   * @param teamId - Currently selected Team.
+   * @param limit - UI-resolved page allowance, bounded again by the Host.
+   * @param mode - Refresh from the beginning or advance the current page.
+   */
+  readAttention?(teamId: TeamId, limit: number, mode?: 'first' | 'next'): Promise<void>
+  /** Stop current pending-list reads while preserving the visible page. */
+  pauseAttention?(): void
+  /** Refresh the current overview preview without changing full-list pagination. */
+  refreshAttentionPreview?(): Promise<void>
+  /** Inspect one retained human request without admitting an answer.
+   * @param teamId - Currently selected Team.
+   * @param actionId - Exact retained request identity.
+   * @returns the current inspection, or undefined when it cannot be admitted.
+   */
+  inspectAction?(teamId: TeamId, actionId: TeamActionResponseInput['actionId']): Promise<import('@clocky/clocky-client-connection/client').TeamActionInspection | undefined>
+  /** Stop request-body IO and release its server-owned inspection. */
+  closeActionDetail?(): void
+  /** Query original task-update admission without resending the operation.
+   * @param input - Exact Team/task/command identity from the retained draft.
+   * @param signal - Current form request cancellation.
+   * @returns immutable original admission or absence at this read; scope replacement withholds the result.
+   */
+  lookupTaskUpdate?(input: import('@clocky/clocky-client-connection/client').TeamTaskUpdateLookupInput, signal?: AbortSignal): Promise<import('@clocky/clocky-client-connection/client').TeamTaskUpdateLookup>
+  /** Observe exact selected/current dependency facts separately from candidate pagination.
+   * @param teamId - Selected Team.
+   * @param taskIds - Current and drafted dependency IDs.
+   * @param options - Validated consumer resource limits.
+   * @returns disposer for this form's observation.
+   */
+  watchTaskReferences?(teamId: TeamId, taskIds: readonly TeamTaskId[], options: import('../teams/task-references.ts').TaskReferencesOptions): () => void
+  /** Explicitly refresh the current exact dependency set. */
+  refreshTaskReferences?(): Promise<void>
+  /** Read dependency candidates independently from the main task collection. */
+  readDependencies?(teamId: TeamId, query: TeamTaskQuery, mode?: 'first' | 'next'): Promise<void>
+  /** Cancel dependency reads without changing an editor's draft. */
+  closeDependencies?(): void
+  /** Read one selected collection window. */
   readCollections?(teamId: TeamId, collection: TeamCollectionKind, mode?: TeamCollectionReadMode, signal?: AbortSignal): Promise<void>
   /** Read the selected task record or replace one revision-pinned history window. */
   readTaskDetail?(teamId: TeamId, taskId: TeamTaskId, section?: 'record' | 'attempts' | 'reviews', mode?: TeamTaskDetailReadMode): Promise<void>
@@ -441,5 +628,5 @@ export interface ITeamTasks {
    * @param signal - optional cancellation for the Host operation.
    * @returns selected Team state plus its coordinator transcript identity.
    */
-  start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection>
+  start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection & { readonly coordinatorSessionId: SessionId }>
 }

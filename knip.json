@@ -67,6 +67,7 @@
     "examples": {
       "entry": [
         "simulation-company/tests/actor-benchmark-scenario.ts",
+        "headless-agent/tests/fixtures/simulation/simulation-administration/model.ts",
         "simulation-company/tests/auxiliary-retirement-scenario.ts",
         "simulation-company/tests/benchmark-scenario.ts",
         "simulation-company/tests/benchmark-recovery-scenario.ts",
@@ -87,6 +88,18 @@
         "simulation-company/tests/message-benchmark-scenario.ts",
         "simulation-company/tests/population-scenario.ts",
         "simulation-company/tests/procurement-scenario.ts",
+        "simulation-company/tests/product-preparation-scenario.ts",
+        "simulation-company/tests/task-assignment-scenario.ts",
+        "simulation-company/tests/task-executor-scenario.ts",
+        "simulation-company/tests/product-driver-scenario.ts",
+        "simulation-company/tests/product-administration-scenario.ts",
+        "simulation-company/tests/product-administration-model.ts",
+        "simulation-company/tests/product-control-model.ts",
+        "simulation-company/tests/product-control-scenario.ts",
+        "simulation-company/tests/product-task-scenario.ts",
+        "simulation-company/tests/product-maintenance-scenario.ts",
+        "simulation-company/tests/fixtures/sdk-product/principal.ts",
+        "simulation-company/tests/fixtures/sdk-maintenance/release-model.ts",
         "simulation-company/tests/retry-scenario.ts",
         "simulation-company/tests/scenario.ts",
         "simulation-company/tests/window-scenario.ts",
@@ -719,6 +732,12 @@
     "packages/bundle/web-app": {
       "ignoreDependencies": [
         "@clocky/.+"
+      ]
+    },
+    "packages/simulation/simulation-product": {
+      "entry": [
+        "tests/fixtures/sources-loader.ts",
+        "tests/fixtures/loader.ts"
       ]
     }
   }

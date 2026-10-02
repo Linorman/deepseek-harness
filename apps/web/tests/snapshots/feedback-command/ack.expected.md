@@ -1,11 +1,10 @@
-- banner:
-  - text: Reply with the single word
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: Reply with the single word
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: Reply with the single word LIGHTHOUSE and stop. 7/26 {{clock}}
 - button "Copy":
   - img

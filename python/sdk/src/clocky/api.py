@@ -1,4 +1,16 @@
 from __future__ import annotations
+from .simulation import SimulationTasksInput, SimulationTasksPage, SimulationTaskCancelInput
+from .simulation import SimulationRequestsInput, SimulationRequestsPage, SimulationRetryRequestInput
+from .simulation import SimulationPreflightInput, SimulationPreflightResult
+from .simulation import SimulationOperationRetryInput
+from .simulation import SimulationRunStatusesInput, SimulationRunStatusesPage
+from .simulation import SimulationTaskReviewListInput, SimulationTaskReviewPage, SimulationTaskReviewResolveInput
+
+from .simulation import SimulationSourceInput, SimulationSourceInspection, SimulationWatchInput, SimulationWatchResult, SimulationRecordsInput, SimulationRecordsPage
+
+from .simulation import (SimulationControlInput, SimulationControl, SimulationManageInput, SimulationManageResult, SimulationManagementInput, SimulationManagementResult, SimulationCheckpointInput, SimulationRequestReceipt, SimulationRestoreInput, SimulationIngressInput, SimulationIngressReceipt, SimulationIngressQuery, SimulationIngressResult)
+
+from .simulation import (SimulationBrowseInput, SimulationCatalog, SimulationCollectionPage, SimulationCreateInput, SimulationInspectInput, SimulationInspection, SimulationListInput, SimulationObjectInput, SimulationObjectInspection, SimulationPrepareInput, SimulationRequestInput, SimulationRequestReceipt, SimulationRequestResult, SimulationRunPage)
 
 from .models import TeamHumanActionResponseRequest
 
@@ -152,6 +164,141 @@ class Clocky:
         resumed = self._client.resume_team(TeamResumeRequest(teamId=team_id, expectedCursor=cursor))
         return Team(self, resumed.teamId, resumed.coordinatorSessionId)
 
+    def get_simulation_control(self, request: SimulationControlInput) -> SimulationControl:
+        """Read current scheduling ownership and preconditions without opening or advancing a run."""
+        self.start()
+        return self._client.get_simulation_control(request)
+
+    def manage_simulation(self, request: SimulationManageInput) -> SimulationManageResult:
+        """Submit an original scheduling intent; exact retries retain its result without undoing later intent."""
+        self.start()
+        return self._client.manage_simulation(request)
+
+    def get_simulation_management(self, request: SimulationManagementInput) -> SimulationManagementResult:
+        """Query an original scheduling outcome; absence does not establish failure."""
+        self.start()
+        return self._client.get_simulation_management(request)
+
+    def list_simulation_tasks(self, request: SimulationTasksInput) -> SimulationTasksPage:
+        """Read bounded canonical run-owned task controls without private task bodies or inference."""
+        self.start()
+        return self._client.list_simulation_tasks(request)
+
+    def cancel_simulation_task(self, request: SimulationTaskCancelInput) -> SimulationRequestReceipt:
+        """Cancel the exact original task with a current revision and attempt or explicit no-lease fence."""
+        self.start()
+        return self._client.cancel_simulation_task(request)
+
+    def list_simulation_task_reviews(self, request: SimulationTaskReviewListInput) -> SimulationTaskReviewPage:
+        """Observe exact run-owned review metadata without task bodies or execution."""
+        self.start()
+        return self._client.list_simulation_task_reviews(request)
+
+    def resolve_simulation_task_review(self, request: SimulationTaskReviewResolveInput) -> SimulationRequestReceipt:
+        """Submit a retained original review intent under installed scene authority."""
+        self.start()
+        return self._client.resolve_simulation_task_review(request)
+
+    def checkpoint_simulation(self, request: SimulationCheckpointInput) -> SimulationRequestReceipt:
+        """Request a full checkpoint; accepted work outlives its waiter and remains paused after completion."""
+        self.start()
+        return self._client.checkpoint_simulation(request)
+
+    def restore_simulation(self, request: SimulationRestoreInput) -> SimulationRequestReceipt:
+        """Verify checkpoint history and current suffix, then acquire a paused owner without rollback or inference."""
+        self.start()
+        return self._client.restore_simulation(request)
+
+    def ingress_simulation(self, request: SimulationIngressInput) -> SimulationIngressReceipt:
+        """Submit one attributed entity input with its original identity and exact simulated time."""
+        self.start()
+        return self._client.ingress_simulation(request)
+
+    def get_simulation_ingress(self, request: SimulationIngressQuery) -> SimulationIngressResult:
+        """Query original input assignment and consumption independently of scheduling."""
+        self.start()
+        return self._client.get_simulation_ingress(request)
+
+    def simulation_catalog(self) -> SimulationCatalog:
+        """Read bounded authorized metadata without starting inference."""
+        self.start()
+        return self._client.simulation_catalog()
+
+    def retry_simulation_operation(self, request: SimulationOperationRetryInput) -> SimulationRequestReceipt:
+        """Grant one existing bounded outbox retry budget; publication and scheduling remain separate explicit actions."""
+        self.start()
+        return self._client.retry_simulation_operation(request)
+
+    def get_simulation_run_statuses(self, request: SimulationRunStatusesInput) -> SimulationRunStatusesPage:
+        """Read one exact bounded authorized batch without acquiring execution or inferring unavailable usage."""
+        self.start()
+        return self._client.get_simulation_run_statuses(request)
+
+    def list_simulations(self, request: SimulationListInput | None = None) -> SimulationRunPage:
+        """Read bounded authorized metadata without starting inference."""
+        self.start()
+        return self._client.list_simulations(request)
+
+    def inspect_simulation(self, request: SimulationInspectInput) -> SimulationInspection:
+        """Read bounded authorized metadata without starting inference."""
+        self.start()
+        return self._client.inspect_simulation(request)
+
+    def browse_simulation(self, request: SimulationBrowseInput) -> SimulationCollectionPage:
+        """Read bounded authorized metadata without starting inference."""
+        self.start()
+        return self._client.browse_simulation(request)
+
+    def inspect_simulation_source(self, request: SimulationSourceInput) -> SimulationSourceInspection:
+        """Read an exact frozen Envelope source under separate Simulation and Team authority."""
+        self.start()
+        return self._client.inspect_simulation_source(request)
+
+    def read_simulation_records(self, request: SimulationRecordsInput) -> SimulationRecordsPage:
+        """Read bounded original journal metadata or separately authorized historical JSON text."""
+        self.start()
+        return self._client.read_simulation_records(request)
+
+    def watch_simulation(self, request: SimulationWatchInput) -> SimulationWatchResult:
+        """Observe invalidation only; the caller chooses whether to wait again or refresh."""
+        self.start()
+        return self._client.watch_simulation(request)
+
+    def inspect_simulation_object(self, request: SimulationObjectInput) -> SimulationObjectInspection:
+        """Read bounded authorized metadata without starting inference."""
+        self.start()
+        return self._client.inspect_simulation_object(request)
+
+    def preflight_simulation(self, request: SimulationPreflightInput) -> SimulationPreflightResult:
+        """Resolve an allowlisted creation draft without allocating or preparing a run."""
+        self.start()
+        return self._client.preflight_simulation(request)
+
+    def create_simulation(self, request: SimulationCreateInput) -> SimulationRequestReceipt:
+        """Use the original durable command identity; absence does not establish failure."""
+        self.start()
+        return self._client.create_simulation(request)
+
+    def prepare_simulation(self, request: SimulationPrepareInput) -> SimulationRequestReceipt:
+        """Use the original durable command identity; absence does not establish failure."""
+        self.start()
+        return self._client.prepare_simulation(request)
+
+    def list_simulation_requests(self, request: SimulationRequestsInput) -> SimulationRequestsPage:
+        """Read one exact original receipt metadata page; private inputs and scheduling authority are withheld."""
+        self.start()
+        return self._client.list_simulation_requests(request)
+
+    def retry_simulation_request(self, request: SimulationRetryRequestInput) -> SimulationRequestReceipt:
+        """Retry only backend-retained original input; never allocate a fresh identity or retry automatically."""
+        self.start()
+        return self._client.retry_simulation_request(request)
+
+    def get_simulation_request(self, request: SimulationRequestInput) -> SimulationRequestResult:
+        """Use the original durable command identity; absence does not establish failure."""
+        self.start()
+        return self._client.get_simulation_request(request)
+
     def list_teams(self, *, after_cursor: str | Literal[-1] | None = None, limit: int | None = None):
         """Read one bounded page of durable Teams visible to the runtime."""
         self.start()
@@ -171,10 +318,11 @@ class Clocky:
                                               after_cursor=after_cursor, limit=limit)
 
     def browse_team(self, team_id: str, kind: Literal["tasks", "members", "workflowPlans"], *,
-                    after_cursor: int | None = None, limit: int | None = None) -> TeamBrowseResponse:
+                    after_cursor: int | None = None, limit: int | None = None,
+                    query: JsonObject | None = None, query_cursor: JsonObject | None = None) -> TeamBrowseResponse:
         """Read one bounded summary window for the selected Team collection."""
         self.start()
-        return self._client.browse_team(team_id, kind, after_cursor=after_cursor, limit=limit)
+        return self._client.browse_team(team_id, kind, after_cursor=after_cursor, limit=limit, query=query, query_cursor=query_cursor)
 
     def inspect_workflow_plan(self, team_id: str, plan_id: str, *, expected_revision: int | None = None,
                               after_cursor: int = -1, limit: int | None = None):
@@ -424,6 +572,11 @@ class Team:
         """Read one durable Team task."""
         self.harness.start()
         return self.harness.client.get_team_task(self.id, task_id)
+
+    def update_result(self, task_id: str, command_id: str):
+        """Read this Team's original update admission without executing a command."""
+        self.harness.start()
+        return self.harness.client.get_team_task_update_result(self.id, task_id, command_id)
 
     def update_task(self, payload: JsonObject):
         """Update one Team task through the initialized connection's authenticated human route."""

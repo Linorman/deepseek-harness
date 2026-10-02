@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 `@clocky/clocky-agent-runtime` defines the named `ctx.agentRuntimes` registry for Participant-bound Agent activation. It separates stable Team membership from a provider-owned activation epoch and imports neither a Team Hub, model tool, subagent runtime, nor concrete Agent loop.
 
+Providers declare `participantKinds`; the registry rejects other mechanisms with `AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED` before calling `activate()`. The declaration is the same fact consumed by Team readiness. In-process declares local agents, while SDK and ACP declare remote agents. Provider names do not imply compatibility.
+
 ## Provider contract
 
 An `AgentRuntimeProvider` registers under one placement name and receives a resolved Team, participant, Session, fresh/fork/resume seed mode, Agent composition, and pre-publication cancellation signal. A fork seed includes its source Session id and copied events. Its `activate()` call returns an `ActivationHandle` only after the activation is published; concurrent calls joining one epoch return its exact handle. The handle reports its current immutable health projection, subscribes callers to later immutable status changes, owns interruption and quiescent disposal for that epoch, and does not determine Team membership, task assignment, channel delivery, or parent authority.

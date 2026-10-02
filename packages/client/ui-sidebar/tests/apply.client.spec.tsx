@@ -9,7 +9,7 @@ import type { SidebarRootInjected } from '@clocky/clocky-client-ui-sidebar/clien
 async function bench(declare = true) {
   const ctx = new Context()
   await ctx.plugin(SlotRegistry).await()
-  const layout = { toggleSidebar: vi.fn() }
+  const layout = { toggleSidebar: vi.fn(), showWorkspace: vi.fn() }
   const sessions = { open: vi.fn(), clear: vi.fn() }
   const teamTasks = { startDraft: vi.fn() }
   ctx.provide('layout', layout)

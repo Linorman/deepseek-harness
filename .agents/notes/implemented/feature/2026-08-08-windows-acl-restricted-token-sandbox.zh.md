@@ -28,7 +28,7 @@ AppContainer 令牌没有环境读访问：每个可读路径都必须预先通�
 
 ### 为什么不选 landstrip？
 
-[landstrip 评估](../../rejected/feature/2026-07-26-evaluate-landstrip-for-windows-sandbox-rung.zh.md)在实现前已被否决（未经实战检验；自建 launcher 方案胜出），且其 Windows 后端是 AppContainer 形态，继承同样的任意路径读问题。
+其基于身份的 Windows 隔离需要为任意路径读增加宿主 ACL 授权，与 AppContainer 存在同样的不匹配。受限令牌 runner 保留环境读访问，限制写入，无需这些授权。
 
 ## 后果
 

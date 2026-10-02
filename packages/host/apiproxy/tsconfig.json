@@ -118,6 +118,12 @@
     },
     {
       "path": "../../attachment/attachment-local"
+    },
+    {
+      "path": "../../core/team-workspace"
+    },
+    {
+      "path": "../../simulation/simulation-product"
     }
   ]
 }

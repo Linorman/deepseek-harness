@@ -647,10 +647,11 @@ describe('Team domain schemas', () => {
   })
 
   it('validates receipts and finals', () => {
-    expect(teamListValueSchema.parse({ items: [], scanned: 0 })).toEqual({ items: [], scanned: 0 })
+    expect(teamListValueSchema.parse({ items: [] })).toEqual({ items: [] })
+    expect(teamListValueSchema.safeParse({ items: [], scanned: 0 }).success).toBe(false)
     expect(teamListRequestSchema.parse({ afterCursor: -1, limit: 2 })).toEqual({ afterCursor: -1, limit: 2 })
-    expect(teamListValueSchema.parse({ items: [], scanned: 1, nextCursor: 'next-page' }))
-      .toEqual({ items: [], scanned: 1, nextCursor: 'next-page' })
+    expect(teamListValueSchema.parse({ items: [], nextCursor: 'next-page' }))
+      .toEqual({ items: [], nextCursor: 'next-page' })
     expect(teamInputReceiptSchema.parse({ envelopeId: 'envelope-1' })).toEqual({ envelopeId: 'envelope-1' })
     expect(teamStartValueSchema.parse({
       state: {
@@ -697,6 +698,7 @@ describe('Team domain schemas', () => {
     }
     const channel = { manifest, phase: 'active', cursor: 1 }
     const task = {
+      createdAt: 0,
       id: 'task-1', teamId: 'team-1', revision: 1, subject: 'Review', description: 'Review the patch.',
       execution: { kind: 'participant' },
       createCommand: {
@@ -778,11 +780,11 @@ describe('Team domain schemas', () => {
     expect(teamTaskGetValueSchema.parse(task).id).toBe('task-1')
     expect(teamTaskListRequestSchema.parse({ teamId: 'team-1', afterCursor: -1, limit: 2 })).toMatchObject({ teamId: 'team-1', limit: 2 })
     expect(teamTaskListValueSchema.parse({ items: [task], nextCursor: 0 }).items).toHaveLength(1)
-    expect(teamTaskUpdateRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 1, subject: 'Updated' }).subject).toBe('Updated')
-    expect(teamTaskUpdateValueSchema.parse(task).id).toBe('task-1')
+    expect(teamTaskUpdateRequestSchema.parse({ commandId: 'schema-update', teamId: 'team-1', taskId: 'task-1', expectedRevision: 1, subject: 'Updated' }).subject).toBe('Updated')
+    expect(teamTaskUpdateValueSchema.parse({ task: { ...task, revision: 2 }, receipt: { teamId: task.teamId, taskId: task.id, commandId: 'schema-update', expectedRevision: 1, appliedRevision: 2, appliedAt: 2 } })).toMatchObject({ task: { id: 'task-1' } })
     expect(teamTaskWatchRequestSchema.parse({ teamId: 'team-1' }).afterCursor).toBeUndefined()
     expect(teamTaskWatchValueSchema.parse({ kind: 'closed' })).toEqual({ kind: 'closed' })
     expect(() => teamChannelPostRequestSchema.parse({ ...post, audience: 'p2' })).toThrow()
-    expect(() => teamTaskUpdateRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1', expectedRevision: 1 })).toThrow()
+    expect(() => teamTaskUpdateRequestSchema.parse({ commandId: 'schema-update', teamId: 'team-1', taskId: 'task-1', expectedRevision: 1 })).toThrow()
   })
 })

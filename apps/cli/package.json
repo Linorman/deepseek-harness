@@ -73,7 +73,13 @@
     "commander": "^15.0.0",
     "@clocky/cordis": "workspace:^",
     "js-yaml": "^4.2.0",
-    "node-addon-require-builtin": "^0.1.4"
+    "node-addon-require-builtin": "^0.1.4",
+    "@clocky/clocky-simulation": "workspace:^",
+    "@clocky/clocky-simulation-local": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^",
+    "@clocky/clocky-simulation-team": "workspace:^",
+    "@clocky/clocky-tool-simulation": "workspace:^",
+    "@clocky/clocky-client-ui-simulation": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-agent": "workspace:^",

@@ -1,11 +1,10 @@
-- banner:
-  - text: {{workspace}}
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: {{workspace}}
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: "Direct message from participant-{{uuid}}: Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
 - button "Copy":
   - img

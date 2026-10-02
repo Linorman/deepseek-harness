@@ -31,7 +31,8 @@ class FakeTransport implements JsonRpcTransportPeer {
 /** Test-owned Context with exact Agent publication and lifecycle edges. */
 class FakeRuntime {
   readonly transport = new FakeTransport()
-  readonly listeners = new Map<string, ((payload: unknown) => void)[]>()
+  readonly listeners = new Map<string, ((...payload: unknown[]) => void)[]>()
+  principals = testProductPrincipals()
   readonly live = new Map<string, FakeAgent>()
   readonly cancels = new Map<string, ReturnType<typeof vi.fn>>()
   readonly persisted = new Map<string, Pick<Session['header'], 'teamId' | 'participantId'>>()
@@ -73,7 +74,7 @@ class FakeRuntime {
       return this.handle(agent)
     })
     this.ctx = {
-      on: (name: string, listener: (payload: unknown) => void) => { // The harness exposes only emit-style listeners here.
+      on: (name: string, listener: (...payload: unknown[]) => void) => { // The harness exposes only emit-style listeners here.
         const listeners = this.listeners.get(name) ?? []
         listeners.push(listener)
         this.listeners.set(name, listeners)
@@ -84,7 +85,7 @@ class FakeRuntime {
       },
       get: (name: string) => {
         if (name === 'llm') return { listProviders: () => [{ id: 'test-provider', name: 'Test Provider' }] }
-        if (name === 'productPrincipals') return testProductPrincipals()
+        if (name === 'productPrincipals') return this.principals
         if (name === 'sessionPersistence') return this.persistenceAvailable
           ? { materializeHeader: this.materializeHeader }
           : undefined
@@ -112,8 +113,8 @@ class FakeRuntime {
   }
 
   /** Emit one ordinary Context event to the listeners currently attached. */
-  emit(name: string, payload: unknown): void {
-    for (const listener of [...this.listeners.get(name) ?? []]) listener(payload)
+  emit(name: string, ...payload: unknown[]): void {
+    for (const listener of [...this.listeners.get(name) ?? []]) listener(...payload)
   }
 
   /** Build one unregistered Agent that must not affect an activation's state. */
@@ -186,6 +187,37 @@ async function expectActivationError(operation: Promise<unknown>, code: string):
 }
 
 describe('SDK remote activation lifecycle', () => {
+  it('publishes Session facts only from its exact remote Agent and keeps the epoch bound to its accepting principal', async () => {
+    const runtime = new FakeRuntime()
+    const alice = testProductPrincipals(SDK_TEST_CREDENTIAL)
+    const bob = testProductPrincipals('other-credential', 'other-principal')
+    runtime.principals = { authenticate: request => request.credential === 'other-credential'
+      ? bob.authenticate(request) : alice.authenticate(request) }
+    const server = await runtime.server()
+    const first = target()
+    await server.openActivation({ target: first, seed: { kind: 'fresh' } })
+    const agent = runtime.live.get(first.sessionId)!
+    runtime.transport.notifications.length = 0
+    const event = { type: 'session/end-seed', data: {}, seq: 0, time: 1 }
+    runtime.emit('session/event', agent.session, event)
+    const fabricated = { id: agent.session.id, header: { ...agent.session.header } }
+    runtime.emit('session/event', fabricated, event)
+    await server.drainNotifications()
+    expect(runtime.transport.notifications).toEqual([{ method: 'session.event', params: { sessionId: first.sessionId, event } }])
+    await expect(server.initialize({ credential: 'other-credential', cwd: process.cwd(), provider: 'test-provider', model: 'test-model' }))
+      .rejects.toMatchObject({ data: { code: 'SDK_ACTIVATION_ROUTE_LOCKED' } })
+    await server.disposeActivation({ target: first })
+    await server.initialize({ credential: 'other-credential', cwd: process.cwd(), provider: 'test-provider', model: 'test-model' })
+    runtime.transport.notifications.length = 0
+    runtime.emit('agent/status', { agent, status: 'idle' })
+    await server.drainNotifications()
+    expect(runtime.transport.notifications).toEqual([])
+    expect(() => server.activationStatus({ target: first })).toThrow(expect.objectContaining({ data: { code: 'SDK_ACTIVATION_NOT_FOUND' } }))
+    await expect(server.openActivation({ target: first, seed: { kind: 'fresh' } }))
+      .rejects.toMatchObject({ data: { code: 'SDK_ACTIVATION_NOT_FOUND' } })
+    await server.shutdown()
+  })
+
   it('materializes fresh provenance, streams exact state transitions, interrupts without release, and retains an offline tombstone', async () => {
     const runtime = new FakeRuntime()
     const server = await runtime.server()
@@ -213,7 +245,9 @@ describe('SDK remote activation lifecycle', () => {
 
     const unrelated = runtime.createUnmanagedAgent('unrelated')
     runtime.emitStatus(unrelated, 'running')
-    expect(runtime.transport.notifications.filter(item => item.method === 'activation.status')).toHaveLength(3)
+    await vi.waitFor(() => {
+      expect(runtime.transport.notifications.filter(item => item.method === 'activation.status')).toHaveLength(3)
+    })
 
     const disposed = await server.disposeActivation({ target: first })
     expect(disposed.state).toMatchObject({ status: 'offline', statusSequence: 4 })

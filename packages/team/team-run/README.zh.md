@@ -21,6 +21,8 @@ Principal-owned final 要求挂载[持久 human inbox](../team-human-client/READ
 
 子 Team 协调者的模型失败在 Team 失败意图中保留原错误码。轮次结束处理使用仍由本地运行持有的 activation binding，签发证明前复核归属，并在 `receiptRetryAttempts` 内重试游标冲突；公开任务和目标命令仍要求当前协调者轮次。
 
+成员就绪度根据本 run 保留的 coordinator、worker、reviewer 和模板成员记录识别受管身份，只读冻结执行配置和成员池目标，不启动或恢复 run。相同显示角色不证明所有权。
+
 ## Configuration
 
 `channelPageSize`是正整数配置，默认为 `128`；`waitForFinal()`使用它通过 provider page 有界读取 final-output channel WAL。

@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`preserves original report inputs across actual TypeScript SDK process restart (json) 1`] = `
+{
+  "attempts": 2,
+  "continuationInput": "recorded-and-authorized",
+  "inference": false,
+  "originalReport": "preserved",
+  "reports": 1,
+  "restored": "paused",
+  "review": "completed",
+  "sdk": "typescript",
+}
+`;
+
+exports[`preserves original report inputs across actual TypeScript SDK process restart (sqlite) 1`] = `
+{
+  "attempts": 2,
+  "continuationInput": "recorded-and-authorized",
+  "inference": false,
+  "originalReport": "preserved",
+  "reports": 1,
+  "restored": "paused",
+  "review": "completed",
+  "sdk": "typescript",
+}
+`;

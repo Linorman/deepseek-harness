@@ -169,6 +169,7 @@ class InProcessActivationHandle implements ActivationHandle {
 
 /** Provider for fresh, fork-seeded, and persisted local Agent activations. */
 class InProcessAgentRuntimeProvider implements AgentRuntimeProvider {
+  readonly participantKinds = ['local-agent'] as const
   readonly terminationMode = 'cooperative' as const
   private readonly activations = new Map<string, ActivationEntry>()
   private closing = false

@@ -1,56 +1,62 @@
-/** On-demand member detail owns a single capability page and no background Team cache. */
-import { useEffect, useRef, useState } from 'react'
-import { Button, Modal } from '@clocky/clocky-client-ui-primitives'
-import type { ITeamTasks, ParticipantId, TeamId } from '@clocky/clocky-client-runtime/client'
+import { MemberReadiness } from './MemberReadiness.tsx'
+/** Present the runtime-owned member page; React retains only clipboard feedback. */
+import { useEffect, useState } from 'react'
+import { Button, Modal, writeClipboard } from '@clocky/clocky-client-ui-primitives'
+import type { ITeamTasks, ParticipantId, TeamId, TeamMemberDetailState } from '@clocky/clocky-client-runtime/client'
 import css from './TeamBrowser.module.css'
 import type { TeamKey } from './locales.ts'
-type Inspect = NonNullable<ITeamTasks['inspectMember']>
-type Detail = Awaited<ReturnType<Inspect>>
+type Read = NonNullable<ITeamTasks['readMemberDetail']>
 
 /** Display exact member metadata and replace capability pages only after successful reads.
  * @param props - Exact selection, runtime reader, localized labels and close action.
  * @returns an inspection dialog with explicit refresh and continuation.
  */
-export function MemberDetail({ teamId, participantId, inspect, translate: t, onClose }: {
+export function MemberDetail({ teamId, participantId, read, closeDetail, detail, readiness,
+  readinessStale = false, translate: t, onClose }: {
+  readiness?: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessRecord | undefined
+  readinessStale?: boolean
   teamId: TeamId
   participantId: ParticipantId
-  inspect: Inspect
+  read: Read
+  closeDetail: () => void
+  detail?: TeamMemberDetailState | undefined
   translate: (key: TeamKey, vars?: Record<string, unknown>) => string
   onClose: () => void
 }) {
-  const [value, setValue] = useState<Detail>()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>()
-  const request = useRef<AbortController>()
-  const read = async (mode: 'first' | 'next' | 'refresh') => {
-    const previous = value
-    const window = mode === 'first' ? { afterCursor: -1 } : mode === 'refresh' ? { afterCursor: previous?.startCursor ?? -1 }
-      : previous?.nextCursor === undefined ? undefined : { afterCursor: previous.nextCursor, expectedTeamCursor: previous.teamCursor }
-    if (window === undefined) return
-    request.current?.abort()
-    const controller = new AbortController()
-    request.current = controller
-    setLoading(true); setError(undefined)
-    try {
-      const result = await inspect({ teamId, participantId, ...window }, controller.signal)
-      if (!controller.signal.aborted) setValue(result)
-    } catch (cause: unknown) { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause)) }
-    finally { if (request.current === controller) { request.current = undefined; setLoading(false) } }
-  }
+  const current = detail?.teamId === teamId && detail.participantId === participantId ? detail : undefined
+  const value = current?.value
+  const loading = current?.loading ?? false
+  const error = current?.error
+  const unavailable = loading || current?.disconnected === true
+  const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState<string>()
   useEffect(() => {
-    void read('first')
-    return () => { request.current?.abort() }
-  }, [])
+    void read(teamId, participantId, 'first')
+    return closeDetail
+  }, [teamId, participantId, read, closeDetail])
   return <Modal open title={t('memberDetail.title')} closeLabel={t('cancel')} onClose={onClose} bodyClassName={css.memberDetail ?? ''}
     footer={<div className={css.memberPages}>
-      <Button disabled={loading} onClick={() => { void read('refresh') }}>{t('memberDetail.refresh')}</Button>
-      {value !== undefined && value.startCursor >= 0 && <Button disabled={loading} onClick={() => { void read('first') }}>{t('detail.firstPage')}</Button>}
-      {value?.nextCursor !== undefined && <Button disabled={loading || error !== undefined} onClick={() => { void read('next') }}>{t('memberDetail.next')}</Button>}
+      <Button disabled={unavailable} onClick={() => { void read(teamId, participantId, 'refresh') }}>{t('memberDetail.refresh')}</Button>
+      {value !== undefined && value.startCursor >= 0 && <Button disabled={unavailable} onClick={() => { void read(teamId, participantId, 'first') }}>{t('detail.firstPage')}</Button>}
+      {value?.nextCursor !== undefined && <Button disabled={unavailable || error !== undefined || current?.hasNewer === true} onClick={() => { void read(teamId, participantId, 'next') }}>{t('memberDetail.next')}</Button>}
     </div>}>
     {loading && <p role="status">{t('memberDetail.loading')}</p>}
+    {current?.disconnected === true && <p role="status">{t('attention.disconnected')}</p>}
+    {current?.hasNewer === true && !current.disconnected && <p role="status">{t('memberDetail.stale')}</p>}
     {error !== undefined && <p role="alert">{error}</p>}
     {value !== undefined && <>
-      <h3>{value.record.displayName}</h3><p>{value.record.role} · {t(`detail.participant.phase.${value.record.phase}`)}</p>
+      <h3>{value.record.displayName}</h3><p>{value.record.role} · {t(`detail.participant.phase.${readiness?.participation ?? value.record.phase}`)}</p>
+      <dl><div><dt>{t('memberDetail.id')}</dt><dd><code>{participantId}</code></dd></div></dl>
+      <Button onClick={() => {
+        setCopyError(undefined); setCopied(false)
+        void writeClipboard(participantId).then((success) => {
+          setCopied(success)
+          if (!success) setCopyError(t('memberDetail.copyFailed'))
+        }, () => { setCopyError(t('memberDetail.copyFailed')) })
+      }}>{t('memberDetail.copyId')}</Button>
+      {copied && <p role="status">{t('memberDetail.copiedId')}</p>}
+      {copyError !== undefined && <p role="alert">{copyError}</p>}
+      <MemberReadiness value={readiness} stale={readinessStale} details translate={t} />
       <dl>{(['provider', 'preset', 'model', 'authScheme'] as const).map(field => value.record[field] === undefined ? null
         : <div key={field}><dt>{t(`memberDetail.${field}`)}</dt><dd>{value.record[field]}</dd></div>)}</dl>
       <h4>{t('memberDetail.capabilities')} · {value.total}</h4>

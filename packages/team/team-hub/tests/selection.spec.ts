@@ -1,4 +1,4 @@
-import { projectTeamSelection, projectMemberSession } from '@clocky/clocky-team/selection'
+import { projectTeamSelection, projectMemberSession, projectTeamProductSummary } from '@clocky/clocky-team/selection'
 /** Selection bytes stay bounded independently of retained Team history. */
 import { describe, expect, it } from 'vitest'
 import { teamSelectionRequestSchema, teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
@@ -15,6 +15,32 @@ function projection() {
 }
 
 describe('bounded Team selection', () => {
+  it('exposes Simulation execution ownership without returning its rules or run identity', () => {
+    const ordinary = teamProjectionFromData(checkpointFor([createdTeam()]))
+    expect(teamSelection(ordinary, 512, 16384)).not.toHaveProperty('executionManagement')
+    const simulation = { ...ordinary, rules: { simulationRunId: 'private-run', activationLifecycleOwner: 'simulation/owner' } }
+    const selected = teamSelection(simulation, 512, 16384, true)
+    expect(selected.executionManagement).toBe('simulation-managed')
+    expect(JSON.stringify(selected)).not.toContain('private-run')
+    expect(teamSelectionSnapshotSchema.parse(selected)).toEqual(selected)
+    const summary = projectTeamProductSummary(simulation.team, simulation.team.id, 512, simulation.rules)
+    expect(summary.executionManagement).toBe('simulation-managed')
+    expect(JSON.stringify(summary)).not.toContain('private-run')
+    const bytes = Buffer.byteLength(JSON.stringify(selected))
+    expect(teamSelection(simulation, 512, bytes, true)).toEqual(selected)
+    expect(() => teamSelection(simulation, 512, 1)).toThrow(/maxSelectionBytes/)
+  })
+
+  it('counts product read access inside the complete response allowance', () => {
+    const state = teamProjectionFromData(checkpointFor([createdTeam()]))
+    const selected = teamSelection(state, 512, 16384, false, 'parent-inspection')
+    const exact = Buffer.byteLength(JSON.stringify(selected))
+    expect(selected.readAccess).toBe('parent-inspection')
+    expect(teamSelection(state, 512, exact, false, 'parent-inspection')).toEqual(selected)
+    expect(() => teamSelection(state, 512, exact - 1, false, 'parent-inspection')).toThrow(/maxSelectionBytes/)
+    expect(teamSelectionSnapshotSchema.parse(selected)).toEqual(selected)
+  })
+
   it('keeps Unicode prefixes whole, marks truncation, and excludes history and configuration', () => {
     const state = projection()
     const member = participant({ role: 'coordinator', phase: 'active', displayName: '😀协调员' })

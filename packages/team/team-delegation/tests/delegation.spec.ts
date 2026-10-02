@@ -23,7 +23,8 @@ function setup(
   const result = teamDelegationResultAdmissionSchema.parse({ binding, requestEnvelopeId: 'request', requestSequence: 1,
     responseEnvelopeId: 'response', responseSequence: 2, contentFingerprint: `sha256:${'a'.repeat(64)}`, text: 'Child result', artifacts: [],
     parentTaskRevision: 3, parentCursor: 8, admittedAt: 3 })
-  let task = teamTaskSnapshotSchema.parse({ id: 'parent-task', teamId: parentId, revision: 3,
+  let task = teamTaskSnapshotSchema.parse({
+    createdAt: 1, id: 'parent-task', teamId: parentId, revision: 3,
     execution: { kind: 'child-team', templateId: 'fixture', templateVersion: 1, authorityGrant: grant, budget: {} },
     createCommand: { creator: { teamId: parentId, participantId: 'human' }, idempotencyKey: 'create' },
     subject: 'Nested work', description: 'Do work', phase: 'running', blockedBy: [], requiredCapabilities: [], priority: 0,

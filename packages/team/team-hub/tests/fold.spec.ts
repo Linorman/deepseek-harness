@@ -299,6 +299,28 @@ function adapter(options: { readonly failure?: 'validate' | 'initial' | 'fold'; 
 }
 
 describe('Team journal fold', () => {
+  it('retains the first accepted task time through edits, deletion and checkpoint replay', () => {
+    const active = taskBaseTeam()
+    const first = task({ createdAt: 13 })
+    const created = foldTeamRecord(active, taskChanged({ task: first }), active.team.cursor + 1, teamId)
+    expect(created.tasks.get(first.id)?.createdAt).toBe(13)
+    expect(() => foldTeamRecord(active, taskChanged({ task: { ...first, createdAt: 12 } }), active.team.cursor + 1, teamId))
+      .toThrow('creation time does not match its first journal record')
+    const edit = { ...first, revision: 2, subject: 'Edited title' }
+    expect(() => foldTeamRecord(created, taskChanged({ task: { ...edit, createdAt: 14 }, createdAt: 14 }), created.team.cursor + 1, teamId))
+      .toThrow('changed its immutable creation time')
+    const edited = foldTeamRecord(created, taskChanged({ task: edit, createdAt: 14 }), created.team.cursor + 1, teamId)
+    const deleted = foldTeamRecord(edited, taskChanged({ task: { ...edit, revision: 3, phase: 'deleted' }, createdAt: 15 }), edited.team.cursor + 1, teamId)
+    expect(teamProjectionFromData(teamProjectionData(deleted)).tasks.get(first.id)?.createdAt).toBe(13)
+    const checkpoint = teamProjectionData(deleted)
+    for (const createdAt of [9, 16]) {
+      expect(() => teamProjectionFromData({ ...checkpoint, tasks: checkpoint.tasks.map(task => ({ ...task, createdAt })) }))
+        .toThrow('creation time is outside its Team lifetime')
+    }
+    const { createdAt: _missingTime, ...legacy } = first
+    expect(() => teamJournalRecordSchema.parse({ type: 'task/changed', task: legacy, createdAt: 13 })).toThrow()
+  })
+
   it('replays a valid Team, participants, task graph, and attached channel', () => {
     let projection = taskBaseTeam()
     projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human' }), createdAt: 12 }), 2, teamId)
@@ -306,11 +328,11 @@ describe('Team journal fold', () => {
     projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human', phase: 'active' }), createdAt: 14 }), 4, teamId)
     projection = foldTeamRecord(projection, taskChanged({ createdAt: 15 }), 5, teamId)
     projection = foldTeamRecord(projection, taskChanged({
-      task: task({ id: otherTaskId, blockedBy: [taskId] }),
+      task: task({ createdAt: 16, id: otherTaskId, blockedBy: [taskId] }),
       createdAt: 16,
     }), 6, teamId)
     projection = foldTeamRecord(projection, taskChanged({
-      task: task({
+      task: task({ createdAt: 15,
         revision: 2,
         phase: 'assigned',
         attemptCount: 1,
@@ -563,34 +585,34 @@ describe('Team journal fold', () => {
 
   it('rejects invalid persisted task identity, lifecycle, revision, and dependency graphs', () => {
     const active = taskBaseTeam()
-    failure(() => foldTeamRecord(active, taskChanged({ task: task({ teamId: otherTeamId }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(active, taskChanged({ task: task({ revision: 2 }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(active, rawTaskChanged({ ...task(), phase: 'running' }, 13), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(active, taskChanged({ task: task({ blockedBy: [taskId] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(active, taskChanged({ task: task({ blockedBy: [otherTaskId] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(active, taskChanged({ task: task({ writeScopes: ['packages/team', 'packages/team'] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, taskChanged({ task: task({ createdAt: 13, teamId: otherTeamId }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, taskChanged({ task: task({ createdAt: 13, revision: 2 }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, rawTaskChanged({ ...task({ createdAt: 13 }), phase: 'running' }, 13), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, taskChanged({ task: task({ createdAt: 13, blockedBy: [taskId] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, taskChanged({ task: task({ createdAt: 13, blockedBy: [otherTaskId] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(active, taskChanged({ task: task({ createdAt: 13, writeScopes: ['packages/team', 'packages/team'] }) }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
 
     const first = foldTeamRecord(active, taskChanged(), 2, teamId)
     const lease = taskLease({ assignedAt: 14, renewedAt: 14, expiresAt: 24 })
-    const assigned = task({ revision: 2, phase: 'assigned', attemptCount: 1, lease })
+    const assigned = task({ createdAt: 13, revision: 2, phase: 'assigned', attemptCount: 1, lease })
     failure(() => foldTeamRecord(first, taskChanged({
       task: { ...assigned, revision: 3 },
       createdAt: 14,
     }), 3, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(first, rawTaskChanged({ ...task(), revision: 2, phase: 'running' }, 14), 3, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(first, rawTaskChanged({ ...task({ createdAt: 13 }), revision: 2, phase: 'running' }, 14), 3, teamId), 'TEAM_JOURNAL_MALFORMED')
 
     const second = foldTeamRecord(first, taskChanged({
-      task: task({ id: otherTaskId, blockedBy: [taskId] }),
+      task: task({ createdAt: 14, id: otherTaskId, blockedBy: [taskId] }),
       createdAt: 14,
     }), 3, teamId)
     failure(() => foldTeamRecord(second, taskChanged({
-      task: task({ revision: 2, blockedBy: [otherTaskId] }),
+      task: task({ createdAt: 13, revision: 2, blockedBy: [otherTaskId] }),
       createdAt: 15,
     }), 4, teamId), 'TEAM_JOURNAL_MALFORMED')
-    failure(() => foldTeamRecord(second, taskChanged({ task: task({ revision: 2, phase: 'deleted' }), createdAt: 15 }), 4, teamId), 'TEAM_JOURNAL_MALFORMED')
+    failure(() => foldTeamRecord(second, taskChanged({ task: task({ createdAt: 13, revision: 2, phase: 'deleted' }), createdAt: 15 }), 4, teamId), 'TEAM_JOURNAL_MALFORMED')
 
     const deleted = foldTeamRecord(first, taskChanged({
-      task: task({ revision: 2, phase: 'deleted' }),
+      task: task({ createdAt: 13, revision: 2, phase: 'deleted' }),
       createdAt: 14,
     }), 3, teamId)
     expect(deleted.tasks.get(taskId)?.phase).toBe('deleted')
@@ -599,7 +621,7 @@ describe('Team journal fold', () => {
   it('folds unique activation-authorized task-create commands and validates their checkpoint relations', () => {
     const { projection: active, binding } = interruptProjection()
     const createCommand = taskCreateCommand(binding)
-    const created = task({ createCommand })
+    const created = task({ createCommand, createdAt: 16 })
     const { createCommand: _unattributedCommand, ...unattributed } = created
     const missingCommandRecord: unknown = JSON.parse(JSON.stringify({ type: 'task/changed', task: unattributed, createdAt: 16 }))
     expect(() => teamJournalRecordSchema.parse(missingCommandRecord)).toThrow()
@@ -664,13 +686,12 @@ describe('Team journal fold', () => {
     projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human' }), createdAt: 12 }), 2, teamId)
     projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human', phase: 'provisioning' }), createdAt: 13 }), 3, teamId)
     projection = foldTeamRecord(projection, participantChanged({ participant: participant({ kind: 'human', phase: 'active' }), createdAt: 14 }), 4, teamId)
-    const pending = task({ reviewPolicy: { kind: 'participant', reviewerId: participantId } })
+    const pending = task({ createdAt: 15, reviewPolicy: { kind: 'participant', reviewerId: participantId } })
     projection = foldTeamRecord(projection, taskChanged({ task: pending, createdAt: 15 }), 5, teamId)
     const lease = taskLease({ assignedAt: 16, renewedAt: 16, expiresAt: 26 })
     const assigned = task({ ...pending, revision: 2, phase: 'assigned', attemptCount: 1, lease })
     failure(() => foldTeamRecord(projection, taskChanged({
-      task: task({
-        ...assigned,
+      task: task({ ...assigned,
         lease: taskLease({ ...lease, activationId: activationIdSchema.parse('forbidden-human-activation') }),
       }),
       createdAt: 16,
@@ -690,8 +711,7 @@ describe('Team journal fold', () => {
     }), 10, teamId)
     const { lease: _reviewerGoneLease, ...reviewerGoneBase } = renewed
     failure(() => foldTeamRecord(reviewerGone, taskChanged({
-      task: task({
-        ...reviewerGoneBase,
+      task: task({ ...reviewerGoneBase,
         revision: 6,
         phase: 'review',
         attemptHistory: [settledAttempt({
@@ -705,8 +725,7 @@ describe('Team journal fold', () => {
       createdAt: 21,
     }), 11, teamId), 'TEAM_JOURNAL_MALFORMED')
     const { lease: _settledLease, ...releasedBase } = renewed
-    const released = task({
-      ...releasedBase,
+    const released = task({ ...releasedBase,
       revision: 6,
       phase: 'pending',
       attemptHistory: [settledAttempt({
@@ -727,7 +746,7 @@ describe('Team journal fold', () => {
     })
     const releasedCheckpoint = teamProjectionData(releasedProjection)
     failure(() => foldTeamRecord(baseTeam(), taskChanged({
-      task: task({ reviewPolicy: { kind: 'participant', reviewerId: participantId } }),
+      task: task({ createdAt: 15, reviewPolicy: { kind: 'participant', reviewerId: participantId } }),
       createdAt: 15,
     }), 2, teamId), 'TEAM_JOURNAL_MALFORMED')
     failure(() => teamProjectionFromData({
@@ -818,9 +837,9 @@ describe('Team journal fold', () => {
       }],
     }).tasks.get(taskId)?.phase).toBe('cancelled')
 
-    const inactivePending = task()
+    const inactivePending = task({ createdAt: 15 })
     const inactive = foldTeamRecord(taskBaseTeam(), taskChanged({ task: inactivePending, createdAt: 15 }), 2, teamId)
-    const inactiveAssigned = task({ revision: 2, phase: 'assigned', attemptCount: 1, lease })
+    const inactiveAssigned = task({ createdAt: 15, revision: 2, phase: 'assigned', attemptCount: 1, lease })
     failure(() => foldTeamRecord(inactive, taskChanged({ task: inactiveAssigned, createdAt: 16 }), 3, teamId), 'TEAM_JOURNAL_MALFORMED')
     failure(() => foldTeamRecord(projection, rawTaskChanged({
       ...released,
@@ -839,15 +858,15 @@ describe('Team journal fold', () => {
       createdAt: 21,
     }), 11, teamId), 'TEAM_JOURNAL_MALFORMED')
     failure(() => foldTeamRecord(projection, taskChanged({
-      task: task({ id: otherTaskId, parentTaskId: otherTaskId }),
+      task: task({ createdAt: 21, id: otherTaskId, parentTaskId: otherTaskId }),
       createdAt: 21,
     }), 11, teamId), 'TEAM_JOURNAL_MALFORMED')
     failure(() => foldTeamRecord(projection, taskChanged({
-      task: task({ id: otherTaskId, parentTaskId: 'missing-parent' }),
+      task: task({ createdAt: 21, id: otherTaskId, parentTaskId: 'missing-parent' }),
       createdAt: 21,
     }), 11, teamId), 'TEAM_JOURNAL_MALFORMED')
     const child = foldTeamRecord(projection, taskChanged({
-      task: task({ id: otherTaskId, parentTaskId: taskId }),
+      task: task({ createdAt: 21, id: otherTaskId, parentTaskId: taskId }),
       createdAt: 21,
     }), 11, teamId)
     failure(() => foldTeamRecord(child, taskChanged({
@@ -923,8 +942,7 @@ describe('Team journal fold', () => {
       31,
     ), 13, teamId), 'TEAM_JOURNAL_MALFORMED')
     failure(() => foldTeamRecord(projection, taskChanged({
-      task: task({
-        ...settleBase,
+      task: task({ ...settleBase,
         revision: 9,
         phase: 'failed',
         attemptHistory: [...rerunning.attemptHistory, settledAttempt({
@@ -955,7 +973,7 @@ describe('Team journal fold', () => {
       }), 4, teamId)
       const binding = activationBinding()
       projection = foldTeamRecord(projection, { type: 'activation/changed', binding, createdAt: 15 }, 5, teamId)
-      const pending = task({ requiredCapabilities: ['lint'] })
+      const pending = task({ createdAt: 16, requiredCapabilities: ['lint'] })
       projection = foldTeamRecord(projection, taskChanged({ task: pending, createdAt: 16 }), 6, teamId)
       const lease = taskLease({
         activationId: binding.activation.id,
@@ -963,7 +981,7 @@ describe('Team journal fold', () => {
         renewedAt: 17,
         expiresAt: 27,
       })
-      const assigned = task({ revision: 2, phase: 'assigned', attemptCount: 1, lease, requiredCapabilities: ['lint'] })
+      const assigned = task({ createdAt: 16, revision: 2, phase: 'assigned', attemptCount: 1, lease, requiredCapabilities: ['lint'] })
       return { projection, binding, assigned, lease }
     }
 
@@ -982,8 +1000,7 @@ describe('Team journal fold', () => {
       createdAt: 18,
     }, 8, teamId)
     failure(() => foldTeamRecord(offline, taskChanged({
-      task: task({
-        ...valid.assigned,
+      task: task({ ...valid.assigned,
         revision: 3,
         phase: 'running',
         lease: taskLease({ ...valid.lease, startedAt: 19 }),
@@ -1568,7 +1585,7 @@ it('attributes non-agent attempt usage without inventing an activation binding',
   }
   projection = foldTeamRecord(projection, taskChanged({ createdAt: 15 }), projection.team.cursor + 1, teamId)
   const lease = taskLease({ participantId, activationId: undefined, assignedAt: 16, renewedAt: 16, expiresAt: 26 })
-  projection = foldTeamRecord(projection, taskChanged({ task: task({ revision: 2, phase: 'assigned', attemptCount: 1, lease }), createdAt: 16 }),
+  projection = foldTeamRecord(projection, taskChanged({ task: task({ createdAt: 15, revision: 2, phase: 'assigned', attemptCount: 1, lease }), createdAt: 16 }),
     projection.team.cursor + 1, teamId)
   const sample = usageSample({ taskId, attemptId: lease.attemptId })
   const usage = usageFromSamples(new Map([[sample.id, sample]]))

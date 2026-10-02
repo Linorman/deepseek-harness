@@ -42,6 +42,7 @@ const SCROLLBAR_LINGER_MS = 2000
  * @returns the sidebar element tree.
  */
 export function SidebarRoot({
+  workspace,
   collapsed,
   width,
   startTask,
@@ -182,8 +183,11 @@ export function SidebarRoot({
         </button>
       </Tooltip>
 
+      <nav className={css.productNavigation} aria-label={t('workspace.navigation')}>
+        {renderSlot('sidebar.workspaceNavigation', { wide, workspace, expandSidebar: () => { if (collapsed) toggleSidebar() } })}
+      </nav>
       {/* The Team browsing region fills the column between controls and foot. */}
-      <div className={css.regionArea}>
+      <div className={css.regionArea} hidden={workspace !== 'team'}>
         {renderSlot('sidebar.teamTasks', {
           wide,
           expandSidebar: () => { if (collapsed) toggleSidebar() },

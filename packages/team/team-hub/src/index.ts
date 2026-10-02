@@ -1,3 +1,21 @@
+import { teamSimulationTaskAssignInputSchema, teamSimulationTaskStartInputSchema, teamSimulationTaskSettleInputSchema } from '@clocky/clocky-team'
+import { normalizeTaskDetailsUpdate, taskUpdateReceipt, taskUpdateRejection } from '@clocky/clocky-team/selection'
+import { TeamTaskUpdateRejectedError } from '@clocky/clocky-team'
+import { teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema, teamTaskDetailsUpdateResultSchema, type TeamTaskUpdateLookupInput, type TeamTaskUpdateLookup, type TeamTaskDetailsUpdateResult, type TeamTaskUpdateCommandReceipt } from '@clocky/clocky-team'
+import { resolveTaskReferences } from '@clocky/clocky-team/selection'
+import { teamTaskReferencesInputSchema, teamTaskReferencesPageSchema, type TeamTaskReferencesInput, type TeamTaskReferencesPage } from '@clocky/clocky-team'
+import { resolveTeamIdentities } from '@clocky/clocky-team/selection'
+import { projectTeamAttention } from '@clocky/clocky-team/selection'
+import { humanActionHandling } from '@clocky/clocky-team/selection'
+import { teamActionInspectInputSchema, teamActionInspectionSchema, type TeamActionInspectRequest, type TeamActionInspection } from '@clocky/clocky-team'
+import { teamAttentionReadInputSchema, teamAttentionPageSchema, type TeamAttentionReadRequest, type TeamAttentionPage } from '@clocky/clocky-team'
+import { teamIdentityResolveInputSchema, type TeamIdentityResolveRequest, type TeamIdentityResolvePage } from '@clocky/clocky-team'
+import { teamExecutionProfilesInputSchema, teamExecutionProfilesPageSchema, type TeamExecutionProfilesRequest, type TeamExecutionProfilesPage } from '@clocky/clocky-team'
+import { memberReadiness } from '@clocky/clocky-team/selection'
+import { teamMemberReadinessInputSchema, teamMemberReadinessPageSchema, type TeamMemberReadinessPage, type TeamMemberReadinessRequest } from '@clocky/clocky-team'
+import { findHumanActor, selectHumanActor } from '@clocky/clocky-team/selection'
+import type { TeamHumanActorLookup, TeamHumanActorSelection, TeamHumanReadAuthority } from '@clocky/clocky-team'
+import { teamTaskCapabilitiesInputSchema, teamTaskCapabilitiesSchema, type TeamTaskCapabilities, type TeamTaskCapabilitiesRequest, type TeamTaskCapabilityReason } from '@clocky/clocky-team'
 import { readPersistencePrefix } from './persistence-prefix.ts'
 import { teamPersistenceReferenceRequestSchema, fingerprintTeamPersistenceProjection, jsonValueSchema } from '@clocky/clocky-team'
 import type { TeamDeliveryOwnerProof } from '@clocky/clocky-team'
@@ -15,6 +33,9 @@ import { teamBrowseRequestSchema, type TeamBrowseRequest, type TeamBrowseSpec, t
 import { projectMemberSession } from '@clocky/clocky-team/selection'
 import { teamMemberSessionRequestSchema, type TeamMemberSessionRequest, type TeamMemberSessionSnapshot } from '@clocky/clocky-team'
 import { teamSelection } from './selection.ts'
+import { ProductDirectory } from './product-directory.ts'
+import { projectTeamProductSummary } from '@clocky/clocky-team/selection'
+import type { TeamProductDiscoveryRequest, TeamProductDirectoryPage, TeamProductSummary } from '@clocky/clocky-team'
 import type { TeamSelectionSnapshot } from '@clocky/clocky-team'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { StorageLogError } from '@clocky/clocky-storage-log'
@@ -166,6 +187,7 @@ import {
   teamTaskAttemptStartClaimInputSchema,
   teamTaskAttemptStartInputSchema,
   teamTaskCancelInputSchema,
+  teamSimulationTaskCancelInputSchema,
   teamTaskCancellationReconcileInputSchema,
   teamCancellationTaskCancelInputSchema,
   teamTaskCreateInputSchema,
@@ -480,7 +502,9 @@ import {
   channelReplayWatermark,
   foldChannelRecord,
   foldTeamRecord,
+  taskUpdateFailure,
   assertTaskCancellationSettlements,
+  assertTaskRetirementEvidence,
   teamProjectionData,
   teamProjectionFromData,
   usageFromSamplesAndCharges,
@@ -1032,6 +1056,8 @@ export interface Config {
   readonly maxParticipantsPerTeam?: number
   /** Maximum activation epochs retained by one Team. */
   readonly maxActivationsPerTeam?: number
+  /** Maximum terminal task-details command outcomes retained per Team, including semantic refusals. */
+  readonly maxTaskUpdateCommandsPerTeam?: number
   /** Maximum task records retained by one Team. */
   readonly maxTasksPerTeam?: number
   /** Maximum channel records attached to one Team. */
@@ -1079,6 +1105,7 @@ export const Config: z<Config> = z.object({
   maxTaskLeaseDurationMs: z.number().step(1).min(1).default(DEFAULT_MAX_TASK_LEASE_DURATION_MS),
   maxParticipantsPerTeam: z.number().step(1).min(1).default(DEFAULT_MAX_PARTICIPANTS_PER_TEAM),
   maxActivationsPerTeam: z.number().step(1).min(1).default(DEFAULT_MAX_ACTIVATIONS_PER_TEAM),
+  maxTaskUpdateCommandsPerTeam: z.number().step(1).min(1).default(10000),
   maxTasksPerTeam: z.number().step(1).min(1).default(DEFAULT_MAX_TASKS_PER_TEAM),
   maxChannelsPerTeam: z.number().step(1).min(1).default(DEFAULT_MAX_CHANNELS_PER_TEAM),
   maxTurnsPerTeam: z.number().step(1).min(1).default(DEFAULT_MAX_TURNS_PER_TEAM),
@@ -1104,6 +1131,7 @@ export const Config: z<Config> = z.object({
  * before the projection becomes visible through `ctx.teams`.
  */
 export class TeamHub extends TeamRuntime {
+  private readonly productDirectory = new ProductDirectory()
   static inject = ['storageLog']
   static Config = Config
 
@@ -1197,6 +1225,7 @@ export class TeamHub extends TeamRuntime {
         'maxActivationsPerTeam',
         config.maxActivationsPerTeam ?? DEFAULT_MAX_ACTIVATIONS_PER_TEAM,
       ),
+      maxTaskUpdateCommandsPerTeam: positiveLimit('maxTaskUpdateCommandsPerTeam', config.maxTaskUpdateCommandsPerTeam ?? 10000),
       maxTasksPerTeam: positiveLimit('maxTasksPerTeam', config.maxTasksPerTeam ?? DEFAULT_MAX_TASKS_PER_TEAM),
       maxChannelsPerTeam: positiveLimit(
         'maxChannelsPerTeam',
@@ -1626,6 +1655,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamHumanActorProof,
     input: TeamArchiveInput,
   ): { readonly sourceName: string; readonly actorId: ParticipantId } {
+    this.assertHumanTeamMutable(team)
     const resolution = this.requireHumanActorProof(actor)
     const expected = this.humanArchiveProofInput(input)
     this.assertHumanArchiveProofScope(resolution.scope, expected)
@@ -1673,6 +1703,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamHumanActorProof,
     input: TeamResumeInput,
   ): { readonly sourceName: string; readonly actorId: ParticipantId } {
+    this.assertHumanTeamMutable(team)
     const resolution = this.requireHumanActorProof(actor)
     this.assertHumanResumeProofScope(resolution.scope, this.humanResumeProofInput(input))
     const projection = team.projection.team
@@ -1890,20 +1921,340 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  /** Read a retained human request and current handling under the same Team revision. */
+  override async inspectHumanAction(request: TeamActionInspectRequest): Promise<TeamActionInspection> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamActionInspectInputSchema.parse(raw)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        const human = this.assertHumanTeamRead(current, actor, 'attention-read', jsonObjectSchema.parse(input))
+        const action = current.projection.humanActions.get(input.actionId)
+        if (action === undefined) throw new TeamError('Human request is not retained', 'TEAM_INVALID_ARGUMENT')
+        const scope = this.requireHumanActorProof(actor).scope
+        const value = { teamId: current.id, teamCursor: current.projection.team.cursor, action,
+          handling: humanActionHandling(current.projection, action, human, scope.teamId !== current.id) }
+        if (Buffer.byteLength(JSON.stringify(value)) > this.config.maxSelectionBytes) {
+          throw new TeamError('Request inspection exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+        }
+        return Promise.resolve(freeze(teamActionInspectionSchema.parse(value)))
+      })
+    })
+  }
+
   /** Project first-selection data under the same cursor serializer as full-state reads. */
   override async getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot> {
     return await this.admit(async () => {
       const input = teamSelectionRequestSchema.parse(request)
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(() => Promise.resolve(freeze(teamSelection(
-        this.requireLiveTeam(loaded).projection, this.config.maxSelectionTextBytes, this.config.maxSelectionBytes, input.includeMetadata,
+        this.requireLiveTeam(loaded).projection, this.config.maxSelectionTextBytes, this.config.maxSelectionBytes,
+        input.includeMetadata, input.readAccess,
       ))))
+    })
+  }
+
+  /** Read the profile registry under the same current-human rules as invitation. */
+  override async getExecutionProfiles(request: TeamExecutionProfilesRequest): Promise<TeamExecutionProfilesPage> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamExecutionProfilesInputSchema.parse(raw)
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        const human = this.assertHumanTeamRead(current, actor, 'execution-profiles-read', jsonObjectSchema.parse(input))
+        let reason: TeamExecutionProfilesPage['reason']
+        if (human.authorityGrant?.operations.includes('invite') !== true) reason = 'not-authorized'
+        else if (current.projection.rules['simulationRunId'] !== undefined) reason = 'simulation-managed'
+        else if (current.projection.team.phase !== 'active' || current.projection.team.cancellation !== undefined
+          || current.projection.team.closure !== undefined) reason = 'team-inactive'
+        else if (current.projection.participants.size >= this.teamLimit(current.projection, 'maxParticipants', this.config.maxParticipantsPerTeam)) reason = 'member-limit'
+        return Promise.resolve(freeze(teamExecutionProfilesPageSchema.parse(this.executionProfiles.page(
+          input, this.config.recoveryPageSize, this.config.maxSelectionBytes, reason,
+        ))))
+      })
+    })
+  }
+
+  /** Read complete pending counts and one current-authority page under the Team serializer. */
+  override async getTeamAttention(request: TeamAttentionReadRequest): Promise<TeamAttentionPage> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamAttentionReadInputSchema.parse(raw)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) {
+        throw new TeamError('Pending input exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      }
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        const human = this.assertHumanTeamRead(current, actor, 'attention-read', jsonObjectSchema.parse(input))
+        const authority = this.requireHumanActorProof(actor).scope
+        const value = projectTeamAttention(current.projection, input, { limit: this.pageLimit(input.limit ?? this.config.recoveryPageSize),
+          textBytes: this.config.maxSelectionTextBytes, bytes: this.config.maxSelectionBytes }, human, authority.teamId !== input.teamId)
+        return Promise.resolve(freeze(teamAttentionPageSchema.parse(value)))
+      })
+    })
+  }
+
+  /** Resolve authorized identity references without traversing the member collection. */
+  override async resolveIdentities(request: TeamIdentityResolveRequest): Promise<TeamIdentityResolvePage> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamIdentityResolveInputSchema.parse(raw)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) {
+        throw new TeamError('Identity input exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      }
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        this.assertHumanTeamRead(current, actor, 'identity-resolve-read', jsonObjectSchema.parse(input))
+        return Promise.resolve(freeze(resolveTeamIdentities(current.projection.participants, current.projection.team.cursor,
+          input, this.config.recoveryPageSize, this.config.maxSelectionTextBytes, this.config.maxSelectionBytes)))
+      })
+    })
+  }
+
+  /** Observe requested members directly from authoritative maps without copying Team history. */
+  override async getMemberReadiness(request: TeamMemberReadinessRequest): Promise<TeamMemberReadinessPage> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamMemberReadinessInputSchema.parse(raw)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) {
+        throw new TeamError('Member readiness input exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      }
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(async () => {
+        const current = this.requireLiveTeam(loaded)
+        const validate = () => this.assertHumanTeamRead(current, actor, 'member-readiness-read', jsonObjectSchema.parse(input))
+        validate()
+        const projection = current.projection
+        if (input.expectedTeamCursor !== undefined && input.expectedTeamCursor !== projection.team.cursor) {
+          throw new TeamError('Member readiness changed; refresh the member set', 'TEAM_CURSOR_CONFLICT')
+        }
+        const limit = liveActivationLimit(projection.budgets, projection.team.authorityGrant)
+        const used = liveActivationCapacity(projection.participants.values(), projection.activations.values(), projection.tasks.values())
+        const budget = resourceBudget(projection.budgets, 'Team budget')
+        const usage = resourceBudgetUsage(projection)
+        const requested = new Set(input.participantIds)
+        const latestBindings = new Map<ParticipantId, ActivationBindingSnapshot>()
+        const unquiescedMembers = new Set<ParticipantId>()
+        const settledReservations = new Set<string>()
+        for (const binding of projection.activations.values()) {
+          const participantId = binding.activation.participantId
+          if (!requested.has(participantId)) continue
+          latestBindings.set(participantId, binding)
+          if (binding.quiescedAt === undefined) unquiescedMembers.add(participantId)
+          else if (binding.reservationId !== undefined) settledReservations.add(binding.reservationId)
+        }
+        const activeAttempts = new Map<ParticipantId, number>()
+        for (const task of projection.tasks.values()) {
+          if (task.lease !== undefined && requested.has(task.lease.participantId) && (task.phase === 'running' || task.phase === 'assigned')) {
+            activeAttempts.set(task.lease.participantId, (activeAttempts.get(task.lease.participantId) ?? 0) + 1)
+          }
+        }
+        const items: TeamMemberReadinessPage['items'][number][] = []
+        const page = (nextCursor?: number): TeamMemberReadinessPage => ({ teamId: input.teamId,
+          teamCursor: projection.team.cursor, observedAt: Date.now(),
+          observationId: createHash('sha256').update(JSON.stringify({ input, cursor: projection.team.cursor, items })).digest('hex') as TeamMemberReadinessPage['observationId'],
+          items, ...nextCursor === undefined ? {} : { nextCursor } })
+        let nextCursor: number | undefined
+        for (let index = input.afterCursor ?? 0; index < input.participantIds.length; index++) {
+          if (items.length >= this.config.recoveryPageSize) { nextCursor = index; break }
+          const participantId = input.participantIds[index] as ParticipantId
+          const participant = projection.participants.get(participantId)
+          if (participant === undefined) throw new TeamError('Member is not in the selected Team', 'TEAM_PARTICIPANT_NOT_FOUND')
+          const sources = await this.ctx.waterfall(this, 'team/member-execution-observe', { teamId: input.teamId,
+            participant: { id: participant.id, kind: participant.kind, phase: participant.phase, role: participant.role,
+              ...participant.provider === undefined ? {} : { provider: participant.provider },
+              ...participant.preset === undefined ? {} : { preset: participant.preset },
+              ...participant.model === undefined ? {} : { model: participant.model } } }, () => Promise.resolve({}))
+          validate()
+          const value = memberReadiness({ teamId: input.teamId, participant, latest: latestBindings.get(participantId),
+            unquiesced: unquiescedMembers.has(participantId),
+            pendingReservation: participant.activationReservation !== undefined
+              && participant.activationReservation.releasedAt === undefined
+              && !settledReservations.has(participant.activationReservation.id),
+            activeAttempts: activeAttempts.get(participantId) ?? 0,
+            activationCapacity: (limit === undefined || used < limit) && participant.authorityGrant?.budgets.maxLiveActivations !== 0,
+            concurrencyCapacity: budget.maxConcurrency === undefined || usage.maxConcurrency < budget.maxConcurrency,
+            teamAccepting: projection.team.phase === 'active' && projection.team.cancellation === undefined
+              && projection.team.closure === undefined,
+            simulationManaged: projection.rules['simulationRunId'] !== undefined,
+          }, sources)
+          items.push(value)
+          const candidatePage = page(index + 1 < input.participantIds.length ? index + 1 : undefined)
+          if (Buffer.byteLength(JSON.stringify(candidatePage)) > this.config.maxSelectionBytes) {
+            items.pop()
+            if (items.length === 0) throw new TeamError('Member readiness row exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+            nextCursor = index; break
+          }
+        }
+        const result = page(nextCursor)
+        if (Buffer.byteLength(JSON.stringify(result)) > this.config.maxSelectionBytes) {
+          throw new TeamError('Member readiness metadata exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+        }
+        return freeze(teamMemberReadinessPageSchema.parse(result))
+      })
+    })
+  }
+
+  /** Resolve the authenticated issuer's active member without materializing the Team snapshot. */
+  override async resolveHumanActor(request: TeamHumanActorLookup): Promise<TeamHumanActorSelection> {
+    return await this.admit(async () => {
+      const loaded = await this.ensureTeam(request.teamId)
+      return await loaded.queue.run(() => Promise.resolve(freeze(selectHumanActor(
+        this.requireLiveTeam(loaded).projection.participants.values(), request,
+      ))))
+    })
+  }
+
+  /** Resolve a reader through immutable reserved delegations, without inheriting mutation grants. */
+  override async resolveHumanReadAuthority(request: TeamHumanActorLookup): Promise<TeamHumanReadAuthority> {
+    return await this.admit(async () => {
+      const lineage: LoadedTeam[] = []
+      let current = await this.loadHumanReadTeam(request.teamId)
+      while (true) {
+        lineage.push(current)
+        const parentId = current.projection.team.parentTeamId
+        if (parentId === undefined) break
+        const parent = await this.loadHumanReadTeam(parentId)
+        this.assertReadParent(parent, current)
+        current = parent
+      }
+      const read = (index: number): Promise<TeamHumanReadAuthority> => {
+        const member = lineage[index]
+        if (member === undefined) return Promise.resolve(this.selectHumanReadAuthority(lineage, request))
+        return member.queue.run(() => read(index - 1))
+      }
+      return await read(lineage.length - 1)
+    })
+  }
+
+  private async loadHumanReadTeam(teamId: TeamId): Promise<LoadedTeam> {
+    try { return await this.ensureTeam(teamId) }
+    catch (error: unknown) {
+      if (error instanceof TeamError && error.code === 'TEAM_NOT_FOUND') {
+        throw new TeamError('Authenticated principal cannot inspect this Team', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+      }
+      throw error
+    }
+  }
+
+  private selectHumanReadAuthority(lineage: readonly LoadedTeam[], request: TeamHumanActorLookup): TeamHumanReadAuthority {
+    for (let index = 0; index < lineage.length; index++) {
+      const team = this.requireLiveTeam(lineage[index] as LoadedTeam)
+      const parent = lineage[index + 1]
+      if (parent !== undefined) this.assertReadParent(this.requireLiveTeam(parent), team)
+      const selection = findHumanActor(team.projection.participants.values(), { ...request, teamId: team.id })
+      if (selection !== undefined) return freeze({ ...selection, teamId: team.id })
+    }
+    throw new TeamError('Authenticated principal cannot inspect this Team', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+  }
+
+  /** Read inheritance follows a reserved task, never an arbitrary parent ID or participant role. */
+  private assertReadParent(parent: LoadedTeam, child: LoadedTeam): void {
+    const identity = child.projection.team
+    const task = identity.parentTaskId === undefined ? undefined : parent.projection.tasks.get(identity.parentTaskId)
+    if (identity.parentTeamId !== parent.id || identity.depth !== parent.projection.team.depth + 1
+      || identity.depth > identity.maxTeamDepth || identity.maxTeamDepth !== parent.projection.team.maxTeamDepth
+      || task?.execution.kind !== 'child-team' || task.delegation?.childTeamId !== child.id
+      || task.delegation.creation?.parentTeamId !== parent.id || task.delegation.creation.parentTaskId !== task.id
+      || task.delegation.creation.delegationId !== task.delegation.id
+      || identity.childRun !== undefined && (identity.childRun.parentTeamId !== parent.id
+        || identity.childRun.parentTaskId !== task.id || identity.childRun.delegationId !== task.delegation.id)) {
+      throw new TeamError('Team inspection does not match its reserved parent task', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+    }
+  }
+
+  /** Prove Session ownership against durable participant reservations and immutable activation bindings. */
+  override async assertHumanSessionRead(request: import('@clocky/clocky-team').TeamHumanSessionReadRequest): Promise<void> {
+    await this.admit(async () => {
+      const { actor, ...input } = request
+      const team = await this.ensureTeam(input.teamId)
+      await team.queue.run(() => {
+        const current = this.requireLiveTeam(team)
+        this.assertHumanTeamRead(current, actor, 'session-content-read', jsonObjectSchema.parse(input))
+        const participant = current.projection.participants.get(input.participantId)
+        const bound = [...current.projection.activations.values()].some(binding =>
+          binding.activation.participantId === input.participantId && binding.sessionId === input.sessionId)
+        if (participant === undefined || participant.kind !== 'local-agent' && participant.kind !== 'remote-agent'
+          || !bound && participant.activationReservation?.sessionId !== input.sessionId) {
+          throw new TeamError('Session does not match a reserved or published Team member', 'TEAM_ACTOR_PROOF_INVALID')
+        }
+        return Promise.resolve()
+      })
+    })
+  }
+
+  /** Project the live human grant and Team limits without copying task or member histories. */
+  override async getTaskCapabilities(request: TeamTaskCapabilitiesRequest): Promise<TeamTaskCapabilities> {
+    return await this.admit(async () => {
+      const { actor, ...raw } = request
+      const input = teamTaskCapabilitiesInputSchema.parse(raw)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) {
+        throw new TeamError('Task capability input exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      }
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        const human = this.assertHumanTeamRead(current, actor, 'task-capabilities-read', jsonObjectSchema.parse(input))
+        const projection = current.projection
+        const grant = human.authorityGrant
+        const readScopes = normalizeTaskScopes(input.readScopes, 'readScopes')
+        const writeScopes = normalizeWriteScopes(input.writeScopes)
+        const reasons: TeamTaskCapabilityReason[] = []
+        if (grant?.operations.includes('task-mutate') !== true
+          || input.integration && !grant.operations.includes('workspace-integrate')) reasons.push('not-authorized')
+        if (projection.team.phase !== 'active' || projection.team.closure !== undefined || projection.team.cancellation !== undefined) {
+          reasons.push('team-inactive')
+        }
+        if (projection.rules['simulationRunId'] !== undefined) reasons.push('simulation-managed')
+        if (projection.tasks.size >= this.teamLimit(projection, 'maxTasks', this.config.maxTasksPerTeam)) reasons.push('task-limit')
+        const wallTime = this.teamLimit(projection, 'maxWallTimeMsPerTeam', this.config.maxWallTimeMsPerTeam)
+        const budgetWallTime = resourceBudget(projection.budgets, 'Team budget').maxWallTimeMs
+        const elapsed = Math.max(0, Date.now() - projection.team.createdAt)
+        if (elapsed >= wallTime || budgetWallTime !== undefined && elapsed >= budgetWallTime) reasons.push('time-budget')
+        const value: TeamTaskCapabilities = {
+          teamId: input.teamId, teamCursor: projection.team.cursor, create: { allowed: reasons.length === 0, reasons },
+          workspaceModes: (['shared', 'worktree', 'sandbox', 'remote'] as const).map(mode => ({ mode,
+            allowed: grant?.workspaceModes.includes(mode) === true,
+            reasons: grant?.workspaceModes.includes(mode) === true ? [] : ['not-authorized'],
+          })),
+          readScopes: { editable: (grant?.readScopes.length ?? 0) > 0,
+            accepted: readScopes.every(scope => grant !== undefined && scopeAllowed(grant.readScopes, scope)) },
+          writeScopes: { editable: (grant?.writeScopes.length ?? 0) > 0,
+            accepted: writeScopes.every(scope => grant !== undefined && scopeAllowed(grant.writeScopes, scope)) },
+          maxAttempts: this.teamLimit(projection, 'maxTaskAttemptsPerTask', this.config.maxTaskAttemptsPerTask),
+        }
+        if (Buffer.byteLength(JSON.stringify(value)) > this.config.maxSelectionBytes) {
+          throw new TeamError('Task capabilities exceed maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+        }
+        return Promise.resolve(freeze(teamTaskCapabilitiesSchema.parse(value)))
+      })
+    })
+  }
+
+  /** Resolve only selected task identities under the current Team serializer. */
+  override async resolveTaskReferences(request: TeamTaskReferencesInput): Promise<TeamTaskReferencesPage> {
+    return await this.admit(async () => {
+      const input = teamTaskReferencesInputSchema.parse(request)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) {
+        throw new TeamError('Task references exceed maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      }
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const current = this.requireLiveTeam(loaded)
+        return Promise.resolve(freeze(teamTaskReferencesPageSchema.parse(resolveTaskReferences(current.projection.tasks,
+          current.projection.team.cursor, input, this.config.recoveryPageSize,
+          this.config.maxSelectionTextBytes, this.config.maxSelectionBytes))))
+      })
     })
   }
 
   /** Resolve the provider's configured page size before reading any summary rows. */
   private resolveBrowse(request: TeamBrowseRequest): TeamBrowseSpec {
-    return { teamId: request.teamId, kind: request.kind, afterCursor: request.afterCursor ?? -1,
+    return { ...request, afterCursor: request.queryCursor?.afterCursor ?? request.afterCursor ?? -1,
       limit: this.pageLimit(request.limit ?? this.config.recoveryPageSize) }
   }
 
@@ -1911,11 +2262,18 @@ export class TeamHub extends TeamRuntime {
   override async browse(request: TeamBrowseRequest): Promise<TeamBrowsePage> {
     return await this.admit(async () => {
       const input = this.resolveBrowse(teamBrowseRequestSchema.parse(request))
+      if (input.query !== undefined && new TextEncoder().encode(input.query.search).byteLength > this.config.maxSelectionTextBytes) {
+        throw new TeamError('Task search exceeds maxSelectionTextBytes', 'TEAM_INVALID_ARGUMENT')
+      }
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(() => {
         const result = projectTeamBrowse(this.requireLiveTeam(loaded).projection, input,
           this.config.maxSelectionTextBytes, this.config.maxSelectionBytes)
-        if (!result.ok) throw new TeamError(`Team browse ${result.reason} cannot fit the selected response`, 'TEAM_CHANNEL_BACKPRESSURE')
+        if (!result.ok) {
+          if (result.reason === 'revision') throw new TeamError('Task query revision changed; refresh the query', 'TEAM_CURSOR_CONFLICT')
+          if (result.reason === 'query') throw new TeamError('Task query continuation does not match the query', 'TEAM_INVALID_ARGUMENT')
+          throw new TeamError(`Team browse ${result.reason} cannot fit the selected response`, 'TEAM_CHANNEL_BACKPRESSURE')
+        }
         return Promise.resolve(freeze(result.value))
       })
     })
@@ -2115,6 +2473,7 @@ export class TeamHub extends TeamRuntime {
       return await loaded.queue.run(async () => {
         const team = this.requireLiveTeam(loaded)
         const validate = () => {
+          this.assertHumanTeamMutable(team)
           const resolution = this.requireSystemHumanActionProof(actor)
           const scope = resolution.scope
           if (resolution.sourceName !== HOST_API_PROXY_HUMAN_ACTION_PROOF_SOURCE || scope.kind !== 'host-human-action-response-accept'
@@ -2417,6 +2776,80 @@ export class TeamHub extends TeamRuntime {
       return freeze(teamListPageSchema.parse({ items, scanned: page.scanned,
         ...page.nextCursor === undefined ? {} : { nextCursor: teamDiscoveryCursorSchema.parse(page.nextCursor) } }))
     })
+  }
+
+  /** Discover authorized summaries without returning raw storage positions or Team authority grants. */
+  override async listHumanTeamsPage(request: TeamProductDiscoveryRequest): Promise<TeamProductDirectoryPage> {
+    return await this.admit(async () => {
+      const scope = this.requireHumanReaderProof(request.reader)
+      const project = async (teamId: TeamId): Promise<TeamProductSummary | undefined> => {
+        try {
+          const authority = await this.resolveHumanReadAuthority({ teamId, principalId: scope.principalId })
+          const team = await this.loadHumanReadTeam(teamId)
+          return await team.queue.run(() => Promise.resolve(this.productTeamSummary(this.requireLiveTeam(team), authority.teamId)))
+        } catch (error: unknown) {
+          if (error instanceof TeamError && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS')) return undefined
+          throw error
+        }
+      }
+      return await this.productDirectory.read(request.afterCursor, scope, this.pageLimit(request.limit), this.config.maxSelectionBytes, {
+        currentScope: () => this.requireHumanReaderProof(request.reader),
+        scan: async afterCursor => await this.listTeamsPage({ afterCursor, limit: 1 }), project,
+        publish: async (ids, nextCursor) => {
+          const nodes = new Map<TeamId, LoadedTeam>()
+          for (const id of ids) {
+            let team = await this.loadHumanReadTeam(id)
+            while (true) {
+              nodes.set(team.id, team)
+              const parentId = team.projection.team.parentTeamId
+              if (parentId === undefined) break
+              const parent = await this.loadHumanReadTeam(parentId)
+              this.assertReadParent(parent, team)
+              team = parent
+            }
+          }
+          const ordered = [...nodes.values()].sort((left, right) => left.projection.team.depth - right.projection.team.depth
+            || left.id.localeCompare(right.id))
+          const lock = (index: number): Promise<TeamProductDirectoryPage> => {
+            const node = ordered[index]
+            if (node !== undefined) return node.queue.run(() => lock(index + 1))
+            if (!isDeepStrictEqual(scope, this.requireHumanReaderProof(request.reader))) {
+              throw new TeamError('Team reader changed during discovery', 'TEAM_ACTOR_PROOF_INVALID')
+            }
+            const items: TeamProductSummary[] = []
+            for (const id of ids) {
+              const lineage: LoadedTeam[] = []
+              let team = this.requireLiveTeam(nodes.get(id) as LoadedTeam)
+              while (true) {
+                lineage.push(team)
+                const parentId = team.projection.team.parentTeamId
+                if (parentId === undefined) break
+                const parent = this.requireLiveTeam(nodes.get(parentId) as LoadedTeam)
+                this.assertReadParent(parent, team)
+                team = parent
+              }
+              try {
+                const authority = this.selectHumanReadAuthority(lineage, { teamId: id, principalId: scope.principalId })
+                const target = lineage[0] as LoadedTeam
+                if (target.projection.team.archivedAt === undefined) items.push(this.productTeamSummary(target, authority.teamId))
+              } catch (error: unknown) {
+                if (!(error instanceof TeamError) || error.code !== 'TEAM_HUMAN_ACTOR_FORBIDDEN') throw error
+              }
+            }
+            const result = { items, ...nextCursor === undefined ? {} : { nextCursor } }
+            if (Buffer.byteLength(JSON.stringify(result)) > this.config.maxSelectionBytes) {
+              throw new TeamError('Team directory changed beyond response allowance; refresh', 'TEAM_CHANNEL_BACKPRESSURE')
+            }
+            return Promise.resolve(freeze(result))
+          }
+          return await lock(0)
+        },
+      })
+    })
+  }
+
+  private productTeamSummary(team: LoadedTeam, membershipTeam: TeamId): TeamProductSummary {
+    return projectTeamProductSummary(team.projection.team, membershipTeam, this.config.maxSelectionTextBytes, team.projection.rules)
   }
 
   /** Archive one terminal Team through a current system or authenticated-human runtime proof. */
@@ -3646,6 +4079,7 @@ export class TeamHub extends TeamRuntime {
           throw new TeamError(`Team '${input.teamId}' reached its participant limit`, 'TEAM_CHANNEL_BACKPRESSURE')
         }
         this.assertTeamCursor(current, input.expectedCursor)
+        this.executionProfiles.assertInvitation(input)
         const authorityGrant = current.projection.team.authorityGrant === undefined && input.authorityGrant === undefined
           ? undefined
           : resolveAuthorityGrant(input.authorityGrant, current.projection.team.authorityGrant)
@@ -3692,6 +4126,7 @@ export class TeamHub extends TeamRuntime {
         } else {
           this.resolveTopologyParticipantInviteAuthority(current, actor as TeamSystemTopologyProof, input)
         }
+        this.executionProfiles.assertInvitation(input)
         await this.commitTeamCommand(current, [{
           type: 'participant/changed', participant, createdAt: nextTeamTimestamp(current.projection),
         }], 'TEAM_INVALID_ARGUMENT')
@@ -4073,9 +4508,14 @@ export class TeamHub extends TeamRuntime {
         for (const task of current.projection.tasks.values()) {
           const lease = task.lease
           if (lease?.activationId !== binding.activation.id) continue
+          const creator = task.createCommand.creator
+          const simulation = 'kind' in creator && creator.runId === current.projection.rules['simulationRunId']
+            && task.cancellation === undefined && current.projection.team.closure === undefined
+            && current.projection.team.cancellation === undefined
           const outcome: TaskAttemptOutcome = settledAt >= lease.expiresAt
             ? { kind: 'lease-expired' }
-            : { kind: 'released' }
+            : simulation ? { kind: 'failed', failure: { code: 'SIM_WRITER_RETIRED', message: 'Simulation writer retired before task completion' } }
+              : { kind: 'released' }
           const owner = {
             teamId: input.teamId,
             taskId: task.id,
@@ -4093,7 +4533,7 @@ export class TeamHub extends TeamRuntime {
             nextPhase,
           }, input.participantId)
           revalidate()
-          const settled = this.settledAttempt(task, lease, settledAt, outcome)
+          const settled = { ...this.settledAttempt(task, lease, settledAt, outcome), retirement: { source } }
           const nextTask = this.withSettledAttempt(task, settled, nextPhase)
           records.push({ type: 'task/changed', task: nextTask, createdAt: settledAt })
         }
@@ -4502,6 +4942,7 @@ export class TeamHub extends TeamRuntime {
           this.assertWorkflowTaskTemplate(current.projection, plan, template, {
             id: teamTaskIdSchema.parse('workflow-task-validation'),
             teamId: input.teamId,
+            createdAt: nextTeamTimestamp(current.projection),
             revision: 1,
             execution: structuredClone(creation.execution),
             workflowPlanId: input.workflowPlanId,
@@ -4582,6 +5023,7 @@ export class TeamHub extends TeamRuntime {
         const task: TeamTaskSnapshot = {
           id: mintTaskId(),
           teamId: input.teamId,
+          createdAt,
           revision: 1,
           execution: structuredClone(creation.execution),
           ...creation.execution.kind === 'participant' ? {} : { delegation: {
@@ -5751,39 +6193,73 @@ export class TeamHub extends TeamRuntime {
   /**
    * Compare-and-set the editable task details without changing scheduler-owned state.
    * @param request - Team/task identity, observed revision, and optional replacement details.
-   * @returns the detached task projection after the committed details update.
+   * @returns original acceptance metadata and the detached current task, which may have advanced since admission.
    */
-  override async updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot> {
+  override async updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskDetailsUpdateResult> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
-      const input = teamTaskDetailsUpdateInputSchema.parse(untrustedInput)
-      const human = this.isHumanTaskDetailsActor(actor, input)
+      const authorityInput = teamTaskDetailsUpdateInputSchema.parse(untrustedInput)
+      const input = teamTaskDetailsUpdateInputSchema.parse(normalizeTaskDetailsUpdate(authorityInput))
+      const human = this.isHumanTaskDetailsActor(actor, authorityInput)
       const coordinatorActor = human ? undefined : this.requireCoordinatorTaskAuthorityForTeam(actor, input.teamId)
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(async () => {
         const current = this.requireLiveTeam(loaded)
         const actorId = human
-          ? this.resolveHumanTaskDetailsAuthority(current, actor, input)
+          ? this.resolveHumanTaskDetailsAuthority(current, actor, authorityInput)
           : this.coordinatorTaskCreator(
             current,
             this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId),
           ).participantId
-        const prior = this.requireTask(current, input.taskId)
-        this.assertWorkflowTaskDetailsMutable(current.projection, prior, 'edit')
-        this.assertTaskRevision(prior, input.expectedRevision)
-        this.requireLeaseFreeTask(prior)
+        const creator = human ? { teamId: current.id, participantId: actorId }
+          : this.coordinatorTaskCreator(current, this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId))
+        const existing = current.projection.taskUpdateCommands.get(input.commandId)
+        if (existing !== undefined) {
+          if (!isDeepStrictEqual(existing.creator, creator) || !isDeepStrictEqual(existing.input, input)) {
+            throw new TeamError('Task update command identity was used with different caller or payload', 'TEAM_TASK_UPDATE_COMMAND_CONFLICT')
+          }
+          await this.authorizeOrThrow('task-mutate', input.teamId, { taskId: input.taskId, commandId: input.commandId,
+            expectedRevision: input.expectedRevision }, actorId)
+          const confirmedCreator = human
+            ? { teamId: current.id, participantId: this.resolveHumanTaskDetailsAuthority(current, actor, authorityInput) }
+            : this.coordinatorTaskCreator(current, this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId))
+          if (!isDeepStrictEqual(confirmedCreator, creator)) {
+            throw new TeamError('Task update author changed during policy', 'TEAM_ACTOR_PROOF_INVALID')
+          }
+          if (existing.kind === 'rejected') throw new TeamTaskUpdateRejectedError(existing)
+          return freeze(teamTaskDetailsUpdateResultSchema.parse({
+            receipt: taskUpdateReceipt(existing), task: this.requireTask(current, input.taskId),
+          }))
+        }
+        if (current.projection.taskUpdateCommands.size >= this.config.maxTaskUpdateCommandsPerTeam) {
+          throw new TeamError('Task update command count exceeds maxTaskUpdateCommandsPerTeam', 'TEAM_INVALID_ARGUMENT')
+        }
+        this.requireTask(current, input.taskId)
         await this.authorizeOrThrow('task-mutate', input.teamId, {
           taskId: input.taskId,
           expectedRevision: input.expectedRevision,
         }, actorId)
-        if (human) this.resolveHumanTaskDetailsAuthority(current, actor, input)
-        else this.coordinatorTaskCreator(
-          current,
-          this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId),
-        )
+        const confirmedCreator = human
+          ? { teamId: current.id, participantId: this.resolveHumanTaskDetailsAuthority(current, actor, authorityInput) }
+          : this.coordinatorTaskCreator(current, this.requireCoordinatorTaskAuthorityForTeam(coordinatorActor, input.teamId))
+        if (!isDeepStrictEqual(confirmedCreator, creator)) throw new TeamError('Task update author changed during policy', 'TEAM_ACTOR_PROOF_INVALID')
         const confirmed = this.requireTask(current, input.taskId)
-        this.assertTaskRevision(confirmed, input.expectedRevision)
-        this.requireLeaseFreeTask(confirmed)
+        const createdAt = nextTeamTimestamp(current.projection)
+        const original: TeamTaskUpdateCommandReceipt = { kind: 'applied', input, creator,
+          appliedRevision: confirmed.revision + 1, appliedAt: createdAt }
+        if (Buffer.byteLength(JSON.stringify(original)) > this.config.maxSelectionBytes) {
+          throw new TeamError('Task update receipt exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+        }
+        const failure = taskUpdateFailure(current.projection, input)
+        if (failure !== undefined) {
+          const command: import('@clocky/clocky-team').TeamTaskUpdateCommandRejection = { kind: 'rejected', input, creator,
+            observedRevision: confirmed.revision, rejectedAt: createdAt, ...failure }
+          if (Buffer.byteLength(JSON.stringify(command)) > this.config.maxSelectionBytes) {
+            throw new TeamError('Task update refusal exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+          }
+          await this.commitTeam(current, [{ type: 'task/update-rejected', command, createdAt }])
+          throw new TeamTaskUpdateRejectedError(command)
+        }
         const task: TeamTaskSnapshot = {
           ...confirmed,
           revision: confirmed.revision + 1,
@@ -5791,9 +6267,25 @@ export class TeamHub extends TeamRuntime {
           ...input.description === undefined ? {} : { description: normalizedText(input.description, 'description') },
           ...input.blockedBy === undefined ? {} : { blockedBy: [...input.blockedBy] },
         }
-        const createdAt = nextTeamTimestamp(current.projection)
-        await this.commitTeamCommand(current, [{ type: 'task/changed', task, createdAt }], 'TEAM_TASK_GRAPH_INVALID')
-        return this.taskSnapshot(task)
+        const detailsCommand = original
+        await this.commitTeamCommand(current, [{ type: 'task/changed', task, detailsCommand, createdAt }], 'TEAM_TASK_GRAPH_INVALID')
+        return freeze(teamTaskDetailsUpdateResultSchema.parse({ receipt: taskUpdateReceipt(detailsCommand), task }))
+      })
+    })
+  }
+
+  /** Inspect original update acceptance or terminal refusal without re-executing the command. */
+  override async getTaskUpdateResult(request: TeamTaskUpdateLookupInput): Promise<TeamTaskUpdateLookup> {
+    return await this.admit(async () => {
+      const input = teamTaskUpdateLookupInputSchema.parse(request)
+      if (Buffer.byteLength(JSON.stringify(input)) > this.config.maxSelectionBytes) throw new TeamError('Task update lookup exceeds maxSelectionBytes', 'TEAM_INVALID_ARGUMENT')
+      const loaded = await this.ensureTeam(input.teamId)
+      return await loaded.queue.run(() => {
+        const receipt = this.requireLiveTeam(loaded).projection.taskUpdateCommands.get(input.commandId)
+        const value: TeamTaskUpdateLookup = receipt === undefined || receipt.input.taskId !== input.taskId
+          ? { kind: 'not-found', ...input } : receipt.kind === 'applied' ? { kind: 'applied', receipt: taskUpdateReceipt(receipt) }
+            : { kind: 'rejected', rejection: taskUpdateRejection(receipt) }
+        return Promise.resolve(freeze(teamTaskUpdateLookupSchema.parse(value)))
       })
     })
   }
@@ -5842,18 +6334,32 @@ export class TeamHub extends TeamRuntime {
    * @param request - authenticated task selection, revision, and optional reason.
    * @returns the task with its accepted intent, or its settled cancellation.
    */
-  override async cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot> {
+  override cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot> {
+    return this.cancelTaskOwned(request, false)
+  }
+
+  /** Admit an exact Simulation task stop without granting an ordinary human or coordinator bypass. */
+  override cancelRuntimeTask(request: import('@clocky/clocky-team').TeamSimulationTaskCancelRequest): Promise<TeamTaskSnapshot> {
+    return this.cancelTaskOwned(request, true)
+  }
+
+  private async cancelTaskOwned(request: TeamTaskCancelRequest | import('@clocky/clocky-team').TeamSimulationTaskCancelRequest,
+    simulation: boolean): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
-      const input = teamTaskCancelInputSchema.parse(untrustedInput)
-      const human = this.isHumanTaskCancelActor(actor, input)
-      if (!human) this.taskControlCancelScope(actor, input)
+      const input = simulation ? teamSimulationTaskCancelInputSchema.parse(untrustedInput) : teamTaskCancelInputSchema.parse(untrustedInput)
+      const sourceActor = actor as TeamSystemTaskControlProof
+      const sourceInput = input as import('@clocky/clocky-team').TeamSimulationTaskCancelInput
+      const human = !simulation && this.isHumanTaskCancelActor(actor, input)
+      if (simulation) this.simulationTaskCancelScope(sourceActor, sourceInput)
+      else if (!human) this.taskControlCancelScope(sourceActor, input)
       const loaded = await this.ensureTeam(input.teamId)
       return await loaded.queue.run(async () => {
         const current = this.requireLiveTeam(loaded)
-        const resolveActor = (): ParticipantId => human
-          ? this.resolveHumanTaskCancelAuthority(current, actor, input)
-          : this.resolveTaskControlCancelAuthority(current, actor, input).actorId
+        const resolveActor = (): ParticipantId => simulation
+          ? this.simulationTaskCancelAuthority(current, sourceActor, sourceInput).creatorId
+          : human ? this.resolveHumanTaskCancelAuthority(current, actor, input)
+            : this.resolveTaskControlCancelAuthority(current, sourceActor, input).actorId
         const actorId = resolveActor()
         const prior = this.requireTask(current, input.taskId)
         this.assertWorkflowTaskCancellationAllowed(current.projection, prior)
@@ -6106,6 +6612,7 @@ export class TeamHub extends TeamRuntime {
   override async resolveTaskReviewFromResponse(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const initial = this.requireSystemTaskReviewProof(request.actor)
+      if (initial.scope.kind !== 'scheduler-review-response') this.rejectTaskReviewActor()
       const channel = await this.ensureAttachedChannel(initial.scope.channelId)
       const loaded = await this.ensureTeam(initial.scope.teamId)
       return await loaded.queue.run(async () => await channel.queue.run(async () => {
@@ -6117,12 +6624,70 @@ export class TeamHub extends TeamRuntime {
     })
   }
 
+  /** Review only an original native completed result through its configured participant route. */
+  override async resolveSimulationTaskReview(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot> {
+    return await this.admit(async () => {
+      const initial = this.requireSystemTaskReviewProof(request.actor)
+      if (initial.sourceName !== 'simulation-team' || initial.scope.kind !== 'simulation-task-review') this.rejectTaskReviewActor()
+      const loaded = await this.ensureTeam(initial.scope.teamId)
+      return await loaded.queue.run(async () => {
+        const current = this.requireLiveTeam(loaded)
+        const validate = (): import('@clocky/clocky-team').SimulationTaskReviewScope => {
+          const resolution = this.requireSystemTaskReviewProof(request.actor)
+          if (resolution.sourceName !== initial.sourceName || !isDeepStrictEqual(resolution.scope, initial.scope)
+            || resolution.scope.kind !== 'simulation-task-review') return this.rejectTaskReviewActor()
+          const scope = resolution.scope
+          const task = this.requireTask(current, scope.taskId), creator = task.createCommand.creator
+          const attempt = task.attemptHistory.find(value => value.id === scope.attemptId)
+          if (scope.teamId !== current.id || current.projection.rules['simulationRunId'] !== scope.runId
+            || current.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+            || !('kind' in creator) || creator.runId !== scope.runId
+            || creator.operationId !== scope.operationId || creator.teamId !== current.id || creator.participantId !== scope.creatorId
+            || task.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+            || task.reviewPolicy.kind !== 'participant' || task.reviewPolicy.reviewerId !== scope.reviewerId
+            || current.projection.participants.get(scope.reviewerId)?.phase !== 'active'
+            || attempt?.participantId !== scope.initiatorId || !isDeepStrictEqual(attempt.outcome, scope.outcome)) {
+            return this.rejectTaskReviewActor()
+          }
+          return scope
+        }
+        const scope = validate()
+        const command: import('@clocky/clocky-team').TeamSimulationTaskReviewCommand = {
+          runId: scope.runId, commandId: scope.commandId, operationId: scope.operationId, expectedRevision: scope.expectedRevision,
+        }
+        for (const task of current.projection.tasks.values()) {
+          const prior = task.reviewHistory.find(value => value.simulationCommand?.runId === scope.runId
+            && value.simulationCommand.commandId === scope.commandId)
+          if (prior === undefined) continue
+          if (task.id !== scope.taskId || !isDeepStrictEqual(prior.simulationCommand, command)
+            || prior.attemptId !== scope.attemptId || prior.reviewerId !== scope.reviewerId
+            || prior.nextPhase !== scope.nextPhase || prior.reason !== scope.reason) {
+            throw new TeamError('Simulation review command changed its original payload', 'TEAM_TASK_IDEMPOTENCY_CONFLICT')
+          }
+          return this.taskSnapshot(task)
+        }
+        const prior = this.requireTask(current, scope.taskId)
+        if (current.projection.team.phase !== 'active' || current.projection.team.cancellation !== undefined
+          || current.projection.team.closure !== undefined || prior.attemptHistory.at(-1)?.id !== scope.attemptId) {
+          return this.rejectTaskReviewActor()
+        }
+        return await this.resolveTaskReviewForReviewer(current, { taskId: scope.taskId, expectedRevision: scope.expectedRevision,
+          nextPhase: scope.nextPhase, reason: scope.reason }, scope.reviewerId, () => {
+          validate()
+          if (current.projection.team.phase !== 'active' || current.projection.team.cancellation !== undefined
+            || current.projection.team.closure !== undefined) this.rejectTaskReviewActor()
+        }, command)
+      })
+    })
+  }
+
   /** Resolve one review decision after deriving and validating its exact reviewer. */
   private async resolveTaskReviewForReviewer(
     current: LoadedTeam,
     input: TeamTaskReviewResolveInput,
     reviewerId: ParticipantId,
     revalidate?: () => void | Promise<void>,
+    simulationCommand?: import('@clocky/clocky-team').TeamSimulationTaskReviewCommand,
   ): Promise<TeamTaskSnapshot> {
     const prior = this.requireTask(current, input.taskId)
     assertTaskNotCancelling(prior)
@@ -6146,6 +6711,7 @@ export class TeamHub extends TeamRuntime {
       nextPhase: input.nextPhase,
       reason: normalizedText(input.reason, 'review reason'),
       decidedAt: createdAt,
+      ...simulationCommand === undefined ? {} : { simulationCommand },
     }
     await this.authorizeOrThrow('task-mutate', current.id, {
       taskId: input.taskId,
@@ -6208,9 +6774,10 @@ export class TeamHub extends TeamRuntime {
     team: LoadedTeam,
     channel: LoadedChannel,
     resolution: TeamSystemTaskReviewProofResolution,
-  ): Promise<TeamSystemTaskReviewProofResolution['scope']> {
+  ): Promise<import('@clocky/clocky-team').SchedulerReviewResponseTaskReviewScope> {
     const scope = resolution.scope
     if (resolution.sourceName !== TEAM_SCHEDULER_TASK_REVIEW_PROOF_SOURCE
+      || scope.kind !== 'scheduler-review-response'
       || scope.teamId !== team.id
       || scope.channelId !== channel.id) {
       return this.rejectTaskReviewActor()
@@ -6283,11 +6850,25 @@ export class TeamHub extends TeamRuntime {
    * @param request - scheduler proof and JSON-only task owner/lease selection.
    * @returns the detached assigned task projection containing the minted lease.
    */
-  override async assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot> {
+  override assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot> {
+    return this.assignTaskOwned(request, false)
+  }
+
+  override assignSimulationTask(request: import('@clocky/clocky-team').TeamSimulationTaskAssignRequest): Promise<TeamTaskSnapshot> {
+    return this.assignTaskOwned(request, true)
+  }
+
+  private async assignTaskOwned(request: TeamTaskAssignRequest | import('@clocky/clocky-team').TeamSimulationTaskAssignRequest,
+    simulation: boolean): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
-      const input = teamTaskAssignInputSchema.parse(untrustedInput)
-      this.assertInitialTaskAssignLeaseAuthority(actor, input)
+      const input: TeamTaskAssignInput = simulation
+        ? teamSimulationTaskAssignInputSchema.parse(untrustedInput) : teamTaskAssignInputSchema.parse(untrustedInput)
+      const schedulerActor = actor as TeamSystemTaskLeaseProof
+      const simulationActor = actor as TeamSystemTaskControlProof
+      const simulationInput = input as import('@clocky/clocky-team').TeamSimulationTaskAssignInput
+      if (simulation) this.simulationTaskAssignScope(simulationActor, simulationInput)
+      else this.assertInitialTaskAssignLeaseAuthority(schedulerActor, input)
       const loaded = await this.ensureTeam(input.teamId)
       await this.repairPendingParentCharges(loaded)
       const wakeChannel = input.wakeChannelId === undefined
@@ -6296,7 +6877,8 @@ export class TeamHub extends TeamRuntime {
       return await loaded.queue.run(async () => {
         const assign = async (): Promise<TeamTaskSnapshot> => {
           const current = this.requireLiveTeam(loaded)
-          this.resolveTaskAssignLeaseAuthority(current, actor, input)
+          if (simulation) this.simulationTaskAssignAuthority(current, simulationActor, simulationInput)
+          else this.resolveTaskAssignLeaseAuthority(current, schedulerActor, input)
           const prepared = this.prepareTaskAssignment(current, input, wakeChannel)
           const assignedRevision = prepared.task.revision + 1
           await this.authorizeOrThrow('task-assign', input.teamId, {
@@ -6309,12 +6891,13 @@ export class TeamHub extends TeamRuntime {
             leaseDurationMs: input.leaseDurationMs,
             attemptOrdinal: prepared.task.attemptCount + 1,
           })
-          this.resolveTaskAssignLeaseAuthority(current, actor, input)
+          if (simulation) this.simulationTaskAssignAuthority(current, simulationActor, simulationInput)
+          else this.resolveTaskAssignLeaseAuthority(current, schedulerActor, input)
           const confirmed = this.prepareTaskAssignment(current, input, wakeChannel)
           const confirmedAssignedRevision = confirmed.task.revision + 1
           const assignedAt = nextTeamTimestamp(current.projection)
           const lease: TaskLeaseSnapshot = {
-            attemptId: mintTaskAttemptId(),
+            attemptId: simulation ? simulationInput.attemptId : mintTaskAttemptId(),
             assignedRevision: confirmedAssignedRevision,
             ordinal: confirmed.task.attemptCount + 1,
             participantId: input.participantId,
@@ -6403,26 +6986,43 @@ export class TeamHub extends TeamRuntime {
    * @param request - Revision, attempt, and owner fence.
    * @returns the detached running task projection.
    */
-  override async startTaskAttempt(request: TeamTaskAttemptStartRequest): Promise<TeamTaskSnapshot> {
+  override startTaskAttempt(request: TeamTaskAttemptStartRequest): Promise<TeamTaskSnapshot> {
+    return this.startTaskAttemptOwned(request, false)
+  }
+
+  override startSimulationTaskAttempt(request: import('@clocky/clocky-team').TeamSimulationTaskStartRequest): Promise<TeamTaskSnapshot> {
+    return this.startTaskAttemptOwned(request, true)
+  }
+
+  private async startTaskAttemptOwned(request: TeamTaskAttemptStartRequest | import('@clocky/clocky-team').TeamSimulationTaskStartRequest,
+    simulation: boolean): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
-      const input = teamTaskAttemptStartInputSchema.parse(untrustedInput)
-      const issued = this.requireActivationActorProof(actor)
-      const loaded = await this.ensureTeam(issued.activation.teamId)
+      const input = simulation ? teamSimulationTaskStartInputSchema.parse(untrustedInput)
+        : teamTaskAttemptStartInputSchema.parse(untrustedInput)
+      const sourceActor = actor as TeamSystemTaskControlProof
+      const ordinaryActor = actor as TeamActorProof
+      const sourceInput = input as import('@clocky/clocky-team').TeamSimulationTaskStartInput
+      const teamId = simulation ? this.simulationTaskStartScope(sourceActor, sourceInput).input.teamId
+        : this.requireActivationActorProof(ordinaryActor).activation.teamId
+      const loaded = await this.ensureTeam(teamId)
       return await loaded.queue.run(async () => {
         const current = this.requireLiveTeam(loaded)
-        const binding = this.requireCurrentActivationActorBinding(current, actor)
+        const binding = simulation ? this.simulationTaskStartAuthority(current, sourceActor, sourceInput)
+          : this.requireCurrentActivationActorBinding(current, ordinaryActor)
         const owner = this.proofAttemptOwner(current, input, binding)
         const prior = this.requireTask(current, input.taskId)
         assertTaskNotCancelling(prior)
         const lease = this.requireAttemptOwner(current, prior, owner)
+        if (simulation && prior.phase === 'running') return this.taskSnapshot(prior)
         if (prior.phase !== 'assigned') {
           throw new TeamError(`Team task '${prior.id}' is not assigned`, 'TEAM_INVALID_ARGUMENT')
         }
         const startedAt = nextTeamTimestamp(current.projection)
         this.assertLeaseLive(lease, startedAt)
         await this.authorizeOrThrow('task-mutate', current.id, ownerAttemptFacts(owner), binding.activation.participantId)
-        const confirmedBinding = this.requireCurrentActivationActorBinding(current, actor)
+        const confirmedBinding = simulation ? this.simulationTaskStartAuthority(current, sourceActor, sourceInput)
+          : this.requireCurrentActivationActorBinding(current, ordinaryActor)
         const confirmedOwner = this.proofAttemptOwner(current, input, confirmedBinding)
         const confirmed = this.requireTask(current, input.taskId)
         assertTaskNotCancelling(confirmed)
@@ -6569,17 +7169,32 @@ export class TeamHub extends TeamRuntime {
    * @param request - Runtime actor proof, revision/attempt fence, and terminal outcome.
    * @returns the detached task projection without an active lease.
    */
-  override async settleTaskAttempt(request: TeamTaskAttemptSettleRequest): Promise<TeamTaskSnapshot> {
+  override settleTaskAttempt(request: TeamTaskAttemptSettleRequest): Promise<TeamTaskSnapshot> {
+    return this.settleTaskAttemptOwned(request, false)
+  }
+
+  override settleSimulationTaskAttempt(request: import('@clocky/clocky-team').TeamSimulationTaskSettleRequest): Promise<TeamTaskSnapshot> {
+    return this.settleTaskAttemptOwned(request, true)
+  }
+
+  private async settleTaskAttemptOwned(request: TeamTaskAttemptSettleRequest | import('@clocky/clocky-team').TeamSimulationTaskSettleRequest,
+    simulation: boolean): Promise<TeamTaskSnapshot> {
     return await this.admit(async () => {
       const { actor, ...untrustedInput } = request
-      const input = teamTaskAttemptSettleInputSchema.parse(untrustedInput)
+      const input = simulation ? teamSimulationTaskSettleInputSchema.parse(untrustedInput)
+        : teamTaskAttemptSettleInputSchema.parse(untrustedInput)
+      const sourceActor = actor as TeamSystemTaskControlProof
+      const ordinaryActor = actor as TeamActorProof
+      const sourceInput = input as import('@clocky/clocky-team').TeamSimulationTaskSettleInput
       // The proof selects the Team before a task lookup. Revalidate it while
       // holding that Team lock before it can select a lease owner or policy actor.
-      const issued = this.requireActivationActorProof(actor)
-      const loaded = await this.ensureTeam(issued.activation.teamId)
+      const teamId = simulation ? this.simulationTaskSettleScope(sourceActor, sourceInput).input.teamId
+        : this.requireActivationActorProof(ordinaryActor).activation.teamId
+      const loaded = await this.ensureTeam(teamId)
       return await loaded.queue.run(async () => {
         const current = this.requireLiveTeam(loaded)
-        const binding = this.requireCurrentActivationActorBinding(current, actor)
+        const binding = simulation ? this.simulationTaskSettleAuthority(current, sourceActor, sourceInput)
+          : this.requireCurrentActivationActorBinding(current, ordinaryActor)
         const owner = this.proofAttemptOwner(current, input, binding)
         const prior = this.requireTask(current, input.taskId)
         const recorded = prior.attemptHistory.find(attempt => attempt.id === input.attemptId)
@@ -6618,7 +7233,8 @@ export class TeamHub extends TeamRuntime {
           outcome: attemptOutcomeFacts(input.outcome),
           nextPhase,
         }, binding.activation.participantId)
-        const confirmedBinding = this.requireCurrentActivationActorBinding(current, actor)
+        const confirmedBinding = simulation ? this.simulationTaskSettleAuthority(current, sourceActor, sourceInput)
+          : this.requireCurrentActivationActorBinding(current, ordinaryActor)
         const confirmedOwner = this.proofAttemptOwner(current, input, confirmedBinding)
         const confirmed = this.requireTask(current, input.taskId)
         const confirmedLease = this.requireAttemptOwner(current, confirmed, confirmedOwner)
@@ -6635,7 +7251,10 @@ export class TeamHub extends TeamRuntime {
             if (channel.projection.phase !== 'active' && channel.projection.phase !== 'pending') return
             await this.closeChannelOwned(channel, { channelId: wake.id, expectedCursor: channel.projection.cursor, reason: 'task cancelled' },
               { taskId: confirmed.id, attemptId: confirmedLease.attemptId, cancellationRequestedAt: cancellation.requestedAt },
-              cancellation.requestedBy, () => { this.requireCurrentActivationActorBinding(current, actor) })
+              cancellation.requestedBy, () => {
+                if (simulation) this.simulationTaskSettleAuthority(current, sourceActor, sourceInput)
+                else this.requireCurrentActivationActorBinding(current, ordinaryActor)
+              })
           })
         }
         const settled = this.settledAttempt(confirmed, confirmedLease, settledAt, input.outcome)
@@ -7187,6 +7806,123 @@ export class TeamHub extends TeamRuntime {
   /** Reject every forged, revoked, foreign, stale, or wrong-operation scheduler lease proof. */
   private rejectTaskLeaseActor(): never {
     throw new TeamError('Task lease actor is invalid for this command', 'TEAM_ACTOR_PROOF_INVALID')
+  }
+
+  /** Match the exact runtime-only cancellation request before opening its target. */
+  private simulationTaskCancelScope(actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskCancelInput): import('@clocky/clocky-team').SimulationTaskCancelScope {
+    const resolution = this.requireSystemTaskControlProof(actor)
+    const scope = resolution.scope
+    if (resolution.sourceName !== 'simulation-team' || scope.kind !== 'simulation-task-cancel'
+      || scope.runId !== input.runId || scope.operationId !== input.operationId
+      || !isDeepStrictEqual(scope.input, input)) return this.rejectTaskControlActor()
+    return scope
+  }
+
+  /** Recheck immutable creation and the original exact work selected by the cancellation intent. */
+  private simulationTaskCancelAuthority(team: LoadedTeam, actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskCancelInput): import('@clocky/clocky-team').SimulationTaskCancelScope {
+    const scope = this.simulationTaskCancelScope(actor, input)
+    const task = this.requireTask(team, input.taskId)
+    const creator = task.createCommand.creator
+    const target = task.cancellation?.target
+    const attemptId = target === undefined ? task.lease?.attemptId ?? null : target.kind === 'attempt' ? target.attemptId : null
+    if (team.id !== input.teamId || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+      || !('kind' in creator) || creator.runId !== scope.runId || creator.operationId !== scope.operationId
+      || creator.teamId !== team.id || creator.participantId !== scope.creatorId
+      || task.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+      || task.execution.kind !== 'participant' || input.expectedAttemptId !== attemptId) return this.rejectTaskControlActor()
+    return scope
+  }
+
+  /** Match the exact runtime-only assignment request before opening its target. */
+  private simulationTaskAssignScope(actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskAssignInput): import('@clocky/clocky-team').SimulationTaskAssignScope {
+    const resolution = this.requireSystemTaskControlProof(actor)
+    const scope = resolution.scope
+    if (resolution.sourceName !== 'simulation-team' || scope.kind !== 'simulation-task-assign'
+      || !isDeepStrictEqual(scope.input, input)) return this.rejectTaskControlActor()
+    return scope
+  }
+
+  /** Verify canonical task provenance and current activation under the Team lock, including after policy awaits. */
+  private simulationTaskAssignAuthority(team: LoadedTeam, actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskAssignInput): void {
+    const scope = this.simulationTaskAssignScope(actor, input)
+    const task = this.requireTask(team, input.taskId)
+    const creator = task.createCommand.creator
+    const binding = team.projection.activations.get(input.activationId)
+    if (team.id !== input.teamId || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+      || !('kind' in creator) || creator.runId !== scope.runId || creator.operationId !== scope.operationId
+      || creator.teamId !== team.id || creator.participantId !== scope.creatorId || task.attemptCount + 1 !== scope.ordinal
+      || task.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+      || binding?.activation.participantId !== input.participantId || binding.sessionId !== scope.sessionId
+      || binding.reservationId !== scope.reservationId
+      || [...team.projection.tasks.values()].some(value => value.lease?.attemptId === input.attemptId
+        || value.attemptHistory.some(attempt => attempt.id === input.attemptId))) return this.rejectTaskControlActor()
+  }
+
+  /** Resolve exact native input authority before touching a target Team. */
+  private simulationTaskStartScope(actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskStartInput): import('@clocky/clocky-team').SimulationTaskStartScope {
+    const resolution = this.requireSystemTaskControlProof(actor)
+    const scope = resolution.scope
+    if (resolution.sourceName !== 'simulation-team' || scope.kind !== 'simulation-task-start'
+      || !isDeepStrictEqual(scope.input, input)) return this.rejectTaskControlActor()
+    return scope
+  }
+
+  /** Recheck canonical creation and the same live lease under the Team queue and after policy IO. */
+  private simulationTaskStartAuthority(team: LoadedTeam, actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskStartInput): ActivationBindingSnapshot {
+    const scope = this.simulationTaskStartScope(actor, input)
+    const task = this.requireTask(team, input.taskId)
+    const creator = task.createCommand.creator
+    const lease = task.lease
+    const binding = lease?.activationId === undefined ? undefined : team.projection.activations.get(lease.activationId)
+    if (team.id !== input.teamId || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+      || !('kind' in creator) || creator.runId !== scope.runId || creator.operationId !== scope.operationId
+      || creator.participantId !== scope.creatorId || creator.teamId !== team.id
+      || task.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+      || lease?.attemptId !== input.attemptId || lease.ordinal !== scope.ordinal
+      || binding === undefined || binding.sessionId !== scope.sessionId || binding.reservationId !== scope.reservationId
+      || binding.activation.participantId !== lease.participantId || binding.quiescedAt !== undefined || binding.fencedAt !== undefined
+      || binding.activation.status !== 'idle' && binding.activation.status !== 'running') return this.rejectTaskControlActor()
+    return binding
+  }
+
+  /** Resolve exact native result authority before reading its target Team. */
+  private simulationTaskSettleScope(actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskSettleInput): import('@clocky/clocky-team').SimulationTaskSettleScope {
+    const resolution = this.requireSystemTaskControlProof(actor)
+    const scope = resolution.scope
+    if (resolution.sourceName !== 'simulation-team' || scope.kind !== 'simulation-task-settle'
+      || !isDeepStrictEqual(scope.input, input)) return this.rejectTaskControlActor()
+    return scope
+  }
+
+  /** Revalidate the current result owner and immutable Simulation creation under the Team queue. */
+  private simulationTaskSettleAuthority(team: LoadedTeam, actor: TeamSystemTaskControlProof,
+    input: import('@clocky/clocky-team').TeamSimulationTaskSettleInput): ActivationBindingSnapshot {
+    const scope = this.simulationTaskSettleScope(actor, input)
+    const task = this.requireTask(team, input.taskId)
+    const creator = task.createCommand.creator
+    const owner = task.lease?.attemptId === input.attemptId ? task.lease
+      : task.attemptHistory.find(value => value.id === input.attemptId)
+    const binding = owner?.activationId === undefined ? undefined : team.projection.activations.get(owner.activationId)
+    if (team.id !== input.teamId || team.projection.rules['simulationRunId'] !== scope.runId
+      || team.projection.rules['activationLifecycleOwner'] !== scope.lifecycleOwner
+      || !('kind' in creator) || creator.runId !== scope.runId || creator.operationId !== scope.operationId
+      || creator.participantId !== scope.creatorId || creator.teamId !== team.id
+      || task.createCommand.idempotencyKey !== JSON.stringify(['simulation-task', scope.runId, scope.operationId])
+      || owner?.ordinal !== scope.ordinal || binding === undefined || binding.sessionId !== scope.sessionId
+      || binding.reservationId !== scope.reservationId || binding.activation.participantId !== owner.participantId
+      || binding.quiescedAt !== undefined || binding.fencedAt !== undefined
+      || binding.activation.status !== 'idle' && binding.activation.status !== 'running') return this.rejectTaskControlActor()
+    return binding
   }
 
   /** Match a registered Simulation source to every durable task field before touching its Team. */
@@ -7793,6 +8529,7 @@ export class TeamHub extends TeamRuntime {
     actor: TeamHumanActorProof,
     input: ChannelCloseInput,
   ): ParticipantId {
+    this.assertHumanTeamMutable(team)
     const currentChannel = this.requireLiveChannel(channel)
     const scope = this.requireHumanParticipantProofScope(actor, this.humanChannelCloseProofInput(team.id, input))
     const participant = team.projection.participants.get(scope.participantId)
@@ -7942,6 +8679,7 @@ export class TeamHub extends TeamRuntime {
     scope: TeamHumanActorScope,
     expectedCursor: number,
   ): ParticipantId {
+    this.assertHumanTeamMutable(team)
     const participant = team.projection.participants.get(scope.participantId)
     if (scope.teamId !== team.id
       || team.projection.team.cursor !== expectedCursor
@@ -7953,6 +8691,13 @@ export class TeamHub extends TeamRuntime {
       this.rejectHumanParticipantActor()
     }
     return participant.id
+  }
+
+  /** Ordinary product mutations cannot bypass the immutable Simulation execution owner. */
+  private assertHumanTeamMutable(team: LoadedTeam): void {
+    if (team.projection.rules['simulationRunId'] !== undefined) {
+      throw new TeamError('Simulation-managed Team changes require Simulation administration', 'TEAM_POLICY_DENIED')
+    }
   }
 
   /** Reject every forged, revoked, stale, cross-Team, or wrong-operation human member authority. */
@@ -9262,6 +10007,7 @@ export class TeamHub extends TeamRuntime {
         const currentTeam = this.requireLiveTeam(team)
         const current = this.requireLiveChannel(channel)
         const actorId = this.resolveSummaryRequester(currentTeam, current, requester, input)
+        if (this.tryResolveHumanActorProof(requester) !== undefined) this.assertHumanTeamMutable(currentTeam)
         const existing = current.projection.summaries.get(input.idempotencyKey)
         if (existing !== undefined) {
           if (!sameChannelSummary(existing, input)) {
@@ -9411,15 +10157,31 @@ export class TeamHub extends TeamRuntime {
 
   /** Revalidate a membership-only read against its exact operation and complete selected payload. */
   private assertHumanTeamRead(team: LoadedTeam, actor: TeamHumanActorProof,
-    operation: 'channel-list-read' | 'channel-admission-read' | 'channel-content-read', payload: JsonObject): void {
+    operation: 'channel-list-read' | 'channel-admission-read' | 'channel-content-read' | 'task-capabilities-read' | 'member-readiness-read' | 'execution-profiles-read' | 'identity-resolve-read' | 'session-content-read' | 'attention-read', payload: JsonObject): ParticipantSnapshot {
     const human = this.tryResolveHumanActorProof(actor)
-    const expected: TeamHumanActorProofInput = { teamId: team.id, operation, fence: { kind: 'read' }, payload }
-    const participant = human === undefined ? undefined : team.projection.participants.get(human.participantId)
-    if (human === undefined || human.teamId !== team.id || human.operation !== operation
+    let authority = team
+    if (human !== undefined && human.teamId !== team.id) {
+      if (operation !== 'attention-read' && operation !== 'identity-resolve-read' && operation !== 'member-readiness-read'
+        && operation !== 'session-content-read' && operation !== 'channel-list-read' && operation !== 'channel-content-read') {
+        throw new TeamError('This read requires membership in the selected Team', 'TEAM_ACTOR_PROOF_INVALID')
+      }
+      while (authority.id !== human.teamId) {
+        const parentId = authority.projection.team.parentTeamId
+        const parent = parentId === undefined ? undefined : this.teams.get(parentId)
+        if (parent === undefined) throw new TeamError('Team inspection authority is unavailable', 'TEAM_ACTOR_PROOF_INVALID')
+        this.assertReadParent(this.requireLiveTeam(parent), authority)
+        authority = parent
+      }
+    }
+    const expected: TeamHumanActorProofInput = { teamId: authority.id, operation, fence: { kind: 'read' }, payload }
+    const participant = human === undefined ? undefined : authority.projection.participants.get(human.participantId)
+    if (human === undefined || human.teamId !== authority.id || human.operation !== operation
       || !isDeepStrictEqual(human.fence, expected.fence) || human.payloadFingerprint !== fingerprintTeamHumanActorPayload(expected)
       || participant?.kind !== 'human' || participant.phase !== 'active' || participant.owner?.kind !== 'product-principal') {
-      throw new TeamError('Channel inspection requires a current authenticated Team human', 'TEAM_ACTOR_PROOF_INVALID')
+      throw new TeamError('Team inspection requires a current authenticated Team human', 'TEAM_ACTOR_PROOF_INVALID')
     }
+    findHumanActor(authority.projection.participants.values(), { teamId: authority.id, principalId: participant.owner.principalId })
+    return participant
   }
 
   override async getHumanChannelEnvelope(request: ChannelHumanEnvelopeGetRequest): Promise<TeamEnvelope> {
@@ -9613,6 +10375,7 @@ export class TeamHub extends TeamRuntime {
       if (participant?.kind !== 'human' || participant.owner?.kind !== 'product-principal') {
         throw new TeamError('Invitation human has no authenticated principal owner', 'TEAM_ACTOR_PROOF_INVALID')
       }
+      this.assertHumanTeamMutable(team)
     } else {
       try {
         activation = this.requireCurrentActivationActorBinding(team, actor as TeamActorProof)
@@ -9730,6 +10493,24 @@ export class TeamHub extends TeamRuntime {
       const input = channelGetRequestSchema.parse(request)
       const channel = await this.ensureAttachedChannel(input.channelId)
       return await channel.queue.run(() => Promise.resolve(this.channelSnapshot(this.requireLiveChannel(channel))))
+    })
+  }
+
+  /** Read only the attached owner tuple; no channel transcript or protocol state is copied. */
+  override async getChannelOwner(request: ChannelGetRequest): Promise<import('@clocky/clocky-team').ChannelOwnerSnapshot> {
+    return await this.admit(async () => {
+      const input = channelGetRequestSchema.parse(request)
+      const channel = await this.ensureAttachedChannel(input.channelId)
+      const team = await this.ensureTeam(channel.projection.manifest.teamId)
+      return await team.queue.run(() => channel.queue.run(() => {
+        const current = this.requireLiveChannel(channel)
+        this.assertAttachedChannel(this.requireLiveTeam(team), current)
+        const value = { channelId: current.id, teamId: current.projection.manifest.teamId }
+        if (Buffer.byteLength(JSON.stringify(value)) > this.config.maxSelectionBytes) {
+          throw new TeamError('Channel owner tuple exceeds maxSelectionBytes', 'TEAM_CHANNEL_BACKPRESSURE')
+        }
+        return Promise.resolve(freeze(value))
+      }))
     })
   }
 
@@ -10970,7 +11751,7 @@ export class TeamHub extends TeamRuntime {
           cursor = entry.sequence
         }
       }
-      assertTaskCancellationSettlements(projection)
+      assertTaskCancellationSettlements(projection); assertTaskRetirementEvidence(projection)
       await this.assertRecoveredTerminalChannels(projection)
     } catch (error: unknown) {
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- disposal may race the backend read.
@@ -11058,7 +11839,7 @@ export class TeamHub extends TeamRuntime {
     if (projection === undefined) {
       throw new TeamError(`Team '${teamId}' was not found`, 'TEAM_NOT_FOUND')
     }
-    assertTaskCancellationSettlements(projection)
+    assertTaskCancellationSettlements(projection); assertTaskRetirementEvidence(projection)
     await this.assertRecoveredTerminalChannels(projection)
     return { projection, policyDenialCursors }
   }
@@ -11131,7 +11912,7 @@ export class TeamHub extends TeamRuntime {
     if (!await hasCheckpointAnchor(stream, checkpoint.sequence)) return undefined
     try {
       const projection = teamProjectionFromData(parsed.data.projection)
-      assertTaskCancellationSettlements(projection)
+      assertTaskCancellationSettlements(projection); assertTaskRetirementEvidence(projection)
       await this.assertRecoveredTerminalChannels(projection)
       return {
         projection,
@@ -13710,7 +14491,7 @@ export class TeamHub extends TeamRuntime {
       projection = foldTeamRecord(projection, record, cursor, loaded.id)
       events.push(teamEventFor(record, projection))
     }
-    assertTaskCancellationSettlements(projection)
+    assertTaskCancellationSettlements(projection); assertTaskRetirementEvidence(projection)
     try {
       const appended = await current.stream.append(current.projection.team.cursor, acceptedRecords, {
         summary: this.discoverySummary(projection),
@@ -14057,6 +14838,7 @@ export class TeamHub extends TeamRuntime {
     expected: TeamHumanActorProofInput,
     allowStalled = false,
   ): ParticipantId {
+    this.assertHumanTeamMutable(team)
     const scope = this.requireHumanActorProof(actor).scope
     this.assertHumanTaskProofScope(scope, expected)
     if (scope.teamId !== team.id) this.rejectHumanTaskActor()
@@ -14378,6 +15160,7 @@ export class TeamHub extends TeamRuntime {
   ): ParticipantId {
     const human = this.tryResolveHumanActorProof(actor)
     if (human !== undefined) {
+      this.assertHumanTeamMutable(loaded)
       const expected = this.goalHumanActorProofInput(input)
       if (human.teamId !== loaded.id
         || human.operation !== expected.operation
@@ -16416,6 +17199,7 @@ function teamEventFor(record: TeamJournalRecord, projection: TeamProjection): Te
     case 'team/cancellation':
     case 'team/archived':
     case 'channel/attached':
+    case 'task/update-rejected':
       return { type: 'team/changed', team: projection.team }
     case 'goal/changed':
       return {

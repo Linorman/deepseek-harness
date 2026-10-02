@@ -4,6 +4,8 @@ English | [中文](agent-runtime.zh.md)
 
 `@clocky/clocky-agent-runtime` defines the reusable activation registry at `ctx.agentRuntimes`. A Team/Host resolves stable Participant identity, Session identity, seed mode, and Agent composition before calling it; a registered placement provider owns only the resulting live activation epoch.
 
+`AgentRuntimeProvider.participantKinds` declares accepted local/remote participant mechanisms. The registry enforces it before startup, and Team readiness reads the same field. A known kind rejection can release a controller startup reservation without claiming an unknown provider-side start.
+
 ## Ownership
 
 `AgentRuntimeActivationRequest` carries a Team, complete Participant snapshot, reserved Session id, fresh/fork/resume seed mode, Agent options, an optional local execution root, and cancellation signal. A fork seed includes the source Session id and copied event prefix. `ActivationHandle` exposes its immutable `ActivationSnapshot`, optional exact local Agent, asynchronous health projection, later-status subscription, interruption, and quiescent disposal. Its returned Team and Participant ids must equal the request; the registry disposes a mismatched handle before rejection and publishes `agent-runtime/activation-changed` for initial and later valid status snapshots.

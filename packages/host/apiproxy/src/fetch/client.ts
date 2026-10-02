@@ -1,6 +1,28 @@
+import { simulationProductRequestsPageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductPreflightResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunStatusesPageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductTasksPageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductTaskReviewPageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductSourceInspectionSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRecordsPageSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWatchResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductIngressReceiptSchema, simulationProductIngressResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductControlSchema, simulationProductManageResultSchema, simulationProductManagementResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { teamTaskUpdateLookupValueSchema } from '../api/teams.schema.ts'
+import { simulationProductRunPageSchema, simulationProductRunInspectionSchema,
+  simulationProductCollectionPageSchema, simulationProductObjectInspectionSchema, simulationProductCatalogSchema,
+  simulationProductRequestReceiptSchema, simulationProductRequestResultSchema } from '@clocky/clocky-simulation-product/schema'
+import { ApiAccessDeniedError } from '../api/rpc.ts'
+import { teamIdentityResolutionSchema } from '../api/teams.schema.ts'
+import { teamExecutionProfilesPageSchema } from '../api/teams.schema.ts'
+import { teamMemberReadinessPageSchema } from '../api/teams.schema.ts'
+import { teamCapabilitiesValueSchema } from '../api/teams.schema.ts'
+import { teamActionInspectionValueSchema } from '../api/teams.schema.ts'
+import { teamAttentionValueSchema } from '../api/teams.schema.ts'
 import { teamMemberInspectValueSchema } from '../api/teams.schema.ts'
 import { teamWorkflowInspectionValueSchema } from '../api/teams.schema.ts'
 import { teamHumanActionValueSchema } from '../api/teams.schema.ts'
+import { teamTaskReferencesValueSchema } from '../api/teams.schema.ts'
 import { teamTaskInspectionValueSchema } from '../api/teams.schema.ts'
 import { teamBrowseValueSchema } from '../api/teams.schema.ts'
 import { teamMemberSessionValueSchema } from '../api/teams.schema.ts'
@@ -121,6 +143,41 @@ import {
  * Derived per method key from RpcMethodMap so a map row addition updates this mechanically.
  */
 export interface IApiClient {
+  /** Optional deployment reads still use the same required carrier contract and unavailable result. */
+  simulations: {
+    /** Read one original journal page under its independent historical-content policy. */
+    /** Inspect an exact frozen source under independent Simulation and Team permission. */
+    inspectSource(payload: RequestPayload<'simulation.sources.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.sources.inspect'>>>
+    records(payload: RequestPayload<'simulation.records.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.records.list'>>>
+    watch(payload: RequestPayload<'simulation.changes.watch'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.changes.watch'>>>
+    checkpoint(payload: RequestPayload<'simulation.checkpoints.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.checkpoints.create'>>>
+    restore(payload: RequestPayload<'simulation.runs.restore'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.restore'>>>
+    listTasks(payload: RequestPayload<'simulation.tasks.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.list'>>>
+    cancelTask(payload: RequestPayload<'simulation.tasks.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.cancel'>>>
+    listTaskReviews(payload: RequestPayload<'simulation.tasks.review.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.review.list'>>>
+    resolveTaskReview(payload: RequestPayload<'simulation.tasks.review.resolve'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.tasks.review.resolve'>>>
+    ingress(payload: RequestPayload<'simulation.ingress.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.ingress.create'>>>
+    ingressRequest(payload: RequestPayload<'simulation.ingress.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.ingress.get'>>>
+    control(payload: RequestPayload<'simulation.runs.control'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.control'>>>
+    manage(payload: RequestPayload<'simulation.runs.manage'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.manage'>>>
+    managementRequest(payload: RequestPayload<'simulation.management.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.management.get'>>>
+    catalog(payload: RequestPayload<'simulation.catalog'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.catalog'>>>
+    /** Resolve a creation draft without allocating or preparing a run. */
+    preflight(payload: RequestPayload<'simulation.runs.preflight'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.preflight'>>>
+    create(payload: RequestPayload<'simulation.runs.create'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.create'>>>
+    prepare(payload: RequestPayload<'simulation.runs.prepare'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.prepare'>>>
+    /** Discover original receipt metadata without retaining private command bodies. */
+    listRequests(payload: RequestPayload<'simulation.requests.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.requests.list'>>>
+    /** Retry only the server-retained original; input and identity cannot be replaced. */
+    retryRequest(payload: RequestPayload<'simulation.requests.retry'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.requests.retry'>>>
+    request(payload: RequestPayload<'simulation.requests.get'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.requests.get'>>>
+    retryOperation(payload: RequestPayload<'simulation.operation.retry'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.operation.retry'>>>
+    runStatuses(payload: RequestPayload<'simulation.runs.statuses'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.statuses'>>>
+    list(payload: RequestPayload<'simulation.runs.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.list'>>>
+    inspect(payload: RequestPayload<'simulation.runs.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.runs.inspect'>>>
+    browse(payload: RequestPayload<'simulation.collections.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.collections.list'>>>
+    inspectObject(payload: RequestPayload<'simulation.objects.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'simulation.objects.inspect'>>>
+  }
   sessions: {
     list(payload: RequestPayload<'session.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.list'>>>
     search(payload: RequestPayload<'session.search'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.search'>>>
@@ -134,10 +191,22 @@ export interface IApiClient {
     cancel(payload: RequestPayload<'session.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'session.cancel'>>>
   }
   teams: {
+    executionProfiles(payload: RequestPayload<'team.executionProfiles'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.executionProfiles'>>>
+
+    /** Read authorized display identities and their principal-generation cache scope. */
+    /** Read Team-scoped pending counts and one bounded summary page. */
+    actionInspect(payload: RequestPayload<'team.action.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.action.inspect'>>>
+    attentionRead(payload: RequestPayload<'team.attention.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.attention.read'>>>
+    identityResolve(payload: RequestPayload<'team.identity.resolve'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.identity.resolve'>>>
+    memberReadiness(payload: RequestPayload<'team.member.readiness'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.readiness'>>>
+
+    capabilities(payload: RequestPayload<'team.capabilities'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.capabilities'>>>
+
     memberInspect(payload: RequestPayload<'team.member.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.member.inspect'>>>
 
     /** Read task details or one history window without retaining other histories. */
     actionRead(payload: RequestPayload<'team.action.read'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.action.read'>>>
+    taskReferences(payload: RequestPayload<'team.task.references'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.references'>>>
     taskInspect(payload: RequestPayload<'team.task.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.inspect'>>>
 
     browse(payload: RequestPayload<'team.browse'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.browse'>>>
@@ -191,6 +260,7 @@ export interface IApiClient {
     taskList(payload: RequestPayload<'team.task.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.list'>>>
     workflowPlanInspect(payload: RequestPayload<'team.workflow.plan.inspect'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.workflow.plan.inspect'>>>
     workflowPlanList(payload: RequestPayload<'team.workflow.plan.list'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.workflow.plan.list'>>>
+    taskUpdateResult(payload: RequestPayload<'team.task.update.result'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.update.result'>>>
     taskUpdate(payload: RequestPayload<'team.task.update'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.update'>>>
     taskCancel(payload: RequestPayload<'team.task.cancel'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.cancel'>>>
     taskDelete(payload: RequestPayload<'team.task.delete'>, signal?: AbortSignal): Promise<RpcResponse<ResponseValue<'team.task.delete'>>>
@@ -254,6 +324,33 @@ export interface IApiClient {
  * mirror of the handler's request table; key coverage compiler-enforced against RpcMethodMap).
  */
 const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseValue<K>>> } = {
+  'simulation.checkpoints.create': simulationProductRequestReceiptSchema,
+  'simulation.runs.restore': simulationProductRequestReceiptSchema,
+  'simulation.tasks.list': simulationProductTasksPageSchema,
+  'simulation.tasks.cancel': simulationProductRequestReceiptSchema,
+  'simulation.tasks.review.list': simulationProductTaskReviewPageSchema,
+  'simulation.tasks.review.resolve': simulationProductRequestReceiptSchema,
+  'simulation.ingress.create': simulationProductIngressReceiptSchema,
+  'simulation.ingress.get': simulationProductIngressResultSchema,
+  'simulation.runs.control': simulationProductControlSchema,
+  'simulation.runs.manage': simulationProductManageResultSchema,
+  'simulation.management.get': simulationProductManagementResultSchema,
+  'simulation.catalog': simulationProductCatalogSchema,
+  'simulation.runs.preflight': simulationProductPreflightResultSchema,
+  'simulation.runs.create': simulationProductRequestReceiptSchema,
+  'simulation.runs.prepare': simulationProductRequestReceiptSchema,
+  'simulation.requests.list': simulationProductRequestsPageSchema,
+  'simulation.requests.retry': simulationProductRequestReceiptSchema,
+  'simulation.requests.get': simulationProductRequestResultSchema,
+  'simulation.operation.retry': simulationProductRequestReceiptSchema,
+  'simulation.runs.statuses': simulationProductRunStatusesPageSchema,
+  'simulation.runs.list': simulationProductRunPageSchema,
+  'simulation.runs.inspect': simulationProductRunInspectionSchema,
+  'simulation.collections.list': simulationProductCollectionPageSchema,
+  'simulation.objects.inspect': simulationProductObjectInspectionSchema,
+  'simulation.sources.inspect': simulationProductSourceInspectionSchema,
+  'simulation.records.list': simulationProductRecordsPageSchema,
+  'simulation.changes.watch': simulationProductWatchResultSchema,
   'session.list': sessionListValueSchema,
   'session.search': sessionSearchValueSchema,
   'session.history': sessionHistoryValueSchema,
@@ -270,7 +367,14 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'team.member.session': teamMemberSessionValueSchema,
   'team.workflow.plan.inspect': teamWorkflowInspectionValueSchema,
   'team.action.read': teamHumanActionValueSchema,
+  'team.task.references': teamTaskReferencesValueSchema,
   'team.task.inspect': teamTaskInspectionValueSchema,
+  'team.executionProfiles': teamExecutionProfilesPageSchema,
+  'team.identity.resolve': teamIdentityResolutionSchema,
+  'team.member.readiness': teamMemberReadinessPageSchema,
+  'team.capabilities': teamCapabilitiesValueSchema,
+  'team.action.inspect': teamActionInspectionValueSchema,
+  'team.attention.read': teamAttentionValueSchema,
   'team.browse': teamBrowseValueSchema,
   'team.get': teamStateValueSchema,
   'team.create': teamStateValueSchema,
@@ -317,6 +421,7 @@ const UNARY_VALUE_SCHEMAS: { [K in keyof RpcMethodMap]: z.ZodType<Wire<ResponseV
   'team.task.list': teamTaskListValueSchema,
   'team.workflow.plan.list': teamWorkflowPlanListValueSchema,
   'team.task.update': teamTaskUpdateValueSchema,
+  'team.task.update.result': teamTaskUpdateLookupValueSchema,
   'team.task.watch': teamTaskWatchValueSchema,
   'host.describe': hostDescribeValueSchema,
   'host.pickDirectory': hostPickDirectoryValueSchema,
@@ -368,6 +473,236 @@ const INTERNAL_BASE = 'http://clocky.internal'
  * subclass whose doFetch is toFetchHandler(api).fetch never touches the network.
  */
 export abstract class AbstractApiClient implements IApiClient {
+  readonly simulations: IApiClient['simulations'] = {
+    inspectSource: async (payload, signal) => {
+      const response = await this.callUnary('simulation.sources.inspect', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.decisionId !== payload.decisionId || value.sourceIndex !== payload.sourceIndex
+          || payload.expectedRevision !== undefined && value.snapshotRevision !== payload.expectedRevision
+          || payload.envelopeSequence !== undefined && value.envelope !== undefined && value.envelope.sequence !== payload.envelopeSequence
+          || payload.limit !== undefined && value.items.length > payload.limit) throw new Error('Simulation source response does not match its selection')
+      }
+      return response
+    },
+    records: async (payload, signal) => {
+      const response = await this.callUnary('simulation.records.list', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.mode !== payload.mode || value.selection.kind !== payload.kind
+          || value.selection.sequence !== payload.sequence
+          || payload.expectedRevision !== undefined && value.snapshotRevision !== payload.expectedRevision
+          || payload.sequence !== undefined && value.items.some(item => item.sequence !== payload.sequence)
+          || payload.limit !== undefined && value.items.length > payload.limit) {
+          throw new Error('Simulation record response does not match its query or page')
+        }
+      }
+      return response
+    },
+    watch: async (payload, signal) => {
+      const response = await this.callUnary('simulation.changes.watch', payload, signal)
+      if (response.result.ok && response.result.value.runId !== payload.runId) throw new Error('Simulation watch response does not match its run')
+      return response
+    },
+    checkpoint: async (payload, signal) => {
+      const response = await this.callUnary('simulation.checkpoints.create', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.commandId !== payload.commandId || value.kind !== 'checkpoint') {
+          throw new Error('Simulation maintenance/input response does not match its original selection')
+        }
+      }
+      return response
+    },
+    restore: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.restore', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.commandId !== payload.commandId || value.kind !== 'restore'
+          || value.checkpointId !== payload.checkpointId) {
+          throw new Error('Simulation maintenance/input response does not match its original selection')
+        }
+      }
+      return response
+    },
+    listTasks: async (payload, signal) => {
+      const response = await this.callUnary('simulation.tasks.list', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || payload.expectedRevision !== undefined && response.result.value.snapshotRevision !== payload.expectedRevision
+        || payload.limit !== undefined && response.result.value.items.length > payload.limit)) {
+        throw new Error('Simulation task page does not match its original selection')
+      }
+      return response
+    },
+    cancelTask: async (payload, signal) => {
+      const response = await this.callUnary('simulation.tasks.cancel', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'cancel-task')) {
+        throw new Error('Simulation cancellation receipt does not match its original selection')
+      }
+      return response
+    },
+    listTaskReviews: async (payload, signal) => {
+      const response = await this.callUnary('simulation.tasks.review.list', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || payload.expectedRevision !== undefined && response.result.value.snapshotRevision !== payload.expectedRevision
+        || payload.limit !== undefined && response.result.value.items.length > payload.limit)) {
+        throw new Error('Simulation review page does not match its original selection')
+      }
+      return response
+    },
+    resolveTaskReview: async (payload, signal) => {
+      const response = await this.callUnary('simulation.tasks.review.resolve', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'review')) {
+        throw new Error('Simulation review receipt does not match its original selection')
+      }
+      return response
+    },
+    ingress: async (payload, signal) => {
+      const response = await this.callUnary('simulation.ingress.create', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.ingressId !== payload.ingressId || value.entityId !== payload.entityId
+          || value.availableAt !== payload.availableAt) {
+          throw new Error('Simulation maintenance/input response does not match its original selection')
+        }
+      }
+      return response
+    },
+    ingressRequest: async (payload, signal) => {
+      const response = await this.callUnary('simulation.ingress.get', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.ingressId !== payload.ingressId) {
+          throw new Error('Simulation maintenance/input response does not match its original selection')
+        }
+      }
+      return response
+    },
+    control: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.control', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId) {
+          throw new Error('Simulation scheduling response does not match its original selection')
+        }
+      }
+      return response
+    },
+    manage: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.manage', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.operation.managementId !== payload.managementId
+          || value.operation.phase !== payload.phase) {
+          throw new Error('Simulation scheduling response does not match its original selection')
+        }
+      }
+      return response
+    },
+    managementRequest: async (payload, signal) => {
+      const response = await this.callUnary('simulation.management.get', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.managementId !== payload.managementId) {
+          throw new Error('Simulation scheduling response does not match its original selection')
+        }
+      }
+      return response
+    },
+    catalog: (payload, signal) => this.callUnary('simulation.catalog', payload, signal),
+    preflight: (payload, signal) => this.callUnary('simulation.runs.preflight', payload, signal),
+    create: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.create', payload, signal)
+      if (response.result.ok && (response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'create')) {
+        throw new Error('Simulation administration response does not match its original command')
+      }
+      return response
+    },
+    prepare: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.prepare', payload, signal)
+      if (response.result.ok && (response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'prepare' || response.result.value.runId !== payload.runId)) {
+        throw new Error('Simulation administration response does not match its original command')
+      }
+      return response
+    },
+    listRequests: async (payload, signal) => {
+      const response = await this.callUnary('simulation.requests.list', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.items.some(item => item.runId !== payload.runId)
+          || payload.expectedRevision !== undefined && value.snapshotRevision !== payload.expectedRevision
+          || payload.limit !== undefined && value.items.length > payload.limit) {
+          throw new Error('Simulation request page does not match its original selection')
+        }
+      }
+      return response
+    },
+    retryRequest: async (payload, signal) => {
+      const response = await this.callUnary('simulation.requests.retry', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId || response.result.value.commandId !== payload.commandId)) {
+        throw new Error('Simulation request retry does not match its original selection')
+      }
+      return response
+    },
+    request: async (payload, signal) => {
+      const response = await this.callUnary('simulation.requests.get', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        const id = value.status === 'found' ? value.request.commandId : value.commandId
+        if (id !== payload.commandId) throw new Error('Simulation result response does not match its original command')
+      }
+      return response
+    },
+    retryOperation: async (payload, signal) => {
+      const response = await this.callUnary('simulation.operation.retry', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.commandId !== payload.commandId || response.result.value.kind !== 'retry-operation')) {
+        throw new Error('Simulation operation retry response does not match its original selection')
+      }
+      return response
+    },
+    runStatuses: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.statuses', payload, signal)
+      if (response.result.ok && (response.result.value.items.length !== payload.runIds.length
+        || response.result.value.items.some((item, index) => item.run.id !== payload.runIds[index]))) {
+        throw new Error('Simulation status response does not match its exact run batch')
+      }
+      return response
+    },
+    list: (payload, signal) => this.callUnary('simulation.runs.list', payload, signal),
+    inspect: async (payload, signal) => {
+      const response = await this.callUnary('simulation.runs.inspect', payload, signal)
+      if (response.result.ok && response.result.value.run.id !== payload.runId) {
+        throw new Error('Simulation inspection response does not match its registered run')
+      }
+      return response
+    },
+    browse: async (payload, signal) => {
+      const response = await this.callUnary('simulation.collections.list', payload, signal)
+      if (response.result.ok && (response.result.value.runId !== payload.runId
+        || response.result.value.collection !== payload.collection)) {
+        throw new Error('Simulation collection response does not match its registered run and collection')
+      }
+      return response
+    },
+    inspectObject: async (payload, signal) => {
+      const response = await this.callUnary('simulation.objects.inspect', payload, signal)
+      if (response.result.ok) {
+        const value = response.result.value
+        if (value.runId !== payload.runId || value.selection.collection !== payload.collection || value.selection.id !== payload.id
+          || value.selection.section !== payload.section
+          || payload.collection === 'decisions' && payload.section === 'knowledge' && (value.selection.collection !== 'decisions'
+            || value.selection.section !== 'knowledge' || value.selection.reference?.id !== payload.reference?.id
+            || value.selection.reference?.revision !== payload.reference?.revision)
+          || payload.expectedRevision !== undefined && value.snapshotRevision !== payload.expectedRevision) {
+          throw new Error('Simulation object response does not match its exact selection')
+        }
+      }
+      return response
+    },
+  }
   /** Instance-owned observation buffer (module-level state would leak across instances/tests). */
   private envelopeBatch: RpcMessage[] = []
   private flushScheduled = false
@@ -447,6 +782,7 @@ export abstract class AbstractApiClient implements IApiClient {
       body: JSON.stringify(body),
       ...requestSignal === undefined ? {} : { signal: requestSignal },
     })
+    if (response.status === 401 || response.status === 403) throw new ApiAccessDeniedError(path, response.status)
     if (!response.ok) throw new Error(`transport failure for ${path}: HTTP ${response.status}`)
     return response
   }
@@ -499,6 +835,7 @@ export abstract class AbstractApiClient implements IApiClient {
     onOpen?: () => void,
   ): AsyncGenerator<RpcRequest<F>> {
     const response = await this.doFetch(new URL(path, this.resolveBase()), { signal })
+    if (response.status === 401 || response.status === 403) throw new ApiAccessDeniedError(path, response.status)
     if (!response.ok || response.body === null) throw new Error(`transport failure for ${path}: HTTP ${response.status}`)
     onOpen?.()
     const reader = response.body.getReader()
@@ -549,6 +886,12 @@ export abstract class AbstractApiClient implements IApiClient {
   }
 
   readonly teams: IApiClient['teams'] = {
+    executionProfiles: (payload, signal) => this.callUnary('team.executionProfiles', payload, signal),
+    actionInspect: (payload, signal) => this.callUnary('team.action.inspect', payload, signal),
+    attentionRead: (payload, signal) => this.callUnary('team.attention.read', payload, signal),
+    identityResolve: (payload, signal) => this.callUnary('team.identity.resolve', payload, signal),
+    memberReadiness: (payload, signal) => this.callUnary('team.member.readiness', payload, signal),
+    capabilities: (payload, signal) => this.callUnary('team.capabilities', payload, signal),
     memberInspect: (payload, signal) => this.callUnary('team.member.inspect', payload, signal),
     actionRead: async (payload, signal) => {
       const response = await this.callUnary('team.action.read', payload, signal)
@@ -557,6 +900,7 @@ export abstract class AbstractApiClient implements IApiClient {
       }
       return response
     },
+    taskReferences: (payload, signal) => this.callUnary('team.task.references', payload, signal),
     taskInspect: async (payload, signal) => {
       const response = await this.callUnary('team.task.inspect', payload, signal)
       if (response.result.ok) {
@@ -634,7 +978,18 @@ export abstract class AbstractApiClient implements IApiClient {
       return response
     },
     workflowPlanList: (payload, signal) => this.callUnary('team.workflow.plan.list', payload, signal),
-    taskUpdate: (payload, signal) => this.callUnary('team.task.update', payload, signal),
+    taskUpdateResult: (payload, signal) => this.callUnary('team.task.update.result', payload, signal),
+    taskUpdate: async (payload, signal) => {
+      const response = await this.callUnary('team.task.update', payload, signal)
+      if (response.result.ok) {
+        const { receipt } = response.result.value
+        if (receipt.teamId !== payload.teamId || receipt.taskId !== payload.taskId
+          || receipt.commandId !== payload.commandId || receipt.expectedRevision !== payload.expectedRevision) {
+          throw new Error('Task update receipt does not match its original command')
+        }
+      }
+      return response
+    },
     taskCancel: (payload, signal) => this.callUnary('team.task.cancel', payload, signal),
     taskDelete: (payload, signal) => this.callUnary('team.task.delete', payload, signal),
     taskReview: (payload, signal) => this.callUnary('team.task.review', payload, signal),

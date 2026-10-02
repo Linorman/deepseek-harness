@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
 import { activationIdSchema, activationReservationIdSchema } from '@clocky/clocky-team'
 import {
-  assertCanonicalTeam, simulationCoordinatorIdSchema, simulationEntityBindingSchema, simulationEntityIdSchema,
+  simulationResidentSlots, assertCanonicalTeam, simulationCoordinatorIdSchema, simulationEntityBindingSchema, simulationEntityIdSchema,
   simulationWriterActivationSchema, simulationWriterEpochSchema,
 } from '@clocky/clocky-simulation'
 import type {
@@ -109,8 +109,7 @@ export function foldWriterChange(state: SimulationSnapshot, change: WriterChange
     case 'writer/reserved': {
       if (entity.phase !== 'active' || entity.binding === undefined) throw new Error('Writer reservation requires an active bound entity')
       if (entity.writer !== undefined && entity.writer.phase !== 'released') throw new Error('Simulation writer has not been proven stopped')
-      if (Object.values(state.entities).filter(value => value.writer !== undefined && value.writer.phase !== 'released').length
-        >= state.spec.maxResidentActors) throw new Error('Simulation resident actor capacity exceeded')
+      if (simulationResidentSlots(state).used >= state.spec.maxResidentActors) throw new Error('Simulation resident actor capacity exceeded')
       if (BigInt(change.epoch) !== BigInt(entity.writer?.epoch ?? '0') + 1n) throw new Error('Simulation writer epoch must increase by one')
       next = { ...entity, writer: { epoch: change.epoch, coordinatorId: change.coordinatorId, reservationId: change.reservationId, provider: change.provider, phase: 'reserved' } }
       break
@@ -153,8 +152,7 @@ function assertNever(value: never): never {
  */
 export function assertWriterProjection(state: SimulationSnapshot): void {
   if (Object.values(state.entities).filter(entity => entity.phase !== 'terminated').length > state.spec.maxEntities
-    || Object.values(state.entities).filter(entity => entity.writer !== undefined && entity.writer.phase !== 'released').length
-      > state.spec.maxResidentActors) throw new Error('Simulation population exceeds its persisted capacity limits')
+    || simulationResidentSlots(state).used > state.spec.maxResidentActors) throw new Error('Simulation population exceeds its persisted capacity limits')
   const reserved = state.teamReservation
   if (reserved === undefined) return
   for (const channel of Object.values(state.channelReservations ?? {})) {

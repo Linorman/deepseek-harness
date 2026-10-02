@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod'
+import { teamTaskUpdateRejectionSchema } from '@clocky/clocky-team/schema'
 import type { z as zCore } from 'zod'
 type ZodIssue = zCore.core.$ZodIssue
 import type { ClientRequest, ClientResponse, RpcError, RpcId, RpcReceipt, ServerRequest, ServerResponse } from './rpc.ts'
@@ -66,6 +67,8 @@ export const rpcErrorSchema: z.ZodType<RpcError> = z.discriminatedUnion('code', 
   z.object({ code: z.literal('TEAM_HUMAN_ACTOR_NOT_FOUND'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('TEAM_HUMAN_ACTOR_AMBIGUOUS'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('TEAM_HUMAN_ACTOR_FORBIDDEN'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('TEAM_GRANT_DENIED'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('TEAM_POLICY_DENIED'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('TEAM_ACTOR_PROOF_INVALID'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('team-service-unavailable'), message: z.string(), details: z.object({}) }),
   z.object({ code: z.literal('team-run-unavailable'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
@@ -73,7 +76,18 @@ export const rpcErrorSchema: z.ZodType<RpcError> = z.discriminatedUnion('code', 
   z.object({ code: z.literal('team-model-required'), message: z.string(), details: z.object({}) }),
   z.object({ code: z.literal('team-start-conflict'), message: z.string(), details: z.object({}) }),
   z.object({ code: z.literal('team-cursor-conflict'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('team-discovery-expired'), message: z.string(), details: z.object({}) }),
+  z.object({ code: z.literal('team-task-update-conflict'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('simulation-product-unavailable'), message: z.string(), details: z.object({}).strict() }),
+  z.object({ code: z.literal('simulation-product-forbidden'), message: z.string(), details: z.object({}).strict() }),
+  z.object({ code: z.literal('simulation-product-invalid'), message: z.string(), details: z.object({}).strict() }),
+  z.object({ code: z.literal('simulation-product-stale'), message: z.string(), details: z.object({}).strict() }),
+  z.object({ code: z.literal('team-task-update-rejected'), message: z.string(),
+    details: z.object({ rejection: teamTaskUpdateRejectionSchema }).strict() }),
   z.object({ code: z.literal('team-task-stale-revision'), message: z.string(), details: z.object({ teamId: z.string().optional(), taskId: z.string().optional() }) }),
+  z.object({ code: z.literal('team-profile-stale'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('team-profile-unavailable'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
+  z.object({ code: z.literal('team-member-not-found'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('team-task-not-found'), message: z.string(), details: z.object({ teamId: z.string().optional(), taskId: z.string().optional() }) }),
   z.object({ code: z.literal('team-invalid-argument'), message: z.string(), details: z.object({ teamId: z.string().optional() }) }),
   z.object({ code: z.literal('team-channel-cursor-conflict'), message: z.string(), details: z.object({ teamId: z.string().optional(), channelId: z.string().optional() }) }),

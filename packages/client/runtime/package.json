@@ -47,6 +47,7 @@
   },
   "peerDependencies": {
     "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^",
     "@clocky/clocky-api-remotes": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-typert-protocol": "workspace:^",
@@ -61,10 +62,12 @@
     "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-session-projection": "workspace:^",
     "@clocky/clocky-session-title": "workspace:^",
-    "@clocky/clocky-tools": "workspace:^"
+    "@clocky/clocky-tools": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   },
   "devDependencies": {
     "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-brand": "workspace:^",
     "@clocky/clocky-api-remotes": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",
     "@clocky/clocky-timeout": "workspace:^",
@@ -83,7 +86,8 @@
     "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-session-projection": "workspace:^",
     "@clocky/clocky-session-title": "workspace:^",
-    "@clocky/clocky-tools": "workspace:^"
+    "@clocky/clocky-tools": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   },
   "files": [
     "lib/index.js",

@@ -16,7 +16,7 @@ function stoppingAllocation(kind: 'fail' | 'cancel') {
     } }
   const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
     assignedAt: 17, renewedAt: 17, expiresAt: 27 })
-  const initial = task()
+  const initial = task({ createdAt: 16 })
   const created = task({ ...initial, createCommand: { ...initial.createCommand,
     creator: { teamId, participantId: taskCreatorId, activationId: taskCreatorActivationId,
       sessionId: taskCreatorSessionId, provider: 'sdk' } } })

@@ -12,6 +12,6 @@ export const simulationIngressRequestSchema = z.strictObject({
   source: z.string().trim().min(1), text: z.string().min(1), availableAt: simTimeSchema,
 })
 /** Stable run-local input identity. */
-export type SimulationIngressId = z.infer<typeof simulationIngressIdSchema>
+export type { SimulationIngressId } from './identities.ts'
 /** Explicit external input request. */
 export type SimulationIngressRequest = z.infer<typeof simulationIngressRequestSchema>

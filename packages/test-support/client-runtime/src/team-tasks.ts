@@ -90,7 +90,7 @@ export class TestTeamTasks implements ITeamTasks {
   }
 
   /** Resolve a Team only through an explicit test stub. */
-  async open(teamId: Parameters<ITeamTasks['open']>[0], signal?: AbortSignal): Promise<TeamTaskSelection> {
+  async open(teamId: Parameters<ITeamTasks['open']>[0], signal?: AbortSignal): ReturnType<ITeamTasks['open']> {
     this.calls.push({ method: 'open', args: [teamId, signal] })
     const stub = this.stubs.open
     if (stub === undefined) throw new Error('test team tasks: open is not stubbed')
@@ -98,7 +98,7 @@ export class TestTeamTasks implements ITeamTasks {
   }
 
   /** Start a Team only through an explicit test stub. */
-  async start(input: TeamTaskStartInput, signal?: AbortSignal): Promise<TeamTaskSelection> {
+  async start(input: TeamTaskStartInput, signal?: AbortSignal): ReturnType<ITeamTasks['start']> {
     this.calls.push({ method: 'start', args: [input, signal] })
     const stub = this.stubs.start
     if (stub === undefined) throw new Error('test team tasks: start is not stubbed')
@@ -122,7 +122,7 @@ export class TestTeamTasks implements ITeamTasks {
   }
 
   /** Resume a Team only through an explicit test stub. */
-  async resume(teamId: Parameters<ITeamTasks['resume']>[0], signal?: AbortSignal): Promise<TeamTaskSelection> {
+  async resume(teamId: Parameters<ITeamTasks['resume']>[0], signal?: AbortSignal): ReturnType<ITeamTasks['resume']> {
     this.calls.push({ method: 'resume', args: [teamId, signal] })
     const stub = this.stubs.resume
     if (stub === undefined) throw new Error('test team tasks: resume is not stubbed')

@@ -1,3 +1,6 @@
+export type { TeamTaskDetailsUpdateResult, TeamTaskUpdateLookupInput, TeamTaskUpdateLookup, TeamTaskUpdateCommandId } from '@clocky/clocky-host-apiproxy/api'
+export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference } from '@clocky/clocky-host-apiproxy/api'
+export type { TeamActionInspection, TeamActionInspectInput, TeamAttentionHandling } from '@clocky/clocky-host-apiproxy/api'
 // Central contract re-export point: every contract import inside
 // web-runtime goes through this single file.
 // Types and runtime protocol helpers/bounds come from the apiproxy api/ layer
@@ -6,6 +9,7 @@
 // The ./api and ./client subpath exports are the browser-safe channels.
 
 import type { TeamMetricsSnapshot } from '@clocky/clocky-team/types'
+export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from '@clocky/clocky-host-apiproxy/api'
 
 export type {
   ApiProxy, SessionsApi, SessionSearchItem, SessionSummary, PromptContentPart, HostApi, EventsApi, MuxFrame, HostFrame,

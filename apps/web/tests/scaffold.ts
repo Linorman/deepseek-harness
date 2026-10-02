@@ -26,7 +26,6 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Page } from 'playwright'
 import type { RpcResult } from '@clocky/clocky-host-apiproxy/api/rpc'
-import { expect } from 'vitest'
 import { Context } from '@clocky/cordis'
 import Loader from '@clocky/cordis-plugin-loader'
 import Include, { type PatchOptions } from '@clocky/cordis-plugin-include'
@@ -168,6 +167,8 @@ export interface WebScaffold {
   whenTurnSettled(timeoutMs?: number): Promise<SessionId>
   /** Admit a Playwright page through the same one-time bootstrap cookie as the shipped browser handoff. */
   authenticateBrowserPage(page: Page): Promise<void>
+  /** Replace the Host cookie session while existing browser pages retain the retired cookie. */
+  replaceBrowserAuthentication(): Promise<void>
   /** Issue one HTTP request with the scaffold's authenticated product cookie. */
   authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>
   /** Issue one typed JSON-RPC request through the authenticated Web carrier. */
@@ -182,6 +183,14 @@ export interface WebScaffold {
 
 /** Options for {@link launchWebScaffold}. */
 export interface LaunchOptions {
+  /** Parent-owned persistent roots for a separately launched Host restart scenario; close never deletes them. */
+  retainedWorld?: { workspaceCwd: string; persistenceRoot: string }
+  /** Explicit port retained across independent Host processes; omission requests an OS-assigned port. */
+  port?: number
+  /** Project-owned temp parent when a scenario must retain evidence inside the checkout. */
+  tempRoot?: string
+  /** Non-secret fixed fixture identity; authentication still uses the real rotating provider. */
+  productPrincipalId?: string
   /**
    * Optional product overlay applied after the shipped Web surface and before
    * the scaffold's hermetic test patches, matching the launcher's `--patch`
@@ -277,11 +286,13 @@ export interface LaunchOptions {
 }
 
 /** Dispose the booted tree and remove both owned temp roots, reporting every independent cleanup failure. */
-async function cleanupScaffoldWorld(ctx: Context, workspaceCwd: string, persistenceRoot: string): Promise<unknown[]> {
+async function cleanupScaffoldWorld(ctx: Context, workspaceCwd: string, persistenceRoot: string, retained = false): Promise<unknown[]> {
   const failures: unknown[] = []
   await Promise.resolve(ctx.fiber.dispose()).catch((error: unknown) => failures.push(error))
-  await rm(workspaceCwd, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
-  await rm(persistenceRoot, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
+  if (!retained) {
+    await rm(workspaceCwd, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
+    await rm(persistenceRoot, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
+  }
   return failures
 }
 
@@ -305,7 +316,18 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       throw new Error('web e2e record mode needs DEEPSEEK_API_KEY or CLOCKY_LOCAL_MODEL_BASE_URL')
     }
   }
-  const workspaceCwd = await realpath(await mkdtemp(join(tmpdir(), 'clocky-web-e2e-ws-')))
+  if (options.retainedWorld !== undefined) await mkdir(options.retainedWorld.workspaceCwd, { recursive: true })
+  const workspaceCwd = await realpath(options.retainedWorld?.workspaceCwd
+    ?? await mkdtemp(join(options.tempRoot ?? tmpdir(), 'clocky-web-e2e-ws-')))
+  if (options.productPrincipalId !== undefined) {
+    const directory = join(workspaceCwd, '.clocky-auth')
+    await mkdir(directory, { recursive: true })
+    const identityFile = join(directory, 'product-principal.json')
+    if (!existsSync(identityFile)) {
+      await writeFile(identityFile, JSON.stringify({ version: 1, principalId: options.productPrincipalId,
+        credentialGeneration: 1, credentialDigest: 'a'.repeat(64) }), { mode: 0o600 })
+    }
+  }
   // Isolated harness home: the settings/credentials rows resolve $CLOCKY_HOME
   // paths at load, and an in-process boot must NEVER touch the developer's
   // real ~/.clocky document or credential file.
@@ -341,11 +363,18 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
   let persistenceRoot: string
   try {
     // Project-local TMPDIR must not expose the enclosing checkout's instructions or skills.
-    await mkdir(join(workspaceCwd, '.git'))
-    persistenceRoot = await mkdtemp(join(tmpdir(), 'clocky-web-e2e-sessions-'))
+    await mkdir(join(workspaceCwd, '.git'), { recursive: true })
+    if (options.retainedWorld === undefined) {
+      persistenceRoot = await mkdtemp(join(options.tempRoot ?? tmpdir(), 'clocky-web-e2e-sessions-'))
+    } else {
+      persistenceRoot = options.retainedWorld.persistenceRoot
+      await mkdir(persistenceRoot, { recursive: true })
+    }
   } catch (error) {
     const failures: unknown[] = [error]
-    await rm(workspaceCwd, { recursive: true, force: true }).catch((cleanupError: unknown) => failures.push(cleanupError))
+    if (options.retainedWorld === undefined) {
+      await rm(workspaceCwd, { recursive: true, force: true }).catch((cleanupError: unknown) => failures.push(cleanupError))
+    }
     restoreSkillRootEnvironment()
     if (failures.length > 1) throw new AggregateError(failures, 'web scaffold temp-root setup failed')
     throw error
@@ -444,7 +473,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
       }] }],
     {
       id: 'webserver',
-      config: { host: '127.0.0.1', port: 0 },
+      config: { host: '127.0.0.1', port: options.port ?? 0 },
     },
     // The bundle's web-runtime row resolves the same built dist under test
     // (apps/web IS @clocky/clocky-web-frontend); native browser opening and the
@@ -608,7 +637,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
     }
   } catch (error) {
     if (process.cwd() !== originalCwd) process.chdir(originalCwd)
-    const cleanupFailures = await cleanupScaffoldWorld(ctx, workspaceCwd, persistenceRoot)
+    const cleanupFailures = await cleanupScaffoldWorld(ctx, workspaceCwd, persistenceRoot, options.retainedWorld !== undefined)
     restoreSkillRootEnvironment()
     if (cleanupFailures.length > 0) {
       throw new AggregateError([error, ...cleanupFailures], 'web scaffold setup failed and cleanup was incomplete')
@@ -660,6 +689,27 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         value: token,
         url: `http://${browserHost}:${String(port)}/api`,
       }])
+    },
+    async replaceBrowserAuthentication(): Promise<void> {
+      const token = await ensureBrowserAuthToken()
+      const principals = ctx.get('productPrincipals')
+      if (principals === undefined) throw new Error('web e2e scaffold: product-principal registry is unavailable')
+      // The Loader owns registration; this fixture reaches its retained provider to exercise the public rotation operation.
+      const local = (principals as unknown as { providers: Map<string, {
+        provider: { rotateBootstrapCredential(): Promise<void> }
+      }> }).providers.get('local')?.provider
+      if (local === undefined) throw new Error('web e2e scaffold: local provider is unavailable')
+      await local.rotateBootstrapCredential()
+      const response = await fetch(`http://127.0.0.1:${String(port)}/api/bootstrap`, {
+        method: 'POST', headers: { 'content-type': 'application/json', cookie: `clocky_product_auth=${token}` },
+        body: JSON.stringify({ credential: principals.bootstrapCredential('local') }),
+      })
+      if (response.status !== 204) throw new Error('web e2e scaffold: authentication replacement failed')
+      const cookie = response.headers.get('set-cookie')?.split(';', 1)[0]
+      if (cookie === undefined || !cookie.startsWith('clocky_product_auth=')) {
+        throw new Error('web e2e scaffold: replacement cookie is unavailable')
+      }
+      browserAuthToken = cookie.slice('clocky_product_auth='.length)
     },
     async authenticatedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
       const token = await ensureBrowserAuthToken()
@@ -714,7 +764,7 @@ export async function launchWebScaffold(options: LaunchOptions = {}): Promise<We
         }
       }
       try {
-        failures.push(...await cleanupScaffoldWorld(ctx, workspaceCwd, persistenceRoot))
+        failures.push(...await cleanupScaffoldWorld(ctx, workspaceCwd, persistenceRoot, options.retainedWorld !== undefined))
       } finally {
         restoreSkillRootEnvironment()
       }
@@ -967,6 +1017,7 @@ function normalizeAria(snapshot: string, workspaceCwd: string): string {
  * @returns the stable normalized snapshot.
  */
 export async function captureStableAria(page: Page, selector: string, workspaceCwd: string): Promise<string> {
+  const { expect } = await import('vitest')
   const region = page.locator(selector).first()
   let previous = normalizeAria(await region.ariaSnapshot(), workspaceCwd)
   await expect.poll(async () => {
@@ -987,6 +1038,7 @@ export async function captureStableAria(page: Page, selector: string, workspaceC
  * @param mode - the active snapshot mode.
  */
 export async function compareOrRefreshGolden(goldenPath: string, actual: string, mode: WebSnapshotMode): Promise<void> {
+  const { expect } = await import('vitest')
   const payload = `${actual}\n`
   if (mode === 'refresh') {
     await writeFile(goldenPath, payload)
@@ -1006,6 +1058,7 @@ export async function compareOrRefreshGolden(goldenPath: string, actual: string,
  * @param expected - the exact expected file inventory.
  */
 export async function assertFixtureInventory(dir: string, expected: string[]): Promise<void> {
+  const { expect } = await import('vitest')
   const entries = (await readdir(dir)).sort()
   expect(entries).toEqual([...expected].sort())
   for (const entry of entries.filter(name => name.endsWith('.jsonl'))) {

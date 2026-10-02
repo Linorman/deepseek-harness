@@ -16,7 +16,7 @@ import { Context, Service } from '@clocky/cordis'
 import z from '@clocky/schemastery'
 import type {} from '@clocky/clocky-agent-default-model'
 import type { ApiProxy } from './api/index.ts'
-import { createApiProxy, DEFAULT_COLD_BLANK_PROBE_MAX_BYTES } from './api-proxy.ts'
+import { createApiProxy, DEFAULT_COLD_BLANK_PROBE_MAX_BYTES, DEFAULT_MAX_PENDING_EVENT_FRAMES, DEFAULT_MAX_PENDING_EVENT_BYTES } from './api-proxy.ts'
 import {
   DEFAULT_SESSION_LOG_COMPRESSION_LEVEL,
   type SessionLogCompressionLevel,
@@ -25,6 +25,7 @@ import {
 export type * from './api/index.ts'
 export { RpcId } from './api/rpc.ts'
 export { toFetchHandler } from './fetch/handler.ts'
+export { currentAuthenticatedProductCall, withAuthenticatedProductCall } from './authenticated-product-call.ts'
 export { AbstractApiClient, InProcessApiClient } from './fetch/client.ts'
 export type { IApiClient } from './fetch/client.ts'
 export { createApiProxy } from './api-proxy.ts'
@@ -39,6 +40,10 @@ declare module '@clocky/cordis' {
 
 /** Gateway plugin configuration. */
 export interface Config {
+  /** Maximum pending frames per event stream. @default 4096 */
+  maxPendingEventFrames?: number
+  /** Maximum serialized pending bytes per event stream. @default 8388608 */
+  maxPendingEventBytes?: number
   /**
    * Whether this deployment can hand paths to a native desktop opener —
    * the `hasDocument` capability the agent-preset roster reports. Absent,
@@ -73,6 +78,8 @@ export class ApiProxyService extends Service implements ApiProxy {
   ]
 
   static Config: z<Config> = z.object({
+    maxPendingEventFrames: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_PENDING_EVENT_FRAMES),
+    maxPendingEventBytes: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(DEFAULT_MAX_PENDING_EVENT_BYTES),
     nativeOpen: z.boolean(),
     sessionExportCompressionLevel: z.number().step(1).min(0).max(9)
       .default(DEFAULT_SESSION_LOG_COMPRESSION_LEVEL) as z<SessionLogCompressionLevel>,
@@ -88,6 +95,7 @@ export class ApiProxyService extends Service implements ApiProxy {
   readonly credentials: ApiProxy['credentials']
   readonly llm: ApiProxy['llm']
   readonly teams?: NonNullable<ApiProxy['teams']>
+  readonly simulations?: NonNullable<ApiProxy['simulations']>
   readonly events: ApiProxy['events']
   readonly downloads: ApiProxy['downloads']
   readonly respond: ApiProxy['respond']
@@ -98,6 +106,8 @@ export class ApiProxyService extends Service implements ApiProxy {
       defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
       saveDefaultModelSelection: selection => ctx.agentDefaultModel.saveSelection(selection),
       cwd: process.cwd(),
+      ...config.maxPendingEventFrames === undefined ? {} : { maxPendingEventFrames: config.maxPendingEventFrames },
+      ...config.maxPendingEventBytes === undefined ? {} : { maxPendingEventBytes: config.maxPendingEventBytes },
       ...config.nativeOpen === undefined ? {} : { canOpenPath: () => config.nativeOpen as boolean },
       ...(config.sessionExportCompressionLevel === undefined
         ? {}
@@ -115,6 +125,7 @@ export class ApiProxyService extends Service implements ApiProxy {
     this.credentials = api.credentials
     this.llm = api.llm
     if (api.teams !== undefined) this.teams = api.teams
+    if (api.simulations !== undefined) this.simulations = api.simulations
     this.events = api.events
     this.downloads = api.downloads
     // createApiProxy returns closures (no `this` capture), so the bind is

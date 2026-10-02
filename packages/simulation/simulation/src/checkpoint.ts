@@ -1,4 +1,6 @@
 import type { SimulationEntity } from './entity-types.ts'
+import type { SimulationCheckpointDiagnostic } from './checkpoint-diagnostics-types.ts'
+export * from './checkpoint-diagnostics.ts'
 /** Durable checkpoint requests and immutable cross-owner manifests. @module @clocky/clocky-simulation/checkpoint */
 import { z } from 'zod'
 import type { Branded } from '@clocky/clocky-brand'
@@ -10,6 +12,7 @@ import { simulationWriterEpochSchema } from './writer.ts'
 import { simTimeSchema } from './time.ts'
 import { simulationEventIdSchema, simulationEventSlotSchema } from './scheduler.ts'
 import { simulationOperationIdSchema, simulationDecisionSlotSchema } from './business.ts'
+export type { SimulationCheckpointId } from './identities.ts'
 
 /** Caller-retained identity of one checkpoint request. */
 export const simulationCheckpointIdSchema = z.string().min(1).transform(value => value as Branded<'SimulationCheckpointId'>)
@@ -21,8 +24,6 @@ export const simulationCheckpointRestoreRequestSchema = z.strictObject({ id: sim
   implementationVersion: z.string().min(1), maxAttempts: z.number().int().positive() })
 /** Explicit implementation compatibility and bounded owner-movement retries for restoration. */
 export type SimulationCheckpointRestoreRequest = z.infer<typeof simulationCheckpointRestoreRequestSchema>
-/** Stable checkpoint identity. */
-export type SimulationCheckpointId = z.infer<typeof simulationCheckpointIdSchema>
 /** Immutable checkpoint command; changed retries reject. */
 export type SimulationCheckpointRequest = z.infer<typeof simulationCheckpointRequestSchema>
 const fingerprint = <B extends string>() => z.string().regex(/^sha256:[a-f0-9]{64}$/).transform(value => value as Branded<B>)
@@ -57,8 +58,8 @@ export type SimulationCheckpointManifest = z.infer<typeof simulationCheckpointMa
 /** Request progress and a terminal result retained independently of later checkpoints. */
 export type SimulationCheckpointOperation = { readonly request: SimulationCheckpointRequest; readonly startedSequence: number } & (
   | { readonly status: 'in-progress' }
-  | { readonly status: 'failed'; readonly finishedSequence: number; readonly error: string }
-  | { readonly status: 'completed'; readonly finishedSequence: number; readonly manifest: SimulationCheckpointManifest }
+  | { readonly status: 'failed'; readonly finishedSequence: number; readonly error: string; readonly diagnostic?: SimulationCheckpointDiagnostic | undefined }
+  | { readonly status: 'completed'; readonly finishedSequence: number; readonly publishedAt: number; readonly manifest: SimulationCheckpointManifest }
 )
 
 /**

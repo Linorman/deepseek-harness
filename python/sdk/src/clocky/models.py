@@ -93,12 +93,11 @@ class TeamArchiveResponse(BaseModel):
 
 
 class TeamListResponse(BaseModel):
-    """Bounded durable Team summary page returned by the runtime."""
+    """Bounded metadata readable by the authenticated principal."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     items: list[JsonObject]
-    scanned: int
     nextCursor: str | None = None
 
 
@@ -268,10 +267,31 @@ class _TeamBrowseMetadata(BaseModel):
     nextCursor: _TeamReadCount | None = None
 
 
+class TeamTaskQuery(BaseModel):
+    """Literal case-insensitive title search, excluding deleted tasks."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    search: str
+    phase: Literal["pending", "assigned", "running", "review", "completed", "failed", "cancelled"] | None = None
+    excludeTaskId: _TeamReadId | None = None
+
+
+class TeamTaskQueryCursor(BaseModel):
+    """Public revision-bound continuation, never an authorization credential."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    teamId: _TeamReadId
+    teamCursor: _TeamReadCount
+    query: TeamTaskQuery
+    order: Literal["task-insertion-v1"]
+    afterCursor: _TeamReadCount
+
+
 class TeamTaskBrowsePage(_TeamBrowseMetadata):
     """Provider-order task summary page."""
     kind: Literal["tasks"]
     items: list[TeamTaskSummary]
+    query: TeamTaskQuery | None = None
+    sourceTotal: _TeamReadCount | None = None
+    nextQueryCursor: TeamTaskQueryCursor | None = None
 
 
 class TeamMemberBrowsePage(_TeamBrowseMetadata):
@@ -299,10 +319,27 @@ class TeamBrowseResponse(BaseModel):
             raise ValueError("Browse rows must belong to the selected Team")
         if len({item.id for item in page.items}) != len(page.items):
             raise ValueError("Browse page repeats an identity")
-        if len(page.items) > page.scanned or page.scanned > page.total:
+        query_page = isinstance(page, TeamTaskBrowsePage) and page.query is not None
+        scan_total = (page.sourceTotal if page.sourceTotal is not None else -1) if query_page else page.total
+        if len(page.items) > page.scanned or page.scanned > scan_total:
             raise ValueError("Browse scan accounting is inconsistent")
         if page.nextCursor is not None and page.nextCursor >= page.total - 1:
             raise ValueError("Browse continuation must leave an unread row")
+        if isinstance(page, TeamTaskBrowsePage):
+            if page.query is None:
+                if page.sourceTotal is not None or page.nextQueryCursor is not None:
+                    raise ValueError("Task query metadata requires a query")
+            else:
+                if page.sourceTotal is None or page.total > page.sourceTotal or page.nextCursor is not None:
+                    raise ValueError("Invalid task query accounting")
+                if any(item.phase == "deleted" or item.id == page.query.excludeTaskId
+                       or page.query.phase is not None and item.phase != page.query.phase for item in page.items):
+                    raise ValueError("Task query rows do not match the filter")
+                cursor = page.nextQueryCursor
+                if cursor is not None and (cursor.teamId != page.teamId or cursor.teamCursor != page.teamCursor
+                                           or cursor.query != page.query or not page.items
+                                           or cursor.afterCursor >= page.sourceTotal - 1):
+                    raise ValueError("Task query continuation does not match the page")
         return self
 
 
@@ -923,4 +960,83 @@ class TeamWorkflowInspection(BaseModel):
                 or self.record.phase in ("compiling", "ready") and self.record.resultTaskCount is not None):
             raise ValueError("Workflow result count does not match its phase")
 
+        return self
+
+
+class TaskUpdateReceipt(BaseModel):
+    """Immutable admission of one original task-details command."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    teamId: Annotated[str, Field(min_length=1)]
+    taskId: Annotated[str, Field(min_length=1)]
+    commandId: Annotated[str, Field(min_length=1)]
+    expectedRevision: Annotated[int, Field(ge=1, le=9007199254740991)]
+    appliedRevision: Annotated[int, Field(ge=1, le=9007199254740991)]
+    appliedAt: Annotated[int, Field(ge=0, le=9007199254740991)]
+
+    @model_validator(mode="after")
+    def validate_revision(self):
+        if self.expectedRevision < 1 or self.appliedRevision != self.expectedRevision + 1 or self.appliedAt < 0:
+            raise ValueError("Task update receipt must retain its positive original revision and timestamp")
+        return self
+
+
+class TaskDetailsUpdateValue(BaseModel):
+    """Original admission and the explicitly current task state."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    receipt: TaskUpdateReceipt
+    task: JsonObject
+
+    @model_validator(mode="after")
+    def validate_current_task(self):
+        revision = self.task.get("revision")
+        if (self.task.get("teamId") != self.receipt.teamId or self.task.get("id") != self.receipt.taskId
+                or type(revision) is not int or revision < self.receipt.appliedRevision or revision > 9007199254740991):
+            raise ValueError("Current task must retain the original update admission")
+        return self
+
+
+class TaskDetailsUpdateResponse(BaseModel):
+    """Wire result from retry-safe task-details admission."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    value: TaskDetailsUpdateValue
+
+
+class TaskUpdateRejection(BaseModel):
+    """Original semantic refusal; later task changes cannot revive the command."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    teamId: Annotated[str, Field(min_length=1)]
+    taskId: Annotated[str, Field(min_length=1)]
+    commandId: Annotated[str, Field(min_length=1)]
+    expectedRevision: Annotated[int, Field(ge=1, le=9007199254740991)]
+    observedRevision: Annotated[int, Field(ge=1, le=9007199254740991)]
+    rejectedAt: Annotated[int, Field(ge=0, le=9007199254740991)]
+    reason: Literal["stale-revision", "workflow-owned", "active-execution", "invalid-edit"]
+
+    @model_validator(mode="after")
+    def validate_revision_comparison(self):
+        if (self.reason == "stale-revision") != (self.expectedRevision != self.observedRevision):
+            raise ValueError("Refusal reason must retain its original revision comparison")
+        return self
+
+
+class TaskUpdateLookup(BaseModel):
+    """Read-only original admission; absence does not cancel an in-flight request."""
+    model_config = ConfigDict(extra="forbid", strict=True)
+    kind: Literal["applied", "rejected", "not-found"]
+    receipt: TaskUpdateReceipt | None = None
+    rejection: TaskUpdateRejection | None = None
+    teamId: Annotated[str, Field(min_length=1)] | None = None
+    taskId: Annotated[str, Field(min_length=1)] | None = None
+    commandId: Annotated[str, Field(min_length=1)] | None = None
+
+    @model_validator(mode="after")
+    def validate_lookup(self):
+        if self.kind == "applied":
+            if self.receipt is None or any(value is not None for value in (self.rejection, self.teamId, self.taskId, self.commandId)):
+                raise ValueError("Applied lookup requires only its receipt")
+        elif self.kind == "rejected":
+            if self.rejection is None or any(value is not None for value in (self.receipt, self.teamId, self.taskId, self.commandId)):
+                raise ValueError("Rejected lookup requires only its refusal metadata")
+        elif self.receipt is not None or self.rejection is not None or any(value is None or value == "" for value in (self.teamId, self.taskId, self.commandId)):
+            raise ValueError("Not-found lookup requires its exact command identity")
         return self

@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+[Simulation preset](presets/simulation/agent.cordis.yml)拥有完整参与者 persona，并抑制无关部署运行时上下文。原生工具 role 过滤最终模型 schema，包括后来登记的 actor 自有 Team 工具。原生分发器与执行器独立执行决策权限检查。同一 actor 因此能在 Web 编码部署中运行，不继承未拥有的文件系统 `cwd` 或普通 Team 模型能力。
+
 此显式启用的组合使用脚本化模型，通过真实 Agent 回合运行买方与供应商。他们请求一个库存单位，等待延迟投递、接受承诺、转移库存、发送证据并观察结果。角色 preset 只开放 Simulation 工具。
 
 在仓库根目录运行无密钥场景：
@@ -65,6 +67,10 @@ pnpm run benchmark:simulation --backend sqlite --workload parallel-messages --en
 ```sh
 pnpm run benchmark:simulation --backend sqlite --workload organization --entities 570 --departments 20 --managers 50 --days 30 --operations 15000 --residents 20 --duration-ms 60000 --timeout-ms 180000 --sample-every 100 --entity-batch-size 100 --replay-page-size 1000 --output .tmp-simulation-development/benchmarks
 ```
+
+[产品 driver 场景](tests/product-driver-scenario.ts) 消费有界生产 driver。验证单 actor 驻留限制下的真实模型／工具采购、提交／接受／效果中断后的恢复、明确 paused 启动及完成重试不推理。仅脚本化外部模型；fixture 不直接完成业务操作。
+
+[初始产品准备场景](tests/product-preparation-scenario.ts) 消费生产公司准备 helper。不推理地对账中断的原生拓扑，发布初始完整检查点，并验证恢复后保持 paused。这个场景不实现公开产品创建命令或后台 driver。
 
 ## 有预算的真实模型小样本
 

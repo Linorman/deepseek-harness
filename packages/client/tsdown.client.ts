@@ -58,7 +58,10 @@ function styleInjectionModule(
  * Everything else under @clocky/* is either a module-table entry
  * (external) or a leak the purity gate rejects.
  */
-export const INLINE_SAFE = /^@clocky\/clocky-(host-apiproxy|file-reference|session|llm|tools|brand|timeout|team\/(schema|selection))(\/|$)/
+export const INLINE_SAFE = new RegExp(
+  '^@clocky/clocky-(host-apiproxy|file-reference|session|llm|tools|brand|timeout|team/(schema|selection)'
+  + '|simulation-product/schema|simulation/checkpoint-diagnostics-schema)(/|$)',
+)
 
 /**
  * Vendored framework libraries: rescoped into @clocky, so the gate below

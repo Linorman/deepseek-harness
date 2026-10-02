@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+`readSqliteLogSnapshot(path, descriptor, limits)` 使用现有只读连接和单个读取事务，不初始化或迁移 schema、不取得 backend ownership，也不修改 journal。解码前核对 physical／stream version 以及编码 row／checkpoint 大小，再验证完整响应额度。SQLite 的只读连接仍可能创建或复用 WAL／SHM 辅助文件，这是 [SQLite WAL 语义](https://www.sqlite.org/walformat.html)，不代表应用写入已受理。并发可变 journal 不适合 immutable mode。
+
 [存储中心](../storage/README.zh.md)的 SQLite 后端：注册为后端 `sqlite`，通过一个数据库提供 `kv` 和追加日志分面；该数据库由 `node:sqlite` 操作，可以是单个文件，也可以是 `:memory:`。设计与取舍见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
 Log-name discovery 使用 UTF-8 prefix 范围和排他的 last-name key，每次从 stream-name 索引定位一行，不读取 log entry 或 checkpoint。当前 key 之后插入的名称可以进入本次扫描；key 之前的插入由新的扫描发现。

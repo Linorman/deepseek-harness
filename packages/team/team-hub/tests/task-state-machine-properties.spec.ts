@@ -109,7 +109,7 @@ function opening(maxAttempts = 1): TeamProjection {
     createdAt: 19,
   }, 9, teamId)
   return foldTeamRecord(projection, taskChanged({
-    task: task({ maxAttempts }),
+    task: task({ maxAttempts, createdAt: 20 }),
     createdAt: 20,
   }), 10, teamId)
 }

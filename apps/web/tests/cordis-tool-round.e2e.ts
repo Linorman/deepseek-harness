@@ -183,7 +183,7 @@ describe('web e2e: Cordis tools use their owned cards', () => {
       { timeout: 10_000 },
     ).toBe(0)
     await page.mouse.move(0, 0)
-    const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
   })
 

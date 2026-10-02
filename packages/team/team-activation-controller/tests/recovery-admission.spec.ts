@@ -44,7 +44,7 @@ async function setup(mountController = true, backend: 'json' | 'sqlite' = 'json'
   await ctx.plugin(AgentRuntime)
   let sequence = 0
   const handles: ActivationHandle[] = []
-  const provider: AgentRuntimeProvider = {
+  const provider: AgentRuntimeProvider = { participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'admission-runtime',
     terminationMode: 'cooperative',
     async activate(request) {

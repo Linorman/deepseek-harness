@@ -93,6 +93,7 @@ const receipt = channelReceiptRecordSchema.parse({
 })
 
 const task = teamTaskSnapshotSchema.parse({
+  createdAt: 0,
   id: 'task-websocket',
   teamId: binding.activation.teamId,
   revision: 2,

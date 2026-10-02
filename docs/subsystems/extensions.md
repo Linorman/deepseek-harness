@@ -272,8 +272,10 @@ One exact Plugin/Package activation is now live in the Host.
  * @param pkg - stable plugin, immutable package, run identity, and label.
  * @mode emit
  */
-'cordis/dynamic-package'(pkg: DynamicCordisPackage): void
+'cordis/dynamic-package'(pkg: DynamicCordisPackage & { agentId: SessionId }): void
 ```
+
+Types: [SessionId](core.md)
 
 Source: [`packages/extensions/cordis-host-runner/src/types.ts`](../../packages/extensions/cordis-host-runner/src/types.ts)
 

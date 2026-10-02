@@ -16,6 +16,10 @@ Wake 恢复、review 派发与新任务分配分别受每轮额度约束。`maxR
 
 每次 discovery drive 消费一个配置大小的 Team page，为下一 pulse 保留 opaque cursor，空页也推进。每次 Team drive 完成一个有界轮次；期间合并的变更安排到后续事件循环。Disposal 取消这些延后轮次，并在已接纳工作结算前保留 proof source。
 
+由 effect 管理的 `team/task-scheduling-modes` 监听器为产品只读观察提供 scheduler 配置的工作区模式。它委派给其他 scheduler，在关闭期间不提供模式，并在卸载时移除。读取模式不会发现 Team、准备成员或分配工作。
+
+review policy 指定的 active human 无需 Agent activation 即可保持任务等待审核。等待该 human 不启动模型，也不触发 TASK_NO_ELIGIBLE_OWNER；审核响应仍执行既有 participant、权限和 revision 检查。
+
 ## 调度与失效
 
 每次 drive 检查冻结的消费与时间上限后，会使已到期的 assigned 或 running lease 失效，再按 priority 降序和 task 的 durable creation order 选择 ready 的 `pending` task。它只考虑 active 的 `local-agent` 和 `remote-agent` participant：它们必须声明全部 required capability、拥有准确的 `idle` activation，且 active attempt 数少于 `maxActiveAttemptsPerParticipant`。在对这些 candidate 排名之前，它会调用 `ctx.teamWorkspaces.eligible(task.workspaceMode, { task, binding })`，并跳过返回 `false` 的结果；provider 不可用会使 drive 拒绝。scheduler 绝不调用 `allocate()`。它使用 task revision 与已配置的 `leaseDurationMs` 调用 `assignTask()`；Team provider 仍是 membership、capability、activation identity、task phase、revision 和 lease validity 的最终 authority。Discovery 使用配置的 `teamPageSize`调用有界 `listTeamsPage()`，一个 pulse 不会请求完整 Team collection。

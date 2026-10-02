@@ -19,7 +19,7 @@ import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { SessionId } from '@clocky/clocky-session'
 import { settingsNamespace } from '@clocky/clocky-settings'
 import { launchWebScaffold, watchConsole, type WebScaffold } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 /** Points the shipped shared Agent default at this scenario's own route. */
 const OVERLAY = fileURLToPath(new URL('./default-model.overlay.yml', import.meta.url))
@@ -67,10 +67,7 @@ describe('web e2e: the composer model switch is the default for later Team coord
 
   /** The route the gateway reports for one session, through the real wire face. */
   const currentOf = async (sessionId: string): Promise<unknown> => {
-    const response = await scaffold.ctx.apiProxy.sessions.models({
-      rpcId: `default-model-${sessionId}` as never,
-      payload: { sessionId: SessionId(sessionId) },
-    })
+    const response = await scaffold.authenticatedRpc<{ current: unknown }>('session.models', { sessionId: SessionId(sessionId) })
     if (!response.result.ok) throw new Error(`session.models failed: ${response.result.error.message}`)
     return response.result.value.current
   }
@@ -105,6 +102,7 @@ describe('web e2e: the composer model switch is the default for later Team coord
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await page.getByText(INITIAL_TEAM_OBJECTIVE, { exact: true }).click()
+    await openCoordinatorConversation(page)
   }, 120_000)
 
   afterAll(async () => {

@@ -1,0 +1,6 @@
+- name: cordis:include
+  config:
+    path: ../simulation-product/cordis.yml
+- name: '@clocky/clocky-team-hub'
+- name: '@clocky/clocky-team-human-actor'
+- name: '@clocky/clocky-team-channel-direct'

@@ -51,6 +51,7 @@ const taskCreateDefaults = {
 }
 
 const taskSnapshotDefaults = {
+  createdAt: 0,
   ...taskCreateDefaults,
   reviewHistory: [],
   attemptCount: 0,

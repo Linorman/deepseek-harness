@@ -1,11 +1,10 @@
-- banner:
-  - text: {{workspace}}
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: {{workspace}}
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: m1 7/25 {{clock}}
 - button "Copy":
   - img

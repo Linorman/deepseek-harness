@@ -326,6 +326,7 @@ describe('workspace.insertBefore', () => {
 describe('Host Workspace increments', () => {
   it('keeps internal child lineage out of summaries and creation increments', async () => {
     const { api, ctx } = await harness()
+    ctx.sessions.create(SessionId('session-parent'), { meta: { cwd: '/tmp' } })
     const abort = new AbortController()
     const stream: AsyncIterator<RpcRequest<HostFrame>> =
       api.events.host(request({}), abort.signal)[Symbol.asyncIterator]()

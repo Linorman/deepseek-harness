@@ -55,7 +55,8 @@
     "@clocky/cordis": "workspace:^",
     "@clocky/clocky-team-channel-admission": "workspace:^",
     "@clocky/clocky-attachment": "workspace:^",
-    "@clocky/clocky-team-channel-summary": "workspace:^"
+    "@clocky/clocky-team-channel-summary": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   },
   "devDependencies": {
     "@clocky/cordis-plugin-loader": "workspace:^",
@@ -89,6 +90,7 @@
     "@clocky/clocky-team-channel-admission": "workspace:^",
     "@clocky/clocky-attachment": "workspace:^",
     "@clocky/clocky-attachment-local": "workspace:^",
-    "@clocky/clocky-team-channel-summary": "workspace:^"
+    "@clocky/clocky-team-channel-summary": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   }
 }

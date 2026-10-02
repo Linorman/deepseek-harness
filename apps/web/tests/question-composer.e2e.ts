@@ -19,7 +19,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, connectFreshWorkspace, newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/question-composer', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -97,6 +97,7 @@ describe('web e2e: resident question composer round trip', () => {
     const settled = scaffold.whenTurnSettled(MODE === 'record' ? 180_000 : 30_000)
     await input.fill(PROMPT)
     await input.press('Enter')
+    await openCoordinatorConversation(page)
 
     // The composer takes over the input area while the tool blocks. Its
     // presence is a STABLE waiting state (not a transient): it stays until
@@ -107,7 +108,7 @@ describe('web e2e: resident question composer round trip', () => {
 
     // Team-first navigation owns the selected task; the legacy Session tree
     // no longer carries pending-human-action status.
-    const selectedTask = page.locator('section[aria-label="Tasks"] [aria-current="page"]')
+    const selectedTask = page.locator('section[aria-label="Team directory"] [aria-current="page"]')
     await expect.poll(() => selectedTask.count(), { timeout: 10_000 }).toBe(1)
 
     if (MODE !== 'record') {
@@ -115,7 +116,7 @@ describe('web e2e: resident question composer round trip', () => {
       // golden below owns the resulting transcript.
       const snapshot = await captureStableAria(page, '[data-question-key]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
-      const sidebar = await captureStableAria(page, 'section[aria-label="Tasks"] [aria-current="page"]', scaffold.workspaceCwd)
+      const sidebar = await captureStableAria(page, 'section[aria-label="Team directory"] [aria-current="page"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(SIDEBAR_EXPECTED, sidebar, MODE)
     }
 
@@ -225,7 +226,7 @@ describe('web e2e: resident question composer round trip', () => {
     await expect.poll(() => page.locator('textarea').first().isEnabled(), { timeout: 10_000 }).toBe(true)
     // Golden of the answered transcript: the ask_user_question round trip
     // rendered as history (question tool row + DONE), composer takeover gone.
-    const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(ANSWERED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

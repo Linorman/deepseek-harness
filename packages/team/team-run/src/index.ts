@@ -1,3 +1,4 @@
+import type { TeamMemberExecutionSources } from '@clocky/clocky-team'
 import type {} from '@clocky/clocky-team-placement-default'
 import { settleAgentWorkspaceLease } from '@clocky/clocky-agent'
 import type { HumanChannelAdmission } from '@clocky/clocky-team-channel-admission'
@@ -898,7 +899,7 @@ interface TaskControlProofRecord {
   /** Exact currently running coordinator turn that issued the proof. */
   readonly coordinator: Agent
   /** Closed task-control operation and every durable fact it permits. */
-  readonly scope: Exclude<TeamSystemTaskControlScope, { kind: 'simulation-task-create' }>
+  readonly scope: Extract<TeamSystemTaskControlScope, { readonly coordinator: TeamTaskCreator }>
 }
 
 /** Private source-owned root-creation proof retained for one exact Hub admission. */
@@ -1091,6 +1092,31 @@ export class TeamRunService extends Service {
    */
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'teamRuns')
+    ctx.on('team/member-execution-observe', async ({ teamId, participant }, next) => {
+      const sources = await next()
+      if (participant.kind !== 'local-agent' && participant.kind !== 'remote-agent') return sources
+      const state = this.runs.get(teamId)
+      if (state === undefined) return sources
+      const workerIndex = state.workers.findIndex(worker => worker.id === participant.id)
+      const templateMember = state.handle.members.find(member => member.id === participant.id)
+      const owns = participant.id === state.handle.coordinator.id || workerIndex >= 0
+        || templateMember !== undefined || state.reviewer?.participant.id === participant.id
+      if (!owns) return sources
+      if (sources.route?.kind === 'managed') throw new TeamError('Member has multiple managed execution owners', 'TEAM_INVALID_ARGUMENT')
+      const reasons: NonNullable<TeamMemberExecutionSources['route']>['reasons'][number][] = []
+      if (this.closing || state.topologyReleased) reasons.push('owner-closing')
+      const provider = templateMember === undefined ? state.config.activationProvider
+        : state.config.members.find(spec => spec.role === templateMember.role)?.provider
+      if (provider === undefined) throw new TeamRunError('Managed member has no frozen execution profile', 'TEAM_RUN_NOT_QUIESCENT')
+      const runtime = this.ctx.get('agentRuntimes')?.getProvider(provider)
+      if (runtime === undefined) reasons.push('provider-unavailable')
+      else if (!runtime.participantKinds.includes(participant.kind)) reasons.push('participant-kind-unsupported')
+      if (workerIndex >= state.targetWorkerCount && workerIndex >= 0
+        && !state.workerStates.has(participant.id) && !state.workerActivations.has(participant.id)) reasons.push('pool-capacity')
+      if (workerIndex >= 0 && !state.workerAgents.has(participant.id)) reasons.push('route-unavailable')
+      return { ...sources, route: { kind: 'managed', provider, configuration: 'team-run', reasons } }
+    })
+
     this.config = resolveConfig(config)
     ctx.teams.registerSystemChannelAdmissionProofSource({ name: 'team-run',
       resolveChannelAdmissionProof: proof => this.closing ? undefined : this.invitationProofs.get(proof) })
@@ -4895,7 +4921,7 @@ export class TeamRunService extends Service {
   private async withTaskControlProof<T>(
     state: RunState,
     coordinator: Agent,
-    scope: Exclude<TeamSystemTaskControlScope, { kind: 'simulation-task-create' }>,
+    scope: Extract<TeamSystemTaskControlScope, { readonly coordinator: TeamTaskCreator }>,
     operation: (actor: TeamSystemTaskControlProof) => Promise<T>,
   ): Promise<T> {
     this.assertOpen()

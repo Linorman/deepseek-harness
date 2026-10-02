@@ -93,6 +93,8 @@ async function buildApi(
   if (persistence) {
     ctx.provide('sessionPersistence', {
       supportsRawArtifacts: persistence !== 'unsupported',
+      list: async () => Object.values(artifacts).map(value => value.meta).concat(
+        services.readRaw !== undefined || persistence === 'throw' ? [header('session-root')] : []),
       readRaw: services.readRaw ?? (async (id: SessionId) => {
         if (persistence === 'throw') throw new Error('/host/private/session.jsonl')
         return artifacts[id]
@@ -129,11 +131,13 @@ describe('session export compression config', () => {
     expect(ApiProxyService.Config({})).toEqual({
       sessionExportCompressionLevel: 6,
       coldBlankProbeMaxBytes: 1024,
+      maxPendingEventFrames: 4096,
+      maxPendingEventBytes: 8388608,
     })
     expect(ApiProxyService.Config({ sessionExportCompressionLevel: 0 }))
-      .toEqual({ sessionExportCompressionLevel: 0, coldBlankProbeMaxBytes: 1024 })
+      .toMatchObject({ sessionExportCompressionLevel: 0, coldBlankProbeMaxBytes: 1024 })
     expect(ApiProxyService.Config({ sessionExportCompressionLevel: 9 }))
-      .toEqual({ sessionExportCompressionLevel: 9, coldBlankProbeMaxBytes: 1024 })
+      .toMatchObject({ sessionExportCompressionLevel: 9, coldBlankProbeMaxBytes: 1024 })
     for (const value of [-1, 10, 1.5]) {
       expect(() => ApiProxyService.Config({ sessionExportCompressionLevel: value } as never)).toThrow()
     }
@@ -143,11 +147,22 @@ describe('session export compression config', () => {
 describe('cold blank probe config', () => {
   it('accepts a per-Session byte bound including zero and rejects invalid bounds', () => {
     expect(ApiProxyService.Config({ coldBlankProbeMaxBytes: 0 }))
-      .toEqual({ sessionExportCompressionLevel: 6, coldBlankProbeMaxBytes: 0 })
+      .toMatchObject({ sessionExportCompressionLevel: 6, coldBlankProbeMaxBytes: 0 })
     expect(ApiProxyService.Config({ coldBlankProbeMaxBytes: 2048 }))
-      .toEqual({ sessionExportCompressionLevel: 6, coldBlankProbeMaxBytes: 2048 })
+      .toMatchObject({ sessionExportCompressionLevel: 6, coldBlankProbeMaxBytes: 2048 })
     for (const value of [-1, 1.5]) {
       expect(() => ApiProxyService.Config({ coldBlankProbeMaxBytes: value })).toThrow()
+    }
+  })
+})
+
+describe('pending event backlog config', () => {
+  it('accepts positive integer frame and byte bounds and rejects unbounded or empty allowances', () => {
+    expect(ApiProxyService.Config({ maxPendingEventFrames: 8, maxPendingEventBytes: 4096 }))
+      .toMatchObject({ maxPendingEventFrames: 8, maxPendingEventBytes: 4096 })
+    for (const value of [0, -1, 1.5, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => ApiProxyService.Config({ maxPendingEventFrames: value })).toThrow()
+      expect(() => ApiProxyService.Config({ maxPendingEventBytes: value })).toThrow()
     }
   })
 })
@@ -450,7 +465,7 @@ describe('session.export download endpoint', () => {
     expect(body).not.toContain('/host/private/')
   })
 
-  it('forwards one request signal through root, lineage, and descendant reads', async () => {
+  it('propagates request cancellation through root, lineage, and descendant reads', async () => {
     const reads: Array<{ id: SessionId; signal: AbortSignal | undefined }> = []
     const traces: AbortSignal[] = []
     const api = await buildApi({}, [node('child-a')], {
@@ -479,10 +494,15 @@ describe('session.export download endpoint', () => {
     await response.arrayBuffer()
     const producerSignal = traces[0]
     if (producerSignal === undefined) throw new Error('missing lineage signal')
-    expect(reads[0]).toEqual({ id: sid('session-root'), signal: controller.signal })
+    const rootSignal = reads[0]?.signal
+    if (rootSignal === undefined) throw new Error('missing root read signal')
+    expect(reads[0]?.id).toBe(sid('session-root'))
+    expect(rootSignal.aborted).toBe(false)
     expect(reads[1]).toEqual({ id: sid('child-a'), signal: producerSignal })
     const cancellation = new Error('request cancelled after response')
     controller.abort(cancellation)
+    expect(rootSignal.aborted).toBe(true)
+    expect(rootSignal.reason).toBe(cancellation)
     expect(producerSignal.aborted).toBe(true)
     expect(producerSignal.reason).toBe(cancellation)
   })
@@ -600,7 +620,7 @@ describe('session.export download endpoint', () => {
       { sessionId: sid('session-root'), includeDescendants: true },
       new AbortController().signal,
     )
-    await expect(response.arrayBuffer()).rejects.toEqual(new Error('descendant read failed'))
+    await expect(response.arrayBuffer()).rejects.toThrow('Session log export was interrupted')
   })
 
   it('includes media objects referenced by the root log under media/<id>.<ext>', async () => {
@@ -708,7 +728,7 @@ describe('session.export download endpoint', () => {
       new Request('http://host/api/session.export?sessionId=session-root'),
     )
     expect(response.status).toBe(200)
-    await expect(response.arrayBuffer()).rejects.toThrow('attachment bytes missing')
+    await expect(response.arrayBuffer()).rejects.toThrow('Session log export was interrupted')
   })
 
   it('answers 500 when the deployment mounts no attachments service', async () => {

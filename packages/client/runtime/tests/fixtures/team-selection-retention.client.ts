@@ -1,3 +1,4 @@
+import { projectTeamProductSummary } from '@clocky/clocky-team/selection'
 import type { TeamActionResponseResult, TeamInboxPage } from '../../src/client/contract/team-tasks.ts'
 /** Source-launched GC probe for browser-owned Team history retention. */
 import assert from 'node:assert/strict'
@@ -29,7 +30,7 @@ async function firstListWindow(): Promise<WeakRef<object>[]> {
   api.onTeamList = async (input) => {
     const index = input.afterCursor === -1 ? 0 : Number(input.afterCursor)
     const id = `gc-page-${index}` as TeamId
-    return ok({ items: [{ ...base, id, goal: { ...base.goal, teamId: id } }], scanned: 1,
+    return ok({ items: [projectTeamProductSummary({ ...base, id, goal: { ...base.goal, teamId: id } }, id, 512, {})],
       nextCursor: String(index + 1) as NonNullable<import('../../src/client/contract/team-tasks.ts').TeamTaskListState['nextCursor']> })
   }
   await runtime.refresh(true)

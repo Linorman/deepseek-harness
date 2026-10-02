@@ -198,6 +198,7 @@ export class SessionRuntime implements ISessions {
   private readonly selection: SnapshotStore<SessionSelection>
 
   private readonly scopes = new Map<SessionId, ScopeRecord>()
+  private authorizationScope: import('@clocky/clocky-client-connection/client').HostDescription['authorizationScope']
   /** The provide channel (roster, materialization rules, current projection) — shared with the test runtime's double. */
   private readonly provideChannel: SessionProvideChannel
   /**
@@ -355,6 +356,17 @@ export class SessionRuntime implements ISessions {
    * @param envelope - validated mux stream envelope.
    */
   handleMuxEnvelope(envelope: Parameters<SessionManager['handleMuxEnvelope']>[0]): void {
+    if (envelope.payload.type === 'team/access-revoked') {
+      const teamId = envelope.payload.teamId
+      const revoked = this.manager.getListSnapshot().items.filter(item => item.team?.teamId === teamId).map(item => item.sessionId)
+      if (revoked.includes(this.list.getSnapshot().current as SessionId)) this.manager.clearSelection()
+      for (const id of revoked) {
+        const record = this.scopes.get(id)
+        if (record !== undefined) { this.scopes.delete(id); this.dropScope(id, record) }
+      }
+      this.manager.revokeTeam(teamId)
+      return
+    }
     this.manager.handleMuxEnvelope(envelope)
   }
 
@@ -366,9 +378,26 @@ export class SessionRuntime implements ISessions {
     this.manager.handleHostEnvelope(envelope)
   }
 
-  /** Rebuild the Session baseline and every opened window after connection. */
-  handleConnected(): void {
+  /** Rebuild the Session baseline and every opened window after connection.
+   * @param scope - Host authorization identity; replacement retires data from the previous principal.
+   */
+  handleConnected(scope?: import('@clocky/clocky-client-connection/client').HostDescription['authorizationScope']): void {
+    if (scope !== this.authorizationScope) {
+      this.authorizationScope = scope
+      this.clearAuthorization()
+    }
     this.manager.handleConnected()
+  }
+
+  /** Retire all Session content and views after an explicit product access refusal. */
+  clearAuthorization(): void {
+    this.watched = undefined
+    this.selection.set({})
+    for (const [id, record] of this.scopes) this.dropScope(id, record)
+    this.scopes.clear()
+    this.deferredRemovals.clear()
+    this.manager.clearAuthorization()
+    this.provideChannel.publishCurrent()
   }
 
   /** Drop generation-scoped live interaction state the moment a connection generation dies. */

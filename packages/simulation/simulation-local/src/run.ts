@@ -1,3 +1,9 @@
+import { simulationResidentSlots } from '@clocky/clocky-simulation'
+import { simulationOutboxRetryRequestSchema } from '@clocky/clocky-simulation'
+import { simulationTaskResultRequestSchema } from '@clocky/clocky-simulation'
+import { simulationTaskDecisionRequestSchema, simulationTaskInputReceiptSchema } from '@clocky/clocky-simulation'
+import { simulationTaskExecutionRequestSchema, simulationTaskExecutionObservationSchema, simulationTaskExecutionRetirementSchema } from '@clocky/clocky-simulation'
+import { simulationTaskCancellationSchema } from '@clocky/clocky-simulation'
 import { simulationCheckpointRequestSchema, simulationCheckpointManifestSchema } from '@clocky/clocky-simulation'
 import { addAbortListener } from 'node:events'
 import { simulationPhaseManagementRequestSchema } from '@clocky/clocky-simulation'
@@ -7,7 +13,7 @@ import { simulationDispatchOutcomeSchema } from '@clocky/clocky-simulation'
 import { simulationTaskReconcileRequestSchema } from '@clocky/clocky-simulation'
 /** Serialized writes publish only after the journal batch is durable. @module @clocky/clocky-simulation-local/run */
 import { assertKnowledgeAccess } from './context.ts'
-import { selectKnowledge } from './knowledge.ts'
+import { selectKnowledge } from '@clocky/clocky-simulation'
 import { simulationKnowledgeRequestSchema } from '@clocky/clocky-simulation'
 import { simulationPolicyRefSchema } from '@clocky/clocky-simulation'
 import { queueUsage, SimulationCapacityExceeded } from './capacity.ts'
@@ -92,13 +98,14 @@ export class LocalSimulationRun implements SimulationRun {
     })
   }
 
-  failCheckpoint(id: import('@clocky/clocky-simulation').SimulationCheckpointId, error: string):
+  failCheckpoint(id: import('@clocky/clocky-simulation').SimulationCheckpointId, error: string,
+    diagnostic?: import('@clocky/clocky-simulation').SimulationCheckpointDiagnostic):
   Promise<import('@clocky/clocky-simulation').SimulationCheckpointOperation> {
     return this.enqueue(async () => {
       const prior = this.checkpointOperation(id)
       if (prior.status !== 'in-progress') return prior
       await this.commit({ kind: 'run/checkpoint', runId: this.state.spec.runId, expectedRevision: this.state.revision,
-        change: { kind: 'checkpoint/failed', id, error } })
+        change: { kind: 'checkpoint/failed', id, error, ...diagnostic === undefined ? {} : { diagnostic } } })
       return this.checkpointOperation(id)
     })
   }
@@ -142,6 +149,10 @@ export class LocalSimulationRun implements SimulationRun {
       if (Object.values(this.state.management ?? {}).some(operation => operation.status === 'in-progress')) {
         throw new Error('Simulation checkpoint cannot seal an unfinished phase-management request')
       }
+      if (Object.values(this.state.taskExecutions ?? {}).some(value => value.retired === undefined
+        && value.task?.executor?.outcome === undefined)) {
+        throw new Error('Simulation checkpoint cannot seal an unresolved task attempt')
+      }
       this.checkpointBarrier.phase = 'sealed'
       const reference = this.persistenceReference()
       return { snapshot: this.snapshot(), reference, release, publish: (manifest) => {
@@ -160,7 +171,7 @@ export class LocalSimulationRun implements SimulationRun {
             throw new Error('Checkpoint publication changed its run cut')
           }
           await this.commit({ kind: 'run/checkpoint', runId: this.state.spec.runId, expectedRevision: this.state.revision,
-            change: { kind: 'checkpoint/published', manifest: accepted } })
+            change: { kind: 'checkpoint/published', publishedAt: Date.now(), manifest: accepted } })
           return this.checkpointOperation(accepted.id)
         }, 'checkpoint').finally(() => { publishing -= 1; if (releaseRequested) release() })
       } }
@@ -194,7 +205,7 @@ export class LocalSimulationRun implements SimulationRun {
   population(): { readonly entities: number; readonly chargedActors: number } {
     const entities = Object.values(this.state.entities)
     return { entities: entities.filter(entity => entity.phase !== 'terminated').length,
-      chargedActors: entities.filter(entity => entity.writer !== undefined && entity.writer.phase !== 'released').length }
+      chargedActors: simulationResidentSlots(this.state).used }
   }
 
   ingest(request: import('@clocky/clocky-simulation').SimulationIngressRequest): Promise<import('@clocky/clocky-simulation').SimulationIngress> {
@@ -711,11 +722,27 @@ export class LocalSimulationRun implements SimulationRun {
     }, 'retirement')
   }
 
-  retryOutbox(operationId: SimulationOperationId, reason: string, wallTime: number, expectedRevision: number): Promise<SimulationSnapshot> {
+  retryOutbox(request: import('@clocky/clocky-simulation').SimulationOutboxRetryRequest, authorize?: () => void):
+  Promise<import('@clocky/clocky-simulation').SimulationOutboxRetryGrant> {
+    const accepted = simulationOutboxRetryRequestSchema.parse(request)
     return this.enqueue(async () => {
-      this.assertRevision(expectedRevision)
-      await this.commitOutbox([{ kind: 'outbox/retry-authorized', id: operationId, reason, at: wallTime }])
-      return this.snapshot()
+      authorize?.()
+      for (const operation of Object.values(this.state.operations)) {
+        const grants = operation.outbox?.retryAuthorizations ?? {}
+        if (!Object.hasOwn(grants, accepted.id)) continue
+        const prior = grants[accepted.id]
+        if (prior === undefined || !isDeepStrictEqual(prior.request, accepted)) throw new Error('Simulation retry identity changed its original payload')
+        return structuredClone(prior)
+      }
+      if (this.state.activeWindowId !== undefined || Object.values(this.state.checkpoints ?? {}).some(value => value.status === 'in-progress')) {
+        throw new Error('Simulation retry authorization is blocked by native maintenance')
+      }
+      await this.commitOutbox([{ kind: 'outbox/retry-authorized', id: accepted.operationId, request: accepted }])
+      authorize?.()
+      const grant = requireOutbox(this.state, accepted.operationId).outbox.retryAuthorizations?.[accepted.id]
+      /* v8 ignore next -- successful retry-authorized folding installs this exact original grant. */
+      if (grant === undefined) throw new Error('Simulation retry authorization has no retained grant')
+      return structuredClone(grant)
     })
   }
 
@@ -762,6 +789,126 @@ export class LocalSimulationRun implements SimulationRun {
       await this.commit({ kind: 'run/phase', runId: this.state.spec.runId, expectedRevision, phase })
       return this.snapshot()
     })
+  }
+
+  reserveTaskExecution(request: import('@clocky/clocky-simulation').SimulationTaskExecutionRequest, expectedRevision: number):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskExecution> {
+    const accepted = simulationTaskExecutionRequestSchema.parse(request)
+    return this.enqueue(async () => {
+      const entries = this.state.taskExecutions ?? {}
+      const prior = Object.hasOwn(entries, accepted.attemptId) ? entries[accepted.attemptId] : undefined
+      if (prior !== undefined) {
+        if (!isDeepStrictEqual(prior.request, accepted)) throw new Error('Simulation task retry changed its reservation')
+        return structuredClone(prior)
+      }
+      this.assertRevision(expectedRevision)
+      await this.commitBusiness([{ kind: 'task/execution-reserved', request: accepted }])
+      return structuredClone(this.state.taskExecutions?.[accepted.attemptId] as import('@clocky/clocky-simulation').SimulationTaskExecution)
+    })
+  }
+
+  recordTaskCancellation(request: import('@clocky/clocky-simulation').SimulationTaskCancellation):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskCancellationRecord> {
+    const accepted = simulationTaskCancellationSchema.parse(request)
+    return this.enqueue(async () => {
+      const prior = this.state.taskCancellations?.[accepted.operationId]
+      if (prior !== undefined) {
+        if (!isDeepStrictEqual(prior.request, accepted)) throw new Error('Simulation task cancellation changed its original intent')
+        return structuredClone(prior)
+      }
+      await this.commitBusiness([{ kind: 'task/cancellation', request: accepted }])
+      const result = this.state.taskCancellations?.[accepted.operationId]
+      if (result === undefined) throw new Error('Simulation task cancellation was not published')
+      return structuredClone(result)
+    }, 'retirement')
+  }
+
+  observeTaskExecution(observation: import('@clocky/clocky-simulation').SimulationTaskExecutionObservation):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskExecution> {
+    const accepted = simulationTaskExecutionObservationSchema.parse(observation)
+    return this.enqueue(async () => {
+      const prior = this.state.taskExecutions?.[accepted.attemptId]
+      if (prior?.task !== undefined && isDeepStrictEqual(prior.task, accepted.task)) return structuredClone(prior)
+      await this.commitBusiness([{ kind: 'task/execution-observed', observation: accepted }])
+      return structuredClone(this.state.taskExecutions?.[accepted.attemptId] as import('@clocky/clocky-simulation').SimulationTaskExecution)
+    }, 'retirement')
+  }
+
+  associateTaskDecision(request: import('@clocky/clocky-simulation').SimulationTaskDecisionRequest):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskDecision> {
+    const accepted = simulationTaskDecisionRequestSchema.parse(request)
+    return this.enqueue(async () => {
+      const decisions = this.state.taskExecutions?.[accepted.attemptId]?.decisions
+      const prior = decisions?.find(value => value.request.decisionId === accepted.decisionId)
+      if (prior !== undefined) {
+        if (!isDeepStrictEqual(prior.request, accepted)) throw new Error('Simulation task decision retry changed its source selection')
+        return structuredClone(prior)
+      }
+      await this.commitBusiness([{ kind: 'task/execution-decision', request: accepted }])
+      return structuredClone(this.state.taskExecutions?.[accepted.attemptId]?.decisions?.at(-1) as import('@clocky/clocky-simulation').SimulationTaskDecision)
+    })
+  }
+
+  recordTaskInput(receipt: import('@clocky/clocky-simulation').SimulationTaskInputReceipt):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskDecision> {
+    const accepted = simulationTaskInputReceiptSchema.parse(receipt)
+    return this.enqueue(async () => {
+      const decisions = this.state.taskExecutions?.[accepted.attemptId]?.decisions
+      const prior = decisions?.find(value => value.request.decisionId === accepted.decisionId)
+      if (prior?.input !== undefined) {
+        if (prior.input.id !== accepted.inputId) throw new Error('Simulation task input retry changed its identity')
+        return structuredClone(prior)
+      }
+      await this.commitBusiness([{ kind: 'task/execution-input', receipt: accepted }])
+      const current = this.state.taskExecutions?.[accepted.attemptId]?.decisions
+      const association = current?.find(value => value.request.decisionId === accepted.decisionId)
+      return structuredClone(association as import('@clocky/clocky-simulation').SimulationTaskDecision)
+    })
+  }
+
+  selectTaskCompletionPolicy(attemptId: import('@clocky/clocky-team').TaskAttemptId,
+    policy: import('@clocky/clocky-simulation').SimulationPolicyRef): Promise<import('@clocky/clocky-simulation').SimulationTaskExecution> {
+    const accepted = simulationPolicyRefSchema.parse(policy)
+    return this.enqueue(async () => {
+      const prior = this.state.taskExecutions?.[attemptId]
+      if (prior?.completionPolicy !== undefined) {
+        if (!isDeepStrictEqual(prior.completionPolicy, accepted)) throw new Error('Simulation task retry changed its completion policy')
+        return structuredClone(prior)
+      }
+      await this.commitBusiness([{ kind: 'task/execution-policy', attemptId, policy: accepted }])
+      return structuredClone(this.state.taskExecutions?.[attemptId] as import('@clocky/clocky-simulation').SimulationTaskExecution)
+    })
+  }
+
+  recordTaskResult(request: import('@clocky/clocky-simulation').SimulationTaskResultRequest, expectedRevision: number):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskResult> {
+    const accepted = simulationTaskResultRequestSchema.parse(request)
+    return this.enqueue(async () => {
+      const prior = this.state.taskExecutions?.[accepted.attemptId]?.result
+      if (prior !== undefined) {
+        if (!isDeepStrictEqual(prior.request, accepted)) throw new Error('Simulation task retry changed its accepted result')
+        return structuredClone(prior)
+      }
+      this.assertRevision(expectedRevision)
+      await this.commitBusiness([{ kind: 'task/execution-result', request: accepted }])
+      return structuredClone(this.state.taskExecutions?.[accepted.attemptId]?.result as import('@clocky/clocky-simulation').SimulationTaskResult)
+    })
+  }
+
+  retireTaskExecution(retirement: import('@clocky/clocky-simulation').SimulationTaskExecutionRetirement):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskExecution> {
+    const accepted = simulationTaskExecutionRetirementSchema.parse(retirement)
+    return this.enqueue(async () => {
+      const prior = this.state.taskExecutions?.[accepted.attemptId]
+      if (prior?.retired !== undefined) {
+        const { sequence: _sequence, ...payload } = prior.retired
+        const { attemptId: _attempt, ...request } = accepted
+        if (!isDeepStrictEqual(payload, request)) throw new Error('Simulation task retry changed its retirement evidence')
+        return structuredClone(prior)
+      }
+      await this.commitBusiness([{ kind: 'task/execution-retired', retirement: accepted }])
+      return structuredClone(this.state.taskExecutions?.[accepted.attemptId] as import('@clocky/clocky-simulation').SimulationTaskExecution)
+    }, 'retirement')
   }
 
   reconcileTask(request: import('@clocky/clocky-simulation').SimulationTaskReconcileRequest):

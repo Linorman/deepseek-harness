@@ -1,13 +1,16 @@
+import { teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema } from '@clocky/clocky-team/schema'
+import type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from './types.ts'
+import { teamTaskDetailsUpdateResultSchema } from '@clocky/clocky-team/schema'
 import { teamMemberInspectRequestSchema, teamMemberInspectionSchema } from '@clocky/clocky-team/schema'
 import type { TeamMemberInspectParams, TeamMemberInspectResult } from './types.ts'
 import type { TeamSelectionParams } from './types.ts'
 import { teamTaskInspectRequestSchema, teamTaskInspectionSchema } from '@clocky/clocky-team/schema'
 import type { TeamTaskInspectParams, TeamTaskInspectResult } from './types.ts'
-import { teamBrowsePageSchema } from '@clocky/clocky-team/schema'
+import { teamBrowsePageSchema, teamBrowseRequestSchema } from '@clocky/clocky-team/schema'
 import type { TeamBrowseParams, TeamBrowseResult } from './types.ts'
 import { teamMemberSessionSnapshotSchema } from '@clocky/clocky-team/schema'
 import type { TeamMemberSessionParams, TeamMemberSessionResult } from './types.ts'
-import { teamListPageSchema, teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
+import { teamProductDirectoryPageSchema, teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
 import { AttachmentId } from '@clocky/clocky-attachment'
 /** Strict parsers for SDK activation frames at the JSON-RPC wire boundary. @module @clocky/clocky-sdk-protocol/schema */
 
@@ -173,7 +176,7 @@ export const teamListParamsSchema = z.object({
 }).strict() satisfies z.ZodType<TeamListParams>
 
 /** Parse a durable Team summary listing result. */
-export const teamListResultSchema = teamListPageSchema satisfies z.ZodType<TeamListResult>
+export const teamListResultSchema = teamProductDirectoryPageSchema satisfies z.ZodType<TeamListResult>
 
 /** Parse one complete Team state request. */
 export const teamSelectionParamsSchema = z.object({ teamId: nonEmptyStringSchema, includeMetadata: z.boolean().optional() })
@@ -199,9 +202,7 @@ export const teamTaskInspectResultSchema = z.object({ inspection: teamTaskInspec
   .strict() satisfies z.ZodType<TeamTaskInspectResult>
 
 /** Parse a collection summary request. */
-export const teamBrowseParamsSchema = z.object({ teamId: nonEmptyStringSchema, kind: z.enum(['tasks', 'members', 'workflowPlans']),
-  afterCursor: z.number().int().min(-1).optional(), limit: z.number().int().positive().optional(),
-}).strict() satisfies z.ZodType<TeamBrowseParams>
+export const teamBrowseParamsSchema = teamBrowseRequestSchema satisfies z.ZodType<TeamBrowseParams>
 /** Summary response with exact collection and Team ownership. */
 export const teamBrowseResultSchema = z.object({ page: teamBrowsePageSchema }).strict() satisfies z.ZodType<TeamBrowseResult>
 
@@ -488,7 +489,7 @@ export const teamTaskGetResultSchema = (
 export const teamTaskUpdateParamsSchema = teamTaskDetailsUpdateInputSchema as unknown as z.ZodType<TeamTaskUpdateParams>
 /** Wire schema for teamTaskUpdateResultSchema. */
 export const teamTaskUpdateResultSchema = (
-  z.object({ value: teamTaskSnapshotSchema }).strict()
+  z.object({ value: teamTaskDetailsUpdateResultSchema }).strict()
 ) as unknown as z.ZodType<TeamTaskUpdateResult>
 /** Wire schema for teamTaskCancelParamsSchema. */
 export const teamTaskCancelParamsSchema = z.object({
@@ -729,3 +730,8 @@ export const teamMemberInspectParamsSchema = teamMemberInspectRequestSchema sati
 /** Validate exact scalar metadata and a bounded capability window. */
 export const teamMemberInspectResultSchema = z.object({ detail: teamMemberInspectionSchema })
   .strict() satisfies z.ZodType<TeamMemberInspectResult>
+
+/** Validated exact original task-update identity. */
+export const teamTaskUpdateLookupParamsSchema = teamTaskUpdateLookupInputSchema as unknown as z.ZodType<TeamTaskUpdateLookupParams>
+/** Original acceptance does not imply the current task is still editable. */
+export const teamTaskUpdateLookupResultSchema = teamTaskUpdateLookupSchema as unknown as z.ZodType<TeamTaskUpdateLookupResult>

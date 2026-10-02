@@ -31,7 +31,8 @@ function childCharge(createdAt = 20) {
 function chargePrefix(nested = false, parentCount?: number, childCount?: number) {
   const grant = { operations: ['register', 'usage'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} }
   const owner = participant({ id: 'charge-owner', kind: 'human', role: 'human', owner: { kind: 'system' }, authorityGrant: grant })
-  const initial = teamTaskSnapshotSchema.parse({ id: 'charge-task', teamId, revision: 1,
+  const initial = teamTaskSnapshotSchema.parse({
+    createdAt: 15, id: 'charge-task', teamId, revision: 1,
     execution: { kind: 'child-team', templateId: 'fixture', templateVersion: 1, authorityGrant: grant, budget: {} },
     createCommand: { creator: { teamId, participantId: owner.id }, idempotencyKey: 'charge-task-create' },
     subject: 'Child work', description: 'Charge this child', phase: 'pending', blockedBy: [], requiredCapabilities: [], priority: 0,

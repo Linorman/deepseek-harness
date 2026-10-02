@@ -10,6 +10,7 @@ const invalidAuthentication = Object.assign(new Error('invalid'), { code: 'PRODU
 class Lease {
   readonly revoked = { count: 0 }
   failCall = false
+  generation = 1
 
   async withCall<T>(
     operation: (call: {
@@ -21,8 +22,8 @@ class Lease {
   ): Promise<T> {
     if (this.failCall) throw invalidAuthentication
     return await operation({
-      principal: { id: 'test-principal', issuer: 'test', subject: 'test-user', assurance: 'test', credentialGeneration: 1 },
-      credentialGeneration: 1,
+      principal: { id: 'test-principal', issuer: 'test', subject: 'test-user', assurance: 'test', credentialGeneration: this.generation },
+      credentialGeneration: this.generation,
       signal: signal ?? new AbortController().signal,
     })
   }
@@ -214,4 +215,22 @@ describe('ProductAuthSessions', () => {
     await expect(exchange).resolves.toMatchObject({ status: 401 })
     expect(lease.revoked.count).toBe(1)
   })
+})
+
+it('replacing the current browser credential aborts old calls and rejects the old cookie', async () => {
+  const first = new Lease()
+  const second = new Lease(); second.generation = 2
+  const manager = sessions({ leases: [first, second] })
+  const bootstrap = (headers: Record<string, string> = {}) => manager.bootstrap(new Request(`http://localhost${PRODUCT_AUTH_BOOTSTRAP_PATH}`, {
+    method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify({ credential }),
+  }))
+  const oldCookie = cookie(await bootstrap())
+  let signal: AbortSignal | undefined
+  await manager.withCall({ headers: { cookie: oldCookie } }, async (call) => { signal = call.signal })
+  const nextCookie = cookie(await bootstrap({ cookie: oldCookie }))
+  expect(signal?.aborted).toBe(true)
+  expect(first.revoked.count).toBe(1)
+  expect(await manager.withCall({ headers: { cookie: oldCookie } }, async () => 'old')).toEqual({ kind: 'invalid' })
+  expect(await manager.withCall({ headers: { cookie: nextCookie } }, async () => 'new')).toEqual({ kind: 'authenticated', value: 'new' })
+  await manager.close()
 })

@@ -14,7 +14,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
   launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, ZH_BROWSER_LOCALE, saveFailureShot } from './support.ts'
 
 /** Starts the shipped default on this scenario's declared reasoning model. */
 const OVERLAY = fileURLToPath(new URL('./declared-reasoning.overlay.yml', import.meta.url))
@@ -62,6 +62,7 @@ describe.skipIf(MODE === 'record')('web e2e: declared reasoning efforts reach th
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await page.getByText(OBJECTIVE, { exact: true }).waitFor({ timeout: 15_000 })
     await page.getByText(OBJECTIVE, { exact: true }).click()
+    await openCoordinatorConversation(page)
   }, 120_000)
 
   afterAll(async () => {

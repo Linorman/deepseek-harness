@@ -2,6 +2,18 @@
 
 [English](README.md) | 中文
 
+`FixtureApiClient` 对 Simulation 元数据与管理 RPC 明确返回 `simulation-product-unavailable`，因为演示 Host 未部署该产品。目录与选择 fixture 保留与原生 Host 一致的不可变执行管理标记。
+
+`team.task.references` 通过共享严格 wire schema 传递精确依赖 ID 和 revision 固定的 offset。状态包括保留的删除 tombstone，与候选页成员关系独立。
+
+`team.action.inspect` 传递精确的 Team／请求身份，返回保留请求、当前处理状态与 Team cursor。它与 core 声明共享严格的 wire 解析；检查不会提交答复。
+
+成功的 product-auth bootstrap 若携带已有会话 cookie，会在安装新会话前撤销旧会话，并中止旧会话已准入的调用与流。失败的 bootstrap 保留当前会话。连接后的 Host 描述携带不透明授权上下文标识，供消费者清除按主体隔离的缓存。
+
+HTTP 拒绝携带结构化访问错误。认证退役以协议码 `4001` 关闭 WebSocket 下行；浏览器丢弃排队帧并报告访问失效。控制器将业务帧保留到 Host 握手与授权重置完成后，忽略已退役代际的帧。`onAuthorizationLost` 清理按主体隔离的数据；普通网络失败保留此前可读内容。
+
+WebSocket 下行保留完整的已认证调用，并在 upgrade 后于该主体下打开每个事件 source；其退役信号关闭 socket 与 source。HTTP 读取流和下载接收相同调用上下文。网关 root export 拥有共享调用上下文，避免打包后的消费者产生第二份签发状态。
+
 协议消费层：客户端插件的 apply 会挂载 `ctx.connection`（共享 API 客户端 + 当前页面的 loopback 状态 + 可观察且按 generation 生效的 `hostDescription` + 单消费方流循环启动器）；导出表层携带协议约定类型、`AbstractApiClient` 抽象，以及循环的 sink／配置类型。每次就绪握手成功后，都会在 `onConnected` 之前发布完整的 `host.describe` 值；generation 失效或显式 stop 会清空它，因此原生能力消费者不会保留已经断线的判断。浏览器载体以 HTTP POST 发送 unary／respond，并为 `events.mux` 与 `events.host` 各开一条只下行的 WebSocket；进程内载体满足同一双流抽象。导出的 `ClientTransportHooks` 命名了整体替换浏览器载体的页面全局量 `__CLOCKY_TRANSPORT__`：served web app 不设置它、走 HTTP + WebSocket；拥有另一种物理传输的壳（worker 预览的 postMessage 隧道）则在此提供 `createApiClient` 与 `fetch`——当它同时持有 bundle 字节时再加 `loadBundle`——而不必 fork 本插件。Host half 持有唯一 `/api` route 及其 Fetch bridge；已注册的 Typert interceptor 会先认领自己的 Remote endpoint，未认领请求再回退 API Proxy。Loopback hostname 判定逻辑留在包内部：`/api` Host fence 与 WebSocket upgrade 会直接使用它，其他客户端插件则消费派生的 `ctx.connection.isLoopback` 状态。node 半侧的 `/api` 路由让特权方法集（`host.pickDirectory`、`host.openPath`，以及整个配置面——`settings.describe`/`openDocument`/`update`/`replace`/`mutate` 与 `credentials.describe`/`set`/`unset`；读取与原生操作也在内，因为 describe 会返回已暴露的配置、打开操作会作用于 Host 桌面，而探测任意引用会报出某条凭据来自何处——以及 agent（智能体） preset 的创作面 `agentPreset.read`/`copy`/`openDocument`/`remove`，因为组装指明了一个 Team 所运行的插件，读取它是侦察，而 copy/remove/openDocument 管理名单并驱动宿主桌面（创作只有复制一种写入，因此这些方法都不接收组装文本或路径）；`agentPreset.list` 与 `agentPreset.select` 不在其中——名单只携带 id 与信任级别，而选择一个 preset 并不比 `team.start` 自带的 `agentPreset` 多给任何能力，何况默认 preset 本就带着 bash）以空信任表过信任 fence，从而钉在回环——已声明的 `trustedHosts` 授权可达其余全部方法，而特权请求还会要求 product-principal authentication。平台载体与 ConnectionController 循环属于包内部；apply 负责选择并驱动它们。下行边界见 [WebSocket 下行载体 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-04-websocket-downlink-carrier.zh.md)。
 
 ## /api 浏览器信任栅栏

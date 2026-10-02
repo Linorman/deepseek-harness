@@ -31,6 +31,18 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@clocky/clocky-client-ui-simulation": ["./packages/client/ui-simulation/src/index.ts"],
+      "@clocky/clocky-client-ui-simulation/client": ["./packages/client/ui-simulation/src/client/index.ts"],
+      "@clocky/clocky-simulation/identities": ["./packages/simulation/simulation/src/identities.ts"],
+      "@clocky/clocky-simulation/time-types": ["./packages/simulation/simulation/src/time-types.ts"],
+      "@clocky/clocky-simulation/metrics-types": ["./packages/simulation/simulation/src/metrics-types.ts"],
+      "@clocky/clocky-simulation/checkpoint-diagnostics-types": ["./packages/simulation/simulation/src/checkpoint-diagnostics-types.ts"],
+      "@clocky/clocky-simulation/checkpoint-diagnostics-schema": ["./packages/simulation/simulation/src/checkpoint-diagnostics-schema.ts"],
+      "@clocky/clocky-simulation-product/context-readers": ["./packages/simulation/simulation-product/src/context-readers.ts"],
+      "@clocky/clocky-simulation-product/administration": ["./packages/simulation/simulation-product/src/administration.ts"],
+      "@clocky/clocky-simulation-product/errors": ["./packages/simulation/simulation-product/src/errors.ts"],
+      "@clocky/clocky-simulation-product/types": ["./packages/simulation/simulation-product/src/types.ts"],
+      "@clocky/clocky-simulation-product/schema": ["./packages/simulation/simulation-product/src/schema.ts"],
       "@clocky/clocky-tool-simulation/role": ["./packages/simulation/tool-simulation/src/role.ts"],
       "@clocky/clocky-activation-supervisor-http/invariant": ["./packages/agent-runtime/activation-supervisor-http/src/invariant.ts"],
       "@clocky/clocky-activation-supervisor-http/endpoint": ["./packages/agent-runtime/activation-supervisor-http/src/endpoint.ts"],

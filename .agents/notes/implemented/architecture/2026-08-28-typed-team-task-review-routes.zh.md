@@ -10,6 +10,8 @@ task 先前的 `reviewPolicy`是一个不受解释的 JSON object。每个成功
 
 ## Decision
 
+Active human reviewer 无需 activation 即可保留待审核工作。DAG scheduler 将该权威 human 关系视为进行中，不因没有模型 owner 而停滞，也不为 human 调度推理。
+
 `TeamTaskReviewPolicy`是封闭的 task-creation 值：`{ kind: 'none' }`或 `{ kind: 'participant', reviewerId }`。`none`下的 completed attempt 直接到达 `completed`。participant route 会进入 `review`；只有准确的 active configured reviewer 才能通过 `resolveTaskReview()`resolve 它。
 
 每次 resolution 都会将不可变 `TeamTaskReviewDecision`追加到 task snapshot。它标识 completed attempt、reviewer、已接收的 `completed`或 rework 的 `pending` phase、非空 reason 和 decision time。Hub 会在 journal fold 和 checkpoint recovery 中校验 policy 与 decision history，跨 rework 保留先前 decision，并拒绝缺失、重复、乱序、错误 reviewer 或尚未 resolve 的 completed attempt。

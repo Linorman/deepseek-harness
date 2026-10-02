@@ -30,6 +30,8 @@ An SDK deployment that configures one recovery profile and host identity starts 
 
 ## Consequences
 
+The [SDK notification decision](2026-09-29-sdk-principal-notification-ownership.md) owns current credential checks and principal-scoped publication of exact activation and Session events.
+
 An SDK process can host a durable-bound remote Participant epoch with fresh/resume provenance and exact lifecycle observation. After durable bind, it can receive direct and task-assignment input through an activation-local fixed Link, flush its Session source, acknowledge the durable delivery, report a task outcome, and post an explicit final output. A same-host deployment can cold-replace a fenced child after a Hub restart. The explicit startup-recovery Consumer scans the latest matching unfinished or `fenced` epoch for replacement and retries wake cleanup only for a locally `quiesced` epoch; remote supervision is owned by the [versioned endpoint decision](2026-09-08-owned-activation-supervisor-endpoints.md).
 
 The [AgentRuntime service-definition decision](2026-08-27-agent-runtime-service-definition.md) remains the authority for the registry and in-process provider. The [durable activation binding decision](2026-08-28-durable-local-activation-binding.md) remains the authority for Team journal admission. The [native multi-agent work-system proposal](../../proposed/architecture/2026-08-27-native-multi-agent-work-system.md) remains proposed because delivery, scheduling, workspace, and product phases are unfinished.

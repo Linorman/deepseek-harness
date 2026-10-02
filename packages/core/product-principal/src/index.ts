@@ -147,6 +147,7 @@ function operationSignal(leaseSignal: AbortSignal, operationSignal: AbortSignal 
 /** Registry-owned wrapper that tracks admitted calls before provider revocation. */
 class AuthenticatedLease implements AuthenticatedProductPrincipalLease {
   private readonly controller = new AbortController()
+  readonly signal = this.controller.signal
   private readonly onProviderAbort = () => { void this.revoke() }
   private activeCalls = 0
   private revoking = false
@@ -206,6 +207,7 @@ class AuthenticatedLease implements AuthenticatedProductPrincipalLease {
   /** Stop new calls immediately and defer provider revocation until accepted work drains. */
   revoke(): Promise<void> {
     this.revoking = true
+    this.controller.abort()
     return this.finalize()
   }
 

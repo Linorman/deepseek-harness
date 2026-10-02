@@ -217,10 +217,11 @@ export async function expireTestTask(
  */
 export async function updateTestCoordinatorTask(
   ctx: Context,
-  input: TeamTaskDetailsUpdateInput,
+  input: Omit<TeamTaskDetailsUpdateInput, 'commandId'> & { commandId?: TeamTaskDetailsUpdateInput['commandId'] },
 ): Promise<TeamTaskSnapshot> {
   const actor = await coordinatorTaskActor(ctx, input.teamId)
-  return await ctx.teams.updateTaskDetails({ actor, ...input })
+  const commandId = input.commandId ?? `fixture-update:${nextTestCoordinatorTaskSequence(ctx)}` as TeamTaskDetailsUpdateInput['commandId']
+  return (await ctx.teams.updateTaskDetails({ actor, ...input, commandId })).task
 }
 
 /**
@@ -537,6 +538,7 @@ export function task(overrides: Record<string, unknown> = {}): TeamTaskSnapshot 
   return teamTaskSnapshotSchema.parse({
     id,
     teamId: ownerTeamId,
+    createdAt: 13,
     revision: 1,
     execution: { kind: 'participant' },
     createCommand: {
@@ -658,7 +660,7 @@ export function participantChanged(overrides: Record<string, unknown> = {}): Tea
 }
 
 export function taskChanged(overrides: Record<string, unknown> = {}): TeamJournalRecord {
-  return teamRecord({ type: 'task/changed', task: task(), createdAt: 13, ...overrides })
+  return teamRecord({ type: 'task/changed', task: task({ createdAt: overrides.createdAt ?? 13 }), createdAt: 13, ...overrides })
 }
 
 export function channelAttached(overrides: Record<string, unknown> = {}): TeamJournalRecord {

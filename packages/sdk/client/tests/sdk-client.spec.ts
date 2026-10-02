@@ -535,6 +535,27 @@ describe('HarnessClient', () => {
     }
   })
 
+  it('binds original update lookups to the requested Team, task and command', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const params = { teamId: 'team', taskId: 'task', commandId: 'update' }
+    const receipt = { ...params, expectedRevision: 1, appliedRevision: 2, appliedAt: 20 }
+    const rejection = { ...params, expectedRevision: 1, observedRevision: 2, rejectedAt: 20, reason: 'stale-revision' }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ kind: 'applied', receipt })
+    await expect(client.getTeamTaskUpdateResult(params)).resolves.toEqual({ kind: 'applied', receipt })
+    for (const patch of [{ teamId: 'foreign' }, { taskId: 'foreign' }, { commandId: 'foreign' }]) {
+      for (const value of [{ kind: 'applied', receipt: { ...receipt, ...patch } },
+        { kind: 'rejected', rejection: { ...rejection, ...patch } }, { kind: 'not-found', ...params, ...patch }]) {
+        request.mockResolvedValue(value)
+        await expect(client.getTeamTaskUpdateResult(params)).rejects.toThrow(/original command identity/)
+      }
+    }
+    request.mockResolvedValue({ kind: 'rejected', rejection })
+    await expect(client.getTeamTaskUpdateResult(params)).resolves.toEqual({ kind: 'rejected', rejection })
+    request.mockResolvedValue({ kind: 'not-found', ...params })
+    await expect(client.getTeamTaskUpdateResult(params)).resolves.toEqual({ kind: 'not-found', ...params })
+    expect(request).toHaveBeenLastCalledWith('team/task-update-result', params)
+  })
+
   it('rejects a summary page for a different Team or collection even when it is empty', async () => {
     const client = new HarnessClient(fakeLaunch())
     const page = { teamId: 'team', kind: 'members', teamCursor: 1, scanned: 0, total: 0, items: [] }
@@ -544,6 +565,17 @@ describe('HarnessClient', () => {
       request.mockResolvedValue({ page: changed })
       await expect(client.browseTeam({ teamId: 'team', kind: 'members' })).rejects.toThrow(/different Team or collection/)
     }
+  })
+
+  it('binds filtered summaries to the submitted task query', async () => {
+    const client = new HarnessClient(fakeLaunch())
+    const query = { search: '报告', excludeTaskId: 'self' }
+    const page = { teamId: 'team', kind: 'tasks', teamCursor: 1, scanned: 0, total: 0, sourceTotal: 0, items: [], query }
+    const request = vi.spyOn(client, 'request').mockResolvedValue({ page })
+    await expect(client.browseTeam({ teamId: 'team', kind: 'tasks', query })).resolves.toEqual({ page })
+    expect(request).toHaveBeenCalledWith('team/browse', { teamId: 'team', kind: 'tasks', query })
+    request.mockResolvedValue({ page: { ...page, query: { search: 'other' } } })
+    await expect(client.browseTeam({ teamId: 'team', kind: 'tasks', query })).rejects.toThrow(/different task query/)
   })
 
   it('validates exact action ownership before returning a parsed SDK action', async () => {
@@ -639,7 +671,7 @@ describe('HarnessClient', () => {
     await malformed(client.listTeamTasks({ teamId: 'team' }))
     await malformed(client.createTeamTask(taskCreate))
     await malformed(client.getTeamTask({ teamId: 'team', taskId: 'task' }))
-    await malformed(client.updateTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1, subject: 'Changed' }))
+    await malformed(client.updateTeamTask({  commandId: 'sdk-client.spec-update-1',teamId: 'team', taskId: 'task', expectedRevision: 1, subject: 'Changed' }))
     await malformed(client.cancelTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1 }))
     await malformed(client.deleteTeamTask({ teamId: 'team', taskId: 'task', expectedRevision: 1 }))
     await malformed(client.reviewTeamTask({
@@ -982,7 +1014,7 @@ describe('HarnessTeam forwarding', () => {
       readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
     })
     await team.task('task')
-    await team.updateTask({ taskId: 'task', expectedRevision: 1, subject: 'Changed' })
+    await team.updateTask({  commandId: 'sdk-client.spec-update-2',taskId: 'task', expectedRevision: 1, subject: 'Changed' })
     await team.cancelTask({ taskId: 'task', expectedRevision: 1 })
     await team.deleteTask({ taskId: 'task', expectedRevision: 1 })
     await team.reviewTask({ taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Looks good.' })
@@ -1024,7 +1056,7 @@ describe('HarnessTeam forwarding', () => {
       teamId: 'team-untrusted', expectedCursor: 1, idempotencyKey: 'sdk-task-bound-create', subject: 'Task', description: 'Do the task.',
       blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 1,
     } as never)
-    await team.updateTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, subject: 'Changed' } as never)
+    await team.updateTask({  commandId: 'sdk-client.spec-update-3',teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, subject: 'Changed' } as never)
     await team.cancelTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
     await team.deleteTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1 } as never)
     await team.reviewTask({ teamId: 'team-untrusted', taskId: 'task', expectedRevision: 1, decision: 'accepted', reason: 'Reviewed.' } as never)

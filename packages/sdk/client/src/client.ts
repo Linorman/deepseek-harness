@@ -1,3 +1,24 @@
+import type { SimulationTasksParams, SimulationTasksResult, SimulationTaskCancelParams, SimulationTaskCancelResult } from '@clocky/clocky-sdk-protocol'
+import { simulationTasksParamsSchema, simulationTasksResultSchema, simulationTaskCancelParamsSchema, simulationTaskCancelResultSchema } from '@clocky/clocky-sdk-protocol'
+import { simulationRequestsParamsSchema, simulationRequestsResultSchema, simulationRetryRequestParamsSchema, simulationRetryRequestResultSchema, type SimulationRequestsParams, type SimulationRequestsResult, type SimulationRetryRequestParams, type SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
+import { simulationPreflightParamsSchema, simulationPreflightResultSchema, type SimulationPreflightParams, type SimulationPreflightResult } from '@clocky/clocky-sdk-protocol'
+import { simulationOperationRetryParamsSchema, simulationOperationRetryResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationOperationRetryParams, SimulationOperationRetryResult } from '@clocky/clocky-sdk-protocol'
+import { simulationRunStatusesParamsSchema, simulationRunStatusesResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRunStatusesParams, SimulationRunStatusesResult } from '@clocky/clocky-sdk-protocol'
+import { simulationTaskReviewListParamsSchema, simulationTaskReviewListResultSchema, simulationTaskReviewResolveParamsSchema, simulationTaskReviewResolveResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationTaskReviewListParams, SimulationTaskReviewListResult, SimulationTaskReviewResolveParams, SimulationTaskReviewResolveResult } from '@clocky/clocky-sdk-protocol'
+import { simulationSourceParamsSchema, simulationSourceResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationSourceParams, SimulationSourceResult } from '@clocky/clocky-sdk-protocol'
+import { simulationRecordsParamsSchema, simulationRecordsResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRecordsParams, SimulationRecordsResult } from '@clocky/clocky-sdk-protocol'
+import { simulationWatchParamsSchema, simulationWatchResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWatchParams, SimulationWatchResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationControlParams, SimulationControlResult, SimulationManageParams, SimulationManageResult, SimulationManagementParams, SimulationManagementResult, SimulationCheckpointParams, SimulationCheckpointResult, SimulationRestoreParams, SimulationRestoreResult, SimulationIngressParams, SimulationIngressResult, SimulationIngressRequestParams, SimulationIngressRequestResult } from '@clocky/clocky-sdk-protocol'
+import { simulationControlParamsSchema, simulationControlResultSchema, simulationManageParamsSchema, simulationManageResultSchema, simulationManagementParamsSchema, simulationManagementResultSchema, simulationCheckpointParamsSchema, simulationCheckpointResultSchema, simulationRestoreParamsSchema, simulationRestoreResultSchema, simulationIngressParamsSchema, simulationIngressResultSchema, simulationIngressRequestParamsSchema, simulationIngressRequestResultSchema } from '@clocky/clocky-sdk-protocol'
+import { simulationCatalogParamsSchema, simulationCatalogResultSchema, simulationListParamsSchema, simulationListResultSchema, simulationInspectParamsSchema, simulationInspectResultSchema, simulationBrowseParamsSchema, simulationBrowseResultSchema, simulationObjectParamsSchema, simulationObjectResultSchema, simulationCreateParamsSchema, simulationCreateResultSchema, simulationPrepareParamsSchema, simulationPrepareResultSchema, simulationRequestParamsSchema, simulationRequestResultSchema } from '@clocky/clocky-sdk-protocol'
+import type { SimulationCatalogParams, SimulationCatalogResult, SimulationListParams, SimulationListResult, SimulationInspectParams, SimulationInspectResult, SimulationBrowseParams, SimulationBrowseResult, SimulationObjectParams, SimulationObjectResult, SimulationCreateParams, SimulationCreateResult, SimulationPrepareParams, SimulationPrepareResult, SimulationRequestParams, SimulationRequestResult } from '@clocky/clocky-sdk-protocol'
+import { teamTaskUpdateLookupParamsSchema, teamTaskUpdateLookupResultSchema, type TeamTaskUpdateLookupParams, type TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
 import { teamMemberInspectParamsSchema, teamMemberInspectResultSchema, type TeamMemberInspectParams, type TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
 import type { TeamWorkflowInspection } from '@clocky/clocky-team'
@@ -510,6 +531,411 @@ export class HarnessClient {
   }
 
   /**
+   * Read current scheduling ownership and preconditions without opening or advancing a run.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationControl(params: SimulationControlParams): Promise<SimulationControlResult> {
+    const input = parseProtocolValue('simulation/runs-control params', simulationControlParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-control result', simulationControlResultSchema,
+      await this.request('simulation/runs-control', input))
+    if (result.runId !== input.runId) {
+      throw new SdkProtocolError('simulation/runs-control response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Submit an original scheduling intent; exact retries retain its result without undoing later intent.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async manageSimulation(params: SimulationManageParams): Promise<SimulationManageResult> {
+    const input = parseProtocolValue('simulation/runs-manage params', simulationManageParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-manage result', simulationManageResultSchema,
+      await this.request('simulation/runs-manage', input))
+    if (result.runId !== input.runId || result.operation.managementId !== input.managementId || result.operation.phase !== input.phase) {
+      throw new SdkProtocolError('simulation/runs-manage response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Query an original scheduling outcome; absence does not establish failure.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationManagement(params: SimulationManagementParams): Promise<SimulationManagementResult> {
+    const input = parseProtocolValue('simulation/management-get params', simulationManagementParamsSchema, params)
+    const result = parseProtocolValue('simulation/management-get result', simulationManagementResultSchema,
+      await this.request('simulation/management-get', input))
+    if (result.runId !== input.runId || result.managementId !== input.managementId) {
+      throw new SdkProtocolError('simulation/management-get response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Read a bounded set of canonical tasks without creating an execution owner.
+   * @param params - Owned run and exact bounded canonical observation.
+   * @returns run-owned task metadata without task bodies or general Team authority.
+   */
+  async listSimulationTasks(params: SimulationTasksParams): Promise<SimulationTasksResult> {
+    const input = parseProtocolValue('simulation/tasks-list params', simulationTasksParamsSchema, params)
+    const result = parseProtocolValue('simulation/tasks-list result', simulationTasksResultSchema,
+      await this.request('simulation/tasks-list', input))
+    if (result.runId !== input.runId || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
+      || input.limit !== undefined && result.items.length > input.limit) throw new SdkProtocolError('Simulation task page belongs to another selection')
+    return result
+  }
+
+  /**
+   * Submit or retry one original cancellation without general Team authority or inference.
+   * @param params - Source operation, current task revision and exact attempt or explicit no-lease fence.
+   * @returns original persistent receipt; requests-get reconciles response loss using the same command.
+   */
+  async cancelSimulationTask(params: SimulationTaskCancelParams): Promise<SimulationTaskCancelResult> {
+    const input = parseProtocolValue('simulation/tasks-cancel params', simulationTaskCancelParamsSchema, params)
+    const result = parseProtocolValue('simulation/tasks-cancel result', simulationTaskCancelResultSchema,
+      await this.request('simulation/tasks-cancel', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'cancel-task') {
+      throw new SdkProtocolError('Simulation cancellation receipt belongs to another original command')
+    }
+    return result
+  }
+
+  /**
+   * Read exact bounded run-owned review metadata without task bodies.
+   * @param params - Exact run, page and optional canonical revision.
+   * @returns current scene-authorized review targets.
+   */
+  async listSimulationTaskReviews(params: SimulationTaskReviewListParams): Promise<SimulationTaskReviewListResult> {
+    const input = parseProtocolValue('simulation/task-reviews-list params', simulationTaskReviewListParamsSchema, params)
+    const result = parseProtocolValue('simulation/task-reviews-list result', simulationTaskReviewListResultSchema,
+      await this.request('simulation/task-reviews-list', input))
+    if (result.runId !== input.runId || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
+      || input.limit !== undefined && result.items.length > input.limit) throw new SdkProtocolError('Simulation review page belongs to another selection')
+    return result
+  }
+
+  /**
+   * Submit or retry one original scene-authorized review while preserving its command identity.
+   * @param params - Original immutable scene review command, completed attempt and canonical revision.
+   * @returns original persistent receipt; requests-get reconciles response loss without allocating another command.
+   */
+  async resolveSimulationTaskReview(params: SimulationTaskReviewResolveParams): Promise<SimulationTaskReviewResolveResult> {
+    const input = parseProtocolValue('simulation/task-reviews-resolve params', simulationTaskReviewResolveParamsSchema, params)
+    const result = parseProtocolValue('simulation/task-reviews-resolve result', simulationTaskReviewResolveResultSchema,
+      await this.request('simulation/task-reviews-resolve', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'review') {
+      throw new SdkProtocolError('Simulation review receipt belongs to another original command')
+    }
+    return result
+  }
+
+  /**
+   * Request a full checkpoint; accepted work outlives its waiter and remains paused after completion.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async checkpointSimulation(params: SimulationCheckpointParams): Promise<SimulationCheckpointResult> {
+    const input = parseProtocolValue('simulation/runs-checkpoint params', simulationCheckpointParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-checkpoint result', simulationCheckpointResultSchema,
+      await this.request('simulation/runs-checkpoint', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'checkpoint') {
+      throw new SdkProtocolError('simulation/runs-checkpoint response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Verify checkpoint history and current suffix, then acquire a paused owner without rollback or inference.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async restoreSimulation(params: SimulationRestoreParams): Promise<SimulationRestoreResult> {
+    const input = parseProtocolValue('simulation/runs-restore params', simulationRestoreParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-restore result', simulationRestoreResultSchema,
+      await this.request('simulation/runs-restore', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId
+      || result.kind !== 'restore' || result.checkpointId !== input.checkpointId) {
+      throw new SdkProtocolError('simulation/runs-restore response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Submit one attributed entity input with its original identity and exact simulated time.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async ingressSimulation(params: SimulationIngressParams): Promise<SimulationIngressResult> {
+    const input = parseProtocolValue('simulation/runs-ingress params', simulationIngressParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-ingress result', simulationIngressResultSchema,
+      await this.request('simulation/runs-ingress', input))
+    if (result.runId !== input.runId || result.ingressId !== input.ingressId
+      || result.entityId !== input.entityId || result.availableAt !== input.availableAt) {
+      throw new SdkProtocolError('simulation/runs-ingress response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Query original input assignment and consumption independently of scheduling.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationIngress(params: SimulationIngressRequestParams): Promise<SimulationIngressRequestResult> {
+    const input = parseProtocolValue('simulation/ingress-get params', simulationIngressRequestParamsSchema, params)
+    const result = parseProtocolValue('simulation/ingress-get result', simulationIngressRequestResultSchema,
+      await this.request('simulation/ingress-get', input))
+    if (result.runId !== input.runId || result.ingressId !== input.ingressId) {
+      throw new SdkProtocolError('simulation/ingress-get response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async simulationCatalog(params: SimulationCatalogParams = {}): Promise<SimulationCatalogResult> {
+    const input = parseProtocolValue('simulation/catalog params', simulationCatalogParamsSchema, params)
+    const result = parseProtocolValue('simulation/catalog result', simulationCatalogResultSchema,
+      await this.request('simulation/catalog', input))
+    return result
+  }
+
+  /**
+   * Grant a bounded retry allowance for the original unknown intent without publishing or resuming it.
+   * @param params - Original command, unknown operation, exact retained attempt count and reason.
+   * @returns persistent original grant receipt; explicit scheduling is required to reconcile the target.
+   */
+  async retrySimulationOperation(params: SimulationOperationRetryParams): Promise<SimulationOperationRetryResult> {
+    const input = parseProtocolValue('simulation/operation-retry params', simulationOperationRetryParamsSchema, params)
+    const result = parseProtocolValue('simulation/operation-retry result', simulationOperationRetryResultSchema,
+      await this.request('simulation/operation-retry', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId || result.kind !== 'retry-operation') {
+      throw new SdkProtocolError('Simulation operation retry response belongs to another original command')
+    }
+    return result
+  }
+
+  /**
+   * Observe exact registered runs with independent failure and scheduling states.
+   * @param params - Exact bounded registered run batch; every identity is authorized before provider IO.
+   * @returns independent native metrics and Host scheduling observations without opening execution.
+   */
+  async getSimulationRunStatuses(params: SimulationRunStatusesParams): Promise<SimulationRunStatusesResult> {
+    const input = parseProtocolValue('simulation/runs-statuses params', simulationRunStatusesParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-statuses result', simulationRunStatusesResultSchema,
+      await this.request('simulation/runs-statuses', input))
+    if (result.items.length !== input.runIds.length || result.items.some((item, index) => item.run.id !== input.runIds[index])) {
+      throw new SdkProtocolError('Simulation status response belongs to another exact run batch')
+    }
+    return result
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async listSimulations(params: SimulationListParams = {}): Promise<SimulationListResult> {
+    const input = parseProtocolValue('simulation/runs-list params', simulationListParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-list result', simulationListResultSchema,
+      await this.request('simulation/runs-list', input))
+    return result
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async inspectSimulation(params: SimulationInspectParams): Promise<SimulationInspectResult> {
+    const input = parseProtocolValue('simulation/runs-inspect params', simulationInspectParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-inspect result', simulationInspectResultSchema,
+      await this.request('simulation/runs-inspect', input))
+    if (result.run.id !== input.runId) {
+      throw new SdkProtocolError('simulation/runs-inspect response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async browseSimulation(params: SimulationBrowseParams): Promise<SimulationBrowseResult> {
+    const input = parseProtocolValue('simulation/collections-list params', simulationBrowseParamsSchema, params)
+    const result = parseProtocolValue('simulation/collections-list result', simulationBrowseResultSchema,
+      await this.request('simulation/collections-list', input))
+    if (result.runId !== input.runId || result.collection !== input.collection) {
+      throw new SdkProtocolError('simulation/collections-list response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Inspect one exact retained Team Envelope source without activating execution.
+   * @param params - Decision source ordinal and bounded lookup/body continuation.
+   * @returns separately authorized text, redacted status or explicit lookup continuation.
+   */
+  async inspectSimulationSource(params: SimulationSourceParams): Promise<SimulationSourceResult> {
+    const input = parseProtocolValue('simulation/sources-inspect params', simulationSourceParamsSchema, params)
+    const result = parseProtocolValue('simulation/sources-inspect result', simulationSourceResultSchema,
+      await this.request('simulation/sources-inspect', input))
+    if (result.runId !== input.runId || result.decisionId !== input.decisionId || result.sourceIndex !== input.sourceIndex
+      || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
+      || input.envelopeSequence !== undefined && result.envelope !== undefined && result.envelope.sequence !== input.envelopeSequence
+      || input.limit !== undefined && result.items.length > input.limit) throw new SdkProtocolError('Simulation source response does not match its selection')
+    return result
+  }
+
+  /**
+   * Read retained Simulation journal metadata or separately authorized original JSON text.
+   * @param params - Exact run/filter/mode with optional revision and continuation.
+   * @returns validated bounded policy-tagged page; does not open execution or infer historical events.
+   */
+  async readSimulationRecords(params: SimulationRecordsParams): Promise<SimulationRecordsResult> {
+    const input = parseProtocolValue('simulation/records-list params', simulationRecordsParamsSchema, params)
+    const result = parseProtocolValue('simulation/records-list result', simulationRecordsResultSchema,
+      await this.request('simulation/records-list', input))
+    if (result.runId !== input.runId || result.mode !== input.mode || result.selection.kind !== input.kind
+      || result.selection.sequence !== input.sequence
+      || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
+      || input.sequence !== undefined && result.items.some(item => item.sequence !== input.sequence)
+      || input.limit !== undefined && result.items.length > input.limit) {
+      throw new SdkProtocolError('simulation/records-list response belongs to a different selection or exceeds its page')
+    }
+    return result
+  }
+
+  /**
+   * Observe bounded read invalidation without opening or driving a run.
+   * @param params - Exact run and optional prior cursor/real wait. Zero is an immediate probe.
+   * @returns metadata-only hint; callers decide whether to repeat the wait or refresh pages.
+   */
+  async watchSimulation(params: SimulationWatchParams): Promise<SimulationWatchResult> {
+    const input = parseProtocolValue('simulation/changes-watch params', simulationWatchParamsSchema, params)
+    const result = parseProtocolValue('simulation/changes-watch result', simulationWatchResultSchema,
+      await this.request('simulation/changes-watch', input))
+    if (result.runId !== input.runId) throw new SdkProtocolError('simulation/changes-watch response belongs to a different run')
+    return result
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async inspectSimulationObject(params: SimulationObjectParams): Promise<SimulationObjectResult> {
+    const input = parseProtocolValue('simulation/objects-inspect params', simulationObjectParamsSchema, params)
+    const result = parseProtocolValue('simulation/objects-inspect result', simulationObjectResultSchema,
+      await this.request('simulation/objects-inspect', input))
+    if (result.runId !== input.runId || result.selection.collection !== input.collection
+      || result.selection.id !== input.id || result.selection.section !== input.section
+      || input.collection === 'decisions' && input.section === 'knowledge' && (result.selection.collection !== 'decisions'
+        || result.selection.section !== 'knowledge' || result.selection.reference?.id !== input.reference?.id
+        || result.selection.reference?.revision !== input.reference?.revision)
+      || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision) {
+      throw new SdkProtocolError('simulation/objects-inspect response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Validate creation semantics without allocating a run, Team, actor or command.
+   * @param params - Allowlisted template draft and optional run allowances.
+   * @returns current resolved configuration or safe field issues; no resources are reserved.
+   */
+  async preflightSimulation(params: SimulationPreflightParams): Promise<SimulationPreflightResult> {
+    const input = parseProtocolValue('simulation/runs-preflight params', simulationPreflightParamsSchema, params)
+    return parseProtocolValue('simulation/runs-preflight result', simulationPreflightResultSchema,
+      await this.request('simulation/runs-preflight', input))
+  }
+
+  /**
+   * Allocate and prepare a run with the retained original command identity.
+   * @param params - Exact original allowlisted creation payload.
+   * @returns immutable creation receipt without starting inference.
+   */
+  async createSimulation(params: SimulationCreateParams): Promise<SimulationCreateResult> {
+    const input = parseProtocolValue('simulation/runs-create params', simulationCreateParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-create result', simulationCreateResultSchema,
+      await this.request('simulation/runs-create', input))
+    if (result.commandId !== input.commandId || result.kind !== 'create') {
+      throw new SdkProtocolError('simulation/runs-create response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Submit or query an original durable preparation request without starting inference.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns original durable receipt; absence does not establish failure.
+   */
+  async prepareSimulation(params: SimulationPrepareParams): Promise<SimulationPrepareResult> {
+    const input = parseProtocolValue('simulation/runs-prepare params', simulationPrepareParamsSchema, params)
+    const result = parseProtocolValue('simulation/runs-prepare result', simulationPrepareResultSchema,
+      await this.request('simulation/runs-prepare', input))
+    if (result.commandId !== input.commandId || result.kind !== 'prepare' || result.runId !== input.runId) {
+      throw new SdkProtocolError('simulation/runs-prepare response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
+   * Discover original administrative receipts for one authorized run without exposing command inputs.
+   * @param params - Exact run and optional revision-pinned bounded page.
+   * @returns metadata-only page; reads neither schedule inference nor retry any command.
+   */
+  async listSimulationRequests(params: SimulationRequestsParams): Promise<SimulationRequestsResult> {
+    const input = parseProtocolValue('simulation/requests-list params', simulationRequestsParamsSchema, params)
+    const result = parseProtocolValue('simulation/requests-list result', simulationRequestsResultSchema,
+      await this.request('simulation/requests-list', input))
+    if (result.runId !== input.runId || result.items.some(item => item.runId !== input.runId)
+      || input.expectedRevision !== undefined && result.snapshotRevision !== input.expectedRevision
+      || input.limit !== undefined && result.items.length > input.limit) {
+      throw new SdkProtocolError('simulation/requests-list response belongs to a different selection or exceeds its page')
+    }
+    return result
+  }
+
+  /**
+   * Retry the exact server-retained original command without replacing its payload or allocating another identity.
+   * @param params - Exact run and original command metadata discovered from the request list.
+   * @returns original accepted or terminal receipt; no automatic retry is scheduled by the client.
+   */
+  async retrySimulationRequest(params: SimulationRetryRequestParams): Promise<SimulationRetryRequestResult> {
+    const input = parseProtocolValue('simulation/requests-retry params', simulationRetryRequestParamsSchema, params)
+    const result = parseProtocolValue('simulation/requests-retry result', simulationRetryRequestResultSchema,
+      await this.request('simulation/requests-retry', input))
+    if (result.runId !== input.runId || result.commandId !== input.commandId) {
+      throw new SdkProtocolError('simulation/requests-retry response belongs to a different original request')
+    }
+    return result
+  }
+
+  /**
+   * Query the exact original durable administrative command; absence does not establish failure.
+   * @param params - Original retained command identity.
+   * @returns known original request or non-authoritative absence without scheduling work.
+   */
+  async getSimulationRequest(params: SimulationRequestParams): Promise<SimulationRequestResult> {
+    const input = parseProtocolValue('simulation/requests-get params', simulationRequestParamsSchema, params)
+    const result = parseProtocolValue('simulation/requests-get result', simulationRequestResultSchema,
+      await this.request('simulation/requests-get', input))
+    if ((result.status === 'found' ? result.request.commandId : result.commandId) !== input.commandId) {
+      throw new SdkProtocolError('simulation/requests-get response belongs to a different selection or command')
+    }
+    return result
+  }
+
+  /**
    * List durable Teams visible to this runtime.
    * @param params - validated Team operation parameters.
    * @returns the validated result from the runtime.
@@ -559,6 +985,10 @@ export class HarnessClient {
     const result = parseProtocolValue('team/browse result', teamBrowseResultSchema, await this.request('team/browse', parsed))
     if (result.page.teamId !== parsed.teamId || result.page.kind !== parsed.kind) {
       throw new SdkProtocolError('team/browse response belongs to a different Team or collection')
+    }
+    if (parsed.query !== undefined && (result.page.kind !== 'tasks' || result.page.query?.search !== parsed.query.search
+      || result.page.query.phase !== parsed.query.phase || result.page.query.excludeTaskId !== parsed.query.excludeTaskId)) {
+      throw new SdkProtocolError('team/browse response belongs to a different task query')
     }
     return result
   }
@@ -979,15 +1409,43 @@ export class HarnessClient {
     return parseProtocolValue('team/task-get result', teamTaskGetResultSchema, result)
   }
 
+  /** Query the original admission without resending its update.
+   * @param params - Team, task and original command identity.
+   * @returns immutable applied metadata or absence at this authorized read.
+   */
+  async getTeamTaskUpdateResult(params: TeamTaskUpdateLookupParams): Promise<TeamTaskUpdateLookupResult> {
+    const parsed = parseProtocolValue('team/task-update-result params', teamTaskUpdateLookupParamsSchema, params)
+    const result = parseProtocolValue('team/task-update-result result', teamTaskUpdateLookupResultSchema,
+      await this.request('team/task-update-result', parsed))
+    let identity: typeof parsed
+    switch (result.kind) {
+      case 'applied': identity = result.receipt; break
+      case 'rejected': identity = result.rejection; break
+      case 'not-found': identity = result; break
+      /* v8 ignore next 2 -- The protocol lookup parser accepts only these three outcome tags. */
+      default: return assertNever(result)
+    }
+    if (identity.teamId !== parsed.teamId || identity.taskId !== parsed.taskId || identity.commandId !== parsed.commandId) {
+      throw new SdkProtocolError('Task update lookup does not match its original command identity')
+    }
+    return result
+  }
+
   /**
    * Update one Team task through the authenticated connection's human proof.
    * @param params - validated Team operation parameters.
-   * @returns the validated result from the runtime.
+   * @returns original acceptance metadata and current task state, which may have advanced since admission.
    */
   async updateTeamTask(params: TeamTaskUpdateParams): Promise<TeamTaskUpdateResult> {
     const parsed = parseProtocolValue('team/task-update params', teamTaskUpdateParamsSchema, params)
     const result = await this.request('team/task-update', parsed)
-    return parseProtocolValue('team/task-update result', teamTaskUpdateResultSchema, result)
+    const response = parseProtocolValue('team/task-update result', teamTaskUpdateResultSchema, result)
+    const receipt = response.value.receipt
+    if (receipt.teamId !== parsed.teamId || receipt.taskId !== parsed.taskId || receipt.commandId !== parsed.commandId
+      || receipt.expectedRevision !== parsed.expectedRevision) {
+      throw new SdkProtocolError('Task update receipt does not match its original command identity')
+    }
+    return response
   }
 
   /**
@@ -1344,3 +1802,7 @@ function scrubCredentialFromLaunchEnvironment(
   return Object.fromEntries(Object.entries(environment)
     .filter(([, value]) => value === undefined || !value.includes(credential)))
 }
+
+/* v8 ignore next 2 -- Parsed original-update outcomes have exactly three closed tags. */
+/** Reject an unhandled future original-update outcome without exposing its body. */
+function assertNever(value: never): never { void value; throw new SdkProtocolError('Unhandled task update outcome') }

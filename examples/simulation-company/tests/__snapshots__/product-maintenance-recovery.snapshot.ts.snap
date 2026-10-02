@@ -1,0 +1,97 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reconciles original native maintenance after json accepted process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after json native-begin process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after json native-complete process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after json terminal process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after sqlite accepted process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after sqlite native-begin process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after sqlite native-complete process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`reconciles original native maintenance after sqlite terminal process exit 1`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;

@@ -95,6 +95,22 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'simulationAdministration',
+    pkg: 'simulation-product',
+    title: 'Persistent company creation owner',
+    mode: 'core',
+    consumers: ['host-apiproxy'],
+    note: 'Retains authenticated original allocations and immutable preparation outcomes, registers discovery, and owns paused native handles.',
+  },
+  {
+    key: 'simulationProducts',
+    pkg: 'simulation-product',
+    title: 'Simulation product registration and reads',
+    mode: 'core',
+    consumers: ['host-apiproxy'],
+    note: 'Registers immutable principal-owned metadata and projects authenticated native history without taking execution ownership.',
+  },
+  {
     key: 'simulationTeams',
     pkg: 'simulation-team',
     title: 'Simulation cognition coordination',
@@ -108,7 +124,7 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Durable simulation runs',
     mode: 'seam',
     implementations: ['simulation-local'],
-    consumers: ['simulation-team'],
+    consumers: ['simulation-team', 'simulation-product'],
     note: 'Programmatic callers receive exclusively owned durable runs; the local provider owns one retained Storage journal per run.',
   },
   {

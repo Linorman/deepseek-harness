@@ -1,0 +1,60 @@
+{
+  "scope": "Documentation and current-WebUI audit; no product implementation",
+  "checks": [
+    {
+      "command": "pnpm run build",
+      "result": "passed; current client artifacts rebuilt"
+    },
+    {
+      "command": "pnpm run doc-sync",
+      "result": "passed; 29 gates, 0 failures, 42.83s on final run"
+    },
+    {
+      "command": "pnpm run verify-translation-pairing",
+      "result": "passed; 1111 pairs checked"
+    },
+    {
+      "command": "audit_project.py /Volumes/projects-mac/deepseek-harness --mode strict",
+      "result": "passed; 0 findings; static rules only"
+    },
+    {
+      "command": "targeted verify-md-links findViolations over the 5 new Markdown files",
+      "result": "passed; 0 broken targets or fragments"
+    },
+    {
+      "command": "git diff --check plus explicit new-file whitespace/newline checks",
+      "result": "passed"
+    }
+  ],
+  "browserEvidence": {
+    "screenshots": 15,
+    "viewports": [
+      "1280x720",
+      "390x844"
+    ],
+    "locale": "zh",
+    "theme": "light",
+    "host": "real authenticated isolated scaffold",
+    "modelCalls": "none initiated",
+    "covered": [
+      "Team overview/task/channel/session inspection",
+      "Simulation empty directory",
+      "template selection, preflight and paused creation",
+      "run overview, entity inspector and narrow layout",
+      "independent Team authorization denial and browser Back restoration",
+      "initial checkpoint list",
+      "records metadata list",
+      "persistent request versus older retained receipt"
+    ]
+  },
+  "notVerified": [
+    "real-model execution",
+    "start/pause/recovery mutation cycle",
+    "task review and external delivery",
+    "dark/English matrix",
+    "full keyboard/screen reader/contrast audit",
+    "320px and native zoom",
+    "offline/stale/race matrix",
+    "large production datasets"
+  ]
+}

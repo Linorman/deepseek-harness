@@ -16,7 +16,7 @@ Hub 将经过验证的 Team journal 和 channel WAL 折叠为按资源划分的�
 
 首条 `team/created` record 携带 revision-one Team Goal；后续完整的 `goal/changed` record 保留其 compare-and-set 沿袭、phase、仅在 blocked 时存在的说明和 Goal 专用 budget。Hub 通过 `goal-mutate`授权公开的 Goal definition 和 phase mutation；Team resource budget 仍是独立的 creation-time fact。[持久 Team Goal 决策](2026-08-28-durable-team-goal.zh.md)拥有该 objective-state 设计。
 
-只有检查点的序列化、身份、Goal/task-create/task-attempt 语义、pending-delivery ordering、quiescence source 和持久 watermark 一致时，恢复才从该检查点开始；否则恢复会回放 journal 或 WAL。Team journal format 26 与 Team checkpoint format 27 独立于 channel WAL format 5 和 channel checkpoint format 8。quiescence proof 会记录是 fencer 停止了旧进程，还是本地 owner 已结算；只有前者有 cold-replacement 资格。按资源划分的串行队列和持久预期尾部检查会拒绝陈旧命令。游标 watch 在观察当前游标的同一队列内注册，Hub dispose 会关闭准入、在配置的上限内结算已接收工作、尝试写入最终检查点并关闭每条自有流。
+只有检查点的序列化、身份、Goal/task-create/task-attempt 语义、pending-delivery ordering、quiescence source 和持久 watermark 一致时，恢复才从该检查点开始；否则恢复会回放 journal 或 WAL。Team journal format 36 与 Team checkpoint format 36 独立于 channel WAL format 7 和 channel checkpoint format 10。quiescence proof 会记录是 fencer 停止了旧进程，还是本地 owner 已结算；只有前者有 cold-replacement 资格。按资源划分的串行队列和持久预期尾部检查会拒绝陈旧命令。游标 watch 在观察当前游标的同一队列内注册，Hub dispose 会关闭准入、在配置的上限内结算已接收工作、尝试写入最终检查点并关闭每条自有流。
 
 只有仍存在 durable human receipt 或准确 pending delivery 时，completion intent 才会保留某条 final。已经过期且没有 receipt 的 final 不能占用 closure authority，因为 TeamRun 和 recovery 都无法确认一条 expiry 已经 durable 的 delivery。Clock 超过 Envelope deadline 本身不会让 delivery 过期。
 
@@ -49,6 +49,8 @@ Root Team 的 outbound parent-charge ledger 始终为空。创建时 map 为空�
 **从 Hub 公开投递、Agent runtime placement 或产品 API。** 不予采纳，因为这些角色需要各自的持久所有权和授权规则。本地提供方拥有持久 admission 和 receipt，但不拥有 Agent delivery 或远端 transport；[原生多 agent 工作系统提案](../../proposed/architecture/2026-08-27-native-multi-agent-work-system.zh.md)保留远端 replay、scheduler、workspace 和产品工作。
 
 ## Consequences
+
+[任务创建时间决策](2026-09-29-team-task-creation-time.zh.md) 负责任务排序使用的不可变创建时间及其持久校验。
 
 sender-scoped post retry key 在每个 channel 内有上限；达到上限时拒绝新 key，而不淘汰已接受的 retry。
 

@@ -1,0 +1,73 @@
+# Agent Note: Persistent original company creation requests
+
+Status: implemented
+
+English | [中文](2026-09-29-persistent-company-creation.zh.md)
+
+## Problem
+
+A disconnected creation waiter cannot establish whether the Host allocated or prepared a run. Regenerating an identity or resolving a changed template on retry can create another company, reset inventory or lose the original failure. Native preparation reservations do not retain the authenticated public request that owns them.
+
+## Decision
+
+The explicit [administration entry](../../../../packages/simulation/simulation-product/src/administration.ts) owns a separate format 1 command journal. Acceptance persists the original command, authenticated principal, allocated product/native identity and complete immutable template resolution before directory registration or native IO. The trusted template fixes version, native policy, preset, model route, driver offsets and collector bounds. Public requests select its installed identity/version, permitted names/stock and explicitly editable allowance reductions. Startup validates deployment references without inference.
+
+Exact retries compare the original owner and normalized payload, preserve allocation and return the original accepted or terminal receipt. Carrier cancellation retires only the waiter. Terminal append failure leaves the durable request accepted rather than inventing success or failure. Outcome lookup is read-only; unknown/private requests share `not-found`, which is not proof that a request failed. Later preparation uses a distinct command and checkpoint identity on the same original run; its success never rewrites an earlier failed result.
+
+The read directory supplies a process-local registrar whose function refuses JSON serialization. The administration owner persists intent first, then idempotently registers that allocation. Recovery replays the complete bounded journal and repairs discovery without opening native handles. Explicit accepted-request retry reconciles partial preparation through [the existing preparation owner](2026-09-29-company-initial-preparation.md). One native handle is held per allocated run; foreign ownership returns recovery responsibility without takeover. New preparation on a held unstarted run actually collects its own checkpoint. No actor, temporary Team connection or model work is retained by creation.
+
+Capacity is computed from durable pending requests and distinct pending/held runs before another allocation, so acceptance cannot outrun async job registration. Complete journal entry bytes, retained command count, transport waits and public result bytes have independent deployment bounds. Unload stops admission and drains admitted preparation before native close and journal release. Unconfirmed native retirement retains the command stream; Cordis reports disposal failures through its logger.
+
+The [product-directory decision](2026-09-29-simulation-product-directory.md) retains its independent authorization/redaction rationale; [preparation](2026-09-29-company-initial-preparation.md) and [driver](2026-09-29-company-procurement-driver.md) retain their native topology and model/effect rules. The [product proposal](../../proposed/architecture/2026-09-28-web-team-simulation-product-integration.md) remains active for Web creation/management and automatic execution. These notes are partially implemented dependencies, not obsolete records.
+
+
+SDK requests use the same administration owner, original journal and product projections. The JSON-RPC server captures the transport-authenticated call, resolves optional product services and refuses replaced/retired credential responses. TypeScript and Python clients validate exact result identities and section/revision correspondence. The SDK adds no writer, preparation queue or automatic retry owner. Scheduling, checkpoint/restore and single-entity input dispatch use the same administration owner and native journals as Host requests. Strict clients correlate the original management ID/phase, command kind, selected restore checkpoint and ingress target/time; exact absence remains uncertain. An old start retry cannot undo later pause. Cold lookup never acquires ownership; explicit recovery validates the current suffix and returns a paused owner without inference. Host and SDK dispatch classify product refusals through `isSimulationProductError()` from the pure `./errors` entry. The public code identifies a refusal across separately bundled constructors; unknown failures retain generic diagnostics.
+## Scheduling ownership
+
+The administration service retains one [company owner](../../../../packages/simulation/simulation-product/src/company-owner.ts) per prepared run. A later completed preparation establishes its own full checkpoint anchor; an earlier failed anchor cannot enable scheduling. Management and preparation serialize in that owner's queue, while accepted driver work remains independently drainable so pause can be accepted during inference. Connection allocation occurs only for an authorized start and cannot replace a live scheduler.
+
+Native `managePhase()` owns durable ordered phase requests. Product management bounds retained identities, rechecks authentication at its queue position and preserves original terminal results without rescheduling on retry. Host `control/manage/managementRequest` expose redacted observations and original results; cold reads and historical retries acquire no native execution handle. New cold scheduling requires recovery. Current provider registration contributes to action hints, and native phase admission still checks its own mutable facts. Opaque IDs select own journal keys, including JavaScript property names.
+
+A single timer nominates bounded driver batches. Productive limits schedule another batch; technical retry/capacity stops use configured real delays and native retry deadlines. Unknown results, recovery, scenario blocking and completion retain their stop instead of repeatedly invoking models. Pause preserves those reasons and cancels future timer admission. Owner retirement cancels supported connection work and awaits accepted model cleanup before releasing native ownership; carrier cancellation does not perform retirement.
+
+## Maintenance requests
+
+The creation command journal retains checkpoint and restore commands with the same authenticated principal, original payload and terminal-result rules. Strict folding binds the derived checkpoint ID to checkpoint commands and the selected full checkpoint to restore commands. Native world phase, inventory, input and checkpoint manifests remain native facts rather than being copied into the product journal. Carrier retirement never retires an accepted maintenance operation.
+
+Checkpoint collection serializes admission with management/input, stops future driver batches and delegates cancellation, retirement, source verification and manifest publication to the native connection. Only a completed full cut replaces the owner's startup anchor. Interrupted accepted collection uses full retained-source/suffix validation before continuing its same native ID. Restore verifies a compatible full anchor before retiring a held owner, validates current suffixes through native restoration, and publishes a new paused product owner. Historical terminal retry is a result lookup; a new restore identity performs new validation. Unconfirmed temporary connection cleanup retains a run for explicit later recovery.
+
+External input has its own native idempotency record, authenticated source and one scenario-allowed entity. Public receipts omit text/source and distinguish event assignment from wake completion. Input neither mutates world facts nor resumes a paused run. Current owner queues and native ingress boundaries recheck admission; completed running procurement can process future input without reconstructing an original business effect under a new key. Event/ingress identity brands reside in the pure native identity entry so browser DTOs import no Host Context augmentation.
+
+Administrative control snapshots expose observed maintenance admission from the same original allocation and current native owner. Compatible-anchor metadata includes real publication time and source cardinalities; browser reference inspection is independent of its ordinary object inspector. The browser confirms checkpoint/recovery consequences, retains per-run input plus original selectors under shared quotas, and keeps input assignment separate from recorded consumption. A lookup miss or lost exact-terminal retry cannot revoke a previously observed immutable terminal receipt. Native journal version 40 commits checkpoint publication time atomically and rejects prior formats.
+
+Creation previews resolve the same explicit template allowance reductions as durable acceptance. Deployment `editableLimits` is an allowlist; installed spec values are defaults and ceilings, while scene preparation, recipient delivery, request reservations and completion offsets impose minimums. Public previews carry no command identity and consume no durable or model capacity. Their ready result is an observation, so create rechecks current admission rather than trusting it. The retained request includes the selected allowance overrides and the retained record includes the complete resolved spec; reopening and exact retries never substitute current deployment defaults. Shared model permits, clock definition and policy remain deployment-owned.
+
+A restarted Host rotates product credentials, so private browser drafts and retained command selectors cannot be recovery authority. Authorized per-run request discovery returns only original receipts; its revision counts accepted and terminal journal entries and its sealed pagination is tied to the new principal generation. Explicit retry selects a stored command by its original run/ID and invokes the existing operation with that exact retained body. Terminal results remain historical, and cold review/retry intents require explicit owner restoration. This provides a recovery path without revealing private input or allowing callers to regenerate identities or bypass an operation’s admission queue.
+
+## Alternatives considered
+
+**Allocate before durable acceptance.** A crash leaves native facts without the authenticated original allocation and makes a retry ambiguous.
+
+**Resolve the current template on every retry.** Deployment changes silently change an accepted request's model route, policy or initial stock.
+
+**Cancel preparation when HTTP disconnects.** It confuses waiter lifetime with durable ownership and leaves partial commits without a stable outcome query.
+
+**Treat a failed terminal append as preparation failure.** It attempts to replace an unknown result and can append a contradictory terminal record after native success.
+
+## Consequences
+
+Creation is opt-in and leaves runs paused with a complete initial checkpoint. Completed discovery/retry does not reopen runs or infer. Host scheduling uses the native ordered request journal; the complete Web maintenance matrix and automatic task execution retain separate product requirements. The retained command journal cannot be compacted without a separately designed complete checkpoint format; capacity refuses new work while original outcomes remain queryable.
+
+## Verification
+
+Source-plane owner tests cover JSON/SQLite allocation, exact/changed retries, original failure preservation, new preparation checkpoints, waiter retirement, concurrent capacity, complete-byte limits, initialization references, native ownership refusal, terminal-write failure and unconfirmed close. Journal tests reject corrupt/incomplete prefixes, sequence gaps, retained excess and terminal rewrites. The [real Loader snapshot](../../../../examples/simulation-company/tests/product-administration.snapshot.ts) kills processes after acceptance, directory registration, native creation, entity write, initial checkpoint and terminal append. Restart retains the original identity, repairs discovery without inference, completes the same request and performs no writes on completed retry.
+
+The [SDK Loader snapshot](../../../../examples/simulation-company/tests/sdk-product.snapshot.ts) exercises both JSON and SQLite through production stdio and product services with deterministic credential input. Source and built entry paths retain one run across restart, reject changed command payloads, paginate metadata and publish a distinct preparation checkpoint without inference.
+
+The [product control Loader snapshot](../../../../examples/simulation-company/tests/product-control.snapshot.ts) drives real background procurement through the authenticated Host fetch carrier, pauses an accepted inference, preserves original retry intent, checks native inventory/effect facts and reopens the process for read-only historical results without model calls. The external model is scripted; this is not live-provider or multi-host evidence.
+
+The [maintenance Loader scenario](../../../../examples/simulation-company/tests/product-maintenance.snapshot.ts) verifies single input assignment, recorded consumption, full collection, old-anchor/current-suffix recovery and no recovery inference. The [process-exit scenario](../../../../examples/simulation-company/tests/product-maintenance-recovery.snapshot.ts) kills JSON/SQLite processes at product acceptance, native checkpoint start/completion and product terminal append; retry preserves the original identity, current inventory and input history while retiring old writers.
+
+The [SDK maintenance Loader scenario](../../../../examples/simulation-company/tests/sdk-maintenance.snapshot.ts) exercises JSON/SQLite scheduling, original start retry after pause, input consumption with decision linkage, full collection, cold result queries and old-anchor/current-suffix recovery through production stdio. Public DTOs withhold input text; recovery preserves recorded decisions/time and creates no new Session files.
+
+The [Web maintenance scenario](../../../../apps/web/tests/simulation-maintenance.snapshot.ts) verifies JSON/SQLite input response loss, raw later edits, original input consumption, full checkpoint response loss and exact lookup. It disables/remounts the real Loader administration owner before explicit recovery, preserving current inventory/input/decisions and model-call counts while returning paused. This is cold product-owner recovery within one Host process; separate process-exit evidence remains in the native maintenance scenarios.

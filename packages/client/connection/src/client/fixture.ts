@@ -1,5 +1,5 @@
 import { projectMemberInspection } from '@clocky/clocky-team/selection'
-import { projectWorkflowInspection, projectHumanAction, projectTeamSelection, projectMemberSession, projectTeamBrowse, projectTaskInspection } from '@clocky/clocky-team/selection'
+import { projectWorkflowInspection, projectHumanAction, projectTeamProductSummary, projectTeamSelection, projectMemberSession, projectTeamBrowse, projectTaskInspection } from '@clocky/clocky-team/selection'
 // FixtureApi: standalone UI development without a server. Real contract shape: unary takes
 // RpcRequest<P> and returns RpcResponse<T> (echoing the rpcId); streams yield RpcRequest<frame>
 // (the fixture IS the fake server, so it mints frame rpcIds); root respond takes ClientResponse
@@ -2459,6 +2459,12 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       },
     },
     teams: {
+      executionProfiles: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no execution profile catalog', details: {} }),
+      actionInspect: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no request inspector', details: {} }),
+      attentionRead: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no pending reader', details: {} }),
+      identityResolve: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no identity resolver', details: {} }),
+      memberReadiness: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no configured readiness observation', details: {} }),
+      capabilities: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no configured task capability observation', details: {} }),
       memberInspect: async (request) => {
         const response = await withFixtureTeam(request, request.payload.teamId, (state) => {
           const member = state.participants.find(value => value.id === request.payload.participantId)
@@ -2491,6 +2497,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         return result?.ok === true ? ok(request, result.value)
           : err(request, { code: 'internal', message: `Workflow inspection failed: ${result?.reason ?? 'missing'}`, details: {} })
       },
+      taskReferences: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no task reference resolver', details: {} }),
       taskInspect: async (request) => {
         const response = await withFixtureTeam(request, request.payload.teamId, (state) => {
           const task = state.tasks.find(candidate => candidate.id === request.payload.taskId)
@@ -2514,7 +2521,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           team: state.team, participants: new Map(state.participants.map(member => [member.id, member])),
           tasks: new Map(state.tasks.map(task => [task.id, task])),
           workflowPlans: new Map((state.workflowPlans ?? []).map(plan => [plan.id, plan])),
-        }, { ...request.payload, afterCursor: request.payload.afterCursor ?? -1,
+        }, { ...request.payload, afterCursor: request.payload.queryCursor?.afterCursor ?? request.payload.afterCursor ?? -1,
           limit: Math.min(request.payload.limit ?? 64, 64) }, 512, 16384))
         if (!response.result.ok) return err(request, response.result.error)
         const projected = response.result.value
@@ -2535,7 +2542,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
 
       selection: async (request) => {
         const response = await withFixtureTeam(request, request.payload.teamId, state => projectTeamSelection({
-          team: state.team, budgets: state.budgets,
+          team: state.team, rules: state.rules, budgets: state.budgets,
           ...state.usage === undefined ? {} : { usage: state.usage },
           humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
           participants: new Map(state.participants.map(member => [member.id, member])),
@@ -2546,7 +2553,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         }, 512, 16384, request.payload.includeMetadata))
         if (!response.result.ok) return err(request, response.result.error)
         const projected = response.result.value
-        return projected.ok ? ok(request, projected.value) : err(request, { code: 'internal',
+        return projected.ok ? ok(request, { ...projected.value, readAccess: 'member' as const }) : err(request, { code: 'internal',
           message: `Team operation failed: Team selection ${projected.reason} exceeds maxSelectionBytes`, details: {} })
       },
       inboxRespond: request => err(request, { code: 'bad-request', message: 'Fixture inbox has no action continuation', details: { issues: [] } }),
@@ -2560,13 +2567,13 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         }
         const after = cursor === undefined || cursor === -1 ? '' : cursor.slice('fixture-team:'.length)
         const candidates = [...fixtureTeams.values()].flatMap(state =>
-          state.team.archivedAt === undefined && state.team.id > after ? [state.team] : [])
-          .sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0)
+          state.team.archivedAt === undefined && state.team.id > after ? [state] : [])
+          .sort((left, right) => left.team.id < right.team.id ? -1 : left.team.id > right.team.id ? 1 : 0)
         const page = boundedFixturePage(candidates, -1, request.payload.limit)
         const last = page.items.at(-1)
-        return ok(request, { items: page.items, scanned: page.items.length,
+        return ok(request, { items: page.items.map(state => projectTeamProductSummary(state.team, state.team.id, 512, state.rules)),
           ...page.nextCursor === undefined || last === undefined ? {} : {
-            nextCursor: `fixture-team:${last.id}` as NonNullable<ResponseValue<'team.list'>['nextCursor']>,
+            nextCursor: `fixture-team:${last.team.id}` as NonNullable<ResponseValue<'team.list'>['nextCursor']>,
           } })
       },
       get: request => withFixtureTeam(request, request.payload.teamId, state => state),
@@ -2770,6 +2777,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         const task = {
           id,
           teamId,
+          createdAt: Date.now(),
           revision: 1,
           execution: { kind: 'participant' as const },
           createCommand: {
@@ -2814,6 +2822,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
         request.payload.afterCursor,
         request.payload.limit,
       )),
+      taskUpdateResult: async request => err(request, { code: 'team-run-unavailable', message: 'Fixture has no update receipts', details: {} }),
       taskUpdate: request => withFixtureTeam(request, request.payload.teamId, (state) => {
         const current = state.tasks.find(task => task.id === request.payload.taskId)
         if (current === undefined) return undefined as never
@@ -2823,12 +2832,13 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           ...request.payload.subject === undefined ? {} : { subject: request.payload.subject },
           ...request.payload.description === undefined ? {} : { description: request.payload.description },
           ...request.payload.blockedBy === undefined ? {} : { blockedBy: request.payload.blockedBy },
-        } as ResponseValue<'team.task.update'>
+        } as FixtureTeamState['tasks'][number]
         fixtureTeams.set(state.team.id, {
           ...advanceFixtureTeam(state),
           tasks: state.tasks.map(task => task.id === updated.id ? updated : task),
         })
-        return updated
+        return { task: updated, receipt: { teamId: state.team.id, taskId: updated.id, commandId: request.payload.commandId,
+          expectedRevision: request.payload.expectedRevision, appliedRevision: updated.revision, appliedAt: Date.now() } }
       }),
       taskCancel: request => teamManagementUnavailable(request),
       taskDelete: request => teamManagementUnavailable(request),
@@ -3348,6 +3358,35 @@ export class FixtureApiClient extends AbstractApiClient {
     signal: AbortSignal,
   ): Promise<RpcResponse<unknown>> {
     switch (method) {
+      case 'simulation.operation.retry':
+      case 'simulation.runs.statuses':
+      case 'simulation.tasks.list':
+      case 'simulation.tasks.cancel':
+      case 'simulation.tasks.review.list':
+      case 'simulation.tasks.review.resolve':
+      case 'simulation.catalog':
+      case 'simulation.changes.watch':
+      case 'simulation.checkpoints.create':
+      case 'simulation.collections.list':
+      case 'simulation.ingress.create':
+      case 'simulation.ingress.get':
+      case 'simulation.management.get':
+      case 'simulation.objects.inspect':
+      case 'simulation.records.list':
+      case 'simulation.requests.list':
+      case 'simulation.requests.retry':
+      case 'simulation.runs.preflight':
+      case 'simulation.requests.get':
+      case 'simulation.runs.control':
+      case 'simulation.runs.create':
+      case 'simulation.runs.inspect':
+      case 'simulation.runs.list':
+      case 'simulation.runs.manage':
+      case 'simulation.runs.prepare':
+      case 'simulation.runs.restore':
+      case 'simulation.sources.inspect':
+        return Promise.resolve({ rpcId: request.rpcId, result: { ok: false,
+          error: { code: 'simulation-product-unavailable', message: 'The fixture Host does not deploy Simulation.', details: {} } } })
       case 'session.list': return this.api.sessions.list(request)
       case 'session.search': return this.api.sessions.search(request, signal)
       case 'session.history': return this.api.sessions.history(request)
@@ -3375,7 +3414,14 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'team.member.session': return this.api.teams.memberSession(request)
       case 'team.workflow.plan.inspect': return this.api.teams.workflowPlanInspect(request)
       case 'team.action.read': return this.api.teams.actionRead(request)
+      case 'team.task.references': return this.api.teams.taskReferences(request)
       case 'team.task.inspect': return this.api.teams.taskInspect(request)
+      case 'team.executionProfiles': return this.api.teams.executionProfiles(request)
+      case 'team.action.inspect': return this.api.teams.actionInspect(request)
+      case 'team.attention.read': return this.api.teams.attentionRead(request)
+      case 'team.identity.resolve': return this.api.teams.identityResolve(request)
+      case 'team.member.readiness': return this.api.teams.memberReadiness(request)
+      case 'team.capabilities': return this.api.teams.capabilities(request)
       case 'team.browse': return this.api.teams.browse(request)
       case 'team.get': return this.api.teams.get(request)
       case 'team.create': return this.api.teams.create(request, signal)
@@ -3407,6 +3453,7 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'team.task.create': return this.api.teams.taskCreate(request)
       case 'team.task.get': return this.api.teams.taskGet(request)
       case 'team.task.list': return this.api.teams.taskList(request)
+      case 'team.task.update.result': return this.api.teams.taskUpdateResult(request)
       case 'team.task.update': return this.api.teams.taskUpdate(request)
       case 'team.task.cancel': return this.api.teams.taskCancel(request)
       case 'team.task.delete': return this.api.teams.taskDelete(request)

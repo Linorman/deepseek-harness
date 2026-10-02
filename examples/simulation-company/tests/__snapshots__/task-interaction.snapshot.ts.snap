@@ -1,0 +1,313 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json linked task completion > keeps 'explicit' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "open",
+    "kind": "explicit",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`json linked task completion > keeps 'task-completed' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "task-completed",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`json linked task completion > keeps 'task-completed' fulfillment separate through 'model' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "task-completed",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 2,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 2,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`json linked task completion > keeps 'transfer' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "transfer",
+    "source": "task-order",
+    "task": "pending",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`sqlite linked task completion > keeps 'explicit' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "open",
+    "kind": "explicit",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`sqlite linked task completion > keeps 'task-completed' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "task-completed",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`sqlite linked task completion > keeps 'task-completed' fulfillment separate through 'model' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "task-completed",
+    "source": "task-order",
+    "task": "completed",
+  },
+  "interrupted": "completed",
+  "modelCalls": 2,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 2,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;
+
+exports[`sqlite linked task completion > keeps 'transfer' fulfillment separate through 'deterministic' task completion 1`] = `
+{
+  "attemptCount": 1,
+  "checkpoint": "completed",
+  "completion": {
+    "after": "completed",
+    "before": "waiting",
+    "retriesWithoutEvaluation": true,
+  },
+  "exactAttempt": true,
+  "interaction": {
+    "commitment": "fulfilled",
+    "kind": "transfer",
+    "source": "task-order",
+    "task": "pending",
+  },
+  "interrupted": "completed",
+  "modelCalls": 0,
+  "phase": "paused",
+  "replacement": false,
+  "retriedWithoutWrites": true,
+  "taskCount": 1,
+  "work": {
+    "after": [
+      "1",
+      "1",
+    ],
+    "before": [
+      "2",
+      "0",
+    ],
+    "inputLogged": true,
+    "modelCalls": 0,
+    "phase": "running",
+    "taskContext": "{"kind":"simulation-task","runId":"<runId>","teamId":"<teamId>","taskId":"<taskId>","attemptId":"<attemptId>","ordinal":1,"decisionId":"<decisionId>","epoch":"<epoch>","interactionId":"task-order","interactionRevision":2,"revision":2,"subject":"Deliver goods","description":"A later executor must prove the world effect"}",
+  },
+}
+`;

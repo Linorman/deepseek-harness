@@ -1,4 +1,6 @@
 .workspace {
+  flex: 1;
+  width: 100%;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -9,8 +11,6 @@
   padding: 24px 32px;
   box-sizing: border-box;
 }
-.navigationError { position: absolute; z-index: 3; top: 12px; right: 16px; max-width: min(440px, calc(100% - 32px)); padding: 16px; border: 1px solid var(--clocky-alias-state-error-primary); border-radius: 8px; background: var(--clocky-alias-bg-layer-1); color: var(--clocky-alias-label-primary); font-size: 13px; }
-.navigationError p { margin: 0 0 8px; overflow-wrap: anywhere; }
 .navigation {
   display: flex;
   align-items: center;
@@ -56,9 +56,8 @@
   box-shadow: inset 0 -2px var(--clocky-alias-state-business-primary);
 }
 .navigation button:focus-visible { outline: 2px solid var(--clocky-alias-state-business-primary); outline-offset: 2px; }
-.navigation .sessionButton { margin-left: auto; border: 1px solid var(--clocky-alias-border-l1); }
 .overview { display: grid; gap: 24px; animation: appear 180ms var(--ds-ease-in-out); }
-.overviewMain { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; }
+.overviewMain { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
 .overviewRail { display: grid; align-content: start; gap: 20px; min-width: 0; }
 .overviewSecondary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .previewCard { min-width: 0; padding: 20px; border: 1px solid var(--clocky-alias-border-l1); border-radius: 12px; background: var(--clocky-alias-bg-layer-1); }
@@ -74,7 +73,7 @@
 .attentionList > li { border-top: 1px solid var(--clocky-alias-border-l1); padding: 12px 0; font-size: 13px; line-height: 22px; }
 .attentionList small { display: block; color: var(--clocky-alias-label-secondary); font-size: 12px; margin-top: 4px; }
 .attentionList summary { cursor: pointer; }
-.stalled { font-size: 13px; color: var(--clocky-alias-state-warn-label); line-height: 22px; }
+.pendingControls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .memberPreview, .artifactPreview { list-style: none; margin: 0; padding: 0; }
 .memberPreview li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--clocky-alias-border-l1); }
 .memberPreview strong { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
@@ -97,7 +96,7 @@
 .usageDetails dt, .usageDetails dd { font-size: 12px; margin: 0; }
 .metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--clocky-alias-border-l1);
   border-radius: 12px;
   margin: 0;
@@ -111,8 +110,6 @@
 .metrics small { font-size: 12px; font-weight: 400; color: var(--clocky-alias-label-secondary); }
 .execution { padding: 24px; border: 1px solid var(--clocky-alias-border-l1); border-radius: 12px; background: var(--clocky-alias-bg-layer-1); }
 .execution h2 { font-size: 18px; margin: 0 0 20px; }
-.progress { height: 6px; overflow: hidden; border-radius: 4px; background: var(--clocky-alias-border-l1); margin-bottom: 24px; }
-.progress span { display: block; height: 100%; background: var(--clocky-alias-state-business-primary); transition: width 200ms var(--ds-ease-in-out); }
 .taskTable { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
 .taskTable th { color: var(--clocky-alias-label-secondary); font-size: 12px; font-weight: 500; padding: 12px; }
 .taskTable td { border-top: 1px solid var(--clocky-alias-border-l1); padding: 16px 12px; }
@@ -122,7 +119,10 @@
 @keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 960px) {
   .overviewMain, .overviewSecondary { grid-template-columns: minmax(0, 1fr); }
-  .overviewRail { order: -1; grid-template-columns: 1fr 1fr; }
+  .overviewRail { display: contents; }
+  .overviewMain > .execution { order: 1; }
+  .overviewMain .previewCard { order: 2; }
+  .overviewMain [data-team-attention] { order: 0; }
   .workspace { padding: 16px; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 0; }
   .metrics > div:nth-child(2) { border-right: 0; }
@@ -135,13 +135,11 @@
   .headerActions { flex-wrap: wrap; }
   .workspace { padding: 12px; }
   .navigation { gap: 0; }
-  .navigation .sessionButton { margin: 8px 0 0; }
   .execution { padding: 12px; }
   .taskTable td, .taskTable th { padding: 12px 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .overview { animation: none; }
-  .progress span { transition: none; }
 }
 @media (pointer: coarse) {
   .workspace :is(button, select, summary, input:not([type='checkbox']):not([type='radio'])) {
@@ -149,3 +147,20 @@
   }
   .workspace button { min-width: 44px; }
 }
+
+.previewCard[data-empty] { padding: 12px 16px; background: transparent; }
+.previewCard[data-empty] .cardHeader { margin-bottom: 4px; }
+.previewCard[data-empty] .cardHeader h2 { font-size: 14px; }
+.previewCard[data-empty] .emptyPreview { margin: 4px 0; }
+.previewCard[data-empty] .pendingControls { margin-top: 4px; }
+.memberPreview button { flex-shrink: 0; white-space: nowrap; }
+
+.usageDetails .usageSummary { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; font-size: 13px; margin: 8px 0; }
+.usageSummary dt, .usageSummary dd { margin: 0; }
+
+.workspace code { overflow-wrap: anywhere; }
+.workspace h1:focus-visible { outline: 2px solid var(--clocky-alias-state-business-primary); outline-offset: 3px; }
+
+.sourceContext { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--clocky-workspace-muted); }
+.sourceContext summary { cursor: pointer; }
+.sourceContext dd { margin: 0 0 4px; }

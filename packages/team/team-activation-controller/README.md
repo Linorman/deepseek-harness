@@ -8,6 +8,8 @@ For a Team with `maxLiveActivations`, `activate()` first commits a Participant s
 
 `stopOwnedActivation()` retires only the exact locally owned activation. A lifecycle owner may provide `checkpoint()` after local work and workspace settlement, before runtime disposal detaches the Session. Failure retains ownership; a successful checkpoint is not repeated after partial runtime disposal.
 
+The scoped member-observation listener reports retained ownership, pending starts and unfinished termination/cleanup without invoking health, recovery or activation. A durable binding alone does not establish live ownership. Registry participant-kind rejection is a confirmed pre-start failure, so its startup reservation can be released rather than quarantined as an unknown start.
+
 ## Durable activation
 
 `TeamActivationController.activate()` reads the requested Team cursor and active agent Participant, rejects a resident epoch or another Session before placement, calls the named AgentRuntime provider, verifies that the returned handle owns the requested Session and that any local Agent belongs to that Session, then calls `ctx.teams.bindActivation()`. It returns a `TeamActivationLease` only after the binding commits. If the binding rejects, the controller disposes the raw handle; a cleanup failure is reported together with the binding failure.

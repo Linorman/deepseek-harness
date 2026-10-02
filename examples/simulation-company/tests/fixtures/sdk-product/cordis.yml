@@ -1,0 +1,17 @@
+- name: cordis:include
+  config:
+    path: ../product-administration/cordis.yml
+- name: '@clocky/clocky-product-principal'
+- name: '@clocky/clocky-sdk-jsonrpc-server'
+- name: '@clocky/clocky-agent-default-model'
+  config:
+    model: company/scripted
+- name: '@clocky/clocky-team-channel-admission'
+- name: '@clocky/clocky-team-run'
+- name: ./principal.ts
+- name: '@clocky/clocky-team-human-actor'
+- name: '@clocky/clocky-simulation-product/context-readers'
+  config:
+    readers: []
+    recordReaders:
+      - principalId: sdk-reader

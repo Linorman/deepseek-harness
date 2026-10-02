@@ -7,6 +7,10 @@ A service can be a core spine service, a swappable capability seam, or a bundle/
 
 ```mermaid
 flowchart LR
+  pkg_simulation_product["simulation-product"]
+  svc_simulationAdministration["ctx.simulationAdministration<br/>Persistent company creation owner"]
+  pkg_host_apiproxy["host-apiproxy"]
+  svc_simulationProducts["ctx.simulationProducts<br/>Simulation product registration and reads"]
   pkg_simulation_team["simulation-team"]
   svc_simulationTeams["ctx.simulationTeams<br/>Simulation cognition coordination"]
   pkg_tool_simulation["tool-simulation"]
@@ -59,7 +63,6 @@ flowchart LR
   pkg_host_product_principal_local["host-product-principal-local"]
   pkg_host_product_principal_digest["host-product-principal-digest"]
   pkg_connection["connection"]
-  pkg_host_apiproxy["host-apiproxy"]
   pkg_sdk_client["sdk-client"]
   pkg_sdk_server["sdk-server"]
   pkg_team_human_actor["team-human-actor"]
@@ -347,6 +350,8 @@ flowchart LR
   pkg_shell_env --> svc_shellEnv
   pkg_simulation --> svc_simulations
   pkg_simulation_local --> svc_simulations
+  pkg_simulation_product --> svc_simulationAdministration
+  pkg_simulation_product --> svc_simulationProducts
   pkg_simulation_team --> svc_simulationTeams
   pkg_skill --> svc_skills
   pkg_skill_filesystem --> svc_skills
@@ -473,7 +478,10 @@ flowchart LR
   svc_shell --> pkg_tool_pwsh
   svc_shellEnv --> pkg_tool_bash
   svc_shellEnv --> pkg_tool_pwsh
+  svc_simulationAdministration --> pkg_host_apiproxy
+  svc_simulationProducts --> pkg_host_apiproxy
   svc_simulationTeams --> pkg_tool_simulation
+  svc_simulations --> pkg_simulation_product
   svc_simulations --> pkg_simulation_team
   svc_skills --> pkg_tool_skill
   svc_spillStore --> pkg_spill_policy
@@ -570,8 +578,10 @@ flowchart LR
 
 | ctx key | Role | Owner | Implementations | Direct consumers | Companion plugins | Note |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.simulationAdministration` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | Retains authenticated original allocations and immutable preparation outcomes, registers discovery, and owns paused native handles. |
+| `ctx.simulationProducts` | `core` | [`simulation-product`](../packages/simulation/simulation-product) | - | [`host-apiproxy`](../packages/host/apiproxy) | - | Registers immutable principal-owned metadata and projects authenticated native history without taking execution ownership. |
 | `ctx.simulationTeams` | `core` | [`simulation-team`](../packages/simulation/simulation-team) | - | [`tool-simulation`](../packages/simulation/tool-simulation) | - | Connects durable entity bindings to controller-owned local activation epochs. |
-| `ctx.simulations` | `seam` | [`simulation`](../packages/simulation/simulation) | [`simulation-local`](../packages/simulation/simulation-local) | [`simulation-team`](../packages/simulation/simulation-team) | - | Programmatic callers receive exclusively owned durable runs; the local provider owns one retained Storage journal per run. |
+| `ctx.simulations` | `seam` | [`simulation`](../packages/simulation/simulation) | [`simulation-local`](../packages/simulation/simulation-local) | [`simulation-team`](../packages/simulation/simulation-team), [`simulation-product`](../packages/simulation/simulation-product) | - | Programmatic callers receive exclusively owned durable runs; the local provider owns one retained Storage journal per run. |
 | `ctx.attachments` | `seam` | [`attachment`](../packages/attachment/attachment) | [`attachment-local`](../packages/attachment/attachment-local) | `host-runtime`, [`llm-pi-ai`](../packages/llm/llm-pi-ai) | - | The host commits accepted images before session events; provider adapters resolve authorized durable references into provider-native content. |
 | `ctx.llm` | `seam` | [`llm`](../packages/llm/llm) | [`llm-pi-ai`](../packages/llm/llm-pi-ai), [`llm-replay`](../packages/test-support/llm-replay) | [`agent-loop`](../packages/core/agent-loop), [`compaction-basic`](../packages/compaction/compaction-basic), [`simulation-team`](../packages/simulation/simulation-team) | - | Adapters register provider implementations; the loop and compaction call the provider-neutral stream service. |
 | `ctx.tokenMeter` | `core` | [`token-meter`](../packages/llm/token-meter) | - | [`compaction-basic`](../packages/compaction/compaction-basic) | - | Owns isolated per-session replay folds; pressure consumers share immutable revisioned measurements. |

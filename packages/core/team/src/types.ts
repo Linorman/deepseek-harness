@@ -1,3 +1,7 @@
+export type { TeamTaskUpdateCommandId, TeamTaskUpdateCommandReceipt, TeamTaskUpdateReceipt, TeamTaskDetailsUpdateResult,
+  TeamTaskUpdateLookupInput, TeamTaskUpdateLookup, TeamTaskUpdateCommandRejection, TeamTaskUpdateCommand,
+  TeamTaskUpdateRejectionReason, TeamTaskUpdateRejection } from './task-update.ts'
+export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference } from './task-references.ts'
 /**
  * Team work-system identities, records, adapter inputs, and policy vocabulary.
  * This module contains only type declarations so providers can depend on it
@@ -7,6 +11,7 @@
  */
 
 import type { Branded } from '@clocky/clocky-brand'
+export type * from './attention-types.ts'
 import type { SessionId, TeamChannelViewEventData } from '@clocky/clocky-session/types'
 
 export type { TeamChannelViewEventData } from '@clocky/clocky-session/types'
@@ -937,9 +942,71 @@ export interface SimulationTaskCreateScope {
   readonly input: Omit<TeamTaskCreateInput, 'expectedCursor'>
 }
 
+/** Source-scoped assignment for a durable Simulation attempt reservation. */
+export interface SimulationTaskAssignScope {
+  readonly kind: 'simulation-task-assign'
+  readonly creatorId: ParticipantId
+  readonly ordinal: number
+  readonly runId: Branded<'SimulationRunId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+  readonly entityId: Branded<'SimulationEntityId'>
+  readonly epoch: Branded<'SimulationWriterEpoch'>
+  readonly lifecycleOwner: string
+  readonly sessionId: SessionId
+  readonly reservationId: ActivationReservationId
+  readonly input: TeamSimulationTaskAssignInput
+}
+
+/** Source-scoped start after an exact task input has reached durable Session storage. */
+export interface SimulationTaskStartScope extends Omit<SimulationTaskAssignScope, 'kind' | 'input'> {
+  readonly kind: 'simulation-task-start'
+  readonly decisionId: Branded<'SimulationDecisionId'>
+  readonly inputId: string
+  readonly input: TeamSimulationTaskStartInput
+}
+/** Exact current task lease selected by the native task-input owner. */
+export interface TeamSimulationTaskStartInput {
+  readonly teamId: TeamId
+  readonly taskId: TeamTaskId
+  readonly attemptId: TaskAttemptId
+  readonly expectedRevision: number
+}
+/** Runtime-only start authority, independent of ordinary channel task delivery. */
+export interface TeamSimulationTaskStartRequest extends TeamSimulationTaskStartInput {
+  readonly actor: TeamSystemTaskControlProof
+}
+
+/** Source-scoped settlement derived from a retained native result and current writer. */
+export interface SimulationTaskSettleScope extends Omit<SimulationTaskAssignScope, 'kind' | 'input'> {
+  readonly kind: 'simulation-task-settle'
+  readonly input: TeamSimulationTaskSettleInput
+}
+/** Exact original task result selected by its native completion owner. */
+export interface TeamSimulationTaskSettleInput extends TeamSimulationTaskStartInput {
+  readonly outcome: TaskAttemptOutcome
+}
+/** Runtime-only result authority; it cannot manufacture completion after writer retirement. */
+export interface TeamSimulationTaskSettleRequest extends TeamSimulationTaskSettleInput {
+  readonly actor: TeamSystemTaskControlProof
+}
+
+/** Source-scoped cancellation of one task created by its immutable Simulation operation. */
+export interface SimulationTaskCancelScope {
+  readonly kind: 'simulation-task-cancel'
+  readonly runId: Branded<'SimulationRunId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+  readonly creatorId: ParticipantId
+  readonly lifecycleOwner: string
+  readonly input: TeamSimulationTaskCancelInput
+}
+
 /** Closed task mutations that registered system owners may authorize. */
 export type TeamSystemTaskControlScope =
   | SimulationTaskCreateScope
+  | SimulationTaskAssignScope
+  | SimulationTaskStartScope
+  | SimulationTaskSettleScope
+  | SimulationTaskCancelScope
   | TeamRunDefaultWorkerOwnerProposalScope
   | TeamRunDefaultWorkerCancelScope
   | TeamRunWorkflowTaskCancelScope
@@ -2414,7 +2481,7 @@ export interface TeamHumanActorProofInput {
   /** Team selected by the authenticated product route. */
   readonly teamId: TeamId
   /** Mutation operation required by the grant, or membership-only channel inspection. */
-  readonly operation: TeamPolicyHook | 'channel-invitation-read' | 'channel-admission-read' | 'channel-list-read' | 'channel-content-read'
+  readonly operation: TeamPolicyHook | 'channel-invitation-read' | 'channel-admission-read' | 'channel-list-read' | 'channel-content-read' | 'task-capabilities-read' | 'member-readiness-read' | 'execution-profiles-read' | 'identity-resolve-read' | 'session-content-read' | 'attention-read'
   /** Current cursor or revision observed before the mutation. */
   readonly fence: TeamHumanActorProofFence
   /** Complete parsed JSON-only mutation input, excluding every runtime proof. */
@@ -2440,7 +2507,7 @@ export interface TeamHumanActorScope {
   /** Exact active human participant derived from the authenticated principal. */
   readonly participantId: ParticipantId
   /** Policy operation accepted by the participant's immutable grant. */
-  readonly operation: TeamPolicyHook | 'channel-invitation-read' | 'channel-admission-read' | 'channel-list-read' | 'channel-content-read'
+  readonly operation: TeamPolicyHook | 'channel-invitation-read' | 'channel-admission-read' | 'channel-list-read' | 'channel-content-read' | 'task-capabilities-read' | 'member-readiness-read' | 'execution-profiles-read' | 'identity-resolve-read' | 'session-content-read' | 'attention-read'
   /** Digest of the complete JSON-only mutation input and its Team fence. */
   readonly payloadFingerprint: TeamHumanActorPayloadFingerprint
   /** Cursor or revision observed before the proof was minted. */
@@ -2468,6 +2535,70 @@ export interface TeamHumanActorProofSource {
    * @returns the exact human mutation scope, or `undefined` when this source does not own the token.
    */
   resolveHumanActorProof(proof: TeamHumanActorProof): TeamHumanActorScope | undefined
+  /** Resolve a principal-only reader without supplying mutation or membership authority.
+   * @param proof - Runtime-only reader retained by this exact source.
+   * @returns immutable principal facts while live, or undefined for a foreign or retired reader.
+   */
+  resolveHumanReaderProof?(proof: TeamHumanReaderProof): TeamHumanReaderScope | undefined
+}
+
+declare const teamHumanReaderProofBrand: unique symbol
+
+/** Revocable, non-serializable principal identity for discovery and authorized read consumers. */
+export interface TeamHumanReaderProof {
+  readonly [teamHumanReaderProofBrand]: never
+}
+
+/** Consumer-owned lifetime of one revocable principal reader. */
+export interface TeamHumanReaderLease {
+  readonly reader: TeamHumanReaderProof
+  readonly signal: AbortSignal
+  /** Retire authority and stop pending consumers without accepting later frames. */
+  close(): void
+}
+
+/** Exact durable Session ownership and current membership read proof. */
+export interface TeamHumanSessionReadRequest {
+  readonly actor: TeamHumanActorProof
+  readonly teamId: TeamId
+  readonly participantId: ParticipantId
+  readonly sessionId: SessionId
+}
+
+/** Immutable authentication context retained by the product-principal reader issuer. */
+export interface TeamHumanReaderScope {
+  readonly principalId: Branded<'ProductPrincipalId'>
+  readonly issuer: string
+  readonly subject: string
+  readonly credentialGeneration: number
+}
+
+/** Product directory positions conceal storage names and are bound to one reader context. */
+export type TeamProductDiscoveryCursor = Branded<'TeamProductDiscoveryCursor'>
+
+/** Bounded product discovery, requiring current membership for every returned Team. */
+export interface TeamProductDiscoveryRequest {
+  readonly reader: TeamHumanReaderProof
+  readonly afterCursor: TeamProductDiscoveryCursor | -1
+  readonly limit: number
+}
+
+/** Read-only directory metadata; grants, execution history and goal budget bodies are excluded. */
+export interface TeamProductSummary extends Pick<TeamSnapshot, 'id' | 'phase' | 'depth' | 'maxTeamDepth' | 'cursor' | 'createdAt' | 'updatedAt'> {
+  /** Immutable Simulation ownership; ordinary Teams omit this product mutation restriction. */
+  readonly executionManagement?: TeamSelectionSnapshot['executionManagement']
+  readonly parentTeamId?: TeamSnapshot['parentTeamId']
+  readonly parentTaskId?: TeamSnapshot['parentTaskId']
+  readonly workspacePath?: TeamSnapshot['workspacePath']
+  readonly goal: Pick<TeamGoalSnapshot, 'teamId' | 'revision' | 'objective' | 'phase'>
+  readonly objectiveTruncated: boolean
+  readonly readAccess: 'member' | 'parent-inspection'
+}
+
+/** One authorized directory page; its continuation does not expose physical scan counts. */
+export interface TeamProductDirectoryPage {
+  readonly items: readonly TeamProductSummary[]
+  readonly nextCursor?: TeamProductDiscoveryCursor | undefined
 }
 
 /**
@@ -2880,7 +3011,7 @@ declare const teamSystemTaskReviewProofBrand: unique symbol
 
 /**
  * Runtime-only evidence retained by a registered system source for one narrow
- * durable review-response recovery. The proof contains no serializable fields
+ * task review. The proof contains no serializable fields
  * and cannot grant a generic reviewer identity.
  */
 export interface TeamSystemTaskReviewProof {
@@ -2916,21 +3047,52 @@ export interface SchedulerReviewResponseTaskReviewScope {
   readonly reason: string
 }
 
+/** Durable identity of one administrative Simulation review command. */
+export interface TeamSimulationTaskReviewCommand {
+  /** Canonical native run that owns the completed result. */
+  readonly runId: Branded<'SimulationRunId'>
+  /** Run-wide command identity; payload changes under this identity reject. */
+  readonly commandId: string
+  /** Original accepted task/create operation. */
+  readonly operationId: Branded<'SimulationOperationId'>
+  /** Task revision selected before the first review acceptance. */
+  readonly expectedRevision: number
+}
+
+/** Exact administrative review of a result already retained by its native Simulation owner. */
+export interface SimulationTaskReviewScope extends TeamSimulationTaskReviewCommand {
+  readonly kind: 'simulation-task-review'
+  readonly teamId: TeamId
+  readonly taskId: TeamTaskId
+  readonly lifecycleOwner: string
+  /** Original task creator, derived from the native task/create actor binding. */
+  readonly creatorId: ParticipantId
+  /** Completed attempt executor, derived from its native reservation. */
+  readonly initiatorId: ParticipantId
+  readonly attemptId: TaskAttemptId
+  /** Actual reviewer binding; no activation or model turn is required. */
+  readonly reviewerId: ParticipantId
+  readonly reviewerSessionId: SessionId
+  readonly nextPhase: 'completed' | 'pending'
+  readonly reason: string
+  /** Exact immutable native result; the Hub matches the completed attempt. */
+  readonly outcome: Extract<TaskAttemptOutcome, { kind: 'completed' }>
+}
+
 /** Closed durable scope a system task-review source may select. */
-export type TeamSystemTaskReviewScope = SchedulerReviewResponseTaskReviewScope
+export type TeamSystemTaskReviewScope = SchedulerReviewResponseTaskReviewScope | SimulationTaskReviewScope
 
 /** Immutable system-source attribution resolved for one task-review recovery proof. */
 export interface TeamSystemTaskReviewProofResolution {
   /** Registered source that retained and resolved the opaque proof. */
   readonly sourceName: string
-  /** Exact task, reviewer, and consult-response scope supplied by that source. */
+  /** Exact task, reviewer and durable source scope supplied by that owner. */
   readonly scope: TeamSystemTaskReviewScope
 }
 
 /**
  * Registration contributed by a system owner that retains opaque task-review
- * recovery proofs. A source never receives a caller-selected reviewer or
- * response identity.
+ * proofs. The owner derives the configured reviewer and original source facts.
  */
 export interface TeamSystemTaskReviewProofSource {
   /** Stable nonempty registry identity for the contributing system owner. */
@@ -3557,7 +3719,7 @@ export interface TeamTaskCreateCommandInput {
 
 /** Current bounded lease for the active attempt of one Team task. */
 export interface TaskLeaseSnapshot {
-  /** Provider-minted attempt identity used to fence subsequent owner writes. */
+  /** Source-owned attempt identity used to fence subsequent owner writes. */
   readonly attemptId: TaskAttemptId
   /** Task revision committed with this lease assignment and retained for idempotent start claims. */
   readonly assignedRevision: number
@@ -3583,7 +3745,7 @@ export interface TaskLeaseSnapshot {
 
 /** Immutable settled task-attempt record retained in one task's bounded history. */
 export interface TaskAttemptSnapshot {
-  /** Provider-minted attempt identity. */
+  /** Source-owned non-reusable attempt identity. */
   readonly id: TaskAttemptId
   /** Team that owns the task this attempt executed. */
   readonly teamId: TeamId
@@ -3605,6 +3767,8 @@ export interface TaskAttemptSnapshot {
   readonly leaseExpiresAt: number
   /** Epoch milliseconds when the provider recorded the terminal outcome. */
   readonly settledAt: number
+  /** Controller quiescence evidence atomically paired with this attempt's terminal record. */
+  readonly retirement?: { readonly source: 'quiesced' | 'fenced' }
   /** Closed terminal fact for this attempt. */
   readonly outcome: TaskAttemptOutcome
 }
@@ -3626,6 +3790,8 @@ export interface TeamTaskReviewDecision {
   readonly reason: string
   /** Epoch milliseconds when the provider committed this decision. */
   readonly decidedAt: number
+  /** Original native administrative command; absent for participant and scheduler reviews. */
+  readonly simulationCommand?: TeamSimulationTaskReviewCommand | undefined
 }
 
 /** Versioned condition accepted by a declarative Team workflow graph. */
@@ -3888,6 +4054,8 @@ export interface TeamTaskSnapshot {
   readonly id: TeamTaskId
   /** Team that owns this task. */
   readonly teamId: TeamId
+  /** Immutable epoch milliseconds stamped by the Hub when this task is first accepted. */
+  readonly createdAt: number
   /** Compare-and-set revision for mutations. */
   readonly revision: number
   /** Immutable task executor; child Teams never receive a Participant lease. */
@@ -4024,13 +4192,21 @@ export interface TeamHumanActionReadRequest {
 /** Select bounded product data; scalar metadata may independently exceed the response allowance. */
 export interface TeamSelectionRequest extends TeamGetRequest {
   readonly includeMetadata?: boolean | undefined
+  /** Same-process authorization observation; product and SDK request parsers do not accept this field. */
+  readonly readAccess?: 'member' | 'parent-inspection' | undefined
 }
 
 /** Initial Team selection without task, roster, channel or activation history arrays. */
 export interface TeamSelectionSnapshot {
+  /** Present when immutable Team rules reserve execution and product mutations for Simulation administration. */
+  readonly executionManagement?: 'simulation-managed' | undefined
+  /** Product authorization metadata, present only when supplied by the authenticated read owner. */
+  readonly readAccess?: TeamSelectionRequest['readAccess']
   readonly metadata?: TeamSelectionMetadata | undefined
   readonly cancellation?: { readonly reason: TeamSelectionText } | undefined
   readonly pendingHumanActionCount?: number | undefined
+  /** Complete pending responsibilities, absent when the provider supplies no human-action collection. */
+  readonly attentionCounts?: import('./attention-types.ts').TeamAttentionCounts | undefined
   readonly team: Pick<TeamSnapshot, 'id' | 'parentTeamId' | 'parentTaskId' | 'depth' | 'maxTeamDepth'
     | 'workspacePath' | 'phase' | 'cursor' | 'createdAt' | 'updatedAt' | 'archivedAt'>
   readonly goal: {
@@ -4059,10 +4235,201 @@ export interface TeamSelectionSnapshot {
 /** Collection whose listing can omit execution bodies and history. */
 export type TeamBrowseKind = 'tasks' | 'members' | 'workflowPlans'
 
+/** Stable identity of a public execution-route descriptor, not a startup capability. */
+export type TeamExecutionProfileId = Branded<'TeamExecutionProfileId'>
+
+/** Public member descriptor backed by a trusted deployment route. */
+export interface TeamExecutionProfile {
+  readonly id: TeamExecutionProfileId
+  readonly kind: 'local-agent' | 'remote-agent'
+  readonly role: string
+  readonly provider: string
+  readonly preset?: string | undefined
+  readonly model: string
+}
+
+/** Current availability comes from the execution owner, never the browser. */
+export interface TeamExecutionProfileChoice extends TeamExecutionProfile {
+  readonly available: boolean
+  readonly reasons: readonly ('provider-unavailable' | 'participant-kind-unsupported' | 'owner-closing')[]
+}
+
+/** Effect-owned registration; availability must be synchronous, read-only and free of Hub reentry. */
+export interface TeamExecutionProfileRegistration {
+  readonly profile: TeamExecutionProfile
+  readonly availability: () => TeamExecutionProfileChoice['reasons']
+}
+
+/** A public continuation binds the exact Team, member mechanism and registry revision. */
+export interface TeamExecutionProfileCursor {
+  readonly teamId: TeamId
+  readonly kind: Exclude<ParticipantKind, 'human'>
+  readonly revision: number
+  readonly offset: number
+}
+
+/** Read deployment choices and independently revalidate the selected profile. */
+export interface TeamExecutionProfilesInput {
+  readonly teamId: TeamId
+  readonly kind: Exclude<ParticipantKind, 'human'>
+  readonly cursor?: TeamExecutionProfileCursor | undefined
+  readonly selectedId?: TeamExecutionProfileId | undefined
+}
+
+/** Profile reads retain exact membership authority without exposing its grant. */
+export interface TeamExecutionProfilesRequest extends TeamExecutionProfilesInput {
+  readonly actor: TeamHumanActorProof
+}
+
+/** One bounded profile page; an off-page selection is rechecked independently. */
+export interface TeamExecutionProfilesPage {
+  readonly teamId: TeamId
+  readonly kind: Exclude<ParticipantKind, 'human'>
+  readonly revision: number
+  readonly allowed: boolean
+  readonly reason?: 'not-authorized' | 'team-inactive' | 'member-limit' | 'simulation-managed' | undefined
+  readonly items: readonly TeamExecutionProfileChoice[]
+  readonly selected?: TeamExecutionProfileChoice | undefined
+  readonly nextCursor?: TeamExecutionProfileCursor | undefined
+}
+
+/** Exact member identities selected by an authenticated product reader. */
+export interface TeamMemberReadinessInput {
+  readonly teamId: TeamId
+  readonly participantIds: readonly ParticipantId[]
+  readonly afterCursor?: number | undefined
+  readonly expectedTeamCursor?: number | undefined
+}
+
+/** Runtime-only read proof never crosses the Host transport. */
+export interface TeamMemberReadinessRequest extends TeamMemberReadinessInput {
+  readonly actor: TeamHumanActorProof
+}
+
+/** Explanations remain independent; a running execution can also have an unavailable restart route. */
+export type TeamMemberReadinessReason = 'not-participating' | 'human' | 'service-managed' | 'simulation-managed'
+  | 'team-inactive' | 'route-unavailable' | 'provider-unavailable' | 'participant-kind-unsupported' | 'owner-closing' | 'pool-capacity'
+  | 'activation-capacity' | 'concurrency-capacity' | 'old-writer' | 'stopping'
+
+/** Same-process observations contributed by exact lifecycle and route owners. */
+export interface TeamMemberExecutionSources {
+  readonly activation?: {
+    readonly state: 'attached' | 'starting' | 'stopping' | 'recovery-required'
+    readonly activationId?: ActivationId | undefined
+  } | undefined
+  readonly route?: {
+    readonly kind: 'managed' | 'configured'
+    readonly provider: string
+    readonly configuration: string
+    readonly reasons: readonly ('provider-unavailable' | 'participant-kind-unsupported' | 'owner-closing' | 'pool-capacity' | 'route-unavailable')[]
+  } | undefined
+}
+
+/** Pure execution-owner query; listeners must not reenter the Hub or start work. */
+export interface TeamMemberExecutionQuery {
+  readonly teamId: TeamId
+  readonly participant: Pick<ParticipantSnapshot, 'id' | 'kind' | 'phase' | 'role' | 'provider' | 'preset' | 'model'>
+}
+
+/** Participation never implies that an execution route or resident writer is available. */
+export interface TeamMemberReadiness {
+  readonly participantId: ParticipantId
+  readonly participation: ParticipantPhase
+  readonly state: 'not-applicable' | 'route-unavailable' | 'ready' | 'starting' | 'resident' | 'busy'
+    | 'stopping' | 'capacity-wait' | 'recovery-required'
+  readonly reasons: readonly TeamMemberReadinessReason[]
+  readonly configuration?: string | undefined
+}
+
+/** One byte-bounded observation page in the caller's requested member order. */
+export interface TeamMemberReadinessPage {
+  readonly teamId: TeamId
+  readonly teamCursor: number
+  readonly observationId: TeamCapabilityObservationId
+  readonly observedAt: number
+  readonly items: readonly TeamMemberReadiness[]
+  readonly nextCursor?: number | undefined
+}
+
+/** Same-process principal lookup for the human-proof issuer; never a browser-supplied actor. */
+export interface TeamHumanActorLookup {
+  readonly teamId: TeamId
+  readonly principalId: Branded<'ProductPrincipalId'>
+}
+
+/** Minimal identity and operation grant needed to issue a live human proof. */
+export interface TeamHumanActorSelection {
+  readonly participantId: ParticipantId
+  readonly operations: readonly TeamPolicyHook[]
+}
+
+/** Active human membership authorizing inspection of its Team or a reserved descendant. */
+export interface TeamHumanReadAuthority extends TeamHumanActorSelection {
+  /** Team containing the principal-owned human; mutation authority remains local to this Team. */
+  readonly teamId: TeamId
+}
+
+/** Digest of one authenticated Host capability observation, not a write credential. */
+export type TeamCapabilityObservationId = Branded<'TeamCapabilityObservationId'>
+
+/** Authenticated task-authoring observation; scope paths are checked without disclosing the grant. */
+export interface TeamTaskCapabilitiesInput {
+  /** Integration task creation additionally requires workspace-integrate authority. */
+  readonly integration: boolean
+  readonly teamId: TeamId
+  readonly readScopes: readonly string[]
+  readonly writeScopes: readonly string[]
+}
+
+/** Stable reasons that block ordinary human task authoring at the observation time. */
+export type TeamTaskCapabilityReason = 'not-authorized' | 'team-inactive' | 'task-limit' | 'time-budget'
+  | 'simulation-managed' | 'provider-unavailable' | 'scheduler-unavailable'
+
+/** One choice remains unavailable until all of its observed blockers are cleared. */
+export interface TeamTaskCapabilityChoice {
+  readonly allowed: boolean
+  readonly reasons: readonly TeamTaskCapabilityReason[]
+}
+
+/** Grant and lifecycle projection, without paths, grant bodies or task history. */
+export interface TeamTaskCapabilities {
+  readonly teamId: TeamId
+  readonly teamCursor: number
+  readonly create: TeamTaskCapabilityChoice
+  readonly workspaceModes: readonly (TeamTaskCapabilityChoice & { readonly mode: TeamTaskWorkspaceMode })[]
+  readonly readScopes: { readonly editable: boolean; readonly accepted: boolean }
+  readonly writeScopes: { readonly editable: boolean; readonly accepted: boolean }
+  readonly maxAttempts: number
+}
+
+/** Runtime-only membership proof stays outside the JSON request. */
+export interface TeamTaskCapabilitiesRequest extends TeamTaskCapabilitiesInput {
+  readonly actor: TeamHumanActorProof
+}
+
+/** Server-side task title search; deleted tasks are always excluded. */
+export interface TeamTaskQuery {
+  readonly search: string
+  readonly phase?: Exclude<TeamTaskPhase, 'deleted'> | undefined
+  readonly excludeTaskId?: TeamTaskId | undefined
+}
+
+/** Public continuation binds a task query to one Team revision and ordering version; it grants no access. */
+export interface TeamTaskQueryCursor {
+  readonly teamId: TeamId
+  readonly teamCursor: number
+  readonly query: TeamTaskQuery
+  readonly order: 'task-insertion-v1'
+  readonly afterCursor: number
+}
+
 /** A provider-order summary page request; ids and revisions remain exact. */
 export interface TeamBrowseRequest {
   readonly teamId: TeamId
   readonly kind: TeamBrowseKind
+  /** Task-only server filter; query continuation uses queryCursor instead of afterCursor. */
+  readonly query?: TeamTaskQuery | undefined
+  readonly queryCursor?: TeamTaskQueryCursor | undefined
   readonly afterCursor?: number | undefined
   readonly limit?: number | undefined
 }
@@ -4124,11 +4491,17 @@ export type TeamBrowsePage = {
   /** Global Team journal watermark; collection continuation uses nextCursor. */
   readonly teamCursor: number
   readonly total: number
-  /** Entries examined, including the ordinal prefix and one look-ahead row. */
+  /** Entries examined; filtered queries scan the collection to count all matches. */
   readonly scanned: number
   readonly nextCursor?: number | undefined
 } & (
-  | { readonly kind: 'tasks'; readonly items: readonly TeamTaskSummary[] }
+  | {
+    readonly kind: 'tasks'
+    readonly items: readonly TeamTaskSummary[]
+    /** Echoed query and full source size distinguish matching totals from scan work. */
+    readonly query?: TeamTaskQuery | undefined
+    readonly sourceTotal?: number | undefined
+    readonly nextQueryCursor?: TeamTaskQueryCursor | undefined }
   | { readonly kind: 'members'; readonly items: readonly TeamMemberSummary[] }
   | { readonly kind: 'workflowPlans'; readonly items: readonly TeamWorkflowSummary[] }
 )
@@ -5559,6 +5932,8 @@ export interface TeamWorkflowPlanListPage {
 
 /** JSON-only fields accepted when a provider invites a participant and mints its identity. */
 export interface ParticipantInviteInput {
+  /** Optional deployed profile checked again before invitation commit; no startup parameters are accepted. */
+  readonly executionProfileId?: TeamExecutionProfileId | undefined
   /** Team receiving the participant. */
   readonly teamId: TeamId
   /** Team-journal cursor the caller read before this invitation. */
@@ -5796,6 +6171,8 @@ export interface TeamTaskListPage {
 
 /** JSON-only narrow compare-and-set edit of a lease-free task's instructions and dependency graph. */
 export interface TeamTaskDetailsUpdateInput {
+  /** Original caller identity for retry-safe admission; changed semantics require another identity. */
+  readonly commandId: import('./task-update.ts').TeamTaskUpdateCommandId
   /** Team that owns the task. */
   readonly teamId: TeamId
   /** Task whose details change. */
@@ -5868,6 +6245,19 @@ export interface TeamTaskCancelRequest extends TeamTaskCancelInput {
   readonly actor: TeamSystemTaskControlProof | TeamHumanActorProof
 }
 
+/** Exact Simulation provenance and current work selected before task cancellation admission. */
+export interface TeamSimulationTaskCancelInput extends TeamTaskCancelInput {
+  readonly runId: Branded<'SimulationRunId'>
+  readonly operationId: Branded<'SimulationOperationId'>
+  /** Original active attempt; null requires a lease-free pending/review task or terminal result. */
+  readonly expectedAttemptId: TaskAttemptId | null
+}
+
+/** Runtime-only Simulation cancellation authority, independent of ordinary human/task-control proofs. */
+export interface TeamSimulationTaskCancelRequest extends TeamSimulationTaskCancelInput {
+  readonly actor: TeamSystemTaskControlProof
+}
+
 /** JSON-only recovery of one accepted lease-free cancellation after a channel-WAL interruption. */
 export interface TeamTaskCancellationReconcileInput {
   /** Team that retained the stop intent. */
@@ -5926,7 +6316,7 @@ export interface TeamTaskReviewResolveRequest extends TeamTaskReviewResolveInput
   readonly actor: TeamActorProof | TeamHumanActorProof
 }
 
-/** Runtime-only scheduler recovery of one durable consult review response. */
+/** Runtime-only system resolution of one source-owned task review. */
 export interface TeamTaskReviewRecoverRequest {
   /** Trusted system authority; it never crosses a wire or durable boundary. */
   readonly actor: TeamSystemTaskReviewProof
@@ -5957,6 +6347,21 @@ export type TeamTaskAssignInput = TaskAttemptActivationSelection & {
   readonly wakeChannelId?: ChannelId
   /** Fixed duration that the provider records on the new lease. */
   readonly leaseDurationMs: number
+}
+
+/** Exact source-selected assignment without ordinary Team channel wake authority. */
+export interface TeamSimulationTaskAssignInput {
+  readonly teamId: TeamId
+  readonly taskId: TeamTaskId
+  readonly expectedRevision: number
+  readonly participantId: ParticipantId
+  readonly activationId: ActivationId
+  readonly attemptId: TaskAttemptId
+  readonly leaseDurationMs: number
+}
+/** Runtime proof from the Simulation owner for this exact persisted attempt. */
+export interface TeamSimulationTaskAssignRequest extends TeamSimulationTaskAssignInput {
+  readonly actor: TeamSystemTaskControlProof
 }
 
 /** Runtime-authorized scheduler task assignment. */
@@ -6238,6 +6643,12 @@ export type ChannelOpenRequest = ChannelOpenInput & (
 export interface ChannelGetRequest {
   /** Channel to read. */
   readonly channelId: ChannelId
+}
+
+/** Exact attached-channel ownership without protocol state or message content. */
+export interface ChannelOwnerSnapshot {
+  readonly channelId: ChannelId
+  readonly teamId: TeamId
 }
 
 /** Runtime-only member-authorized read of immutable channel metadata. */
@@ -6683,4 +7094,28 @@ export interface TeamChannelCatalog {
   readonly adapters: readonly TeamAdapterRef[]
   readonly viewPolicies: readonly TeamViewPolicyRef[]
   readonly summary?: ChannelSummaryCapabilities | undefined
+}
+
+/** Finite identity references already held by an authorized Team view. */
+export interface TeamIdentityResolveInput {
+  readonly teamId: TeamId
+  readonly participantIds: readonly ParticipantId[]
+  /** Offset in the deduplicated request order. */
+  readonly afterCursor?: number | undefined
+  readonly expectedTeamCursor?: number | undefined
+}
+/** Payload-bound membership proof for display identity resolution. */
+export interface TeamIdentityResolveRequest extends TeamIdentityResolveInput {
+  readonly actor: TeamHumanActorProof
+}
+/** Unknown identities use the same unavailable result without exposing another Team's membership. */
+export type TeamResolvedIdentity =
+  | { readonly participantId: ParticipantId; readonly state: 'unavailable' }
+  | { readonly participantId: ParticipantId; readonly state: 'resolved'; readonly displayName: TeamSelectionText; readonly phase: ParticipantPhase }
+/** A bounded page contains only requested identity display fields. */
+export interface TeamIdentityResolvePage {
+  readonly teamId: TeamId
+  readonly teamCursor: number
+  readonly items: readonly TeamResolvedIdentity[]
+  readonly nextCursor?: number | undefined
 }

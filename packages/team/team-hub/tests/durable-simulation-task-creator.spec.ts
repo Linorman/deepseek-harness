@@ -9,7 +9,7 @@ for (const backend of ['json', 'sqlite'] as const) {
   describe(`durable Simulation task creator (${backend})`, () => {
     it.each(['phase', 'cancellation', 'closure'] as const)('reconciles committed tasks but refuses new tasks after a retained %s', async (stop) => {
       const member = participant({ id: 'simulation-member', role: 'worker' })
-      const initial = task({ id: 'simulation-task', createCommand: { creator: { kind: 'simulation', teamId,
+      const initial = task({ id: 'simulation-task', createdAt: 15, createCommand: { creator: { kind: 'simulation', teamId,
         participantId: member.id, runId: 'simulation', operationId: 'accepted-operation' },
       idempotencyKey: JSON.stringify(['simulation-task', 'simulation', 'accepted-operation']) } })
       const intent = { teamId, idempotencyKey: 'stop-task-admission', actor: { kind: 'system', name: 'team-run' },
@@ -50,16 +50,16 @@ for (const backend of ['json', 'sqlite'] as const) {
         participantChanged({ participant: member, createdAt: 12 }),
         participantChanged({ participant: { ...member, phase: 'provisioning' }, createdAt: 13 }),
         participantChanged({ participant: { ...member, phase: 'active' }, createdAt: 14 })]
-      const initial = task({ id: 'simulation-task', createCommand: { creator: { kind: 'simulation', teamId,
+      const initial = task({ id: 'simulation-task', createdAt: 15, createCommand: { creator: { kind: 'simulation', teamId,
         participantId: member.id, runId: 'simulation', operationId: 'accepted-operation' },
       idempotencyKey: JSON.stringify(['simulation-task', 'simulation', 'accepted-operation']) } })
       const closing = await recover(backend, [...prefix, teamPhase({ phase: 'quiescing', createdAt: 15 }),
-        taskChanged({ task: initial, createdAt: 16 })])
+        taskChanged({ task: { ...initial, createdAt: 16 }, createdAt: 16 })])
       await expect(closing.teams.getTeam({ teamId })).rejects.toThrow(/invalid Simulation creation relation/)
       const cancelled = await recover(backend, [...prefix, { type: 'team/cancellation', createdAt: 15,
         cancellation: { teamId, idempotencyKey: 'cancel-task-admission', actor: { kind: 'system', name: 'team-run' },
           reason: { code: 'CANCEL', message: 'Stop accepting work' }, requestedAt: 15 } },
-      taskChanged({ task: initial, createdAt: 16 })])
+      taskChanged({ task: { ...initial, createdAt: 16 }, createdAt: 16 })])
       await expect(cancelled.teams.getTeam({ teamId })).rejects.toThrow(/invalid Simulation creation relation/)
       const rows = [...prefix, taskChanged({ task: initial, createdAt: 15 }),
         participantChanged({ participant: { ...member, phase: 'left' }, createdAt: 16 })]
@@ -67,7 +67,7 @@ for (const backend of ['json', 'sqlite'] as const) {
         const restored = await recover(backend, rows, checkpoint)
         expect((await restored.teams.getTeam({ teamId })).tasks).toEqual([initial])
       }
-      const repeated = task({ ...initial, id: 'duplicate-task' })
+      const repeated = task({ ...initial, id: 'duplicate-task', createdAt: 16 })
       const duplicate = await recover(backend, [...prefix, taskChanged({ task: initial, createdAt: 15 }),
         taskChanged({ task: repeated, createdAt: 16 })])
       await expect(duplicate.teams.getTeam({ teamId })).rejects.toThrow(/repeats a task-creation command/)

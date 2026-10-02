@@ -1891,7 +1891,8 @@ it('carries the retained reviewer decision into a replacement attempt input', as
   const connected = link(durable), current = connection(local, connected)
   internal.connections.set(key(teamId, recipientId), current)
   const accepted = taskAssignmentEnvelope(durable, { payload: { ...taskAssignmentEnvelope(durable).payload, assignedRevision: 5 } })
-  const task = teamTaskSnapshotSchema.parse({ id: 'task-edges', teamId, revision: 6, execution: { kind: 'participant' },
+  const task = teamTaskSnapshotSchema.parse({
+    createdAt: 0, id: 'task-edges', teamId, revision: 6, execution: { kind: 'participant' },
     createCommand: { creator: { teamId, participantId: senderId }, idempotencyKey: 'handoff' },
     subject: 'Revise the report', description: 'Use the prior review.', phase: 'running', blockedBy: [], requiredCapabilities: [],
     priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, maxAttempts: 2, attemptCount: 2,

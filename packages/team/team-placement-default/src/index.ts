@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+import { teamExecutionProfileIdSchema, type TeamExecutionProfile, type TeamExecutionProfileChoice } from '@clocky/clocky-team'
 /** Provision explicitly routed Team participants before deterministic task assignment. @module */
 import { Service } from '@clocky/cordis'
 import type { Context } from '@clocky/cordis'
@@ -69,6 +71,17 @@ export class TeamPlacement extends Service {
   /** @param ctx - Authoritative Team, activation and runtime services. @param config - Explicit bounded routes. */
   constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'teamPlacement')
+    ctx.on('team/member-execution-observe', async ({ participant }, next) => {
+      const sources = await next()
+      if (participant.kind !== 'local-agent' && participant.kind !== 'remote-agent') return sources
+      if (sources.route?.kind === 'managed') return sources
+      const route = this.config.routes.find(route => route.provider === participant.provider && route.preset === participant.preset
+        && route.model === participant.model && route.roles.includes(participant.role))
+      if (route === undefined) return sources
+      if (sources.route !== undefined) throw new TeamError('Member has multiple configured execution routes', 'TEAM_INVALID_ARGUMENT')
+      const reasons = this.profileAvailability(route, participant.kind)
+      return { ...sources, route: { kind: 'configured', provider: route.provider, configuration: 'team-placement-default.routes', reasons } }
+    })
     const selections = new Set<string>()
     for (const route of config.routes) {
       if (route.model !== `${route.modelProvider}/${route.modelId}`) throw new TypeError('Placement model must equal modelProvider/modelId')
@@ -77,8 +90,23 @@ export class TeamPlacement extends Service {
         const key = JSON.stringify([route.provider, route.preset, route.model, role])
         if (selections.has(key)) throw new TypeError(`Placement role '${role}' has overlapping execution routes`)
         selections.add(key)
+        for (const kind of ['local-agent', 'remote-agent'] as const) {
+          const descriptor = { kind, role, provider: route.provider, model: route.model,
+            ...route.preset === undefined ? {} : { preset: route.preset } }
+          const profile: TeamExecutionProfile = { ...descriptor,
+            id: teamExecutionProfileIdSchema.parse(`profile-${createHash('sha256').update(JSON.stringify(descriptor)).digest('hex')}`) }
+          ctx.teams.registerExecutionProfile({ profile, availability: () => this.profileAvailability(route, kind) })
+        }
       }
     }
+  }
+
+  /** Read the same owner/provider conditions used by readiness and profile-backed invitation. */
+  private profileAvailability(route: PlacementRoute, kind: TeamExecutionProfile['kind']): TeamExecutionProfileChoice['reasons'] {
+    if (this.stopping.signal.aborted) return ['owner-closing']
+    const runtime = this.ctx.agentRuntimes.getProvider(route.provider)
+    if (runtime === undefined) return ['provider-unavailable']
+    return runtime.participantKinds.includes(kind) ? [] : ['participant-kind-unsupported']
   }
 
   /**
@@ -132,6 +160,10 @@ export class TeamPlacement extends Service {
       const route = this.config.routes.find(route => route.provider === participant.provider
         && route.preset === participant.preset && route.model === participant.model && route.roles.includes(role))
       if (route === undefined) throw new TeamError(`Workflow role '${role}' requires one configured placement route`, 'TEAM_INVALID_ARGUMENT')
+      const runtime = this.ctx.agentRuntimes.getProvider(route.provider)
+      if (runtime !== undefined && !runtime.participantKinds.includes(participant.kind)) {
+        throw new TeamError(`Workflow role '${role}' has an unsupported runtime participant kind`, 'TEAM_INVALID_ARGUMENT')
+      }
       return [{ participant, route }]
     })
     if (selected.length > this.config.maxActivationsPerDrive) {
@@ -213,6 +245,8 @@ export class TeamPlacement extends Service {
     initial: TeamStateSnapshot, task: TeamTaskSnapshot | undefined, participant: ParticipantSnapshot, route: PlacementRoute,
     signal: AbortSignal,
   ): Promise<boolean> {
+    const runtime = this.ctx.agentRuntimes.getProvider(route.provider)
+    if (runtime !== undefined && !runtime.participantKinds.some(kind => kind === participant.kind)) return false
     const previous = initial.activations.filter(value => value.activation.participantId === participant.id).at(-1)
     if (task === undefined && previous !== undefined
       && (previous.activation.status === 'idle' || previous.activation.status === 'running')) return true

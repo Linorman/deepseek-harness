@@ -18,7 +18,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { hasClass, installAssembledBootEnv, mountAssembledApp, REFRESHING_GOLDEN } from './assembled-boot.ts'
+import { openAssembledCoordinator, hasClass, installAssembledBootEnv, mountAssembledApp, REFRESHING_GOLDEN } from './assembled-boot.ts'
 
 const EXPECTED = join(process.cwd(), 'apps/web/tests/snapshots/search-card/grep-card.expected.txt')
 
@@ -48,8 +48,9 @@ describe('assembled search card', () => {
   it('renders the grep card, its truncation summary, and its capped head/tail slice from the built bundles', async () => {
     mountAssembledApp()
 
-    const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+    const tasks = await screen.findByRole('region', { name: 'Team directory' }, { timeout: 10_000 })
     fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+    await openAssembledCoordinator()
     // Wait for chat content to reach the fixture's later turns (the bash sample
     // is turn 66, the grep card turn 67).
     await waitFor(() => {

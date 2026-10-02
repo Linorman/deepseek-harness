@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+`LogReadLimits` 和 `LogReadSnapshot` 为不能取得 writer handle 的读取方定义有界、分离的历史。JSON 和 SQLite 提供方导出各自的读取函数；descriptor／配置在 IO 前校验，完整返回 JSON 和保留行数超额会拒绝。这些观察不授予应用读取权限或 compaction 权限。
+
 非会话数据的存储中心（`ctx.storage`）：具名后端注册表加已挂载的数据形式设施。中心自身不执行 IO：后端拥有介质，数据形式拥有语义。[存储家族概述](../README.zh.md)列出了这些包；[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)记录了设计理由。
 
 ## 结构

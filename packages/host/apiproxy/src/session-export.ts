@@ -23,7 +23,7 @@ import { Zip, ZipDeflate } from 'fflate'
 import type { Context } from '@clocky/cordis'
 import type { AttachmentStore, ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { SessionLineageNode, SessionQueryEngine } from '@clocky/clocky-session-query'
-import type { SessionId, SessionStore } from '@clocky/clocky-session'
+import type { SessionHeader, SessionId, SessionStore } from '@clocky/clocky-session'
 import type { SessionPersistence, SessionRawArtifact } from '@clocky/clocky-session-persistence'
 
 /** Valid fflate DEFLATE levels accepted by session-log export. */
@@ -42,6 +42,14 @@ export interface SessionLogExportDeps {
 
 /** The export services narrowed to the mounted ones streaming actually reads. */
 export interface SessionLogExportReady {
+  /** Retain exact Session authority through one read and recheck it before publishing its result.
+   * @param header - Durable Session metadata owning this content.
+   * @param read - Body IO or an empty publication check.
+   * @returns result only while authority remains current.
+   */
+  readonly withSessionRead: <T>(header: SessionHeader, read: () => Promise<T>) => Promise<T>
+  /** Retire the export's principal lease after completion or cancellation. */
+  readonly close: () => void
   readonly sessionQuery: SessionQueryEngine
   readonly sessionPersistence: SessionPersistence
   readonly attachments: AttachmentStore
@@ -86,8 +94,8 @@ export async function flushLiveSessionLog(
 
 /** One exported file: a stored artifact text or one referenced media object. */
 export type SessionLogZipEntry =
-  | { readonly path: string; readonly content: string }
-  | { readonly path: string; readonly data: Uint8Array }
+  | { readonly path: string; readonly content: string; readonly owner: SessionHeader }
+  | { readonly path: string; readonly data: Uint8Array; readonly owner: SessionHeader }
 
 /** Zip extension for each accepted raster media type. */
 const MEDIA_TYPE_EXTENSIONS: Record<ImageAttachmentRef['mediaType'], string> = {
@@ -223,12 +231,13 @@ export async function* sessionLogZipEntries(
   includeDescendants: boolean,
   signal?: AbortSignal,
 ): AsyncGenerator<SessionLogZipEntry> {
-  const media = new Map<string, ImageAttachmentRef>()
-  const rememberMedia = (content: string): void => {
-    for (const [id, ref] of imageRefsInArtifact(content)) media.set(id, ref)
+  const media = new Map<string, { ref: ImageAttachmentRef; owner: SessionHeader }>()
+  const rememberMedia = (content: string, owner: SessionHeader): void => {
+    for (const [id, ref] of imageRefsInArtifact(content)) if (!media.has(id)) media.set(id, { ref, owner })
   }
-  rememberMedia(root.content)
-  yield { path: root.filename, content: root.content }
+  await deps.withSessionRead(root.meta, async () => {})
+  rememberMedia(root.content, root.meta)
+  yield { path: root.filename, content: root.content, owner: root.meta }
   if (includeDescendants) {
     const seen = new Set<SessionId>([sessionId])
     const collect = async function* (
@@ -239,29 +248,33 @@ export async function* sessionLogZipEntries(
         const id = node.session.header.id
         if (seen.has(id)) continue
         seen.add(id)
-        await flushLiveSessionLog(deps, id, signal)
-        const raw = await deps.sessionPersistence.readRaw(id, signal)
+        const raw = await deps.withSessionRead(node.session.header, async () => {
+          await flushLiveSessionLog(deps, id, signal)
+          return await deps.sessionPersistence.readRaw(id, signal)
+        })
         signal?.throwIfAborted()
         if (raw === undefined) {
           throw new Error(`subagent "${id}" has no stored log artifact`)
         }
-        rememberMedia(raw.content)
+        await deps.withSessionRead(raw.meta, async () => {})
+        rememberMedia(raw.content, raw.meta)
         yield {
           path: `subagents/${safeSessionIdSegment(id)}/${raw.filename}`,
           content: raw.content,
+          owner: raw.meta,
         }
         yield* collect(node.descendants)
       }
     }
-    const lineage = await deps.sessionQuery.traceSession(sessionId, signal)
+    const lineage = await deps.withSessionRead(root.meta, async () => await deps.sessionQuery.traceSession(sessionId, signal))
     signal?.throwIfAborted()
     yield* collect(lineage.descendants)
   }
-  for (const ref of media.values()) {
+  for (const { ref, owner } of media.values()) {
     signal?.throwIfAborted()
-    const stored = await deps.attachments.readImage(ref, signal)
+    const stored = await deps.withSessionRead(owner, async () => await deps.attachments.readImage(ref, signal))
     signal?.throwIfAborted()
-    yield { path: mediaEntryPath(ref), data: stored.data }
+    yield { path: mediaEntryPath(ref), data: stored.data, owner }
   }
 }
 
@@ -315,6 +328,7 @@ class ResponseCapacityGate {
  * @param controller - response queue controller.
  * @param capacity - pull-driven response-capacity gate.
  * @param signal - cancellation; throws when aborted.
+ * @param authorize - Current authority for this entry, checked after each wait and before publication.
  */
 async function pushBinaryChunks(
   deflate: ZipDeflate,
@@ -322,9 +336,11 @@ async function pushBinaryChunks(
   controller: ReadableStreamDefaultController<Uint8Array>,
   capacity: ResponseCapacityGate,
   signal: AbortSignal,
+  authorize: () => Promise<void>,
 ): Promise<void> {
   let offset = 0
   do {
+    await authorize()
     signal.throwIfAborted()
     const end = Math.min(offset + PUSH_CHUNK_BYTES, data.byteLength)
     const finalChunk = end >= data.byteLength
@@ -343,6 +359,7 @@ async function pushBinaryChunks(
  * @param controller - response queue controller.
  * @param capacity - pull-driven response-capacity gate.
  * @param signal - cancellation; throws when aborted.
+ * @param authorize - Current authority for this entry, checked after each wait and before publication.
  */
 async function pushArtifactChunks(
   deflate: ZipDeflate,
@@ -350,11 +367,13 @@ async function pushArtifactChunks(
   controller: ReadableStreamDefaultController<Uint8Array>,
   capacity: ResponseCapacityGate,
   signal: AbortSignal,
+  authorize: () => Promise<void>,
 ): Promise<void> {
   const encoder = new TextEncoder()
   let offset = 0
   let finalChunk: boolean
   do {
+    await authorize()
     signal.throwIfAborted()
     let end = Math.min(offset + PUSH_CHUNK_CODE_UNITS, content.length)
     if (end < content.length && end - offset > 1) {
@@ -423,21 +442,27 @@ export function streamSessionLogZip(
       void (async () => {
         try {
           for await (const entry of sessionLogZipEntries(deps, root, sessionId, includeDescendants, producerSignal)) {
+            const authorize = () => deps.withSessionRead(entry.owner, async () => {})
+            await authorize()
+            producerSignal.throwIfAborted()
             const deflate = new ZipDeflate(entry.path, { level: compressionLevel })
             archive.add(deflate)
             if ('content' in entry) {
-              await pushArtifactChunks(deflate, entry.content, controller, capacity, producerSignal)
+              await pushArtifactChunks(deflate, entry.content, controller, capacity, producerSignal, authorize)
             } else {
-              await pushBinaryChunks(deflate, entry.data, controller, capacity, producerSignal)
+              await pushBinaryChunks(deflate, entry.data, controller, capacity, producerSignal, authorize)
             }
           }
+          await deps.withSessionRead(root.meta, async () => {})
+          producerSignal.throwIfAborted()
           archive.end()
-        } catch (error) {
+        } catch (_error: unknown) {
           // A mid-stream failure (missing descendant, cancellation, read
           // error) must fail the download rather than ship a truncated archive.
-          /* v8 ignore next -- typed backends reject with Error, and DOMException is one in Node */
           terminateZip()
-          controller.error(error instanceof Error ? error : new Error(String(error)))
+          controller.error(new Error('Session log export was interrupted; refresh authorization and retry.'))
+        } finally {
+          deps.close()
         }
       })()
     },
@@ -449,6 +474,7 @@ export function streamSessionLogZip(
         reason instanceof Error ? reason : new Error('session log export stream cancelled'),
       )
       terminateZip()
+      deps.close()
     },
   }, {
     highWaterMark: RESPONSE_HIGH_WATER_MARK_BYTES,

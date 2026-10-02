@@ -49,9 +49,11 @@ Simplified Chinese and English have equal coverage, including accessibility labe
 
 The design avoids decorative dashboards, invented metrics, arbitrary status changes, nested full applications inside modals, and permanently crowded detail panes. The [Team workspace decision](.agents/notes/implemented/architecture/2026-09-11-team-workspace-ui.md) owns the composition and navigation decisions; [visual concepts](design/team-workspace-2026-09-11/concepts.md) show the intended composition.
 
+Simulation is an optional peer workspace with its own run directory, bounded record inspection and explicit installed-template creation/scheduling. Navigation retains the Team view. Host reads own business facts and authorization; the browser retains view selection, committed filters and bounded raw input drafts. Business receipts and original submitted commands remain in runtime. Exact simulated times remain decimal strings. The [Simulation viewing decision](.agents/notes/implemented/architecture/2026-09-29-simulation-browser-viewing.md) owns this composition.
+
 ### Token ownership
 
-[design-platform.css](packages/client/ui-theme/src/styles/design-platform.css) is canonical. Its `--clocky-workspace-*` variables define light/dark working surfaces; `--clocky-navigation-*` variables define graphite navigation. The `[data-team-workspace-page]` and `[data-clocky-navigation]` selectors map those values into existing `--clocky-alias-*` consumers. Feature styles consume aliases and do not copy literal colors. Shared Button geometry reads `--clocky-control-radius`; Team workspace controls use 8px, while transcript and other established controls retain their existing default geometry.
+[design-platform.css](packages/client/ui-theme/src/styles/design-platform.css) is canonical. Its `--clocky-workspace-*` variables define light/dark working surfaces; `--clocky-navigation-*` variables define graphite navigation. The `[data-team-workspace-page]`, `[data-simulation-workspace-page]`, and `[data-clocky-navigation]` selectors map those values into existing `--clocky-alias-*` consumers. Feature styles consume aliases and do not copy literal colors. Shared Button geometry reads `--clocky-control-radius`; Team workspace controls use 8px, while transcript and other established controls retain their existing default geometry.
 
 ## Colors
 
@@ -67,17 +69,21 @@ Names and objectives can wrap. A summary may clamp long prose only when the comp
 
 ## Layout
 
-Navigation is a 224px expanded sidebar or a 56px rail, with drag resizing and automatic narrow-window collapse. The Team header sits above module navigation: Overview, Tasks, Channels, Members, Artifacts, with Workflow and Audit under More.
+Navigation is a 224px expanded sidebar or a 56px rail, with drag resizing and automatic narrow-window collapse. Team work and installed Simulation are parallel entries above the active directory; switching domains retains each view and keeps Settings at the foot. The Team header sits above module navigation: Overview, Tasks, Channels, Members, Artifacts, with Workflow and Audit under More.
 
-The overview uses one shared metric band, a primary execution list, an attention area, and bounded member/activity/artifact previews. Counts derived from complete Team state stay distinct from bounded collection counts. Task completion is not a claim of goal completion; subtree usage is explicitly labeled.
+The overview uses three primary business metrics, an execution list, a compact attention area, and bounded member/activity/artifact previews. Token usage is a secondary disclosure. Counts derived from complete Team state stay distinct from bounded collection counts. Task completion is not a claim of goal completion; subtree usage is explicitly labeled.
 
 Task lists prioritize comparative reading. The selected task opens a 360px non-modal inspector with objective, owner, phase, dependencies, latest result, and next action. Full instructions, attempts, and management forms require deliberate expansion or navigation. Narrow views show one primary working surface at a time.
 
 Channel Hub separates channel navigation, message history, inline input, and optional details. Protocol configuration, endpoint admission metadata, and raw records belong in details and diagnostics. Reading a channel never accepts its invitation. Changing modules or channels preserves unsent text, ordered images, audience, delivery selection, and ambiguous-send retry identity.
 
-Session inspection uses a single stable conversation container, up to 1120px wide and 88dvh tall, with an explicit return action. Closing inspection does not cancel execution. The source Team, task filters, selection, and browsing position survive. Worker inspection does not grant direct prompt or model-change authority.
+Session inspection uses a single stable conversation container, up to 1120px wide and 88dvh tall, with an explicit return action. The title distinguishes talking to a writable coordinator from viewing an execution record. Existing-Team empty states name the current context instead of repeating the first-work hero. Closing inspection does not cancel execution. The source Team, task filters, selection, and browsing position survive. Worker inspection does not grant direct prompt or model-change authority.
 
-Each table, message history, and Session transcript owns its scroll region. A table's sizing must not impose clipping on sibling forms. Scrollbars remain operable; asynchronous updates do not move active controls or force a reader away from history.
+Team and Simulation roots fill the available product stage independently of module content. Simulation separates identity/actions, grouped status facts and module navigation; run diagnostics are disclosed on demand. At less than 880px of content width, selected Simulation details replace the collection panel; at less than 540px, the shared Menu supplies labeled module selection.
+
+Simulation keeps six primary modules; Request history is a secondary More destination. Its bounded durable page and retained originals form one reading surface, with off-page originals still recoverable. Request status and original receipts disclose their relationship rather than presenting contradictory results.
+
+Directory, overview and request history scroll with their workspace; collection tables and their non-modal inspector own the reading regions. Long forms use a stable-height card with a scrolling body and stationary actions. At viewport heights of 420px or less, the whole dialog scrolls so fields remain visible. Each message history and Session transcript owns its scroll region. A table's sizing must not impose clipping on sibling forms. Scrollbars remain operable; asynchronous updates do not move active controls or force a reader away from history.
 
 ## Elevation & Depth
 
@@ -97,7 +103,7 @@ Task stop, delete, and Team cancellation identify the object and consequence. Re
 
 ### Overlays and input
 
-Modal views have a visible title and close/return action, contain keyboard focus, and restore focus to the origin on dismissal. Non-modal task inspectors do not claim modal semantics. Keep Session input, IME state, attachment ownership, and tool details attached to the existing conversation implementation. The inline channel composer uses the existing authenticated channel command form, including basic-protocol restrictions and ordered media.
+Modal views have a visible title and close/return action, contain keyboard focus, and restore focus to the origin on dismissal. Non-modal task inspectors and the initial work composer do not claim modal semantics. Collapsed details are absent from focus and accessibility navigation; image previews use the native top layer above Session inspection. Keep Session input, IME state, attachment ownership, and tool details attached to the existing conversation implementation. The inline channel composer uses the existing authenticated channel command form, including basic-protocol restrictions and ordered media.
 
 ### Motion
 

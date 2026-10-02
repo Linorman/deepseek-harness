@@ -2,6 +2,22 @@
 
 [English](README.md) | 中文
 
+Simulation 行政任务审核保留不可变的 Participant review policy。Hub 在 task-mutate 策略 IO 前后核对精确的原生 task/create 来源、原完成结果、当前有效的配置 reviewer、任务 revision、最新 attempt、lease 与取消状态。受理决定保留 `simulationCommand` 来源；运行内相同 command 复用其他载荷会拒绝。相同载荷且权限仍有效的重试即使已有后续 attempt，也仅保留历史决定，不重复策略或修改。Team journal 与 projection checkpoint format 40 拒绝旧格式。参见[审核权限决策](../../../.agents/notes/implemented/architecture/2026-10-01-simulation-task-review-authority.zh.md)。
+
+`cancelRuntimeTask()` 在目标查找前、Team 队列内和 policy IO 后重新解析可撤销的 `simulation-task-cancel` proof。规范创建、creator、run／operation、生命周期所有者、幂等身份及精确可为空的 attempt fence 必须匹配。现有取消所有者保留最初原因／目标、live lease 和物理清理责任；pending／review 取消及相同重试复用同一机制。普通 human 与 TeamRun task-control proof 不能使用该入口。
+
+任务更新保留规范化输入、精确作者及一个终态结果。即使任务条件改变，同权限下的精确重试仍保留原受理或拒绝；作者／payload 改变会拒绝。语义拒绝提交 `task/update-rejected`，不改任务字段或 revision。拒绝受理前须通过 policy 与权限；追加错误仍不确定。`maxTaskUpdateCommandsPerTeam` 默认保留 10000 个终态结果且不淘汰，`maxSelectionBytes` 限制每份私有结果。
+
+任务引用在 Team 串行队列内读取权威 map，包括删除 tombstone，不复制任务正文或历史。唯一请求 ID 与 revision 固定的 offset 使用 `recoveryPageSize`、`maxSelectionTextBytes` 和 `maxSelectionBytes`；超大输入或无法拆分的条目被拒绝。
+
+`inspectHumanAction()` 在 Team 串行队列和精确的当前人工读取 proof 下读取保留请求。它在 `maxSelectionBytes` 内返回当前处理状态与 Team cursor，不写 journal，也不重新打开请求。
+
+`listHumanTeamsPage()` 使用 `recoveryPageSize` 限制物理扫描工作，使用 `maxSelectionBytes` 限制包含加密游标的完整响应，以 `maxSelectionTextBytes` 限制标题。最终投影锁定全部选中 Team 与祖先并复查成员资格。游标认证绑定主体、issuer、subject 和凭据代际；provider 替换使其失效。空授权页可保留续页。内部 `listTeamsPage()` 保持独立回放／发现约定。
+
+`assertHumanSessionRead()` 在 Team 队列下检查当前成员或规范父团队读取 proof 及其准确 payload。它接受本地／远程 Agent 成员 activation reservation 或持久 activation binding 中记录的 Session，包括历史绑定。不读取 Session 正文，也不启动运行环境。
+
+`resolveHumanReadAuthority()` 在按祖先优先顺序加锁后，验证父关系深度、任务 reservation、创建身份和已发布的子绑定，再选择最近的 active、由当前主体拥有的人工成员。身份、就绪度和获支持的频道检查，每次检查 proof 都复查该委派链与准确 payload。缺失和私有 Team 返回相同检查拒绝。父团队读取 proof 不能授权子团队修改、执行配置选择、任务能力或邀请同意。
+
 `@clocky/clocky-team-hub`是 `ctx.teams` 上本地权威的 `TeamRuntime` 提供方。将它与 `@clocky/clocky-team`、`@clocky/clocky-storage-log` 以及选定的日志后端一同挂载。它拥有 `team/<TeamId>` journal 和 `channel/<ChannelId>` WAL 流，包括持久声明式 workflow plan 及其 task/channel binding，且不导入 Agent、Session、AgentLoop 或实验性 Team 包。
 
 邀请选项可在激活前冻结 Agent Session。Hub 拒绝为非 Agent 端点指定 Session，也拒绝与 task-assignment 端点冲突的 Session。休眠 Simulation 确认必须匹配专用 run、生命周期所有者与 Session；策略等待后重新校验，再执行既有期限检查和持久确认。
@@ -18,6 +34,12 @@ Scheduler review 频道选择 `recent-window` v1，将任务说明和报告结�
 
 
 带有不可变 `rules.simulationRunId` 的 Team 仅允许 `simulation-team` 来源及其精确 `simulation-operation` scope 准入普通 Envelope。该 scope 将完整 draft 与重试身份绑定到已接受的 run 操作。发送权限终止后可以对账精确匹配的已提交结果；新增发布仍要求当前成员权限、频道准入与发送策略。claim 与 receipt 还要求绑定同一当前 activation 的专用 delivery-owner proof；单独的通用 activation 权限不能消费这些 Envelope。
+
+同一不可变的仿真规则使通用认证人工任务、目标、成员、频道、恢复、归档与事项回答命令在 Team 串行器内以 `TEAM_POLICY_DENIED` 拒绝。Simulation 专用 system scope 保留既有准入检查。授权选择与目录读取仅暴露有界的 `executionManagement: "simulation-managed"` 标记；人工成员与规范父团队仍可检查，但不会启动执行。
+
+Task 的 `createdAt` 与首条 task journal record 的时间一致，后续 revision 不可改写。检查点中的时间必须位于所属 Team 的持久生命周期内。参见[创建时间决策](../../../.agents/notes/implemented/architecture/2026-09-29-team-task-creation-time.zh.md)。
+
+待处理摘要在 Team queue 内读取完整任务／人工事项 map。`attention-read` 绑定完整解析输入；父团队检查返回等待提示，不授予修改权限。其他 Team、已变化的 revision 或当前集合中不存在的位置均不能续页。摘要不复制人工事项正文或任务结果。
 
 ## 持久 Team 状态
 
@@ -77,7 +99,7 @@ Failure continuation 会取消 pending 和 review task，保留其 attempt 与 r
 
 Host 与 SDK management surface 会调用 `listTeamsPage()`、`listParticipantsPage()`、`listTasksPage()`和`readChannelPage()`，因此单个 response 不会实体化无界的 task、roster、Team 或 channel-WAL page。每个 method 使用 caller cursor 与正整数 limit。Team discovery 最多扫描该数量的物理名称条目，返回 `scanned`，空页也可能带 opaque continuation；discovery cursor 过期时从 `-1` 重扫。其他 collection 保留数值 cursor 和 look-ahead 语义。Discovery 读取原子提交的 Team 摘要，不打开 journal 或加载投影。`maxDiscoveryBytes`限制每次元数据读取，并在 journal 批次提交前拒绝超限摘要；摘要缺失或身份不匹配会明确失败。归档 Team 投影及 audit handle 在最后一个已接纳读取结束后释放；终态 channel handle 不受无关 watch 阻挡。归档 Team 最终 cursor 的 watch 返回 `closed`。选中 Team 的 hydration 仍读取完整投影。`expireSchedulerChannelDeliveries()`只接受准确的 scheduler channel proof，并为 folded deadline 已到的 delivery 追加逐 recipient 的 TTL expiry record。`readChannelSummarySource()`与`summarizeChannel()`要求当前频道成员协调者，或负载绑定且经过认证的人类。[显式摘要 Consumer](../team-channel-summary/README.zh.md) 拥有规范输出证明。Hub 在追加前检查已提交范围、精确来源 id 与规范 SHA-256 指纹、全频道可见性、不可变策略、游标及当前接纳条件。WAL/checkpoint 恢复根据来源 Envelope 验证这些关系；摘要范围在压缩时保留。匹配重试返回原持久化结果。`compactChannel()`与`compactTeam()`是分别面向 terminal channel 与 Team 的 trusted retention operation：两者都要求 actor 已获授权、audit projection 是 current 且 checkpoint 已存在；channel compaction 还要求没有 pending delivery，并保留每条已接纳的 final Envelope，并且两者都会在 compact source stream 前保留配置的 audit tail。压缩后的 channel snapshot 与 audit page 会公开 first retained cursor，consumer 可以从 retained boundary 恢复而无需猜测。内部 scheduler 与 recovery code 仍保留独立的 full-read method，因为它们拥有完整 replay 与 repair 的责任。
 
-显式 Team hydration 会验证 checkpoint watermark 并回放 journal 后缀。Checkpoint 中 activation fence 的时间必须位于 Team lifetime 内，且不得早于已接纳的 cancellation 请求或 completion/failure intent；取消场景的 fence 可以早于后置 terminal closure。Final-admission timestamp 必须位于 Team lifetime 内，workflow checkpoint 同时校验 task-to-plan、plan-to-task reference 和 attached channel identity。当双方都保留 grant 时，checkpoint 中 Participant authority 的 operation、workspace mode、read/write scope 与 budget 必须包含于所属 Team grant。Checkpoint 中 task owner proposal 必须引用 Team 保留的 participant；已离队的 participant 仍是合法历史引用。不一致的 checkpoint 会回退 journal；尚未完成但一致的 compiling binding 仍可恢复。Team journal 使用 format 35，Team checkpoint 使用 format 35；channel WAL 使用 format 7，channel checkpoint 使用 format 10；audit projection 使用 format 1。更早的预发布 format 会被拒绝。`recoveryPageSize`、`checkpointEvery`、`auditRetentionTail`、`disposalTimeoutMs`、pending-delivery 与 retry-key capacity、depth、lease 及 budget limit 都由部署配置。Team 与 channel compaction 会保留原始 cursor；移除 retained prefix 后，旧 read 会收到明确的 compaction error。 Completed task 的结果投影必须匹配其最后一个 attempt 的 completed result；显式 failure 必须匹配其最后一个 attempt 的 failure，省略 failure 详情仍然有效。
+显式 Team hydration 会验证 checkpoint watermark 并回放 journal 后缀。Checkpoint 中 activation fence 的时间必须位于 Team lifetime 内，且不得早于已接纳的 cancellation 请求或 completion/failure intent；取消场景的 fence 可以早于后置 terminal closure。Final-admission timestamp 必须位于 Team lifetime 内，workflow checkpoint 同时校验 task-to-plan、plan-to-task reference 和 attached channel identity。当双方都保留 grant 时，checkpoint 中 Participant authority 的 operation、workspace mode、read/write scope 与 budget 必须包含于所属 Team grant。Checkpoint 中 task owner proposal 必须引用 Team 保留的 participant；已离队的 participant 仍是合法历史引用。不一致的 checkpoint 会回退 journal；尚未完成但一致的 compiling binding 仍可恢复。Team journal 使用 format 40，Team checkpoint 使用 format 40；channel WAL 使用 format 7，channel checkpoint 使用 format 10；audit projection 使用 format 1。更早的预发布 format 会被拒绝。`recoveryPageSize`、`checkpointEvery`、`auditRetentionTail`、`disposalTimeoutMs`、pending-delivery 与 retry-key capacity、depth、lease 及 budget limit 都由部署配置。Team 与 channel compaction 会保留原始 cursor；移除 retained prefix 后，旧 read 会收到明确的 compaction error。 Completed task 的结果投影必须匹配其最后一个 attempt 的 completed result；显式 failure 必须匹配其最后一个 attempt 的 failure，省略 failure 详情仍然有效。
 
 终态恢复在 checkpoint 或 journal 中的 Team 对外可见前，根据权威 WAL 检查关联 channel 的所属 Team、终态 phase 及零 pending delivery。Completed 恢复还检查选定 final 的 admission、保留 Envelope、fingerprint、human recipient 与 receipt。Final 查找遵循 WAL 的保留前缀。Checkpoint 关系无效时允许回退 source journal；存储错误及准确实现加载失败向调用方传播。
 
@@ -88,6 +110,10 @@ Host 与 SDK management surface 会调用 `listTeamsPage()`、`listParticipantsP
 Workflow plan 会作为一个完整、已校验的 JSON value 准入，并在每个 task template 及其 plan-owned versioned workflow channel 都完成 durable binding 前保持 `compiling`。Task 和 channel retry 使用 plan/template identity；scheduler 在 plan 为 `ready` 前不会调度其中的 task，因此 restart 可以从 journal record 继续，而不会重放 model-written code。
 
 `simulation-team` 拓扑 proof 只能在匹配的 run 与生命周期所有者内邀请已预留的本地参与者、推进成员状态。重复邀请先核对原始持久描述，再返回既有成员。其频道 scope 预留 direct-v4 身份及必需 Session 邀请；匹配的孤立 WAL 可通过该实时权限继续挂接，保留原始截止时间。
+
+筛选任务查询遵循 [Team browse 契约](../../core/team/README.zh.md)。Hub 在 Team 队列内验证续页身份和 revision，搜索长度使用配置的显示文本字节额度。查询不调度任务或启动参与者。
+
+Controller quiescence 可在 activation 已逻辑 offline 后释放 lease。受影响尝试保留 `retirement.source`；重放及检查点要求对应的不可变 activation `quiescedAt` 和来源。孤立退休记录、来源不匹配或 completed 退休结果会被拒绝。未完成即中断的 Simulation 创建任务按冻结尝试预算保留 `SIM_WRITER_RETIRED` 失败。该来源权限不能伪造完成。
 
 ## 模型体验
 

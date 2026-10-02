@@ -5,17 +5,18 @@ import { Button, MarkdownText } from '@clocky/clocky-client-ui-primitives'
 import type { TeamActionResponseInput, TeamActionResponseResult, TeamHumanAction } from '@clocky/clocky-client-runtime/client'
 import type { TeamKey } from './locales.ts'
 import css from './TeamBrowser.module.css'
+import { EMPTY_ACTION_DRAFT, type ActionAnswerDraft, type HumanActionDraft } from './action-draft.ts'
 
 type Action = TeamActionResponseResult['action']
 type Question = Extract<TeamHumanAction, { kind: 'question' }>['questions'][number]
-type AnswerDraft = { readonly selected: readonly string[]; readonly custom: string }
 
 /**
  * Render a durable request and admit one revision-fenced answer through its Host owner.
  * @param props - current action, authenticated callbacks, and parent dialog interaction-state callbacks.
  * @returns current request facts, answer controls, and truthful acceptance/unavailability feedback.
  */
-export function HumanActionCard({ action, translate: t, respond, confirm, openContext, onDirtyChange, onBusyChange }: {
+export function HumanActionCard({ action, translate: t, respond, confirm, openContext, onDirtyChange, onBusyChange,
+  draft: controlledDraft, onDraftChange, onAccepted, disabled = false }: {
   readonly action: Action
   readonly translate: (key: TeamKey, vars?: Record<string, unknown>) => string
   readonly respond: (input: TeamActionResponseInput, signal?: AbortSignal) => Promise<TeamActionResponseResult>
@@ -23,20 +24,35 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
   readonly openContext?: (action: Action) => void | Promise<void>
   readonly onDirtyChange?: (dirty: boolean) => void
   readonly onBusyChange?: (busy: boolean) => void
+  readonly draft?: HumanActionDraft | undefined
+  readonly onDraftChange?: ((draft: HumanActionDraft) => void) | undefined
+  readonly onAccepted?: (() => void) | undefined
+  readonly disabled?: boolean | undefined
 }) {
   const id = useId()
-  const [drafts, setDrafts] = useState<Readonly<Record<string, AnswerDraft>>>({})
+  const [localDraft, setLocalDraft] = useState(EMPTY_ACTION_DRAFT)
+  const draft = controlledDraft ?? localDraft
   const [confirmedAt, setConfirmedAt] = useState<number | undefined>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [result, setResult] = useState<TeamActionResponseResult | undefined>()
+  const response = action.response ?? result?.action.response
+  const drafts = response?.answer.kind === 'question'
+    ? Object.fromEntries(response.answer.answers.map(answer => [answer.id, { selected: answer.selected, custom: answer.custom ?? '' }]))
+    : draft.answers
   const [invalidQuestion, setInvalidQuestion] = useState<string | undefined>()
   const request = useRef<AbortController | undefined>()
-  const retry = useRef<{ fingerprint: string; key: TeamActionResponseInput['idempotencyKey'] } | undefined>()
   const questions = action.kind === 'question' ? readQuestions(action.details.questions) : []
   const answerAccepted = action.response !== undefined || result?.kind === 'accepted'
   const available = action.phase === 'pending' && !answerAccepted && result?.kind !== 'unavailable'
   const verified = confirm === undefined || confirmedAt === action.updatedAt
+
+  useEffect(() => {
+    if (action.phase === 'pending' && action.response === undefined) return
+    setError(undefined)
+    setInvalidQuestion(undefined)
+    if (action.response !== undefined && action.response.idempotencyKey === draft.retry?.key) onAccepted?.()
+  }, [action.updatedAt])
 
   useEffect(() => () => {
     request.current?.abort()
@@ -44,9 +60,14 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
     onBusyChange?.(false)
   }, [])
 
-  const setDraft = (questionId: string, next: AnswerDraft): void => {
+  const publishDraft = (value: HumanActionDraft): void => {
+    onDraftChange?.(value)
+    if (controlledDraft === undefined) setLocalDraft(value)
+  }
+  const setDraft = (questionId: string, next: ActionAnswerDraft): void => {
     const updated = { ...drafts, [questionId]: next }
-    setDrafts(updated)
+    try { publishDraft({ ...draft, answers: updated }) }
+    catch (cause: unknown) { setError(cause instanceof Error ? cause.message : String(cause)); return }
     onDirtyChange?.(Object.values(updated).some(value => value.selected.length > 0 || value.custom.trim().length > 0))
   }
   const updateBusy = (value: boolean): void => { setBusy(value); onBusyChange?.(value) }
@@ -61,16 +82,22 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
     finally { if (request.current === controller) { request.current = undefined; updateBusy(false) } }
   }
   const answer = async (value: TeamActionResponseInput['answer']): Promise<void> => {
-    if (!available || !verified || request.current !== undefined) return
+    if (!available || !verified || disabled || request.current !== undefined) return
     const fingerprint = JSON.stringify({ updatedAt: action.updatedAt, answer: value })
-    if (retry.current?.fingerprint !== fingerprint) retry.current = { fingerprint, key: crypto.randomUUID() as TeamActionResponseInput['idempotencyKey'] }
+    const retry = draft.retry?.fingerprint === fingerprint ? draft.retry
+      : { fingerprint, key: crypto.randomUUID() as TeamActionResponseInput['idempotencyKey'] }
+    try { publishDraft({ ...draft, retry }) }
+    catch (cause: unknown) { setError(cause instanceof Error ? cause.message : String(cause)); return }
     const controller = new AbortController()
     request.current = controller; updateBusy(true); setError(undefined)
     try {
       const accepted = await respond({ teamId: action.teamId, actionId: action.id, expectedUpdatedAt: action.updatedAt,
-        idempotencyKey: retry.current.key, answer: value }, controller.signal)
-      if (!controller.signal.aborted) { setResult(accepted); onDirtyChange?.(false) }
-    } catch (cause: unknown) { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause)) }
+        idempotencyKey: retry.key, answer: value }, controller.signal)
+      if (!controller.signal.aborted) { setResult(accepted); onDirtyChange?.(false); if (accepted.kind === 'accepted') onAccepted?.() }
+    } catch (cause: unknown) {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
+      setConfirmedAt(undefined)
+    }
     finally { if (request.current === controller) { request.current = undefined; updateBusy(false) } }
   }
   const submitQuestions = async (): Promise<void> => {
@@ -104,7 +131,7 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
     {action.kind === 'question' && questions?.map((question) => {
       const draft = drafts[question.id] ?? { selected: [], custom: '' }
       return <fieldset key={question.id} id={`${id}-${question.id}`} tabIndex={-1} className={css.managementChoices}
-        disabled={!available || !verified || busy} aria-invalid={invalidQuestion === question.id}
+        disabled={!available || !verified || disabled || busy} aria-invalid={invalidQuestion === question.id}
         aria-describedby={invalidQuestion === question.id ? `${id}-error` : undefined}>
         <legend>{question.question}</legend>
         {question.detail !== undefined && <MarkdownText text={question.detail} />}
@@ -137,10 +164,10 @@ export function HumanActionCard({ action, translate: t, respond, confirm, openCo
       {openContext !== undefined && <Button disabled={busy} onClick={() => { void inspectContext() }}>{t('human.context')}</Button>}
       {available && !verified && <Button disabled={busy} onClick={() => { void confirmCurrent() }}>{t('human.confirmCurrent')}</Button>}
       {available && verified && action.kind === 'approval' && <>
-        <Button disabled={busy} onClick={() => { void answer({ kind: 'approval', outcome: 'rejected' }) }}>{t('human.reject')}</Button>
-        <Button disabled={busy} onClick={() => { void answer({ kind: 'approval', outcome: 'allowed-once' }) }}>{t('human.allowOnce')}</Button>
+        <Button disabled={busy || disabled} onClick={() => { void answer({ kind: 'approval', outcome: 'rejected' }) }}>{t('human.reject')}</Button>
+        <Button disabled={busy || disabled} onClick={() => { void answer({ kind: 'approval', outcome: 'allowed-once' }) }}>{t('human.allowOnce')}</Button>
       </>}
-      {available && verified && action.kind === 'question' && questions !== undefined && <Button disabled={busy} onClick={() => { void submitQuestions() }}>{t('human.submitAnswer')}</Button>}
+      {available && verified && action.kind === 'question' && questions !== undefined && <Button disabled={busy || disabled} onClick={() => { void submitQuestions() }}>{t('human.submitAnswer')}</Button>}
       {busy && <Button onClick={() => { request.current?.abort(); setError(t('manage.cancelledRead')) }}>{t('detail.cancelRead')}</Button>}
     </div>
   </article>

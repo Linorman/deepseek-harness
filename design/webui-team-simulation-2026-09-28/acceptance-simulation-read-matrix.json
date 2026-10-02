@@ -1,0 +1,2379 @@
+{
+  "date": "2026-10-01",
+  "scope": "current built Host; keyless JSON and SQLite",
+  "pages": 16,
+  "screenshots": 256,
+  "native200Screenshots": 64,
+  "textContrastSamples": 13296,
+  "minimumTextRatio": 5.230267640077466,
+  "rows": [
+    {
+      "path": ".tmp/simulation-records-browser/json/json-records-presentation.json",
+      "identity": "json-records",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 744,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp/simulation-records-browser/sqlite/sqlite-records-presentation.json",
+      "identity": "sqlite-records",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 744,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp/simulation-source-ui/json/json-sources-presentation.json",
+      "identity": "json-sources",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 896,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp/simulation-source-ui/sqlite/sqlite-sources-presentation.json",
+      "identity": "sqlite-sources",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 896,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-checkpoints-presentation.json",
+      "identity": "json-checkpoints",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-decisions-presentation.json",
+      "identity": "json-decisions",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-entities-presentation.json",
+      "identity": "json-entities",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 992,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-operations-presentation.json",
+      "identity": "json-operations",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-overview-presentation.json",
+      "identity": "json-overview",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 1296,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/json-runs-presentation.json",
+      "identity": "json-runs",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 848,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 3,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-checkpoints-presentation.json",
+      "identity": "sqlite-checkpoints",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-decisions-presentation.json",
+      "identity": "sqlite-decisions",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-entities-presentation.json",
+      "identity": "sqlite-entities",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 992,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-operations-presentation.json",
+      "identity": "sqlite-operations",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 624,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-overview-presentation.json",
+      "identity": "sqlite-overview",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 1296,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 2,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    },
+    {
+      "path": ".tmp-simulation-plan/web-browser/sqlite-runs-presentation.json",
+      "identity": "sqlite-runs",
+      "screenshots": 16,
+      "native200": 4,
+      "combinations": [
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "zh",
+          "dark",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "light",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "light",
+          1440,
+          1000,
+          2
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1280,
+          480,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          390,
+          844,
+          1
+        ],
+        [
+          "en",
+          "dark",
+          1440,
+          1000,
+          2
+        ]
+      ],
+      "samples": 848,
+      "minimum": {
+        "tag": "P",
+        "text": "查看运行及已记录结果。浏览不会启动执行。",
+        "color": "rgb(91, 104, 123)",
+        "background": [
+          244,
+          246,
+          250,
+          1
+        ],
+        "ratio": 5.230267640077466,
+        "minimum": 4.5
+      },
+      "overflow": false,
+      "all_screenshots_exist": true,
+      "keyboard_native200": {
+        "factor": 2,
+        "width": 720,
+        "height": 500,
+        "devicePixelRatio": 2
+      },
+      "tabs": 3,
+      "focus": {
+        "outline": "auto",
+        "outlineWidth": "1px",
+        "boxShadow": "none"
+      }
+    }
+  ]
+}

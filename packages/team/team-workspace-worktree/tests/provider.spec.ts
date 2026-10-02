@@ -99,6 +99,7 @@ function baseline(): {
     provider: 'in-process',
   }
   const task: TeamTaskSnapshot = {
+    createdAt: 0,
     execution: { kind: 'participant' },
     id: taskId,
     teamId,

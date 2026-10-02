@@ -56,7 +56,8 @@ for (const backend of ['json', 'sqlite'] as const) {
       const failed = [...quiescing, f.quiesced(20), { type: 'team/phase', phase: 'failed', createdAt: 21 }]
       const channel = { id: f.final.channel.id, records: [...f.final.pendingChannel.records,
         { type: 'channel/delivery-expired', sequence: f.final.pendingChannel.records.length, createdAt: 19, reason: 'closure',
-          participantId: f.admission.admission.recipientId, envelopeId: f.admission.admission.envelopeId, envelopeSequence: f.admission.admission.envelopeSequence },
+          participantId: f.admission.admission.recipientId, envelopeId: f.admission.admission.envelopeId,
+          envelopeSequence: f.admission.admission.envelopeSequence },
         { type: 'channel/phase', phase: 'closing', sequence: f.final.pendingChannel.records.length + 1, createdAt: 19 },
         { type: 'channel/closed', phase: 'closed', sequence: f.final.pendingChannel.records.length + 2, createdAt: 20 },
       ] }

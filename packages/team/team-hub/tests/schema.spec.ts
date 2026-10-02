@@ -53,6 +53,7 @@ const projection = {
   budgets: { tokens: 50 },
   participants: [participant({ phase: 'active' })],
   tasks: [task()],
+  taskUpdateCommands: [],
   activations: [],
   interrupts: [],
   channelIds: ['channel-a'],

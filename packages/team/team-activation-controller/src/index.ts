@@ -1,3 +1,4 @@
+import type { TeamMemberExecutionSources } from '@clocky/clocky-team'
 import type { ActivationControllerStartupStallPhaseScope, ActivationReservationSnapshot } from '@clocky/clocky-team'
 import { randomUUID } from 'node:crypto'
 import { activationReservationIdSchema, liveActivationLimit } from '@clocky/clocky-team'
@@ -293,6 +294,20 @@ export class TeamActivationController extends Service {
     this.lifecycle = new LifecycleOwners((keys, teamIds) => withTimeout(this.drainLifecycleOwner(keys, teamIds), this.disposalTimeoutMs))
     this.disposalTimeoutMs = disposalTimeoutMs
     this.statusSyncAttempts = statusSyncAttempts
+    ctx.on('team/member-execution-observe', async (query, next) => {
+      const sources = await next()
+      const key = activationKey(query.teamId, query.participant.id)
+      const entry = this.entries.get(key)
+      let activation: TeamMemberExecutionSources['activation']
+      if (this.recoveries.has(key) || this.staleFences.has(key) || this.unpublishedStarts.has(key) || entry?.terminationUnconfirmed) {
+        activation = { state: 'recovery-required' }
+      } else if (entry !== undefined) {
+        activation = { state: entry.stopping || this.closing ? 'stopping' : 'attached', activationId: entry.binding.activation.id }
+      } else if (this.pending.has(key)) activation = { state: this.closing ? 'stopping' : 'starting' }
+      if (activation === undefined) return sources
+      if (sources.activation !== undefined) throw new TeamError('Member has multiple live activation observers', 'TEAM_INVALID_ARGUMENT')
+      return { ...sources, activation }
+    })
     teamActivationControllerProofSources.set(this, Object.freeze({
       name: TEAM_ACTIVATION_CONTROLLER_PROOF_SOURCE,
       resolveActivationProof: (proof: TeamSystemActivationProof): TeamSystemActivationScope | undefined =>
@@ -1000,7 +1015,8 @@ export class TeamActivationController extends Service {
         seed: request.seed, agent: request.agent, signal: request.signal,
       } satisfies AgentRuntimeActivationRequest, expectedProvider)
     } catch (error: unknown) {
-      if (error instanceof AgentRuntimeError && (error.code === 'AGENT_RUNTIME_PROVIDER_CHANGED' || error.code === 'AGENT_RUNTIME_PROVIDER_NOT_FOUND')) {
+      if (error instanceof AgentRuntimeError && (error.code === 'AGENT_RUNTIME_PROVIDER_CHANGED' || error.code === 'AGENT_RUNTIME_PROVIDER_NOT_FOUND'
+        || error.code === 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED')) {
         if (reservation !== undefined) await this.cleanupUnstartedReservation(reservation, key)
         throw error
       }

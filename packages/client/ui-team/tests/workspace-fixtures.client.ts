@@ -18,7 +18,7 @@ export function workspaceState(): TeamStateSnapshot {
 export function workspaceTask(id: string, patch: Partial<TeamTaskSnapshot> = {}): TeamTaskSnapshot {
   const teamId = workspaceState().team.id
   return {
-    id: id as TeamTaskSnapshot['id'], teamId, revision: 1, execution: { kind: 'participant' },
+    id: id as TeamTaskSnapshot['id'], teamId, createdAt: 0, revision: 1, execution: { kind: 'participant' },
     createCommand: { creator: { teamId, participantId: 'human' as never }, idempotencyKey: id as never },
     subject: id, description: `Instructions for ${id}`, phase: 'pending', blockedBy: [], requiredCapabilities: [],
     priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' },
@@ -49,7 +49,7 @@ export function workspaceTaskDetail(task: TeamTaskSnapshot): TeamTaskDetailState
 
 /** Project full fixture input through the same bounded selector as the Host. */
 export function workspaceSelection(state: TeamStateSnapshot): TeamTaskSelection['state'] {
-  const projected = projectTeamSelection({ team: { ...state.team, goal: state.goal }, budgets: state.budgets,
+  const projected = projectTeamSelection({ team: { ...state.team, goal: state.goal }, rules: state.rules, budgets: state.budgets,
     ...state.usage === undefined ? {} : { usage: state.usage },
     humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
     participants: new Map(state.participants.map(member => [member.id, member])),
@@ -58,7 +58,7 @@ export function workspaceSelection(state: TeamStateSnapshot): TeamTaskSelection[
     workflowPlans: { size: state.workflowPlans?.length ?? 0 },
   }, 512, 16384, true)
   if (!projected.ok) throw new Error('Fixture selection is oversized')
-  return projected.value
+  return { ...projected.value, readAccess: 'member' }
 }
 
 /** Convert complete fixture members to the same history-free rows served by the Host. */

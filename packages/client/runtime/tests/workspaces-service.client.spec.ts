@@ -17,6 +17,40 @@ function workspace(id: string, sessionIds: SessionId[] = [], createdAt = '2026-0
 }
 
 describe('WorkspaceManager', () => {
+  it('clears principal metadata and rejects a late hydration or mutation echo', async () => {
+    const api = new FakeApiClient()
+    const list = deferred<Awaited<ReturnType<FakeApiClient['onWorkspaceList']>>>()
+    api.onWorkspaceList = () => list.promise
+    const rename = deferred<Awaited<ReturnType<FakeApiClient['onWorkspaceRename']>>>()
+    api.onWorkspaceRename = () => rename.promise
+    const manager = new WorkspaceManager(api)
+    const old = workspace('old-principal', [sid('private-session')])
+    manager.handleHostEnvelope({ rpcId: 'old' as never, payload: { type: 'host/workspace-changed', workspace: old } })
+    const hydration = manager.refresh()
+    const mutation = manager.rename(old.workspaceId, 'Old rename')
+    manager.clearAuthorization()
+    list.resolve(ok({ items: [old] as never[] }))
+    rename.resolve(ok({ workspace: old }))
+    await hydration
+    expect(await mutation).toMatchObject({ ok: false, error: { code: 'PRODUCT_AUTH_INVALID' } })
+    expect(manager.getSnapshot()).toMatchObject({ items: [], archivedSessionIds: [], phase: 'pending', state: 'idle' })
+  })
+
+  it('drops revoked Session references from retained and late frames while preserving other workspace data', async () => {
+    const api = new FakeApiClient()
+    const manager = new WorkspaceManager(api)
+    const mixed = workspace('shared', [sid('revoked'), sid('readable')])
+    manager.handleHostEnvelope({ rpcId: 'mixed' as never, payload: { type: 'host/workspace-changed', workspace: mixed } })
+    manager.handleHostEnvelope({ rpcId: 'archive' as never, payload: { type: 'host/archived-sessions-changed',
+      archivedSessionIds: [sid('revoked'), sid('readable')] } })
+    manager.revokeSessionReferences([sid('revoked')])
+    manager.handleHostEnvelope({ rpcId: 'late' as never, payload: { type: 'host/workspace-changed', workspace: mixed } })
+    manager.handleHostEnvelope({ rpcId: 'late-archive' as never, payload: { type: 'host/archived-sessions-changed',
+      archivedSessionIds: [sid('revoked')] } })
+    expect(manager.getSnapshot().items[0]).toMatchObject({ title: 'shared', sessionIds: ['readable'] })
+    expect(manager.getSnapshot().archivedSessionIds).toEqual([])
+  })
+
   it('replays changed frames over hydration and adopts the durable order on refresh', async () => {
     const api = new FakeApiClient()
     const gate = deferred<Awaited<ReturnType<FakeApiClient['onWorkspaceList']>>>()

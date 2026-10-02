@@ -1,14 +1,10 @@
 /** Stable entity and organization records; no activation is implied. @module @clocky/clocky-simulation/entity-types */
-import type { Branded } from '@clocky/clocky-brand'
 import type { z } from 'zod'
 import type { simulationChangeSchema, simulationProfileSchema, simulationRelationRuleSchema } from './entity.ts'
 import type { SimulationEntityBinding, SimulationWriter } from './writer-types.ts'
 import type { SimTime } from './types.ts'
-
-/** Durable entity identity within one run. */
-export type SimulationEntityId = Branded<'SimulationEntityId'>
-/** Durable organization relation identity within one run. */
-export type SimulationRelationId = Branded<'SimulationRelationId'>
+import type { SimulationEntityId, SimulationRelationId } from './identities.ts'
+export type { SimulationEntityId, SimulationRelationId } from './identities.ts'
 /** Validated JSON metadata attached to an entity profile. */
 export type SimulationProfile = z.infer<typeof simulationProfileSchema>
 /** Immutable per-run endpoint and cycle constraints. */

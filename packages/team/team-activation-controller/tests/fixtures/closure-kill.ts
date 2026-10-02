@@ -23,7 +23,7 @@ else await ctx.plugin(StorageSqlite, { path: join(root, 'team.db') })
 await ctx.plugin(StorageLog, { backend, routes: {} })
 await ctx.plugin(TeamHub)
 await ctx.plugin(AgentRuntime)
-ctx.agentRuntimes.registerProvider({
+ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const,
   name: 'kill-window',
   terminationMode: 'cooperative',
   async activate(request) {

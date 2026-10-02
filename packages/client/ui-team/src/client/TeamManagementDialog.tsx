@@ -34,7 +34,7 @@ export type TeamManagementTarget =
  */
 export function TeamManagementDialog({ target,
   state,
-  channel,
+  channel, executionProfiles, watchExecutionProfiles, refreshExecutionProfiles,
   senderId,
   channelPending,
   catalog,
@@ -48,6 +48,9 @@ export function TeamManagementDialog({ target,
   maxDraftBytes,
   draft,
   onDraftChange, onDraftDiscard }: {
+  executionProfiles?: import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesState | undefined
+  watchExecutionProfiles?: ((input: import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesInput) => () => void) | undefined
+  refreshExecutionProfiles?: (() => Promise<void>) | undefined
   readonly maxDraftBytes?: number | undefined
   readonly target: TeamManagementTarget
   /** Present the same channel command form in its conversation instead of a dialog. */
@@ -78,6 +81,21 @@ export function TeamManagementDialog({ target,
   const [provider, setProvider] = useState('')
   const [preset, setPreset] = useState('')
   const [model, setModel] = useState('')
+  const [profileId, setProfileId] = useState<import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesInput['selectedId']>()
+  const [profileCursor, setProfileCursor] = useState<import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesInput['cursor']>()
+  useEffect(() => {
+    if (target.kind !== 'memberInvite') return
+    return watchExecutionProfiles?.({ teamId: state.team.id, kind,
+      ...profileId === undefined ? {} : { selectedId: profileId },
+      ...profileCursor === undefined ? {} : { cursor: profileCursor } })
+  }, [target.kind, state.team.id, kind, profileId, profileCursor, watchExecutionProfiles])
+  const profiles = executionProfiles?.input.teamId === state.team.id && executionProfiles.input.kind === kind
+    ? executionProfiles : undefined
+  const profilePage = profiles?.value?.kind === kind ? profiles.value : undefined
+  const chosenProfile = profileId !== undefined && profilePage?.selected?.id === profileId ? profilePage.selected : undefined
+  const profileBlocked = watchExecutionProfiles !== undefined && (profiles === undefined || profiles.loading || profiles.disconnected
+    || profiles.error !== undefined || profilePage?.allowed !== true
+    || profileId !== undefined && chosenProfile?.available !== true)
   const [adapterChoice, setAdapterChoice] = useState('')
   const [viewChoice, setViewChoice] = useState('')
   const [initiator, setInitiator] = useState<ParticipantId | undefined>()
@@ -202,9 +220,11 @@ export function TeamManagementDialog({ target,
     let command: TeamManagementCommand
     switch (target.kind) {
       case 'memberInvite': {
+        if (profileBlocked) { failField('profiles', t('manage.profileUnavailable')); return }
         if (!name.trim()) { failField('name', t('manage.nameRequired')); return }
         if (!role.trim()) { failField('role', t('manage.roleRequired')); return }
         command = { operation: 'memberInvite', input: {
+          ...profileId === undefined ? {} : { executionProfileId: profileId },
           expectedCursor: state.team.cursor, kind, displayName: name.trim(), role: role.trim(),
           capabilities: [...new Set(capabilities.split(',').map(value => value.trim()).filter(Boolean))],
           ...provider.trim() ? { provider: provider.trim() } : {},
@@ -315,10 +335,10 @@ export function TeamManagementDialog({ target,
     setError(t('manage.cancelledRead'))
   }
   const footer = <div className={css.actions}>
-    {inline && <Button variant="outline" disabled={busy || importing} onClick={() => { setDiscardDraft(true) }}>{t('channel.discardDraft')}</Button>}
+    {inline && <Button variant="ghost" disabled={busy || importing} onClick={() => { setDiscardDraft(true) }}>{t('channel.discardDraft')}</Button>}
     {!inline && <Button data-management-cancel disabled={busy} onClick={close}>{t('cancel')}</Button>}
     {busy && <Button onClick={stopWaiting}>{t('detail.cancelRead')}</Button>}
-    <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || importing || target.kind === 'channelPost' && channelPending}>{title}</Button>
+    <Button form={`${id}-form`} type="submit" variant="primary" disabled={busy || importing || target.kind === 'memberInvite' && profileBlocked || target.kind === 'channelPost' && channelPending}>{title}</Button>
   </div>
   const formContent = <form id={`${id}-form`} ref={form} noValidate className={inline ? hubCss.composerForm : css.managementForm} onKeyDown={(event) => {
     if (inline && (event.metaKey || event.ctrlKey) && event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); void submit() }
@@ -327,23 +347,48 @@ export function TeamManagementDialog({ target,
     {(target.kind === 'memberRemove' || target.kind === 'memberActivate' || target.kind === 'memberInterrupt' || target.kind === 'channelClose')
         && <p className={css.notice}>{t(cancellingOpening ? 'channel.cancelOpeningDescription' : `manage.${target.kind}Description`)}</p>}
     {target.kind === 'memberInvite' && <>
+      {profileId === undefined && kind !== 'service' && <p className={css.notice} role="status">{t('manage.executionWarning')}</p>}
       <label htmlFor={`${id}-name`}>{t('manage.name')}</label>
       <Input id={`${id}-name`} value={name} disabled={busy} onChange={(event) => { setName(event.target.value) }} aria-invalid={invalidField === 'name'} aria-describedby={invalidField === 'name' ? `${id}-error` : undefined} />
       <label htmlFor={`${id}-role`}>{t('manage.role')}</label>
-      <Input id={`${id}-role`} value={role} disabled={busy} onChange={(event) => { setRole(event.target.value) }} aria-invalid={invalidField === 'role'} aria-describedby={invalidField === 'role' ? `${id}-error` : undefined} />
+      <Input id={`${id}-role`} value={role} readOnly={profileId !== undefined} disabled={busy} onChange={(event) => { setRole(event.target.value) }} aria-invalid={invalidField === 'role'} aria-describedby={invalidField === 'role' ? `${id}-error` : undefined} />
       <fieldset className={css.managementChoices} disabled={busy}><legend>{t('manage.kind')}</legend>
         {(['local-agent', 'remote-agent', 'service'] as const).map(value => <label key={value}>
-          <input type="radio" name={`${id}-kind`} value={value} checked={kind === value} onChange={() => { setKind(value) }} />{t(`manage.kind.${value}`)}
+          <input type="radio" name={`${id}-kind`} value={value} checked={kind === value} onChange={() => { setKind(value); setProfileId(undefined); setProfileCursor(undefined) }} />{t(`manage.kind.${value}`)}
         </label>)}
       </fieldset>
+      {watchExecutionProfiles !== undefined && <fieldset id={`${id}-profiles`} tabIndex={-1} className={css.managementChoices} disabled={busy}>
+        <legend>{t('manage.profiles')}</legend>
+        {profiles?.loading && <p role="status">{t('manage.profilesLoading')}</p>}
+        {profiles?.error !== undefined && <p role="alert">{profiles.error}</p>}
+        {profiles?.disconnected && <p role="status">{t('manage.profileUnavailable')}</p>}
+        {profilePage?.reason !== undefined && <p role="status">{t(`manage.profileReason.${profilePage.reason}`)}</p>}
+        {profilePage?.allowed && <>
+          <label><input type="radio" name={`${id}-profile`} checked={profileId === undefined}
+            onChange={() => { setProfileId(undefined) }} />{t('manage.manualProfile')}</label>
+          {profilePage.items.map(profile => <label key={profile.id}>
+            <input type="radio" name={`${id}-profile`} checked={profileId === profile.id} disabled={!profile.available || profiles?.loading}
+              onChange={() => { setProfileId(profile.id); setRole(profile.role); setProvider(profile.provider); setPreset(profile.preset ?? ''); setModel(profile.model) }} />
+            {profile.role} · {profile.provider} · {profile.preset === undefined ? '' : `${profile.preset} · `}{profile.model}
+            {profile.reasons.map(reason => <span key={reason}> — {t(`readiness.reason.${reason}`)}</span>)}
+          </label>)}
+          {profilePage.items.length === 0 && <p>{t('manage.profilesEmpty')}</p>}
+          {profileId !== undefined && <p role="status">{chosenProfile?.available ? t('manage.profileSelected') : t('manage.profileUnavailable')}</p>}
+          {profilePage.nextCursor !== undefined && <Button disabled={profiles?.loading} onClick={() => { setProfileCursor(profilePage.nextCursor) }}>{t('manage.profilesNext')}</Button>}
+        </>}
+        <Button disabled={profiles?.loading} onClick={() => {
+          if (profileCursor === undefined) void refreshExecutionProfiles?.()
+          else setProfileCursor(undefined)
+        }}>{t('manage.profilesRefresh')}</Button>
+      </fieldset>}
       <label htmlFor={`${id}-capabilities`}>{t('manage.capabilities')}</label>
       <Input id={`${id}-capabilities`} value={capabilities} disabled={busy} onChange={(event) => { setCapabilities(event.target.value) }} />
       <label htmlFor={`${id}-provider`}>{t('manage.provider')}</label>
-      <Input id={`${id}-provider`} value={provider} disabled={busy} onChange={(event) => { setProvider(event.target.value) }} />
+      <Input id={`${id}-provider`} value={provider} readOnly={profileId !== undefined} disabled={busy} onChange={(event) => { setProvider(event.target.value) }} />
       <label htmlFor={`${id}-preset`}>{t('manage.preset')}</label>
-      <Input id={`${id}-preset`} value={preset} disabled={busy} onChange={(event) => { setPreset(event.target.value) }} />
+      <Input id={`${id}-preset`} value={preset} readOnly={profileId !== undefined} disabled={busy} onChange={(event) => { setPreset(event.target.value) }} />
       <label htmlFor={`${id}-model`}>{t('manage.model')}</label>
-      <Input id={`${id}-model`} value={model} disabled={busy} onChange={(event) => { setModel(event.target.value) }} />
+      <Input id={`${id}-model`} value={model} readOnly={profileId !== undefined} disabled={busy} onChange={(event) => { setModel(event.target.value) }} />
     </>}
     {target.kind === 'channelOpen' && <>
       {catalog?.loading && <p role="status">{t('channel.catalogLoading')}</p>}
@@ -428,7 +473,7 @@ export function TeamManagementDialog({ target,
     </>}
     {target.kind === 'channelPost' && !basic && <fieldset id={`${id}-content`} tabIndex={-1} className={css.managementChoices}
       disabled={busy || importing} aria-invalid={invalidField === 'content'} aria-describedby={invalidField === 'content' ? `${id}-error` : undefined}>
-      <legend>{t('channel.orderedContent')}</legend>
+      <legend hidden={inline && content.length === 1}>{t('channel.orderedContent')}</legend>
       {content.map((part, index) => <div key={part.id} className={css.channelDraftPart} role="group" aria-label={t('channel.contentItem', { index: index + 1 })}>
         {part.content.type === 'text' ? <>
           <label htmlFor={`${id}-content-${part.id}`}>{index === 0 ? t('manage.text') : t('channel.textPart', { index: index + 1 })}</label>
@@ -442,7 +487,9 @@ export function TeamManagementDialog({ target,
         </div>}
       </div>)}
       <div className={css.actions}>
-        <button type="button" onClick={() => { setContent(previous => [...previous, { id: crypto.randomUUID(), content: { type: 'text', text: '' } }]) }}>{t('channel.addText')}</button>
+        <details open={!inline || content.length > 1}><summary>{t('channel.moreContent')}</summary>
+          <button type="button" onClick={() => { setContent(previous => [...previous, { id: crypto.randomUUID(), content: { type: 'text', text: '' } }]) }}>{t('channel.addText')}</button>
+        </details>
         <button type="button" onClick={() => { imageInput.current?.click() }}>{t('channel.addImages')}</button>
         <input ref={imageInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden aria-label={t('channel.addImages')}
           onChange={(event) => { const files = [...event.currentTarget.files ?? []]; event.currentTarget.value = ''; void addImages(files) }} />

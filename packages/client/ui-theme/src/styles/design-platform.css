@@ -184,7 +184,9 @@ body[data-ds-dark-theme] {
 }
 
 /* Team working surfaces reuse the shared primitives through semantic aliases. */
-[data-team-workspace-page] {
+[data-team-workspace-page],
+[data-workspace-form],
+[data-simulation-workspace-page] {
   --clocky-control-radius: var(--clocky-workspace-control-radius);
   --clocky-alias-bg-base: var(--clocky-workspace-canvas);
   --clocky-alias-bg-layer-1: var(--clocky-workspace-surface);

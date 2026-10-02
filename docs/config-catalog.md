@@ -803,6 +803,10 @@ Requires: `agentDefaultModel` · `agents` · `attachments` · `directoryPicker` 
 ```ts config-catalog
 /** Gateway plugin configuration. */
 export interface Config {
+  /** Maximum pending frames per event stream. @default 4096 */
+  maxPendingEventFrames?: number
+  /** Maximum serialized pending bytes per event stream. @default 8388608 */
+  maxPendingEventBytes?: number
   /**
    * Whether this deployment can hand paths to a native desktop opener —
    * the `hasDocument` capability the agent-preset roster reports. Absent,
@@ -826,7 +830,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/host/apiproxy/src/index.ts:41`](../packages/host/apiproxy/src/index.ts)
+Source: [`packages/host/apiproxy/src/index.ts:42`](../packages/host/apiproxy/src/index.ts)
 
 <a id="clockyclocky-host-directory-picker-browse"></a>
 
@@ -1656,6 +1660,10 @@ Requires: `agents` · `teamRuns` · `productPrincipals`
 ```ts config-catalog
 /** JSON-RPC deployment config plus runtime-only test hooks. */
 export interface JsonRpcConfig {
+  /** Maximum notifications waiting for authority or transport drain. @default 4096 */
+  maxPendingNotificationFrames?: number
+  /** Maximum serialized notification bytes awaiting publication. @default 8388608 */
+  maxPendingNotificationBytes?: number
   /** Product-principal provider that authenticates one SDK connection handshake. */
   productPrincipalProvider?: string
   /** Transport input override; production uses `process.stdin`. */
@@ -1973,10 +1981,97 @@ export interface Config {
   readonly backend: 'json' | 'sqlite'
   /** Positive maximum journal entries read per recovery page. */
   readonly replayPageSize: number
+  /** Maximum retained entries observed without a writer handle. */
+  readonly inspectionMaxEntries?: number
+  /** Maximum serialized retained journal bytes observed without writer ownership. */
+  readonly inspectionMaxBytes?: number
 }
 ```
 
-Source: [`packages/simulation/simulation-local/src/index.ts:21`](../packages/simulation/simulation-local/src/index.ts)
+Source: [`packages/simulation/simulation-local/src/index.ts:27`](../packages/simulation/simulation-local/src/index.ts)
+
+<a id="clockyclocky-simulation-product"></a>
+
+## `@clocky/clocky-simulation-product`
+
+Requires: `storageLog` · `simulations`
+
+```ts config-catalog
+/** Deployment registration and complete-response allowances. */
+export interface Config {
+  /** Dedicated directory stream routed by storage-log; it cannot share another consumer's format. */
+  readonly directoryStream: string
+  /** Trusted imports of existing provider history; no run creation or execution occurs. */
+  readonly imports?: SimulationProductImport[]
+  /** Maximum retained registered runs on this Host. */
+  readonly maxRuns?: number
+  /** Maximum entries read per directory recovery page. */
+  readonly recoveryPageSize?: number
+  /** Maximum admitted reads, including those waiting for directory initialization. */
+  readonly maxPendingReads?: number
+  /** Maximum public list rows. */
+  readonly maxPageSize?: number
+  /** Maximum complete public JSON request/result bytes. */
+  readonly maxBytes?: number
+  /** Maximum complete durable registration entry bytes, checked during import and replay. */
+  readonly maxDirectoryEntryBytes?: number
+  /** Maximum UTF-8 display text bytes before explicit truncation. */
+  readonly maxTextBytes?: number
+  /** Trusted private-body readers; omitted means every context body is withheld, including from run owners. */
+  readonly contextReaders?: SimulationProductContextReader[]
+  /** Whole-run original journal readers; includes retained private history, independently of entity-context grants. */
+  readonly recordReaders?: SimulationProductRecordReader[]
+  /** Maximum bytes in one Unicode-safe text part, before complete-response accounting. Must be at least four. */
+  readonly maxContextPartBytes?: number
+  /** Maximum independent authenticated waits; watch sleeps do not occupy ordinary read admission. */
+  readonly maxWatchers?: number
+  /** Maximum real milliseconds held by one watch, independently of simulation time. */
+  readonly maxWatchWaitMs?: number
+  /** Minimum real milliseconds between native revision observations within one watch. */
+  readonly watchPollMs?: number
+}
+
+/** Trusted deployment registration; never accepted as a browser request. */
+export interface SimulationProductImport {
+  /** Opaque product identity exposed to readers; independent of provider storage selection. */
+  readonly id: SimulationProductRunId
+  /** Deployment display name; public output explicitly marks any UTF-8 truncation. */
+  readonly name: string
+  /** Registry provider identity resolved only for actual native history inspection. */
+  readonly provider: string
+  /** Exact immutable expected native run configuration, including provider-local run identity. */
+  readonly spec: SimulationRunSpec
+  /** Durable authenticated principal permitted to discover and inspect this registration. */
+  readonly ownerPrincipalId: ProductPrincipalId
+}
+
+/** Explicit private-context disclosure, independent of registration discovery and execution permission. */
+export interface SimulationProductContextReader {
+  /** Authenticated owner identity; this does not authorize another principal's registration. */
+  readonly principalId: ProductPrincipalId
+  /** Omission grants this principal's owned registrations only; it never grants another owner's run. */
+  readonly runId?: SimulationProductRunId | undefined
+  /** Exact actor identities whose retained historical context text may be disclosed. */
+  readonly entityIds: readonly SimulationEntityId[]
+  /** Explicit disclosure domains; omission allows historical context only. Knowledge and source text need their own entries. */
+  readonly content?: readonly ('context' | 'knowledge' | 'sources')[] | undefined
+}
+
+/** Trusted whole-run journal disclosure, including historical private inputs and deployment reservations. */
+export interface SimulationProductRecordReader {
+  /** Current authenticated registration owner; this grants no access to another owner's run. */
+  readonly principalId: ProductPrincipalId
+  /** Exact owned registration; omission permits this principal's owned registrations. */
+  readonly runId?: SimulationProductRunId | undefined
+}
+
+/** Stable directory identity independent of storage paths and provider-local run IDs. */
+export type SimulationProductRunId = Branded<'SimulationProductRunId'>
+```
+
+Depends on: [`Branded`](../packages/util/brand/src/index.ts) · [`ProductPrincipalId`](../packages/core/product-principal/src/index.ts) · `SimulationEntityId` (`@clocky/clocky-simulation/identities`) · [`SimulationRunSpec`](subsystems/simulation.md)
+
+Source: [`packages/simulation/simulation-product/src/index.ts:49`](../packages/simulation/simulation-product/src/index.ts)
 
 <a id="clockyclocky-simulation-team"></a>
 
@@ -2000,7 +2095,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/simulation/simulation-team/src/index.ts:50`](../packages/simulation/simulation-team/src/index.ts)
+Source: [`packages/simulation/simulation-team/src/index.ts:59`](../packages/simulation/simulation-team/src/index.ts)
 
 <a id="clockyclocky-skill"></a>
 
@@ -2134,7 +2229,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/storage/storage-json/src/index.ts:34`](../packages/storage/storage-json/src/index.ts)
+Source: [`packages/storage/storage-json/src/index.ts:35`](../packages/storage/storage-json/src/index.ts)
 
 <a id="clockyclocky-storage-log"></a>
 
@@ -2204,7 +2299,7 @@ export interface Config {
 export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 
-Source: [`packages/storage/storage-sqlite/src/index.ts:28`](../packages/storage/storage-sqlite/src/index.ts)
+Source: [`packages/storage/storage-sqlite/src/index.ts:29`](../packages/storage/storage-sqlite/src/index.ts)
 
 <a id="clockyclocky-subprocess-e2b"></a>
 
@@ -2265,7 +2360,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/team/team-activation-controller/src/index.ts:70`](../packages/team/team-activation-controller/src/index.ts)
+Source: [`packages/team/team-activation-controller/src/index.ts:71`](../packages/team/team-activation-controller/src/index.ts)
 
 <a id="clockyclocky-team-activation-recovery"></a>
 
@@ -2502,6 +2597,8 @@ export interface Config {
   readonly maxParticipantsPerTeam?: number
   /** Maximum activation epochs retained by one Team. */
   readonly maxActivationsPerTeam?: number
+  /** Maximum terminal task-details command outcomes retained per Team, including semantic refusals. */
+  readonly maxTaskUpdateCommandsPerTeam?: number
   /** Maximum task records retained by one Team. */
   readonly maxTasksPerTeam?: number
   /** Maximum channel records attached to one Team. */
@@ -2531,7 +2628,7 @@ export interface Config {
 
 Depends on: [`TeamUsageRate`](../packages/core/team/src/index.ts)
 
-Source: [`packages/team/team-hub/src/index.ts:996`](../packages/team/team-hub/src/index.ts)
+Source: [`packages/team/team-hub/src/index.ts:1020`](../packages/team/team-hub/src/index.ts)
 
 <a id="clockyclocky-team-human-client"></a>
 
@@ -2663,7 +2760,7 @@ export interface PlacementRoute {
 }
 ```
 
-Source: [`packages/team/team-placement-default/src/index.ts:40`](../packages/team/team-placement-default/src/index.ts)
+Source: [`packages/team/team-placement-default/src/index.ts:42`](../packages/team/team-placement-default/src/index.ts)
 
 <a id="clockyclocky-team-run"></a>
 
@@ -2763,7 +2860,7 @@ export interface TeamRunPlacementDefaults {
 }
 ```
 
-Source: [`packages/team/team-run/src/index.ts:352`](../packages/team/team-run/src/index.ts)
+Source: [`packages/team/team-run/src/index.ts:353`](../packages/team/team-run/src/index.ts)
 
 <a id="clockyclocky-team-scheduler-dag"></a>
 
@@ -3715,6 +3812,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 - `@clocky/clocky-client-ui-settings-plugin-inventory` ([`packages/client/ui-settings-plugin-inventory/src/index.ts`](../packages/client/ui-settings-plugin-inventory/src/index.ts))
 - `@clocky/clocky-client-ui-settings-plugins` ([`packages/client/ui-settings-plugins/src/index.ts`](../packages/client/ui-settings-plugins/src/index.ts))
 - `@clocky/clocky-client-ui-sidebar` ([`packages/client/ui-sidebar/src/index.ts`](../packages/client/ui-sidebar/src/index.ts))
+- `@clocky/clocky-client-ui-simulation` — requires `simulationProducts` ([`packages/client/ui-simulation/src/index.ts`](../packages/client/ui-simulation/src/index.ts))
 - `@clocky/clocky-client-ui-skill` ([`packages/client/ui-skill/src/index.ts`](../packages/client/ui-skill/src/index.ts))
 - `@clocky/clocky-client-ui-team` ([`packages/client/ui-team/src/index.ts`](../packages/client/ui-team/src/index.ts))
 - `@clocky/clocky-client-ui-theme` ([`packages/client/ui-theme/src/index.ts`](../packages/client/ui-theme/src/index.ts))

@@ -20,7 +20,7 @@ import {
   compareOrRefreshGolden, fixtureUserPrompts, launchWebScaffold, recordFixture, seedSession,
   watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/lifecycle-chrome', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -208,6 +208,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       if (MODE !== 'record') await page.setViewportSize({ width: 480, height: 1000 })
       try {
         await input.press('Enter')
+        await openCoordinatorConversation(page)
         if (MODE !== 'record') {
           const liveTail = page.locator('[data-variant="think"][data-state="running"] [data-follow-end]')
           await expect.poll(async () => await liveTail.evaluate(element => (
@@ -229,7 +230,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
   it.skipIf(MODE === 'record')('materialized a Team and coordinator Session over the wire', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-lifecycle-materialize'))
     await expect.poll(
-      () => page.locator('section[aria-label="Tasks"] button').filter({ hasText: PROMPT }).count(),
+      () => page.locator('section[aria-label="Team directory"] button').filter({ hasText: PROMPT }).count(),
       { timeout: 15_000 },
     ).toBe(1)
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
@@ -253,20 +254,24 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
 
   it.skipIf(MODE === 'record')('recovers the whole surface across a reload from the log alone', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-lifecycle-reload'))
+    // Select the completed coordinator record explicitly before testing route restoration.
+    await openCoordinatorConversation(page)
     const warningStart = tripwire.warnings.length
+    const beforeReload = { url: page.url(), open: await page.locator('dialog[data-inspecting][open]').count() }
     await page.reload({ waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
-    // The Team list is durable while the browser-local Session selection is
-    // not; reopen the Team before reading its coordinator transcript. The
-    // recorded turn re-renders from session.history with zero model calls.
-    const task = page.locator('section[aria-label="Tasks"] button').filter({ hasText: PROMPT }).first()
-    await task.waitFor({ timeout: 15_000 })
-    await task.click()
+    // Exact Team/Session view routes survive reload and revalidate their binding.
+    // The recorded turn re-renders from history without another model call.
+    const [persisted] = await scaffold.ctx.sessionPersistence.list()
+    if (persisted === undefined) throw new Error('The coordinator was not persisted')
+    await expect.poll(() => new URL(page.url()).searchParams.get('session'), { message: JSON.stringify(beforeReload) }).toBe(persisted.id)
+    await page.locator('dialog[data-inspecting][open]').waitFor({ timeout: 15000 })
+    expect(sessionEvents.filter(event => event.type === 'turn/start')).toHaveLength(1)
     await expect.poll(() => page.getByText('LIGHTHOUSE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
     // Golden of the recovered conversation region: rebuilt from the log, it
     // must render the same settled transcript the live turn produced.
-    const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(RELOADED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
   }, 90_000)

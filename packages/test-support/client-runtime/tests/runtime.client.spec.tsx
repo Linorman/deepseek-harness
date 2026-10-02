@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { stubSettingsScope } from '../src/settings-scope.ts'
 import { act, cleanup } from '@testing-library/react'
 import { defineStore } from '@clocky/clocky-client-runtime/client'
-import type { ITeamTasks, SessionId, TeamTaskListState, TeamTaskSelection, WorkspaceId } from '@clocky/clocky-client-runtime/client'
+import type { ITeamTasks, SessionId, TeamTaskListState, WorkspaceId } from '@clocky/clocky-client-runtime/client'
 import type { PropsRenderSlots, SessionStandardProps } from '@clocky/clocky-client-ui-slots'
 import { SlotTestRuntime } from '@clocky/clocky-client-test-runtime'
 
@@ -407,7 +407,7 @@ describe('Team tasks', () => {
     const teamId = 'team-1' as Parameters<ITeamTasks['open']>[0]
     await expect(runtime.teamTasks.open(teamId)).rejects.toThrow(/open is not stubbed/)
     await expect(runtime.teamTasks.start({ text: 'outline the release' })).rejects.toThrow(/start is not stubbed/)
-    const selection = {} as TeamTaskSelection
+    const selection = {} as Awaited<ReturnType<ITeamTasks['open']>>
     const open = vi.fn<ITeamTasks['open']>(() => Promise.resolve(selection))
     const start = vi.fn<ITeamTasks['start']>(() => Promise.resolve(selection))
     runtime.teamTasks.stub('open', open)

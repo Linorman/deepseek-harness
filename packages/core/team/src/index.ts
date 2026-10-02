@@ -1,3 +1,15 @@
+export { teamTaskUpdateCommandIdSchema, teamTaskUpdateCommandReceiptSchema, teamTaskUpdateReceiptSchema,
+  teamTaskDetailsUpdateResultSchema, teamTaskUpdateLookupInputSchema, teamTaskUpdateLookupSchema,
+  teamTaskUpdateCommandRejectionSchema, teamTaskUpdateCommandSchema, teamTaskUpdateRejectionSchema,
+  teamTaskUpdateRejectionReasonSchema } from './schema.ts'
+export { TeamTaskUpdateRejectedError } from './task-update.ts'
+export { teamTaskReferencesInputSchema, teamTaskReferencesPageSchema } from './schema.ts'
+export { teamIdentityResolveInputSchema, teamIdentityResolvePageSchema } from './schema.ts'
+export { teamAttentionReadInputSchema, teamAttentionPageSchema, teamAttentionCursorSchema, teamAttentionCountsSchema } from './schema.ts'
+export { teamActionInspectInputSchema, teamActionInspectionSchema } from './schema.ts'
+export { teamExecutionProfileIdSchema, teamExecutionProfileSchema, teamExecutionProfilesInputSchema, teamExecutionProfilesPageSchema } from './schema.ts'
+export { teamMemberReadinessInputSchema, teamMemberReadinessPageSchema } from './schema.ts'
+export { teamTaskCapabilitiesInputSchema, teamTaskCapabilitiesSchema } from './schema.ts'
 export { fingerprintTeamPersistenceProjection } from './human-actor.ts'
 export * from './persistence-reference.ts'
 export { teamMemberInspectRequestSchema, teamMemberInspectionSchema } from './schema.ts'
@@ -5,7 +17,7 @@ export { teamWorkflowInspectRequestSchema, teamWorkflowInspectionSchema } from '
 export { teamHumanActionReadRequestSchema } from './schema.ts'
 export { teamSelectionRequestSchema } from './schema.ts'
 export { teamTaskInspectRequestSchema, teamTaskInspectionSchema, teamTaskRecordSchema } from './schema.ts'
-export { teamBrowseRequestSchema, teamBrowsePageSchema, teamTaskSummarySchema, teamMemberSummarySchema, teamWorkflowSummarySchema } from './schema.ts'
+export { teamTaskQuerySchema, teamTaskQueryCursorSchema, teamBrowseRequestSchema, teamBrowsePageSchema, teamTaskSummarySchema, teamMemberSummarySchema, teamWorkflowSummarySchema } from './schema.ts'
 export { teamMemberSessionRequestSchema, teamMemberSessionSnapshotSchema } from './schema.ts'
 export { teamSelectionSnapshotSchema } from './schema.ts'
 export { teamDiscoveryCursorSchema } from './schema.ts'
@@ -328,8 +340,12 @@ export {
   teamTaskCreatorSchema,
   teamHumanTaskCreatorSchema,
   teamTaskCancelInputSchema,
+  teamSimulationTaskCancelInputSchema,
   teamCancellationTaskCancelInputSchema,
   teamTaskAssignInputSchema,
+  teamSimulationTaskAssignInputSchema,
+  teamSimulationTaskStartInputSchema,
+  teamSimulationTaskSettleInputSchema,
   teamTaskAttemptExpireInputSchema,
   teamTaskAttemptFenceSchema,
   teamTaskAttemptHeartbeatInputSchema,

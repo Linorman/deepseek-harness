@@ -1,0 +1,15 @@
+[
+  { "insert": [
+    { "name": "@clocky/clocky-simulation" },
+    { "name": "@clocky/clocky-simulation-local", "config": { "name": "local", "root": ".clocky-simulations", "backend": "json", "replayPageSize": 4 } },
+    { "name": "@clocky/clocky-simulation-team", "config": { "maxContextBytes": 65536, "deliveryPageSize": 32,
+      "maxCoordinationRounds": 16, "maxConcurrentModels": 1, "maxQueuedModels": 16 } },
+    { "name": "@clocky/clocky-tool-simulation" },
+    { "name": "./model.ts" },
+    { "name": "@clocky/clocky-simulation-product", "config": { "directoryStream": "browser-simulation-products", "imports": [] } },
+    { "name": "@clocky/clocky-simulation-product/administration", "config": { "journalStream": "browser-simulation-commands", "templates": [],
+      "driverIntervalMs": 5, "driverRetryMs": 10 } },
+    { "name": "@clocky/clocky-client-ui-simulation" }
+  ] },
+  { "id": "modules", "config": { "browserConfig": { "@clocky/clocky-client-ui-simulation": { "pageSize": 2, "controlRefreshMs": 50 } } } }
+]

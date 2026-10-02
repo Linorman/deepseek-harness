@@ -1,7 +1,7 @@
 /** Task target refusal and uncertain receipts retain independent dependent-operation outcomes. */
 import { describe, expect, it, vi } from 'vitest'
 import { teamIdSchema, teamTaskIdSchema } from '@clocky/clocky-team'
-import { simTimeSchema } from '@clocky/clocky-simulation'
+import { simTimeSchema, simulationOutboxRetryRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationTaskTransport } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 
@@ -68,7 +68,9 @@ for (const backend of ['json', 'sqlite'] as const) {
         const restored = await h.provider.open({ ...h.selection, mode: 'open' })
         expect(restored.snapshot().operations[id]?.status).toBe('outcome-unknown')
         foreign = false
-        await restored.retryOutbox(id, 'Reconcile the canonical task', 200, restored.snapshot().revision)
+        await restored.retryOutbox(simulationOutboxRetryRequestSchema.parse({ id: 'reconcile-task', operationId: id,
+          expectedAttemptCount: restored.snapshot().operations[id]!.outbox!.attempts.length,
+          reason: 'Reconcile the canonical task', authorizedAt: 200 }))
         await restored.setPhase('running', restored.snapshot().revision)
         expect(await restored.dispatchOperation(id, { createTask }, () => 200))
           .toMatchObject({ status: 'settled', result: { status: 'applied', code: 'SIM_TASK_CREATED' } })
@@ -125,10 +127,12 @@ it('rejects task outbox records without due, attempt, authority and matching tar
       outcome: { status: 'applied', taskReceipt: { ...receipt, fingerprint: 'foreign' } } })).toThrow(/does not match/)
     const completed = fold(started, { kind: 'outbox/finished', id, number: 1, at: 100, outcome: { status: 'applied', taskReceipt: receipt } })
     expect(() => fold(completed, { kind: 'outbox/started', id, number: 2, at: 100 })).toThrow(/already retained/)
-    expect(() => fold(completed, { kind: 'outbox/retry-authorized', id, at: 100, reason: 'Again' })).toThrow(/Only an unknown/)
+    const retry = simulationOutboxRetryRequestSchema.parse({ id: 'original-retry', operationId: id,
+      expectedAttemptCount: 1, authorizedAt: 110, reason: 'Reconcile target' })
+    expect(() => fold(completed, { kind: 'outbox/retry-authorized', id, request: retry })).toThrow(/exact current unknown/)
     const exhausted = fold(started, { kind: 'outbox/exhausted', id })
     expect(exhausted.operations[id]?.status).toBe('outcome-unknown')
-    const retried = fold(exhausted, { kind: 'outbox/retry-authorized', id, at: 110, reason: 'Reconcile target' })
+    const retried = fold(exhausted, { kind: 'outbox/retry-authorized', id, request: retry })
     expect(() => fold(retried, { kind: 'outbox/started', id, number: 2, at: 110 })).toThrow(/not admissible/)
     const resumed = { ...retried, phase: 'running' as const }
     expect(() => fold(resumed, { kind: 'outbox/started', id, number: 2, at: 109 })).toThrow(/not admissible/)

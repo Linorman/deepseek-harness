@@ -20,7 +20,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/plan-review', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -74,7 +74,7 @@ describe('web e2e: plan review takeover round trip', () => {
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await page.getByText(OBJECTIVE, { exact: true }).waitFor({ timeout: 15_000 })
     await page.getByText(OBJECTIVE, { exact: true }).click()
-    await page.locator('section[aria-label="Tasks"] [aria-current="page"]').waitFor({ timeout: 15_000 })
+    await page.locator('section[aria-label="Team directory"] [aria-current="page"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 
   afterAll(async () => {
@@ -87,6 +87,7 @@ describe('web e2e: plan review takeover round trip', () => {
     if (MODE !== 'record') {
       expect(fixtureUserPrompts(await readFile(FIXTURE, 'utf8'))).toEqual([TASK])
     }
+    await openCoordinatorConversation(page)
     const input = page.locator('textarea').first()
     await input.waitFor({ timeout: 10_000 })
     const settled = scaffold.whenTurnSettled(MODE === 'record' ? 180_000 : 30_000)
@@ -102,13 +103,13 @@ describe('web e2e: plan review takeover round trip', () => {
     expect(await page.locator('[data-question-key]').count()).toBe(0)
     await expect.poll(() => card.getByText('Plan review').count(), { timeout: 10_000 }).toBeGreaterThan(0)
 
-    const selectedTask = page.locator('section[aria-label="Tasks"] [aria-current="page"]')
+    const selectedTask = page.locator('section[aria-label="Team directory"] [aria-current="page"]')
     await expect.poll(() => selectedTask.count(), { timeout: 10_000 }).toBe(1)
 
     if (MODE !== 'record') {
       const snapshot = await captureStableAria(page, '[data-plan-review-key]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(REVIEW_EXPECTED, snapshot, MODE)
-      const sidebar = await captureStableAria(page, 'section[aria-label="Tasks"] [aria-current="page"]', scaffold.workspaceCwd)
+      const sidebar = await captureStableAria(page, 'section[aria-label="Team directory"] [aria-current="page"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(SIDEBAR_EXPECTED, sidebar, MODE)
     }
 
@@ -127,7 +128,7 @@ describe('web e2e: plan review takeover round trip', () => {
     expect(await page.locator('[data-plan-review-key]').count()).toBe(0)
     expect(await selectedTask.count()).toBe(1)
     await expect.poll(() => page.locator('textarea').first().isEnabled(), { timeout: 10_000 }).toBe(true)
-    const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(APPROVED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

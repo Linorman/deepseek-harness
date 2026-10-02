@@ -200,10 +200,9 @@ interface TableStop {
  * @param target - the page whose pane to close.
  */
 async function closeDetailsPane(target: Page): Promise<void> {
-  await target.getByRole('button', { name: 'Close details', exact: true }).waitFor({ timeout: 10_000 })
-  await target.evaluate(() => {
-    document.querySelector<HTMLElement>('button[aria-label="Close details"]')?.click()
-  })
+  if (await target.locator('[data-details-collapsed]').count() === 0) {
+    await target.getByRole('button', { name: 'Close details', exact: true }).click()
+  }
   // Closed details resolve to zero width but never unmount (ui-layout
   // columns contract), so the settled signal is the frame's collapse marker,
   // not the button's detachment.
@@ -273,10 +272,6 @@ describe('web e2e: markdown tables fill the column, wide ones break out and scro
     // identically on every platform, which is what keeps one committed
     // golden true for all lanes.
     await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click()
-    // JS click: after the transcript scrolled to its tail, the pane's close
-    // button can sit under the sticky header where a pointer click is
-    // intercepted; the pane itself is scaffolding, not the behavior under
-    // test, so actionability adds nothing here.
     await closeDetailsPane(page)
   }, 180_000)
 

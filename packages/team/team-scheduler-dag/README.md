@@ -16,6 +16,10 @@ A scheduler-issued proof can become stale while its task advances during channel
 
 Each discovery drive consumes one configured Team page and preserves its opaque cursor for the next pulse, including empty pages. Each Team drive finishes one bounded round; changes coalesced during that round schedule a later event-loop turn. Disposal cancels those deferred turns and retains the proof sources until accepted work settles.
 
+The effect-owned `team/task-scheduling-modes` listener exposes the scheduler’s configured workspace modes for read-only product observations. It delegates to other schedulers, advertises no modes during shutdown, and disappears on unload. Reading modes does not discover Teams, prepare members or assign work.
+
+An active human named by the review policy keeps its task in progress without an Agent activation. Waiting for that human does not start a model or trigger TASK_NO_ELIGIBLE_OWNER; the review response still requires the existing participant, permission and revision checks.
+
 ## Scheduling and expiry
 
 Each drive checks frozen consumption/time ceilings, expires due assigned or running leases, then selects ready `pending` tasks in descending priority and durable task-creation order. It considers only active `local-agent` and `remote-agent` participants that declare every required capability, have an exact `idle` activation, and hold fewer than `maxActiveAttemptsPerParticipant` active attempts. Before ranking those candidates, it calls `ctx.teamWorkspaces.eligible(task.workspaceMode, { task, binding })` and skips a `false` result; an unavailable provider rejects the drive. The scheduler never calls `allocate()`. It calls `assignTask()` with the task revision and configured `leaseDurationMs`; the Team provider remains the final authority for membership, capabilities, activation identity, task phase, revision, and lease validity. Discovery uses bounded `listTeamsPage()` calls with the configured `teamPageSize`; a pulse never requests the full Team collection.

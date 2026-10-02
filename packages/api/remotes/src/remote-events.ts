@@ -9,10 +9,10 @@
 /**
  * Host events this application forwards to consumers verbatim: no projection,
  * no redaction, no renaming. The wire name is the Host cordis event name and
- * the payload is its argument list, so this array is simultaneously the whole
- * control point over what a consumer can receive and the legal key set of
- * `ctx.remote.$on`. Forwarding one more event is an entry here and nothing
- * else.
+ * the payload is its argument list. This array owns the legal key set of
+ * `ctx.remote.$on`; Host delivery additionally classifies Session ownership
+ * and checks current product read authority. Adding an event requires that
+ * ownership decision in the Host's exhaustive classifier.
  */
 export const API_REMOTE_FORWARDED_EVENTS = [
   'agent-preset/selected',

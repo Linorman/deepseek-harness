@@ -151,7 +151,7 @@ export class CordisInspectRegistryService extends Service {
     }
     this.pending.delete(requestId)
     pending.settle(resolution)
-    this.ctx.emit('cordis/inspect-query-resolved', { requestId })
+    this.ctx.emit('cordis/inspect-query-resolved', { requestId, agentId: pending.request.agentId })
     return { accepted: true }
   }
 
@@ -183,7 +183,7 @@ export class CordisInspectRegistryService extends Service {
       if (pending === undefined) return
       this.pending.delete(requestId)
       pending.settle({ ok: false, reason: 'cancelled', message: `Client inspect query ${providerId}.${methodName} was cancelled` })
-      this.ctx.emit('cordis/inspect-query-resolved', { requestId })
+      this.ctx.emit('cordis/inspect-query-resolved', { requestId, agentId: pending.request.agentId })
     }
     signal.addEventListener('abort', onAbort, { once: true })
     if (signal.aborted) onAbort()

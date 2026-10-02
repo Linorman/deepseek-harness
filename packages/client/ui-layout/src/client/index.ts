@@ -23,6 +23,8 @@ import { ThemePresenter } from './theme-presenter.ts'
 // against; the frame components and the store factory are package-internal.
 export { LayoutController } from './service.ts'
 export type { ILayout } from './service.ts'
+export { teamInspectionUrl, readWorkspaceSource, restoreWorkspaceFocus, TEAM_ROUTE_KEYS, WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
+export type { TeamInspectionTarget } from './navigation.ts'
 
 declare module '@clocky/cordis' {
   interface Context {
@@ -33,6 +35,8 @@ declare module '@clocky/cordis' {
 
 declare module '@clocky/clocky-client-ui-slots' {
   interface SlotMap {
+    /** Independently composed Simulation workspace; visibility is owned by the shared application frame. */
+    'simulation.workspace': { kind: 'single'; scope: 'root'; owner: { visible: boolean } }
     /** Selected Team workspace, independent of the current Session. */
     'team.workspace': { kind: 'single'; scope: 'root' }
     // The 'root' entry itself is the runtime's built-in slot (declared
@@ -87,7 +91,7 @@ declare module '@clocky/clocky-client-ui-slots' {
   }
   interface LocaleNamespaceMap {
     /** Session inspection navigation owned by the application frame. */
-    layout: 'session' | 'back' | 'expand' | 'restore'
+    layout: 'session' | 'newTeam' | 'coordinator' | 'back' | 'expand' | 'restore' | 'simulationUnavailable' | 'backToTeams'
   }
 }
 
@@ -99,6 +103,8 @@ declare module '@clocky/clocky-client-ui-slots' {
 
 /** Sidebar owner share: live column state from the frame's concession solve. */
 export interface SidebarOwnerProps {
+  /** Selected product domain; each feature retains its own view state. */
+  workspace: 'team' | 'simulation'
   /** True when the sidebar is closed (the column renders the compact control rail). */
   collapsed: boolean
   /** Rendered column width in px (SIDEBAR_COLLAPSED when collapsed). */
@@ -123,8 +129,10 @@ export const inject = ['slots', 'theme', 'sessions', 'locale']
 export function apply(ctx: ClientContext): void {
   const layout = new LayoutController()
   ctx.effect(() => ctx.locale.register('layout', {
-    en: { session: 'Execution record', back: 'Back to team', expand: 'Expand', restore: 'Restore' },
-    zh: { session: '执行记录', back: '返回团队', expand: '展开', restore: '还原' },
+    en: { newTeam: 'New team work', session: 'Execution record', coordinator: 'Talk to coordinator', back: 'Back to team', expand: 'Expand', restore: 'Restore',
+      simulationUnavailable: 'Simulation viewing is unavailable on this host.', backToTeams: 'Back to teams' },
+    zh: { newTeam: '新建团队工作', session: '执行记录', coordinator: '与协调者沟通', back: '返回团队', expand: '展开', restore: '还原',
+      simulationUnavailable: '此主机未提供仿真查看。', backToTeams: '返回团队' },
   }), 'ui-layout: dictionaries')
   ctx.effect(() => {
     const disposeService = ctx.reflect.provide('layout', layout)
@@ -132,6 +140,7 @@ export function apply(ctx: ClientContext): void {
       name: 'root',
       locale: 'layout',
       children: {
+        'simulation.workspace': { kind: 'single', scope: 'root' },
         'team.workspace': { kind: 'single', scope: 'root' },
         'sidebar': { kind: 'single', scope: 'root' },
         'conversation': { kind: 'single', scope: 'session-maybe' },
@@ -140,12 +149,12 @@ export function apply(ctx: ClientContext): void {
       },
       // Exclusive store: the factory itself — the framework instantiates per
       // entry and delivers useStore/actions to AppFrame as standard props.
-      store: createLayoutStore,
+      store: () => createLayoutStore(new URLSearchParams(window.location.search).get('workspace') === 'simulation' ? 'simulation' : 'team'),
       // The hook's only side effect connects the root store to ctx.layout;
       // conversation business actions belong to their registrants.
       inject: (actions: PanelActions) => {
         layout.attachPanels(actions)
-        return { closeSession: () => { ctx.sessions.clear() } }
+        return { closeSession: () => { ctx.sessions.clear() }, showTeams: () => { layout.showWorkspace('team') } }
       },
     }, AppFrame)
     return () => {
@@ -154,6 +163,12 @@ export function apply(ctx: ClientContext): void {
       void disposeService()
     }
   }, 'ui-layout: service + root registration')
+
+  ctx.effect(() => {
+    const restore = () => { layout.restoreWorkspace() }
+    window.addEventListener('popstate', restore)
+    return () => { window.removeEventListener('popstate', restore) }
+  }, 'ui-layout: browser product history')
 
   // Theme presentation: pure DOM writes from resolved snapshots — initial
   // state through the getter once, then event-driven only; no React path.

@@ -1,11 +1,10 @@
-- banner:
-  - text: Math rendering
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: Math rendering
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: Render this mathematical proof. {{clock}}
 - button "Copy":
   - img

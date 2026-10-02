@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md
-2026-09-06-exact-single-task-cancellation.md: 91232befca3dcea5424dda50a43fb78019e136a7
-2026-09-06-exact-single-task-cancellation.zh.md: 764510e0369a31bd85b1b3800e66bfc5beddd989
+2026-09-06-exact-single-task-cancellation.md: 63e47cebb4dfc15687753846f946da6c0ae7c1be
+2026-09-06-exact-single-task-cancellation.zh.md: b162ab45caed20b784c27273bd1b8c85580b7dfe

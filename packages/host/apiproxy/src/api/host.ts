@@ -3,7 +3,7 @@
  * together; introduce protocolVersion only when an independently released client appears.
  */
 
-import type { RpcRequest, RpcResponse } from './rpc.ts'
+import type { ProductAuthorizationScope, RpcRequest, RpcResponse } from './rpc.ts'
 
 /** One directory row of a listing: a child entry or a breadcrumb ancestor. */
 export interface DirectoryEntry {
@@ -45,6 +45,8 @@ export interface HostApi {
    * canOpenPath = whether this deployment can hand a path to a user-visible native desktop.
    */
   describe(request: RpcRequest<{}>): Promise<RpcResponse<{
+    /** Absent for trusted non-product transports; otherwise isolates cached principal data. */
+    authorizationScope?: ProductAuthorizationScope | undefined
     version: string
     cwd: string
     provider?: string

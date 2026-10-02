@@ -57,6 +57,8 @@ export class WorkspaceManager {
   private orderFrameGeneration = 0
   /** Last complete order accepted from a Host baseline, frame, or current unary echo. */
   private committedOrder: WorkspaceId[] = []
+  private authorizationGeneration = 0
+  private readonly revokedSessionIds = new Set<SessionId>()
   /**
    * Ids this process has seen removed, kept for the connection's lifetime so
    * a late changed frame or a stale baseline row cannot resurrect a deleted
@@ -85,6 +87,7 @@ export class WorkspaceManager {
    */
   refresh(): Promise<void> {
     if (this.inflight !== null) return this.inflight
+    const generation = this.authorizationGeneration
     this.state = 'loading'
     this.error = null
     const frames: WorkspaceDelta[] = []
@@ -93,7 +96,11 @@ export class WorkspaceManager {
     this.inflight = (async () => {
       try {
         const { result } = await this.api.workspace.list({})
+        if (generation !== this.authorizationGeneration) return
         if (result.ok) {
+          for (const id of [...result.value.items.flatMap(item => item.sessionIds), ...result.value.archivedSessionIds]) {
+            this.revokedSessionIds.delete(id)
+          }
           let items = result.value.items
           items = items.filter(workspace => !this.removedIds.has(workspace.workspaceId))
           for (const delta of frames) items = applyWorkspaceDelta(items, delta)
@@ -106,15 +113,18 @@ export class WorkspaceManager {
           this.error = result.error
         }
       } catch (error) {
+        if (generation !== this.authorizationGeneration) return
         this.state = 'error'
         const folded = transportError<never>(error)
         /* v8 ignore next -- transportError always returns the failure branch. */
         this.error = folded.ok ? null : folded.error
       } finally {
-        this.refreshFrames = null
-        this.archivedSupersedesRefresh = false
-        this.inflight = null
-        this.notifier.markDirty()
+        if (generation === this.authorizationGeneration) {
+          this.refreshFrames = null
+          this.archivedSupersedesRefresh = false
+          this.inflight = null
+          this.notifier.markDirty()
+        }
       }
     })()
     return this.inflight
@@ -127,10 +137,11 @@ export class WorkspaceManager {
    * @returns the wire result.
    */
   async create(input: WorkspaceCreateInput): Promise<RpcResult<{ workspace: WorkspaceView; created: boolean }>> {
+    const generation = this.authorizationGeneration
     const workspace = new Workspace(this.api, input)
     const completion = workspace.materialize()
     if (completion === undefined) throw new Error('a local Workspace must be materializable')
-    const result = await completion
+    const result = this.currentResult(await completion, generation)
     if (result.ok) this.upsert(result.value.workspace, workspace)
     return result
   }
@@ -143,7 +154,8 @@ export class WorkspaceManager {
    * @returns the wire result.
    */
   async rename(workspaceId: WorkspaceId, title: string): Promise<RpcResult<{ workspace: WorkspaceView }>> {
-    const { result } = await this.api.workspace.rename({ workspaceId, title })
+    const generation = this.authorizationGeneration
+    const result = this.currentResult((await this.api.workspace.rename({ workspaceId, title })).result, generation)
     if (result.ok) this.upsert(result.value.workspace)
     return result
   }
@@ -155,7 +167,8 @@ export class WorkspaceManager {
    * @returns the wire result.
    */
   async delete(workspaceId: WorkspaceId): Promise<RpcResult<{ deleted: true }>> {
-    const { result } = await this.api.workspace.delete({ workspaceId })
+    const generation = this.authorizationGeneration
+    const result = this.currentResult((await this.api.workspace.delete({ workspaceId })).result, generation)
     if (result.ok) this.remove(workspaceId, true)
     return result
   }
@@ -171,6 +184,7 @@ export class WorkspaceManager {
     workspaceId: WorkspaceId,
     beforeWorkspaceId?: WorkspaceId,
   ): Promise<RpcResult<{ workspaceIds: WorkspaceId[] }>> {
+    const generation = this.authorizationGeneration
     const requestGeneration = ++this.orderRequestGeneration
     const frameGeneration = this.orderFrameGeneration
     const localOrder = this.itemViews().map(workspace => workspace.workspaceId)
@@ -182,12 +196,13 @@ export class WorkspaceManager {
         ...beforeWorkspaceId === undefined ? {} : { beforeWorkspaceId },
       }))
     } catch (error) {
-      if (requestGeneration === this.orderRequestGeneration
+      if (generation === this.authorizationGeneration && requestGeneration === this.orderRequestGeneration
         && frameGeneration === this.orderFrameGeneration) {
         this.installOrder(this.committedOrder)
       }
       throw error
     }
+    result = this.currentResult(result, generation)
     if (result.ok && requestGeneration === this.orderRequestGeneration
       && frameGeneration === this.orderFrameGeneration) {
       this.installOrder(result.value.workspaceIds, true)
@@ -211,10 +226,11 @@ export class WorkspaceManager {
     sessionId: SessionId,
     beforeSessionId?: SessionId,
   ): Promise<RpcResult<{ workspace: WorkspaceView }>> {
-    const { result } = await this.api.workspace.insertSessionBefore({
+    const generation = this.authorizationGeneration
+    const result = this.currentResult((await this.api.workspace.insertSessionBefore({
       workspaceId, sessionId,
       ...beforeSessionId === undefined ? {} : { beforeSessionId },
-    })
+    })).result, generation)
     if (result.ok) this.upsert(result.value.workspace)
     return result
   }
@@ -226,7 +242,8 @@ export class WorkspaceManager {
    * @returns the wire result.
    */
   async archiveSession(sessionId: SessionId): Promise<RpcResult<{ archivedSessionIds: SessionId[] }>> {
-    const { result } = await this.api.workspace.archiveSession({ sessionId })
+    const generation = this.authorizationGeneration
+    const result = this.currentResult((await this.api.workspace.archiveSession({ sessionId })).result, generation)
     if (result.ok) this.installArchived(result.value.archivedSessionIds)
     return result
   }
@@ -251,6 +268,53 @@ export class WorkspaceManager {
   /** Re-pull the baseline after each connection generation. */
   handleConnected(): void {
     void this.refresh()
+  }
+
+  /** Remove previously authorized metadata and fence every pending baseline or unary echo. */
+  clearAuthorization(): void {
+    this.retireRequests()
+    this.items = []
+    this.committedOrder = []
+    this.removedIds.clear()
+    this.revokedSessionIds.clear()
+    this.archivedSessionIds = []
+    this.phase = 'pending'
+    this.notifier.markDirty()
+  }
+
+  /** Drop known revoked Session references and reject late replies from the previous read generation.
+   * @param ids - Session identities previously visible in this principal's Team.
+   */
+  revokeSessionReferences(ids: readonly SessionId[]): void {
+    if (ids.length === 0) return
+    this.retireRequests()
+    for (const id of ids) this.revokedSessionIds.add(id)
+    this.installViews(this.itemViews())
+    this.installArchived(this.archivedSessionIds)
+    this.notifier.markDirty()
+  }
+
+  /** Fence pending reads without changing unaffected workspace metadata. */
+  private retireRequests(): void {
+    this.authorizationGeneration++
+    this.orderRequestGeneration++
+    this.orderFrameGeneration++
+    this.inflight = null
+    this.refreshFrames = null
+    this.archivedSupersedesRefresh = false
+    this.state = 'idle'
+    this.error = null
+  }
+
+  /** Prevent a response issued under withdrawn authority from reaching a caller or the snapshot. */
+  private currentResult<T>(result: RpcResult<T>, generation: number): RpcResult<T> {
+    return generation === this.authorizationGeneration ? result
+      : { ok: false, error: { code: 'PRODUCT_AUTH_INVALID', message: 'Workspace authorization changed; refresh.', details: {} } }
+  }
+
+  private readableView(view: WorkspaceView): WorkspaceView {
+    const sessionIds = view.sessionIds.filter(id => !this.revokedSessionIds.has(id))
+    return sessionIds.length === view.sessionIds.length ? view : { ...view, sessionIds }
   }
 
   /**
@@ -287,6 +351,7 @@ export class WorkspaceManager {
    * positional comparison is exact, not merely heuristic.
    */
   private installArchived(archivedSessionIds: readonly SessionId[]): void {
+    archivedSessionIds = archivedSessionIds.filter(id => !this.revokedSessionIds.has(id))
     if (this.refreshFrames !== null) this.archivedSupersedesRefresh = true
     if (archivedSessionIds.length === this.archivedSessionIds.length
       && archivedSessionIds.every((id, index) => id === this.archivedSessionIds[index])) return
@@ -314,6 +379,7 @@ export class WorkspaceManager {
 
   /** Upsert one Host view, optionally retaining the local object that materialized it. */
   private upsert(view: WorkspaceView, identity?: Workspace): void {
+    view = this.readableView(view)
     if (this.removedIds.has(view.workspaceId)) return
     this.refreshFrames?.push({ type: 'upsert', workspace: view })
     const index = this.items.findIndex(item => item.getSnapshot().view?.workspaceId === view.workspaceId)
@@ -366,13 +432,14 @@ export class WorkspaceManager {
     )
     const installed = new Map<WorkspaceView['workspaceId'], Workspace>()
     for (const view of views) {
+      const readable = this.readableView(view)
       const duplicate = installed.get(view.workspaceId)
       if (duplicate !== undefined) {
-        duplicate.adopt(view)
+        duplicate.adopt(readable)
         continue
       }
-      const workspace = existing.get(view.workspaceId) ?? new Workspace(this.api, view)
-      workspace.adopt(view)
+      const workspace = existing.get(view.workspaceId) ?? new Workspace(this.api, readable)
+      workspace.adopt(readable)
       installed.set(view.workspaceId, workspace)
     }
     this.items = [...installed.values()]

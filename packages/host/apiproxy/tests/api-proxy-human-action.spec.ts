@@ -5,12 +5,18 @@ import SessionStore from '@clocky/clocky-session'
 import SystemPrompt from '@clocky/clocky-system-prompt'
 import UserQuestionService from '@clocky/clocky-user-questions'
 import ApprovalService from '@clocky/clocky-user-approval'
-import { TeamError } from '@clocky/clocky-team'
+import { TeamError, fingerprintTeamHumanActorPayload } from '@clocky/clocky-team'
+import { selectHumanActor } from '@clocky/clocky-team/selection'
+import ProductPrincipalRegistry from '@clocky/clocky-product-principal'
+import * as TeamHumanActor from '@clocky/clocky-team-human-actor'
 import type {
   ParticipantId,
   TeamHumanActionResolveRequest,
   TeamHumanActionSnapshot,
   TeamHumanActionUpsertRequest,
+  TeamHumanActorLookup,
+  TeamHumanActorProofSource,
+  TeamHumanSessionReadRequest,
   TeamId,
   TeamStateSnapshot,
   TeamSystemHumanActionProof,
@@ -66,7 +72,9 @@ function openMux(api: ApiProxy, abort: AbortController): MuxCapture {
     readonly resolve: (frame: MuxFrame) => void
   }> = []
   void (async () => {
-    for await (const envelope of api.events.mux({ rpcId: RpcId('human-action-mux'), payload: {} }, abort.signal)) {
+    const stream = await withAuthenticatedProductCall(productCall, async () =>
+      api.events.mux({ rpcId: RpcId('human-action-mux'), payload: {} }, abort.signal))
+    for await (const envelope of stream) {
       envelopes.push(envelope)
       for (let index = waiters.length - 1; index >= 0; index -= 1) {
         const waiter = waiters[index] as (typeof waiters)[number]
@@ -160,11 +168,32 @@ async function harness(options: {
   let cursor = 4
   let remainingUpsertConflicts = options.rejectFirstUpsert === true ? 1 : 0
   let registered: TeamSystemHumanActionProofSource | undefined
+  let readerSource: TeamHumanActorProofSource | undefined
   const actions = new Map<string, TeamHumanActionSnapshot>()
   const upserts: TeamHumanActionUpsertRequest[] = []
   const resolutions: TeamHumanActionResolveRequest[] = []
   const scopes: TeamSystemHumanActionScope[] = []
   const teams = {
+    registerHumanActorProofSource(source: TeamHumanActorProofSource): () => void {
+      readerSource = source
+      return () => { if (readerSource === source) readerSource = undefined }
+    },
+    async resolveHumanReadAuthority(request: TeamHumanActorLookup) {
+      if (request.teamId !== teamId) throw new TeamError('Unknown test Team', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+      return { ...selectHumanActor((await teams.getTeam()).participants, request), teamId }
+    },
+    async assertHumanSessionRead(request: TeamHumanSessionReadRequest): Promise<void> {
+      const scope = readerSource?.resolveHumanActorProof(request.actor)
+      const { actor: _actor, ...input } = request
+      const header = ctx.sessions.get(request.sessionId)?.header
+      // This broker fixture owns synthetic agents; real activation binding is covered by api-proxy-teams.spec.ts.
+      if (scope?.operation !== 'session-content-read' || scope.teamId !== teamId
+        || header?.teamId !== request.teamId || header.participantId !== request.participantId
+        || scope.payloadFingerprint !== fingerprintTeamHumanActorPayload({ teamId, operation: 'session-content-read',
+          fence: { kind: 'read' }, payload: input })) {
+        throw new TeamError('Session read proof does not match its fixture provenance', 'TEAM_ACTOR_PROOF_INVALID')
+      }
+    },
     registerSystemHumanActionProofSource(source: TeamSystemHumanActionProofSource): () => void {
       registered = source
       return () => {
@@ -236,6 +265,8 @@ async function harness(options: {
     },
   }
   ctx.provide('teams', teams as never)
+  await ctx.plugin(ProductPrincipalRegistry)
+  await ctx.plugin(TeamHumanActor)
   const api = createApiProxy(ctx, {
     defaultModelSelection: () => ({ provider: 'p', model: 'm' }),
     cwd: '/tmp',

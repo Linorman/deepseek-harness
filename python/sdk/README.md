@@ -2,6 +2,32 @@
 
 English | [中文](https://github.com/Linorman/clocky/blob/master/python/sdk/README.zh.md)
 
+The control response exposes at most 32 authorized ingress targets from the complete installed topology; each ingress command still selects one entity.
+
+`list_simulation_requests(SimulationRequestsInput(...))` discovers one bounded original receipt page without private command inputs. `retry_simulation_request(SimulationRetryRequestInput(...))` accepts only the run and retained command identity; backend-retained input is replayed only for accepted commands, and terminal receipts stay unchanged. Both clients validate run, command, requested revision and page size, never traverse pages or retry automatically, and reject private or substituted results.
+
+`preflight_simulation(SimulationPreflightInput(...))` on both public clients returns current readiness without a command identity or resource reservation. `SimulationLimitsInput` permits only optional deployment-allowlisted run allowances; `SimulationPreflightResult` requires either resolved configuration or bounded field issues. Catalog configuration includes defaults and editable keys. Exact decimal `maxTime` remains a string; creation independently rechecks and retains its original command.
+
+`SimulationCheckpointDiagnostic` carries only finite public stage/code values, exact canonical subject identities and optional unconfirmed cleanup. Both receipts and checkpoint detail models refuse diagnoses on successful or unrelated operations and forbid provider messages, paths and arbitrary causes.
+
+`retry_simulation_operation(SimulationOperationRetryInput(...))` submits one exact existing outbox-budget grant through both public clients. The strict input normalizes reason once and rejects changed identity whitespace or unsafe/nonpositive attempt counts. Original queries retain `retryOperation`; a different payload cannot reuse its command, and `not-found` never authorizes a fresh identity. Grant/query remain separate from explicit scheduling and target reconciliation.
+
+`get_simulation_run_statuses(SimulationRunStatusesInput(...))` reads one exact ordered authorized batch through both public clients. Strict native metrics preserve canonical decimal intervals and charged unknown attempts; `modelPool` reports real-time Host permit/queue occupancy separately from run budgets. Scenario versions come only from the original trusted template. Missing/unavailable observations stay explicit, and provided private or substituted fields reject.
+
+`list_simulation_task_reviews()` and `resolve_simulation_task_review()` share strict `SimulationTaskReview*` models and the installed scene authority. Clients correlate the exact owned run, revision/page or original review command. `get_simulation_request()` retains the original `review` input; cold writes require explicit restore. Review never grants ordinary Team mutation or body access.
+
+`inspect_simulation_source(SimulationSourceInput(...))` returns a strict `SimulationSourceInspection`. Continue searching with the opaque cursor, then continue found text with that cursor and `envelope.sequence`. Selection/revision/position mismatches and bodies on redacted results are rejected.
+
+Knowledge inputs accept an exact decision `reference`; strict models and client correlation refuse substituted versions and source fields. Current audience and Host content grants still govern every returned text part.
+
+`watch_simulation(SimulationWatchInput(...))` performs one bounded real-time metadata wait. Exact run checks and strict DTOs reject substituted or private results; reset discards prior policy/body responses. Repeating a watch is caller-owned and never resumes a model.
+
+`Clocky` and `HarnessClient` provide Simulation product metadata, creation/preparation, `get_simulation_control()`, `manage_simulation()`, `get_simulation_management()`, `checkpoint_simulation()`, `restore_simulation()`, `ingress_simulation()` and `get_simulation_ingress()` when the selected runtime mounts the product services. Public `Simulation*Input` models reject execution configuration and invalid collection/section filters; response models preserve exact decimal time strings and reject bodies when the Host marks them withheld. `inspect_simulation_object()` supports separately paged entity relationships and frozen decision context. Only an explicit Host context grant discloses recorded plain text; source references grant no Team/Session body access, and this view is not the complete model request. Clients check selection/revision, command kind, restore target, original scheduling phase and ingress target/time. Retain the original command, management or ingress ID and payload after disconnect; `not-found` does not establish failure. Creation prepares a paused run without inference; old scheduling retries retain their original result without undoing later pause. Checkpoint/restore leave the run paused, restore validates the current suffix without rollback or inference, and input assignment remains separate from consumption. These methods never automatically retry commands or traverse pages.
+
+Retain `commandId` and original fields in `update_team_task()` or `Team.update_task()`. Acceptance returns original `value.receipt` and current `value.task`. `get_team_task_update_result()` and `Team.update_result()` read applied, terminal rejected or currently missing outcomes without writing. Strict models validate refusal reasons and original revision comparisons, and clients check exact command identity. `not-found` leaves a delayed request unresolved.
+
+`list_teams()` returns only safe metadata readable by the authenticated principal, without physical scan counts or authority grants. Encrypted `nextCursor` is valid only for that principal generation; an expired cursor requires an explicit first-page request. Team reads require current membership and never start model execution.
+
 Python subprocess SDK for driving Clocky over JSON-RPC stdio. The
 runtime inherits the environment named by the selected Cordis composition, so
 callers can use real model endpoints directly or point those variables at a
@@ -83,6 +109,11 @@ Team-list `nextCursor` values are opaque strings; `after_cursor=-1` begins a fre
 
 `inspect_team_task(team_id, task_id, "record")` returns current fields and history counts. Use `"attempts"` or `"reviews"` with `after_cursor`, `limit`, and `expected_revision` for a bounded history page. Replies are checked against the selected Team, task, section, revision and window. A stale revision requires refreshing the record; private artifact references are omitted.
 
+
+`list_simulation_tasks()` reads bounded canonical run-owned controls. `cancel_simulation_task()` retains the source operation, task revision, original command and exact attempt; required nullable `expectedAttemptId` preserves explicit `None` as JSON `null`, requiring no active lease. The SDK checks run/command/receipt family and rejects missing fences, actor fields and invalid hints. `get_simulation_request()` exposes original `cancellation` only with its matching `cancel-task` receipt; queries do not retry or infer.
+
 ## Single-task cancellation
 
 `HarnessClient.cancel_team_task()` and `Team.cancel_task()` accept `teamId`, `taskId`, `expectedRevision`, and optional `reason` (the Team helper supplies its own Team id). `value.cancellation` retains the exact intent; assigned or running phases mean termination is pending. Observe the task until cancelled while the Team continues. [Cancellation ownership](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.md).
+
+`read_simulation_records(SimulationRecordsInput(...))` returns a strict `SimulationRecordsPage` with exact run/filter/mode correlation. Metadata never includes raw JSON text. Original text requires a separate whole-run historical-content grant, uses ordered Unicode-safe parts and carries the revision and policy version needed for consistent reconstruction.

@@ -2,7 +2,15 @@
 
 [English](README.md) | 中文
 
+`withReader()` 为目录消费者保留不可变的主体、issuer、subject 和凭据代际事实。它不要求已有 Team 成员资格，本身不授予 Team 访问；provider 检查每个返回对象。回调完成、调用撤销或 source unload 都会退役该不透明 reader。Reader 不能作为成员或修改 proof 使用。
+
+`openReader()` 为流消费者返回该 reader、退役信号与幂等的 `close()`。消费者负责清理；认证撤销或 source unload 会中止 lease，即使没有新帧到达。`session-content-read` 只使用成员读取权限，并绑定完整 Team／成员／Session 元组；Hub 独立检查其持久绑定。
+
+身份、就绪度、Session、频道列表和频道内容检查，可将 proof 锚定到规范 reservation 祖先 Team 中最近的 active 人工成员。回调接收该成员所属 Team，完整目标 payload 仍计入 fingerprint。其他操作仍解析目标 Team 内的成员资格。缺失／私有 Team 检查使用 `TEAM_HUMAN_ACTOR_FORBIDDEN`；祖先关系不提供修改或同意授权。
+
 `@clocky/clocky-team-human-actor` 将一个 `AuthenticatedProductCall` 绑定到准确一个 active human Team participant；该 participant durable 的 `owner` 必须等于已认证 product-principal id。它会在 `ctx.teams` 上注册生成的 runtime-only proof source。
+
+`resolveHumanActor()` 提供有界身份和操作名称；proof 签发不复制完整 Team 快照。仅检查成员资格的 `task-capabilities-read` scope 将准确的输入路径绑定到 read fence，不允许变更，并由 Hub 重新检查。
 
 ## 语义
 

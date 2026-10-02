@@ -2,12 +2,12 @@
 
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { runInNewContext } from 'node:vm'
-import { Context } from '@clocky/cordis'
-import { afterEach, describe, expect, it } from 'vitest'
+import { Context, FiberState } from '@clocky/cordis'
+import Loader from '@clocky/cordis-plugin-loader'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderIndexInjections, type WebServer, type WebRoute } from '@clocky/clocky-host-webserver'
 import * as modulesClient from '../src/client/index.ts'
 import { ClientModuleRegistry, bootInjections, orderByModuleGraph, type Config } from '../src/index.ts'
@@ -28,7 +28,9 @@ function writePackage(
   packageName: string,
   metadata: Record<string, unknown> = { clocky: { client: { platform: 'web' } } },
 ): string {
-  root ??= realpathSync(mkdtempSync(join(tmpdir(), 'clocky-client-modules-')))
+  const temporary = join(process.cwd(), '.tmp/client-module-node-half')
+  mkdirSync(temporary, { recursive: true })
+  root ??= realpathSync(mkdtempSync(join(temporary, 'fixture-')))
   const pkgRoot = join(root, 'node_modules', ...packageName.split('/'))
   const clientPath = join(pkgRoot, 'lib', 'client.js')
   mkdirSync(pkgRoot, { recursive: true })
@@ -57,7 +59,7 @@ function constructWithRoute(packageNames: string[], config: Config = {}): { serv
   ctx.provide('loader', {
     *entries() {
       for (const packageName of packageNames) {
-        yield { options: { name: packageName, config: { hostOnly: 'never-forwarded-marker' } }, fiber: {}, disabled: false }
+        yield { options: { name: packageName, config: { hostOnly: 'never-forwarded-marker' } }, fiber: { state: FiberState.ACTIVE }, disabled: false }
       }
     },
   })
@@ -355,4 +357,112 @@ describe('module graph order', () => {
     expect(() => construct(['@fixture/cycle-a', '@fixture/cycle-b']))
       .toThrow('module graph cycle @fixture/cycle-a -> @fixture/cycle-b -> @fixture/cycle-a')
   })
+})
+
+it('advertises only settled active entries across required-service loss, reload and owner disposal', async () => {
+  const packageName = '@fixture/required-client'
+  writeBuiltPackage(packageName, {})
+  const packageRoot = join(root!, 'node_modules', '@fixture', 'required-client')
+  writeFileSync(join(packageRoot, 'package.json'), JSON.stringify({ name: packageName, type: 'module',
+    exports: { '.': './lib/index.js', './client': './lib/client.js', './package.json': './package.json' },
+    clocky: { client: { platform: 'web' } } }))
+  writeFileSync(join(packageRoot, 'lib/index.js'), `
+export const inject = ['moduleAvailabilitySource']
+export async function apply(ctx) {
+  const state = ctx.get('moduleAvailabilitySource')
+  state.started++
+  await state.ready
+  ctx.effect(() => { state.active++; return () => { state.active--; state.disposed++ } })
+}
+`)
+  const ctx = new Context()
+  const gate = Promise.withResolvers<undefined>()
+  const state = { ready: gate.promise, started: 0, active: 0, disposed: 0 }
+  const provider = { apply(context: Context) { context.reflect.provide('moduleAvailabilitySource', state) } }
+  const webServer: Pick<WebServer, 'port' | 'register' | 'tapIndex'> = { port: 0, register: () => () => {}, tapIndex: () => () => {} }
+  ctx.provide('webServer', webServer as WebServer)
+  ctx.baseUrl = pathToFileURL(root!).href + '/'
+  await ctx.plugin(Loader, { baseUrl: ctx.baseUrl })
+  const registry = new ClientModuleRegistry(ctx)
+  const observed: number[] = []
+  const unsubscribe = registry.onGraphChanged(() => { observed.push(registry.graph().entries.length) })
+  let first: ReturnType<Context['plugin']> | undefined, second: ReturnType<Context['plugin']> | undefined
+  try {
+    const id = await ctx.loader.create({ name: packageName })
+    const entry = ctx.loader.resolve(id)
+    await ctx.loader.await()
+    expect(entry.fiber?.state).toBe(FiberState.PENDING)
+    expect(registry.graph().entries).toEqual([])
+    first = ctx.plugin(provider); await first
+    await vi.waitFor(() => { expect(entry.fiber?.state).toBe(FiberState.LOADING) })
+    expect(state.started).toBe(1)
+    expect(registry.graph().entries).toEqual([])
+    gate.resolve(undefined); await ctx.loader.await()
+    expect(registry.graph().entries).toHaveLength(1)
+    const row = registry.graph().entries[0]!
+    expect(entry.fiber?.state).toBe(FiberState.ACTIVE)
+    expect(state.active).toBe(1)
+    await first.dispose(); await ctx.loader.await()
+    expect(registry.graph().entries).toEqual([])
+    expect(entry.fiber?.state).toBe(FiberState.PENDING)
+    expect(state).toMatchObject({ active: 0, disposed: 1 })
+    second = ctx.plugin(provider); await second; await ctx.loader.await()
+    expect(registry.graph().entries).toEqual([row])
+    expect(state).toMatchObject({ active: 1, started: 2, disposed: 1 })
+    expect(observed).toEqual([1, 0, 1])
+    unsubscribe()
+    await ctx.fiber.dispose()
+    expect(state).toMatchObject({ active: 0, disposed: 2 })
+    expect(observed).toEqual([1, 0, 1])
+  } finally { unsubscribe(); gate.resolve(undefined); await first?.dispose(); await second?.dispose(); await ctx.fiber.dispose() }
+})
+
+it('keeps one published package row while a sibling entry waits for a different required service', async () => {
+  const packageName = '@fixture/sibling-client'
+  writeBuiltPackage(packageName, {})
+  const packageRoot = join(root!, 'node_modules', '@fixture', 'sibling-client')
+  writeFileSync(join(packageRoot, 'package.json'), JSON.stringify({ name: packageName, type: 'module',
+    exports: { '.': './lib/index.js', './client': './lib/client.js', './package.json': './package.json' },
+    clocky: { client: { platform: 'web' } } }))
+  writeFileSync(join(packageRoot, 'lib/index.js'), `
+export function apply(ctx, config) {
+  const state = ctx.get(config.source)
+  ctx.effect(() => { state.active++; return () => { state.active--; state.disposed++ } })
+}
+`)
+  const ctx = new Context()
+  ctx.baseUrl = pathToFileURL(root!).href + '/'
+  const webServer: Pick<WebServer, 'port' | 'register' | 'tapIndex'> = { port: 0, register: () => () => {}, tapIndex: () => () => {} }
+  ctx.provide('webServer', webServer as WebServer)
+  await ctx.plugin(Loader, { baseUrl: ctx.baseUrl })
+  const state = { active: 0, disposed: 0 }
+  const first = ctx.plugin({ apply(context: Context) { context.reflect.provide('firstAvailabilitySource', state) } })
+  await first
+  const registry = new ClientModuleRegistry(ctx)
+  const changes: number[] = []
+  const unsubscribe = registry.onGraphChanged(() => { changes.push(registry.graph().entries.length) })
+  try {
+    const activeId = await ctx.loader.create({ name: packageName, inject: ['firstAvailabilitySource'], config: { source: 'firstAvailabilitySource' } })
+    const waitingId = await ctx.loader.create({ name: packageName, inject: ['secondAvailabilitySource'], config: { source: 'secondAvailabilitySource' } })
+    await ctx.loader.await()
+    expect(ctx.loader.resolve(activeId).fiber?.state).toBe(FiberState.ACTIVE)
+    expect(ctx.loader.resolve(waitingId).fiber?.state).toBe(FiberState.PENDING)
+    const row = registry.graph().entries[0]!
+    expect(registry.graph().entries).toEqual([row])
+    expect(changes).toEqual([1])
+    const second = ctx.plugin({ apply(context: Context) { context.reflect.provide('secondAvailabilitySource', state) } })
+    await second; await ctx.loader.await()
+    expect(state.active).toBe(2)
+    expect(registry.graph().entries).toEqual([row])
+    expect(changes).toEqual([1])
+    await second.dispose(); await ctx.loader.await()
+    expect(ctx.loader.resolve(waitingId).fiber?.state).toBe(FiberState.PENDING)
+    expect(registry.graph().entries).toEqual([row])
+    expect(state).toEqual({ active: 1, disposed: 1 })
+    expect(changes).toEqual([1])
+    await first.dispose(); await ctx.loader.await()
+    expect(registry.graph().entries).toEqual([])
+    expect(state).toEqual({ active: 0, disposed: 2 })
+    expect(changes).toEqual([1, 0])
+  } finally { unsubscribe(); await first.dispose(); await ctx.fiber.dispose() }
 })

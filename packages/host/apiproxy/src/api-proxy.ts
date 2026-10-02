@@ -1,7 +1,19 @@
-import { withoutPrivateTaskArtifacts } from '@clocky/clocky-team/selection'
+import { productAuthorizationScope } from './product-authorization-scope.ts'
+import { createSimulationProductApi } from './simulation-product-api.ts'
+import { teamIdentityResolveInputSchema, teamIdentityResolutionSchema } from './api/teams.schema.ts'
+import { teamActionInspectInputSchema } from './api/teams.schema.ts'
+import { teamActionInspectionSchema } from '@clocky/clocky-team/schema'
+import { teamAttentionReadInputSchema, teamAttentionPageSchema } from './api/teams.schema.ts'
+import { teamExecutionProfilesInputSchema } from './api/teams.schema.ts'
+import { teamMemberReadinessInputSchema, teamMemberReadinessPageSchema } from './api/teams.schema.ts'
+import type {} from '@clocky/clocky-team-workspace'
+import { teamCapabilitiesInputSchema, teamCapabilitiesValueSchema } from './api/teams.schema.ts'
+import { withoutPrivateTeamArtifacts as redactTeamStateForHuman, teamEventOwnerId as teamEventOwner,
+  withoutPrivateTaskHistoryArtifacts as redactTaskForHuman, withoutPrivateWorkflowArtifacts as redactWorkflowPlanForHuman,
+} from '@clocky/clocky-team/selection'
 import { teamTaskIdSchema } from '@clocky/clocky-team'
 import { teamChannelInputRequestSchema, teamChannelAttachmentRequestSchema, teamWorkflowPlanListRequestSchema } from './api/teams.schema.ts'
-import type { TeamChannelPostInput, TeamWorkflowPlanList } from './api/teams.ts'
+import type { TeamChannelPostInput } from './api/teams.ts'
 import { teamChannelListInputSchema } from '@clocky/clocky-team/schema'
 import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 import type { TeamHumanActionResponseInput, TeamHumanActionResponseResult, HostHumanActionResponseScope, HostHumanActionUnavailableScope } from '@clocky/clocky-team'
@@ -13,7 +25,7 @@ import { resolvePrincipalChannelText, getPrincipalChannelInvitation, acknowledge
  * narrow RpcRequest<P> and echoes request.rpcId on the RpcResponse<T>.
  */
 
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname } from 'node:path'
@@ -26,6 +38,7 @@ import { AttachmentError, admitEncodedImages } from '@clocky/clocky-attachment'
 import type { ImageAttachmentRef } from '@clocky/clocky-attachment'
 import {
   TeamError,
+  TeamTaskUpdateRejectedError,
   channelCloseInputSchema,
   channelSummarySelectionInputSchema,
   channelSummaryHumanProofInput,
@@ -54,6 +67,7 @@ import type {
   ChannelEnvelopePostInput,
   ChannelOpenInput,
   ChannelSnapshot,
+  ChannelId,
   EnvelopeId,
   ParticipantInterruptSnapshot,
   ParticipantInterruptRequestInput,
@@ -77,7 +91,6 @@ import type {
   TeamGoalPhaseTransitionInput,
   TeamGoalUpdateInput,
   TeamResumeInput,
-  TeamWorkflowPlanSnapshot,
   TeamTaskCancelInput,
   TeamTaskCreateInput,
   TeamTaskDeleteInput,
@@ -92,11 +105,12 @@ import { TeamArtifactError } from '@clocky/clocky-team-artifact'
 import type {} from '@clocky/clocky-team-artifact'
 import { TeamRunError } from '@clocky/clocky-team-run'
 import type {} from '@clocky/clocky-team-run'
-import { createUserMessage, freezeMessage, ReasoningEffortId } from '@clocky/clocky-llm'
+import { createUserMessage, freezeMessage, ReasoningEffortId, assertNever } from '@clocky/clocky-llm'
 import { errorChain } from '@clocky/clocky-llm'
 import type { MessageSource } from '@clocky/clocky-llm'
 import { isAppendSurfaceEvent, isJsonValue } from '@clocky/clocky-session'
 import type { JsonValue, Session, SessionEvent, SessionEventMap, SessionHeader, SessionId, UserMessage } from '@clocky/clocky-session'
+import { SessionId as brandSessionId } from '@clocky/clocky-session'
 import type { SessionPersistence } from '@clocky/clocky-session-persistence'
 import { SessionQueryError, type SessionSearchCursor } from '@clocky/clocky-session-query'
 import { isUserInvocable } from '@clocky/clocky-skill'
@@ -169,7 +183,7 @@ import { imageLimitsProjectionSchema, sessionListMetadataProjectionSchema } from
 import { questionResponsePayloadSchema } from './api/questions.schema.ts'
 import type { ClientResponse, RpcError, RpcReceipt, RpcRequest, RpcResponse } from './api/rpc.ts'
 import { RpcId } from './api/rpc.ts'
-import type { TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamStartResult } from './api/teams.ts'
+import type { TeamArtifactReadResult, TeamFinal, TeamStartResult } from './api/teams.ts'
 import type {
   AskUserQuestionAnswer, AskUserQuestionItem, AskUserQuestionRequest,
 } from '@clocky/clocky-user-questions'
@@ -200,6 +214,25 @@ const COLD_SUMMARY_BATCH_SIZE = 16
 export const DEFAULT_COLD_BLANK_PROBE_MAX_BYTES = 1024
 /** Fixed host-side safety bound for one browser artifact response. */
 const MAX_TEAM_ARTIFACT_READ_BYTES = 8 * 1024 * 1024
+
+/** Default pending event count; deployments can lower or raise the bounded subscription allowance. */
+export const DEFAULT_MAX_PENDING_EVENT_FRAMES = 4096
+/** Default serialized event bytes retained while a subscription awaits authorization or its consumer. */
+export const DEFAULT_MAX_PENDING_EVENT_BYTES = 8 * 1024 * 1024
+
+type FrameReadSubject = { kind: 'public' } | { kind: 'unknown' }
+  | { kind: 'session-id'; sessionId: SessionId }
+  | { kind: 'session-lineage'; header: SessionHeader }
+  | { kind: 'team'; teamId: TeamId }
+  | { kind: 'channel'; channelId: ChannelId }
+  | { kind: 'session'; sessionId: SessionId; teamId: TeamId; participantId: ParticipantId }
+
+/** Provider cleanup codes permit intent reconciliation; unrelated failures still surface. */
+function isTeamCancellationPending(error: unknown): boolean {
+  if (error instanceof AggregateError) return error.errors.every(isTeamCancellationPending)
+  return typeof error === 'object' && error !== null && 'code' in error
+    && (error.code === 'TEAM_NOT_QUIESCENT' || error.code === 'TEAM_RUN_NOT_QUIESCENT')
+}
 
 /** Conversation message event types (the pagination counting unit). */
 const MESSAGE_TYPES = new Set(['user/message', 'team/channel-view', 'assistant/message'])
@@ -460,13 +493,28 @@ function presetFailure(request: RpcRequest<unknown>, error: unknown): RpcRespons
 
 /** Simple async queue: core callbacks push, the AsyncIterable pulls; abort/return cleans up. */
 class FrameQueue<F> {
-  private buffer: F[] = []
+  private buffer: { item: F; subject: FrameReadSubject; bytes: number }[] = []
   private waiter: (() => void) | undefined
   private done = false
+  private bytes = 0
+  private authorizing = false
+  private failure: Error | undefined
 
-  push(item: F): void {
+  constructor(private readonly limits: { frames: number; bytes: number },
+    private readonly capture: (item: F) => FrameReadSubject) {}
+
+  push(item: F, subject = this.capture(item)): void {
     if (this.done) return
-    this.buffer.push(item)
+    const bytes = Buffer.byteLength(JSON.stringify(item))
+    if (this.buffer.length + Number(this.authorizing) === this.limits.frames || this.bytes + bytes > this.limits.bytes) {
+      this.failure = new Error('Event stream backlog exceeded its configured allowance; reconnect and refresh')
+      this.buffer = []
+      this.bytes = 0
+      this.end()
+      return
+    }
+    this.buffer.push({ item, subject, bytes })
+    this.bytes += bytes
     this.waiter?.()
   }
 
@@ -475,17 +523,39 @@ class FrameQueue<F> {
     this.waiter?.()
   }
 
-  async *iterate(signal: AbortSignal, cleanup: () => void): AsyncGenerator<F> {
+  /** Producer callbacks can fail this queue while authorization is awaiting IO. */
+  private currentFailure(): Error | undefined { return this.failure }
+
+  async *iterate(signal: AbortSignal, cleanup: () => void,
+    read: (item: F, subject: FrameReadSubject) => Promise<F | undefined>): AsyncGenerator<F> {
     const onAbort = (): void => { this.end() }
     signal.addEventListener('abort', onAbort, { once: true })
     try {
       while (true) {
-        while (this.buffer.length > 0) yield this.buffer.shift() as F
-        if (this.done || signal.aborted) return
+        if (isAborted(signal)) return
+        const initialFailure = this.currentFailure()
+        if (initialFailure !== undefined) throw initialFailure
+        while (this.buffer.length > 0) {
+          if (isAborted(signal)) return
+          const next = this.buffer.shift() as { item: F; subject: FrameReadSubject; bytes: number }
+          this.authorizing = true
+          const allowed = await read(next.item, next.subject)
+          if (isAborted(signal)) return
+          const failure = this.currentFailure()
+          if (failure !== undefined) throw failure
+          this.bytes -= next.bytes
+          this.authorizing = false
+          if (allowed !== undefined) yield allowed
+        }
+        if (this.done || isAborted(signal)) return
         await new Promise<void>((resolve) => { this.waiter = resolve })
         this.waiter = undefined
       }
     } finally {
+      this.done = true
+      this.buffer = []
+      this.bytes = 0
+      this.authorizing = false
       signal.removeEventListener('abort', onAbort)
       cleanup()
     }
@@ -526,7 +596,18 @@ export function assertJsonArgs(event: string, args: readonly unknown[]): JsonVal
 
 /** Queue the subscription baseline frame. */
 function subscribeSession(queue: FrameQueue<RpcRequest<MuxFrame>>, session: Session): void {
-  queue.push(frame({ type: 'session/subscribed', sessionId: session.id, lastSeq: session.seq - 1 }))
+  queue.push(frame({ type: 'session/subscribed', sessionId: session.id, lastSeq: session.seq - 1 }), sessionReadSubject(session.header))
+}
+
+/** Capture immutable Session provenance while its producer still owns the live object. */
+function sessionReadSubject(header: SessionHeader): FrameReadSubject {
+  if (header.teamId === undefined && header.participantId === undefined && header.parentSession !== undefined) {
+    return { kind: 'session-lineage', header }
+  }
+  if (header.teamId === undefined && header.participantId === undefined) return { kind: 'public' }
+  if (header.teamId === undefined || header.participantId === undefined) return { kind: 'unknown' }
+  return { kind: 'session', sessionId: header.id, teamId: teamIdSchema.parse(header.teamId),
+    participantId: participantIdSchema.parse(header.participantId) }
 }
 
 /**
@@ -682,6 +763,10 @@ function directoryError(error: unknown): RpcError {
 
 /** Resolved Agent model and project-directory defaults consumed by the API implementation. */
 export interface ApiProxyDefaults {
+  /** Maximum frames waiting for authorization or downstream consumption per event stream. */
+  maxPendingEventFrames?: number
+  /** Maximum serialized bytes waiting per event stream. */
+  maxPendingEventBytes?: number
   /**
    * The model selection a session starts from when its own log names none. Read on
    * every access rather than captured, so a default saved during this process
@@ -1319,48 +1404,6 @@ function changedWorkspaceView(workspaceId: string, value: unknown): WorkspaceVie
   }
 }
 
-/** Remove private artifact metadata from browser-facing Team projections. */
-function redactTeamStateForHuman(state: TeamStateSnapshot): TeamStateSnapshot {
-  return {
-    ...state,
-    tasks: state.tasks.map(redactTaskForHuman),
-    workspaceAllocations: state.workspaceAllocations.map(allocation => allocation.loss === undefined ? allocation : {
-      ...allocation, loss: { ...allocation.loss, artifacts: allocation.loss.artifacts.filter(reference => reference.visibility !== 'private') },
-    }),
-  }
-}
-
-/** Remove private artifact metadata from one browser-facing task projection. */
-function redactTaskForHuman(task: TeamTaskSnapshot): TeamTaskSnapshot {
-  return {
-    ...task,
-    attemptHistory: task.attemptHistory.map((attempt) => {
-      if (attempt.outcome.kind !== 'completed') return attempt
-      return {
-        ...attempt,
-        outcome: {
-          ...attempt.outcome,
-          result: withoutPrivateTaskArtifacts(attempt.outcome.result),
-        },
-      }
-    }),
-  }
-}
-
-/** Remove private artifact metadata from one browser-facing workflow plan result. */
-function redactWorkflowPlanForHuman(plan: TeamWorkflowPlanSnapshot): TeamWorkflowPlanSnapshot {
-  if (plan.result === undefined) return plan
-  return {
-    ...plan,
-    result: {
-      ...plan.result,
-      tasks: plan.result.tasks.map(task => task.phase === 'completed'
-        ? { ...task, result: withoutPrivateTaskArtifacts(task.result) }
-        : task),
-    },
-  }
-}
-
 /**
  * Implement ApiProxy over a composed host context.
  * @param ctx - a context with the Host spine and Workspace registry mounted.
@@ -1368,6 +1411,10 @@ function redactWorkflowPlanForHuman(plan: TeamWorkflowPlanSnapshot): TeamWorkflo
  * @returns the ApiProxy implementation.
  */
 export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiProxy {
+  const eventLimits = { frames: defaults.maxPendingEventFrames ?? DEFAULT_MAX_PENDING_EVENT_FRAMES,
+    bytes: defaults.maxPendingEventBytes ?? DEFAULT_MAX_PENDING_EVENT_BYTES }
+  if (!Number.isSafeInteger(eventLimits.frames) || eventLimits.frames < 1
+    || !Number.isSafeInteger(eventLimits.bytes) || eventLimits.bytes < 1) throw new Error('Event stream allowances must be positive safe integers')
   const sessionExportCompressionLevel = defaults.sessionExportCompressionLevel
     ?? DEFAULT_SESSION_LOG_COMPRESSION_LEVEL
   const coldBlankProbeMaxBytes = defaults.coldBlankProbeMaxBytes
@@ -1392,8 +1439,112 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
   const pendingQuestions = new Map<RpcId, PendingQuestion>()
   const pendingApprovals = new Map<RpcId, PendingApproval>()
   const muxQueues = new Set<FrameQueue<RpcRequest<MuxFrame>>>()
+  let sessionVisibilityRevision = 0
+  ctx.on('team/changed', (event) => {
+    if (event.type === 'participant/changed' || event.type === 'task/changed' && event.task.execution.kind === 'child-team') {
+      sessionVisibilityRevision++
+    }
+  })
   const imageAdmissionChains = new WeakMap<Agent, Promise<void>>()
   hostHumanActionProofIssuer(ctx)
+
+  /** Capture immutable provenance before an emitted Session can be disposed. */
+  function captureEventSubject(payload: MuxFrame | HostFrame): FrameReadSubject {
+    if (payload.type === 'team/changed') return { kind: 'team', teamId: teamEventOwner(payload.event) }
+    if (payload.type === 'channel/changed') return { kind: 'channel', channelId: payload.event.channelId }
+    if ('sessionId' in payload) {
+      const session = ctx.sessions.get(payload.sessionId)
+      return session === undefined ? { kind: 'unknown' } : sessionReadSubject(session.header)
+    }
+    return { kind: 'public' }
+  }
+
+  /** Classify the allowlisted event's owned Session before its JSON arguments enter a stream queue. */
+  function forwardedReadSubject(event: typeof API_REMOTE_FORWARDED_EVENTS[number], args: JsonValue[]): FrameReadSubject {
+    let id: JsonValue | undefined
+    switch (event) {
+      case 'commands/change': case 'credentials/reference-updated': case 'llm/adapters-updated': case 'settings/document-updated':
+        return { kind: 'public' }
+      case 'agent-preset/selected': id = args[0]; break
+      case 'cordis/request-run': case 'cordis/request-run-resolved': case 'cordis/dynamic-package': case 'cordis/dynamic-retract':
+      case 'cordis/inspect-query': case 'cordis/inspect-query-resolved': {
+        const owner = args[0]
+        id = typeof owner === 'object' && owner !== null && !Array.isArray(owner) ? owner.agentId : undefined
+        break
+      }
+      default: return assertNever(event)
+    }
+    if (typeof id !== 'string' || id.length === 0) throw new Error('Forwarded Session event has no owner identity')
+    const sessionId = brandSessionId(id)
+    const header = ctx.get('sessions')?.get(sessionId)?.header
+    return header === undefined ? { kind: 'session-id', sessionId } : sessionReadSubject(header)
+  }
+
+  /** Each asynchronous frame check pins the transport principal and ends on source or authentication retirement. */
+  function eventReader(signal: AbortSignal, revoked?: (teamId: TeamId) => void): {
+    signal: AbortSignal
+    authorize: (subject: FrameReadSubject) => Promise<boolean>
+    close: () => void
+  } {
+    const call = currentAuthenticatedProductCall()
+    const humans = ctx.get('teamHumanActors')
+    const teams = ctx.get('teams')
+    const lease = call === undefined || humans === undefined ? undefined : humans.openReader(call)
+    const streamSignal = lease === undefined ? signal : AbortSignal.any([signal, lease.signal])
+    const visibleTeams = new Set<TeamId>()
+    const authorize = async (subject: FrameReadSubject): Promise<boolean> => {
+      if (subject.kind === 'public') return true
+      if (subject.kind === 'unknown' || streamSignal.aborted) return false
+      let observedTeam: TeamId | undefined
+      try {
+        let lineageOwner: SessionHeader | undefined
+        if (subject.kind === 'session-lineage' || subject.kind === 'session-id') {
+          const header = subject.kind === 'session-lineage' ? subject.header
+            : (await sessionReferenceHeaders([subject.sessionId])).get(subject.sessionId)
+          if (header === undefined) return false
+          lineageOwner = await sessionContentOwner(header)
+          if (lineageOwner.teamId === undefined && lineageOwner.participantId === undefined) return !streamSignal.aborted
+        }
+        if (call === undefined || humans === undefined || teams === undefined) return false
+        if (subject.kind === 'session' || subject.kind === 'session-lineage' || subject.kind === 'session-id') {
+          let input: { teamId: TeamId; participantId: ParticipantId; sessionId: SessionId }
+          if (subject.kind === 'session') {
+            input = { teamId: subject.teamId, participantId: subject.participantId, sessionId: subject.sessionId }
+          } else {
+            if (lineageOwner?.teamId === undefined || lineageOwner.participantId === undefined) {
+              throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+            }
+            input = { teamId: teamIdSchema.parse(lineageOwner.teamId),
+              participantId: participantIdSchema.parse(lineageOwner.participantId), sessionId: lineageOwner.id }
+          }
+          observedTeam = input.teamId
+          await humans.withProof(call, { teamId: input.teamId, operation: 'session-content-read',
+            fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) },
+          async (actor) =>{  await teams.assertHumanSessionRead({ ...input, actor }) })
+          visibleTeams.add(input.teamId)
+          return !streamSignal.aborted
+        }
+        const teamId = subject.kind === 'team' ? subject.teamId
+          : (await teams.getChannelOwner({ channelId: subject.channelId })).teamId
+        observedTeam = teamId
+        const input = { teamId, participantIds: [] }
+        await humans.withProof(call, { teamId, operation: 'identity-resolve-read', fence: { kind: 'read' }, payload: input },
+          async actor => await teams.resolveIdentities({ ...input, actor }))
+        visibleTeams.add(teamId)
+        return !streamSignal.aborted
+      } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'code' in error
+          && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+            || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS' || error.code === 'TEAM_ACTOR_PROOF_INVALID'
+            || error.code === 'TEAM_CHANNEL_NOT_FOUND' || error.code === 'TEAM_NOT_FOUND')) {
+          if (observedTeam !== undefined && visibleTeams.delete(observedTeam)) revoked?.(observedTeam)
+          return false
+        }
+        throw new Error('Event authorization is unavailable; reconnect and refresh', { cause: error })
+      }
+    }
+    return { signal: streamSignal, authorize, close: () => { lease?.close() } }
+  }
 
   /** Serialize image admission with model selection for one agent. */
   function serializeImageAdmission<T>(agent: Agent, operation: () => Promise<T>): Promise<T> {
@@ -1499,8 +1650,23 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     apiRemoteSubagentOwnershipError(sessionId)
   const teamOwnershipError = (sessionId: SessionId): RpcError =>
     apiRemoteTeamOwnershipError(sessionId)
-  const inspectServable = (sessionId: SessionId): Promise<{ meta: SessionHeader; events: SessionEvent[] }> =>
-    inspectApiRemoteSession(ctx, sessionId)
+  /** Team transcript reads need no project; generic Agent recovery retains its separate cwd requirement. */
+  const inspectServable = async (sessionId: SessionId): Promise<{ meta: SessionHeader; events: SessionEvent[] }> => {
+    const header = (await sessionReferenceHeaders([sessionId])).get(sessionId)
+    if (header === undefined || header.cwd !== undefined) return await inspectApiRemoteSession(ctx, sessionId)
+    const owner = await sessionContentOwner(header)
+    if (owner.teamId === undefined) return await inspectApiRemoteSession(ctx, sessionId)
+    return await withSessionContentRead(header, currentAuthenticatedProductCall(), async () => {
+      const persistence = ctx.get('sessionPersistence')
+      if (persistence === undefined) throw new Error('Session persistence is unavailable')
+      const inspected = await persistence.inspect(sessionId)
+      if (inspected.meta.id !== sessionId || inspected.meta.teamId !== header.teamId
+        || inspected.meta.participantId !== header.participantId || inspected.meta.parentSession !== header.parentSession) {
+        throw new Error('Session ownership changed during inspection')
+      }
+      return { meta: inspected.meta, events: [...inspected.events] }
+    })
+  }
   // Cold resume composes the preset recorded by the session: its history was
   // produced under that composition.
   // Every generic entry point — prompt, models, commands — arrives here, so
@@ -1833,7 +1999,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
    * besides ensuring the composition; {@link historyCutOf} takes the cut.
    * @param sessionId - the transcript being read.
    * @returns the attached session, or the inspected detached header and events.
-   * @throws {@link ApiRemoteSessionNotFound} when no project-backed session has that identity.
+   * @throws {@link ApiRemoteSessionNotFound} when no project-backed or currently authorized Team Session has that identity.
    */
   async function historySourceFor(sessionId: SessionId): Promise<HistorySource> {
     const attached = ctx.sessions.get(sessionId)
@@ -1937,21 +2103,47 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
    */
   async function listVisibleSessionSummaries(signal?: AbortSignal): Promise<SessionSummary[]> {
     signal?.throwIfAborted()
+    const owners = new Map<SessionId, SessionHeader>()
+    const inheritedTeam = (id: SessionId): Pick<SessionSummary, 'team'> => {
+      const owner = owners.get(id)
+      const team = owner === undefined ? undefined : sessionListFields(owner).team
+      return team === undefined ? {} : { team }
+    }
     const summarizeAttached = (session: Session): SessionSummary => {
       const agent = ctx.agents.get(session.id)
       const projections = listProjectionsFor(ctx, session.header, session)
       return {
         ...summarize(session, agent?.status === 'running'),
+        ...inheritedTeam(session.id),
         ...projections === undefined ? {} : { projections },
       }
     }
-    const items = ctx.sessions.list().map(summarizeAttached)
+    const call = currentAuthenticatedProductCall()
+    const mayRead = async (meta: SessionHeader, cold = false): Promise<boolean> => {
+      try {
+        const owner = await sessionContentOwner(meta)
+        if (cold && meta.cwd === undefined && owner.teamId === undefined) return false
+        await withSessionContentRead(owner, call, async () => {})
+        owners.set(meta.id, owner)
+        return call?.signal.aborted !== true
+      } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'code' in error
+          && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+            || error.code === 'TEAM_ACTOR_PROOF_INVALID' || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS')) return false
+        throw error
+      }
+    }
+    const attachedSessions = ctx.sessions.list()
+    const items: SessionSummary[] = []
+    for (const session of attachedSessions) if (await mayRead(session.header)) items.push(summarizeAttached(session))
     signal?.throwIfAborted()
-    const attached = new Set(items.map(item => item.sessionId))
+    const attached = new Set(attachedSessions.map(item => item.id))
     const persistence = ctx.get('sessionPersistence')
     if (persistence !== undefined) {
-      const cold = (await persistence.list(signal))
-        .filter(meta => !attached.has(meta.id) && meta.cwd !== undefined)
+      const cold: SessionHeader[] = []
+      for (const meta of await persistence.list(signal)) {
+        if (!attached.has(meta.id) && await mayRead(meta, true)) cold.push(meta)
+      }
       signal?.throwIfAborted()
       for (let offset = 0; offset < cold.length; offset += COLD_SUMMARY_BATCH_SIZE) {
         signal?.throwIfAborted()
@@ -1961,18 +2153,19 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             // Projection hints remain optional. Blank verification may read
             // this Session's artifact only when it passes the configured size check.
             const projections = listProjectionsFor(ctx, meta, undefined)
-            const summary = await summarizeCold(
+            const summary = await withSessionContentRead(meta, call, async () => await summarizeCold(
               ctx,
               persistence,
               meta,
               projections?.values.sessionListMetadata,
               coldBlankProbeMaxBytes,
               signal,
-            )
+            ))
             const attachedSession = ctx.sessions.get(meta.id)
             if (attachedSession !== undefined) return summarizeAttached(attachedSession)
             return {
               ...summary,
+              ...inheritedTeam(meta.id),
               ...projections === undefined ? {} : { projections },
             }
           }),
@@ -2122,6 +2315,182 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     }
   }
 
+  /** Keep membership authority alive across a product read, including failed reads. */
+  async function humanTeamRead<T>(request: RpcRequest<{ readonly teamId: TeamId }>,
+    read: (teams: Context['teams'], access: import('./api/teams.ts').TeamProductSelection['readAccess']) => Promise<T>,
+    participantIds: readonly ParticipantId[] = []): Promise<RpcResponse<T>> {
+    const service = teamServiceFor<T>(request)
+    if ('refused' in service) return service.refused
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Team reads require product authentication.', details: {} })
+    const humans = ctx.get('teamHumanActors')
+    if (humans === undefined) return teamActorUnavailable(request, request.payload.teamId)
+    try {
+      const references = { teamId: request.payload.teamId, participantIds }
+      const value = await humans.withProof(call, { teamId: references.teamId, operation: 'identity-resolve-read',
+        fence: { kind: 'read' }, payload: jsonObjectSchema.parse(references) }, async (actor, authorityTeamId) => {
+        await service.teams.resolveIdentities({ ...references, actor })
+        try { return await read(service.teams, authorityTeamId === references.teamId ? 'member' : 'parent-inspection') }
+        finally { await service.teams.resolveIdentities({ ...references, actor }) }
+      })
+      if (call.signal.aborted) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+      return ok(request, value)
+    } catch (error: unknown) {
+      if (call.signal.aborted) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+      return teamFailure(request, error, request.payload.teamId)
+    }
+  }
+
+  /** Keep channel-to-Team ownership private until current principal membership permits the read. */
+  async function humanChannelRead<T>(request: RpcRequest<{ readonly channelId: ChannelId }>,
+    read: (teams: Context['teams'], owner: import('@clocky/clocky-team').ChannelOwnerSnapshot) => Promise<T>): Promise<RpcResponse<T>> {
+    const service = teamServiceFor<T>(request)
+    if ('refused' in service) return service.refused
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Channel reads require product authentication.', details: {} })
+    if (ctx.get('teamHumanActors') === undefined) return teamActorUnavailable(request)
+    const denied = () => err<T>(request, { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN',
+      message: 'Authenticated principal cannot inspect this channel.', details: {} })
+    try {
+      const owner = await service.teams.getChannelOwner({ channelId: request.payload.channelId })
+      const result = await humanTeamRead({ rpcId: request.rpcId, payload: { teamId: owner.teamId } },
+        async teams => await read(teams, owner))
+      if (!result.result.ok && (result.result.error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN'
+        || result.result.error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND' || result.result.error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS'
+        || result.result.error.code === 'TEAM_ACTOR_PROOF_INVALID' || result.result.error.code === 'TEAM_GRANT_DENIED')) return denied()
+      return result
+    } catch (error: unknown) {
+      if (call.signal.aborted) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+      if (typeof error === 'object' && error !== null && 'code' in error
+        && (error.code === 'TEAM_CHANNEL_NOT_FOUND' || error.code === 'TEAM_NOT_FOUND')) return denied()
+      return err(request, { code: 'internal', message: 'Channel inspection is unavailable.', details: {} })
+    }
+  }
+
+  /** Resolve a Session's immutable ancestry to the nearest explicit Team owner or standalone root. */
+  async function sessionContentOwner(header: SessionHeader): Promise<SessionHeader> {
+    let current = header
+    const seen = new Set<SessionId>()
+    let persisted: Map<SessionId, SessionHeader> | undefined
+    while (current.teamId === undefined && current.participantId === undefined && current.parentSession !== undefined) {
+      if (seen.has(current.id)) throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+      seen.add(current.id)
+      let parent = ctx.get('sessions')?.get(current.parentSession)?.header
+      if (parent === undefined) {
+        persisted ??= new Map((await ctx.get('sessionPersistence')?.list() ?? []).map(candidate => [candidate.id, candidate]))
+        parent = persisted.get(current.parentSession)
+      }
+      if (parent === undefined) throw new TeamError('Session ancestry is unavailable.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+      current = parent
+    }
+    return current
+  }
+
+  /** Authorize a Team Session or its durable descendants before IO and revalidate the member tuple afterward. */
+  async function withSessionContentRead<T>(header: SessionHeader, call: AuthenticatedProductCall | undefined,
+    read: () => Promise<T>): Promise<T> {
+    header = await sessionContentOwner(header)
+    if (header.teamId === undefined && header.participantId === undefined) return await read()
+    if (header.teamId === undefined || header.participantId === undefined || call === undefined) {
+      throw new TeamError('Authenticated principal cannot inspect this Session.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+    }
+    const humans = ctx.get('teamHumanActors')
+    const teams = ctx.get('teams')
+    if (humans === undefined || teams === undefined) {
+      throw new TeamError('Authenticated principal cannot inspect this Session.', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
+    }
+    const input = { teamId: teamIdSchema.parse(header.teamId),
+      participantId: participantIdSchema.parse(header.participantId), sessionId: header.id }
+    const value = await humans.withProof(call, { teamId: input.teamId, operation: 'session-content-read',
+      fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) }, async (actor) => {
+      await teams.assertHumanSessionRead({ ...input, actor })
+      try { return await read() }
+      finally { await teams.assertHumanSessionRead({ ...input, actor }) }
+    })
+    if (call.signal.aborted) throw new TeamError('Product authentication is invalid.', 'TEAM_ACTOR_PROOF_INVALID')
+    return value
+  }
+
+  /** Read reference metadata without loading transcripts or projections. */
+  async function sessionReferenceHeaders(ids: readonly SessionId[], signal?: AbortSignal): Promise<Map<SessionId, SessionHeader>> {
+    const headers = new Map<SessionId, SessionHeader>()
+    const live = ctx.get('sessions')
+    for (const id of ids) {
+      const header = live?.get(id)?.header
+      if (header !== undefined) headers.set(id, header)
+    }
+    if (headers.size < new Set(ids).size) {
+      const referenced = new Set(ids)
+      for (const header of await ctx.get('sessionPersistence')?.list(signal) ?? []) {
+        if (referenced.has(header.id) && !headers.has(header.id)) headers.set(header.id, header)
+      }
+    }
+    return headers
+  }
+
+  /** Missing ids keep the registry's lookup errors; known Team references require current content authority. */
+  async function mayReferSessions(ids: readonly SessionId[]): Promise<boolean> {
+    const headers = await sessionReferenceHeaders(ids)
+    const readable = new Set(await filterSessionReferences(ids, currentAuthenticatedProductCall()))
+    return ids.every(id => !headers.has(id) || readable.has(id))
+  }
+
+  /** Project only currently readable Session references without loading transcripts or projections. */
+  async function filterSessionReferences(ids: readonly SessionId[], call: AuthenticatedProductCall | undefined,
+    signal?: AbortSignal): Promise<SessionId[]> {
+    const revision = sessionVisibilityRevision
+    try {
+      const headers = await sessionReferenceHeaders(ids, signal)
+      const accepted = new Set<SessionId>()
+      for (const [id, header] of headers) {
+        signal?.throwIfAborted()
+        try {
+          await withSessionContentRead(header, call, async () => {})
+          accepted.add(id)
+        } catch (error: unknown) {
+          if (typeof error === 'object' && error !== null && 'code' in error
+            && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+              || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS' || error.code === 'TEAM_ACTOR_PROOF_INVALID')) continue
+          throw error
+        }
+      }
+      signal?.throwIfAborted()
+      if (call?.signal.aborted === true || revision !== sessionVisibilityRevision) throw new Error('Session visibility changed')
+      return ids.filter(id => accepted.has(id))
+    } catch {
+      throw new Error('Session reference visibility is unavailable; refresh')
+    }
+  }
+
+  /** Retain Host workspace metadata while projecting its Session account under the caller's current authority. */
+  async function readableWorkspace(workspace: WorkspaceView, call = currentAuthenticatedProductCall()): Promise<WorkspaceView> {
+    return { ...workspace, sessionIds: await filterSessionReferences(workspace.sessionIds, call) }
+  }
+
+  /** Map Session content authorization to the unary response vocabulary. */
+  async function humanSessionRead<T>(request: RpcRequest<{ readonly sessionId: SessionId }>,
+    read: () => Promise<RpcResponse<T>>): Promise<RpcResponse<T>> {
+    const sessionId = request.payload.sessionId
+    const header = ctx.sessions.get(sessionId)?.header
+      ?? (await ctx.get('sessionPersistence')?.list())?.find(candidate => candidate.id === sessionId)
+    if (header === undefined || header.teamId === undefined && header.participantId === undefined
+      && header.parentSession === undefined) return await read()
+    const denied = () => err<T>(request, { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN',
+      message: 'Authenticated principal cannot inspect this Session.', details: {} })
+    const call = currentAuthenticatedProductCall()
+    if (call === undefined && (header.teamId !== undefined || header.participantId !== undefined)) {
+      return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Team Session reads require authentication.', details: {} })
+    }
+    try {
+      const value = await withSessionContentRead(header, call, read)
+      if (call?.signal.aborted === true) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+      return value
+    } catch (_error: unknown) {
+      if (call?.signal.aborted === true) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+      return denied()
+    }
+  }
+
   function teamRunFor<T>(request: RpcRequest<unknown>, teamId?: TeamId):
     | { readonly teams: NonNullable<ReturnType<typeof ctx.get<'teams'>>>; readonly teamRuns: NonNullable<ReturnType<typeof ctx.get<'teamRuns'>>> }
     | { readonly refused: RpcResponse<T> } {
@@ -2215,6 +2584,13 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       return err<never>(request, {
         code: 'TEAM_HUMAN_ACTOR_AMBIGUOUS',
         message: 'Authenticated principal maps to multiple active human Team participants',
+        details: { teamId },
+      })
+    }
+    if (state.rules['simulationRunId'] !== undefined) {
+      return err<never>(request, {
+        code: 'TEAM_POLICY_DENIED',
+        message: 'Simulation-managed Team execution requires Simulation administration',
         details: { teamId },
       })
     }
@@ -2439,6 +2815,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     if (teamError?.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
       || teamError?.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS'
       || teamError?.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN'
+      || teamError?.code === 'TEAM_GRANT_DENIED'
+      || teamError?.code === 'TEAM_POLICY_DENIED'
       || teamError?.code === 'TEAM_ACTOR_PROOF_INVALID') {
       return err(request, {
         code: teamError.code,
@@ -2446,8 +2824,18 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         details: teamId === undefined ? {} : { teamId },
       })
     }
+    if (teamError?.code === 'TEAM_EXECUTION_PROFILE_STALE' || teamError?.code === 'TEAM_EXECUTION_PROFILE_UNAVAILABLE') {
+      return err(request, { code: teamError.code === 'TEAM_EXECUTION_PROFILE_STALE' ? 'team-profile-stale' : 'team-profile-unavailable',
+        message: teamError.message, details: teamId === undefined ? {} : { teamId } })
+    }
+    if (teamError?.code === 'TEAM_PARTICIPANT_NOT_FOUND') {
+      return err(request, { code: 'team-member-not-found', message: teamError.message, details: teamId === undefined ? {} : { teamId } })
+    }
     if (teamError?.code === 'TEAM_NOT_FOUND' && teamId !== undefined) {
       return err(request, { code: 'team-not-found', message: teamError.message, details: { teamId } })
+    }
+    if (teamError instanceof TeamTaskUpdateRejectedError) {
+      return err(request, { code: 'team-task-update-rejected', message: teamError.message, details: { rejection: teamError.rejection } })
     }
     if (teamError?.code === 'TEAM_TASK_STALE_REVISION' || teamError?.code === 'TEAM_TASK_NOT_FOUND') {
       const payload = request.payload
@@ -2456,6 +2844,9 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       return err(request, { code: teamError.code === 'TEAM_TASK_STALE_REVISION' ? 'team-task-stale-revision' : 'team-task-not-found',
         message: teamError.message,
         details: { ...teamId === undefined ? {} : { teamId }, ...selected?.success === true ? { taskId: selected.data } : {} } })
+    }
+    if (teamError?.code === 'TEAM_TASK_UPDATE_COMMAND_CONFLICT') {
+      return err(request, { code: 'team-task-update-conflict', message: teamError.message, details: teamId === undefined ? {} : { teamId } })
     }
     if (teamError?.code === 'TEAM_CURSOR_CONFLICT') {
       return err(request, {
@@ -2848,13 +3239,22 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     sessions: {
       // Attached sessions summarize from memory; persisted-but-unattached (cold)
       // sessions merge in from the persistence store so history survives restarts.
-      // Logs without a cwd are not served; every session records its project
-      // at create time.
+      // Cold logs need a project or current authorized durable Team ownership.
       async list(request) {
-        return ok(request, { items: await listVisibleSessionSummaries() })
+        const revision = sessionVisibilityRevision
+        const call = currentAuthenticatedProductCall()
+        try {
+          const items = await listVisibleSessionSummaries()
+          if (call?.signal.aborted === true) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          if (revision !== sessionVisibilityRevision) throw new Error('Session visibility changed during listing')
+          return ok(request, { items })
+        } catch {
+          return err(request, { code: 'internal', message: 'Session list visibility changed or is unavailable; refresh', details: {} })
+        }
       },
 
       async search(request, signal) {
+        const visibilityRevision = sessionVisibilityRevision
         const cancelled = () => err<{ items: SessionSearchItem[]; hasMore: boolean }>(request, {
           code: 'cancelled',
           message: 'session search was aborted',
@@ -2966,6 +3366,9 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             if (authorized.length > SESSION_SEARCH_RESULT_LIMIT || nextCursor === undefined) break
             cursor = nextCursor
           }
+          if (visibilityRevision !== sessionVisibilityRevision || currentAuthenticatedProductCall()?.signal.aborted === true) {
+            throw new Error('Session visibility changed during search')
+          }
           return ok(request, {
             items: authorized.slice(0, SESSION_SEARCH_RESULT_LIMIT),
             hasMore: authorized.length > SESSION_SEARCH_RESULT_LIMIT,
@@ -2986,64 +3389,68 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async history(request) {
-        const { sessionId, beforeSeq, maxMessages } = request.payload
-        try {
-          const source = await historySourceFor(sessionId)
-          // Both awaits happen BEFORE the cut. Ensuring the recorded
-          // composition's standing mount is what registers its projection
-          // units, so a first cold read would otherwise serve a baseline
-          // missing every preset-owned key; and an attached session keeps
-          // appending, so awaiting between the two reads would pair events cut
-          // at N with a baseline folded to N+1.
-          const scope = await presenterScopeFor(sessionId, sourceSession(source))
-          const cut = historyCutOf(source, beforeSeq === undefined)
-          const page = historyPage(ctx, cut.events, beforeSeq, maxMessages, scope)
-          return ok(request, {
-            events: page.events,
-            hasMore: page.hasMore,
-            ...cut.projections === undefined ? {} : { projections: cut.projections },
-          })
-        } catch (error: unknown) {
-          if (error instanceof SessionNotFound) {
-            return err(request, { code: 'session-not-found', message: error.message, details: { sessionId } })
+        return await humanSessionRead(request, async () => {
+          const { sessionId, beforeSeq, maxMessages } = request.payload
+          try {
+            const source = await historySourceFor(sessionId)
+            // Both awaits happen BEFORE the cut. Ensuring the recorded
+            // composition's standing mount is what registers its projection
+            // units, so a first cold read would otherwise serve a baseline
+            // missing every preset-owned key; and an attached session keeps
+            // appending, so awaiting between the two reads would pair events cut
+            // at N with a baseline folded to N+1.
+            const scope = await presenterScopeFor(sessionId, sourceSession(source))
+            const cut = historyCutOf(source, beforeSeq === undefined)
+            const page = historyPage(ctx, cut.events, beforeSeq, maxMessages, scope)
+            return ok(request, {
+              events: page.events,
+              hasMore: page.hasMore,
+              ...cut.projections === undefined ? {} : { projections: cut.projections },
+            })
+          } catch (error: unknown) {
+            if (error instanceof SessionNotFound) {
+              return err(request, { code: 'session-not-found', message: error.message, details: { sessionId } })
+            }
+            return err(request, {
+              code: 'internal',
+              message: `history unavailable for session "${sessionId}": ${String(error)}`,
+              details: {},
+            })
           }
-          return err(request, {
-            code: 'internal',
-            message: `history unavailable for session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
+        })
       },
 
       async models(request) {
-        const { sessionId } = request.payload
-        let agent: Agent
-        // Model metadata is read-only and is needed to render a Team worker's
-        // transcript. Coordinator ownership is required for prompt/model
-        // mutation, but it must not block this harmless read when the worker
-        // Agent is live and its Team binding is exact.
-        const liveTeamAgent = ctx.agents.get(sessionId)
-        if (liveTeamAgent !== undefined && hasTeamOwner(liveTeamAgent.session)) {
-          agent = liveTeamAgent
-        } else {
-          const teamRoute = await teamCoordinatorRoute<SessionModels>(request, sessionId)
-          if (teamRoute !== undefined && 'refused' in teamRoute) return teamRoute.refused
-          if (teamRoute !== undefined) {
-            agent = teamRoute.agent
+        return await humanSessionRead(request, async () => {
+          const { sessionId } = request.payload
+          let agent: Agent
+          // Model metadata is read-only and is needed to render a Team worker's
+          // transcript. Coordinator ownership is required for prompt/model
+          // mutation, but it must not block this harmless read when the worker
+          // Agent is live and its Team binding is exact.
+          const liveTeamAgent = ctx.agents.get(sessionId)
+          if (liveTeamAgent !== undefined && hasTeamOwner(liveTeamAgent.session)) {
+            agent = liveTeamAgent
           } else {
-            const found = await agentFor(sessionId)
-            if ('error' in found) return err(request, found.error)
-            agent = found.agent
+            const teamRoute = await teamCoordinatorRoute<SessionModels>(request, sessionId)
+            if (teamRoute !== undefined && 'refused' in teamRoute) return teamRoute.refused
+            if (teamRoute !== undefined) {
+              agent = teamRoute.agent
+            } else {
+              const found = await agentFor(sessionId)
+              if ('error' in found) return err(request, found.error)
+              agent = found.agent
+            }
           }
-        }
-        const current = selectionFor(agent).current
-        const { groups, failures } = await buildModelCatalog(ctx)
-        const routable = current !== undefined && routeServed(current.provider)
-        return ok(request, {
-          ...current === undefined ? {} : { current: { ...current } },
-          routable,
-          groups,
-          failures,
+          const current = selectionFor(agent).current
+          const { groups, failures } = await buildModelCatalog(ctx)
+          const routable = current !== undefined && routeServed(current.provider)
+          return ok(request, {
+            ...current === undefined ? {} : { current: { ...current } },
+            routable,
+            groups,
+            failures,
+          })
         })
       },
 
@@ -3195,52 +3602,54 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async attachment(request) {
-        const { sessionId, attachmentId } = request.payload
-        let state: SessionReadState
-        try {
-          state = await readSessionState(sessionId)
-        } catch (error: unknown) {
-          if (error instanceof SessionNotFound) {
+        return await humanSessionRead(request, async () => {
+          const { sessionId, attachmentId } = request.payload
+          let state: SessionReadState
+          try {
+            state = await readSessionState(sessionId)
+          } catch (error: unknown) {
+            if (error instanceof SessionNotFound) {
+              return err(request, {
+                code: 'session-not-found',
+                message: error.message,
+                details: { sessionId },
+              })
+            }
             return err(request, {
-              code: 'session-not-found',
-              message: error.message,
-              details: { sessionId },
+              code: 'internal',
+              message: `attachment authorization unavailable for session "${sessionId}": ${String(error)}`,
+              details: {},
             })
           }
-          return err(request, {
-            code: 'internal',
-            message: `attachment authorization unavailable for session "${sessionId}": ${String(error)}`,
-            details: {},
-          })
-        }
-        const ref = referencedImage(state.events, String(attachmentId))
-        if (ref === undefined) {
-          return err(request, {
-            code: 'attachment-error',
-            message: 'Image is not referenced by this session.',
-            details: { reason: 'ATTACHMENT_NOT_REFERENCED' },
-          })
-        }
-        try {
-          const stored = await ctx.attachments.readImage(ref)
-          return ok(request, {
-            attachment: stored.ref,
-            data: Buffer.from(stored.data).toString('base64'),
-          })
-        } catch (error: unknown) {
-          if (error instanceof AttachmentError) {
+          const ref = referencedImage(state.events, String(attachmentId))
+          if (ref === undefined) {
             return err(request, {
               code: 'attachment-error',
-              message: error.message,
-              details: { reason: error.code },
+              message: 'Image is not referenced by this session.',
+              details: { reason: 'ATTACHMENT_NOT_REFERENCED' },
             })
           }
-          return err(request, {
-            code: 'internal',
-            message: 'Unable to read image attachment.',
-            details: {},
-          })
-        }
+          try {
+            const stored = await ctx.attachments.readImage(ref)
+            return ok(request, {
+              attachment: stored.ref,
+              data: Buffer.from(stored.data).toString('base64'),
+            })
+          } catch (error: unknown) {
+            if (error instanceof AttachmentError) {
+              return err(request, {
+                code: 'attachment-error',
+                message: error.message,
+                details: { reason: error.code },
+              })
+            }
+            return err(request, {
+              code: 'internal',
+              message: 'Unable to read image attachment.',
+              details: {},
+            })
+          }
+        })
       },
 
       updateQueue(request) {
@@ -3321,70 +3730,179 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
     },
 
+    simulations: createSimulationProductApi(ctx),
     teams: {
       async list(request) {
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listTeamsPage']>>>(request)
+        const service = teamServiceFor<import('./api/teams.ts').TeamList>(request)
         if ('refused' in service) return service.refused
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Team discovery requires product authentication.', details: {} })
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request)
         try {
-          return ok(request, await service.teams.listTeamsPage({
+          const value = await humans.withReader(call, async reader => await service.teams.listHumanTeamsPage({ reader,
             afterCursor: request.payload.afterCursor ?? -1,
             limit: request.payload.limit ?? 128,
           }))
+          if (call.signal.aborted) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          return ok(request, value)
         } catch (error: unknown) {
-          return teamFailure(request, error)
+          if (call.signal.aborted) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED') {
+            return err(request, { code: 'team-discovery-expired',
+              message: 'Product Team discovery cursor expired; restart from -1', details: {} })
+          }
+          if (error instanceof TeamError && (error.code === 'TEAM_DISCOVERY_CURSOR_EXPIRED' || error.code === 'TEAM_CHANNEL_BACKPRESSURE'
+            || error.code === 'TEAM_ACTOR_PROOF_INVALID' || error.code === 'TEAM_INVALID_ARGUMENT')) return teamFailure(request, error)
+          return err(request, { code: 'internal', message: 'Team discovery is unavailable.', details: {} })
         }
+      },
+
+      async executionProfiles(request) {
+        const { teamId } = request.payload
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Execution profiles require product authentication.', details: {} })
+        const live = (): boolean => currentAuthenticatedProductCall() === call && !call.signal.aborted
+        if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+        const service = teamServiceFor<import('@clocky/clocky-team').TeamExecutionProfilesPage>(request)
+        if ('refused' in service) return service.refused
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, teamId)
+        try {
+          const input = teamExecutionProfilesInputSchema.parse(request.payload)
+          const value = await humans.withProof(call, { teamId, operation: 'execution-profiles-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await service.teams.getExecutionProfiles({ ...input, actor }))
+          if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          return ok(request, value)
+        } catch (error: unknown) { return teamFailure(request, error, teamId) }
+      },
+
+      async identityResolve(request) {
+        const { teamId } = request.payload
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Identity reads require product authentication.', details: {} })
+        const live = (): boolean => currentAuthenticatedProductCall() === call && !call.signal.aborted
+        if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+        const service = teamServiceFor<import('./api/teams.ts').TeamIdentityResolution>(request)
+        if ('refused' in service) return service.refused
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, teamId)
+        try {
+          const input = teamIdentityResolveInputSchema.parse(request.payload)
+          const value = await humans.withProof(call, { teamId, operation: 'identity-resolve-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await service.teams.resolveIdentities({ ...input, actor }))
+          if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          const authorizationScope = productAuthorizationScope(call)
+          return ok(request, teamIdentityResolutionSchema.parse({ ...value, authorizationScope }))
+        } catch (error: unknown) { return teamFailure(request, error, teamId) }
+      },
+
+      async actionInspect(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Request inspection requires product authentication.', details: {} })
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, request.payload.teamId)
+        return await humanTeamRead(request, async (teams) => {
+          const input = teamActionInspectInputSchema.parse(request.payload)
+          const value = await humans.withProof(call, { teamId: input.teamId, operation: 'attention-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await teams.inspectHumanAction({ ...input, actor }))
+          return teamActionInspectionSchema.parse(value)
+        })
+      },
+
+      async attentionRead(request) {
+        const { teamId } = request.payload
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Pending reads require product authentication.', details: {} })
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, teamId)
+        return await humanTeamRead(request, async (teams) => {
+          const input = teamAttentionReadInputSchema.parse(request.payload)
+          const value = await humans.withProof(call, { teamId, operation: 'attention-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await teams.getTeamAttention({ ...input, actor }))
+          return teamAttentionPageSchema.parse(value)
+        })
+      },
+
+      async memberReadiness(request) {
+        const { teamId } = request.payload
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Member readiness reads require product authentication.', details: {} })
+        const live = (): boolean => currentAuthenticatedProductCall() === call && !call.signal.aborted
+        if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+        const service = teamServiceFor<import('@clocky/clocky-team').TeamMemberReadinessPage>(request)
+        if ('refused' in service) return service.refused
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, teamId)
+        try {
+          const input = teamMemberReadinessInputSchema.parse(request.payload)
+          const value = await humans.withProof(call, { teamId, operation: 'member-readiness-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await service.teams.getMemberReadiness({ ...input, actor }))
+          if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+          const observationId = createHash('sha256').update(JSON.stringify({ principal: call.principal.id,
+            generation: call.credentialGeneration, observationId: value.observationId })).digest('hex')
+          return ok(request, teamMemberReadinessPageSchema.parse({ ...value, observationId }))
+        } catch (error: unknown) { return teamFailure(request, error, teamId) }
+      },
+
+      async capabilities(request) {
+        const { teamId } = request.payload
+        const call = currentAuthenticatedProductCall()
+        if (call === undefined) return err(request, { code: 'PRODUCT_AUTH_REQUIRED', message: 'Task capability reads require product authentication.', details: {} })
+        const live = (): boolean => currentAuthenticatedProductCall() === call && !call.signal.aborted
+        if (!live()) return err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} })
+        const humans = ctx.get('teamHumanActors')
+        if (humans === undefined) return teamActorUnavailable(request, teamId)
+        return await humanTeamRead(request, async (teams) => {
+          const input = teamCapabilitiesInputSchema.parse(request.payload)
+          const authority = await humans.withProof(call, { teamId, operation: 'task-capabilities-read', fence: { kind: 'read' },
+            payload: jsonObjectSchema.parse(input) }, async actor => await teams.getTaskCapabilities({ ...input, actor }))
+          const modes = await ctx.waterfall(teams, 'team/task-scheduling-modes', teamId, () => Promise.resolve([]))
+          const providers = ctx.get('teamWorkspaces')?.listProviders() ?? []
+          const workspaceModes = authority.workspaceModes.map((choice) => {
+            const reasons = [...choice.reasons]
+            if (!providers.some(provider => provider.modes.includes(choice.mode))) reasons.push('provider-unavailable')
+            if (!modes.includes(choice.mode)) reasons.push('scheduler-unavailable')
+            return { mode: choice.mode, allowed: reasons.length === 0, reasons }
+          })
+          const value = { ...authority, workspaceModes }
+          const observationId = createHash('sha256').update(JSON.stringify({ principal: call.principal.id,
+            generation: call.credentialGeneration, workspaceProviders: providers, schedulingModes: modes, value })).digest('hex')
+          return teamCapabilitiesValueSchema.parse({ ...value, observationId, observedAt: Date.now() })
+        })
       },
 
       async memberInspect(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectMember']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.inspectMember(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.inspectMember(request.payload), [request.payload.participantId])
       },
 
       async memberSession(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['getMemberSession']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.getMemberSession(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.getMemberSession(request.payload), [request.payload.participantId])
+      },
+
+      async taskReferences(request) {
+        return await humanTeamRead(request, async teams => await teams.resolveTaskReferences(request.payload))
       },
 
       async taskInspect(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectTask']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.inspectTask(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.inspectTask(request.payload))
       },
 
       async browse(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['browse']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.browse(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.browse(request.payload))
       },
 
       async actionRead(request) {
-        const service = teamServiceFor<TeamHumanActionSnapshot>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.getHumanAction(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.getHumanAction(request.payload))
       },
       async selection(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['getTeamSelection']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.getTeamSelection(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async (teams, readAccess) => ({
+          ...await teams.getTeamSelection({ ...request.payload, readAccess }), readAccess,
+        }))
       },
 
       async get(request) {
-        const { teamId } = request.payload
-        const service = teamServiceFor<TeamStateSnapshot>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, redactTeamStateForHuman(await service.teams.getTeam({ teamId })))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => redactTeamStateForHuman(await teams.getTeam(request.payload)))
       },
 
       async create(request, signal) {
@@ -3554,6 +4072,11 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           const state = await teams.getTeam({ teamId })
           return ok(request, { accepted: true as const, phase: state.team.phase })
         } catch (error: unknown) {
+          if (isTeamCancellationPending(error)) return await humanTeamRead(request, async (teams) => {
+            const current = await teams.getTeam({ teamId })
+            if (current.team.cancellation?.idempotencyKey !== `team-run:cancel:${teamId}`) throw error
+            return { accepted: true as const, phase: current.team.phase }
+          })
           if (error instanceof TeamRunError && error.code === 'TEAM_RUN_NOT_FOUND') {
             const state = await teams.getTeam({ teamId })
             const input = {
@@ -3687,14 +4210,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async quiescence(request) {
-        const { teamId } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['inspectQuiescence']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.inspectQuiescence(teamId))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => await teams.inspectQuiescence(request.payload.teamId))
       },
 
       async inboxRespond(request) {
@@ -3749,108 +4265,91 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async auditRead(request) {
         const { teamId, channelId, afterCursor, limit } = request.payload
-        const service = teamServiceFor<TeamAuditList>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.readAudit({
-            teamId,
-            ...channelId === undefined ? {} : { channelId },
-            afterCursor: afterCursor ?? -1,
-            limit: limit ?? 128,
-          }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => await teams.readAudit({
+          teamId,
+          ...channelId === undefined ? {} : { channelId },
+          afterCursor: afterCursor ?? -1,
+          limit: limit ?? 128,
+        }))
       },
 
       async artifactRead(request, signal) {
-        const { teamId, artifactId } = request.payload
-        const service = teamServiceFor<TeamArtifactReadResult>(request)
-        if ('refused' in service) return service.refused
-        try {
-          const lookup = await service.teams.getArtifact({ teamId, artifactId })
-          if (lookup === undefined) {
-            return err(request, {
-              code: 'team-artifact-not-found',
-              message: `visible Team artifact '${artifactId}' was not found`,
-              details: { teamId, artifactId },
+        const guarded = await humanTeamRead(request, async (teams): Promise<RpcResponse<TeamArtifactReadResult>> => {
+          const { teamId, artifactId } = request.payload
+          try {
+            const lookup = await teams.getArtifact({ teamId, artifactId })
+            if (lookup === undefined) {
+              return err(request, {
+                code: 'team-artifact-not-found',
+                message: `visible Team artifact '${artifactId}' was not found`,
+                details: { teamId, artifactId },
+              })
+            }
+            if (lookup.provider === undefined) {
+              return err(request, {
+                code: 'team-artifact-unavailable',
+                message: `Team artifact '${artifactId}' has no readable provider`,
+                details: { teamId, artifactId },
+              })
+            }
+            const artifacts = ctx.get('teamArtifacts')
+            if (artifacts === undefined || artifacts.getProvider(lookup.provider) === undefined) {
+              return err(request, {
+                code: 'team-artifact-unavailable',
+                message: `Team artifact '${artifactId}' provider is unavailable`,
+                details: { teamId, artifactId },
+              })
+            }
+            signal.throwIfAborted()
+            const bytes = await artifacts.read(lookup.provider, { reference: lookup, signal })
+            signal.throwIfAborted()
+            if (bytes.byteLength > MAX_TEAM_ARTIFACT_READ_BYTES) {
+              return err(request, {
+                code: 'team-artifact-unavailable',
+                message: `Team artifact '${artifactId}' exceeds the browser read limit`,
+                details: { teamId, artifactId },
+              })
+            }
+            return ok(request, {
+              artifact: lookup,
+              bytes: bytes.byteLength,
+              data: Buffer.from(bytes).toString('base64'),
             })
-          }
-          if (lookup.provider === undefined) {
+          } catch (error: unknown) {
+            if (signal.aborted) return teamFailure(request, error, teamId, signal)
+            if (error instanceof TeamArtifactError && error.code === 'TEAM_ARTIFACT_NOT_FOUND') {
+              return err(request, {
+                code: 'team-artifact-not-found',
+                message: `visible Team artifact '${artifactId}' is no longer available`,
+                details: { teamId, artifactId },
+              })
+            }
             return err(request, {
               code: 'team-artifact-unavailable',
-              message: `Team artifact '${artifactId}' has no readable provider`,
+              message: `Team artifact '${artifactId}' could not be read`,
               details: { teamId, artifactId },
             })
           }
-          const artifacts = ctx.get('teamArtifacts')
-          if (artifacts === undefined || artifacts.getProvider(lookup.provider) === undefined) {
-            return err(request, {
-              code: 'team-artifact-unavailable',
-              message: `Team artifact '${artifactId}' provider is unavailable`,
-              details: { teamId, artifactId },
-            })
-          }
-          signal.throwIfAborted()
-          const bytes = await artifacts.read(lookup.provider, { reference: lookup, signal })
-          signal.throwIfAborted()
-          if (bytes.byteLength > MAX_TEAM_ARTIFACT_READ_BYTES) {
-            return err(request, {
-              code: 'team-artifact-unavailable',
-              message: `Team artifact '${artifactId}' exceeds the browser read limit`,
-              details: { teamId, artifactId },
-            })
-          }
-          return ok(request, {
-            artifact: lookup,
-            bytes: bytes.byteLength,
-            data: Buffer.from(bytes).toString('base64'),
-          })
-        } catch (error: unknown) {
-          if (signal.aborted) return teamFailure(request, error, teamId, signal)
-          if (error instanceof TeamArtifactError && error.code === 'TEAM_ARTIFACT_NOT_FOUND') {
-            return err(request, {
-              code: 'team-artifact-not-found',
-              message: `visible Team artifact '${artifactId}' is no longer available`,
-              details: { teamId, artifactId },
-            })
-          }
-          return err(request, {
-            code: 'team-artifact-unavailable',
-            message: `Team artifact '${artifactId}' could not be read`,
-            details: { teamId, artifactId },
-          })
-        }
+        })
+        return guarded.result.ok ? guarded.result.value : { rpcId: guarded.rpcId, result: guarded.result }
       },
 
       async artifactList(request) {
         const { teamId, afterCursor, limit } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listArtifactsPage']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.listArtifactsPage({
-            teamId,
-            afterCursor: afterCursor ?? -1,
-            limit: limit ?? 128,
-          }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => await teams.listArtifactsPage({
+          teamId,
+          afterCursor: afterCursor ?? -1,
+          limit: limit ?? 128,
+        }))
       },
 
       async memberList(request) {
         const { teamId, afterCursor, limit } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listParticipantsPage']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.listParticipantsPage({
-            teamId,
-            afterCursor: afterCursor ?? -1,
-            limit: limit ?? 128,
-          }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => await teams.listParticipantsPage({
+          teamId,
+          afterCursor: afterCursor ?? -1,
+          limit: limit ?? 128,
+        }))
       },
 
       async memberInvite(request) {
@@ -4167,17 +4666,11 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelRead(request) {
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['readChannelPage']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.readChannelPage({
-            channelId: request.payload.channelId,
-            afterCursor: request.payload.afterCursor ?? -1,
-            limit: request.payload.limit ?? 128,
-          }))
-        } catch (error: unknown) {
-          return teamFailure(request, error)
-        }
+        return await humanChannelRead(request, async teams => await teams.readChannelPage({
+          channelId: request.payload.channelId,
+          afterCursor: request.payload.afterCursor ?? -1,
+          limit: request.payload.limit ?? 128,
+        }))
       },
 
       async channelClose(request) {
@@ -4207,17 +4700,11 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async channelWatch(request, signal) {
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['watchChannel']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.watchChannel({
-            channelId: request.payload.channelId,
-            afterCursor: request.payload.afterCursor ?? -1,
-            signal,
-          }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, undefined, signal)
-        }
+        return await humanChannelRead(request, async teams => await teams.watchChannel({
+          channelId: request.payload.channelId,
+          afterCursor: request.payload.afterCursor ?? -1,
+          signal,
+        }))
       },
 
       async taskCreate(request) {
@@ -4248,61 +4735,48 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async taskGet(request) {
         const { teamId, taskId } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['getTask']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, redactTaskForHuman(await service.teams.getTask({ teamId, taskId })))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+        return await humanTeamRead(request, async teams => redactTaskForHuman(await teams.getTask({ teamId, taskId })))
       },
 
       async taskList(request) {
         const { teamId, afterCursor, limit } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['listTasksPage']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          const page = await service.teams.listTasksPage({
+        return await humanTeamRead(request, async (teams) => {
+          const page = await teams.listTasksPage({
             teamId,
             afterCursor: afterCursor ?? -1,
             limit: limit ?? 128,
           })
-          return ok(request, { ...page, items: page.items.map(redactTaskForHuman) })
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId)
-        }
+          return { ...page, items: page.items.map(redactTaskForHuman) }
+        })
       },
 
       async workflowPlanInspect(request) {
-        const service = teamServiceFor<Awaited<ReturnType<Context['teams']['inspectWorkflowPlan']>>>(request)
-        if ('refused' in service) return service.refused
-        try { return ok(request, await service.teams.inspectWorkflowPlan(request.payload)) }
-        catch (error: unknown) { return teamFailure(request, error, request.payload.teamId) }
+        return await humanTeamRead(request, async teams => await teams.inspectWorkflowPlan(request.payload))
       },
 
       async workflowPlanList(request) {
         const input = teamWorkflowPlanListRequestSchema.parse(request.payload)
-        const service = teamServiceFor<TeamWorkflowPlanList>(request)
-        if ('refused' in service) return service.refused
-        try {
-          const page = await service.teams.listWorkflowPlansPage({
+        return await humanTeamRead(request, async (teams) => {
+          const page = await teams.listWorkflowPlansPage({
             teamId: input.teamId,
             afterCursor: input.afterCursor ?? -1,
             limit: input.limit ?? 128,
           })
-          return ok(request, {
+          return {
             items: page.items.map(redactWorkflowPlanForHuman),
             ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
-          })
-        } catch (error: unknown) {
-          return teamFailure(request, error, input.teamId)
-        }
+          }
+        })
+      },
+
+      async taskUpdateResult(request) {
+        return await humanTeamRead(request, async teams => await teams.getTaskUpdateResult(request.payload))
       },
 
       async taskUpdate(request) {
-        const refused = requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+        const refused = requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
         if (refused !== undefined) return refused
-        const service = teamServiceFor<TeamTaskSnapshot>(request)
+        const service = teamServiceFor<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
         if ('refused' in service) return service.refused
         const humanActors = ctx.get('teamHumanActors')
         if (humanActors === undefined) return teamActorUnavailable(request, request.payload.teamId)
@@ -4310,7 +4784,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           const input = teamTaskDetailsUpdateInputSchema.parse(request.payload)
           const call = currentAuthenticatedProductCall()
           if (call === undefined || call.signal.aborted) {
-            return requireTeamMutationAuthentication<TeamTaskSnapshot>(request)
+            return requireTeamMutationAuthentication<import('@clocky/clocky-team').TeamTaskDetailsUpdateResult>(request)
               ?? teamActorUnavailable(request, input.teamId)
           }
           const task = await humanActors.withProof(
@@ -4318,7 +4792,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             humanTaskRevisionProofInput(input),
             async actor => await service.teams.updateTaskDetails({ actor, ...input }),
           )
-          return ok(request, redactTaskForHuman(task))
+          return ok(request, ({ ...task, task: redactTaskForHuman(task.task) }))
         } catch (error: unknown) {
           return teamFailure(request, error, request.payload.teamId)
         }
@@ -4406,29 +4880,25 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async taskWatch(request, signal) {
         const { teamId, afterCursor } = request.payload
-        const service = teamServiceFor<Awaited<ReturnType<NonNullable<ReturnType<typeof ctx.get<'teams'>>>['watchTeam']>>>(request)
-        if ('refused' in service) return service.refused
-        try {
-          return ok(request, await service.teams.watchTeam({ teamId, afterCursor: afterCursor ?? -1, signal }))
-        } catch (error: unknown) {
-          return teamFailure(request, error, teamId, signal)
-        }
+        return await humanTeamRead(request, async teams => await teams.watchTeam({ teamId, afterCursor: afterCursor ?? -1, signal }))
       },
     },
 
     workspace: {
-      list(request) {
-        return Promise.resolve(ok(request, {
-          items: ctx.workspaceRegistry.list().map(workspaceView),
-          archivedSessionIds: [...ctx.workspaceRegistry.archivedSessionIds],
-        }))
+      async list(request) {
+        const call = currentAuthenticatedProductCall()
+        const items = ctx.workspaceRegistry.list().map(workspaceView)
+        const archivedSessionIds = [...ctx.workspaceRegistry.archivedSessionIds]
+        const accepted = new Set(await filterSessionReferences([...items.flatMap(item => item.sessionIds), ...archivedSessionIds], call))
+        return ok(request, { items: items.map(item => ({ ...item, sessionIds: item.sessionIds.filter(id => accepted.has(id)) })),
+          archivedSessionIds: archivedSessionIds.filter(id => accepted.has(id)) })
       },
 
       async create(request) {
         const { path } = request.payload
         try {
           const { workspace, created } = await ensureWorkspace(path)
-          return ok(request, { workspace: workspaceView(workspace), created })
+          return ok(request, { workspace: await readableWorkspace(workspaceView(workspace)), created })
         } catch (error: unknown) {
           // The registry rejects a path that does not resolve to an existing
           // directory (realpath ENOENT / not-a-directory) — the business
@@ -4470,7 +4940,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           }
           throw error
         }
-        return ok(request, { workspace: workspaceView(workspace) })
+        return ok(request, { workspace: await readableWorkspace(workspaceView(workspace)) })
       },
 
       async delete(request) {
@@ -4498,8 +4968,12 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async insertSessionBefore(request) {
         const { payload } = request
+        const references = [payload.sessionId, ...payload.beforeSessionId === undefined ? [] : [payload.beforeSessionId]]
         const workspace = ctx.workspaceRegistry.get(brandWorkspaceId(payload.workspaceId))
         if (workspace === undefined) return workspaceNotFound(request, payload.workspaceId)
+        if (!await mayReferSessions(references)) {
+          return err(request, { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN', message: 'Session references are unavailable.', details: {} })
+        }
         try {
           await workspace.insertSessionBefore(payload.sessionId, payload.beforeSessionId)
         } catch (error: unknown) {
@@ -4516,11 +4990,14 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             },
           })
         }
-        return ok(request, { workspace: workspaceView(workspace) })
+        return ok(request, { workspace: await readableWorkspace(workspaceView(workspace)) })
       },
 
       async archiveSession(request) {
         const { sessionId } = request.payload
+        if (!await mayReferSessions([sessionId])) {
+          return err(request, { code: 'TEAM_HUMAN_ACTOR_FORBIDDEN', message: 'Session reference is unavailable.', details: {} })
+        }
         try {
           await ctx.workspaceRegistry.archiveSession(sessionId)
         } catch (error: unknown) {
@@ -4533,15 +5010,19 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             details: { sessionId },
           })
         }
-        return ok(request, { archivedSessionIds: [...ctx.workspaceRegistry.archivedSessionIds] })
+        return ok(request, { archivedSessionIds: await filterSessionReferences(
+          [...ctx.workspaceRegistry.archivedSessionIds], currentAuthenticatedProductCall()) })
       },
     },
 
     host: {
       describe(request) {
+        const call = currentAuthenticatedProductCall()
+        if (call?.signal.aborted) return Promise.resolve(err(request, { code: 'PRODUCT_AUTH_INVALID', message: 'Product authentication is invalid.', details: {} }))
         // TODO: version should read apps/cli's package.json; placeholder for now.
         const selection = defaults.defaultModelSelection()
         return Promise.resolve(ok(request, {
+          ...call === undefined ? {} : { authorizationScope: productAuthorizationScope(call) },
           version: '0.0.1',
           // The configured execution-root fallback exposed to Host clients.
           cwd: defaults.cwd,
@@ -4992,7 +5473,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
     events: {
       mux(_request, signal) {
-        const queue = new FrameQueue<RpcRequest<MuxFrame>>()
+        const reader = eventReader(signal, (teamId) =>{  queue.push(frame({ type: 'team/access-revoked', teamId }), { kind: 'public' }) })
+        const queue = new FrameQueue<RpcRequest<MuxFrame>>(eventLimits, item => captureEventSubject(item.payload))
         muxQueues.add(queue)
         for (const session of ctx.sessions.list()) {
           subscribeSession(queue, session)
@@ -5057,7 +5539,8 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
               callId => openCalls.get(session.id)?.get(callId) ?? backscanArgs(session.events, callId),
               ctx.agents.get(session.id),
             )
-            queue.push(frame({ type: 'session/event', sessionId: session.id, event, ...view === undefined ? {} : { view } }))
+            queue.push(frame({ type: 'session/event', sessionId: session.id, event, ...view === undefined ? {} : { view } }),
+              sessionReadSubject(session.header))
           }),
           ctx.on('session/created', (session: Session) => {
             subscribeSession(queue, session)
@@ -5092,14 +5575,17 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             }
           })],
         ]
-        return queue.iterate(signal, () => {
+        return queue.iterate(reader.signal, () => {
           muxQueues.delete(queue)
           for (const dispose of disposers) dispose()
-        })
+          reader.close()
+        }, async (item, subject) => await reader.authorize(subject) ? item : undefined)
       },
 
       host(_request, signal) {
-        const queue = new FrameQueue<RpcRequest<HostFrame>>()
+        const call = currentAuthenticatedProductCall()
+        const reader = eventReader(signal)
+        const queue = new FrameQueue<RpcRequest<HostFrame>>(eventLimits, item => captureEventSubject(item.payload))
         const committedWorkspaces = ctx.workspaceRegistry.list()
         const committedWorkspaceIds = new Set(
           committedWorkspaces.map(workspace => String(workspace.id)),
@@ -5122,7 +5608,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             }))
           }),
           ctx.on('session/disposed', (session: Session) => {
-            queue.push(frame({ type: 'host/session-removed', sessionId: session.id }))
+            queue.push(frame({ type: 'host/session-removed', sessionId: session.id }), sessionReadSubject(session.header))
           }),
           ctx.on('agent/status', ({ agent, status }: { agent: Agent; status: AgentStatus }) => {
             queue.push(frame({ type: 'host/session-status', sessionId: agent.id, running: status === 'running' }))
@@ -5191,15 +5677,34 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             // satisfies every member of the union `on` accepts here;
             // assertJsonArgs proves the payload is JSON-safe before it queues.
             ((...args: unknown[]) => {
+              const values = assertJsonArgs(name, args)
               queue.push(frame({
                 type: 'host/remote-event',
                 event: name,
-                args: assertJsonArgs(name, args),
-              }))
+                args: values,
+              }), forwardedReadSubject(name, values))
             }),
           )),
         ]
-        return queue.iterate(signal, () => { for (const dispose of disposers) dispose() })
+        return queue.iterate(reader.signal, () => { for (const dispose of disposers) dispose(); reader.close() }, async (item, subject) => {
+          if (!await reader.authorize(subject)) return undefined
+          const payload = item.payload
+          if (payload.type === 'host/session-added' && subject.kind === 'session-lineage') {
+            const owner = await sessionContentOwner(subject.header)
+            const team = sessionListFields(owner).team
+            if (!await reader.authorize(subject)) return undefined
+            return { ...item, payload: { ...payload, ...team === undefined ? {} : { team } } }
+          }
+          if (payload.type === 'host/workspace-changed') {
+            return { ...item, payload: { ...payload, workspace: { ...payload.workspace,
+              sessionIds: await filterSessionReferences(payload.workspace.sessionIds, call, reader.signal) } } }
+          }
+          if (payload.type === 'host/archived-sessions-changed') {
+            return { ...item, payload: { ...payload,
+              archivedSessionIds: await filterSessionReferences(payload.archivedSessionIds, call, reader.signal) } }
+          }
+          return item
+        })
       },
     },
 
@@ -5221,24 +5726,51 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             { status: 501 },
           )
         }
+        const call = currentAuthenticatedProductCall()
+        let header: SessionHeader | undefined
+        try {
+          header = deps.sessions?.get(request.sessionId)?.header
+            ?? (await deps.sessionPersistence.list(signal)).find(candidate => candidate.id === request.sessionId)
+        } catch {
+          if (call?.signal.aborted === true) return new Response('session log export is unavailable', { status: 403 })
+          signal.throwIfAborted()
+          return new Response('session log export metadata is unavailable', { status: 500 })
+        }
+        if (header === undefined) return new Response('session log export is unavailable', { status: call === undefined ? 404 : 403 })
+        let lease: import('@clocky/clocky-team').TeamHumanReaderLease | undefined
+        try { lease = call === undefined ? undefined : ctx.get('teamHumanActors')?.openReader(call) }
+        catch { return new Response('session log export is unavailable', { status: 403 }) }
+        const exportSignal = AbortSignal.any([signal, ...call === undefined ? [] : [call.signal],
+          ...lease === undefined ? [] : [lease.signal]])
         const ready: SessionLogExportReady = {
           sessionQuery: deps.sessionQuery,
           sessionPersistence: deps.sessionPersistence,
           attachments: deps.attachments,
           sessions: deps.sessions,
+          withSessionRead: (header, read) => withSessionContentRead(header, call, read),
+          close: () => { lease?.close() },
         }
         let root: SessionRawArtifact | undefined
         try {
-          await flushLiveSessionLog(deps, request.sessionId, signal)
-          root = await deps.sessionPersistence.readRaw(request.sessionId, signal)
-          signal.throwIfAborted()
-        } catch {
-          signal.throwIfAborted()
+          root = await ready.withSessionRead(header, async () => {
+            await flushLiveSessionLog(deps, request.sessionId, exportSignal)
+            return await ready.sessionPersistence.readRaw(request.sessionId, exportSignal)
+          })
+          exportSignal.throwIfAborted()
+          if (root !== undefined) await ready.withSessionRead(root.meta, async () => {})
+        } catch (error: unknown) {
+          if (call?.signal.aborted !== true && lease?.signal.aborted !== true) signal.throwIfAborted()
           // Root preparation failure: answer 500 without echoing the error,
           // which may carry absolute host paths into the browser error bar.
-          return new Response('session log export failed to prepare the stored artifact', { status: 500 })
+          const denied = call?.signal.aborted === true || lease?.signal.aborted === true
+            || typeof error === 'object' && error !== null && 'code' in error
+              && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+                || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS' || error.code === 'TEAM_ACTOR_PROOF_INVALID')
+          ready.close()
+          return new Response('session log export failed to prepare the stored artifact', { status: denied ? 403 : 500 })
         }
         if (root === undefined) {
+          ready.close()
           return new Response('session not found', { status: 404 })
         }
         return new Response(
@@ -5248,7 +5780,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             request.sessionId,
             request.includeDescendants === true,
             sessionExportCompressionLevel,
-            signal,
+            exportSignal,
           ),
           {
             headers: {

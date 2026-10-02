@@ -77,6 +77,8 @@ export type CordisInspectQueryResolution =
 
 /** Notification that a Client inspect request can no longer be answered. */
 export interface CordisInspectQueryResolved {
+  /** Session that owned the settled query. */
+  agentId: SessionId
   /** Query that left the pending state. */
   requestId: CordisInspectRequestId
 }
@@ -195,6 +197,8 @@ export interface DynamicCordisRunRequest {
 
 /** One settled model-driven Client activation request broadcast to all pages. */
 export interface DynamicCordisRequestResolved {
+  /** Session that owned the settled activation request. */
+  agentId: SessionId
   /** Request that left the pending state. */
   requestId: ApprovalRequestId
   /** How the request settled. */
@@ -203,6 +207,8 @@ export interface DynamicCordisRequestResolved {
 
 /** One activation withdrawn from every page. */
 export interface DynamicCordisRetracted {
+  /** Session owning the withdrawn activation. */
+  agentId: SessionId
   /** Stable plugin instance. */
   pluginId: CordisDynamicPluginId
   /** Package version that was active. */
@@ -376,7 +382,7 @@ declare module '@clocky/cordis' {
      * @param pkg - stable plugin, immutable package, run identity, and label.
      * @mode emit
      */
-    'cordis/dynamic-package'(pkg: DynamicCordisPackage): void
+    'cordis/dynamic-package'(pkg: DynamicCordisPackage & { agentId: SessionId }): void
     /**
      * One exact activation was withdrawn.
      * @param retracted - plugin, package, and run identity.

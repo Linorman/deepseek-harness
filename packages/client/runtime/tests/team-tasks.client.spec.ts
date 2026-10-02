@@ -1,3 +1,4 @@
+import { projectTeamProductSummary, projectTaskInspection } from '@clocky/clocky-team/selection'
 import { Context } from '@clocky/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import type { MuxFrame, SessionId, TeamId, TeamStateSnapshot, TeamTaskSnapshot } from '@clocky/clocky-client-connection/client'
@@ -20,6 +21,131 @@ function setup(): { ctx: Context; api: FakeApiClient; tasks: TeamTaskRuntime } {
   const api = new FakeApiClient()
   return { ctx, api, tasks: new TeamTaskRuntime(ctx, api) }
 }
+
+it('reads original update metadata without accepting a foreign command or clearing on an ordinary failure', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const id = teamId('update-outcomes')
+    await tasks.inspect(id)
+    const input = { teamId: id, taskId: 'task' as never, commandId: 'original' as never }
+    const read = vi.spyOn(api.teams, 'taskUpdateResult').mockResolvedValue(ok({ kind: 'not-found', ...input }))
+    await expect(tasks.lookupTaskUpdate(input)).resolves.toEqual({ kind: 'not-found', ...input })
+    for (const patch of [{ teamId: 'foreign' as never }, { taskId: 'foreign' as never }, { commandId: 'foreign' as never }]) {
+      read.mockResolvedValueOnce(ok({ kind: 'not-found', ...input, ...patch }))
+      await expect(tasks.lookupTaskUpdate(input)).rejects.toThrow(/original command identity/)
+    }
+    read.mockResolvedValueOnce(err({ code: 'internal', message: 'Read failed', details: {} }))
+    await expect(tasks.lookupTaskUpdate(input)).rejects.toThrow('Read failed')
+    expect(tasks.list.getSnapshot().selected?.teamId).toBe(id)
+    read.mockResolvedValueOnce(err({ code: 'TEAM_HUMAN_ACTOR_FORBIDDEN', message: 'Read denied', details: {} }))
+    await expect(tasks.lookupTaskUpdate(input)).rejects.toThrow('Read denied')
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it.each(['abort', 'authorization', 'selection'] as const)('withholds both successful and failed update lookups after %s changes', async (change) => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const id = teamId('lookup-original')
+    const input = { teamId: id, taskId: 'task' as never, commandId: 'original' as never }
+    for (const fail of [false, true]) {
+      await tasks.inspect(id)
+      const controller = new AbortController()
+      const pending = deferred<Awaited<ReturnType<typeof api.teams.taskUpdateResult>>>()
+      const read = vi.spyOn(api.teams, 'taskUpdateResult').mockReturnValueOnce(pending.promise)
+      const result = tasks.lookupTaskUpdate(input, controller.signal)
+      const rejected = expect(result).rejects.toThrow(/authority changed/)
+      if (change === 'abort') controller.abort()
+      else if (change === 'authorization') tasks.clearAuthorization()
+      else await tasks.inspect(teamId('another-team'))
+      if (fail) pending.reject(new Error('Private stale lookup diagnostic'))
+      else pending.resolve(ok({ kind: 'not-found', ...input }))
+      await rejected
+      read.mockRestore()
+    }
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('requires a task record at least as new as original acceptance when its follow-up inspection fails', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const id = teamId('observed-update')
+    await tasks.inspect(id)
+    const task: TeamTaskSnapshot = { teamId: id, id: 'task' as never, createdAt: 0, revision: 1, execution: { kind: 'participant' },
+      createCommand: { creator: { teamId: id, participantId: 'human' as never }, idempotencyKey: 'source-task' as never },
+      subject: 'Original', description: 'Instructions', phase: 'pending', blockedBy: [], requiredCapabilities: [], priority: 0,
+      readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, reviewHistory: [],
+      maxAttempts: 1, attemptCount: 0, attemptHistory: [] }
+    let current = task
+    const inspect = vi.spyOn(api.teams, 'taskInspect').mockImplementation(async (input) => {
+      const spec = input.section === 'record' ? input : { ...input, afterCursor: input.afterCursor ?? -1, limit: input.limit ?? 32 }
+      const result = projectTaskInspection(current, 1, spec, 1024 * 1024)
+      if (!result.ok) throw new Error(result.reason)
+      return ok(result.value)
+    })
+    await tasks.readTaskDetail(id, task.id)
+    expect(tasks.list.getSnapshot().taskDetail?.hasNewer).toBe(false)
+    const input = { teamId: id, taskId: task.id, commandId: 'original' as never }
+    vi.spyOn(api.teams, 'taskUpdateResult').mockResolvedValue(ok({ kind: 'applied', receipt: {
+      ...input, expectedRevision: 1, appliedRevision: 2, appliedAt: 20,
+    } }))
+    await tasks.lookupTaskUpdate(input)
+    expect(tasks.list.getSnapshot().taskDetail?.hasNewer).toBe(true)
+    await tasks.readTaskDetail(id, task.id)
+    expect(tasks.list.getSnapshot().taskDetail).toMatchObject({ hasNewer: true,
+      record: { value: { revision: 1 }, error: 'Task inspection is older than the observed task revision' } })
+    current = { ...task, revision: 2, subject: 'Accepted update' }
+    await tasks.readTaskDetail(id, task.id)
+    expect(tasks.list.getSnapshot().taskDetail).toMatchObject({ hasNewer: false, record: { value: { revision: 2 } } })
+    inspect.mockRestore()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('accepts a definitive update refusal only for its exact submitted identity and revision', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const id = teamId('refused-edit')
+    await tasks.inspect(id)
+    const input = { taskId: 'task' as never, commandId: 'original' as never, expectedRevision: 1, subject: 'Updated' }
+    const rejection = { ...input, subject: undefined, teamId: id, observedRevision: 2, rejectedAt: 20, reason: 'stale-revision' as const }
+    const read = vi.spyOn(api.teams, 'taskUpdate').mockResolvedValue(err({ code: 'team-task-update-rejected',
+      message: 'Original refusal', details: { rejection } }))
+    await expect(tasks.manage(id, { operation: 'taskUpdate', input })).rejects.toMatchObject({
+      rpcError: { code: 'team-task-update-rejected', details: { rejection } },
+    })
+    for (const patch of [{ teamId: 'foreign' as never }, { taskId: 'foreign' as never }, { commandId: 'foreign' as never },
+      { expectedRevision: 3 }]) {
+      read.mockResolvedValueOnce(err({ code: 'team-task-update-rejected', message: 'Foreign refusal', details: { rejection: { ...rejection, ...patch } } }))
+      await expect(tasks.manage(id, { operation: 'taskUpdate', input })).rejects.toThrow(/original command identity/)
+    }
+  } finally { await ctx.fiber.dispose() }
+})
+
+it.each(['abort', 'authorization', 'selection'] as const)('withholds definitive and transport update failures after %s replacement', async (change) => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const id = teamId('late-refusal')
+    const input = { taskId: 'task' as never, commandId: 'original' as never, expectedRevision: 1, subject: 'Updated' }
+    for (const transportFailure of [false, true]) {
+      await tasks.inspect(id)
+      const controller = new AbortController()
+      const pending = deferred<Awaited<ReturnType<typeof api.teams.taskUpdate>>>()
+      const read = vi.spyOn(api.teams, 'taskUpdate').mockReturnValueOnce(pending.promise)
+      const operation = tasks.manage(id, { operation: 'taskUpdate', input }, controller.signal)
+      const rejected = expect(operation).rejects.toThrow(/response authority changed/)
+      if (change === 'abort') controller.abort()
+      else if (change === 'authorization') tasks.clearAuthorization()
+      else await tasks.inspect(teamId('replacement-team'))
+      if (transportFailure) pending.reject(new Error('Private old update diagnostic'))
+      else pending.resolve(err({ code: 'team-task-update-rejected', message: 'Private old refusal', details: {
+        rejection: { teamId: id, taskId: input.taskId, commandId: input.commandId, expectedRevision: 1,
+          observedRevision: 2, rejectedAt: 20, reason: 'stale-revision' },
+      } }))
+      await rejected
+      read.mockRestore()
+    }
+  } finally { await ctx.fiber.dispose() }
+})
 
 async function getTeamState(api: FakeApiClient, id: TeamId): Promise<TeamStateSnapshot> {
   const response = await api.onTeamGet({ teamId: id })
@@ -521,7 +647,7 @@ describe('TeamTaskRuntime', () => {
       api.onTeamList = async (input) => {
         const index = input.afterCursor === -1 ? 0 : Number(String(input.afterCursor).split(':')[1])
         const id = teamId(`page-team-${index}`)
-        return ok({ items: [{ ...base.team, id, goal: { ...base.goal, teamId: id } }], scanned: 1, nextCursor: `page:${index + 1}` as NonNullable<TeamTaskListState['nextCursor']> })
+        return ok({ items: [projectTeamProductSummary({ ...base.team, id, goal: { ...base.goal, teamId: id } }, id, 512, {})], nextCursor: `page:${index + 1}` as NonNullable<TeamTaskListState['nextCursor']> })
       }
       await tasks.refresh()
       for (let index = 1; index <= 32; index++) {
@@ -1006,26 +1132,26 @@ describe('TeamTaskRuntime', () => {
     }
   })
 
-  it('reads member detail without Team selection and rejects mismatched member, cursor and oversized pages', async () => {
+  it('owns member detail within the selected Team and clears it on selection and authorization changes', async () => {
     const { ctx, api, tasks } = setup()
     try {
-      const state = await getTeamState(api, teamId('member-inspect'))
+      const id = teamId('member-inspect')
+      const state = await getTeamState(api, id)
       const member = state.participants[0]!
       const value = { record: { id: member.id, teamId: member.teamId, kind: member.kind, phase: member.phase,
         displayName: member.displayName, role: member.role }, teamCursor: 3, startCursor: -1, total: 1, scanned: 1, items: ['read'] }
       const read = vi.spyOn(api.teams, 'memberInspect').mockResolvedValue(ok(value))
-      const full = vi.spyOn(api.teams, 'get').mockRejectedValue(new Error('Full Team read forbidden'))
-      const input = { teamId: member.teamId, participantId: member.id, limit: 1 }
-      await expect(tasks.inspectMember(input)).resolves.toEqual(value)
-      expect(tasks.list.getSnapshot().selected).toBeUndefined()
-      expect(full).not.toHaveBeenCalled()
-      for (const changed of [{ ...value, record: { ...value.record, id: 'foreign' as typeof member.id } },
-        { ...value, startCursor: 1 }, { ...value, items: ['read', 'write'] }]) {
-        read.mockResolvedValue(ok(changed))
-        await expect(tasks.inspectMember(input)).rejects.toThrow(/another selection|requested page/)
-      }
-      read.mockResolvedValue(ok(value))
-      await expect(tasks.inspectMember({ ...input, expectedTeamCursor: 2 })).rejects.toThrow(/another selection/)
+      await tasks.readMemberDetail(id, member.id)
+      expect(read).not.toHaveBeenCalled()
+      await tasks.inspect(id)
+      await tasks.readMemberDetail(id, member.id)
+      expect(tasks.list.getSnapshot().memberDetail?.value).toEqual(value)
+      tasks.startDraft()
+      expect(tasks.list.getSnapshot().memberDetail).toBeUndefined()
+      await tasks.inspect(id)
+      await tasks.readMemberDetail(id, member.id)
+      tasks.clearAuthorization()
+      expect(tasks.list.getSnapshot().memberDetail).toBeUndefined()
     } finally { await ctx.fiber.dispose() }
   })
 
@@ -1062,7 +1188,32 @@ describe('TeamTaskRuntime', () => {
     }
   })
 
-  it('rejects Team selections without a coordinator participant or activation', async () => {
+  it.each([false, true])('inspects and refreshes a coordinator-free Team without starting it (Simulation: %s)', async (simulationManaged) => {
+    const { ctx, api, tasks } = setup()
+    try {
+      const id = teamId('runtime-fk-team')
+      const original = await getTeamState(api, id)
+      const actor = original.participants.find(participant => participant.role === 'coordinator')
+      const binding = original.activations.find(value => value.activation.participantId === actor?.id)
+      if (actor === undefined || binding === undefined) throw new Error('Fixture member Session unavailable')
+      const state = { ...original, rules: simulationManaged ? { simulationRunId: 'run' } : {},
+        participants: original.participants.map(participant => participant.id === actor.id ? { ...participant, role: 'buyer' } : participant) }
+      api.onTeamGet = async () => ok(state)
+      const selected = await tasks.inspect(id)
+      expect(selected.state.coordinator).toEqual({ kind: 'unavailable', reason: 'missing-participant' })
+      expect(selected.coordinatorSessionId).toBeUndefined()
+      expect(await tasks.participantSession(id, actor.id)).toBe(binding.sessionId)
+      api.onTeamGet = async () => ok({ ...state, team: { ...state.team, cursor: state.team.cursor + 1 } })
+      await tasks.refresh()
+      expect(tasks.list.getSnapshot().selected?.state.team.cursor).toBe(state.team.cursor + 1)
+      expect(tasks.list.getSnapshot().selected?.coordinatorSessionId).toBeUndefined()
+      expect(tasks.list.getSnapshot().error).toBeNull()
+      expect(api.callsOf('team.resume')).toEqual([])
+      expect(api.callsOf('team.start')).toEqual([])
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('retains the execution requirement for legacy open without a coordinator participant or activation', async () => {
     const { ctx, api, tasks } = setup()
     try {
       const id = teamId('runtime-fk-team')
@@ -1113,7 +1264,9 @@ describe('TeamTaskRuntime', () => {
         data: 'dGVzdA==',
       }
       api.onTeamArtifactRead = () => Promise.resolve(ok(artifact))
-      await expect(tasks.readArtifact(id, 'local:report')).resolves.toEqual(artifact)
+      tasks.list.set({ ...tasks.list.getSnapshot(), current: id })
+      await tasks.readArtifact(id, 'local:report')
+      expect(tasks.list.getSnapshot().artifactDetail?.value).toEqual(artifact)
       expect(api.callsOf('team.artifact.read')).toEqual([{ teamId: id, artifactId: 'local:report' }])
     } finally {
       await ctx.fiber.dispose()
@@ -1139,6 +1292,25 @@ describe('Team management reconciliation', () => {
       expect(api.callsOf('team.member.activate')).toEqual([{
         teamId: selection.teamId, participantId: 'worker', expectedCursor: selection.state.team.cursor,
       }])
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('refreshes the current member window after invitation without resetting its position', async () => {
+    const { ctx, api, tasks } = setup()
+    try {
+      const selection = await tasks.open(teamId('profile-invite'))
+      const original = await getTeamState(api, selection.teamId)
+      const member = { ...original.participants[0]!, id: 'invited-profile' as never, displayName: 'Profile member' }
+      vi.spyOn(api.teams, 'memberInvite').mockResolvedValue(ok(member))
+      const browse = vi.spyOn(api.teams, 'browse').mockResolvedValue(ok({ kind: 'members', teamId: selection.teamId,
+        teamCursor: selection.state.team.cursor, items: [memberSummary(member)], total: 3, scanned: 3 }))
+      const current = tasks.list.getSnapshot()
+      tasks.list.set({ ...current, collections: { ...current.collections!, members: { ...current.collections!.members, startCursor: 1 } } })
+      await tasks.manage(selection.teamId, { operation: 'memberInvite', input: { expectedCursor: selection.state.team.cursor,
+        kind: 'local-agent', role: 'custom', displayName: 'Profile member', capabilities: [] } })
+      expect(browse).toHaveBeenLastCalledWith({ teamId: selection.teamId, kind: 'members', afterCursor: 1, limit: 64 }, undefined)
+      expect(tasks.list.getSnapshot().collections?.members.items).toEqual([memberSummary(member)])
+      expect(tasks.list.getSnapshot().collections?.members.startCursor).toBe(1)
     } finally { await ctx.fiber.dispose() }
   })
 
@@ -1416,4 +1588,106 @@ describe('Principal inbox runtime', () => {
       expect(api.callsOf('team.resume')).toEqual([])
     } finally { await ctx.fiber.dispose() }
   })
+})
+
+it('clears member names and details on a changed handshake scope before old selection reads settle', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const firstScope = 'a'.repeat(64) as never
+    tasks.handleConnected(firstScope)
+    await tasks.open(teamId('first-principal-team'))
+    const old = tasks.list.getSnapshot().selected!
+    expect(old.state.coordinator.kind).toBe('bound')
+    const pending = deferred<Awaited<ReturnType<FakeApiClient['teams']['selection']>>>()
+    const select = vi.spyOn(api.teams, 'selection').mockReturnValueOnce(pending.promise)
+    const opening = tasks.open(teamId('old-principal-pending'))
+    const settled = opening.catch((error: unknown) => error)
+    tasks.handleConnected('b'.repeat(64) as never)
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+    expect(tasks.list.getSnapshot().collections).toBeUndefined()
+    expect(tasks.list.getSnapshot().memberSession).toBeUndefined()
+    pending.resolve(ok(old.state))
+    await settled
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+    select.mockRestore()
+    await tasks.open(teamId('new-principal-team'))
+    expect(tasks.list.getSnapshot().selected?.teamId).toBe('new-principal-team')
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('does not reopen an old-principal Team when a previously accepted start returns late', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    tasks.handleConnected('a'.repeat(64) as never)
+    tasks.startDraft()
+    const draft = tasks.list.getSnapshot().draft!
+    const accepted = await api.onTeamStart({ objective: 'Old request', text: 'Old request', idempotencyKey: draft.idempotencyKey })
+    const pending = deferred<Awaited<ReturnType<FakeApiClient['teams']['start']>>>()
+    vi.spyOn(api.teams, 'start').mockReturnValueOnce(pending.promise)
+    const starting = tasks.start({ text: 'Old request' })
+    const rejected = expect(starting).rejects.toMatchObject({ name: 'AbortError' })
+    tasks.handleConnected('b'.repeat(64) as never)
+    pending.resolve(accepted)
+    await rejected
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+    expect(tasks.list.getSnapshot().current).toBeUndefined()
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('retains Team context on a transient detail failure and clears it after membership denial', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    tasks.handleConnected('a'.repeat(64) as never)
+    const selected = await tasks.open(teamId('member-access'))
+    const read = vi.spyOn(api.teams, 'memberInspect')
+      .mockResolvedValueOnce(err({ code: 'internal', message: 'Temporary read failure', details: {} }))
+      .mockResolvedValueOnce(err({ code: 'TEAM_HUMAN_ACTOR_FORBIDDEN', message: 'Membership revoked', details: {} }))
+    const input = { teamId: selected.teamId, participantId: 'member' as never }
+    await tasks.readMemberDetail(input.teamId, input.participantId)
+    expect(tasks.list.getSnapshot().memberDetail?.error).toBe('Temporary read failure')
+    expect(tasks.list.getSnapshot().selected?.teamId).toBe(selected.teamId)
+    await tasks.readMemberDetail(input.teamId, input.participantId)
+    expect(tasks.list.getSnapshot().memberDetail).toBeUndefined()
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+    expect(tasks.list.getSnapshot().collections).toBeUndefined()
+    expect(read).toHaveBeenCalledTimes(2)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('keeps the table query independent from dependency candidates and their disposal', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const selected = await tasks.open(teamId('query-owners'))
+    const read = vi.spyOn(api.teams, 'browse').mockImplementation(async input => ok({
+      teamId: input.teamId, kind: 'tasks', teamCursor: selected.state.team.cursor, query: input.query!,
+      sourceTotal: 9, total: 0, scanned: 9, items: [],
+    }))
+    await tasks.readTaskQuery(selected.teamId, { search: 'table' })
+    await tasks.readDependencies(selected.teamId, { search: 'dependency', excludeTaskId: 'edited' as never })
+    const table = tasks.list.getSnapshot().taskQuery
+    const dependencies = tasks.list.getSnapshot().dependencyQuery
+    tasks.closeDependencies()
+    expect(tasks.list.getSnapshot().taskQuery).toBe(table)
+    expect(tasks.list.getSnapshot().dependencyQuery).toBeUndefined()
+    await tasks.readDependencies(selected.teamId, dependencies!.query)
+    tasks.pauseTaskQuery()
+    expect(tasks.list.getSnapshot().dependencyQuery?.query).toEqual(dependencies!.query)
+    expect(tasks.list.getSnapshot().taskQuery?.query.search).toBe('table')
+    await tasks.readTaskQuery('foreign' as never, { search: 'ignored' })
+    expect(read).toHaveBeenCalledTimes(3)
+  } finally { await ctx.fiber.dispose() }
+})
+
+it('retires a denied current Team but preserves another selected Team after a foreign target refusal', async () => {
+  const { ctx, api, tasks } = setup()
+  try {
+    const source = teamId('source')
+    await tasks.inspect(source)
+    vi.spyOn(api.teams, 'selection').mockResolvedValue(err({ code: 'TEAM_HUMAN_ACTOR_NOT_FOUND', message: 'Not a member', details: {} }))
+    await expect(tasks.inspect(teamId('other'))).rejects.toBeInstanceOf(TeamTaskStartError)
+    expect(tasks.list.getSnapshot().selected?.teamId).toBe(source)
+    await expect(tasks.inspect(source)).rejects.toBeInstanceOf(TeamTaskStartError)
+    expect(tasks.list.getSnapshot().selected).toBeUndefined()
+    expect(tasks.list.getSnapshot().current).toBeUndefined()
+  } finally { await ctx.fiber.dispose() }
 })

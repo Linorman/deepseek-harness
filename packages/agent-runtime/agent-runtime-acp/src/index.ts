@@ -800,6 +800,7 @@ function requiresChannelView(claim: ChannelDeliveryClaim): boolean {
 
 /** ACP-backed provider with one child process per Team participant epoch. */
 class AcpProvider implements AgentRuntimeProvider {
+  readonly participantKinds = ['remote-agent'] as const
   readonly terminationMode = 'owned-process' as const
   /** Local fencer used to prove exact owned-process termination during recovery. */
   readonly fencer: AgentRuntimeFencer | undefined

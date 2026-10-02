@@ -20,6 +20,7 @@ import type {
 } from '../src/index.ts'
 
 const task = teamTaskSnapshotSchema.parse({
+  createdAt: 0,
   id: 'task-workspace-registry',
   teamId: 'team-workspace-registry',
   revision: 1,

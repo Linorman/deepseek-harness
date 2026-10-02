@@ -1,6 +1,7 @@
 /** Durable model-attempt token ownership and reconciliation. @module @clocky/clocky-simulation-local/tokens */
 import { isDeepStrictEqual } from 'node:util'
 import { z } from 'zod'
+import { taskDecision } from '@clocky/clocky-simulation'
 import { simulationCompactionTokenRequestSchema, simulationEntityIdSchema, simulationWriterEpochSchema,
   simulationTokenReservationIdSchema, simulationTokenOutcomeSchema, simulationTokenCount, simulationTokenRequestSchema,
   simulationDecisionIdSchema, simulationEventSlotSchema } from '@clocky/clocky-simulation'
@@ -49,7 +50,9 @@ export function foldTokens(state: SimulationSnapshot, record: TokenRecord): Simu
     case 'token/reserved': {
       const decision = state.decisions[record.decisionId]
       const entity = decision === undefined ? undefined : state.entities[decision.entityId]
+      const task = taskDecision(state, record.decisionId)
       if (record.id !== nextTokenId(state) || state.phase !== 'running' || decision?.status !== 'open'
+        || task !== undefined && state.taskCancellations?.[task.execution.request.operationId] !== undefined
         || decision.context?.status !== 'prepared' || decision.inference === undefined || entity?.binding === undefined
         || entity.writer?.phase !== 'active' || entity.writer.epoch !== decision.epoch
         || (decision.windowId === undefined ? state.activeDecisionId !== decision.id : state.activeWindowId !== decision.windowId)) {
@@ -64,7 +67,11 @@ export function foldTokens(state: SimulationSnapshot, record: TokenRecord): Simu
     }
     case 'token/compaction-reserved': {
       const entity = state.entities[record.entityId]
+      const cancelledTask = Object.values(state.taskExecutions ?? {}).some(execution => execution.retired === undefined
+        && execution.request.entityId === record.entityId && execution.request.epoch === record.epoch
+        && state.taskCancellations?.[execution.request.operationId] !== undefined)
       if (record.id !== nextTokenId(state) || state.phase === 'stalled' || entity?.phase !== 'active'
+        || cancelledTask
         || entity.binding === undefined || entity.writer?.phase !== 'active' || entity.writer.epoch !== record.epoch) {
         throw new Error('Simulation compaction tokens require their current canonical writer')
       }

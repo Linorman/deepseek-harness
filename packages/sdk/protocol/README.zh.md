@@ -2,7 +2,32 @@
 
 [English](README.md) | 中文
 
+`simulation/requests-list` 携带 actor-free 运行选择器，返回互不重复的原 receipt、总数、运行独立 revision 及可选继续游标，不返回私有命令输入。`simulation/requests-retry` 只携带 `runId` 和已有 `commandId`，返回原 receipt 类型；调用方提供替换输入时会被拒绝。已受理命令保留原语义，终态 receipt 保持不可变。
+
+`simulation/runs-preflight` 共用严格产品草稿／结果解析器。草稿省略 `commandId`；`ready` 携带解析后的 `limits`、预算区间、规则／策略／tick 标签及共享模型容量，`invalid` 携带有界字段问题。模拟 `maxTime` 保持规范正十进制字符串。目录配置公开默认值和可编辑额度键；创建只可携带允许的可选 `limits`。
+
+恢复 `diagnostic` 是封闭的 stage／code／subject 契约。Session 对象绑定精确 Session、Team 和 participant；它只允许出现在失败的检查点／恢复 receipt 或失败的检查点详情中。wire 契约不解析私有消息推断类别，也不公开路径或 stack 字段。
+
+`simulation/operation-retry` 要求原 `commandId`、精确 `operationId`、正安全整数 `expectedAttemptCount` 及非空规范化原因。结果属于 `retry-operation`；保留的失败为 `retry-operation-failed`。`simulation/requests-get` 只在该 kind 时携带精确 `retryOperation` 原输入，并将运行／命令绑定到 receipt。额外 actor、配置或伪造结果字段会被拒绝。
+
+`simulation/runs-statuses` 携带有序、独立的 `observed`、`missing` 或 `unavailable` 运行观察，以及一次可选真实时间共享模型池观察。原生指标保留精确十进制模拟区间；token 费用包含预留／未知工作，Host permit 则统计当前基础设施准入。旧 peer 可缺少新的检查／控制字段；提供的字段仍严格校验，unavailable 观察不能携带虚构零数量。
+
+`simulation/task-reviews-list` 与 `simulation/task-reviews-resolve` 复用严格的场景范围产品 DTO。列表只公开规范来源／attempt 元数据；resolve 绑定原命令、operation、attempt、revision、结果和原因。`requests-get` 仅在 `kind: review` 时携带原 `review` payload；receipt 与当前任务 phase 相互独立。
+
+`simulation/sources-inspect` 使用封闭、不含 actor 的来源选择及纯文本结果。missing、withheld、unavailable、searching、found 状态分开，只有 found 携带正文片段；引用序号或已知 Envelope 位置不是授权凭据。
+
+`simulation/records-list` 共享产品日志请求／结果 schema。metadata 与 original 模式分开；原文是独立历史正文策略下的有序 JSON 文本分片。严格结果校验拒绝模式或权限要求删节时的文本。筛选、来源序号、观察 revision 和读取策略版本保持显式。
+
+`SimulationSdkRequestMap` 覆盖已认证的产品元数据、原创建／准备请求、调度控制、检查点／恢复和单实体输入。输入使用不透明 wire 字符串，复用严格的[产品解析器](../../simulation/simulation-product/README.zh.md)；结果保持有界、删节的产品 DTO。provider／spec 选择及主体身份由服务器派生。模拟时间、slot 和 writer epoch 保持规范十进制字符串。管理、命令和输入身份在精确重试中保留；`not-found` 不能证明失败。恢复验证保留历史与当前后缀，不回滚也不推理。
+
+`team/task-update` 要求 `commandId`，受理时返回 `{ value: { receipt, task } }`；receipt 描述原操作，task 是当前状态。`team/task-update-result` 读取精确 Team／task／command 的 `applied` 元数据、终态 `rejected` 元数据或 `not-found`。拒绝原因是封闭联合，保留原 expected／observed revision。查询不含 actor proof、提交输入或私有诊断；未找到不能确立失败。
+
 Clocky SDK 运行时的共享协议格式（wire format）：一个按换行分帧的 JSON-RPC 2.0 传输类，加上协议两端共同使用的具名请求、结果与通知类型。包根枚举协议消费方接口；源模块不支持深层导入。服务端是 [`clocky-sdk-jsonrpc-server`](../server/README.zh.md) 插件；[`clocky-sdk-client`](../client/README.zh.md) 消费 Team 产品接口，[Python SDK](../../../python/README.zh.md) 跟随同一协议迁移。纯库——无插件、无 Config、无注册。
+
+`team/list` 返回已认证主体的安全产品摘要与可选加密续页，不含物理扫描计数、grant 和 goal budget 正文。续页绑定主体与凭据代际；过期要求明确读取首页。选中 Team 的 `readAccess` 由服务器派生，不授予修改权限。
+
+
+`simulation/tasks-list` 返回有界的运行所属规范任务控制；`simulation/tasks-cancel` 固定原命令、来源操作、任务 revision，以及精确 attempt 或显式无 lease 的 `null`。actor 字段与缺失的 fence 均被拒绝。`cancel-task` 回执确认原请求类型；`requests-get` 用同一运行与命令重建不可变的 `cancellation`。协议不携带私有任务正文或通用 Team 权限。
 
 ## 传输
 

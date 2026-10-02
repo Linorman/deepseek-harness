@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { act, cleanup } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { bootInjections, orderByModuleGraph } from '@clocky/clocky-client-modules'
 import type { ClientModuleLoaderTarget, WebBootEntry } from '@clocky/clocky-client-modules/client'
@@ -238,3 +238,12 @@ export function hasClass(el: Element, name: string): boolean {
  * scratch, `refresh` re-derives the expected text from the existing ones).
  */
 export const REFRESHING_GOLDEN = process.env.CLOCKY_SNAPSHOT === 'record' || process.env.CLOCKY_SNAPSHOT === 'refresh'
+
+/**
+ * Open the selected fixture Team's existing coordinator through the production inspection control.
+ * @returns after the named Session inspection is visible.
+ */
+export async function openAssembledCoordinator(): Promise<void> {
+  fireEvent.click(await screen.findByRole('button', { name: /^(Talk to coordinator|View coordinator record)$/ }, { timeout: 10000 }))
+  await screen.findByRole('dialog', { name: /^(Talk to coordinator|Execution record)$/ }, { timeout: 10000 })
+}

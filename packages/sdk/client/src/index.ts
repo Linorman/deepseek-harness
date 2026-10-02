@@ -1,3 +1,10 @@
+export type { SimulationTasksParams, SimulationTasksResult, SimulationTaskCancelParams, SimulationTaskCancelResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationRequestsParams, SimulationRequestsResult, SimulationRetryRequestParams, SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationPreflightParams, SimulationPreflightResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationSourceParams, SimulationSourceResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationRecordsParams, SimulationRecordsResult } from '@clocky/clocky-sdk-protocol'
+export type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
+export type { SimulationWatchParams, SimulationWatchResult } from '@clocky/clocky-sdk-protocol'
 export type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
 export type { TeamActionReadParams } from '@clocky/clocky-sdk-protocol'
 /**
@@ -134,3 +141,13 @@ export type {
 } from '@clocky/clocky-sdk-protocol'
 
 export type { TeamInboxRespondParams } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationCatalogParams, SimulationCatalogResult, SimulationListParams, SimulationListResult, SimulationInspectParams, SimulationInspectResult, SimulationBrowseParams, SimulationBrowseResult, SimulationObjectParams, SimulationObjectResult, SimulationCreateParams, SimulationCreateResult, SimulationPrepareParams, SimulationPrepareResult, SimulationRequestParams, SimulationRequestResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationControlParams, SimulationControlResult, SimulationManageParams, SimulationManageResult, SimulationManagementParams, SimulationManagementResult, SimulationCheckpointParams, SimulationCheckpointResult, SimulationRestoreParams, SimulationRestoreResult, SimulationIngressParams, SimulationIngressResult, SimulationIngressRequestParams, SimulationIngressRequestResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationTaskReviewListParams, SimulationTaskReviewListResult, SimulationTaskReviewResolveParams, SimulationTaskReviewResolveResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationRunStatusesParams, SimulationRunStatusesResult } from '@clocky/clocky-sdk-protocol'
+
+export type { SimulationOperationRetryParams, SimulationOperationRetryResult } from '@clocky/clocky-sdk-protocol'

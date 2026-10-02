@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`checkpoints and restores current scenario facts through the real Host carrier (json) 1`] = `
+{
+  "checkpointRetryInferred": false,
+  "consumptionDecision": true,
+  "fullCheckpoint": "completed",
+  "inputConsumed": true,
+  "originalInputRetained": true,
+  "pendingAssignedAt": "7",
+  "phase": "paused",
+  "preparedPaused": true,
+  "retiredActors": true,
+}
+`;
+
+exports[`checkpoints and restores current scenario facts through the real Host carrier (json) 2`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;
+
+exports[`checkpoints and restores current scenario facts through the real Host carrier (sqlite) 1`] = `
+{
+  "checkpointRetryInferred": false,
+  "consumptionDecision": true,
+  "fullCheckpoint": "completed",
+  "inputConsumed": true,
+  "originalInputRetained": true,
+  "pendingAssignedAt": "7",
+  "phase": "paused",
+  "preparedPaused": true,
+  "retiredActors": true,
+}
+`;
+
+exports[`checkpoints and restores current scenario facts through the real Host carrier (sqlite) 2`] = `
+{
+  "fullSourceRevalidated": true,
+  "modelRequests": 0,
+  "restoredPaused": true,
+  "retainedInputs": 1,
+  "rollback": false,
+  "suffixReceived": "1",
+  "suffixStock": "1",
+}
+`;

@@ -19,6 +19,7 @@ import { parseLogInfo } from './log-format.ts'
 import { acquireJsonLogOwner } from './log-owner.ts'
 import type { JsonLogOwner } from './log-owner.ts'
 import { openJsonUnit } from './unit.ts'
+export { readJsonLogSnapshot } from './readonly-log.ts'
 
 /** Cordis plugin name. */
 export const name = 'storage-json'

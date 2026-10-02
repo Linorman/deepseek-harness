@@ -73,6 +73,9 @@
     },
     {
       "path": "../../team/team-channel-summary"
+    },
+    {
+      "path": "../../simulation/simulation-product"
     }
   ]
 }

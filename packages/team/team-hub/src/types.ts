@@ -1,3 +1,4 @@
+import type { TeamTaskUpdateCommandId, TeamTaskUpdateCommandReceipt, TeamTaskUpdateCommandRejection, TeamTaskUpdateCommand } from '@clocky/clocky-team'
 import type { ChannelInvitationSnapshot } from '@clocky/clocky-team'
 /** Durable Team-Hub journal, projection, and checkpoint records. @module @clocky/clocky-team-hub/types */
 
@@ -49,13 +50,13 @@ import type {
 } from '@clocky/clocky-team'
 
 /** Durable format stamped on every Team journal stream. */
-export const TEAM_JOURNAL_FORMAT_VERSION = 35
+export const TEAM_JOURNAL_FORMAT_VERSION = 40
 /** Durable format stamped on every channel WAL stream. */
 export const CHANNEL_WAL_FORMAT_VERSION = 7
 /** Durable format stamped on every Team or channel audit projection stream. */
 export const AUDIT_PROJECTION_FORMAT_VERSION = 1
 /** Serialization format for Team-journal projection checkpoints. */
-export const TEAM_CHECKPOINT_FORMAT_VERSION = 35
+export const TEAM_CHECKPOINT_FORMAT_VERSION = 40
 /** Serialization format for channel-WAL projection checkpoints. */
 export const CHANNEL_CHECKPOINT_FORMAT_VERSION = 10
 
@@ -175,9 +176,21 @@ export interface ParticipantChangedJournalRecord {
 export interface TaskChangedJournalRecord {
   /** Closed durable-record discriminator. */
   readonly type: 'task/changed'
+  /** Present only for an atomically admitted editable-details command. */
+  readonly detailsCommand?: TeamTaskUpdateCommandReceipt | undefined
   /** Complete task snapshot after the mutation. */
   readonly task: TeamTaskSnapshot
   /** Epoch milliseconds when the change was accepted. */
+  readonly createdAt: number
+}
+
+/** One authenticated command refusal that changes no task revision or fields. */
+export interface TaskUpdateRejectedJournalRecord {
+  /** Closed durable-record discriminator. */
+  readonly type: 'task/update-rejected'
+  /** Exact original input, author and refusal. */
+  readonly command: TeamTaskUpdateCommandRejection
+  /** Epoch milliseconds shared by the refusal and journal record. */
   readonly createdAt: number
 }
 
@@ -335,6 +348,7 @@ export type TeamJournalRecord =
   | GoalChangedJournalRecord
   | ParticipantChangedJournalRecord
   | TaskChangedJournalRecord
+  | TaskUpdateRejectedJournalRecord
   | WorkspaceAllocationChangedJournalRecord
   | WorkspaceObservedJournalRecord
   | ActivationChangedJournalRecord
@@ -367,6 +381,8 @@ export interface TeamProjectionData {
   readonly taskExecutionStats?: readonly TeamTaskExecutionStats[]
   /** Task snapshots in first-record order. */
   readonly tasks: readonly TeamTaskSnapshot[]
+  /** Retained original task-update admissions; never inferred from current editable fields. */
+  readonly taskUpdateCommands: readonly TeamTaskUpdateCommand[]
   /** Workspace allocation snapshots in first-reservation order. */
   readonly workspaceAllocations: readonly TeamWorkspaceAllocationSnapshot[]
   /** Activation bindings in first-record order. */
@@ -405,6 +421,8 @@ export interface TeamProjection {
   readonly taskExecutionStats: Map<string, TeamTaskExecutionStats>
   /** Tasks keyed by their stable id. */
   readonly tasks: Map<TeamTaskId, TeamTaskSnapshot>
+  /** Team-unique task-update identities and original admissions. */
+  readonly taskUpdateCommands: Map<TeamTaskUpdateCommandId, TeamTaskUpdateCommand>
   /** Provider allocations keyed by their stable provider-minted identity. */
   readonly workspaceAllocations: Map<TeamWorkspaceAllocationId, TeamWorkspaceAllocationSnapshot>
   /** Activation bindings keyed by their provider-owned epoch identity. */

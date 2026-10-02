@@ -4,7 +4,7 @@
 
 纯 React 原子组件（零 cordis）：StateDot、DisclosureRow、共享图标、Button/Pill/Menu/Modal/Input、Toast 短时横幅、OnboardingSurface 首次使用接管层（portal 到 body 的遮罩加不透明展示层，在且仅在自身生命周期内保持 `#root` 为 `inert`）、markdown 家族（MessageText/MarkdownText/JsonBlock）、只读 JsonTree 检查器、`useAnchoredMaxHeight` 钩子（把底部锚定的浮层高度收敛到锚点上方的视口空间，并在 resize、scroll 与调用方提供的依赖变化时重新测量）、`useAnchoredPosition` 钩子（让固定定位的浮动面板跟住锚点：测量、偏移、按视口边距钳制，并在捕获阶段滚动、窗口缩放与面板自身尺寸变化时重新定位）、TerminalBlock、DiffBlock、ReadBlock、SearchBlock，以及 WebBlock。
 
-`Modal` 使用原生 dialog 顶层隔离焦点和背景输入，并保留应用的遮罩与卡片样式。Escape 请求由 owner 控制的关闭；关闭后恢复此前仍连接在文档中的焦点目标。`bodyClassName` 支持独立滚动的表单正文，同时保留标题和底部操作。锚点位于活跃 dialog 内时，`Menu` 和 `HoverCard` 的 portal 内容也保留在该 dialog 内。
+`Modal` 使用原生 dialog 顶层隔离焦点和背景输入，并保留应用的遮罩与卡片样式。Escape 请求由 owner 控制的关闭；关闭后恢复此前仍连接在文档中的焦点目标。`bodyClassName` 支持独立滚动的表单正文，同时保留标题和底部操作。锚点位于活跃 dialog 内时，`Menu` 和 `HoverCard` 的 portal 内容也保留在该 dialog 内。 `size="form"` 提供 800px 宽、由视口约束的稳定高度桌面表单，以及窄屏全高视图。字段滚动而操作保持原位；视口高度不超过 420px 时改为整卡滚动，避免标题／页脚把字段挤出可访问区域。默认确认框仍为 380px 宽。
 
 ## 悬浮卡片
 

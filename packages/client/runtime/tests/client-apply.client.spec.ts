@@ -155,3 +155,29 @@ describe('runtime client apply', () => {
     void fiber
   })
 })
+
+it('retires Session, Team and Workspace state after an explicit access refusal', async () => {
+  const bench = await mount()
+  try {
+    const sessions = bench.ctx.get('sessions') as SessionRuntime
+    const workspaces = bench.ctx.get('workspaces') as WorkspaceRuntime
+    const teams = bench.ctx.get('teamTasks') as TeamTaskRuntime
+    bench.sinks?.onHostEnvelope?.({ rpcId: 'private-session' as never, payload: {
+      type: 'host/session-added', sessionId: 'private-session' as never, blank: true,
+    } })
+    bench.sinks?.onHostEnvelope?.({ rpcId: 'private-workspace' as never, payload: {
+      type: 'host/workspace-changed', workspace: { workspaceId: 'private-workspace' as never,
+        path: '/private-workspace', title: 'Private workspace', sessionIds: ['private-session' as never],
+        createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+    } })
+    await flushMicrotasks()
+    expect(sessions.list.getSnapshot().ids).toContain('private-session')
+    expect(workspaces.list.getSnapshot().items).toHaveLength(1)
+    bench.sinks?.onAuthorizationLost?.()
+    await flushMicrotasks()
+    expect(sessions.list.getSnapshot().ids).toEqual([])
+    expect(workspaces.list.getSnapshot().items).toEqual([])
+    expect(teams.list.getSnapshot()).toMatchObject({ items: [], current: undefined, draft: undefined,
+      error: { code: 'PRODUCT_AUTH_INVALID' } })
+  } finally { await bench.ctx.fiber.dispose() }
+})

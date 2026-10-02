@@ -12,7 +12,7 @@
 import { resolve } from 'node:path'
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
+import { openAssembledCoordinator, installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
 
 installAssembledBootEnv()
 
@@ -40,20 +40,21 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   mountAssembledApp()
 
   // The sidebar renders from the boot graph: every inject layer activated.
-  const teamNavigator = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+  const teamNavigator = await screen.findByRole('region', { name: 'Team directory' }, { timeout: 10_000 })
   const draftComposer = screen.getByRole('textbox') as HTMLTextAreaElement
   expect(draftComposer.disabled).toBe(false)
   expect(screen.queryByRole('tree', { name: 'Sessions' })).toBeNull()
   const fixtureTeam = within(teamNavigator).getByTitle('Demonstrate the fixture Team API.')
   fireEvent.click(fixtureTeam)
+  await openAssembledCoordinator()
   await waitFor(() => {
     expect(within(teamNavigator).getByTitle('Demonstrate the fixture Team API.')
       .getAttribute('aria-current')).toBe('page')
   }, { timeout: 10_000 })
-  expect(document.querySelector('svg[viewBox="0 0 156 24"]')).not.toBeNull()
-  expect(screen.queryByText('Clocky')).toBeNull()
+  expect(document.querySelector('svg[viewBox="0 0 156 24"]')).toBeNull()
+  expect(screen.getByText('Clocky')).toBeDefined()
 
-  // Team selection opens the fixture coordinator transcript through the Team
+  // Explicit inspection opens the fixture coordinator transcript through the Team
   // activation binding rather than a Session-browser row.
   await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()

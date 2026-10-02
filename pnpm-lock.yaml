@@ -144,6 +144,9 @@ importers:
       '@clocky/clocky-client-ui-cordis':
         specifier: workspace:^
         version: link:../../packages/extensions/ui-cordis
+      '@clocky/clocky-client-ui-simulation':
+        specifier: workspace:^
+        version: link:../../packages/client/ui-simulation
       '@clocky/clocky-cmdline':
         specifier: workspace:^
         version: link:../../packages/boot/cmdline
@@ -201,6 +204,18 @@ importers:
       '@clocky/clocky-session-reference':
         specifier: workspace:^
         version: link:../../packages/context/session-reference
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation
+      '@clocky/clocky-simulation-local':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-local
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-product
+      '@clocky/clocky-simulation-team':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-team
       '@clocky/clocky-skill':
         specifier: workspace:^
         version: link:../../packages/skill/skill
@@ -249,6 +264,9 @@ importers:
       '@clocky/clocky-tool-pwsh-persistent':
         specifier: workspace:^
         version: link:../../packages/shell/tool-pwsh-persistent
+      '@clocky/clocky-tool-simulation':
+        specifier: workspace:^
+        version: link:../../packages/simulation/tool-simulation
       '@clocky/clocky-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill
@@ -433,6 +451,9 @@ importers:
       '@clocky/clocky-bash-sandbox':
         specifier: workspace:*
         version: link:../packages/shell/bash-sandbox
+      '@clocky/clocky-client-ui-simulation':
+        specifier: workspace:^
+        version: link:../packages/client/ui-simulation
       '@clocky/clocky-code-runtime-worker-thread':
         specifier: workspace:*
         version: link:../packages/code-runtime/code-runtime-worker-thread
@@ -559,6 +580,9 @@ importers:
       '@clocky/clocky-permission-presets':
         specifier: workspace:*
         version: link:../packages/interaction/permission-presets
+      '@clocky/clocky-persona':
+        specifier: workspace:^
+        version: link:../packages/preset/persona
       '@clocky/clocky-plan-mode':
         specifier: workspace:*
         version: link:../packages/plan/plan-mode
@@ -634,6 +658,9 @@ importers:
       '@clocky/clocky-simulation-local':
         specifier: workspace:^
         version: link:../packages/simulation/simulation-local
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../packages/simulation/simulation-product
       '@clocky/clocky-simulation-team':
         specifier: workspace:^
         version: link:../packages/simulation/simulation-team
@@ -2135,6 +2162,9 @@ importers:
       '@clocky/clocky-attachment':
         specifier: workspace:^
         version: link:../../attachment/attachment
+      '@clocky/clocky-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
       '@clocky/clocky-client-connection':
         specifier: workspace:^
         version: link:../connection
@@ -2165,6 +2195,9 @@ importers:
       '@clocky/clocky-session-title':
         specifier: workspace:^
         version: link:../../session/session-title
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
       '@clocky/clocky-timeout':
         specifier: workspace:^
         version: link:../../util/timeout
@@ -3182,6 +3215,49 @@ importers:
       '@clocky/clocky-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+
+  packages/client/ui-simulation:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-client-connection':
+        specifier: workspace:^
+        version: link:../connection
+      '@clocky/clocky-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@clocky/clocky-client-runtime':
+        specifier: workspace:^
+        version: link:../runtime
+      '@clocky/clocky-client-ui-layout':
+        specifier: workspace:^
+        version: link:../ui-layout
+      '@clocky/clocky-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@clocky/clocky-client-ui-sidebar':
+        specifier: workspace:^
+        version: link:../ui-sidebar
+      '@clocky/clocky-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
       '@clocky/cordis':
         specifier: workspace:^
         version: link:../../../vendor/cordis
@@ -5969,6 +6045,9 @@ importers:
       '@clocky/clocky-team-run':
         specifier: workspace:^
         version: link:../../team/team-run
+      '@clocky/clocky-team-workspace':
+        specifier: workspace:^
+        version: link:../../core/team-workspace
       '@clocky/clocky-tools':
         specifier: workspace:^
         version: link:../../core/tools
@@ -6021,6 +6100,12 @@ importers:
       '@clocky/clocky-session-persistence-jsonl':
         specifier: workspace:^
         version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-session-query-sqlite':
+        specifier: workspace:^
+        version: link:../../session-query/session-query-sqlite
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -6063,6 +6148,12 @@ importers:
       '@clocky/clocky-team-link-local':
         specifier: workspace:^
         version: link:../../team/team-link-local
+      '@clocky/clocky-team-placement-default':
+        specifier: workspace:^
+        version: link:../../team/team-placement-default
+      '@clocky/clocky-team-workspace-shared':
+        specifier: workspace:^
+        version: link:../../team/team-workspace-shared
       '@clocky/clocky-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
@@ -7059,6 +7150,9 @@ importers:
       '@clocky/clocky-session':
         specifier: workspace:^
         version: link:../../core/session
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
       '@clocky/clocky-team':
         specifier: workspace:^
         version: link:../../core/team
@@ -7123,6 +7217,9 @@ importers:
       '@clocky/clocky-session-persistence-jsonl':
         specifier: workspace:^
         version: link:../../session/session-persistence-jsonl
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../simulation/simulation-product
       '@clocky/clocky-storage':
         specifier: workspace:^
         version: link:../../storage/storage
@@ -8188,11 +8285,99 @@ importers:
         specifier: workspace:^
         version: link:../../../vendor/cordis
 
+  packages/simulation/simulation-product:
+    dependencies:
+      '@clocky/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@clocky/clocky-agent-presets':
+        specifier: workspace:^
+        version: link:../../preset/agent-presets
+      '@clocky/clocky-agent-runtime':
+        specifier: workspace:^
+        version: link:../../core/agent-runtime
+      '@clocky/clocky-agent-runtime-in-process':
+        specifier: workspace:^
+        version: link:../../agent-runtime/agent-runtime-in-process
+      '@clocky/clocky-app-boot':
+        specifier: workspace:^
+        version: link:../../boot/app-boot
+      '@clocky/clocky-brand':
+        specifier: workspace:^
+        version: link:../../util/brand
+      '@clocky/clocky-host-apiproxy':
+        specifier: workspace:^
+        version: link:../../host/apiproxy
+      '@clocky/clocky-host-product-principal-local':
+        specifier: workspace:^
+        version: link:../../host/product-principal-local
+      '@clocky/clocky-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@clocky/clocky-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@clocky/clocky-product-principal':
+        specifier: workspace:^
+        version: link:../../core/product-principal
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../simulation
+      '@clocky/clocky-simulation-team':
+        specifier: workspace:^
+        version: link:../simulation-team
+      '@clocky/clocky-storage':
+        specifier: workspace:^
+        version: link:../../storage/storage
+      '@clocky/clocky-storage-json':
+        specifier: workspace:^
+        version: link:../../storage/storage-json
+      '@clocky/clocky-storage-log':
+        specifier: workspace:^
+        version: link:../../storage/storage-log
+      '@clocky/clocky-storage-sqlite':
+        specifier: workspace:^
+        version: link:../../storage/storage-sqlite
+      '@clocky/clocky-team':
+        specifier: workspace:^
+        version: link:../../core/team
+      '@clocky/clocky-team-channel-direct':
+        specifier: workspace:^
+        version: link:../../team/team-channel-direct
+      '@clocky/clocky-team-hub':
+        specifier: workspace:^
+        version: link:../../team/team-hub
+      '@clocky/clocky-team-human-actor':
+        specifier: workspace:^
+        version: link:../../team/team-human-actor
+      '@clocky/clocky-tool-simulation':
+        specifier: workspace:^
+        version: link:../tool-simulation
+      '@clocky/clocky-user-questions':
+        specifier: workspace:^
+        version: link:../../interaction/user-questions
+      '@clocky/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@clocky/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      '@clocky/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+
   packages/simulation/simulation-team:
     dependencies:
       '@clocky/schemastery':
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@clocky/clocky-agent':
         specifier: workspace:^
@@ -10386,6 +10571,9 @@ importers:
       '@clocky/clocky-agent-loop':
         specifier: workspace:^
         version: link:../../packages/core/agent-loop
+      '@clocky/clocky-agent-presets':
+        specifier: workspace:^
+        version: link:../../packages/preset/agent-presets
       '@clocky/clocky-agent-runtime':
         specifier: workspace:^
         version: link:../../packages/core/agent-runtime
@@ -10569,6 +10757,15 @@ importers:
       '@clocky/clocky-shell-env':
         specifier: workspace:^
         version: link:../../packages/shell/shell-env
+      '@clocky/clocky-simulation':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation
+      '@clocky/clocky-simulation-product':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-product
+      '@clocky/clocky-simulation-team':
+        specifier: workspace:^
+        version: link:../../packages/simulation/simulation-team
       '@clocky/clocky-skill':
         specifier: workspace:^
         version: link:../../packages/skill/skill

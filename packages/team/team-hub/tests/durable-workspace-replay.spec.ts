@@ -5,8 +5,10 @@ import { teamProjectionFromData } from '../src/fold.ts'
 import { teamProjectionDataSchema } from '../src/schema.ts'
 import type { TeamTaskSnapshot } from '@clocky/clocky-team'
 import { checkpointFor, recover } from './durable-replay-fixtures.ts'
-import { createdTeam, otherTaskId, participant, participantChanged, task, taskChanged, taskCreatorActivationId, taskCreatorId,
+import { createdTeam, otherTaskId, participant, participantChanged, task as baseTask, taskChanged, taskCreatorActivationId, taskCreatorId,
   taskCreatorSessionId, taskId, taskLease, teamId, teamPhase } from './fixtures.ts'
+
+function task(overrides: Record<string, unknown> = {}) { return baseTask({ createdAt: 16, ...overrides }) }
 
 function runningTaskPrefix(wakeChannelId?: string) {
   const member = participant({ id: taskCreatorId, role: 'coordinator' })
@@ -191,7 +193,7 @@ for (const backend of ['json', 'sqlite'] as const) {
       const lease = taskLease({ attemptId: 'attempt-b', participantId: taskCreatorId,
         activationId: taskCreatorActivationId, assignedAt: 20, renewedAt: 20, expiresAt: 30,
         wakeChannelId: 'wake-b' })
-      const pending = task({ id: otherTaskId })
+      const pending = task({ id: otherTaskId, createdAt: 19 })
       const assigned = task({ ...pending, phase: 'assigned', revision: 2, attemptCount: 1, lease })
       const prefix = [...records, { type: 'channel/attached', channelId: 'wake-b', createdAt: 19 },
         taskChanged({ task: pending, createdAt: 19 })]
@@ -450,4 +452,23 @@ it.each(['json', 'sqlite'] as const)('accepts loss of an existing workspace afte
   expect((await ctx.teams.getTeam({ teamId })).workspaceAllocations).toEqual([unavailable])
   const invalid = await recover(backend, [...closing, changed({ ...unavailable, id: 'new-allocation', revision: 1 }, 21)])
   await expect(invalid.teams.getTeam({ teamId })).rejects.toThrow('closure cleanup cannot create or reactivate workspace allocation')
+})
+
+it.each(['json', 'sqlite'] as const)('pairs task release with exact controller quiescence after logical offline (%s)', async (backend) => {
+  const { records, running, binding } = runningTaskPrefix()
+  const offline = { ...binding, activation: { ...binding.activation, status: 'offline' } }
+  const before = [...records, { type: 'activation/changed', binding: offline, createdAt: 19 }]
+  const settled = settledTask(running)
+  const final = { ...settled, attemptHistory: settled.attemptHistory.map(value => ({ ...value, retirement: { source: 'quiesced' as const } })) }
+  const proof = { ...offline, quiescedAt: 20, quiescenceSource: 'quiesced', quiescedWakeChannelIds: [] }
+  const rows = [...before, taskChanged({ task: final, createdAt: 20 }), { type: 'activation/changed', binding: proof, createdAt: 20 }]
+  const valid = await recover(backend, rows, checkpointFor(rows))
+  const state = await valid.teams.getTeam({ teamId })
+  expect(state.tasks[0]?.attemptHistory[0]?.retirement).toEqual({ source: 'quiesced' })
+  expect(state.activations).toEqual([proof])
+  const missing = await recover(backend, rows.slice(0, -1))
+  await expect(missing.teams.getTeam({ teamId })).rejects.toThrow(/retirement evidence has no matching controller quiescence/)
+  const foreign = await recover(backend, [...before, taskChanged({ task: final, createdAt: 20 }),
+    { type: 'activation/changed', binding: { ...proof, quiescenceSource: 'fenced' }, createdAt: 20 }])
+  await expect(foreign.teams.getTeam({ teamId })).rejects.toThrow(/retirement evidence has no matching controller quiescence/)
 })

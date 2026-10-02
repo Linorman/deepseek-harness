@@ -8,7 +8,7 @@ import { createdTeam, participant, participantChanged, task, taskChanged, taskCr
 
 function records() {
   const member = participant({ id: taskCreatorId, role: 'coordinator', capabilities: ['a', 'b'] })
-  const initial = task({ requiredCapabilities: ['b', 'a'], budget: { maxCostUnits: 1 } })
+  const initial = task({ createdAt: 16, requiredCapabilities: ['b', 'a'], budget: { maxCostUnits: 1 } })
   const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
     assignedAt: 18, renewedAt: 18, expiresAt: 28 })
   const assigned = task({ ...initial, revision: 2, phase: 'assigned', attemptCount: 1, lease })

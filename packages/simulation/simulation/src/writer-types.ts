@@ -5,9 +5,9 @@ import type { Branded } from '@clocky/clocky-brand'
 import type { ActivationId, ActivationReservationId, ParticipantId, TeamId } from '@clocky/clocky-team'
 import type { SessionId } from '@clocky/clocky-session'
 import type { SimulationEntityId } from './entity-types.ts'
+import type { SimulationWriterEpoch } from './identities.ts'
+export type { SimulationWriterEpoch } from './identities.ts'
 
-/** Canonical decimal writer epoch, monotonically increasing for one Entity. */
-export type SimulationWriterEpoch = Branded<'SimulationWriterEpoch'>
 /** Identity of one exclusively owned open-run lifetime. */
 export type SimulationCoordinatorId = Branded<'SimulationCoordinatorId'>
 /** One Entity's immutable canonical execution identity. */

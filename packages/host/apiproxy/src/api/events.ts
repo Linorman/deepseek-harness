@@ -53,12 +53,16 @@ export interface EventsApi {
    * generic projection pair (history-tail projections block + session/projection frames).
    * since: resume hook, unimplemented in v1 (ignored if passed); reconnection = reopen the
    * stream + refetch history.
+   * Team/member Session and Team/channel frames require current product read authority
+   * at delivery. Authentication retirement or configured backlog overflow ends the stream.
    */
   mux(request: RpcRequest<{ since?: Record<SessionId, number> }>, signal: AbortSignal): AsyncIterable<RpcRequest<MuxFrame>>
 
   /**
    * Host-level info stream: session create/destroy, running-status flips, and
    * agent failures with no turn position. Empty payload uses `{}`.
+   * Team Session frames are authorized at delivery; standalone Host metadata retains
+   * its Host access semantics.
    */
   host(request: RpcRequest<{}>, signal: AbortSignal): AsyncIterable<RpcRequest<HostFrame>>
 }
@@ -76,6 +80,8 @@ export type MuxFrame =
   | { type: 'question/resolved'; sessionId: SessionId; questionRpcId: RpcId; outcome: 'answered' | 'cancelled' }
   /** Post-commit Team projection event for live Team browsers. */
   | { type: 'team/changed'; event: TeamEvent }
+  /** Previously visible Team authority was withdrawn; contains no newly discovered private identity. */
+  | { type: 'team/access-revoked'; teamId: TeamId }
   /** Post-commit channel WAL event for live channel views. */
   | { type: 'channel/changed'; event: ChannelEvent }
   /**
@@ -127,6 +133,8 @@ export type MuxFrame =
  * registry order after a reorder; archived-sessions-changed pushes the full registry
  * archive set after every durable change (same full-snapshot posture as
  * workspace-changed — `workspace.list` re-baselines it on reconnect).
+ * Workspace Session and archive references are projected under current product
+ * read authority before delivery; Workspace metadata keeps its Host access semantics.
  */
 export type HostFrame =
   | {
@@ -147,7 +155,8 @@ export type HostFrame =
   /**
    * One allowlisted host cordis event forwarded verbatim. The allowlist is
    * owned by `@clocky/clocky-api-remotes` (`API_REMOTE_FORWARDED_EVENTS`),
-   * which is also the only control point over what a consumer can receive.
+   * which owns the legal forwarded vocabulary. Session-owned events are delivered
+   * only under the caller's current Session read authority.
    * `event` is the host's own event name and `args` its argument list: this
    * path applies no projection, no redaction, and no renaming, so the payload
    * contract is the owner package's cordis `Events` declaration rather than

@@ -30,7 +30,7 @@ afterEach(() => {
  */
 function mountColumn(): { column: HTMLElement; quiet: () => boolean } {
   const view = render(
-    <SidebarRoot
+    <SidebarRoot workspace="team"
       collapsed={false} width={300}
       useSessions={neverHook} useWorkspaces={neverHook}
       startTask={vi.fn()} toggleSidebar={vi.fn()} t={t}

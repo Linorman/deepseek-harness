@@ -2,7 +2,32 @@
 
 English | [中文](README.zh.md)
 
+`simulation/requests-list` carries an actor-free run selector and returns distinct original receipt rows, total count, run-specific revision and optional continuation. No private command input is returned. `simulation/requests-retry` carries only `runId` and the existing `commandId`, returning the original receipt family; caller-supplied replacement input rejects. Accepted commands retain their original semantics and terminal receipts remain immutable.
+
+`simulation/runs-preflight` shares strict product draft/result parsers. The draft omits `commandId`; `ready` carries resolved `limits`, budget interval, rule/policy/tick labels and shared model capacity, while `invalid` carries bounded field issues. Simulated `maxTime` remains a canonical positive decimal string. Catalog configuration exposes defaults and editable allowance keys; creation may carry only the allowlisted optional `limits`.
+
+Recovery `diagnostic` is a closed stage/code/subject contract. Session subjects bind their exact Session, Team and participant; it is permitted only on failed checkpoint/restore receipts or failed checkpoint details. The wire contract never infers a category by parsing private messages and does not expose path or stack fields.
+
+`simulation/operation-retry` requires the original `commandId`, exact `operationId`, positive safe `expectedAttemptCount` and nonempty normalized reason. Its result belongs to `retry-operation`, with `retry-operation-failed` for a retained failure. `simulation/requests-get` carries the exact original `retryOperation` input only for that family and binds its run/command to the receipt. Extra actor, configuration or forged outcome fields reject.
+
+`simulation/runs-statuses` carries ordered independent `observed`, `missing` or `unavailable` run observations and one optional real-time shared model-pool observation. Native metrics retain exact decimal simulated intervals; token charges include reserved/unknown work, while Host permits count current infrastructure admission. New inspection/control fields may be absent on older peers, but provided fields remain strict and unavailable observations cannot carry invented zero counts.
+
+`simulation/task-reviews-list` and `simulation/task-reviews-resolve` reuse strict scene-scoped product DTOs. The list discloses only canonical source/attempt metadata; resolve binds the original command, operation, attempt, revision, outcome and reason. `requests-get` includes the original `review` payload exactly for `kind: review`; receipt and current task phase remain independent.
+
+`simulation/sources-inspect` uses closed actor-free source selectors and text-only results. Missing, withheld, unavailable, searching and found states remain distinct; only found results carry body fragments. A reference ordinal or known Envelope position is not an authorization credential.
+
+`simulation/records-list` shares the product journal request/result schema. Metadata and original modes remain distinct; original bodies are ordered JSON text parts under a separate historical-content policy. Strict results reject text when mode or permission withholds it. Filters, source sequence, observed revision and read-policy version remain explicit.
+
+`SimulationSdkRequestMap` covers authenticated product metadata, original creation/preparation requests, scheduling controls, checkpoint/restore and single-entity ingress. Inputs use opaque wire strings and reuse the strict [product parsers](../../simulation/simulation-product/README.md); results remain bounded redacted product DTOs. Provider/spec selection and principal identity are server-derived. Simulation time, slots and writer epochs remain canonical decimal strings. Management, command and ingress identities persist across exact retries; `not-found` never establishes failure. Restore verifies retained history and the current suffix without rollback or inference.
+
+`team/task-update` requires `commandId` and returns `{ value: { receipt, task } }` on acceptance; receipt describes the original operation while task is current. `team/task-update-result` reads `applied` metadata, terminal `rejected` metadata or `not-found` for exact Team/task/command identity. Refusal reasons are closed and preserve original expected/observed revisions. Lookup omits actor proofs, submitted input and private diagnostics; absence cannot establish failure.
+
 The shared wire protocol for Clocky SDK runtime: one newline-delimited JSON-RPC 2.0 transport class plus the named request, result, and notification types both wire ends speak. The package root enumerates the protocol consumer interface; source modules are not exported as deep imports. The server side is the [`clocky-sdk-jsonrpc-server`](../server/README.md) plugin; [`clocky-sdk-client`](../client/README.md) consumes the Team product surface, and the [Python SDK](../../../python/README.md) follows the same wire cutover. A pure library — no plugin, no Config, no registration.
+
+`team/list` returns the authenticated principal's safe product summaries and an optional encrypted continuation. Physical scan counts, grants and goal budget bodies are absent. A continuation is bound to principal and credential generation; expiry requires an explicit first-page read. Selected-Team `readAccess` is server-derived and grants no mutation authority.
+
+
+`simulation/tasks-list` returns bounded run-owned canonical task controls; `simulation/tasks-cancel` binds the original command, source operation, task revision and exact attempt or explicit no-lease `null`. Actor fields and missing fences reject. A `cancel-task` receipt confirms the original request family; `requests-get` reconstructs its immutable `cancellation` with the same run and command. Private task bodies and general Team authority are absent.
 
 ## Transport
 

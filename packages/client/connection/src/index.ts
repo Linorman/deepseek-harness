@@ -150,7 +150,7 @@ type AuthenticatedDownlinkHandler = (
   req: Parameters<WebUpgradeRoute['handler']>[0],
   socket: Parameters<WebUpgradeRoute['handler']>[1],
   head: Parameters<WebUpgradeRoute['handler']>[2],
-  productSignal?: AbortSignal,
+  productCall?: AuthenticatedProductCall,
 ) => Promise<void>
 
 /**
@@ -264,14 +264,14 @@ export function apply(ctx: Context, config?: ConnectionConfig): void {
             return
           }
           const admission = await productAuth.withCall(req, async (call) => {
-            await handle(req, socket, head, call.signal)
+            await handle(req, socket, head, call)
           })
           if (admission.kind !== 'authenticated') rejectWebSocketUpgrade(socket)
         },
       }), `client-connection: ${path} WebSocket`)
     }
     apiCtx.effect(() => () => downlinks.close(), 'client-connection: WebSocket downlinks')
-    registerDownlink(MUX_EVENTS_PATH, (req, socket, head, productSignal) => downlinks.handleMux(req, socket, head, productSignal))
-    registerDownlink(HOST_EVENTS_PATH, (req, socket, head, productSignal) => downlinks.handleHost(req, socket, head, productSignal))
+    registerDownlink(MUX_EVENTS_PATH, (req, socket, head, call) => downlinks.handleMux(req, socket, head, call))
+    registerDownlink(HOST_EVENTS_PATH, (req, socket, head, call) => downlinks.handleHost(req, socket, head, call))
   })
 }

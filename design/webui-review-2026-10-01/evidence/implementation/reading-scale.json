@@ -1,0 +1,23 @@
+{
+  "pageSize": 16,
+  "inference": false,
+  "evidence": [
+    {
+      "total": 20,
+      "rows": 16,
+      "nodes": 119,
+      "collections": 1,
+      "inspect": 0,
+      "elapsedMs": 294
+    },
+    {
+      "total": 200,
+      "rows": 16,
+      "nodes": 119,
+      "collections": 1,
+      "inspect": 0,
+      "elapsedMs": 290
+    }
+  ],
+  "conclusion": "Tenfold world size keeps the same rendered page and one list read per navigation, without row inspect requests."
+}

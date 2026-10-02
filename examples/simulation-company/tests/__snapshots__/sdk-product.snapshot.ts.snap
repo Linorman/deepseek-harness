@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reads and prepares company runs over the authenticated SDK (json) 1`] = `
+{
+  "createRetryStatus": "completed",
+  "decisions": 0,
+  "entities": 2,
+  "explicitPreparation": "completed",
+  "identityRetainedAfterRestart": true,
+  "initialAndPreparationCheckpoints": 2,
+  "nativeSessions": 0,
+  "phase": "paused",
+  "publicKnowledge": "withheld",
+  "runs": 1,
+  "time": "0",
+}
+`;
+
+exports[`reads and prepares company runs over the authenticated SDK (sqlite) 1`] = `
+{
+  "createRetryStatus": "completed",
+  "decisions": 0,
+  "entities": 2,
+  "explicitPreparation": "completed",
+  "identityRetainedAfterRestart": true,
+  "initialAndPreparationCheckpoints": 2,
+  "nativeSessions": 0,
+  "phase": "paused",
+  "publicKnowledge": "withheld",
+  "runs": 1,
+  "time": "0",
+}
+`;

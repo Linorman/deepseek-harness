@@ -1,4 +1,4 @@
-import { projectTeamSelection, projectTeamBrowse } from '@clocky/clocky-team/selection'
+import { projectTeamSelection, projectTeamBrowse, projectTeamProductSummary } from '@clocky/clocky-team/selection'
 // Test-local programmable IApiClient fake (NOT the fixture: fixture is a demo
 // data source on a real clock; behavior tests need per-case responses and
 // deferred-controlled timing). Streams are hand pumps: pushMux/pushHost.
@@ -141,6 +141,35 @@ export function fakeRemote(): SessionRemotes {
 }
 
 export class FakeApiClient implements IApiClient {
+  readonly simulations: IApiClient['simulations'] = {
+    retryOperation: async () => err({ code: 'simulation-product-unavailable', message: 'No operation retry fixture', details: {} }),
+    runStatuses: async () => err({ code: 'simulation-product-unavailable', message: 'No status fixture', details: {} }),
+    listTaskReviews: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'No review fixture', details: {} })),
+    resolveTaskReview: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'No review fixture', details: {} })),
+    inspectSource: async () => { throw new Error('Fake has no Simulation source') },
+    records: async () => { throw new Error('Fake has no Simulation records') },
+    watch: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    checkpoint: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    restore: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    ingress: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    ingressRequest: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    control: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    manage: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    managementRequest: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    catalog: async () => ok({ items: [] }),
+    preflight: async () => err({ code: 'simulation-product-unavailable', message: 'No preflight fixture', details: {} }),
+    listTasks: async () => err({ code: 'simulation-product-unavailable', message: 'No task control fixture', details: {} }),
+    cancelTask: async () => err({ code: 'simulation-product-unavailable', message: 'No task cancellation fixture', details: {} }),
+    listRequests: async () => err({ code: 'simulation-product-unavailable', message: 'No persisted request fixture', details: {} }),
+    retryRequest: async () => err({ code: 'simulation-product-unavailable', message: 'No original retry fixture', details: {} }),
+    create: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    prepare: async () => err({ code: 'simulation-product-unavailable', message: 'Not deployed', details: {} }),
+    request: async payload => ok({ status: 'not-found', commandId: payload.commandId }),
+    list: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} })),
+    inspect: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} })),
+    browse: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} })),
+    inspectObject: () => Promise.resolve(err({ code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} })),
+  }
   /** Chronological call record: [method, payload]. */
   readonly calls: { method: string; payload: unknown }[] = []
 
@@ -226,7 +255,7 @@ export class FakeApiClient implements IApiClient {
   }
 
   onTeamList: (payload: RequestPayload<'team.list'>) => Promise<RpcResponse<ResponseValue<'team.list'>>>
-    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('runtime-fk-team'), 'Runtime fake Team objective').team], scanned: 1 }))
+    = () => Promise.resolve(ok({ items: [projectTeamProductSummary(fakeTeamState(fakeTeamId('runtime-fk-team'), 'Runtime fake Team objective').team, fakeTeamId('runtime-fk-team'), 512, {})] }))
   onTeamGet: (payload: RequestPayload<'team.get'>) => Promise<RpcResponse<ResponseValue<'team.get'>>>
     = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Runtime fake Team objective')))
   onTeamCreate: (payload: RequestPayload<'team.create'>) => Promise<RpcResponse<ResponseValue<'team.create'>>>
@@ -347,9 +376,16 @@ export class FakeApiClient implements IApiClient {
   })
 
   readonly teams: IApiClient['teams'] = {
+    executionProfiles: payload => this.record('team.executionProfiles', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no profile catalog', details: {} }))),
+    actionInspect: payload => this.record('team.action.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no request inspector', details: {} }))),
+    attentionRead: payload => this.record('team.attention.read', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no pending reader', details: {} }))),
+    identityResolve: payload => this.record('team.identity.resolve', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no identity resolver', details: {} }))),
+    memberReadiness: payload => this.record('team.member.readiness', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no readiness observation', details: {} }))),
+    capabilities: payload => this.record('team.capabilities', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no capability observation', details: {} }))),
     memberInspect: payload => this.record('team.member.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no member detail', details: {} }))),
     workflowPlanInspect: payload => this.record('team.workflow.plan.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no workflow inspection', details: {} }))),
     actionRead: payload => this.record('team.action.read', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no action response', details: {} }))),
+    taskReferences: payload => this.record('team.task.references', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no task reference response', details: {} }))),
     taskInspect: payload => this.record('team.task.inspect', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no Team browse response', details: {} }))),
     browse: (payload, signal) => this.record('team.browse', payload, (async () => {
       if (payload.kind === 'workflowPlans') {
@@ -382,7 +418,7 @@ export class FakeApiClient implements IApiClient {
       const result = await this.onTeamGet(payload)
       if (!result.result.ok) return err(result.result.error)
       const state = result.result.value
-      const selected = projectTeamSelection({ team: { ...state.team, goal: state.goal }, budgets: state.budgets,
+      const selected = projectTeamSelection({ team: { ...state.team, goal: state.goal }, rules: state.rules, budgets: state.budgets,
         ...state.usage === undefined ? {} : { usage: state.usage },
         humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
         participants: new Map(state.participants.map(member => [member.id, member])),
@@ -390,7 +426,7 @@ export class FakeApiClient implements IApiClient {
         tasks: new Map(state.tasks.map(task => [task.id, task])), channelIds: new Set(state.channelIds),
         workflowPlans: { size: state.workflowPlans?.length ?? 0 },
       }, 512, 16384, payload.includeMetadata)
-      return selected.ok ? ok(selected.value) : err({ code: 'internal', message: selected.reason, details: {} })
+      return selected.ok ? ok({ ...selected.value, readAccess: 'member' as const }) : err({ code: 'internal', message: selected.reason, details: {} })
     })()),
     inboxRespond: payload => this.record('team.inbox.respond', payload, Promise.resolve(err({ code: 'bad-request', message: 'Fake inbox has no action continuation', details: { issues: [] } }))),
     inboxRead: payload => this.record('team.inbox.read', payload, Promise.resolve(ok({ items: [], displayCursor: -1, cursor: -1 }))),
@@ -439,6 +475,7 @@ export class FakeApiClient implements IApiClient {
     taskGet: payload => this.record('team.task.get', payload, this.onTeamTaskGet(payload)),
     taskList: payload => this.record('team.task.list', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
     workflowPlanList: payload => this.record('team.workflow.plan.list', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
+    taskUpdateResult: payload => this.record('team.task.update.result', payload, Promise.resolve(err({ code: 'internal', message: 'Fake has no update receipt', details: {} }))),
     taskUpdate: payload => this.record('team.task.update', payload, Promise.resolve(err({ code: 'internal', message: 'runtime fake does not implement Team management', details: {} }))),
     taskCancel: payload => this.record('team.task.cancel', payload, this.onTeamTaskCancel(payload)),
     taskDelete: payload => this.record('team.task.delete', payload, this.onTeamTaskDelete(payload)),
@@ -630,7 +667,7 @@ export class FakeApiClient implements IApiClient {
 
 /** Select bounded product data from test-owned complete replay input. */
 export function selectionView(state: FakeTeamState): ResponseValue<'team.selection'> {
-  const result = projectTeamSelection({ team: { ...state.team, goal: state.goal }, budgets: state.budgets,
+  const result = projectTeamSelection({ team: { ...state.team, goal: state.goal }, rules: state.rules, budgets: state.budgets,
     ...state.usage === undefined ? {} : { usage: state.usage },
     humanActions: new Map((state.humanActions ?? []).map(action => [action.id, action])),
     participants: new Map(state.participants.map(member => [member.id, member])),
@@ -639,7 +676,7 @@ export function selectionView(state: FakeTeamState): ResponseValue<'team.selecti
     workflowPlans: { size: state.workflowPlans?.length ?? 0 },
   }, 512, 16384, true)
   if (!result.ok) throw new Error('Fixture selection exceeds its byte allowance')
-  return result.value
+  return { ...result.value, readAccess: 'member' }
 }
 
 /** Build a browser member row from complete test-owned replay input. */

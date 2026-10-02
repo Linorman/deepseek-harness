@@ -22,13 +22,40 @@
   // this client-registered project must not also hold them (one program
   // cannot see both sides of the cordis Context merges).
   "exclude": [
+    "tests/simulation-operation-retry.snapshot.ts",
+    "tests/simulation-browser-controls.ts",
+    "tests/simulation-task-review.snapshot.ts",
+    "tests/simulation-task-workflow.snapshot.ts",
+    "tests/simulation-workspace.snapshot.ts",
+    "tests/simulation-reading-scale.snapshot.ts",
+    "tests/image-inspection.snapshot.ts",
+    "tests/simulation-records.snapshot.ts",
+    "tests/simulation-sources.snapshot.ts",
+    "tests/simulation-administration.snapshot.ts",
+    "tests/simulation-maintenance.snapshot.ts",
+    "tests/browser-native-zoom.ts",
+    "tests/team-acceptance.snapshot.ts",
+    "tests/team-acceptance-support.ts",
+    "tests/simulation-read-presentation.ts",
+    "tests/simulation-read-lifecycle.snapshot.ts",
+    "tests/simulation-admin-acceptance.ts",
+    "tests/simulation-administration-acceptance.snapshot.ts",
+    "tests/simulation-task-execution-matrix.snapshot.ts",
     "tests/scaffold.ts",
+    "tests/simulation-process-host.ts",
+    "tests/simulation-process-restart.snapshot.ts",
     "tests/scaffold-hermetic.e2e.ts",
     "tests/startup-rpc-budget.e2e.ts",
     "tests/minimal-preset.snapshot.ts",
     "tests/team-channel.snapshot.ts",
     "tests/team-collections.snapshot.ts",
+    "tests/team-attention.snapshot.ts",
+    "tests/team-action.snapshot.ts",
+    "tests/team-task-draft.snapshot.ts",
+    "tests/team-capabilities.snapshot.ts",
+    "tests/team-member-readiness.snapshot.ts",
     "tests/team-workspace.snapshot.ts",
+    "tests/team-artifact.snapshot.ts",
     "tests/action-window.snapshot.ts",
     "tests/team-child-navigation.snapshot.ts",
     "tests/message-feedback-protocol.snapshot.ts",
@@ -95,6 +122,7 @@
     "tests/pwsh-terminal.e2e.ts"
   ],
   "references": [
+
     {
       "path": "../../packages/client/web"
     },

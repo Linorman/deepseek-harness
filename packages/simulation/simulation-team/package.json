@@ -80,5 +80,7 @@
     "@clocky/clocky-compaction": "workspace:^",
     "@clocky/clocky-session-persistence": "workspace:^"
   },
-  "dependencies": {}
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
 }

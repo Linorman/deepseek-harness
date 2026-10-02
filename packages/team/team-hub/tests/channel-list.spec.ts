@@ -78,7 +78,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`channel list (${bac
     expect(first.nextCursor).toBe(0)
     expect(opens.mock.calls.filter(([request]) => request.name.startsWith('channel/')).map(([request]) => request.name))
       .toEqual([`channel/${channels[0]!.manifest.id}`])
-    const fourth = await openTestChannel(ctx, { teamId: own.teamId, expectedCursor: (await ctx.teams.getTeam({ teamId: own.teamId })).team.cursor,
+    const fourth = await openTestChannel(ctx, { teamId: own.teamId,
+      expectedCursor: (await ctx.teams.getTeam({ teamId: own.teamId })).team.cursor,
       adapter: { type: 'direct', version: 4 }, participants: own.members, limits: {} })
     const nextInput = { teamId: own.teamId, afterCursor: first.nextCursor, limit: 100 }
     const next = await ctx.teams.listTeamChannels({ ...nextInput, actor: authority.issue(nextInput, own.humanId) })
@@ -96,7 +97,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`channel list (${bac
     const root = await mkdtemp(join(process.cwd(), '.tmp/channel-list-auth-')); roots.push(root)
     const writer = await hub(backend, root)
     const own = await topology(writer); const foreign = await topology(writer)
-    const channel = await openTestChannel(writer, { teamId: own.teamId, expectedCursor: (await writer.teams.getTeam({ teamId: own.teamId })).team.cursor,
+    const channel = await openTestChannel(writer, { teamId: own.teamId,
+      expectedCursor: (await writer.teams.getTeam({ teamId: own.teamId })).team.cursor,
       adapter: { type: 'direct', version: 4 }, participants: own.members, limits: {} })
     await writer.fiber.dispose(); contexts.delete(writer)
     const ctx = await hub(backend, root); const authority = source(ctx)
@@ -104,7 +106,8 @@ for (const backend of ['json', 'sqlite'] as const) describe(`channel list (${bac
     const actor = authority.issue(input, own.humanId)
     await expect(ctx.teams.listTeamChannels({ ...input, actor: Object.freeze({}) as TeamHumanActorProof })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
     await expect(ctx.teams.listTeamChannels({ ...input, actor: authority.issue(input, foreign.humanId) })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
-    await expect(ctx.teams.listTeamChannels({ ...input, teamId: foreign.teamId, actor })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    await expect(ctx.teams.listTeamChannels({ ...input,
+      teamId: foreign.teamId, actor })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
     const open = ctx.storageLog.open.bind(ctx.storageLog)
     const loading = vi.spyOn(ctx.storageLog, 'open').mockImplementation(async (request) => {
       if (request.name === `channel/${channel.manifest.id}`) authority.proofs.delete(actor)

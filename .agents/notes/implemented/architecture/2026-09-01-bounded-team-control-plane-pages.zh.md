@@ -50,6 +50,8 @@ Team、通道和收件箱列表、通道记录及审计视图各保留一个 pro
 
 浏览器草稿保留使用经过验证的公开部署上限：所有频道的条数与总序列化字节数，并原子更新每条草稿的字节计数。超限拒绝当前编辑，不淘汰其它草稿，也不发送无法保存重试状态的请求。发送确认和明确丢弃释放位置。纯浏览偏好有独立条数上限，包含草稿的视图保持驻留。`client-modules.browserConfig`只为已声明浏览器插件发布显式 JSON 配置；web Loader 在页面启动时交给各插件 schema 验证。不隐式复制 Host 配置；部署修改后需要刷新页面。
 
+筛选任务候选在 client runtime 中使用独立查询窗口。无状态的结构化续页信息绑定 Team、筛选、插入顺序版本和日志水位，因为单独 ordinal 会在搜索或变更后混合候选集合。Hub 在串行队列内检查该选择。它扫描计算匹配总数，但仅保留一页和一个前瞻引用，不复制历史。任何 Team 日志变化都会使续页过期；这里明确选择要求刷新，而非静默拼接不同 revision。已选依赖 ID 仍是本地草稿输入，查询错误、搜索与翻页都不改动它。
+
 ## Alternatives considered
 
 **原地修改已有 full-read method。** 不采用：scheduler、recovery、finalization 与 test-only authoritative scan 有意需要完整数据。把它们与产品 page 混用，要么破坏 recovery，要么迫使 provider 从 API-shaped page 重新拼出 full result。

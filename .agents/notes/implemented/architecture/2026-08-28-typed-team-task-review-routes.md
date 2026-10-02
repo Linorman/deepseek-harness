@@ -10,6 +10,8 @@ A task's prior `reviewPolicy` was an uninterpreted JSON object. Every successful
 
 ## Decision
 
+An active human reviewer retains pending work without an activation. The DAG scheduler treats that authoritative human relationship as in progress instead of stalling for an unavailable model owner; it does not schedule inference for the human.
+
 `TeamTaskReviewPolicy` is a closed task-creation value: `{ kind: 'none' }` or `{ kind: 'participant', reviewerId }`. A completed attempt under `none` reaches `completed` directly. A participant route reaches `review`; only the exact active configured reviewer may resolve it through `resolveTaskReview()`.
 
 Every resolution appends an immutable `TeamTaskReviewDecision` to the task snapshot. It identifies the completed attempt, reviewer, accepted `completed` or rework `pending` phase, nonempty reason, and decision time. The Hub validates the policy and decision history during journal fold and checkpoint recovery, retains prior decisions across rework, and rejects a missing, duplicate, out-of-order, wrong-reviewer, or unresolved completed attempt.

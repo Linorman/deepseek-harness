@@ -21,7 +21,7 @@ import { businessRecordSchema, foldBusinessRecord } from './decisions.ts'
 import { simTimeSchema, simulationDecisionSlotSchema, simulationEventSlotSchema } from '@clocky/clocky-simulation'
 
 /** Durable journal version; unsupported versions reject on open. */
-export const SIMULATION_JOURNAL_VERSION = 36
+export const SIMULATION_JOURNAL_VERSION = 46
 /** Creation is the only record permitted at sequence zero. */
 export const creationSchema = z.strictObject({
   kind: z.literal('run/created'),

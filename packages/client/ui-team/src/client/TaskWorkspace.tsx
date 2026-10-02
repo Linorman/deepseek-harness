@@ -1,3 +1,5 @@
+import { MemberReference } from './MemberReference.tsx'
+import type { ReactNode } from 'react'
 /** Bounded task list with a single concise, non-modal task inspector. */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, Input, Menu, IconCloseOutline16, IconChevronDownOutline14 } from '@clocky/clocky-client-ui-primitives'
@@ -6,10 +8,17 @@ import type { TeamArtifactReference, TeamTaskRecord, TeamTaskSummary, TeamTaskDe
 import type { TeamPageProps, TeamLoadedContext } from './TeamPage.tsx'
 import type { TeamTaskDialogTarget } from './TeamTaskDialog.tsx'
 import type { TeamViewState } from './workspace-store.ts'
+import { taskDraftKey, hasTaskDraftInput } from './task-draft.ts'
 import css from './TaskWorkspace.module.css'
 
 /** The selected task is resolved against current authoritative records, never a copied object. */
 export interface TaskWorkspaceProps {
+  /** Loaded-only presentation remains available to hosts without a query reader. */
+  searchScope?: 'loaded' | 'team'
+  refreshSearch?: (() => void) | undefined
+  queryState?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
+  inspectMember?: ((participantId: import('@clocky/clocky-client-runtime/client').ParticipantId) => void) | undefined
+  identities?: import('@clocky/clocky-client-runtime/client').TeamIdentityState | undefined
   state: {
     readonly team: Pick<TeamPageProps['state']['team'], 'id'>
     readonly participants: readonly Pick<TeamLoadedContext['participants'][number], 'id' | 'displayName'>[]
@@ -37,7 +46,7 @@ export interface TaskWorkspaceProps {
  * @param props - loaded tasks, current authority, controlled view preferences, and authorized callbacks.
  * @returns a task table with an optional summary inspector.
  */
-export function TaskWorkspace({ state,
+export function TaskWorkspace({ state, identities, inspectMember, searchScope = 'loaded', queryState, refreshSearch,
   tasks, detail, readDetail, closeDetail,
   viewState,
   updateView,
@@ -63,8 +72,25 @@ export function TaskWorkspace({ state,
   const [menuOpen, setMenuOpen] = useState(false)
   const [phaseMenuOpen, setPhaseMenuOpen] = useState(false)
   const [error, setError] = useState<string>()
+  const [searchDraft, setSearchDraft] = useState(viewState.taskSearch)
+  const composing = useRef(false)
+  useEffect(() => { setSearchDraft(viewState.taskSearch) }, [viewState.taskSearch])
+  const filterIdentity = JSON.stringify([viewState.taskSearch, viewState.taskPhase])
+  const previousFilters = useRef(filterIdentity)
+  useLayoutEffect(() => {
+    if (previousFilters.current === filterIdentity) return
+    previousFilters.current = filterIdentity
+    tablePosition.current = 0
+    if (tableScroll.current !== null) tableScroll.current.scrollTop = 0
+  }, [filterIdentity])
+  const commitSearch = (search: string, phase = viewState.taskPhase) => {
+    const value = search.trim()
+    setSearchDraft(value)
+    updateView({ taskSearch: value, taskPhase: phase, taskListScroll: 0 })
+    if (value === viewState.taskSearch && phase === viewState.taskPhase) refreshSearch?.()
+  }
   const query = viewState.taskSearch.trim().toLocaleLowerCase()
-  const visible = tasks.filter(task => task.phase !== 'deleted'
+  const visible = searchScope === 'team' ? tasks : tasks.filter(task => task.phase !== 'deleted'
     && (viewState.taskPhase === 'all' || task.phase === viewState.taskPhase)
     && task.subject.text.toLocaleLowerCase().includes(query))
   const currentDetail = detail?.teamId === state.team.id && detail.taskId === viewState.taskId ? detail : undefined
@@ -74,6 +100,8 @@ export function TaskWorkspace({ state,
     && !currentDetail.record.loading && currentDetail.record.error === undefined
     && !currentDetail.latest.loading && currentDetail.latest.error === undefined
   const mutable = canManage && ready
+  const editDraftTarget = viewState.taskId === undefined ? undefined : { kind: 'taskUpdate' as const, taskId: viewState.taskId }
+  const hasEditDraft = editDraftTarget !== undefined && hasTaskDraftInput(viewState.taskDrafts[taskDraftKey(editDraftTarget)])
   useEffect(() => {
     if (viewState.taskId !== undefined) void readDetail?.(state.team.id, viewState.taskId, 'record', 'first')
     else closeDetail?.()
@@ -99,7 +127,9 @@ export function TaskWorkspace({ state,
     setError(undefined)
     void operation().catch((reason: unknown) => { setError(reason instanceof Error ? reason.message : String(reason)) })
   }
-  const participantName = (id: string | undefined) => state.participants.find(member => member.id === id)?.displayName ?? t('detail.task.unassigned')
+  const participantName = (id: import('@clocky/clocky-client-runtime/client').ParticipantId | undefined) => <MemberReference id={id}
+    loadedName={state.participants.find(member => member.id === id)?.displayName} identities={identities}
+    inspect={inspectMember} translate={t} className={css.link} />
   const phaseLabel = (task: Pick<TeamTaskRecord, 'phase'>, stopping: boolean) => t(stopping && (task.phase === 'assigned' || task.phase === 'running')
     ? 'detail.task.phase.stopping' : `detail.task.phase.${task.phase}`)
   const menu: MenuEntry[] = []
@@ -112,11 +142,22 @@ export function TaskWorkspace({ state,
   }
   return <div className={css.layout} data-task-workspace>
     <div className={css.list}>
-      <div className={css.filters}>
-        <Input aria-label={t('taskView.search')} placeholder={t('taskView.search')} value={viewState.taskSearch}
-          onChange={(event) => { updateView({ taskSearch: event.target.value }) }} />
-        {viewState.taskSearch !== '' && <Button size="sm" aria-label={t('taskView.clearSearch')} onClick={() => {
-          updateView({ taskSearch: '' })
+      <form noValidate className={css.filters} onSubmit={(event) => {
+        event.preventDefault()
+        if (!composing.current) commitSearch(searchDraft)
+      }} onKeyDown={(event) => {
+        if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing)) event.preventDefault()
+      }}>
+        <Input aria-label={t(searchScope === 'team' ? 'taskView.searchTeam' : 'taskView.search')}
+          placeholder={t(searchScope === 'team' ? 'taskView.searchTeam' : 'taskView.search')} value={searchDraft}
+          onCompositionStart={() => { composing.current = true }} onCompositionEnd={() => { composing.current = false }}
+          onChange={(event) => {
+            setSearchDraft(event.target.value)
+            if (searchScope === 'loaded') updateView({ taskSearch: event.target.value })
+          }} />
+        {searchScope === 'team' && <Button size="sm" type="submit">{t('taskForm.search')}</Button>}
+        {(searchDraft !== '' || viewState.taskSearch !== '') && <Button size="sm" aria-label={t('taskView.clearSearch')} onClick={() => {
+          commitSearch('')
           tableScroll.current?.parentElement?.querySelector('input')?.focus()
         }}><IconCloseOutline16 /></Button>}
         <div className={css.phaseFilter}>
@@ -127,10 +168,10 @@ export function TaskWorkspace({ state,
               onClick={() => { setPhaseMenuOpen(value => !value) }}>{t(viewState.taskPhase === 'all' ? 'taskView.all' : `detail.task.phase.${viewState.taskPhase}`)}<IconChevronDownOutline14 /></Button>}
             onClose={() => { setPhaseMenuOpen(false) }} onSelect={(id) => {
               setPhaseMenuOpen(false)
-              updateView({ taskPhase: id as TeamViewState['taskPhase'] })
+              commitSearch(searchDraft, id as TeamViewState['taskPhase'])
             }} />
         </div>
-      </div>
+      </form>
       <div
         ref={tableScroll}
         className={css.tableScroll}
@@ -149,10 +190,15 @@ export function TaskWorkspace({ state,
               onClick={() => { select(task.id) }}>{task.dependencyCount}</button>}</td>
           </tr>)}</tbody>
         </table>
-        {visible.length === 0 && <div className={css.empty}><p>{t(tasks.length === 0 ? 'workspace.noTasks' : 'taskView.noResults')}</p>
-          {tasks.length > 0 && <Button onClick={() => { updateView({ taskSearch: '', taskPhase: 'all' }) }}>{t('taskView.clearFilters')}</Button>}</div>}
+        {visible.length === 0 && (searchScope === 'loaded' || queryState?.page !== undefined) && <div className={css.empty}>
+          <p>{t(searchScope === 'team'
+            ? viewState.taskSearch !== '' || viewState.taskPhase !== 'all' ? 'taskView.noResults' : 'workspace.noTasks'
+            : tasks.length === 0 ? 'workspace.noTasks' : 'taskView.noResults')}</p>
+          {(viewState.taskSearch !== '' || viewState.taskPhase !== 'all') && <Button onClick={() => { commitSearch('', 'all') }}>{t('taskView.clearFilters')}</Button>}
+        </div>}
       </div>
-      <p className={css.count}>{t('taskView.loaded', { count: tasks.length })}</p>
+      {searchScope === 'loaded' ? <p className={css.count}>{t('taskView.loaded', { count: tasks.length })}</p>
+        : queryState?.page !== undefined && <p className={css.count}>{t('taskView.queryCount', { count: tasks.length, total: queryState.page.total })}</p>}
     </div>
     {viewState.taskId !== undefined && <aside data-task-inspector className={css.inspector} aria-label={t('taskView.summary')}>
       <div className={css.inspectorHeader}><strong>{t('taskView.summary')}</strong><Button data-task-close size="sm" aria-label={t('taskView.close')} onClick={() => {
@@ -166,12 +212,14 @@ export function TaskWorkspace({ state,
       {current?.phase === 'deleted' && <p>{t('taskView.deleted')}</p>}
       <Button size="sm" disabled={currentDetail?.record.loading || currentDetail?.latest.loading || readDetail === undefined}
         onClick={() => { if (viewState.taskId !== undefined) void readDetail?.(state.team.id, viewState.taskId) }}>{t('taskView.refresh')}</Button>
+      {hasEditDraft && <Button size="sm" disabled={busy}
+        onClick={() => { onForm(editDraftTarget) }}>{t('taskForm.openDraft')}</Button>}
       {selected !== undefined && currentDetail !== undefined && <TaskSummary key={selected.id} task={selected} detail={currentDetail}
-        readDetail={readDetail} state={state} translate={t}
+        readDetail={readDetail} state={state} translate={t} participantName={participantName}
         owner={participantName(selected.lease?.participantId ?? currentDetail.latest.value?.participantId)}
         phase={phaseLabel(selected, selected.cancellation !== undefined)}
+        review={mutable && selected.phase === 'review' ? () => { onForm({ kind: 'taskReview', taskId: selected.id }) } : undefined}
         onDependency={select} openParticipantSession={openParticipantSession} openTeam={openTeam} openArtifact={openArtifact} run={run} />}
-      {mutable && selected?.phase === 'review' && <Button variant="primary" onClick={() => { onForm({ kind: 'taskReview', taskId: selected.id }) }}>{t('taskForm.taskReview')}</Button>}
       {selected !== undefined && menu.length > 0 && <Menu open={menuOpen} portal align="end" items={menu}
         anchor={<Button aria-label={t('taskView.actions')} aria-expanded={menuOpen} onClick={() => { setMenuOpen(value => !value) }}>{t('taskView.actions')}<IconChevronDownOutline14 /></Button>}
         onClose={() => { setMenuOpen(false) }} onSelect={(id) => {
@@ -186,14 +234,16 @@ export function TaskWorkspace({ state,
 }
 
 /** Summary limits expanded instructions and attempt history to an explicit details disclosure. */
-function TaskSummary({ task, detail, readDetail, state, translate: t, owner, phase,
-  onDependency, openParticipantSession, openTeam, openArtifact, run }: {
+function TaskSummary({ task, detail, readDetail, state, translate: t, owner, phase, participantName,
+  onDependency, openParticipantSession, openTeam, openArtifact, run, review }: {
+  review?: (() => void) | undefined
   task: TeamTaskRecord
   detail: TeamTaskDetailState
   readDetail: ITeamTasks['readTaskDetail']
   state: TaskWorkspaceProps['state']
   translate: TeamPageProps['translate']
-  owner: string
+  owner: ReactNode
+  participantName: (id: import('@clocky/clocky-client-runtime/client').ParticipantId) => ReactNode
   phase: string
   onDependency: (id: TeamTaskRecord['id']) => void
   openParticipantSession: TaskWorkspaceProps['openParticipantSession']
@@ -211,16 +261,15 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
   ].filter(artifact => artifact.visibility !== 'private').map(artifact => [artifact.id, artifact])).values()]
   return <>
     <div className={css.title}><h2>{task.subject}</h2><span className={css.phase} data-phase={task.phase}>{phase}</span></div>
-    <p className={css.description}>{task.description}</p>
     <dl className={css.facts}>
       <dt>{t('detail.task.owner')}</dt><dd>{owner}</dd>
-      <dt>{t('detail.task.attempts')}</dt><dd>{task.attemptCount} / {task.maxAttempts}</dd>
       <dt>{t('detail.task.blockedBy')}</dt><dd>{task.blockedBy.length === 0 ? t('taskView.none') : task.blockedBy.map(id =>
         <button type="button" key={id} className={css.link} onClick={() => { onDependency(id) }}>{state.tasks.find(item => item.id === id)?.subject ?? t('taskForm.unloadedDependency', { taskId: id })}</button>)}</dd>
     </dl>
     {detail.latest.loading && <p role="status">{t('taskView.latestLoading')}</p>}
     {detail.latest.error !== undefined && <p className={css.error} role="alert">{detail.latest.error}</p>}
     {result !== undefined && <section className={css.result}><h3>{t('taskView.result')}</h3><p>{result.summary}</p></section>}
+    <p className={css.description}>{task.description}</p>
     {task.delegation !== undefined && <section className={css.result}>
       <h3>{t('detail.task.child')} · {t(`detail.task.childPhase.${task.delegation.phase}`)}</h3>
       {task.delegation.failure !== undefined && <p className={css.error}>{task.delegation.failure.message}</p>}
@@ -236,6 +285,12 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
           onClick={() => { openArtifact?.(artifact) }}>{artifact.uri.split('/').at(-1) || artifact.id}</button>
       </li>)}</ul>
     </section>}
+    {attempt?.activationId !== undefined && openParticipantSession !== undefined
+      ? <Button variant="outline" className={css.openSession} onClick={() => {
+        run(async () => { await openParticipantSession(attempt.participantId) })
+      }}>{t('taskView.openSession')}</Button>
+      : task.execution.kind === 'participant' && <p className={css.count}>{t('taskView.noSession')}</p>}
+    {review !== undefined && <Button variant="primary" onClick={review}>{t('taskForm.taskReview')}</Button>}
     <details className={css.details} onToggle={(event) => {
       if (event.currentTarget.open && !detail.hasNewer && !detail.disconnected) {
         if (detail.attempts.value === undefined && !detail.attempts.loading) void readDetail?.(detail.teamId, detail.taskId, 'attempts', 'first')
@@ -245,10 +300,11 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
       <h3>{t('taskForm.description')}</h3><p>{task.description}</p>
       {result?.evidence !== undefined && <><h3>{t('detail.task.evidence')}</h3><ul>{result.evidence.map((item, index) => <li key={index}>{item}</li>)}</ul></>}
       {result?.verification !== undefined && <><h3>{t('detail.task.verification')}</h3><p>{result.verification}</p></>}
+      <p>{t('detail.task.attempts')}: {task.attemptCount} / {task.maxAttempts}</p>
       <h3>{t('taskView.history')}</h3>
       <HistoryControls detail={detail} section="attempts" readDetail={readDetail} translate={t} />
       {detail.attempts.value?.items.map((item) => {
-        return <div className={css.attempt} key={item.id}><span>{item.ordinal} · {t(`taskView.outcome.${item.outcome.kind}`)}</span>
+        return <div className={css.attempt} key={item.id}><span>{item.ordinal} · {participantName(item.participantId)} · {t(`taskView.outcome.${item.outcome.kind}`)}</span>
           {item.activationId !== undefined && openParticipantSession !== undefined && <Button size="sm" onClick={() => {
             run(async () => { await openParticipantSession(item.participantId) })
           }}>{t('detail.openSession')}</Button>}</div>
@@ -259,11 +315,7 @@ function TaskSummary({ task, detail, readDetail, state, translate: t, owner, pha
         <span>{review.reason}</span><span>{t(review.nextPhase === 'completed' ? 'taskView.accepted' : 'taskView.rework')}</span>
       </div>)}
     </details>
-    {attempt?.activationId !== undefined && openParticipantSession !== undefined
-      ? <Button variant="outline" className={css.openSession} onClick={() => {
-        run(async () => { await openParticipantSession(attempt.participantId) })
-      }}>{t('taskView.openSession')}</Button>
-      : task.execution.kind === 'participant' && <p className={css.count}>{t('taskView.noSession')}</p>}
+
   </>
 }
 

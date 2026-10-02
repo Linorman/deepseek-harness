@@ -873,6 +873,7 @@ describe('Team runtime schemas', () => {
     expect(teamSystemTaskReviewProofResolutionSchema.parse({
       sourceName: 'team-scheduler-dag', scope: taskReviewScope,
     })).toEqual({ sourceName: 'team-scheduler-dag', scope: taskReviewScope })
+    if (taskReviewScope.kind !== 'scheduler-review-response') throw new Error('Fixture review scope is not a scheduler response')
     expect(teamSystemTaskReviewScopeSchema.safeParse({
       ...taskReviewScope, responseEnvelopeId: taskReviewScope.requestEnvelopeId,
     }).success).toBe(false)
@@ -1254,6 +1255,7 @@ describe('Team runtime schemas', () => {
     expect(taskAttemptOutcomeSchema.safeParse({ kind: 'failed' }).success).toBe(false)
     expect(taskAttemptOutcomeSchema.safeParse({ kind: 'completed' }).success).toBe(false)
     const activeTask = {
+      createdAt: 0,
       execution: { kind: 'participant' as const },
       id: 'task-1',
       teamId: 'team-1',
@@ -1517,6 +1519,7 @@ describe('Team runtime schemas', () => {
       teamId: 'team-1', actor: {}, expectedRevision: 1, phase: 'complete',
     }).success).toBe(false)
     const task = {
+      createdAt: 0,
       execution: { kind: 'participant' as const },
       id: 'task-1',
       teamId: 'team-1',
@@ -1899,6 +1902,7 @@ describe('Team runtime schemas', () => {
     expect(teamTaskGetRequestSchema.parse({ teamId: 'team-1', taskId: 'task-1' })).toEqual({ teamId: 'team-1', taskId: 'task-1' })
     expect(teamTaskListPageRequestSchema.safeParse({ teamId: 'team-1', afterCursor: -1, limit: 0 }).success).toBe(false)
     expect(teamTaskDetailsUpdateInputSchema.parse({
+      commandId: 'schema-update',
       teamId: task.teamId,
       taskId: task.id,
       expectedRevision: task.revision,
@@ -1973,6 +1977,7 @@ describe('Team runtime schemas', () => {
       { blockedBy: task.blockedBy },
     ]) {
       expect(teamTaskDetailsUpdateInputSchema.parse({
+        commandId: 'schema-update',
         teamId: task.teamId, taskId: task.id, expectedRevision: task.revision, ...details,
       })).toMatchObject(details)
     }

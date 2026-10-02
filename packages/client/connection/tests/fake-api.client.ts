@@ -1,3 +1,4 @@
+import { projectTeamProductSummary } from '@clocky/clocky-team/selection'
 // Test-local programmable IApiClient fake (NOT the fixture: fixture is a demo
 // data source on a real clock; behavior tests need per-case responses and
 // deferred-controlled timing). Streams are hand pumps: pushMux/pushHost.
@@ -116,6 +117,40 @@ interface StreamConn<F> {
 }
 
 export class FakeApiClient implements IApiClient {
+  readonly simulations: IApiClient['simulations'] = {
+    retryOperation: async () => ({ rpcId: RpcId('retry'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No operation retry fixture', details: {} } } }),
+    runStatuses: async () => ({ rpcId: RpcId('statuses'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No status fixture', details: {} } } }),
+    listTasks: () => Promise.resolve({ rpcId: RpcId('tasks'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No task fixture', details: {} } } }),
+    cancelTask: () => Promise.resolve({ rpcId: RpcId('cancel'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No task fixture', details: {} } } }),
+    listTaskReviews: () => Promise.resolve({ rpcId: RpcId('review'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No review fixture', details: {} } } }),
+    resolveTaskReview: () => Promise.resolve({ rpcId: RpcId('review'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'No review fixture', details: {} } } }),
+    inspectSource: async () => { throw new Error('Fake has no Simulation source') },
+    records: async () => { throw new Error('Fake has no Simulation records') },
+    watch: async () => ({ rpcId: RpcId('watch'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+
+    checkpoint: async () => ({ rpcId: RpcId('checkpoint'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    restore: async () => ({ rpcId: RpcId('restore'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    ingress: async () => ({ rpcId: RpcId('ingress'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    ingressRequest: async () => ({ rpcId: RpcId('ingressRequest'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    control: async () => ({ rpcId: RpcId('fake'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    manage: async () => ({ rpcId: RpcId('fake'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    managementRequest: async () => ({ rpcId: RpcId('fake'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    catalog: async () => ({ rpcId: RpcId('catalog'), result: { ok: true, value: { items: [] } } }),
+    listRequests: async () => ({ rpcId: RpcId('requests'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    retryRequest: async () => ({ rpcId: RpcId('retry-request'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    preflight: async () => ({ rpcId: RpcId('preflight'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    create: async () => ({ rpcId: RpcId('create'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    prepare: async () => ({ rpcId: RpcId('prepare'), result: { ok: false, error: { code: 'simulation-product-unavailable', message: 'Not deployed', details: {} } } }),
+    request: async payload => ({ rpcId: RpcId('request'), result: { ok: true, value: { status: 'not-found', commandId: payload.commandId } } }),
+    list: () => Promise.resolve({ rpcId: RpcId('simulation-list'), result: { ok: false,
+      error: { code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} } } }),
+    inspect: () => Promise.resolve({ rpcId: RpcId('simulation-inspect'), result: { ok: false,
+      error: { code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} } } }),
+    browse: () => Promise.resolve({ rpcId: RpcId('simulation-browse'), result: { ok: false,
+      error: { code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} } } }),
+    inspectObject: () => Promise.resolve({ rpcId: RpcId('simulation-object'), result: { ok: false,
+      error: { code: 'simulation-product-unavailable', message: 'Simulation reads are not deployed', details: {} } } }),
+  }
   /** Chronological call record: [method, payload]. */
   readonly calls: { method: string; payload: unknown }[] = []
 
@@ -199,7 +234,7 @@ export class FakeApiClient implements IApiClient {
   }
 
   onTeamList: (payload: RequestPayload<'team.list'>) => Promise<RpcResponse<ResponseValue<'team.list'>>>
-    = () => Promise.resolve(ok({ items: [fakeTeamState(fakeTeamId('fk-team'), 'Fake Team objective').team], scanned: 1 }))
+    = () => Promise.resolve(ok({ items: [projectTeamProductSummary(fakeTeamState(fakeTeamId('fk-team'), 'Fake Team objective').team, fakeTeamId('fk-team'), 512, {})] }))
   onTeamGet: (payload: RequestPayload<'team.get'>) => Promise<RpcResponse<ResponseValue<'team.get'>>>
     = payload => Promise.resolve(ok(fakeTeamState(payload.teamId, 'Fake Team objective')))
   onTeamCreate: (payload: RequestPayload<'team.create'>) => Promise<RpcResponse<ResponseValue<'team.create'>>>
@@ -280,9 +315,16 @@ export class FakeApiClient implements IApiClient {
     }
 
   readonly teams: IApiClient['teams'] = {
+    executionProfiles: payload => this.record('team.executionProfiles', payload, Promise.resolve(teamManagementError())),
+    actionInspect: payload => this.record('team.action.inspect', payload, Promise.resolve(teamManagementError())),
+    attentionRead: payload => this.record('team.attention.read', payload, Promise.resolve(teamManagementError())),
+    identityResolve: payload => this.record('team.identity.resolve', payload, Promise.resolve(teamManagementError())),
+    memberReadiness: payload => this.record('team.member.readiness', payload, Promise.resolve(teamManagementError())),
+    capabilities: payload => this.record('team.capabilities', payload, Promise.resolve(teamManagementError())),
     memberInspect: payload => this.record('team.member.inspect', payload, Promise.resolve(teamManagementError())),
     workflowPlanInspect: payload => this.record('team.workflow.plan.inspect', payload, Promise.resolve(teamManagementError())),
     actionRead: payload => this.record('team.action.read', payload, Promise.resolve(teamManagementError())),
+    taskReferences: payload => this.record('team.task.references', payload, Promise.resolve(teamManagementError())),
     taskInspect: payload => this.record('team.task.inspect', payload, Promise.resolve(teamManagementError())),
     browse: payload => this.record('team.browse', payload, Promise.resolve(teamManagementError())),
     memberSession: payload => this.record('team.member.session', payload, this.onTeamMemberSession(payload)),
@@ -329,6 +371,7 @@ export class FakeApiClient implements IApiClient {
     taskGet: payload => this.record('team.task.get', payload, Promise.resolve(teamManagementError())),
     taskList: payload => this.record('team.task.list', payload, Promise.resolve(teamManagementError())),
     workflowPlanList: payload => this.record('team.workflow.plan.list', payload, Promise.resolve(teamManagementError())),
+    taskUpdateResult: payload => this.record('team.task.update.result', payload, Promise.resolve(teamManagementError())),
     taskUpdate: payload => this.record('team.task.update', payload, Promise.resolve(teamManagementError())),
     taskCancel: payload => this.record('team.task.cancel', payload, this.onTeamTaskCancel(payload)),
     taskDelete: payload => this.record('team.task.delete', payload, this.onTeamTaskDelete(payload)),

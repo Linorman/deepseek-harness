@@ -2,6 +2,10 @@
 
 [English](team.md) | 中文
 
+`TeamHumanReaderProof` 为产品目录携带可撤销主体身份，不代表成员资格或修改权限。`TeamProductDirectoryPage` 在完整响应额度内包含安全元数据与绑定 reader 的加密续页。`ChannelOwnerSnapshot` 是原始读取鉴权前使用的挂载归属元组。[主体目录决策](../../.agents/notes/implemented/architecture/2026-09-28-principal-team-directory-and-readers.zh.md)拥有安全与范围规则。
+
+`TeamHumanReadAuthority` 通过经过验证的任务 reservation，标识最近的 active、由当前主体拥有的人工成员及其所属 Team。Hub 为获支持的读取 proof 复查祖先关系；修改和同意 proof 保留目标 Team 内成员资格要求。Host 选择发布有界、经认证的 `readAccess` 观察。[产品检查决策](../../.agents/notes/implemented/architecture/2026-09-28-parent-team-product-inspection.zh.md) 拥有安全规则与验证范围。
+
 `@clocky/clocky-team`定义持久 Team 词汇以及 `ctx.teams` Service Definition。[`@clocky/clocky-team-hub`](../../packages/team/team-hub/README.zh.md)是显式挂载的本地提供方：它拥有 journal、channel WAL、按 source 分离的 durable audit projection、成员／任务／activation 投影、有界 root-or-child 层级、已认证 Envelope admission、派生的 pending delivery、receipt cursor、恢复、游标 watch、临时 delivery claim、带围栏的 task attempt、带 revision 的 Team goal、持久声明式 workflow plan、进程内 metrics，以及不删除状态的终态 Team 归档。[`@clocky/clocky-team-activation-controller`](../../packages/team/team-activation-controller/README.zh.md)会在 `ctx.teamActivations`公开 bind-or-dispose owner；[`@clocky/clocky-team-channel-direct`](../../packages/team/team-channel-direct/README.zh.md)提供 带独立 recipient receipt 的产品 direct v4 multicast；[`@clocky/clocky-team-link-local`](../../packages/team/team-link-local/README.zh.md)拥有本地 pending-delivery replay；[`@clocky/clocky-team-agent-client`](../../packages/team/team-agent-client/README.zh.md)拥有本地 Agent inbox admission，并消费 provider-owned task workspace root；[`@clocky/clocky-team-scheduler-dag`](../../packages/team/team-scheduler-dag/README.zh.md)会使 lease 过期、保持 compiling workflow task dormant、作出确定性的 shared-work assignment，并可运行显式配置的 terminal-channel retention drive；[`@clocky/clocky-command-team-goal`](../../packages/team/command-team-goal/README.zh.md)将面向用户的 `/goal`控制限定在已绑定 Team participant 中；[`@clocky/clocky-team-run`](../../packages/team/team-run/README.zh.md)拥有本地默认 human/coordinator/worker topology、按配置启用的 reviewer routing、workspace outcome publish、声明式 workflow compilation 和显式 final-result receipt。本地及 WebSocket Link、Host Remote、TypeScript/Python SDK 和 Web Team page 都消费这条 spine。Worktree provider 提供可选的 policy/CAS integration authority；SQLite-backed Hub 会在读取前 reconciliation 外部追加的 projection。自动 leader election/failover、remote push authority 与 hard cancellation 仍是独立部署工作。[本地 Team Hub 决策](../../.agents/notes/implemented/architecture/2026-08-27-local-team-hub-durable-authority.zh.md)记录本地提供方的理由。
 
 [`@clocky/clocky-team-channel-basic`](../../packages/team/team-channel-basic/README.zh.md)提供有界 consult 和 discussion 协议，[`@clocky/clocky-team-channel-workflow`](../../packages/team/team-channel-workflow/README.zh.md)提供有界声明式 workflow 转移。这些适配器只校验 manifest、折叠状态，不执行投递或模型轮次。
@@ -9,6 +13,14 @@
 [`@clocky/clocky-team-workspace-sandbox`](../../packages/team/team-workspace-sandbox/README.zh.md)提供由 provider 拥有的本地 `sandbox` root、可选 source seeding、有界 changed-file publication 以及 opt-in portable target-directory integration authority。[`@clocky/clocky-team-workspace-e2b`](../../packages/e2b/team-workspace-e2b/README.zh.md)在现有 E2B execution world 内提供 opt-in `remote` root，并在该 world 存活期间提供 opt-in portable target-directory integration authority。两个 provider 都会验证准确的 allocation manifest；两者都不会进行 Git ref integration 或声明 distributed lock。
 
 本地 Hub 的 `compactChannel()` 是 terminal channel 的显式 retention boundary：它要求 actor 已获授权、没有 pending delivery、audit projection 是 current 且 checkpoint 已存在，然后才保留配置的 audit tail 并删除旧 source record。Scheduler 的可选 retention drive 会提供 actor 和有界 source tail，但所有 watermark 检查仍由 Hub 负责。旧 cursor 会收到 typed compaction error。
+
+`TeamTaskQuery` 与 `TeamTaskQueryCursor` 扩展 `TeamBrowseRequest`，提供带 revision 检查的任务筛选分页。[Team 包](../../packages/core/team/README.zh.md) 定义匹配、排序、上限与错误，Host 及两种 SDK 使用相同请求和响应语义。
+
+`TeamHumanActorLookup` 选择 Team 与已认证主体，`TeamHumanActorSelection` 只返回成员 ID 和操作名称。`TeamTaskCapabilitiesRequest` 为输入路径及整合意图附加仅运行时存在的 proof；创建整合任务还要求 workspace integration 授权。
+
+`TeamTaskCapabilitiesInput` 将编写的路径范围绑定到已认证成员资格读取。`TeamTaskCapabilities` 报告 grant 和生命周期判定，Host 观察再补充当前 provider／scheduler 可用性。[能力观察决策](../../.agents/notes/implemented/architecture/2026-09-28-team-task-capability-observations.zh.md) 定义所有权、刷新方式及其与变更权限的区别。
+
+`TeamMemberReadinessInput` 选择准确成员 ID 和可选的带 revision 限制续页。`TeamMemberReadinessRequest` 附加仅运行时存在的 human proof，`TeamMemberReadinessPage` 携带带版本的参与资格与执行状态。`TeamMemberExecutionQuery` 和 `TeamMemberExecutionSources` 是同进程所有者观察，不是浏览器权限。[就绪度决策](../../.agents/notes/implemented/architecture/2026-09-28-team-member-execution-readiness.zh.md) 定义所有权和限制。
 
 ## 独立身份
 
@@ -320,10 +332,23 @@ Effect-scoped product-principal to active-human binder.
  * hold its exact payload-bound proof only while the supplied operation runs.
  * @param call - runtime-only authenticated product call retained by its transport lease.
  * @param input - complete parsed JSON-only mutation input and observed fence.
- * @param operation - Hub call that may resolve the proof more than once before settling.
+ * @param operation - Hub call and membership Team; descendant reads never grant target-Team mutations.
  * @returns the operation result after the proof is revoked.
  */
-async withProof<T>( call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof) => Promise<T>, ): Promise<T>
+async withProof<T>( call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof, authorityTeamId: import('@clocky/clocky-team').TeamId) => Promise<T>, ): Promise<T>
+
+/** Retain an authenticated principal for discovery without granting any Team membership or mutation.
+ * @param call - Current authenticated transport lease.
+ * @param operation - Read consumer which must check current Team visibility itself.
+ * @returns operation result after the reader is revoked.
+ */
+async withReader<T>(call: AuthenticatedProductCall, operation: (reader: TeamHumanReaderProof) => Promise<T>): Promise<T>
+
+/** Open principal read authority for a streaming consumer which owns final cleanup.
+ * @param call - Current authenticated transport lease.
+ * @returns non-serializable reader, retirement signal and idempotent close action.
+ */
+openReader(call: AuthenticatedProductCall): TeamHumanReaderLease
 
 /** Invalidate every outstanding proof before the source leaves the Team runtime. */
 close(): void
@@ -1047,11 +1072,77 @@ getPersistenceReference(request: import('./persistence-reference.ts').TeamPersis
  */
 getHumanAction(request: TeamHumanActionReadRequest): Promise<TeamHumanActionSnapshot>
 
+/** Inspect an exact human request and its current handling allowance.
+ * @param request - Team/request identity and its current read proof.
+ * @returns bounded body and handling hint at one Team revision; unsupported providers reject.
+ */
+inspectHumanAction(request: import('./types.ts').TeamActionInspectRequest): Promise<import('./types.ts').TeamActionInspection>
+
 /** Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.
  * @param request - Team selected for read-only inspection.
  * @returns the lightweight selection projection; no activation is created or resumed.
  */
 abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>
+
+/** Read one authorized, revision-pinned page of Team pending responsibilities.
+ * @param request - Complete Team/cursor input and its current human read proof.
+ * @returns authoritative counts and byte-bounded summaries; no task or model is started.
+ */
+getTeamAttention(request: import('./types.ts').TeamAttentionReadRequest): Promise<import('./types.ts').TeamAttentionPage>
+
+/** Register a deployment-owned execution descriptor and its current availability.
+ * @param registration - Public profile fields and a pure live-owner availability reader.
+ * @returns disposer owned by the registering plugin fiber.
+ */
+registerExecutionProfile(registration: TeamExecutionProfileRegistration): () => void
+
+/** Read authorized deployment choices without starting any execution.
+ * @param request - Selected member kind, continuation and exact read proof.
+ * @returns a byte-bounded catalog page and the independently revalidated selection.
+ */
+abstract getExecutionProfiles(request: TeamExecutionProfilesRequest): Promise<TeamExecutionProfilesPage>
+
+/** Resolve only display identities referenced by an authorized view.
+ * @param request - Finite IDs, revision-bound continuation and membership proof.
+ * @returns a bounded page with indistinguishable unknown or inaccessible identities.
+ */
+abstract resolveIdentities(request: TeamIdentityResolveRequest): Promise<TeamIdentityResolvePage>
+
+/** Read current participation and execution readiness without starting actors.
+ * @param request - Exact member set, optional continuation and a live membership proof.
+ * @returns a bounded page; continuation rejects a changed Team journal watermark.
+ */
+abstract getMemberReadiness(request: TeamMemberReadinessRequest): Promise<TeamMemberReadinessPage>
+
+/** Resolve principal-owned membership for the live human-proof issuer.
+ * @param request - Exact Team and authenticated principal identity.
+ * @returns bounded proof-issuer facts; missing or ambiguous membership rejects.
+ */
+abstract resolveHumanActor(request: TeamHumanActorLookup): Promise<TeamHumanActorSelection>
+
+/** Resolve current membership for inspection through canonical parent-task reservations.
+ * @param request - Target Team and authenticated principal identity from the proof issuer.
+ * @returns the nearest active human's Team and identity; missing, ambiguous or invalid lineage rejects.
+ */
+abstract resolveHumanReadAuthority(request: TeamHumanActorLookup): Promise<TeamHumanReadAuthority>
+
+/** Verify a Session's reserved or published participant identity under current read authority.
+ * @param request - Exact Team, participant and Session tuple with a live payload-bound proof.
+ * @returns completion after ownership and current direct/ancestor membership agree.
+ */
+abstract assertHumanSessionRead(request: import('./types.ts').TeamHumanSessionReadRequest): Promise<void>
+
+/** Discover only Teams readable by the current principal, within provider work and complete response limits.
+ * @param request - Revocable reader, encrypted reader-bound continuation and requested scan allowance.
+ * @returns safe metadata and continuation; an empty page can still require bounded continuation.
+ */
+abstract listHumanTeamsPage(request: TeamProductDiscoveryRequest): Promise<TeamProductDirectoryPage>
+
+/** Observe current human task-authoring permission under the provider's serializer.
+ * @param request - Exact selected scopes and a live membership proof.
+ * @returns choices without grants or authorized path lists; reads do not create work.
+ */
+abstract getTaskCapabilities(request: TeamTaskCapabilitiesRequest): Promise<TeamTaskCapabilities>
 
 /** Read bounded display summaries without materializing task/plan execution history.
  * @param request - Team, collection, provider-order cursor and requested row limit.
@@ -1064,6 +1155,12 @@ abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>
  * @returns detached data capped by the provider's response budget; indivisible oversized records reject.
  */
 abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>
+
+/** Resolve exact task titles and lifecycle status without enumerating the task collection.
+ * @param request - Team, explicit IDs and revision-pinned continuation.
+ * @returns bounded references; trusted consumers own authorization and unsupported providers reject.
+ */
+resolveTaskReferences(request: import('./types.ts').TeamTaskReferencesInput): Promise<import('./types.ts').TeamTaskReferencesPage>
 
 /** Resolve the latest published Session of one retained Team member without starting an Agent.
  * @param request - exact owning Team and member.
@@ -1477,10 +1574,16 @@ listArtifactsPage(request: TeamArtifactListPageRequest): Promise<TeamArtifactLis
 
 /**
  * Compare-and-set a lease-free task details edit without changing phase, scheduler facts, or attempts.
- * @param request - current coordinator proof plus JSON-only task detail fields.
- * @returns the detached task projection after the committed details edit.
+ * @param request - current coordinator or human proof, caller-owned command identity and JSON-only task detail fields.
+ * @returns original acceptance metadata and the detached current task, which may have advanced since admission.
  */
-abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot>
+abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<import('./types.ts').TeamTaskDetailsUpdateResult>
+
+/** Read original task-update admission without executing or retrying it.
+ * @param request - Exact Team/task/command identity.
+ * @returns original acceptance, terminal semantic refusal or not-found at this read; native consumers own authorization.
+ */
+getTaskUpdateResult(request: import('./types.ts').TeamTaskUpdateLookupInput): Promise<import('./types.ts').TeamTaskUpdateLookup>
 
 /**
  * Persist a single-task cancellation while exact live work retains ownership.
@@ -1488,6 +1591,13 @@ abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamT
  * @returns accepted stop progress or the settled task after owner cleanup.
  */
 abstract cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot>
+
+/**
+ * Persist cancellation of one exact Simulation-created task without retiring its live attempt prematurely.
+ * @param request - Revocable Simulation source proof, immutable run/operation provenance and original work fence.
+ * @returns accepted stop progress or settled cancellation; exact retries retain the first cancellation target and reason.
+ */
+cancelRuntimeTask(request: import('./types.ts').TeamSimulationTaskCancelRequest): Promise<TeamTaskSnapshot>
 
 /**
  * Continue an accepted lease-free cancellation after interrupted channel cleanup.
@@ -1530,6 +1640,21 @@ abstract resolveTaskReview(request: TeamTaskReviewResolveRequest): Promise<TeamT
 abstract resolveTaskReviewFromResponse(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot>
 
 /**
+ * Review an exact native completed result using a revocable Simulation source proof.
+ * @param request - Runtime-only authority deriving the original task, reviewer and command payload.
+ * @returns current canonical task after acceptance, or the current task retaining the identical historical decision.
+ * Changed payloads under the same run-wide command identity reject; no reviewer activation is required.
+ */
+resolveSimulationTaskReview(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot>
+
+/**
+ * Assign the exact attempt already durably reserved by the Simulation owner.
+ * @param request - Revocable source proof, canonical task revision and selected actor/attempt.
+ * @returns the assigned task after all ordinary capability, lease and budget constraints pass.
+ */
+assignSimulationTask(request: import('./types.ts').TeamSimulationTaskAssignRequest): Promise<TeamTaskSnapshot>
+
+/**
  * Assign a pending task, mint its next non-reusable attempt id, and commit its bounded lease.
  * The scheduler source selects the exact task, participant, optional activation,
  * wake channel, and lease duration through runtime-only authority.
@@ -1537,6 +1662,13 @@ abstract resolveTaskReviewFromResponse(request: TeamTaskReviewRecoverRequest): P
  * @returns the detached assigned task projection with its current lease.
  */
 abstract assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot>
+
+/**
+ * Start the Simulation attempt whose identified input has reached durable Session storage.
+ * @param request - Exact native task-input source proof and task revision/attempt fence.
+ * @returns running task with the original assigned lease; an exact retained start does not append again.
+ */
+startSimulationTaskAttempt(request: import('./types.ts').TeamSimulationTaskStartRequest): Promise<TeamTaskSnapshot>
 
 /**
  * Start the exact current attempt after checking its revision, id, participant, and optional activation epoch.
@@ -1563,6 +1695,13 @@ abstract claimTaskAttemptStart(request: TeamTaskAttemptStartClaimRequest): Promi
  * @returns the detached task projection with its renewed current lease.
  */
 abstract heartbeatTaskAttempt(request: TeamTaskAttemptHeartbeatRequest): Promise<TeamTaskSnapshot>
+
+/**
+ * Settle the exact Simulation attempt from its native result proof after ordinary Team result checks.
+ * @param request - Current writer authority and retained original terminal outcome.
+ * @returns task receipt; identical current-source retries retain the original outcome.
+ */
+settleSimulationTaskAttempt(request: import('./types.ts').TeamSimulationTaskSettleRequest): Promise<TeamTaskSnapshot>
 
 /**
  * Settle the exact current attempt once, retaining its closed outcome and removing its lease.
@@ -1783,6 +1922,12 @@ abstract summarizeChannel(request: ChannelSummarizeRequest): Promise<ChannelSumm
  * @returns the current channel projection and WAL cursor.
  */
 abstract getChannel(request: ChannelGetRequest): Promise<ChannelSnapshot>
+
+/** Read attached-channel ownership for an authenticated consumer's authorization lookup.
+ * @param request - Exact channel identity from the consumer request.
+ * @returns the attached Team/channel tuple within the provider's response allowance.
+ */
+abstract getChannelOwner(request: ChannelGetRequest): Promise<import('./types.ts').ChannelOwnerSnapshot>
 
 /**
  * Read channel metadata only for a current member activation, including pending admission.
@@ -2082,6 +2227,23 @@ A provider committed a Team-journal record. Listener failure cannot roll back th
 
 Source: [`packages/core/team/src/runtime.ts`](../../packages/core/team/src/runtime.ts)
 
+<a id="teammember-execution-observe--waterfall"></a>
+
+#### `team/member-execution-observe` — waterfall
+
+Read exact route and activation ownership; listeners must not reenter Team reads or mutate work.
+
+```ts cordis-catalog
+/** Read exact route and activation ownership; listeners must not reenter Team reads or mutate work.
+ * @param query - Authorized Team and current member descriptor.
+ * @param next - Other independent execution owners; all listeners delegate.
+ * @mode waterfall
+ */
+'team/member-execution-observe'(this: TeamRuntime, query: TeamMemberExecutionQuery, next: () => Promise<TeamMemberExecutionSources>): Promise<TeamMemberExecutionSources>
+```
+
+Source: [`packages/core/team/src/runtime.ts`](../../packages/core/team/src/runtime.ts)
+
 <a id="teampolicy--waterfall"></a>
 
 #### `team/policy` — waterfall
@@ -2130,6 +2292,23 @@ A policy no longer intercepts future Team operations.
  * @mode emit
  */
 'team/policy-removed'(this: TeamRuntime, policy: TeamPolicyRegistration): void
+```
+
+Source: [`packages/core/team/src/runtime.ts`](../../packages/core/team/src/runtime.ts)
+
+<a id="teamtask-scheduling-modes--waterfall"></a>
+
+#### `team/task-scheduling-modes` — waterfall
+
+Observe modes supported by live schedulers without preparing or assigning work.
+
+```ts cordis-catalog
+/** Observe modes supported by live schedulers without preparing or assigning work.
+ * @param teamId - Team selected by the authenticated product query.
+ * @param next - Remaining scheduling providers; every listener delegates before combining modes.
+ * @mode waterfall
+ */
+'team/task-scheduling-modes'(this: TeamRuntime, teamId: TeamId, next: () => Promise<readonly TeamTaskWorkspaceMode[]>): Promise<readonly TeamTaskWorkspaceMode[]>
 ```
 
 Source: [`packages/core/team/src/runtime.ts`](../../packages/core/team/src/runtime.ts)

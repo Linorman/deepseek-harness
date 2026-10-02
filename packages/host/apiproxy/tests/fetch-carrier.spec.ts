@@ -5,6 +5,8 @@ import type { ClientResponse, RpcMessage, RpcReceipt, RpcRequest } from '../src/
 import { RpcId } from '../src/api/rpc.ts'
 import { toFetchHandler } from '../src/fetch/handler.ts'
 import { AbstractApiClient, InProcessApiClient } from '../src/fetch/client.ts'
+import { currentAuthenticatedProductCall } from '../src/authenticated-product-call.ts'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
 
 /** Minimal in-memory ApiProxy: echoes rpcIds, scripts one frame per stream. */
 function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFrame[]; crashOn: string }> = {}): ApiProxy {
@@ -543,6 +545,35 @@ describe('handler carrier-layer statuses', () => {
 })
 
 describe('SSE streams through the carrier', () => {
+  it('classifies HTTP access denials separately from ordinary transport loss', async () => {
+    for (const status of [401, 403]) {
+      const denied = new InProcessApiClient({ fetch: async () => new Response('Denied', { status }) })
+      await expect(denied.sessions.list({})).rejects.toMatchObject({ code: 'PRODUCT_AUTH_INVALID', status })
+      await expect(collect(denied.events.mux({}, new AbortController().signal)))
+        .rejects.toMatchObject({ code: 'PRODUCT_AUTH_INVALID', status })
+    }
+  })
+  it('pins authenticated call facts when opening both streams and preparing a download', async () => {
+    const call: AuthenticatedProductCall = { principal: { id: 'stream-principal' as never, issuer: 'test', subject: 'user',
+      assurance: 'test', credentialGeneration: 1 }, credentialGeneration: 1, signal: new AbortController().signal }
+    const api = fakeApi()
+    const seen: (AuthenticatedProductCall | undefined)[] = []
+    const originalMux = api.events.mux.bind(api.events)
+    const originalHost = api.events.host.bind(api.events)
+    api.events.mux = (request, signal) => { seen.push(currentAuthenticatedProductCall()); return originalMux(request, signal) }
+    api.events.host = (request, signal) => { seen.push(currentAuthenticatedProductCall()); return originalHost(request, signal) }
+    api.downloads.sessionLog = async () => { seen.push(currentAuthenticatedProductCall()); return new Response('archive') }
+    const handler = toFetchHandler(api, { authenticatedProductCall: call })
+    for (const path of ['/api/events.mux', '/api/events.host', '/api/session.export?sessionId=owned-session']) {
+      const response = await handler.fetch(new Request(`http://host${path}`))
+      await response.text()
+    }
+    expect(seen).toEqual([call, call, call])
+    await (await toFetchHandler(api).fetch(new Request('http://host/api/events.mux'))).text()
+    expect(seen.at(-1)).toBeUndefined()
+    expect(currentAuthenticatedProductCall()).toBeUndefined()
+  })
+
   it('yields mux frames as ServerRequest narrow forms and completes', async () => {
     const ac = new AbortController()
     const frames = await collect(client().events.mux({}, ac.signal))

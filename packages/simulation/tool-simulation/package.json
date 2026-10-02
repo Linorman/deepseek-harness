@@ -39,6 +39,7 @@
   "peerDependencies": {
     "@clocky/cordis": "workspace:^",
     "@clocky/clocky-tools": "workspace:^",
+    "@clocky/clocky-system-prompt": "workspace:^",
     "@clocky/clocky-simulation": "workspace:^",
     "@clocky/clocky-simulation-team": "workspace:^",
     "@clocky/clocky-invariants": "workspace:^",

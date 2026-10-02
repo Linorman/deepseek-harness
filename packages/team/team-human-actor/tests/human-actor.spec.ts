@@ -1,3 +1,5 @@
+import { selectHumanActor } from '../../../core/team/src/selection.ts'
+import type { TeamHumanActorLookup } from '../../../core/team/src/types.ts'
 import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
 import ProductPrincipalRegistry, { productPrincipalId } from '@clocky/clocky-product-principal'
@@ -23,13 +25,19 @@ import * as HumanActor from '../src/index.ts'
 abstract class TestRuntime extends (TeamRuntime as unknown as new (ctx: Context) => TeamRuntime) {
   state: TeamStateSnapshot = { participants: [] } as unknown as TeamStateSnapshot
 
-  getTeam(): Promise<TeamStateSnapshot> {
-    return Promise.resolve(this.state)
+  async resolveHumanActor(request: TeamHumanActorLookup) {
+    return selectHumanActor(this.state.participants, request)
+  }
+
+  async resolveHumanReadAuthority(request: TeamHumanActorLookup) {
+    return { ...await this.resolveHumanActor(request), teamId: request.teamId }
   }
 
   resolveHumanActorProof(proof: TeamHumanActorProof): TeamHumanActorProofResolution {
     return this.requireHumanActorProof(proof)
   }
+
+  reader(proof: import('@clocky/clocky-team').TeamHumanReaderProof) { return this.requireHumanReaderProof(proof) }
 }
 
 const TestRuntimePlugin = TestRuntime as unknown as new (ctx: Context) => TestRuntime
@@ -246,5 +254,38 @@ describe('TeamHumanActor', () => {
     expect(() => HumanActor.apply(ctx)).toThrow(expect.objectContaining({ code: 'TEAM_INVALID_ARGUMENT' }))
     await principals.dispose()
     await ctx.fiber.dispose()
+  })
+
+  it('holds principal-only readers without membership and revokes them on completion, abort and unload', async () => {
+    const { ctx, runtime, humanActorFiber } = await setup([])
+    try {
+      const first = call()
+      let held: import('@clocky/clocky-team').TeamHumanReaderProof | undefined
+      await ctx.teamHumanActors.withReader(first.call, async (reader) => {
+        held = reader
+        expect(runtime.reader(reader)).toEqual({ principalId: 'principal-1', issuer: 'local', subject: 'principal-1', credentialGeneration: 1 })
+        expect(() => JSON.stringify(reader)).toThrow(/runtime-only/)
+        expect(() => runtime.resolveHumanActorProof(reader as unknown as TeamHumanActorProof)).toThrow(/invalid|unavailable/)
+      })
+      expect(() => runtime.reader(held!)).toThrow(/absent|revoked|foreign/)
+      const second = call()
+      await expect(ctx.teamHumanActors.withReader(second.call, async (reader) => {
+        second.controller.abort()
+        expect(() => runtime.reader(reader)).toThrow(/absent|revoked|foreign/)
+      })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      const retired = ctx.teamHumanActors.openReader(call().call)
+      expect(retired.signal.aborted).toBe(false)
+      retired.close()
+      retired.close()
+      expect(retired.signal.aborted).toBe(true)
+      expect(() => runtime.reader(retired.reader)).toThrow(/absent|revoked|foreign/)
+      const idle = ctx.teamHumanActors.openReader(call().call)
+      await expect(ctx.teamHumanActors.withReader(call().call, async (reader) => {
+        await humanActorFiber.dispose()
+        expect(() => runtime.reader(reader)).toThrow(/absent|revoked|foreign/)
+      })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      expect(idle.signal.aborted).toBe(true)
+      expect(() => runtime.reader(idle.reader)).toThrow(/absent|revoked|foreign/)
+    } finally { await ctx.fiber.dispose() }
   })
 })

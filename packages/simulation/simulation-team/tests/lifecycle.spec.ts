@@ -327,7 +327,7 @@ it('pins the validated in-process provider across durable reservation and reject
   vi.spyOn(run, 'reserveWriter').mockImplementation(async (...args) => {
     const lease = await reserve(...args)
     await runtimeFiber.dispose()
-    ctx.agentRuntimes.registerProvider({ name: 'in-process', terminationMode: 'owned-process', activate: externalStart })
+    ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const, name: 'in-process', terminationMode: 'owned-process', activate: externalStart })
     return lease
   })
   await expect(connection.activate(entityId, placement())).rejects.toMatchObject({ code: 'AGENT_RUNTIME_PROVIDER_CHANGED' })
@@ -372,7 +372,7 @@ it('rejects missing bindings, external placement and mismatched durable owner se
   await expect(connection.recover(entityId)).rejects.toThrow(/no durable activation/)
   await expect(connection.activate(entityId, { ...placement(), provider: 'missing' })).rejects.toThrow(/actual in-process/)
   const externalStart = vi.fn(() => Promise.reject(new Error('must not start')))
-  ctx.agentRuntimes.registerProvider({ name: 'external', terminationMode: 'owned-process', activate: externalStart })
+  ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const, name: 'external', terminationMode: 'owned-process', activate: externalStart })
   await expect(connection.activate(entityId, { ...placement(), provider: 'external' })).rejects.toThrow(/actual in-process/)
   expect(externalStart).not.toHaveBeenCalled()
 })
@@ -543,9 +543,18 @@ it('checks current participant authority inside decision admission and preserves
     payloadFingerprint: fingerprintTeamHumanActorPayload({ teamId, operation: 'close', fence, payload: jsonObjectSchema.parse(input) }) }
   const unregister = ctx.teams.registerHumanActorProofSource({ name: 'simulation-human-test',
     resolveHumanActorProof: value => value === actor ? scope : undefined })
-  try { await ctx.teams.transitionParticipantPhase({ actor, ...input }) }
+  try {
+    await expect(ctx.teams.transitionParticipantPhase({ actor, ...input })).rejects.toMatchObject({ code: 'TEAM_POLICY_DENIED' })
+  }
   finally { unregister() }
-  await expect(connection.submitDecision(entityId, id, [])).rejects.toThrow(/authority is no longer active/)
+  const read = ctx.teams.getTeam.bind(ctx.teams)
+  const removed = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (request) => {
+    const current = await read(request)
+    return { ...current, participants: current.participants.map(value => value.id === participant.id
+      ? { ...value, phase: 'left' as const } : value) }
+  })
+  try { await expect(connection.submitDecision(entityId, id, [])).rejects.toThrow(/authority is no longer active/) }
+  finally { removed.mockRestore() }
   expect(run.snapshot().decisions[id]?.status).toBe('open')
   await lease.dispose()
   expect(run.snapshot().decisions[id]?.status).toBe('cancelled')
@@ -1238,7 +1247,9 @@ it('bounds movement retries and releases admission after fatal source failure', 
   missing.mockRestore()
   const { TeamError } = await import('@clocky/clocky-team')
   const moving = vi.spyOn(ctx.teams, 'getPersistenceReference').mockRejectedValue(new TeamError('Moving owner', 'TEAM_CURSOR_CONFLICT'))
-  await expect(connection.collectCheckpointCandidate(4, 2)).rejects.toMatchObject({ code: 'TEAM_CURSOR_CONFLICT' })
+  await expect(connection.collectCheckpointCandidate(4, 2)).rejects.toMatchObject({
+    diagnostic: { stage: 'collect', code: 'source-moved' }, cause: { code: 'TEAM_CURSOR_CONFLICT' },
+  })
   expect(moving).toHaveBeenCalledTimes(2)
   moving.mockRestore()
   const candidate = await connection.collectCheckpointCandidate(4, 3)
@@ -1476,7 +1487,6 @@ it('deduplicates exact Simulation task creation and rejects revoked or widened s
 it('reconciles real Team task revisions without fulfilling a delivery commitment', async () => {
   const { ctx, run, connection, entityId, receiverId } = await preparedPost()
   const { simulationDecisionIdSchema, simulationProposalSchema } = await import('@clocky/clocky-simulation')
-  const { teamTaskCreateIdempotencyKeySchema } = await import('@clocky/clocky-team')
   const { assignTestTask } = await import('../../../team/team-hub/tests/fixtures.ts')
   const coordinator = simulationEntityIdSchema.parse('coordinator')
   await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: coordinator,
@@ -1497,10 +1507,19 @@ it('reconciles real Team task revisions without fulfilling a delivery commitment
   const worker = state.activations.find(value => value.activation.participantId === receiverParticipant)
   if (binding === undefined || worker === undefined) throw new Error('fixture active participants missing')
   const issuer = ctx.teams.openActivationActorProofIssuer()
-  const task = await ctx.teams.createTask({ actor: issuer.issue(binding).proof, teamId, expectedCursor: state.team.cursor,
-    createCommand: { idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('simulation-task') },
-    subject: 'Deliver report', description: 'Prepare delivery evidence', blockedBy: [], requiredCapabilities: [], priority: 0,
-    readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 2 })
+  const createId = simulationDecisionIdSchema.parse('create-task-report')
+  await connection.openDecision(coordinator, createId)
+  const creation = await connection.submitDecision(coordinator, createId, [simulationProposalSchema.parse({ after: [], action: {
+    kind: 'task/create', deliverAt: run.snapshot().time, task: {
+      subject: 'Deliver report', description: 'Prepare delivery evidence', blockedBy: [], requiredCapabilities: [], priority: 0,
+      readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, reviewPolicy: { kind: 'none' }, maxAttempts: 2,
+    },
+  } })])
+  const operationId = creation.operationIds[0]!
+  await run.drive({ until: run.snapshot().time })
+  await connection.dispatchOperation(operationId, () => 100)
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const task = await ctx.teams.getTask({ teamId, taskId: receipt.taskId })
   const apply = async (actor: typeof entityId, name: string, action: unknown) => {
     const id = simulationDecisionIdSchema.parse(name)
     await connection.openDecision(actor, id)
@@ -1513,15 +1532,25 @@ it('reconciles real Team task revisions without fulfilling a delivery commitment
   const interaction = Object.values(run.snapshot().interactions).find(value => value.description === 'Deliver report')!
   const linked = await connection.reconcileTask(interaction.id, interaction.revision, task.id)
   expect(linked.task).toMatchObject({ revision: task.revision, phase: 'pending' })
-  const assigned = await assignTestTask(ctx, { teamId, taskId: task.id, expectedRevision: task.revision,
+  const wrong = await assignTestTask(ctx, { teamId, taskId: task.id, expectedRevision: task.revision,
+    participantId: participant.id, activationId: binding.activation.id, leaseDurationMs: 60000 })
+  await expect(connection.reconcileTask(interaction.id, linked.revision, task.id)).rejects.toThrow(/another executor/)
+  const failed = await ctx.teams.settleTaskAttempt({ actor: issuer.issue(binding).proof, taskId: task.id,
+    attemptId: wrong.lease!.attemptId, expectedRevision: wrong.revision,
+    outcome: { kind: 'failed', failure: { code: 'WRONG_EXECUTOR', message: 'Return task to its assignee' } } })
+  await expect(connection.reconcileTask(interaction.id, linked.revision, task.id)).rejects.toThrow(/another executor/)
+  const assigned = await assignTestTask(ctx, { teamId, taskId: task.id, expectedRevision: failed.revision,
     participantId: worker.activation.participantId, activationId: worker.activation.id, leaseDurationMs: 60000 })
+  const observed = await connection.reconcileTask(interaction.id, linked.revision, task.id)
+  expect(observed.task?.executor).toMatchObject({ attemptId: assigned.lease!.attemptId, participantId: receiverParticipant })
   const actor = issuer.issue(worker).proof
   const running = await ctx.teams.startTaskAttempt({ actor, taskId: task.id,
     attemptId: assigned.lease!.attemptId, expectedRevision: assigned.revision })
   const completed = await ctx.teams.settleTaskAttempt({ actor, taskId: task.id, attemptId: running.lease!.attemptId,
     expectedRevision: running.revision, outcome: { kind: 'completed', result: { summary: 'Report prepared' } } })
-  const reconciled = await connection.reconcileTask(interaction.id, linked.revision, task.id)
-  expect(reconciled.task).toMatchObject({ phase: 'completed', revision: completed.revision })
+  const reconciled = await connection.reconcileTask(interaction.id, observed.revision, task.id)
+  expect(reconciled.task).toMatchObject({ operationId, phase: 'completed', revision: completed.revision,
+    executor: { participantId: receiverParticipant, attemptId: running.lease!.attemptId, outcome: 'completed' } })
   expect(run.snapshot().commitments[reconciled.commitmentId!]!.phase).toBe('open')
 })
 
@@ -1816,8 +1845,9 @@ it('rejects mixed publication cuts and a missing channel owner', async () => {
   const current = await ctx.teams.getChannel({ channelId: channel.manifest.id })
   const prior = await ctx.teams.getPersistenceReference({ kind: 'channel', channelId: channel.manifest.id,
     expectedCursor: current.cursor, prefixCursor: receipt.sequence - 1 })
-  await expect(validateAcceptedTargets(ctx, run.snapshot(), [], [], () => {})).rejects.toThrow(/outside its retained channel prefix/)
-  await expect(validateAcceptedTargets(ctx, run.snapshot(), [prior], [], () => {})).rejects.toThrow(/outside its retained channel prefix/)
+  await expect(validateAcceptedTargets(ctx, run.snapshot(), [], [], [], () => {})).rejects.toThrow(/outside its retained channel prefix/)
+  await expect(validateAcceptedTargets(ctx, run.snapshot(), [prior], [], [], () => {}))
+    .rejects.toThrow(/outside its retained channel prefix/)
 })
 
 it.each(['message', 'task'] as const)('rejects an applied %s projection without its target receipt', async (kind) => {
@@ -1835,7 +1865,7 @@ it.each(['message', 'task'] as const)('rejects an applied %s projection without 
   delete withoutReceipt.outbox.taskReceipt
   for (const value of [withoutOutbox, withoutReceipt]) {
     const incomplete = { ...state, operations: { [id]: value } }
-    await expect(validateAcceptedTargets(h.ctx, incomplete, [], [], () => {})).rejects.toThrow(/has no .*receipt/)
+    await expect(validateAcceptedTargets(h.ctx, incomplete, [], [], [], () => {})).rejects.toThrow(/has no .*receipt/)
   }
   expect(h.run.snapshot()).toEqual(state)
 })
@@ -1857,7 +1887,7 @@ it('does not demand cross-owner targets for pending publications or completed lo
   } })])
   expect((await run.executeOperation(accepted.operationIds[0]!)).status).toBe('applied')
   const reads = vi.spyOn(ctx.teams, 'readChannelPage')
-  await validateAcceptedTargets(ctx, run.snapshot(), [], [], () => {})
+  await validateAcceptedTargets(ctx, run.snapshot(), [], [], [], () => {})
   expect(reads).not.toHaveBeenCalled()
 })
 
@@ -5608,4 +5638,876 @@ it('retains a replacement checkpoint wait when an earlier collection rejects', a
     held.mockRestore()
   }
   expect(await retry).toMatchObject({ message: 'Checkpoint collection is no longer admitted' })
+})
+
+it('refuses advertised tools outside the bound Simulation decision before model or budget admission', async () => {
+  const { ctx, run, connection, entityId, id, agent, adapter } = await inputHarness('foreign-model-capability')
+  const tokens = run.budgetUsage().tokens.used
+  const off = ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
+    const assembly = await next()
+    return context.scope === agent ? { ...assembly, tools: [...assembly.tools,
+      { name: 'team_message', description: 'Foreign Team capability', parameters: { type: 'object' } }] } : assembly
+  })
+  try {
+    await connection.dispatchDecision(entityId, id)
+    await agent.whenIdle()
+    expect(adapter.requests).toHaveLength(0)
+    expect(run.budgetUsage().tokens.used).toBe(tokens)
+    expect(ctx.simulationTeams.modelUsage()).toMatchObject({ active: 0, queued: 0 })
+    expect(agent.session.events.findLast(event => event.type === 'turn/end')?.data).toMatchObject({
+      reason: { kind: 'error', error: { message: 'Simulation model request advertises tools outside its decision authority' } },
+    })
+  } finally { off() }
+})
+
+it('requires the exact accepted creation attribution when observing a canonical task', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { projectTaskEvidence } = await import('../src/task-evidence.ts')
+  const { teamIdSchema, participantIdSchema, teamTaskCreateIdempotencyKeySchema } = await import('@clocky/clocky-team')
+  const { simulationRunIdSchema, simulationOperationIdSchema, simulationInteractionIdSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const task = await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+  const creator = task.createCommand.creator
+  if (!('kind' in creator)) throw new Error('Fixture lacks Simulation creation attribution')
+  expect(projectTaskEvidence(run.snapshot(), task)).toEqual({ operationId, teamId: task.teamId, taskId: task.id,
+    revision: task.revision, phase: 'pending' })
+  for (const changed of [
+    { ...task, createCommand: { ...task.createCommand, creator: { teamId: creator.teamId, participantId: creator.participantId } } },
+    { ...task, createCommand: { ...task.createCommand, creator: { ...creator, runId: simulationRunIdSchema.parse('other') } } },
+    { ...task, createCommand: { ...task.createCommand, creator: { ...creator, operationId: simulationOperationIdSchema.parse('other') } } },
+    { ...task, createCommand: { ...task.createCommand, creator: { ...creator, teamId: teamIdSchema.parse('other') } } },
+    { ...task, createCommand: { ...task.createCommand, creator: { ...creator, participantId: participantIdSchema.parse('other') } } },
+    { ...task, createCommand: { ...task.createCommand, idempotencyKey: teamTaskCreateIdempotencyKeySchema.parse('other') } },
+    { ...task, teamId: teamIdSchema.parse('other') },
+    { ...task, execution: { kind: 'child-team' as const, templateId: 'other', templateVersion: 1,
+      authorityGrant: { operations: [], workspaceModes: [], readScopes: [], writeScopes: [], budgets: {} }, budget: {} } },
+  ]) expect(() => projectTaskEvidence(run.snapshot(), changed)).toThrow(/task receipt/)
+  const state = run.snapshot(), source = state.operations[operationId]!
+  for (const operation of [
+    { ...source, action: { kind: 'interaction/accept' as const, id: simulationInteractionIdSchema.parse('unrelated'), expectedRevision: 1 } },
+    { ...source, result: undefined },
+    { ...source, outbox: { ...source.outbox!, taskReceipt: undefined } },
+    { ...source, outbox: { ...source.outbox!, taskReceipt: { ...receipt, teamId: teamIdSchema.parse('other') } } },
+  ]) expect(() => projectTaskEvidence({ ...state, operations: { ...state.operations, [operationId]: operation } }, task))
+    .toThrow(/task receipt/)
+  expect(() => projectTaskEvidence({ ...state, entities: {} }, task)).toThrow(/task receipt/)
+})
+
+it('retains human task executor identity without inventing an activation', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { projectTaskEvidence } = await import('../src/task-evidence.ts')
+  const { assignTestTask } = await import('../../../team/team-hub/tests/fixtures.ts')
+  await connection.dispatchOperation(operationId, () => 100)
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const team = await ctx.teams.getTeam({ teamId: receipt.teamId })
+  const participant = await inviteBootstrapParticipant(ctx, { teamId: receipt.teamId, expectedCursor: team.team.cursor,
+    kind: 'human', displayName: 'Human executor', role: 'worker', capabilities: [] })
+  for (const phase of ['provisioning', 'active'] as const) {
+    const current = await ctx.teams.getTeam({ teamId: receipt.teamId })
+    await transitionBootstrapParticipant(ctx, { teamId: receipt.teamId, participantId: participant.id,
+      expectedCursor: current.team.cursor, phase })
+  }
+  const task = await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+  const assigned = await assignTestTask(ctx, { teamId: receipt.teamId, taskId: receipt.taskId,
+    expectedRevision: task.revision, participantId: participant.id, leaseDurationMs: 60000 })
+  expect(projectTaskEvidence(run.snapshot(), assigned).executor).toEqual({ participantId: participant.id,
+    attemptId: assigned.lease!.attemptId, ordinal: assigned.lease!.ordinal })
+})
+
+it('persists the exact task execution link before its production assignment and retries a lost response once', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('production-attempt'), leaseDurationMs: 60000 }
+  const assign = ctx.teams.assignSimulationTask.bind(ctx.teams)
+  const lost = vi.spyOn(ctx.teams, 'assignSimulationTask').mockImplementationOnce(async (value) => {
+    const link = run.snapshot().taskExecutions?.[request.attemptId]
+    expect(link?.request).toMatchObject({ attemptId: value.attemptId, operationId, entityId, taskRevision: value.expectedRevision })
+    const result = await assign(value)
+    expect(result.lease?.attemptId).toBe(request.attemptId)
+    expect(() => JSON.stringify(value.actor)).toThrow(/runtime-only/)
+    throw new Error('Assignment response lost after commit')
+  })
+  await expect(connection.assignTask(request)).rejects.toThrow(/response lost/)
+  lost.mockRestore()
+  const retried = await connection.assignTask(request)
+  expect(retried.task?.executor).toMatchObject({ attemptId: request.attemptId })
+  const revision = run.snapshot().revision
+  expect(await connection.assignTask(request)).toEqual(retried)
+  expect(run.snapshot().revision).toBe(revision)
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const task = await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+  expect(task.attemptCount).toBe(1)
+  expect(task.phase).toBe('assigned')
+  await expect(connection.assignTask({ ...request, leaseDurationMs: 1000 })).rejects.toThrow(/changed its assignment/)
+  await expect(connection.checkpoint({ id: (await import('@clocky/clocky-simulation')).simulationCheckpointIdSchema.parse('pending-attempt'),
+    implementationVersion: 'test', maxDrainRounds: 4, maxAttempts: 2 })).resolves.toMatchObject({ status: 'completed' })
+  const released = await connection.assignTask(request)
+  expect(released.task?.executor?.outcome).toBe('failed')
+  expect(released.retired?.source).toBe('quiesced')
+  const coldTask = await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+  expect(coldTask.attemptHistory[0]?.retirement).toEqual({ source: 'quiesced' })
+  const read = vi.spyOn(ctx.teams, 'getTask')
+  expect(await connection.assignTask(request)).toEqual(released)
+  expect(read).not.toHaveBeenCalled()
+  read.mockRestore()
+})
+
+it('rechecks task assignment writer authority after the Hub policy await', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('retired-before-assignment'), leaseDurationMs: 60000 }
+  const dispose = ctx.on('team/policy', async (payload, next) => {
+    if (payload.hook !== 'task-assign') return next()
+    await run.setPhase('paused', run.snapshot().revision)
+    return next()
+  })
+  try { await expect(connection.assignTask(request)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' }) }
+  finally { dispose() }
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  expect((await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })).attemptCount).toBe(0)
+  expect(run.snapshot().taskExecutions?.[request.attemptId]).toBeDefined()
+})
+
+it('pins assignment proof to exact fields, refuses channel wake authority and revokes the token after settlement', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema, teamTaskIdSchema, participantIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('scoped-proof'), leaseDurationMs: 60000 }
+  const assign = ctx.teams.assignSimulationTask.bind(ctx.teams)
+  let captured: Parameters<typeof assign>[0] | undefined
+  const intercept = vi.spyOn(ctx.teams, 'assignSimulationTask').mockImplementationOnce(async (value) => {
+    captured = value
+    for (const changed of [
+      { ...value, attemptId: taskAttemptIdSchema.parse('other') }, { ...value, taskId: teamTaskIdSchema.parse('other') },
+      { ...value, participantId: participantIdSchema.parse('other') }, { ...value, leaseDurationMs: 1 },
+    ]) await expect(assign(changed)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const { teamSimulationTaskAssignInputSchema } = await import('@clocky/clocky-team')
+    const { actor: _actor, ...input } = value
+    expect(() => teamSimulationTaskAssignInputSchema.parse({ ...input, wakeChannelId: 'foreign-channel' })).toThrow()
+    return await assign(value)
+  })
+  try { await connection.assignTask(request) }
+  finally { intercept.mockRestore() }
+  if (captured === undefined) throw new Error('Assignment proof not observed')
+  await expect(assign(captured)).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+})
+
+it('drains assignment owner IO on close without retaining live task authority', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const get = ctx.teams.getTask.bind(ctx.teams)
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  const held = vi.spyOn(ctx.teams, 'getTask').mockImplementationOnce(async (...args) => {
+    const value = await get(...args)
+    entered.resolve(undefined); await release.promise
+    return value
+  })
+  const assigning = connection.assignTask({ operationId, entityId, attemptId: taskAttemptIdSchema.parse('closing-read'), leaseDurationMs: 60000 })
+  const rejected = expect(assigning).rejects.toThrow(/closed/)
+  await entered.promise
+  let done = false
+  const closing = connection.close().then(() => { done = true })
+  await Promise.resolve()
+  expect(done).toBe(false)
+  release.resolve(undefined)
+  await rejected; await closing
+  held.mockRestore()
+  expect(run.snapshot().taskExecutions).toBeUndefined()
+})
+
+it('refuses missing creation, nonresident selection and another live attempt without minting replacement intent', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('eligibility'), leaseDurationMs: 60000 }
+  await expect(connection.assignTask(request)).rejects.toThrow(/accepted creation receipt/)
+  await expect(connection.assignTask({ ...request,
+    operationId: (await import('@clocky/clocky-simulation')).simulationOperationIdSchema.parse('missing') }))
+    .rejects.toThrow(/accepted creation receipt/)
+  await connection.dispatchOperation(operationId, () => 100)
+  await connection.assignTask(request)
+  await expect(connection.assignTask({ ...request, attemptId: taskAttemptIdSchema.parse('replacement') })).rejects.toThrow(/pending task/)
+  expect(Object.keys(run.snapshot().taskExecutions!)).toEqual([request.attemptId])
+  await connection.hibernate(entityId)
+  await expect(connection.assignTask({ ...request, attemptId: taskAttemptIdSchema.parse('nonresident') })).rejects.toThrow(/selected resident actor/)
+  expect((await ctx.teams.getTask({ teamId: Object.values(run.snapshot().entities)[0]!.binding!.teamId,
+    taskId: run.snapshot().operations[operationId]!.outbox!.taskReceipt!.taskId })).attemptCount).toBe(1)
+})
+
+it('keeps response-lost assignment identity when its exact target attempt has already expired', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { expireTestTask } = await import('../../../team/team-hub/tests/fixtures.ts')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('expired-response'), leaseDurationMs: 1000 }
+  const assign = ctx.teams.assignSimulationTask.bind(ctx.teams)
+  const lost = vi.spyOn(ctx.teams, 'assignSimulationTask').mockImplementationOnce(async (value) => {
+    await assign(value); throw new Error('Assignment response lost')
+  })
+  await expect(connection.assignTask(request)).rejects.toThrow(/response lost/)
+  lost.mockRestore()
+  const receipt = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const task = await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(task.lease!.expiresAt)
+  try {
+    await expireTestTask(ctx, { teamId: receipt.teamId, taskId: task.id, expectedRevision: task.revision,
+      attemptId: request.attemptId })
+    const execution = await connection.assignTask(request)
+    expect(execution.task?.executor?.outcome).toBe('lease-expired')
+    expect(execution.task?.executor?.attemptId).toBe(request.attemptId)
+    expect((await ctx.teams.getTask({ teamId: receipt.teamId, taskId: receipt.taskId })).attemptCount).toBe(1)
+  } finally { clock.mockRestore() }
+})
+
+it('revokes a task proof while its owner is closing during policy IO', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  let closing: Promise<void> | undefined
+  const dispose = ctx.on('team/policy', async (request, next) => {
+    if (request.hook === 'task-assign') closing = connection.close()
+    return next()
+  })
+  try {
+    await expect(connection.assignTask({ operationId, entityId, attemptId: taskAttemptIdSchema.parse('policy-close'), leaseDurationMs: 60000 }))
+      .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { dispose() }
+  await closing
+  expect(Object.values(run.snapshot().taskExecutions!)[0]?.retired).toBeDefined()
+})
+
+it('rejects a different canonical creation or returned attempt while retaining its original uncertainty', async () => {
+  const { ctx, run, connection, operationId, dependentId } = await preparedTask(true)
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  if (dependentId === undefined) throw new Error('Fixture needs its second task')
+  await connection.dispatchOperation(operationId, () => 100)
+  await run.drive({ until: run.snapshot().time })
+  await connection.dispatchOperation(dependentId, () => 110)
+  const first = run.snapshot().operations[operationId]!.outbox!.taskReceipt!
+  const second = run.snapshot().operations[dependentId]!.outbox!.taskReceipt!
+  const task = await ctx.teams.getTask({ teamId: second.teamId, taskId: second.taskId })
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('original-return'), leaseDurationMs: 60000 }
+  const other = vi.spyOn(ctx.teams, 'getTask').mockResolvedValueOnce(task)
+  await expect(connection.assignTask(request)).rejects.toThrow(/source differs/)
+  other.mockRestore()
+  expect(run.snapshot().taskExecutions).toBeUndefined()
+  const assign = ctx.teams.assignSimulationTask.bind(ctx.teams)
+  const replaced = vi.spyOn(ctx.teams, 'assignSimulationTask').mockImplementationOnce(async (value) => {
+    const assigned = await assign(value)
+    return { ...assigned, lease: { ...assigned.lease!, attemptId: taskAttemptIdSchema.parse('different-return') } }
+  })
+  await expect(connection.assignTask(request)).rejects.toThrow(/returned another attempt/)
+  replaced.mockRestore()
+  expect(run.snapshot().taskExecutions?.[request.attemptId]?.task).toBeUndefined()
+  expect((await ctx.teams.getTask({ teamId: first.teamId, taskId: first.taskId })).lease?.attemptId).toBe(request.attemptId)
+})
+
+it.each(['team', 'quiescence', 'target', 'lease', 'creation'] as const)
+('refuses %s retirement evidence and retries the same physical cleanup', async (fault) => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema, teamIdSchema } = await import('@clocky/clocky-team')
+  const { simulationOperationIdSchema } = await import('@clocky/clocky-simulation')
+  const { retireTaskExecutions } = await import('../src/task-retirement.ts')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('cleanup-retry'), leaseDurationMs: 60000 }
+  const execution = await connection.assignTask(request)
+  const get = ctx.teams.getTeam.bind(ctx.teams)
+  const prior = await get({ teamId: execution.request.teamId })
+  const snapshot = run.snapshot.bind(run)
+  const corrupted = fault === 'creation' ? vi.spyOn(run, 'snapshot').mockImplementation(() => {
+    const value = snapshot()
+    if (value.entities[entityId]?.writer?.phase !== 'released') return value
+    return { ...value, taskExecutions: { [request.attemptId]: { ...execution,
+      request: { ...execution.request, operationId: simulationOperationIdSchema.parse('different-source') },
+    } } }
+  }) : undefined
+  const read = vi.spyOn(ctx.teams, 'getTeam').mockImplementation(async (input) => {
+    const value = await get(input)
+    if (snapshot().entities[entityId]?.writer?.phase !== 'released') return value
+    if (fault === 'team') return { ...value, team: { ...value.team, id: teamIdSchema.parse('another-team') } }
+    if (fault === 'quiescence') return prior
+    if (fault === 'target') return { ...value, tasks: [] }
+    if (fault === 'lease') return { ...value, tasks: prior.tasks }
+    return value
+  })
+  try {
+    await expect(connection.hibernate(entityId)).rejects.toThrow(/another Team|controller quiescence|target lease|another creation source/)
+  }
+  finally { read.mockRestore(); corrupted?.mockRestore() }
+  expect(snapshot().taskExecutions?.[request.attemptId]?.retired).toBeUndefined()
+  await retireTaskExecutions(ctx, run, execution.request.teamId, entityId)
+  expect(snapshot().taskExecutions?.[request.attemptId]?.retired?.source).toBe('quiesced')
+})
+
+it('retains an already completed target fact during writer cleanup without inventing interruption', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const execution = await connection.assignTask({ operationId, entityId,
+    attemptId: taskAttemptIdSchema.parse('completed-before-cleanup'), leaseDurationMs: 60000 })
+  const team = await ctx.teams.getTeam({ teamId: execution.request.teamId })
+  const binding = team.activations.find(value => value.activation.id === execution.request.activationId)!
+  const issuer = ctx.teams.openActivationActorProofIssuer()
+  const proof = issuer.issue(binding)
+  try {
+    const running = await ctx.teams.startTaskAttempt({ actor: proof.proof, taskId: execution.request.taskId,
+      attemptId: execution.request.attemptId, expectedRevision: execution.task!.revision })
+    await ctx.teams.settleTaskAttempt({ actor: proof.proof, taskId: execution.request.taskId,
+      attemptId: execution.request.attemptId, expectedRevision: running.revision,
+      outcome: { kind: 'completed', result: { summary: 'Already retained target fact' } } })
+  } finally { proof.revoke(); issuer.close() }
+  await connection.hibernate(entityId)
+  const retained = run.snapshot().taskExecutions?.[execution.request.attemptId]
+  expect(retained?.task?.executor?.outcome).toBe('completed')
+  expect(retained?.retired).toBeUndefined()
+})
+
+it('verifies live and retired task execution references against the captured canonical owner', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema, taskAttemptSnapshotSchema, participantIdSchema, activationIdSchema } = await import('@clocky/clocky-team')
+  const { simulationOperationIdSchema } = await import('@clocky/clocky-simulation')
+  const { validateAcceptedTargets } = await import('../src/target-references.ts')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { operationId, entityId, attemptId: taskAttemptIdSchema.parse('reference-attempt'), leaseDurationMs: 60000 }
+  const execution = await connection.assignTask(request)
+  const live = run.snapshot(), team = await ctx.teams.getTeam({ teamId: execution.request.teamId })
+  await validateAcceptedTargets(ctx, live, [], team.tasks, team.activations, () => {})
+  const stateWith = (value: typeof execution) => ({ ...live, taskExecutions: { [request.attemptId]: value } })
+  const { teamTaskIdSchema } = await import('@clocky/clocky-team')
+  for (const patch of [
+    { taskId: teamTaskIdSchema.parse('unretained') }, { operationId: simulationOperationIdSchema.parse('other-source') },
+  ]) await expect(validateAcceptedTargets(ctx, stateWith({ ...execution, request: { ...execution.request, ...patch } }),
+    [], team.tasks, team.activations, () => {})).rejects.toThrow(/no retained canonical target/)
+  const task = team.tasks.find(value => value.id === execution.request.taskId)!
+  const { lease: _lease, ...withoutLease } = task
+  for (const changed of [
+    withoutLease, { ...task, revision: 1 },
+    { ...task, lease: { ...task.lease!, participantId: participantIdSchema.parse('other') } },
+    { ...task, lease: { ...task.lease!, activationId: activationIdSchema.parse('other') } },
+    { ...task, lease: { ...task.lease!, ordinal: 2 } },
+  ]) await expect(validateAcceptedTargets(ctx, live, [], [changed], team.activations, () => {}))
+    .rejects.toThrow(/differs from its retained target attempt/)
+  await expect(validateAcceptedTargets(ctx, stateWith({ ...execution, retired: { sequence: live.revision,
+    quiescedAt: 10, source: 'quiesced', reason: 'Unproven' } }), [], team.tasks, team.activations, () => {}))
+    .rejects.toThrow(/retirement differs from its retained controller proof/)
+  await connection.hibernate(entityId)
+  const retired = run.snapshot(), stopped = await ctx.teams.getTeam({ teamId: execution.request.teamId })
+  await validateAcceptedTargets(ctx, retired, [], stopped.tasks, stopped.activations, () => {})
+  const final = stopped.tasks[0]!, attempt = final.attemptHistory[0]!
+  const changed = { ...final, attemptHistory: [taskAttemptSnapshotSchema.parse({ ...attempt,
+    retirement: undefined, outcome: { kind: 'released' } })] }
+  await expect(validateAcceptedTargets(ctx, retired, [], [changed], stopped.activations, () => {}))
+    .rejects.toThrow(/differs from its retained target attempt/)
+  const withoutObserved = { ...retired.taskExecutions![request.attemptId]! }
+  delete withoutObserved.task
+  await validateAcceptedTargets(ctx, { ...retired, taskExecutions: { [request.attemptId]: withoutObserved } },
+    [], stopped.tasks, stopped.activations, () => {})
+})
+
+it.each(['success', 'lost', 'interrupted', 'close', 'revoke', 'deterministic'] as const)
+('logs exact task input, starts its production attempt before inference and preserves effects under %s', async (fault) => {
+  const { ctx, run, connection, entityId, participant } = await setup()
+  if (connection === undefined) throw new Error('Fixture connection missing')
+  const ToolSimulation = await import('@clocky/clocky-tool-simulation')
+  await ctx.plugin(ToolSimulation)
+  const { toolCallResponse } = await import('../../../core/agent-loop/tests/mock-adapter.ts')
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationResourceSpecSchema, simulationDecisionIdSchema, simulationProposalSchema } = await import('@clocky/clocky-simulation')
+  const transfer = [{ after: [], action: { kind: 'resource/transfer', grants: [], transaction: { commitmentId: null,
+    reads: [{ resourceId: 'stock', revision: 1 }, { resourceId: 'received', revision: 1 }],
+    transfers: [{ from: 'stock', to: 'received', quantity: '1' }] } } }]
+  const model = new MockAdapter([toolCallResponse('stage', 'simulation_stage', { proposals: transfer }),
+    toolCallResponse('submit', 'simulation_submit', {}),
+    toolCallResponse('stage-next', 'simulation_stage', { proposals: [] }), toolCallResponse('submit-next', 'simulation_submit', {})])
+  ctx.llm.registerAdapter(['task-model'], model)
+  await connection.bind(entityId, participant.id)
+  const reservation = vi.spyOn(run, 'reserveWriter')
+  const lease = await connection.activate(entityId, { ...placement(), agent: { options: { provider: 'task-model', model: 'fixture' } } })
+  const originalWriter = await reservation.mock.results[0]!.value as import('@clocky/clocky-simulation').SimulationWriterLease
+  reservation.mockRestore()
+  for (const [id, quantity] of [['stock', '2'], ['received', '0']]) {
+    await run.createResource(simulationResourceSpecSchema.parse({ id, owner: entityId, controllers: [entityId],
+      quantity, kind: 'inventory', unit: 'item' }), run.snapshot().revision)
+  }
+  await run.setPhase('running', run.snapshot().revision)
+  const createId = simulationDecisionIdSchema.parse('task-create')
+  await connection.openDecision(entityId, createId)
+  const creation = await connection.submitDecision(entityId, createId, [simulationProposalSchema.parse({ after: [], action: {
+    kind: 'task/create', deliverAt: run.snapshot().time, task: { subject: 'Move one item', description: 'Transfer one unit from stock to received',
+      blockedBy: [], requiredCapabilities: [], priority: 0, readScopes: [], writeScopes: [], workspaceMode: 'shared',
+      reviewPolicy: { kind: 'none' }, budget: {}, maxAttempts: 2 },
+  } })])
+  const operationId = creation.operationIds[0]!
+  await run.drive({ until: run.snapshot().time })
+  await connection.dispatchOperation(operationId, Date.now)
+  const attemptId = taskAttemptIdSchema.parse('real-model-attempt')
+  const assigned = await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const start = ctx.teams.startSimulationTaskAttempt.bind(ctx.teams)
+  const observe = vi.spyOn(ctx.teams, 'startSimulationTaskAttempt').mockImplementation(async (request) => {
+    expect(model.requests).toHaveLength(0)
+    const association = run.snapshot().taskExecutions?.[attemptId]?.decisions?.[0]
+    expect(association?.input?.id).toBeDefined()
+    const events = lease.localAgent!.session.events
+    expect(events.some(event => event.type === 'user/message' && event.data.id === association?.input?.id
+      || event.type === 'agent/inbox/spliced' && event.data.inserted.some(message => message.id === association?.input?.id))).toBe(true)
+    return await start(request)
+  })
+  const { simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
+  const cognition = simulationPolicyRefSchema.parse({ id: 'task-cognition', version: '1' })
+  const report = simulationPolicyRefSchema.parse({ id: 'task-report', version: '1' })
+  const decide = vi.fn(() => transfer.map(value => simulationProposalSchema.parse(value)))
+  const removeCognition = fault === 'deterministic' ? ctx.simulationTeams.registerDeterministicPolicy({ ...cognition, decide }) : undefined
+  const removeReport = fault === 'deterministic' ? ctx.simulationTeams.registerDeterministicPolicy({ ...report, decide: () => [] }) : undefined
+  const request = { attemptId, decisionId: simulationDecisionIdSchema.parse('task-work'), predecessor: null,
+    ...fault === 'deterministic' ? { policy: cognition } : {},
+    reason: 'Perform the assigned transfer', context: contextRequest() }
+  const decision = await connection.executeTaskDecision(request)
+  observe.mockRestore()
+  expect(decision.status).toBe('accepted')
+  expect(model.requests).toHaveLength(fault === 'deterministic' ? 0 : 2)
+  if (fault === 'deterministic') expect(decide).toHaveBeenCalledTimes(1)
+  else expect(JSON.stringify(model.requests[0]?.messages)).toContain('Transfer one unit from stock to received')
+  const running = await ctx.teams.getTask({ teamId: assigned.request.teamId, taskId: assigned.request.taskId })
+  expect(running.phase).toBe('running')
+  expect(running.attemptCount).toBe(1)
+  expect(Object.values(run.snapshot().resources)[0]?.quantity).toBe('2')
+  const policy = simulationPolicyRefSchema.parse({ id: 'transfer-complete', version: '1' })
+  const evaluate = vi.fn((state: ReturnType<typeof run.snapshot>, original: import('@clocky/clocky-simulation').SimulationTaskExecution):
+  import('@clocky/clocky-simulation').SimulationTaskCompletionAssessment => {
+    const operation = original.decisions?.flatMap(value => state.decisions[value.request.decisionId]?.operationIds ?? [])
+      .map(id => state.operations[id]).find(value => value?.action.kind === 'resource/transfer' && value.result?.status === 'applied')
+    return operation === undefined ? { status: 'waiting', reason: 'Transfer is not applied' }
+      : { status: 'result', operations: [operation.id], outcome: { kind: 'completed', result: { summary: 'Moved one item' } } }
+  })
+  const removePolicy = ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  const busy = vi.spyOn(lease.localAgent!, 'status', 'get').mockReturnValue('running')
+  expect(await connection.completeTask({ attemptId, policy })).toMatchObject({ status: 'waiting', reason: 'Task actor has not finished its turn' })
+  expect(evaluate).not.toHaveBeenCalled()
+  busy.mockRestore()
+  expect(await connection.completeTask({ attemptId, policy })).toMatchObject({ status: 'waiting', reason: 'Transfer is not applied' })
+  expect(run.snapshot().taskExecutions?.[attemptId]?.result).toBeUndefined()
+  const calls = model.requests.length
+  expect(await connection.executeTaskDecision(request)).toEqual(decision)
+  expect(model.requests).toHaveLength(calls)
+  if (fault === 'deterministic') {
+    expect(decide).toHaveBeenCalledTimes(1)
+    const { policy: _policy, ...modelSelection } = request
+    await expect(connection.executeTaskDecision(modelSelection)).rejects.toThrow(/cognition policy/)
+  }
+  await run.drive({ until: run.snapshot().time })
+  expect(Object.values(run.snapshot().resources).map(value => value.quantity)).toEqual(['1', '1'])
+  expect((await ctx.teams.getTask({ teamId: running.teamId, taskId: running.id })).phase).toBe('running')
+  const next = await connection.executeTaskDecision({ ...request, decisionId: simulationDecisionIdSchema.parse('task-report'),
+    predecessor: request.decisionId, reason: 'Inspect the applied result', ...fault === 'deterministic' ? { policy: report } : {} })
+  expect(next.status).toBe('accepted')
+  expect(run.snapshot().taskExecutions?.[attemptId]?.decisions?.map(value => value.request.decisionId))
+    .toEqual([request.decisionId, next.id])
+  if (fault === 'revoke') {
+    const policyHook = ctx.on('team/policy', async (request, next) => {
+      if (request.hook === 'task-mutate') await originalWriter.revoke()
+      return next()
+    })
+    try { await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/source|proof|authority/) }
+    finally { policyHook() }
+    expect(run.snapshot().taskExecutions?.[attemptId]?.result?.request.outcome.kind).toBe('completed')
+    expect((await ctx.teams.getTask({ teamId: running.teamId, taskId: running.id })).phase).toBe('running')
+    await ctx.teamActivations.stopOwnedActivation({ teamId: running.teamId, participantId: participant.id,
+      activationId: assigned.request.activationId })
+    expect((await connection.completeTask({ attemptId, policy })).status).toBe('interrupted')
+    expect(run.snapshot().taskExecutions?.[attemptId]?.task?.executor?.outcome).toBe('failed')
+    removePolicy()
+    return
+  }
+  if (fault === 'close') {
+    const get = ctx.teams.getTask.bind(ctx.teams)
+    let reads = 0, closing: Promise<void> | undefined
+    const retire = vi.spyOn(ctx.teams, 'getTask').mockImplementation(async (input) => {
+      const task = await get(input)
+      if (++reads === 2) closing = connection.close()
+      return task
+    })
+    await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/current result writer|closed/)
+    retire.mockRestore()
+    await closing
+    expect(run.snapshot().taskExecutions?.[attemptId]?.result?.request.outcome.kind).toBe('completed')
+    expect((await get({ teamId: running.teamId, taskId: running.id })).attemptHistory[0]?.outcome.kind).toBe('failed')
+    removePolicy()
+    return
+  }
+  const settle = ctx.teams.settleSimulationTaskAttempt.bind(ctx.teams)
+  const lost = vi.spyOn(ctx.teams, 'settleSimulationTaskAttempt').mockImplementationOnce(async (request) => {
+    expect(run.snapshot().taskExecutions?.[attemptId]?.result?.request.outcome.kind).toBe('completed')
+    if (fault === 'interrupted') {
+      const team = await ctx.teams.getTeam({ teamId: running.teamId })
+      const binding = team.activations.find(value => value.activation.id === assigned.request.activationId)!
+      const issuer = ctx.teams.openActivationActorProofIssuer(), proof = issuer.issue(binding)
+      try {
+        await ctx.teams.settleTaskAttempt({ actor: proof.proof, taskId: running.id, attemptId,
+          expectedRevision: running.revision, outcome: { kind: 'failed', failure: { code: 'INTERRUPTED', message: 'Executor interrupted' } } })
+      } finally { proof.revoke(); issuer.close() }
+      throw new Error('Task completion response lost')
+    }
+    const result = await settle(request)
+    expect(result.phase).toBe('completed')
+    expect(() => JSON.stringify(request.actor)).toThrow(/runtime-only/)
+    if (fault === 'success') return result
+    throw new Error('Task completion response lost')
+  })
+  if (fault === 'success') expect((await connection.completeTask({ attemptId, policy })).status).toBe('settled')
+  else await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/response lost/)
+  lost.mockRestore()
+  const evaluations = evaluate.mock.calls.length
+  removePolicy()
+  const completed = await connection.completeTask({ attemptId, policy })
+  expect(completed.status).toBe(fault === 'interrupted' ? 'interrupted' : 'settled')
+  expect(completed.execution.task?.phase).toBe(fault === 'interrupted' ? 'pending' : 'completed')
+  expect(completed.execution.task?.executor?.outcome).toBe(fault === 'interrupted' ? 'failed' : 'completed')
+  expect(evaluate).toHaveBeenCalledTimes(evaluations)
+  expect(model.requests).toHaveLength(fault === 'deterministic' ? 0 : 4)
+  removeCognition?.(); removeReport?.()
+  const revision = run.snapshot().revision
+  expect(await connection.completeTask({ attemptId, policy })).toEqual(completed)
+  expect(run.snapshot().revision).toBe(revision)
+  expect((await ctx.teams.getTask({ teamId: running.teamId, taskId: running.id })).attemptHistory).toHaveLength(1)
+
+})
+
+it('refuses missing, retired or mismatched task decisions and changed source selection before inference', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const request = { attemptId: taskAttemptIdSchema.parse('task-invalid'), decisionId: simulationDecisionIdSchema.parse('work-invalid'),
+    predecessor: null, reason: 'Perform work', context: contextRequest() }
+  await expect(connection.executeTaskDecision(request)).rejects.toThrow(/unfinished original attempt/)
+  await connection.dispatchOperation(operationId, () => 100)
+  const execution = await connection.assignTask({ operationId, entityId, attemptId: request.attemptId, leaseDurationMs: 60000 })
+  const task = await ctx.teams.getTask({ teamId: execution.request.teamId, taskId: execution.request.taskId })
+  const changed = vi.spyOn(ctx.teams, 'getTask').mockResolvedValueOnce({ ...task,
+    lease: { ...task.lease!, attemptId: taskAttemptIdSchema.parse('foreign') } })
+  try { await expect(connection.executeTaskDecision(request)).rejects.toThrow(/another target attempt/) }
+  finally { changed.mockRestore() }
+  expect(run.snapshot().taskDecisionOwners).toBeUndefined()
+  const { context: _context, ...selection } = request
+  await run.associateTaskDecision({ ...selection, task: { revision: task.revision, subject: task.subject, description: task.description } })
+  await expect(connection.executeTaskDecision({ ...request, reason: 'Changed selection' })).rejects.toThrow(/changed its predecessor, reason or cognition policy/)
+  await connection.hibernate(entityId)
+  await expect(connection.executeTaskDecision(request)).rejects.toThrow(/unfinished original attempt/)
+})
+
+it('requires actual task input persistence and revokes start authority during the policy await', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('start-policy')
+  const execution = await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const dispose = ctx.on('team/policy', async (request, next) => {
+    if (request.hook === 'task-mutate') await run.setPhase('paused', run.snapshot().revision)
+    return next()
+  })
+  try {
+    await expect(connection.executeTaskDecision({ attemptId, decisionId: simulationDecisionIdSchema.parse('start-work'),
+      predecessor: null, reason: 'Work', context: contextRequest() })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+  } finally { dispose() }
+  const task = await ctx.teams.getTask({ teamId: execution.request.teamId, taskId: execution.request.taskId })
+  expect(task.phase).toBe('assigned')
+  const association = run.snapshot().taskExecutions?.[attemptId]?.decisions?.[0]
+  expect(association?.input).toBeDefined()
+  expect(run.snapshot().decisions[association!.request.decisionId]?.inference).toBeUndefined()
+})
+
+it('pins completion policy registration, refuses missing attempts and preserves interruption without evaluation', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
+  const attemptId = taskAttemptIdSchema.parse('policy-attempt')
+  const policy = simulationPolicyRefSchema.parse({ id: 'scene-completion', version: '1' })
+  await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/no original attempt/)
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/generation is not registered/)
+  const evaluate = vi.fn(() => ({ status: 'waiting' as const, reason: 'Scene needs its transfer' }))
+  const dispose = ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  expect(() => ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })).toThrow(/already registered/)
+  await expect(connection.completeTask({ attemptId, policy: { ...policy, version: '2' } })).rejects.toThrow(/generation is not registered/)
+  expect((await connection.completeTask({ attemptId, policy })).status).toBe('waiting')
+  await expect(connection.completeTask({ attemptId, policy: { ...policy, version: '2' } })).rejects.toThrow(/changed its selected policy/)
+  dispose()
+  await expect(connection.completeTask({ attemptId, policy })).rejects.toThrow(/generation is not registered/)
+  const replacement = ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  dispose()
+  expect((await connection.completeTask({ attemptId, policy })).status).toBe('waiting')
+  await connection.hibernate(entityId)
+  const count = evaluate.mock.calls.length
+  expect((await connection.completeTask({ attemptId, policy })).status).toBe('interrupted')
+  expect(evaluate).toHaveBeenCalledTimes(count)
+  replacement()
+})
+
+it('coalesces one completion assessment and refuses a changed in-flight policy before evaluating', async () => {
+  const { ctx, run, connection, operationId } = await preparedTask()
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  const { simulationPolicyRefSchema } = await import('@clocky/clocky-simulation')
+  await connection.dispatchOperation(operationId, () => 100)
+  const entityId = Object.values(run.snapshot().entities)[0]!.id
+  const attemptId = taskAttemptIdSchema.parse('policy-coalesced')
+  await connection.assignTask({ operationId, entityId, attemptId, leaseDurationMs: 60000 })
+  const policy = simulationPolicyRefSchema.parse({ id: 'coalesced', version: '1' })
+  const evaluate = vi.fn(() => ({ status: 'waiting' as const, reason: 'Not yet applied' }))
+  const dispose = ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  const original = run.selectTaskCompletionPolicy.bind(run)
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  const held = vi.spyOn(run, 'selectTaskCompletionPolicy').mockImplementationOnce(async (...args) => {
+    const value = await original(...args)
+    entered.resolve(undefined); await release.promise
+    return value
+  })
+  const first = connection.completeTask({ attemptId, policy })
+  await entered.promise
+  expect(connection.completeTask({ attemptId, policy })).toBe(first)
+  await expect(connection.completeTask({ attemptId, policy: { ...policy, version: '2' } })).rejects.toThrow(/another completion policy in flight/)
+  release.resolve(undefined)
+  expect((await first).status).toBe('waiting')
+  expect(evaluate).toHaveBeenCalledTimes(1)
+  held.mockRestore(); dispose()
+})
+
+async function linkedTaskFixture(kind: 'explicit' | 'transfer' | 'task-completed' = 'task-completed', review = false) {
+  const h = await setup()
+  const { ctx, run, connection, teamId, entityId, participant } = h
+  if (connection === undefined) throw new Error('Fixture connection missing')
+  const { simulationPolicyRefSchema, simulationProposalSchema, simulationResourceSpecSchema,
+    simulationInteractionIdSchema, simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+  const { taskAttemptIdSchema } = await import('@clocky/clocky-team')
+  await connection.bind(entityId, participant.id)
+  await connection.activate(entityId, placement())
+  const team = await ctx.teams.getTeam({ teamId })
+  const requester = await inviteBootstrapParticipant(ctx, { teamId, expectedCursor: team.team.cursor,
+    kind: 'local-agent', displayName: 'Requester', role: 'requester', capabilities: [] })
+  for (const phase of ['provisioning', 'active'] as const) {
+    const current = await ctx.teams.getTeam({ teamId })
+    await transitionBootstrapParticipant(ctx, { teamId, participantId: requester.id, expectedCursor: current.team.cursor, phase })
+  }
+  const requesterId = simulationEntityIdSchema.parse('requester')
+  await run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: requesterId,
+    entityKind: 'person', cognition: 'agent', profile: {} }), run.snapshot().revision)
+  await connection.bind(requesterId, requester.id)
+  await connection.activate(requesterId, placement())
+  for (const [id, quantity, owner] of [['stock', '2', entityId], ['received', '0', requesterId]]) {
+    await run.createResource(simulationResourceSpecSchema.parse({ id, quantity, owner, controllers: [entityId, requesterId],
+      kind: 'inventory', unit: 'item' }), run.snapshot().revision)
+  }
+  await run.setPhase('running', run.snapshot().revision)
+  const interactionId = simulationInteractionIdSchema.parse('linked-order')
+  const submit = async (actor: typeof entityId, label: string, action: unknown) => {
+    const id = simulationDecisionIdSchema.parse(label)
+    await connection.openDecision(actor, id)
+    const decision = await connection.submitDecision(actor, id, [simulationProposalSchema.parse({ after: [], action })])
+    return decision.operationIds[0]!
+  }
+  await run.executeOperation(await submit(requesterId, 'linked-request', { kind: 'interaction/request', id: interactionId,
+    assignee: entityId, description: 'Deliver a unit', replyBy: null, completeBy: null,
+    fulfillment: kind === 'transfer' ? { kind, from: 'stock', to: 'received', quantity: '1' } : { kind } }))
+  await run.executeOperation(await submit(entityId, 'linked-accept', { kind: 'interaction/accept', id: interactionId, expectedRevision: 1 }))
+  const operationId = await submit(requesterId, 'linked-task-create', { kind: 'task/create', deliverAt: run.snapshot().time, task: {
+    subject: 'Deliver a unit', description: 'Transfer one inventory unit', blockedBy: [], requiredCapabilities: [], priority: 0,
+    readScopes: [], writeScopes: [], workspaceMode: 'shared', budget: {}, maxAttempts: 2,
+    reviewPolicy: review ? { kind: 'participant', reviewerId: requester.id } : { kind: 'none' },
+  } })
+  await run.drive({ until: run.snapshot().time })
+  await connection.dispatchOperation(operationId, Date.now)
+  const commitmentId = run.snapshot().interactions[interactionId]!.commitmentId!
+  const cognition = simulationPolicyRefSchema.parse({ id: 'linked-transfer', version: '1' })
+  ctx.simulationTeams.registerDeterministicPolicy({ ...cognition, decide: () => [simulationProposalSchema.parse({ after: [], action: {
+    kind: 'resource/transfer', grants: [], transaction: { commitmentId: kind === 'transfer' ? commitmentId : null,
+      reads: [{ resourceId: 'stock', revision: 1 }, { resourceId: 'received', revision: 1 }],
+      transfers: [{ from: 'stock', to: 'received', quantity: '1' }] },
+  } })] })
+  const policy = simulationPolicyRefSchema.parse({ id: 'linked-completion', version: '1' })
+  const evaluate = vi.fn((state: ReturnType<typeof run.snapshot>, execution: import('@clocky/clocky-simulation').SimulationTaskExecution):
+  import('@clocky/clocky-simulation').SimulationTaskCompletionAssessment => {
+    const effect = execution.decisions?.flatMap(value => state.decisions[value.request.decisionId]?.operationIds ?? [])
+      .map(id => state.operations[id]).find(value => value?.action.kind === 'resource/transfer' && value.result?.status === 'applied')
+    return effect === undefined ? { status: 'waiting', reason: 'Transfer is pending' }
+      : { status: 'result', operations: [effect.id], outcome: { kind: 'completed', result: { summary: 'Delivered a unit' } } }
+  })
+  ctx.simulationTeams.registerTaskCompletionPolicy({ ...policy, evaluate })
+  const selection = { operationId, entityId, interactionId, attemptId: taskAttemptIdSchema.parse('linked-attempt'), leaseDurationMs: 60000 }
+  const work = async () => {
+    const assigned = await connection.assignTask(selection)
+    await connection.executeTaskDecision({ attemptId: selection.attemptId, decisionId: simulationDecisionIdSchema.parse('linked-work'),
+      predecessor: null, reason: 'Perform the delivery', policy: cognition, context: contextRequest() })
+    return assigned
+  }
+  return { ...h, connection, requesterId, requester, interactionId, commitmentId, selection, work, submit, policy, evaluate }
+}
+
+it.each(['explicit', 'transfer', 'task-completed'] as const)('reconciles an explicitly linked %s task through real input, effects and settlement', async (kind) => {
+  const h = await linkedTaskFixture(kind)
+  const assigned = await h.work()
+  expect(assigned.request.interaction?.interactionId).toBe(h.interactionId)
+  const linked = h.run.snapshot().interactions[h.interactionId]!
+  expect(linked.task?.phase).toBe('pending')
+  const observed = vi.spyOn(h.run, 'reconcileTask')
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('waiting')
+  expect(observed).not.toHaveBeenCalled()
+  await h.run.drive({ until: h.run.snapshot().time })
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('settled')
+  const state = h.run.snapshot()
+  expect(state.taskExecutions?.[h.selection.attemptId]?.task?.phase).toBe('completed')
+  expect(state.commitments[h.commitmentId]!.phase).toBe(kind === 'explicit' ? 'open' : 'fulfilled')
+  expect(observed).toHaveBeenCalledTimes(kind === 'transfer' ? 0 : 1)
+  const revision = state.revision, evaluations = h.evaluate.mock.calls.length
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('settled')
+  expect(h.run.snapshot().revision).toBe(revision)
+  expect(h.evaluate).toHaveBeenCalledTimes(evaluations)
+  observed.mockRestore()
+})
+
+it('keeps cancelled interaction responsibility closed when its task later finishes', async () => {
+  const h = await linkedTaskFixture()
+  await h.work()
+  await h.run.drive({ until: h.run.snapshot().time })
+  await h.run.executeOperation(await h.submit(h.requesterId, 'linked-cancel', { kind: 'interaction/cancel', id: h.interactionId,
+    expectedRevision: h.run.snapshot().interactions[h.interactionId]!.revision, reason: 'Withdraw delivery' }))
+  const reconcile = vi.spyOn(h.run, 'reconcileTask')
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('settled')
+  expect(reconcile).not.toHaveBeenCalled()
+  expect(h.run.snapshot().commitments[h.commitmentId]!.phase).toBe('cancelled')
+  expect(h.run.snapshot().interactions[h.interactionId]!.task?.phase).toBe('pending')
+  reconcile.mockRestore()
+})
+
+it('retains the original settled task while waiting for an unrelated decision window to close', async () => {
+  const h = await linkedTaskFixture()
+  await h.work()
+  await h.run.drive({ until: h.run.snapshot().time })
+  const { simulationWindowRequestSchema, simulationWindowIdSchema, simulationDecisionIdSchema } = await import('@clocky/clocky-simulation')
+  const windowId = simulationWindowIdSchema.parse('completion-window'), decisionId = simulationDecisionIdSchema.parse('other-decision')
+  const settle = h.ctx.teams.settleSimulationTaskAttempt.bind(h.ctx.teams)
+  const open = vi.spyOn(h.ctx.teams, 'settleSimulationTaskAttempt').mockImplementationOnce(async (request) => {
+    const task = await settle(request)
+    await h.run.openWindow(simulationWindowRequestSchema.parse({ id: windowId, decisions: [
+      { id: decisionId, entityId: h.requesterId, context: contextRequest() },
+    ] }), h.run.snapshot().revision)
+    return task
+  })
+  const result = await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })
+  expect(result).toMatchObject({ status: 'waiting', reason: 'Interaction reconciliation requires a closed decision window',
+    execution: { task: { phase: 'completed' } } })
+  open.mockRestore()
+  expect(h.run.snapshot().commitments[h.commitmentId]!.phase).toBe('open')
+  await h.connection.cancelDecision(h.requesterId, decisionId)
+  await h.run.commitWindow(windowId)
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('settled')
+  expect(h.run.snapshot().commitments[h.commitmentId]!.phase).toBe('fulfilled')
+})
+
+it('waits for canonical task review before task-completed fulfillment', async () => {
+  const h = await linkedTaskFixture('task-completed', true)
+  const assigned = await h.work()
+  await h.run.drive({ until: h.run.snapshot().time })
+  const request = { attemptId: h.selection.attemptId, policy: h.policy }
+  expect(await h.connection.completeTask(request)).toMatchObject({ status: 'waiting', reason: 'Task review is still pending' })
+  expect(h.run.snapshot().commitments[h.commitmentId]!.phase).toBe('open')
+  const task = await h.ctx.teams.getTask({ teamId: h.teamId, taskId: assigned.request.taskId })
+  const team = await h.ctx.teams.getTeam({ teamId: h.teamId })
+  const binding = team.activations.find(value => value.activation.participantId === h.requester.id)!
+  const issuer = h.ctx.teams.openActivationActorProofIssuer(), actor = issuer.issue(binding)
+  try {
+    await h.ctx.teams.resolveTaskReview({ actor: actor.proof, taskId: task.id, expectedRevision: task.revision,
+      nextPhase: 'completed', reason: 'Delivery verified' })
+  } finally { actor.revoke(); issuer.close() }
+  expect((await h.connection.completeTask(request)).status).toBe('settled')
+  expect(h.run.snapshot().commitments[h.commitmentId]!.phase).toBe('fulfilled')
+})
+
+it('rechecks open commitment admission inside the queued reconciliation after target settlement', async () => {
+  const h = await linkedTaskFixture()
+  await h.work()
+  await h.run.drive({ until: h.run.snapshot().time })
+  const cancel = await h.submit(h.requesterId, 'queued-linked-cancel', { kind: 'interaction/cancel', id: h.interactionId,
+    expectedRevision: h.run.snapshot().interactions[h.interactionId]!.revision, reason: 'Withdraw before reconciliation' })
+  const reconcile = h.run.reconcileTask.bind(h.run)
+  const race = vi.spyOn(h.run, 'reconcileTask').mockImplementationOnce(async (request) => {
+    expect(request.requireOpenCommitment).toBe(true)
+    await h.run.executeOperation(cancel)
+    return await reconcile(request)
+  })
+  const request = { attemptId: h.selection.attemptId, policy: h.policy }
+  await expect(h.connection.completeTask(request)).rejects.toThrow(/open commitment/)
+  race.mockRestore()
+  const state = h.run.snapshot(), calls = h.evaluate.mock.calls.length
+  expect(state.taskExecutions?.[h.selection.attemptId]?.task?.phase).toBe('completed')
+  expect(state.interactions[h.interactionId]!.task?.phase).toBe('pending')
+  expect(state.commitments[h.commitmentId]!.phase).toBe('cancelled')
+  expect((await h.connection.completeTask(request)).status).toBe('settled')
+  expect(h.run.snapshot().revision).toBe(state.revision)
+  expect(h.evaluate).toHaveBeenCalledTimes(calls)
+})
+
+it('rejects an unknown explicit interaction before reserving or assigning its task', async () => {
+  const h = await linkedTaskFixture()
+  const { simulationInteractionIdSchema } = await import('@clocky/clocky-simulation')
+  const before = h.run.snapshot(), assign = vi.spyOn(h.ctx.teams, 'assignSimulationTask')
+  await expect(h.connection.assignTask({ ...h.selection, interactionId: simulationInteractionIdSchema.parse('unknown') }))
+    .rejects.toThrow(/no selected interaction/)
+  expect(h.run.snapshot()).toEqual(before)
+  expect(assign).not.toHaveBeenCalled()
+  assign.mockRestore()
+})
+
+it('revokes new assignment authority when its associated commitment closes during policy IO', async () => {
+  const h = await linkedTaskFixture()
+  const cancel = await h.submit(h.requesterId, 'assignment-linked-cancel', { kind: 'interaction/cancel', id: h.interactionId,
+    expectedRevision: h.run.snapshot().interactions[h.interactionId]!.revision + 1, reason: 'Withdraw during assignment' })
+  const dispose = h.ctx.on('team/policy', async (request, next) => {
+    if (request.hook === 'task-assign') await h.run.executeOperation(cancel)
+    return next()
+  })
+  try { await expect(h.connection.assignTask(h.selection)).rejects.toThrow(/source|proof|authority/) }
+  finally { dispose() }
+  const state = h.run.snapshot(), execution = state.taskExecutions![h.selection.attemptId]!
+  expect(execution.request.interaction?.interactionId).toBe(h.interactionId)
+  expect(execution.task).toBeUndefined()
+  expect(state.commitments[h.commitmentId]!.phase).toBe('cancelled')
+  const task = await h.ctx.teams.getTask({ teamId: h.teamId, taskId: execution.request.taskId })
+  expect(task.attemptCount).toBe(0)
+  expect(task.lease).toBeUndefined()
+})
+
+it.each(['interaction', 'commitment'] as const)('refuses a lost %s source in its completion observation', async (fault) => {
+  const h = await linkedTaskFixture()
+  await h.work()
+  await h.run.drive({ until: h.run.snapshot().time })
+  const snapshot = h.run.snapshot.bind(h.run)
+  const missing = vi.spyOn(h.run, 'snapshot').mockImplementation(() => {
+    const state = snapshot()
+    if (state.taskExecutions?.[h.selection.attemptId]?.task?.phase !== 'completed') return state
+    return fault === 'interaction' ? { ...state, interactions: {} } : { ...state, commitments: {} }
+  })
+  try {
+    await expect(h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy }))
+      .rejects.toThrow(/lost its interaction source/)
+  } finally { missing.mockRestore() }
+  expect(snapshot().commitments[h.commitmentId]!.phase).toBe('open')
+  expect((await h.connection.completeTask({ attemptId: h.selection.attemptId, policy: h.policy })).status).toBe('settled')
+  expect(snapshot().commitments[h.commitmentId]!.phase).toBe('fulfilled')
 })

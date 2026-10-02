@@ -69,7 +69,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await page.getByRole('button', { name: /^发布准备 / }).click()
     const workspace = page.locator('[data-team-workspace-page]')
     await workspace.getByText('任务完成', { exact: true }).waitFor()
-    expect(await page.getByRole('dialog', { name: '执行记录', exact: true }).count()).toBe(0)
+    expect(await page.getByRole('dialog', { name: '与协调者沟通', exact: true }).count()).toBe(0)
     await workspace.evaluate(async (element) => {
       await Promise.all(
         element.getAnimations({ subtree: true })
@@ -77,6 +77,11 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
           .map(animation => animation.finished),
       )
     })
+    expect(await workspace.evaluate((element) => {
+      const sidebar = document.querySelector('[data-clocky-navigation]')!
+      const available = innerWidth - sidebar.getBoundingClientRect().right
+      return Math.abs(element.getBoundingClientRect().width - available)
+    })).toBeLessThan(2)
     await page.screenshot({ path: join(output, '01-overview.png') })
     await workspace.getByRole('region', { name: '团队成员', exact: true }).waitFor()
     await workspace.getByRole('navigation', { name: '团队模块' }).getByRole('button', { name: '成员', exact: true }).click()
@@ -124,7 +129,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     expect(bindingReply.result.ok).toBe(true)
     expect(bindingReply.result.value.activation.teamId).toBe(teamId)
     expect(bindingReply.result.value.activation.participantId).toBe(created.participants.find(member => member.role === 'coordinator')?.id)
-    const memberInspection = page.getByRole('dialog', { name: '执行记录', exact: true })
+    const memberInspection = page.getByRole('dialog', { name: '与协调者沟通', exact: true })
     await memberInspection.waitFor()
     await memberInspection.evaluate(async (element) => {
       await Promise.all(element.getAnimations({ subtree: true })
@@ -137,8 +142,9 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await workspace.getByRole('region', { name: '最近动态', exact: true }).waitFor()
     await workspace.getByRole('region', { name: '产物预览', exact: true }).waitFor()
     await workspace.getByRole('region', { name: '任务执行', exact: true }).getByRole('button', { name: '接口迁移', exact: true }).click()
-    const filter = workspace.getByRole('textbox', { name: '仅搜索已加载任务' })
+    const filter = workspace.getByRole('textbox', { name: '搜索整个团队的任务' })
     await filter.fill('接口')
+    await filter.press('Enter')
     await workspace.getByRole('button', { name: '接口迁移', exact: true }).click()
     await workspace.getByRole('complementary', { name: '任务摘要' }).waitFor()
     await workspace.getByRole('complementary', { name: '任务摘要' }).evaluate(async (element) => {
@@ -160,7 +166,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await page.getByRole('menuitem', { name: '全部状态', exact: true }).waitFor()
     await page.keyboard.press('Escape')
     await page.screenshot({ path: join(output, '02-task-summary.png') })
-    await rpc('team.task.update', { teamId, taskId: record.taskId, expectedRevision: record.revision, subject: '接口迁移（更新）' })
+    await rpc('team.task.update', {  commandId: 'team-workspace.snapshot-update-1',teamId, taskId: record.taskId, expectedRevision: record.revision, subject: '接口迁移（更新）' })
     await taskInspector.getByText('任务已更新，请刷新详情后继续操作。', { exact: true }).waitFor()
     await taskInspector.getByRole('heading', { name: '接口迁移', exact: true }).waitFor()
     let failRead = true
@@ -182,8 +188,8 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await filter.waitFor()
     expect(await filter.inputValue()).toBe('接口')
     await workspace.getByRole('complementary', { name: '任务摘要' }).waitFor()
-    await workspace.getByRole('button', { name: '打开协调会话' }).click()
-    const session = page.getByRole('dialog', { name: '执行记录', exact: true })
+    await workspace.getByRole('button', { name: '与协调者沟通' }).click()
+    const session = page.getByRole('dialog', { name: '与协调者沟通', exact: true })
     await session.waitFor()
     const settled = scaffold.whenTurnSettled(30_000)
     const posted = page.waitForRequest(request => new URL(request.url()).pathname === '/api/team.postInput')
@@ -193,6 +199,13 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     expect(inputRequest.payload.teamId).toBe(teamId)
     await settled
     await session.getByText(response, { exact: true }).waitFor()
+    const exported = await page.evaluate(async (sessionId) => {
+      const reply = await fetch(`/api/session.export?sessionId=${encodeURIComponent(sessionId)}&includeDescendants=true`)
+      return { status: reply.status, type: reply.headers.get('content-type'), bytes: (await reply.arrayBuffer()).byteLength }
+    }, bindingReply.result.value.sessionId)
+    expect(exported.status).toBe(200)
+    expect(exported.type).toBe('application/zip')
+    expect(exported.bytes).toBeGreaterThan(0)
     await expect.poll(() => new URL(page.url()).searchParams.has('session')).toBe(true)
     await page.goBack()
     await session.waitFor({ state: 'hidden' })
@@ -208,7 +221,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     await page.screenshot({ path: join(output, '03-session.png') })
     await session.getByRole('button', { name: '返回团队', exact: true }).click()
     await session.waitFor({ state: 'hidden' })
-    await workspace.getByRole('button', { name: '打开协调会话' }).click()
+    await workspace.getByRole('button', { name: '与协调者沟通' }).click()
     await session.waitFor()
     expect(await session.locator('textarea:visible').last().inputValue()).toBe('保留这段未发送的说明。')
     await session.getByRole('button', { name: '返回团队', exact: true }).click()
@@ -262,7 +275,7 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
       const closeSummary = zoomPage.getByRole('button', { name: 'Close task summary', exact: true })
       expect((await closeSummary.boundingBox())!.height).toBeGreaterThanOrEqual(44)
       await closeSummary.click()
-      await zoomPage.getByRole('textbox', { name: 'Search loaded tasks only' }).waitFor()
+      await zoomPage.getByRole('textbox', { name: 'Search all tasks in this Team' }).waitFor()
       await zoomPage.screenshot({ path: join(output, '06-zoom-equivalent.png') })
     } finally { await zoomPage.close() }
     const longObjective = `长目标验证：${'检查任务进度、协作记录和交付结果。'.repeat(12)}`
@@ -283,6 +296,44 @@ it('opens the Team overview, inspects a task and Session, and returns to retaine
     expect(fullMemberReads).toBe(0)
     expect(fullWorkflowReads).toBe(0)
     expect(selectionReads).toBeGreaterThan(1)
+    await scaffold.replaceBrowserAuthentication()
+    await expect.poll(async () => await heading.count()).toBe(0)
+    expect(await page.getByText(longObjective, { exact: true }).count()).toBe(0)
+    await page.screenshot({ path: join(output, '08-authorization-retired.png') })
+    await scaffold.authenticateBrowserPage(page)
+    await heading.waitFor()
+    await workspace.getByRole('navigation', { name: 'Team modules' }).getByRole('button', { name: 'Tasks', exact: true }).click()
+    await workspace.getByRole('button', { name: 'Create task', exact: true }).click()
+    const retainedForm = page.getByRole('dialog', { name: 'Create task', exact: true })
+    await retainedForm.getByLabel('Task name', { exact: true }).fill('Source draft survives rejected navigation')
+    await retainedForm.getByRole('button', { name: 'Close and keep draft', exact: true }).click()
+    const sourceUrl = page.url()
+    await page.evaluate(() => {
+      const source = location.href
+      const target = new URL(source)
+      target.searchParams.set('team', 'missing-navigation-target')
+      history.pushState({ clockyWorkspaceSource: source, clockyWorkspaceTarget: 'missing-navigation-target' }, '', target)
+      dispatchEvent(new Event('clocky:workspace-navigation'))
+    })
+    await page.getByRole('heading', { name: 'This destination is unavailable', exact: true }).waitFor()
+    expect(await heading.count()).toBe(0)
+    expect(await workspace.count()).toBe(0)
+    expect(new URL(page.url()).searchParams.get('team')).toBe('missing-navigation-target')
+    await page.screenshot({ path: join(output, '09-navigation-target-error.png') })
+    await page.getByRole('button', { name: 'Return to source', exact: true }).click()
+    await heading.waitFor()
+    expect(page.url()).toBe(sourceUrl)
+    await page.goBack()
+    await page.getByRole('heading', { name: 'This destination is unavailable', exact: true }).waitFor()
+    await page.goForward()
+    await heading.waitFor()
+    await workspace.getByRole('button', { name: 'Create task', exact: true }).click()
+    expect(await retainedForm.getByLabel('Task name', { exact: true }).inputValue()).toBe('Source draft survives rejected navigation')
+    await retainedForm.getByRole('button', { name: 'Close and keep draft', exact: true }).click()
+    await page.goBack()
+    await retainedForm.waitFor()
+    await page.goBack()
+    await heading.waitFor()
     expect(errors.pageErrors).toEqual([])
   } catch (error) {
     primaryFailure = error

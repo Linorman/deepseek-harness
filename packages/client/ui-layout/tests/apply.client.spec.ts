@@ -62,7 +62,7 @@ describe('ui-layout client apply', () => {
       setSidebar: vi.fn(), setDetails: vi.fn(), toggleSidebar: vi.fn(), openDetails: vi.fn(), closeDetails: vi.fn(),
     }
     const injected = (slots.entries('root')[0]!.inject as (actions: never) => object)(actions as never)
-    expect(Object.keys(injected)).toEqual(['closeSession'])
+    expect(Object.keys(injected)).toEqual(['closeSession', 'showTeams'])
     expect(injected).toHaveProperty('closeSession', expect.any(Function))
     const layout = ctx.get('layout') as LayoutController
     layout.toggleSidebar()

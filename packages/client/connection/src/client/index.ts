@@ -1,9 +1,13 @@
+export type { TeamTaskDetailsUpdateResult, TeamTaskUpdateLookupInput, TeamTaskUpdateLookup, TeamTaskUpdateCommandId } from './api.ts'
+export type { TeamTaskReferencesInput, TeamTaskReferencesPage, TeamTaskReference } from './api.ts'
+export type { TeamActionInspection, TeamActionInspectInput, TeamAttentionHandling } from './api.ts'
 /**
  * Browser wire client. The plugin selects fixture or HTTP transport, provides
  * the shared API client, and lets the runtime object layer start the stream
  * controller with its sinks.
  */
 import type { Context } from '@clocky/cordis'
+export type { TeamAttentionReadInput, TeamAttentionPage, TeamAttentionCounts, TeamAttentionItem, TeamAttentionCursor } from './api.ts'
 import type { HostDescription, IApiClient } from './api.ts'
 import { ConnectionController, type ConnectionConfig, type ConnectionSinks, type ConnectionState } from './connection.ts'
 import { FixtureApiClient } from './fixture.ts'
@@ -161,6 +165,10 @@ export function apply(ctx: Context): void {
         onStateChange: (state) => {
           if (state === 'reconnecting') publishDescription(undefined)
           sinks.onStateChange?.(state)
+        },
+        onAuthorizationLost: () => {
+          publishDescription(undefined)
+          sinks.onAuthorizationLost?.()
         },
       }, config ?? {})
       controller.start()

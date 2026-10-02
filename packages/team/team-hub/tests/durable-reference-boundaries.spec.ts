@@ -29,7 +29,7 @@ function roster() {
 
 function ownerProposal() {
   const f = roster()
-  const created = task()
+  const created = task({ createdAt: 19 })
   const proposed = task({ ...created, revision: 2, proposedOwnerId: f.owner.id })
   const prefix = [...f.records, taskChanged({ task: created, createdAt: 19 })]
   const record = { type: 'task/changed', task: proposed, createdAt: 20 }
@@ -96,7 +96,8 @@ for (const backend of ['json', 'sqlite'] as const) {
       const f = summarizedChannel()
       const manifest = { ...f.checkpoint.manifest, limits: { turns: 9 } }
       const checkpoint = { ...f.checkpoint, manifest,
-        invitations: f.checkpoint.invitations.map(invitation => ({ ...invitation, manifestFingerprint: fingerprintChannelManifest(manifest) })),
+        invitations: f.checkpoint.invitations.map(invitation => ({ ...invitation,
+          manifestFingerprint: fingerprintChannelManifest(manifest) })),
         summaries: [{ ...f.summary, sequence: damaged ? f.checkpoint.cursor + 1 : f.summary.sequence }] }
       const parsed = channelProjectionDataSchema.parse(JSON.parse(JSON.stringify(checkpoint)))
       if (damaged) {

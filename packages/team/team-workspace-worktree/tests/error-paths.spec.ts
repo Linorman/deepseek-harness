@@ -116,6 +116,7 @@ function fixture(): {
     provider: 'test',
   }
   const task: TeamTaskSnapshot = {
+    createdAt: 0,
     execution: { kind: 'participant' },
     id: taskId,
     teamId,

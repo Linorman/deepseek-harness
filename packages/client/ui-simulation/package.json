@@ -1,0 +1,85 @@
+{
+  "name": "@clocky/clocky-client-ui-simulation",
+  "description": "Simulation product workspace with explicit original operations",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Linorman/clocky.git",
+    "directory": "packages/client/ui-simulation"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "clocky": {
+    "client": {
+      "inject": [
+        "@clocky/clocky-client-connection",
+        "@clocky/clocky-client-runtime",
+        "@clocky/clocky-client-locale",
+        "@clocky/clocky-client-ui-layout",
+        "@clocky/clocky-client-ui-sidebar"
+      ],
+      "platform": "web",
+      "external": [
+        "@clocky/clocky-client-ui-layout/client"
+      ]
+    }
+  },
+  "scripts": {
+    "bundle": "tsdown",
+    "watch": "tsdown --watch"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@clocky/clocky-client-connection": "workspace:^",
+    "@clocky/clocky-client-locale": "workspace:^",
+    "@clocky/clocky-client-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-layout": "workspace:^",
+    "@clocky/clocky-client-ui-sidebar": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
+  },
+  "devDependencies": {
+    "@clocky/clocky-client-connection": "workspace:^",
+    "@clocky/clocky-client-locale": "workspace:^",
+    "@clocky/clocky-client-runtime": "workspace:^",
+    "@clocky/clocky-client-ui-layout": "workspace:^",
+    "@clocky/clocky-client-ui-primitives": "workspace:^",
+    "@clocky/clocky-client-ui-sidebar": "workspace:^",
+    "@clocky/clocky-client-ui-slots": "workspace:^",
+    "@clocky/clocky-invariants": "workspace:^",
+    "@clocky/cordis": "workspace:^",
+    "@types/react": "~18.3.1",
+    "react": "^18.2.0",
+    "@clocky/clocky-simulation-product": "workspace:^"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/client.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}

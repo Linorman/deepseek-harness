@@ -6,7 +6,7 @@ English | [中文](README.zh.md)
 
 `simulation-team` derives the run, entity, writer and decision from the actual Agent and its consumed prepared input. Its execution guard denies other tools for Simulation actors. Staging is local to one writer epoch. Writer replacement cancels unaccepted decisions; collected window proposals remain in run history. Accepted decisions and operations survive independently of the old writer.
 
-The scoped `@clocky/clocky-tool-simulation/role` entry selects only the three installed Simulation tools and forces native presentation. Load the base tool plugin in the host first; a missing required tool rejects the preset. The [company preset](../../../examples/simulation-company/presets/simulation/agent.cordis.yml) uses this entry. Pass its name through `agent.preset` for both fresh and resumed activation.
+The scoped `@clocky/clocky-tool-simulation/role` entry selects the three installed Simulation tools, forces native presentation and filters the final assembled request schemas even when actor-owned tools are registered later. The native model owner separately rejects advertised capabilities outside its decision authority before dispatch or token admission; its execution guard still rejects foreign tool calls. Load the base tools and system-prompt owners first. The [company preset](../../../examples/simulation-company/presets/simulation/agent.cordis.yml) supplies a complete Simulation persona without filesystem variables or unrelated runtime context. Pass this preset through `agent.preset` for fresh and resumed activation.
 
 ## Model Experience
 

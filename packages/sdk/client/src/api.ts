@@ -1,3 +1,16 @@
+import type { SimulationRequestsParams, SimulationRequestsResult, SimulationRetryRequestParams, SimulationRetryRequestResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationPreflightParams, SimulationPreflightResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationOperationRetryParams, SimulationOperationRetryResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRunStatusesParams, SimulationRunStatusesResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationTasksParams, SimulationTasksResult, SimulationTaskCancelParams, SimulationTaskCancelResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationTaskReviewListParams, SimulationTaskReviewListResult, SimulationTaskReviewResolveParams, SimulationTaskReviewResolveResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationSourceParams, SimulationSourceResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationRecordsParams, SimulationRecordsResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationWatchParams, SimulationWatchResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationControlParams, SimulationControlResult, SimulationManageParams, SimulationManageResult, SimulationManagementParams, SimulationManagementResult, SimulationCheckpointParams, SimulationCheckpointResult, SimulationRestoreParams, SimulationRestoreResult, SimulationIngressParams, SimulationIngressResult, SimulationIngressRequestParams, SimulationIngressRequestResult } from '@clocky/clocky-sdk-protocol'
+import type { SimulationCatalogParams, SimulationCatalogResult, SimulationListParams, SimulationListResult, SimulationInspectParams, SimulationInspectResult, SimulationBrowseParams, SimulationBrowseResult, SimulationObjectParams, SimulationObjectResult, SimulationCreateParams, SimulationCreateResult, SimulationPrepareParams, SimulationPrepareResult, SimulationRequestParams, SimulationRequestResult } from '@clocky/clocky-sdk-protocol'
+import type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
+export type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
 import { isSimulationContextViewEvent } from '@clocky/clocky-session/surface'
 import type { TeamMemberInspectParams, TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamTaskInspectParams, TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
@@ -154,6 +167,276 @@ export class Clocky implements AsyncDisposable {
     await this.start()
     const resumed = await this.client.resumeTeam(params)
     return new HarnessTeam(this, resumed.teamId, resumed.coordinatorSessionId)
+  }
+
+  /**
+   * Read current scheduling ownership and preconditions without opening or advancing a run.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationControl(params: SimulationControlParams): Promise<SimulationControlResult> {
+    await this.start()
+    return await this.client.getSimulationControl(params)
+  }
+
+  /**
+   * Submit an original scheduling intent; exact retries retain its result without undoing later intent.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async manageSimulation(params: SimulationManageParams): Promise<SimulationManageResult> {
+    await this.start()
+    return await this.client.manageSimulation(params)
+  }
+
+  /**
+   * Query an original scheduling outcome; absence does not establish failure.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationManagement(params: SimulationManagementParams): Promise<SimulationManagementResult> {
+    await this.start()
+    return await this.client.getSimulationManagement(params)
+  }
+
+  /**
+   * Read canonical run-owned task controls without starting execution.
+   * @param params - Exact bounded owned-run observation.
+   * @returns canonical task controls without bodies or general Team authority.
+   */
+  async listSimulationTasks(params: SimulationTasksParams): Promise<SimulationTasksResult> {
+    await this.start()
+    return await this.client.listSimulationTasks(params)
+  }
+
+  /**
+   * Cancel the exact original run-owned task with a current revision and attempt fence.
+   * @param params - Immutable command identity and cancellation intent; null requires no active lease.
+   * @returns durable original receipt; this neither resumes execution nor grants ordinary Team writes.
+   */
+  async cancelSimulationTask(params: SimulationTaskCancelParams): Promise<SimulationTaskCancelResult> {
+    await this.start()
+    return await this.client.cancelSimulationTask(params)
+  }
+
+  /**
+   * Read bounded canonical review targets without task bodies.
+   * @param params - Exact run and optional page/revision fence.
+   * @returns current scene-authorized review metadata.
+   */
+  async listSimulationTaskReviews(params: SimulationTaskReviewListParams): Promise<SimulationTaskReviewListResult> {
+    await this.start()
+    return await this.client.listSimulationTaskReviews(params)
+  }
+
+  /**
+   * Resolve one exact original administrative review through the installed scene's authority.
+   * @param params - Original scene review command and canonical attempt/revision.
+   * @returns persistent original receipt.
+   */
+  async resolveSimulationTaskReview(params: SimulationTaskReviewResolveParams): Promise<SimulationTaskReviewResolveResult> {
+    await this.start()
+    return await this.client.resolveSimulationTaskReview(params)
+  }
+
+  /**
+   * Request a full checkpoint; accepted work outlives its waiter and remains paused after completion.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async checkpointSimulation(params: SimulationCheckpointParams): Promise<SimulationCheckpointResult> {
+    await this.start()
+    return await this.client.checkpointSimulation(params)
+  }
+
+  /**
+   * Verify checkpoint history and current suffix, then acquire a paused owner without rollback or inference.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async restoreSimulation(params: SimulationRestoreParams): Promise<SimulationRestoreResult> {
+    await this.start()
+    return await this.client.restoreSimulation(params)
+  }
+
+  /**
+   * Submit one attributed entity input with its original identity and exact simulated time.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async ingressSimulation(params: SimulationIngressParams): Promise<SimulationIngressResult> {
+    await this.start()
+    return await this.client.ingressSimulation(params)
+  }
+
+  /**
+   * Query original input assignment and consumption independently of scheduling.
+   * @param params - Actor-free selection; retain the original identity and payload across uncertain outcomes.
+   * @returns validated public observation or original durable receipt; private configuration and input text are withheld.
+   */
+  async getSimulationIngress(params: SimulationIngressRequestParams): Promise<SimulationIngressRequestResult> {
+    await this.start()
+    return await this.client.getSimulationIngress(params)
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async simulationCatalog(params: SimulationCatalogParams = {}): Promise<SimulationCatalogResult> {
+    await this.start()
+    return await this.client.simulationCatalog(params)
+  }
+
+  /**
+   * Grant a bounded retry allowance for the original unknown intent without publishing or resuming it.
+   * @param params - Original command, unknown operation, exact retained attempt count and reason.
+   * @returns persistent original grant receipt; explicit scheduling is required to reconcile the target.
+   */
+  async retrySimulationOperation(params: SimulationOperationRetryParams): Promise<SimulationOperationRetryResult> {
+    await this.start()
+    return await this.client.retrySimulationOperation(params)
+  }
+
+  /**
+   * Observe a bounded authorized run batch without taking execution ownership.
+   * @param params - Exact bounded authorized run batch.
+   * @returns native and scheduling metadata without execution.
+   */
+  async getSimulationRunStatuses(params: SimulationRunStatusesParams): Promise<SimulationRunStatusesResult> {
+    await this.start()
+    return await this.client.getSimulationRunStatuses(params)
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async listSimulations(params: SimulationListParams = {}): Promise<SimulationListResult> {
+    await this.start()
+    return await this.client.listSimulations(params)
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async inspectSimulation(params: SimulationInspectParams): Promise<SimulationInspectResult> {
+    await this.start()
+    return await this.client.inspectSimulation(params)
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async browseSimulation(params: SimulationBrowseParams): Promise<SimulationBrowseResult> {
+    await this.start()
+    return await this.client.browseSimulation(params)
+  }
+
+  /**
+   * Inspect one exact retained Team Envelope source without activating execution.
+   * @param params - Decision source ordinal and bounded lookup/body continuation.
+   * @returns separately authorized text, redacted status or explicit lookup continuation.
+   */
+  async inspectSimulationSource(params: SimulationSourceParams): Promise<SimulationSourceResult> {
+    await this.start()
+    return await this.client.inspectSimulationSource(params)
+  }
+
+  /**
+   * Read retained Simulation journal metadata or separately authorized original JSON text.
+   * @param params - Exact run/filter/mode with optional revision and continuation.
+   * @returns validated bounded policy-tagged page; does not open execution or infer historical events.
+   */
+  async readSimulationRecords(params: SimulationRecordsParams): Promise<SimulationRecordsResult> {
+    await this.start()
+    return await this.client.readSimulationRecords(params)
+  }
+
+  /**
+   * Observe bounded read invalidation without opening or driving a run.
+   * @param params - Exact run and optional prior cursor/real wait. Zero is an immediate probe.
+   * @returns metadata-only hint; callers decide whether to repeat the wait or refresh pages.
+   */
+  async watchSimulation(params: SimulationWatchParams): Promise<SimulationWatchResult> {
+    await this.start()
+    return await this.client.watchSimulation(params)
+  }
+
+  /**
+   * Read authorized Simulation metadata without executing models.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns validated bounded public result; private run configuration and knowledge are withheld.
+   */
+  async inspectSimulationObject(params: SimulationObjectParams): Promise<SimulationObjectResult> {
+    await this.start()
+    return await this.client.inspectSimulationObject(params)
+  }
+
+  /**
+   * Validate creation semantics without allocating a run, Team, actor or command.
+   * @param params - Allowlisted template draft and optional run allowances.
+   * @returns current resolved configuration or safe field issues; no resources are reserved.
+   */
+  async preflightSimulation(params: SimulationPreflightParams): Promise<SimulationPreflightResult> {
+    await this.start()
+    return await this.client.preflightSimulation(params)
+  }
+
+  /**
+   * Allocate and prepare a run with the retained original command identity.
+   * @param params - Exact original allowlisted creation payload.
+   * @returns immutable creation receipt without starting inference.
+   */
+  async createSimulation(params: SimulationCreateParams): Promise<SimulationCreateResult> {
+    await this.start()
+    return await this.client.createSimulation(params)
+  }
+
+  /**
+   * Submit or query an original durable preparation request without starting inference.
+   * @param params - Actor-free selection; command IDs must be retained across uncertain outcomes.
+   * @returns original durable receipt; absence does not establish failure.
+   */
+  async prepareSimulation(params: SimulationPrepareParams): Promise<SimulationPrepareResult> {
+    await this.start()
+    return await this.client.prepareSimulation(params)
+  }
+
+  /**
+   * Discover original administrative receipts for one authorized run without exposing command inputs.
+   * @param params - Exact run and optional revision-pinned bounded page.
+   * @returns metadata-only page; reads neither schedule inference nor retry any command.
+   */
+  async listSimulationRequests(params: SimulationRequestsParams): Promise<SimulationRequestsResult> {
+    await this.start()
+    return await this.client.listSimulationRequests(params)
+  }
+
+  /**
+   * Retry only the server-retained original command, preserving its input and identity.
+   * @param params - Exact run and original command discovered from receipt metadata.
+   * @returns original accepted or terminal receipt; never retries automatically.
+   */
+  async retrySimulationRequest(params: SimulationRetryRequestParams): Promise<SimulationRetryRequestResult> {
+    await this.start()
+    return await this.client.retrySimulationRequest(params)
+  }
+
+  /**
+   * Query the exact original durable administrative command; absence does not establish failure.
+   * @param params - Original retained command identity.
+   * @returns known original request or non-authoritative absence without scheduling work.
+   */
+  async getSimulationRequest(params: SimulationRequestParams): Promise<SimulationRequestResult> {
+    await this.start()
+    return await this.client.getSimulationRequest(params)
   }
 
   /**
@@ -755,6 +1038,15 @@ export class HarnessTeam {
   async task(taskId: string): Promise<TeamTaskGetResult> {
     await this.harness.start()
     return await this.harness.client.getTeamTask({ teamId: this.id, taskId })
+  }
+
+  /** Read original update admission for this Team without executing another command.
+   * @param params - Task and original command identity.
+   * @returns immutable original acceptance or absence at this read.
+   */
+  async updateResult(params: Omit<TeamTaskUpdateLookupParams, 'teamId'>): Promise<TeamTaskUpdateLookupResult> {
+    await this.harness.start()
+    return await this.harness.client.getTeamTaskUpdateResult({ ...params, teamId: this.id })
   }
 
   /**

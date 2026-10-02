@@ -1,0 +1,173 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`json automatic Simulation task executor > executes bounded multi-step cognition through canonical task owners 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 2,
+  "decisions": 2,
+  "inputLogged": true,
+  "inventory": [
+    "0",
+    "2",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "progression": "multi-step",
+  "repeatWithoutWrites": true,
+  "reviews": 0,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`json automatic Simulation task executor > executes bounded rework cognition through canonical task owners 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 2,
+  "decisions": 1,
+  "inputLogged": true,
+  "inventory": [
+    "0",
+    "2",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "progression": "rework",
+  "repeatWithoutWrites": true,
+  "reviews": 2,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`json automatic Simulation task executor > executes deterministic cognition and reconciles a lost settlement response 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 1,
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": true,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`json automatic Simulation task executor > executes model cognition and reconciles a lost settlement response 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "computations": 0,
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": true,
+  "modelCalls": 2,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`sqlite automatic Simulation task executor > executes bounded multi-step cognition through canonical task owners 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 2,
+  "decisions": 2,
+  "inputLogged": true,
+  "inventory": [
+    "0",
+    "2",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "progression": "multi-step",
+  "repeatWithoutWrites": true,
+  "reviews": 0,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`sqlite automatic Simulation task executor > executes bounded rework cognition through canonical task owners 1`] = `
+{
+  "attempts": 2,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 2,
+  "decisions": 1,
+  "inputLogged": true,
+  "inventory": [
+    "0",
+    "2",
+  ],
+  "lostResponse": false,
+  "modelCalls": 0,
+  "phase": "paused",
+  "progression": "rework",
+  "repeatWithoutWrites": true,
+  "reviews": 2,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`sqlite automatic Simulation task executor > executes deterministic cognition and reconciles a lost settlement response 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "deterministic",
+  "computations": 1,
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": true,
+  "modelCalls": 0,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;
+
+exports[`sqlite automatic Simulation task executor > executes model cognition and reconciles a lost settlement response 1`] = `
+{
+  "attempts": 1,
+  "checkpoint": "completed",
+  "cognition": "model",
+  "computations": 0,
+  "inputLogged": true,
+  "inventory": [
+    "1",
+    "1",
+  ],
+  "lostResponse": true,
+  "modelCalls": 2,
+  "phase": "paused",
+  "repeatWithoutWrites": true,
+  "source": "accepted-task-create",
+  "task": "completed",
+}
+`;

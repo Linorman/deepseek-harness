@@ -314,3 +314,7 @@
 .root[data-phase='settling'] .composerSeat {
   visibility: hidden;
 }
+
+.contextualEmpty { max-width: 640px; padding: 24px; text-align: center; overflow-wrap: anywhere; }
+.contextualEmpty h2 { font-size: 22px; line-height: 30px; margin: 0 0 12px; color: var(--clocky-alias-label-primary); }
+.contextualEmpty p { font-size: 14px; line-height: 22px; color: var(--clocky-alias-label-secondary); margin: 8px 0; }

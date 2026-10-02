@@ -54,7 +54,7 @@ async function harness(
   ctx.teamWorkspaces.registerProvider(workspaceProvider)
   const requests: AgentRuntimeActivationRequest[] = []
   const disposed: string[] = []
-  ctx.agentRuntimes.registerProvider({
+  ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'placement-test', terminationMode: 'owned-process',
     async activate(request) {
       requests.push(request)

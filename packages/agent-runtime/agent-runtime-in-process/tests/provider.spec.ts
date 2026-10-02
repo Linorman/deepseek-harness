@@ -248,7 +248,7 @@ describe('in-process AgentRuntime provider', () => {
     })
     await expect(ctx.agentRuntimes.activate(request(SessionId('activation-human'), {
       participant: human,
-    }))).rejects.toMatchObject({ code: 'AGENT_RUNTIME_IN_PROCESS_PARTICIPANT_UNSUPPORTED' })
+    }))).rejects.toMatchObject({ code: 'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED' })
     expect(ctx.agents.list()).toEqual([])
   })
 

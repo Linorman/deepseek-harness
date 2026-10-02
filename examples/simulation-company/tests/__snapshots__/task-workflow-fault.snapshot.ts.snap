@@ -1,0 +1,441 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`recovers 'json' three-actor report tasks through '' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": false,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'assigned' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'created' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'effect' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'input' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'observed' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'reserved' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'result' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'settled' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'submitted' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'json' three-actor report tasks through 'window' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through '' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": false,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'assigned' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'created' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'effect' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'input' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'observed' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'reserved' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'result' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'settled' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 0,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'submitted' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 0,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;
+
+exports[`recovers 'sqlite' three-actor report tasks through 'window' actual process exit 1`] = `
+{
+  "actorCount": 3,
+  "channelCount": 2,
+  "completedTasks": 2,
+  "inventory": [
+    "2",
+    "0",
+  ],
+  "modelRequests": 0,
+  "originalReportsPreserved": true,
+  "originalTaskPreserved": true,
+  "phase": "paused",
+  "recovered": true,
+  "reportContinuations": 1,
+  "reports": 2,
+  "retiredAttempts": 1,
+}
+`;

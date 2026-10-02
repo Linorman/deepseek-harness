@@ -24,3 +24,35 @@ export function memberPageLabels(members: TeamCollectionsState['members']['items
   return members.map(member => ({ id: member.id, kind: member.kind, phase: member.phase,
     role: member.role, displayName: member.displayName.text }))
 }
+
+
+/** Select the same bounded overview members for rendering and readiness reads.
+ * @param state - Team selection containing the independently resolved coordinator.
+ * @param members - Loaded member labels.
+ * @returns at most four participating non-human member labels.
+ */
+export function overviewMemberLabels(state: TeamTaskSelection['state'], members: readonly MemberLabel[]): readonly MemberLabel[] {
+  return memberLabels(state, members).filter(member => member.kind !== 'human' && member.phase !== 'left')
+    .sort((a, b) => Number(b.role === 'coordinator') - Number(a.role === 'coordinator')).slice(0, 4)
+}
+
+/** Resolve display names without treating a missing member page as unassignment.
+ * @param id - Authoritative participant reference, if assigned.
+ * @param loadedName - Name from the current authorized member window.
+ * @param identities - Independent runtime identity observation.
+ * @param translate - Localized assignment and availability labels.
+ * @returns an authorized name, explicit unavailable state or assigned-ID fallback.
+ */
+export function referencedMemberName(id: string | undefined, loadedName: string | undefined,
+  identities: import('@clocky/clocky-client-runtime/client').TeamIdentityState | undefined,
+  translate: (key: import('./locales.ts').TeamKey, vars?: Record<string, unknown>) => string): string {
+  if (id === undefined) return translate('detail.task.unassigned')
+  if (identities?.forbidden) return translate('identity.unavailable')
+  const resolved = identities?.items.find(item => item.participantId === id)
+  if (resolved?.state === 'unavailable') return translate('identity.unavailable')
+  if (resolved?.state === 'resolved') {
+    const name = resolved.displayName.text + (resolved.displayName.truncated ? '…' : '')
+    return resolved.phase === 'left' ? translate('identity.left', { name }) : name
+  }
+  return loadedName ?? translate('detail.task.assignedId', { id })
+}

@@ -48,7 +48,7 @@ function fixture(review = false, terminalTaskPhase: 'cancelled' | 'completed' | 
       transitions: [{ condition: { kind: 'always' }, target: { kind: 'terminate' } }], maxTurns: 1 } },
     result: { kind: 'task-results', taskTemplateIds: ['review'] } } }
   const compiling = [...roster, { type: 'workflow-plan/changed', plan, createdAt: 16 }]
-  const pendingTask = task({ maxAttempts: 1, reviewPolicy: review ? { kind: 'participant', reviewerId: taskCreatorId } : { kind: 'none' } })
+  const pendingTask = task({ createdAt: 17, maxAttempts: 1, reviewPolicy: review ? { kind: 'participant', reviewerId: taskCreatorId } : { kind: 'none' } })
   const pending = [...compiling, taskChanged({ task: pendingTask, createdAt: 17 })]
   const lease = taskLease({ participantId: taskCreatorId, activationId: taskCreatorActivationId,
     assignedAt: 18, renewedAt: 18, durationMs: 100, expiresAt: 118 })
@@ -110,7 +110,10 @@ for (const backend of ['json', 'sqlite'] as const) {
           const rows = [...prepared, ...closureRecords(phase, f.final)]
           const ctx = await recover(backend, rows, undefined, teamId, f.final === undefined ? [] : [f.final.channel],
             rows.length - 1, f.final === undefined ? [] : [f.final.parentTeam])
-          if (f.final !== undefined) { ctx.teams.registerAdapter(consultChannelAdapter); ctx.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY) }
+          if (f.final !== undefined) {
+            ctx.teams.registerAdapter(consultChannelAdapter)
+            ctx.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY)
+          }
           await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow(message)
         }
       })
@@ -122,7 +125,10 @@ for (const backend of ['json', 'sqlite'] as const) {
         const channels = f.final === undefined ? [] : [f.final.channel]
         const relatedTeams = f.final === undefined ? [] : [f.final.parentTeam]
         const valid = await recover(backend, rows, checkpoint, teamId, channels, rows.length - 1, relatedTeams)
-        if (f.final !== undefined) { valid.teams.registerAdapter(consultChannelAdapter); valid.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY) }
+        if (f.final !== undefined) {
+          valid.teams.registerAdapter(consultChannelAdapter)
+          valid.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY)
+        }
         expect((await valid.teams.getTeam({ teamId })).team.phase).toBe(phase)
         const variants = [
           { ...checkpoint, tasks: [...checkpoint.tasks, task({ id: 'late-task' })] },
@@ -136,8 +142,12 @@ for (const backend of ['json', 'sqlite'] as const) {
         ]
         for (const value of variants) {
           // The marker exposes fallback even when the damaged field, such as parent charges, is private.
-          const ctx = await recover(backend, rows, { ...value, rules: { ...value.rules, checkpointMarker: true } }, teamId, channels, rows.length - 1, relatedTeams)
-          if (f.final !== undefined) { ctx.teams.registerAdapter(consultChannelAdapter); ctx.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY) }
+          const ctx = await recover(backend, rows, { ...value, rules: { ...value.rules, checkpointMarker: true } },
+            teamId, channels, rows.length - 1, relatedTeams)
+          if (f.final !== undefined) {
+            ctx.teams.registerAdapter(consultChannelAdapter)
+            ctx.teams.registerViewPolicy(FULL_TRANSCRIPT_VIEW_POLICY)
+          }
           expect(await ctx.teams.getTeam({ teamId })).toEqual(await valid.teams.getTeam({ teamId }))
         }
       })
@@ -152,7 +162,7 @@ for (const backend of ['json', 'sqlite'] as const) {
         participantChanged({ participant: { ...human, phase: 'active' }, createdAt: 14 }),
         ...f.settled.slice(5), ...closureRecords('cancelled')]
       checkpointFor(prefix)
-      const lateTask = task({ id: 'late-human-task', createCommand: {
+      const lateTask = task({ id: 'late-human-task', createdAt: 33, createCommand: {
         creator: { teamId, participantId: human.id }, idempotencyKey: 'late-human-task-key',
       } })
       const lateRecords = [
@@ -215,7 +225,8 @@ for (const backend of ['json', 'sqlite'] as const) {
       const quiesced = { ...f.quiesced, quiescedAt: 34 }
       const records = [...closing,
         { type: 'workspace-allocation/changed', allocation: preserved, createdAt: 31 },
-        { type: 'activation/changed', binding: { ...f.binding, activation: { ...f.binding.activation, status: 'stopping' } }, createdAt: 31 },
+        { type: 'activation/changed', binding: { ...f.binding, activation: { ...f.binding.activation, status: 'stopping' } },
+          createdAt: 31 },
         { type: 'workspace-allocation/changed', allocation: releaseRequested, createdAt: 32 },
         { type: 'workspace-allocation/changed', allocation: released, createdAt: 33 },
         taskChanged({ task: stoppedTask, createdAt: 34 }),
@@ -239,7 +250,7 @@ for (const backend of ['json', 'sqlite'] as const) {
         expect((await ctx.teams.getTeam({ teamId })).tasks[0]?.phase).toBe(phase)
       }
       const f = fixture()
-      const deleted = task({ id: 'deleted-task' })
+      const deleted = task({ id: 'deleted-task', createdAt: 15 })
       const rows = [...f.settled.slice(0, 6), taskChanged({ task: deleted, createdAt: 15 }),
         taskChanged({ task: { ...deleted, revision: 2, phase: 'deleted' }, createdAt: 16 }),
         ...f.settled.slice(6), ...closureRecords('failed')]

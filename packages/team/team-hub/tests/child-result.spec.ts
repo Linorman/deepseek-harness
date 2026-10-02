@@ -49,7 +49,8 @@ function members(teamId: string, id: string, kind: string, role: string, at: num
 function history(options: { missing?: boolean; wrongCause?: boolean; live?: boolean; parentCancelling?: boolean } = {}) {
   const creation = { parentTeamId: parentId, parentTaskId: binding.parentTaskId, delegationId: binding.delegationId,
     goal: { objective: 'Run delegated work', budgets: {} }, rules: {}, budgets: {}, authorityGrant: grant }
-  const initial = teamTaskSnapshotSchema.parse({ id: binding.parentTaskId, teamId: parentId, revision: 1,
+  const initial = teamTaskSnapshotSchema.parse({
+    createdAt: 1005, id: binding.parentTaskId, teamId: parentId, revision: 1,
     execution: { kind: 'child-team', templateId: 'fixture', templateVersion: 1, authorityGrant: grant, budget: {} },
     createCommand: { creator: { teamId: parentId, participantId: 'parent-human' }, idempotencyKey: 'create-delegation' },
     subject: 'Delegated work', description: 'Complete the child', phase: 'pending', blockedBy: [], requiredCapabilities: [],

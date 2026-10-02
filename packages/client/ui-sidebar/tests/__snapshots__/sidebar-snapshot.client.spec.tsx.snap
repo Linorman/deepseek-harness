@@ -47,7 +47,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
       </button>
     </div>
     <button
-      aria-label="New task"
+      aria-label="New team work"
       class="newSession"
       type="button"
     >
@@ -60,6 +60,15 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         xmlns="http://www.w3.org/2000/svg"
       />
     </button>
+    <nav
+      aria-label="Workspaces"
+      class="productNavigation"
+    >
+      <div
+        data-slot="sidebar.workspaceNavigation"
+        style="display: contents;"
+      />
+    </nav>
     <div
       class="regionArea"
     >
@@ -109,7 +118,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       class="logoRow"
     >
       <button
-        aria-label="New task"
+        aria-label="New team work"
         class="brand wide"
         type="button"
       >
@@ -167,7 +176,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       </button>
     </div>
     <button
-      aria-label="New task"
+      aria-label="New team work"
       class="newSession"
       type="button"
     >
@@ -182,9 +191,18 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       <span
         class="newSessionLabel wide"
       >
-        New Task
+        New team work
       </span>
     </button>
+    <nav
+      aria-label="Workspaces"
+      class="productNavigation"
+    >
+      <div
+        data-slot="sidebar.workspaceNavigation"
+        style="display: contents;"
+      />
+    </nav>
     <div
       class="regionArea"
     >
@@ -234,7 +252,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       class="logoRow"
     >
       <button
-        aria-label="新建任务"
+        aria-label="新建团队工作"
         class="brand wide"
         type="button"
       >
@@ -292,7 +310,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       </button>
     </div>
     <button
-      aria-label="新建任务"
+      aria-label="新建团队工作"
       class="newSession"
       type="button"
     >
@@ -307,9 +325,18 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
       <span
         class="newSessionLabel wide"
       >
-        新任务
+        新建团队工作
       </span>
     </button>
+    <nav
+      aria-label="工作区"
+      class="productNavigation"
+    >
+      <div
+        data-slot="sidebar.workspaceNavigation"
+        style="display: contents;"
+      />
+    </nav>
     <div
       class="regionArea"
     >

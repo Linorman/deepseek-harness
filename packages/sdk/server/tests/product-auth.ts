@@ -22,6 +22,7 @@ const SDK_TEST_PRODUCT_PROVIDER = 'local'
 function testProductPrincipalProvider(
   credential = SDK_TEST_CREDENTIAL,
   name = SDK_TEST_PRODUCT_PROVIDER,
+  principalId = 'sdk-test-principal',
 ): ProductPrincipalProvider {
   return {
     name,
@@ -34,7 +35,7 @@ function testProductPrincipalProvider(
       }
       const controller = new AbortController()
       const principal: ProductPrincipal = Object.freeze({
-        id: productPrincipalId('sdk-test-principal'),
+        id: productPrincipalId(principalId),
         issuer: name,
         subject: 'sdk-test-user',
         assurance: 'test',
@@ -56,13 +57,14 @@ export async function installTestProductPrincipals(ctx: Context, credential = SD
 }
 
 /** Structural authentication registry for tests that intentionally use a partial Context. */
-export function testProductPrincipals(credential = SDK_TEST_CREDENTIAL): Pick<ProductPrincipalRegistry, 'authenticate'> {
+export function testProductPrincipals(credential = SDK_TEST_CREDENTIAL, principalId = 'sdk-test-principal'): Pick<ProductPrincipalRegistry, 'authenticate'> {
   return {
     async authenticate(request): Promise<AuthenticatedProductPrincipalLease> {
-      const provider = testProductPrincipalProvider(credential)
+      const provider = testProductPrincipalProvider(credential, SDK_TEST_PRODUCT_PROVIDER, principalId)
       const providerLease = await provider.authenticate(request)
       let revoked = false
       return {
+        signal: providerLease.signal,
         async withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>): Promise<T> {
           if (revoked || providerLease.signal.aborted) {
             throw new ProductPrincipalError('Product authentication is invalid', 'PRODUCT_AUTH_INVALID')

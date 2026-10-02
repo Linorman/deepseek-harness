@@ -1,3 +1,4 @@
+import { assertTaskUpdateReceiptOwner, foldTaskUpdateCommand } from './task-update.ts'
 import { liveActivationCapacity, liveActivationLimit } from '@clocky/clocky-team'
 import { projectWorkspaceObservation, assertWorkspaceObservationSnapshot } from './workspace-observation.ts'
 /** Pure replay folds for Team journals and channel WALs. @module @clocky/clocky-team-hub/fold */
@@ -17,6 +18,7 @@ import {
   deliveryIntentSchema,
   jsonObjectSchema,
   jsonValueSchema,
+  taskHasActiveExecution,
 } from '@clocky/clocky-team'
 import { workflowTerminalOutcome } from './workflow-outcomes.ts'
 import type {
@@ -237,6 +239,7 @@ export function teamProjectionData(projection: TeamProjection): TeamProjectionDa
     budgets: structuredClone(projection.budgets),
     participants: [...projection.participants.values()].map(participant => structuredClone(participant)),
     tasks: [...projection.tasks.values()].map(task => structuredClone(task)),
+    taskUpdateCommands: [...projection.taskUpdateCommands.values()].map(command => structuredClone(command)),
     taskExecutionStats: [...projection.taskExecutionStats.values()].map(stats => structuredClone(stats)),
     workspaceAllocations: [...projection.workspaceAllocations.values()].map(allocation => structuredClone(allocation)),
     activations: [...projection.activations.values()].map(binding => structuredClone(binding)),
@@ -447,6 +450,7 @@ export function teamProjectionFromData(data: TeamProjectionData): TeamProjection
     participants,
     taskExecutionStats,
     tasks,
+    taskUpdateCommands: new Map(data.taskUpdateCommands.map(command => [command.input.commandId, structuredClone(command)])),
     workspaceAllocations,
     activations,
     interrupts,
@@ -458,6 +462,8 @@ export function teamProjectionFromData(data: TeamProjectionData): TeamProjection
     workflowPlans,
     channelIds,
   }
+  if (projection.taskUpdateCommands.size !== data.taskUpdateCommands.length) throw malformedTeam('Team checkpoint repeats a task update command identity')
+  for (const receipt of projection.taskUpdateCommands.values()) assertTaskUpdateReceiptOwner(projection, receipt, false)
   if (projection.finalAdmission !== null) assertFinalAdmission(projection, projection.finalAdmission, projection.team.updatedAt)
   if (projection.team.childRun !== undefined) assertChildRunBinding(projection, projection.team.childRun)
   if (projection.team.childResultAdmission !== undefined) {
@@ -467,11 +473,14 @@ export function teamProjectionFromData(data: TeamProjectionData): TeamProjection
     }
   }
   for (const task of tasks.values()) {
+    if (task.createdAt < data.team.createdAt || task.createdAt > data.team.updatedAt) {
+      throw malformedTeam(`task '${task.id}' creation time is outside its Team lifetime`)
+    }
     assertTaskCreateProvenance(projection, task, false)
     assertTaskOwnerProposal(projection, task)
     assertCheckpointTaskAttempts(projection, task)
   }
-  assertTaskCancellationSettlements(projection)
+  assertTaskCancellationSettlements(projection); assertTaskRetirementEvidence(projection)
   assertChildTeamReservations(projection)
   assertActivationCapacity(projection)
   assertDistinctCurrentWakeChannels(projection)
@@ -544,6 +553,7 @@ function foldTeamRecordValue(
       budgets: structuredClone(record.budgets),
       participants: new Map(),
       tasks: new Map(),
+      taskUpdateCommands: new Map(),
       taskExecutionStats: new Map(),
       workspaceAllocations: new Map(),
       activations: new Map(),
@@ -731,6 +741,21 @@ function foldTeamRecordValue(
       return foldParticipant(previous, record, team, streamTeamId)
     case 'task/changed':
       return foldTask(previous, record, team, streamTeamId)
+    case 'task/update-rejected': {
+      const command = record.command
+      const task = previous.tasks.get(command.input.taskId)
+      const failure = taskUpdateFailure(previous, command.input)
+      if (task === undefined || task.revision !== command.observedRevision || record.createdAt !== command.rejectedAt
+        || previous.taskUpdateCommands.has(command.input.commandId)
+        || failure?.reason !== command.reason || failure.message !== command.message) {
+        throw malformedTeam('Task update refusal does not match a fresh original command and its observed task')
+      }
+      const candidate = { ...previous, team }
+      assertTaskUpdateReceiptOwner(candidate, command, true)
+      const taskUpdateCommands = new Map(previous.taskUpdateCommands)
+      taskUpdateCommands.set(command.input.commandId, structuredClone(command))
+      return { ...candidate, taskUpdateCommands }
+    }
     case 'workspace/observed': {
       const allocation = previous.workspaceAllocations.get(record.observation.allocationId)
       const task = allocation === undefined ? undefined : previous.tasks.get(allocation.taskId)
@@ -791,6 +816,7 @@ type ClosureCleanupRecord = Exclude<TeamJournalRecord, { readonly type:
   | 'usage/parent-charge-pending'
   | 'usage/child-charged'
   | 'policy/denied'
+  | 'task/update-rejected'
 }>
 
 /** Reject new or reopening business work after a non-cancellation closure intent. */
@@ -1613,6 +1639,34 @@ function safeCostAdd(left: number, right: number): number {
   return value
 }
 
+/**
+ * Determine a semantic refusal before storage append using the authoritative task mutation fold.
+ * @param projection - Current Team state under its serializer.
+ * @param input - Normalized parsed update for a retained task.
+ * @returns deterministic refusal reason/diagnostic, or undefined for an admissible editable replacement.
+ */
+export function taskUpdateFailure(projection: TeamProjection, input: import('@clocky/clocky-team').TeamTaskDetailsUpdateInput):
+  { readonly reason: import('@clocky/clocky-team').TeamTaskUpdateRejectionReason; readonly message: string } | undefined {
+  const current = projection.tasks.get(input.taskId)
+  if (current === undefined) throw malformedTeam('Task update refusal has no retained target task')
+  if (current.revision !== input.expectedRevision) return { reason: 'stale-revision',
+    message: `Team task '${current.id}' revision ${input.expectedRevision} is stale; current revision is ${current.revision}` }
+  if (current.workflowPlanId !== undefined) return { reason: 'workflow-owned',
+    message: `workflow task '${current.id}' cannot be directly modified by 'edit'` }
+  if (taskHasActiveExecution(current)) return { reason: 'active-execution', message: `Team task '${current.id}' has active execution` }
+  const task = { ...current, revision: current.revision + 1,
+    ...input.subject === undefined ? {} : { subject: input.subject },
+    ...input.description === undefined ? {} : { description: input.description },
+    ...input.blockedBy === undefined ? {} : { blockedBy: [...input.blockedBy] } }
+  try {
+    foldTask(projection, { type: 'task/changed', task, createdAt: projection.team.updatedAt }, projection.team, projection.team.id)
+  } catch (cause: unknown) {
+    if (!(cause instanceof TeamHubError) || cause.code !== 'TEAM_JOURNAL_MALFORMED') throw cause
+    return { reason: 'invalid-edit', message: cause.message }
+  }
+  return undefined
+}
+
 /** Fold one full task snapshot and validate the resulting dependency graph. */
 function foldTask(
   previous: TeamProjection,
@@ -1627,6 +1681,7 @@ function foldTask(
   const current = previous.tasks.get(task.id)
   if (current === undefined) {
     if (task.revision !== 1) throw malformedTeam(`task '${task.id}' must start at revision 1`)
+    if (task.createdAt !== record.createdAt) throw malformedTeam(`task '${task.id}' creation time does not match its first journal record`)
     assertTeamTransition(() => { assertTeamTaskPhaseTransition(undefined, task.phase) })
     assertInitialTaskAttemptState(task)
     if (task.execution.kind === 'child-team' && (task.delegation?.phase !== 'requested'
@@ -1658,7 +1713,9 @@ function foldTask(
   assertTaskGraph(tasks, task.phase === 'deleted' ? task.id : undefined)
   const taskExecutionStats = addTaskExecutionStats(previous.taskExecutionStats, task,
     task.attemptHistory.slice(current?.attemptHistory.length ?? 0), previous.rules)
-  const projection = { ...previous, team, tasks, taskExecutionStats }
+  const candidate = { ...previous, team, tasks, taskExecutionStats }
+  const taskUpdateCommands = foldTaskUpdateCommand(previous, current, task, record.detailsCommand, record.createdAt, candidate)
+  const projection = { ...candidate, taskUpdateCommands }
   assertTaskReviewHistory(projection, task)
   assertTaskDependencyOutcome(projection, task)
   assertChildTeamReservations(projection)
@@ -1929,6 +1986,7 @@ function assertTaskOwnerProposal(projection: TeamProjection, task: TeamTaskSnaps
 
 /** Preserve fields that only a task's creation record may select. */
 function assertImmutableTaskFields(current: TeamTaskSnapshot, next: TeamTaskSnapshot): void {
+  if (current.createdAt !== next.createdAt) throw malformedTeam(`task '${current.id}' changed its immutable creation time`)
   assertTeamCondition([
     current.parentTaskId === next.parentTaskId,
     isDeepStrictEqual(current.execution, next.execution),
@@ -2282,6 +2340,8 @@ function assertTaskReviewTransition(
     && decision.decidedAt >= attempt.settledAt,
   `task '${current.id}' review decision does not resolve its completed attempt`)
   assertReviewDecision(projection, current, decision, createdAt)
+  assertTeamCondition(decision.simulationCommand === undefined || decision.simulationCommand.expectedRevision === current.revision,
+    `task '${current.id}' Simulation review command selected another revision`)
   assertTeamCondition(decision.nextPhase === next.phase,
     `task '${current.id}' review decision phase does not match its task transition`)
 }
@@ -2299,6 +2359,7 @@ function assertTaskReviewHistory(projection: TeamProjection, task: TeamTaskSnaps
   let priorAttemptIndex = -1
   let priorDecidedAt = -1
   for (const decision of task.reviewHistory) {
+    assertSimulationReviewCommand(projection, task, decision)
     if (decisions.has(decision.attemptId)) {
       throw malformedTeam(`task '${task.id}' repeats review decision for attempt '${decision.attemptId}'`)
     }
@@ -2349,6 +2410,7 @@ function assertReviewDecision(
   decision: TeamTaskReviewDecision,
   createdAt: number,
 ): void {
+  assertSimulationReviewCommand(projection, task, decision)
   assertTeamCondition(
     task.reviewPolicy.kind === 'participant'
     && decision.reviewerId === task.reviewPolicy.reviewerId
@@ -2359,6 +2421,23 @@ function assertReviewDecision(
     && decision.decidedAt === createdAt,
     `task '${task.id}' review resolution has an invalid reviewer or decision`,
   )
+}
+
+/** A durable administrative decision retains its exact native creation and unique run-wide command. */
+function assertSimulationReviewCommand(projection: TeamProjection, task: TeamTaskSnapshot, decision: TeamTaskReviewDecision): void {
+  const command = decision.simulationCommand
+  if (command === undefined) return
+  const creator = task.createCommand.creator
+  assertTeamCondition('kind' in creator && creator.runId === command.runId
+    && creator.operationId === command.operationId && creator.teamId === task.teamId
+    && projection.rules['simulationRunId'] === command.runId
+    && task.createCommand.idempotencyKey === JSON.stringify(['simulation-task', command.runId, command.operationId])
+    && command.expectedRevision < task.revision + 1
+    && ![...projection.tasks.values()].some(other => other.reviewHistory.some(value => value.simulationCommand?.runId === command.runId
+      && value.simulationCommand.commandId === command.commandId && (other.id !== task.id || value.attemptId !== decision.attemptId)))
+    && !task.reviewHistory.some(value => value.simulationCommand?.runId === command.runId
+      && value.simulationCommand.commandId === command.commandId && value.attemptId !== decision.attemptId),
+  `task '${task.id}' has invalid or repeated Simulation review command attribution`)
 }
 
 /** Validate exactly one terminal attempt record replacing the prior current lease. */
@@ -2382,6 +2461,11 @@ function assertSettledLease(
     && projection.participants.get(current.reviewPolicy.reviewerId)?.phase !== 'active') {
     throw malformedTeam(`task '${current.id}' completed without an active configured reviewer`)
   }
+  if (attempt.retirement !== undefined && (attempt.activationId === undefined
+    || attempt.outcome.kind !== 'released' && attempt.outcome.kind !== 'lease-expired'
+      && !(attempt.outcome.kind === 'failed' && isSimulationTask(projection, current)))) {
+    throw malformedTeam(`task '${current.id}' retirement evidence has a non-quiescence outcome`)
+  }
   if (attempt.outcome.kind === 'lease-expired') {
     if (attempt.settledAt < lease.expiresAt) {
       throw malformedTeam(`task '${current.id}' expired its lease before its deadline`)
@@ -2392,7 +2476,7 @@ function assertSettledLease(
   } else {
     const closureRelease = attempt.outcome.kind === 'released'
       && (current.cancellation !== undefined || projection.team.closure !== undefined || projection.team.cancellation !== undefined)
-    assertTaskAttemptOwner(projection, current, lease, !closureRelease)
+    assertTaskAttemptOwner(projection, current, lease, !closureRelease && attempt.retirement === undefined)
   }
   assertAttemptOutcomeTaskPhase(projection, current, next.phase, attempt.outcome)
 }
@@ -2524,7 +2608,8 @@ function quiescedWakeChannelIds(
   for (const task of projection.tasks.values()) {
     for (const attempt of task.attemptHistory) {
       if (attempt.activationId !== activationId || attempt.settledAt !== quiescedAt) continue
-      if (attempt.outcome.kind !== 'released' && attempt.outcome.kind !== 'lease-expired') {
+      if (attempt.outcome.kind !== 'released' && attempt.outcome.kind !== 'lease-expired'
+        && !(attempt.outcome.kind === 'failed' && attempt.retirement !== undefined && isSimulationTask(projection, task))) {
         throw malformedTeam(`activation '${activationId}' quiescence proof retains a non-quiescence task outcome`)
       }
       if (attempt.wakeChannelId !== undefined) channels.add(attempt.wakeChannelId)
@@ -3152,6 +3237,31 @@ function assertTaskCancellationTransition(
       `task '${current.id}' ignored cancellation during settlement`)
     assertTeamCondition([...projection.workspaceAllocations.values()].every(allocation => allocation.taskId !== current.id || allocation.lifecycle === 'released'),
       `task '${current.id}' settled cancellation before workspace release`)
+  }
+}
+
+/** Match immutable Simulation task creation to its canonical Team rule. */
+function isSimulationTask(projection: TeamProjection, task: TeamTaskSnapshot): boolean {
+  const creator = task.createCommand.creator
+  return 'kind' in creator && creator.runId === projection.rules['simulationRunId']
+}
+
+/**
+ * Verify controller-only retirement evidence after its atomic attempt/quiescence batch.
+ * @param projection - Complete hot commit, checkpoint or recovered Team prefix.
+ */
+export function assertTaskRetirementEvidence(projection: TeamProjection): void {
+  for (const task of projection.tasks.values()) {
+    for (const attempt of task.attemptHistory) {
+      if (attempt.retirement === undefined) continue
+      const binding = attempt.activationId === undefined ? undefined : projection.activations.get(attempt.activationId)
+      if (binding?.quiescedAt !== attempt.settledAt || binding.quiescenceSource !== attempt.retirement.source
+        || binding.activation.participantId !== attempt.participantId
+        || attempt.outcome.kind !== 'released' && attempt.outcome.kind !== 'lease-expired'
+          && !(attempt.outcome.kind === 'failed' && isSimulationTask(projection, task))) {
+        throw malformedTeam(`task '${task.id}' retirement evidence has no matching controller quiescence`)
+      }
+    }
   }
 }
 

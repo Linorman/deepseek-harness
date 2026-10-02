@@ -88,6 +88,8 @@ export interface ActivationHandle {
 
 /** One named provider of participant activation epochs. */
 export interface AgentRuntimeProvider {
+  /** Participant mechanisms accepted by this implementation; the registry enforces the same declaration before startup. */
+  readonly participantKinds: readonly ('local-agent' | 'remote-agent')[]
   /** Unique registry name for this placement implementation. */
   readonly name: string
   /** Evidence the provider owns when terminating an activation. */

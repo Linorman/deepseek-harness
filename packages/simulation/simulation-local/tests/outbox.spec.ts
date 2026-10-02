@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { channelIdSchema, envelopeIdSchema } from '@clocky/clocky-team'
 import { JsonStorageBackend } from '@clocky/clocky-storage-json'
 import { SqliteStorageBackend } from '@clocky/clocky-storage-sqlite'
-import { simTimeSchema, simulationDecisionIdSchema, simulationPostReceiptSchema } from '@clocky/clocky-simulation'
+import { simTimeSchema, simulationDecisionIdSchema, simulationPostReceiptSchema, simulationOutboxRetryRequestSchema,
+  simulationOutboxRetryCapability } from '@clocky/clocky-simulation'
 import type { SimulationOutboundMessage, SimulationTeamTransport } from '@clocky/clocky-simulation'
 import { createBusinessHarness } from './business-harness.ts'
 
@@ -83,7 +84,7 @@ describe.each(['json', 'sqlite'] as const)('%s persistent outbox', (backend) => 
   })
 
   it('records unknown outcome at the attempt limit and requires an explicit retry decision', async () => {
-    const { run, root, id } = await setup(backend, { outboxMaxAttempts: 1 })
+    const { run, root, id, provider, selection, leases } = await setup(backend, { outboxMaxAttempts: 1 })
     const remote = await target(root, backend, true)
     await run.drive({ until: simTimeSchema.parse('5') })
     expect(await run.dispatchOperation(id, remote.transport, () => 100)).toEqual({ status: 'outcome-unknown' })
@@ -91,12 +92,66 @@ describe.each(['json', 'sqlite'] as const)('%s persistent outbox', (backend) => 
     await expect(run.setPhase('running', run.snapshot().revision)).rejects.toThrow(/explicit recovery/)
     expect(await run.dispatchOperation(id, remote.transport, () => 200)).toEqual({ status: 'outcome-unknown' })
     expect(remote.calls).toHaveLength(1)
-    await run.retryOutbox(id, 'Reconcile the exact idempotent Team post', 200, run.snapshot().revision)
+    const request = simulationOutboxRetryRequestSchema.parse({ id: 'reconcile-post', operationId: id,
+      expectedAttemptCount: run.snapshot().operations[id]!.outbox!.attempts.length,
+      reason: 'Reconcile the exact idempotent Team post', authorizedAt: 200 })
+    await expect(run.retryOutbox(simulationOutboxRetryRequestSchema.parse({ ...request, id: 'stale-count', expectedAttemptCount: 2 })))
+      .rejects.toThrow(/exact current unknown/)
+    const grant = await run.retryOutbox(request)
+    expect(grant).toMatchObject({ request, budgetStart: 1, maxAttempts: 1 })
+    expect(run.snapshot().phase).toBe('stalled')
+    expect(remote.calls).toHaveLength(1)
+    const granted = run.snapshot()
+    expect(simulationOutboxRetryCapability(granted, id).reason).toBe('not-unknown')
+    expect(granted.operations[id]?.result).toBeUndefined()
+    expect(await run.retryOutbox(request)).toEqual(grant)
+    expect(run.snapshot()).toEqual(granted)
+    await expect(run.retryOutbox({ ...request, reason: 'Different decision' })).rejects.toThrow(/changed its original payload/)
     await run.setPhase('running', run.snapshot().revision)
     expect((await run.dispatchOperation(id, remote.transport, () => 200)).status).toBe('settled')
     expect((await remote.log.read(-1, 100))).toHaveLength(1)
     expect(run.snapshot().operations[id]?.outbox?.attempts).toHaveLength(2)
+    const settled = run.snapshot()
+    expect(simulationOutboxRetryCapability(settled, id).reason).toBe('outcome-known')
+    expect(await run.retryOutbox(request)).toEqual(grant)
+    expect(run.snapshot()).toEqual(settled)
+    for (const lease of leases) { await lease.revoke(); await lease.release() }
+    leases.splice(0)
+    await run.close()
+    const cold = await provider.open({ ...selection, mode: 'open' })
+    try {
+      const before = cold.snapshot()
+      expect(await cold.retryOutbox(request)).toEqual(grant)
+      expect(cold.snapshot()).toEqual(before)
+      expect(cold.snapshot().operations[id]?.outbox?.retryAuthorizations?.[request.id]).toEqual(grant)
+      expect(remote.calls).toHaveLength(2)
+    } finally { await cold.close() }
   })
+})
+
+it('rechecks a retry lease at the native queue and retains an already committed grant after caller retirement', async () => {
+  const h = await setup('json', { outboxMaxAttempts: 1 })
+  await h.run.drive({ until: simTimeSchema.parse('5') })
+  await h.run.dispatchOperation(h.id, { post: () => Promise.reject(new Error('Unknown transport result')) }, () => 100)
+  const request = simulationOutboxRetryRequestSchema.parse({ id: 'lease-fence', operationId: h.id,
+    expectedAttemptCount: 1, reason: 'Reconcile target', authorizedAt: 200 })
+  const entered = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+  const runtime = h.run as unknown as { enqueue<T>(operation: () => Promise<T>): Promise<T> }
+  const blocker = runtime.enqueue(async () => { entered.resolve(undefined); await release.promise })
+  await entered.promise
+  let allowed = true
+  const pending = h.run.retryOutbox(request, () => { if (!allowed) throw new Error('Retired caller lease') })
+  allowed = false
+  release.resolve(undefined)
+  await blocker
+  await expect(pending).rejects.toThrow('Retired caller lease')
+  expect(h.run.snapshot().operations[h.id]?.outbox?.retryAuthorizations).toBeUndefined()
+  let checks = 0
+  await expect(h.run.retryOutbox(request, () => { if (++checks === 2) throw new Error('Retired after native acceptance') }))
+    .rejects.toThrow('Retired after native acceptance')
+  const before = h.run.snapshot()
+  expect((await h.run.retryOutbox(request)).request).toEqual(request)
+  expect(h.run.snapshot()).toEqual(before)
 })
 
 it('does not hold the run write queue during IO and drains accepted dispatch before closing storage', async () => {

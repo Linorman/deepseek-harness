@@ -19,7 +19,7 @@ describe('ImageLightbox', () => {
     expect(document.activeElement).toBe(close)
     fireEvent.keyDown(window, { key: 'a' })
     expect(onClose).not.toHaveBeenCalled()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent(view.getByRole('dialog'), new Event('cancel', { cancelable: true }))
     fireEvent.click(close)
     expect(onClose).toHaveBeenCalledTimes(2)
     view.unmount()

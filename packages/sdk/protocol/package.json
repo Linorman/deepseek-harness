@@ -39,7 +39,8 @@
     "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
     "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-attachment": "workspace:^"
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   },
   "devDependencies": {
     "@clocky/clocky-invariants": "workspace:^",
@@ -47,6 +48,7 @@
     "@clocky/clocky-session": "workspace:^",
     "@clocky/clocky-team": "workspace:^",
     "@clocky/cordis": "workspace:^",
-    "@clocky/clocky-attachment": "workspace:^"
+    "@clocky/clocky-attachment": "workspace:^",
+    "@clocky/clocky-simulation-product": "workspace:^"
   }
 }

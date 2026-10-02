@@ -2,21 +2,61 @@
 
 [English](README.md) | 中文
 
+查看 store 在写入前保留原更新输入和 ID。结果不确定时禁用新提交，并提供精确查询／重试。确认拒绝后保留字段和已确定结果的原提交输入；修正字段或明确核对更新的 revision 后才启用新 ID。查询元数据的原 revision 不匹配时不能释放草稿。确认受理后保留后来的输入供当前版本核对。关闭／导航在共享额度内保留输入；丢弃不会取消已提交更新。
+
+任务 inspector 在精确 Team／task 输入槽位仍保留时提供**打开编辑草稿**，包括执行中、已取消和已删除任务。仅 active Team 且具备当前管理资格时启用新提交与原请求重试；stalled、quiescing 与终态 Team 保留输入并明确说明只读；规范父团队检查、终态 Team 或没有管理回调的部署仍可查询。显示字段前，对话框仍等待当前授权任务检查。当前版本读取失败时保留刷新入口；重新验证成功前，版本确认与写入仍禁用。打开或查询草稿不启动执行，也不授予修改权限。
+
+目录行包含有界标题和 Host 计算的访问状态。截断标题保留省略号；父团队检查行不提供归档操作。当前页或续页失败保留已有窗口，过期游标通过明确的首页操作恢复。
+
+Host 选择结果中的 `readAccess: "parent-inspection"` 打开标明只读的子团队工作区。成员名称、就绪度和详情通过规范父团队归属继续提供检查；不注入修改、取消、恢复和人工回答回调。查看或重载子团队不恢复其执行。
+
+Host 选择结果与目录元数据中的 `executionManagement: "simulation-managed"` 将工作区标明为由仿真管理，并隐藏普通 Team 恢复、取消、任务／成员／频道修改、邀请确认与人工回答。任务、频道、成员和 Session 检查保留既有读取授权。保留的任务草稿可检查，但不授予提交权限；调度、恢复与事件输入归仿真工作区。
+
+没有已绑定协调者的 Team 仍保留完整检查工作区，只省略协调会话入口。成员与任务尝试的 Session 链接仍核对准确且授权的 Participant 绑定。
+
+任务、尝试与频道名称使用 runtime 身份缓存。`identityRefreshMs` 默认 5000 毫秒，`identityBatchSize` 默认每次请求 64 个 ID，`identityCacheCapacity` 默认每个连接保留 512 个身份。成员翻页不清除引用名称。引用可打开成员详情并复制完整 ID；授权拒绝清除已加载详情，暂时读取失败保留详情。网络中断保留同一授权上下文的名称，授权失败则清除。
+
+成员登记提供部署配置选择和手动执行信息。Runtime 拥有的目录观测使用 `capabilityRefreshMs`；选择配置后锁定描述字段。读取失败、权限撤销和选项不可用时暂停提交并保留输入。刷新返回目录首批；登记本身不会启动执行。
+
 `@clocky/clocky-client-ui-team` 根据 `ctx.teamTasks` 渲染 Team 导航和运行工作台。选择 Team 或子 Team 使用只读检查；显式“恢复”操作负责恢复执行。概览汇总完整 Team 的任务数量、子树用量、人工待处理事项、成员、有界最近动态及可见产物，不会从 Session 转录重建 Team 权威状态。
 
 插件通过声明感知的 `slots.inject()` 贡献到 `sidebar.teamTasks` 和 `team.workspace`。任务、频道、成员、产物、工作流计划和审计记录分别拥有独立视图。任务表格打开一个简洁检查栏；完整指令、尝试历史、审核、整合、停止和删除均为显式操作。修改失败保留当前表单及权威 revision 检查。
 
-注册拥有的查看状态 store 保留各 Team 的筛选、任务选择、滚动位置和频道草稿。URL 只包含视图标识与筛选；浏览器导航通过只读 Host 投影恢复状态，并拒绝属于其他 Team 的任务、频道或 Session 标识。Session 按需在布局拥有的子页面中打开。具体任务尝试根据记录的 Participant 及其不可变 Session 绑定打开会话；较早的异步请求不能在后续导航或关闭操作后改变 Session 选择。
+注册拥有的查看状态 store 保留各 Team 的筛选、任务选择、滚动位置、频道草稿和独立的任务表单草稿。URL 只包含视图标识与筛选；浏览器导航等待连接握手完成后，通过只读 Host 投影恢复状态，并拒绝属于其他 Team 的任务、频道或 Session 标识。断线取消尚未完成的恢复读取，但不改写其 URL。Session 按需在布局拥有的子页面中打开。具体任务尝试根据记录的 Participant 及其不可变 Session 绑定打开会话；较早的异步请求不能在后续导航或关闭操作后改变 Session 选择。
 
 详情表单通过已认证的 Host 命令邀请和管理成员、创建直接通道、发送定向消息、编辑任务依赖、记录审阅决定，以及创建产物整合任务。命令失败时保留草稿；任务版本变化后，编辑和审阅需先明确核对最新版本。Team 列表、通道记录和审计记录均提供显式续页控件，读取失败保留已显示记录。
 
-所选 Team 的成员、任务、工作流计划和产物集合分别通过有界 page 独立读取。每个集合独立拥有 cursor、loading、续页、error 和 newer 状态；下一页替换当前窗口，返回首页从头读取，刷新重读当前页。每个集合最多保留一个受 server 上限约束的 page；已选任务查看和未提交输入不因换页丢失。旧 Team selection 的迟到 response 会被丢弃。读取失败保留已加载 rows 和 newer 标记；取消读取会清除 loading，首次读取失败也提供 Refresh。任务表单读取独立详情和有界 attempt 选项；Team 范围的表单选项仍使用 Team 投影。产物视图只展示 provider 允许且非 private 的 references。
+任务负责人依据已授权的任务身份显示，即使对应成员不在已加载页面中；缺少名称不表示任务未分配。已选依赖不在候选页时仍可按 ID 移除，保存时提交完整的剩余集合。空产物与工作流页面保留标题和刷新控件，并区分空结果、加载及读取错误。
+
+所选 Team 的成员、任务、工作流计划和产物集合分别通过有界 page 独立读取。每个集合独立拥有 cursor、loading、续页、error 和 newer 状态；下一页替换当前窗口，返回首页从头读取，刷新重读当前页。每个集合最多保留一个受 server 上限约束的 page；已选任务查看和未提交输入不因换页丢失。旧 Team selection 的迟到 response 会被丢弃。读取失败保留已加载 rows 和 newer 标记；取消读取会清除 loading，首次读取失败也提供 Refresh。任务表单读取独立详情和有界 attempt 选项；成员与审阅者选项使用已加载的成员页。产物视图只展示 provider 允许且非 private 的 references。
 
 Child task 详情展示持久化的 execution/delegation phase、failure、已接纳的 result text 和可见 result artifact。`openTeam(childTeamId)` 以只读方式打开 child，绝不会自动 resume。任务行使用 browse 摘要，当前字段与历史通过版本条件独立读取。Workflow row 会接收 Team snapshot 中相同 id 的更新 revision。页外 workflow task 直接打开详情并聚焦关闭按钮，不伪造列表行。Workflow plan 只读展示 phase、bounds、ordered template、binding、dependency、result count 和 failure；authoring 仍由 `team_workflow_*` tool 拥有。
 
-成员详情通过`team.member.inspect`读取准确身份、角色、非敏感 placement 信息及一页 capability。续页使用已观察的 Team cursor，冲突后需要刷新。页面不包含 grant、启动配置或 attempt 统计，并受 Hub 响应字节额度限制。
+成员详情渲染 runtime 持有的分页，React 仅保留选择与剪贴板反馈。断线保留并标记旧内容，握手后重新验证同一窗口；验证前禁用分页，关闭对话框释放分页。成员详情通过`team.member.inspect`读取准确身份、角色、非敏感 placement 信息及一页 capability。续页使用已观察的 Team cursor，冲突后需要刷新。页面不包含 grant、启动配置或 attempt 统计，并受 Hub 响应字节额度限制。
 
-跨 Team 频道草稿默认最多保留 32 条，总序列化记录不超过 8 MiB。公开浏览器选项`maxDrafts`、`maxDraftBytes`和`maxViewStates`通过`client-modules.browserConfig["@clocky/clocky-client-ui-team"]`配置。浏览偏好默认保留 128 条，只淘汰没有草稿的旧视图；`maxViewStates`必须大于`maxDrafts`。超限拒绝保留原草稿；无法保存重试身份时不会发送。发送确认和明确确认的丢弃操作释放草稿位置。 图片批次在文件读取前按`maxDraftBytes`检查 base64 膨胀、已有内容与文件名元数据；通过检查的文件依次编码。草稿发布前，store 仍检查全部保留草稿的累计额度。
+跨 Team 频道、任务表单和人工答复草稿共享默认 32 条上限，总序列化记录不超过 8 MiB。公开浏览器选项`maxDrafts`、`maxDraftBytes`和`maxViewStates`通过`client-modules.browserConfig["@clocky/clocky-client-ui-team"]`配置。浏览偏好默认保留 128 条，只淘汰没有草稿的旧视图；`maxViewStates`必须大于`maxDrafts`。超限拒绝保留原草稿；无法保存重试身份时不会发送。发送确认和明确确认的丢弃操作释放草稿位置。 图片批次在文件读取前按`maxDraftBytes`检查 base64 膨胀、已有内容与文件名元数据；通过检查的文件依次编码。草稿发布前，store 仍检查全部保留草稿的累计额度。
+
+依赖编辑器将已选 ID 与 Host 标题查询的独立分页分开。搜索需显式提交，Enter 尊重输入法组合态，清除会立即重新查询并恢复焦点。候选读取不修改已选依赖；续页过期时保留页面并要求刷新，新搜索取消旧读取。任务主表分页保持独立。
+
+任务表格通过独立的有界 Host 查询搜索整个获准读取的 Team。已提交的标题搜索和状态筛选可从 URL 重载恢复；未提交文本留在本地。清除立即提交并恢复输入焦点。首页和续页只替换任务窗口，保留详情与依赖输入；过期或失败页面保留内容并提供刷新。不支持该查询的 Host 保留标明范围的当前已加载页搜索。
+
+创建任务前需取得 Host 能力观察。获准的工作区模式出现在基础表单，不可用模式、路径约束、placement 和预算位于高级执行选项。能力读取错误保留草稿并阻止提交。公共配置 `capabilityRefreshMs` 默认为 5000 ms，在表单打开期间重新检查独立的 provider／scheduler 变化，表单销毁时停止，断线时暂停。观察只是提示，不是写权限。
+
+成员卡、概览预览和成员详情将参与资格与 Host 拥有的执行就绪度分开展示。Runtime 只观察显示中的 ID，原子发布其有界分页，并标记过期读取。`readinessRefreshMs` 默认 5000 ms，视图关闭时停止轮询，断线时暂停。后台检查保留焦点，并将已有错误保留到恢复。允许参与改变成员资格，不代表已有执行路由。
+
+概览独立于主体 inbox 读取有界 Team 待处理预览。权威总量非零时，预览失败仍保留“查看全部待处理”。“更多”菜单打开独立分页的待处理工作区；刷新失败保留条目，revision 变化禁用续页，URL 重载恢复模块。任务／阻塞入口打开精确的检查 owner；人工事项入口打开专用的当前请求详情，Session 上下文仍需显式检查。
+
+人工请求草稿在关闭详情、切换模块／Team 和重连后保留答复与重试身份。答复前必须核对当前请求；事实变化或断线时禁止提交。关闭保留输入，显式丢弃需确认，有草稿时离开页面会警告。刷新页面和账号／权限替换会清除这些只在内存中的草稿。请求 URL 只携带 action ID，由 Host 重新校验；已处理请求显示当前状态，不提供答复控件。
+
+任务创建、编辑、审核和整合按 Team／操作／任务身份独立保留原始字段、初始 revision 和创建重试身份。关闭、模块／Team 切换、后退和重连保留输入；显式丢弃需确认，提交确认后清理，有未提交任务输入时离开页面会警告。重载和账号／权限替换会清除内存草稿。URL 只携带表单类型与任务 ID，通过当前 Host 检查后恢复；过期 revision 必须重新核对。字段未加载时不初始化为空值。
+
+编辑冲突逐项比较当前与待提交的名称、完整说明和依赖列表；新事实读取完成之前不标为当前版本。精确依赖状态由 runtime 独立读取，已删除／不可用项保留明确的移除入口，禁用提交且不自动修改草稿。`taskReferenceCapacity` 默认 512 个引用，`taskReferenceBatchSize` 默认每次 64 个 ID，`taskReferenceRefreshMs` 默认 5000 毫秒；关闭表单停止观察，断线保留标明未核对的内容。
+
+产物引用与字节检查由不同所有者持有。Runtime 保留单一精确且已验证的字节窗口；产物视图通过 props 消费，不在 React 缓存响应。读取及刷新失败仅保留同一获准目标；Team／主体退役清理字节并拒绝旧响应，普通断线明确标记过期。独立列表分页及模块导航保留已选窗口。预览字节上限和 provider 批准的二进制处理保持原约束；下载使用已获准保留字节。
+
+精确路由恢复将请求目标与保留的 Team 分开。加载另一目标和目标失败均有独立主体；同目标刷新保留页面挂载及频道位置。只含视图标识的单跳来源路由可经独立鉴权返回。频道、任务及人类操作草稿继续由原有 store 保留。
+
+全局入口和首次输入动作称为团队工作；Team 内的执行任务仍称为任务，文件系统分组称为工作目录。任务摘要优先显示状态、执行者、依赖和当前结果，审核与执行记录入口位于完整说明及历史展开区之前。
 
 ## 模型体验
 
@@ -29,5 +69,5 @@ Child task 详情展示持久化的 execution/delegation phase、failure、已�
 ## 已知限制与暂缓事项
 
 - **产物 provider**——整合需要已配置的工作区 provider 和有效的来源 attempt；无 provider 的引用仅显示 metadata，private artifact 不会列出。
-- **approval/question 路由**——页面列出带 provenance 的 live 与 durable request；回答 control 仍由 Host interaction API 和 coordinator transcript 拥有。
+- **审批／提问路由** — 待处理详情通过 Host 读取保留请求；非标准问题正文只提供上下文检查。答复仍由 Host 交互 owner 负责，不表示工具完成。
 - **transport/browser 验证**——collection race、remote transport 以及完整 child/workflow mutation journey 仍需要独立的 browser 和 multi-host evidence lane。

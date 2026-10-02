@@ -914,6 +914,11 @@ exports[`json knowledge visibility > retains knowledge authority with crash=task
   "tasks": {
     "explicit": {
       "commitment": "open",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
     "quiescing": {
@@ -923,6 +928,11 @@ exports[`json knowledge visibility > retains knowledge authority with crash=task
     },
     "task-completed": {
       "commitment": "fulfilled",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
   },
@@ -994,6 +1004,11 @@ exports[`json knowledge visibility > retains knowledge authority with crash=task
   "tasks": {
     "explicit": {
       "commitment": "open",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
     "quiescing": {
@@ -1003,6 +1018,11 @@ exports[`json knowledge visibility > retains knowledge authority with crash=task
     },
     "task-completed": {
       "commitment": "fulfilled",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
   },
@@ -1990,6 +2010,11 @@ exports[`sqlite knowledge visibility > retains knowledge authority with crash=ta
   "tasks": {
     "explicit": {
       "commitment": "open",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
     "quiescing": {
@@ -1999,6 +2024,11 @@ exports[`sqlite knowledge visibility > retains knowledge authority with crash=ta
     },
     "task-completed": {
       "commitment": "fulfilled",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
   },
@@ -2070,6 +2100,11 @@ exports[`sqlite knowledge visibility > retains knowledge authority with crash=ta
   "tasks": {
     "explicit": {
       "commitment": "open",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
     "quiescing": {
@@ -2079,6 +2114,11 @@ exports[`sqlite knowledge visibility > retains knowledge authority with crash=ta
     },
     "task-completed": {
       "commitment": "fulfilled",
+      "source": {
+        "attempt": "completed",
+        "creation": "accepted",
+        "executor": "assignee",
+      },
       "task": "completed",
     },
   },

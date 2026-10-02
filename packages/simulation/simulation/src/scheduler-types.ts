@@ -1,14 +1,15 @@
 /** Event and wake projections retain responsibility across process death. @module @clocky/clocky-simulation/scheduler-types */
 import type { z } from 'zod'
 import type {
-  simulationDriveRequestSchema, simulationEventActionSchema, simulationEventIdSchema, simulationEventKeySchema,
+  simulationDriveRequestSchema, simulationEventActionSchema, simulationEventKeySchema,
   simulationEventPhaseSchema, simulationEventSlotSchema, simulationWakeRequestSchema,
 } from './scheduler.ts'
+import type { SimulationEventId } from './identities.ts'
 import type { SimulationEntityId } from './entity-types.ts'
 import type { SimulationDecisionId, SimulationOperationId } from './business-types.ts'
 
 /** Durable event identity. */
-export type SimulationEventId = z.infer<typeof simulationEventIdSchema>
+export type { SimulationEventId } from './identities.ts'
 /** Decimal schedule allocation counter. */
 export type SimulationEventSlot = z.infer<typeof simulationEventSlotSchema>
 /** Policy-ordered event phase. */

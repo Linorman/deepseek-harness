@@ -21,6 +21,8 @@ Task waits, workflow waits, and blocking task watches reject with `TEAM_RUN_REVI
 
 Child coordinator model failures retain their original error code in the Team failure intent. Turn-end handling uses the still-owned activation binding after the model turn stops, rechecks ownership before issuing a proof, and retries cursor conflicts within `receiptRetryAttempts`; public task and goal commands still require the current coordinator turn.
 
+Member readiness recognizes managed identities from this run’s retained coordinator, worker, reviewer and template-member records. It reads frozen execution profiles and pool targets without starting or resuming the run. A matching display role is not evidence of ownership.
+
 ## Configuration
 
 `channelPageSize` is a positive safe-integer setting that defaults to `128`; `waitForFinal()` uses it to read the final-output channel WAL through bounded provider pages.

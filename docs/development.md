@@ -2,98 +2,63 @@
 
 English | [中文](development.zh.md)
 
-The setup tutorial takes a new contributor from prerequisites to a checked checkout. The contributor reference that follows covers repository layout, daily workflow, and CI organization. Design rationale and implementation details belong to the linked Agent Notes and scripts.
+Start with the setup tutorial; use the contributor reference for builds, checks, and Git recovery.
 
 ## Setup tutorial
 
 ### Prerequisites
 
-- Node.js supports 22.19+ and 24+. CI covers 22.19, 24, and 26; see the [Node engine floor Agent Note](../.agents/notes/implemented/process/2026-07-06-node-engine-floor.md).
-- Corepack-enabled pnpm. The repo pins `pnpm@11.7.0` in `package.json`; run `corepack enable` if `pnpm --version` does not resolve through Corepack.
-- Git 2.26 or newer; hook setup enables Git's worktree-specific configuration extension.
-- Optional: a provider API key for the Web, headless, and ACP automation demos and real-API e2e tests.
+- Node.js 22.19–22.x or 24+, as declared in [`package.json`](../package.json). CI covers 22.19, 24, and 26.
+- Corepack-enabled pnpm. The repo pins `pnpm@11.7.0`; run `corepack enable` if `pnpm --version` does not resolve through Corepack.
+- Git 2.26 or newer; hook setup uses worktree-specific configuration.
+- Optional: provider credentials for demos and real-model e2e tests; see [environment variables](#environment-variables).
 
 ### First-time setup
 
-Install dependencies from the repo root:
+From the repo root:
 
 ```sh
 pnpm install
+pnpm run typecheck
 ```
 
-The install also configures worktree-local Lefthook hooks and the `clocky-translation-pairing` Git merge driver through `scripts/install-lefthook.mjs`. The [worktree-local hooks Agent Note](../.agents/notes/implemented/process/2026-07-27-worktree-local-lefthook.md) owns the hook-path safety contract; the [automatic pairing merges Agent Note](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md) owns the merge driver.
-
-If either integration is missing because dependencies were restored from cache or `postinstall` was skipped, install them manually:
+Setup is complete when typecheck succeeds. Installation also configures worktree-local Lefthook hooks and the `clocky-translation-pairing` Git merge driver. If cache restoration or a skipped `postinstall` leaves either missing, run:
 
 ```sh
 node scripts/install-lefthook.mjs
 ```
 
-If the wrapper rejects existing Git configuration or reports a stale lock, follow its diagnostic and the linked Agent Note rather than editing worktree metadata speculatively. After moving a checkout, rerun the wrapper to regenerate the owned path.
-
-Run typecheck once after a fresh clone:
-
-```sh
-pnpm run typecheck
-```
-
-Setup is complete when `pnpm run typecheck` exits successfully.
+Rerun the installer after moving a checkout. If it rejects existing Git configuration or a stale lock, follow its diagnostic; the [hook-path decision](../.agents/notes/implemented/process/2026-07-27-worktree-local-lefthook.md) and [pairing-merge decision](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md) explain ownership and recovery.
 
 ## Contributor reference
 
 ### TypeScript project layout
 
-The repository uses isolated Host and Client aggregates. An ordinary package is registered in exactly one aggregate: Host packages in `tsconfig.host.json` and Client packages in `tsconfig.client.json`.
+Host and Client have separate aggregate programs because they declaration-merge Cordis `Context` keys with different service types. Register each ordinary package in exactly one aggregate.
 
 | File | Role | Forms a program? |
 |---|---|---|
-| `tsconfig.json` | Solution root: `extends` base, `files: []`, and references to the two aggregates. It is the tsserver discovery entry and the entry for explicitly running the complete Project Reference graph; through the inherited `paths`, it is also the resolution config for tsx running `examples/` and `scripts/`. | No |
-| `tsconfig.host.json` | Host aggregate: Host packages, examples, tests, scripts, website, and the exceptional Host project of `api/remotes`. | Yes |
-| `tsconfig.client.json` | Client aggregate: `packages/client/*` packages and their tests, `apps/web`, and the exceptional Client project of `api/remotes`. | Yes |
-| `tsconfig.base.json` | Shared compilerOptions and the source `paths` map. Also the resolution facade the vitest configs point vite-tsconfig-paths at: it has no `include`, so its `paths` apply to every importer. | No |
-| `tsconfig.base.client.json` | Browser compiler settings (`jsx`, DOM libs, `types: []`) extended by the Client aggregate and every `packages/client/*` package. | No |
+| `tsconfig.json` | Solution root, tsserver entry, and tsx resolution config for examples and scripts; references both aggregates. | No |
+| `tsconfig.host.json` | Host packages, examples, tests, scripts, website, and the Host project of `api/remotes`. | Yes |
+| `tsconfig.client.json` | Client packages and their tests, `apps/web`, and the Client project of `api/remotes`. | Yes |
+| `tsconfig.base.json` | Shared compiler options and source `paths`; the Vitest resolution config. Keep it free of `include` and `files`. | No |
+| `tsconfig.base.client.json` | Browser settings inherited by the Client aggregate and Client packages. | No |
 
-Host and Client stay two aggregate programs because both sides declaration-merge the cordis `Context` interface under the same keys with different services; one program seeing both merges reports a collision. The collision exists only inside a `ts.Program` — module resolution never triggers it — which is why the solution may reference both aggregates and one paths facade may span both sides. Three disciplines follow:
+A repo-wide `ts.Program` must seed the Host or Client aggregate explicitly. Flattening the root solution into one program collides the `Context` merges. Module resolution can span both faces without creating this collision; see the [two-aggregate decision](../.agents/notes/implemented/process/2026-07-22-tsconfig-solution-root-two-aggregates.md).
 
-- `tsconfig.base.json` never gains `include` or `files`: they would leak into every extending package project and narrow the facade's match-all scope.
-- A script that builds a repo-wide `ts.Program` seeds `tsconfig.host.json` or `tsconfig.client.json` explicitly — never the root solution, because flattening both aggregates into one program collides the `Context` merges.
-- A new package is registered in exactly one aggregate. Having both a Node loader entry and a browser entry is not a reason to split a package; an ordinary Client plugin produces both runtime artifacts during the Client build phase.
+`api/remotes` alone splits its package tsconfig into Host and Client leaves: Host Typert generates declarations the Client imports. Direct consumers must reference the matching leaf; `constraints` checks this. Ordinary Client plugins emit both Node and browser entries in the Client phase. The [`api-remotes` README](../packages/api/remotes/README.md) owns the split and build ordering.
 
-`api/remotes` is the repository's only package with split Host and Client tsconfigs. Its Host entry must participate in the Host Typert graph, while its Client entry imports `/remote` declarations that Host tsdown must generate first. The package-root `tsconfig.json` is therefore only a solution, and the two aggregates and direct consumers reference `tsconfig.host.json` or `tsconfig.client.json` respectively. The workspace `constraints` gate walks the reachable Project Reference graph and checks each referencing project's own compiler face: a single-config target remains valid from either face, while a split target must name the matching leaf rather than its solution root or opposite leaf; it discovers split packages from the presence of both leaf configs, so a new split joins the gate automatically. Do not copy this structure to other packages; the [`api-remotes` README](../packages/api/remotes/README.md) explains the Host/Client split and build order.
+The complete build runs Host tsc → Host tsdown/Typert → Client tsc → Client tsdown → Web build. Tsdown consumes tsc output in `lib/types`; the [emit-ownership decision](../.agents/notes/implemented/process/2026-06-17-ts-build-config.md) and [generated-contract build decision](../.agents/notes/implemented/process/2026-08-08-api-remotes-generated-contract-build.md) own implementation details. [API Gateway](api-gateway.md) explains generated Remote artifacts and their development fallback.
 
-The root build follows the generated dependency order:
+Static checks and tests resolve workspace imports to `src`. Built-artifact consumers declare a build dependency. Public `typecheck`, `lint`, `lint:fix`, and `doc-typecheck` prepare generated Host-for-Client declarations; internal `*:contracts-ready` commands require that preparation already complete. Type-aware lint also needs declarations from both faces; Client projects use `disableSourceOfProjectReferenceRedirect` to avoid importing Host implementations into the Client program.
 
-```sh
-tsc -b tsconfig.host.json
-tsdown --env.CLOCKY_BUILD_FACE host
-tsc -b tsconfig.client.json
-tsdown --env.CLOCKY_BUILD_FACE client
-pnpm run build:web
-```
+`pnpm run build` embeds the caller's exact public `CLOCKY_CLIENT_*` values; unset values stay absent. A complete build records those values and client artifact digests. Release packing and built Web tests reject missing or stale records. `pnpm run build:clocky` uses the CI/release profile.
 
-Both tsdown passes use the same complete workspace match. They neither scan build artifacts to discover Client packages nor maintain a Host/Client package filter list. Package-local tsdown configs select entries for the current phase through `CLOCKY_BUILD_FACE`: an ordinary Client plugin produces both its Node loader and browser bundle during the Client phase; `api-remotes` uses `hostPhase: true` to produce its Host entry early and only its browser bundle during the Client phase. Tsdown consumes only the JavaScript emitted to `lib/types` by the preceding tsc phase.
-
-Typert runs only during Host tsdown, seeded by `tsconfig.host.json`. It analyzes Host types and generates both Host reflection artifacts and the Host-for-Client Remote projection; Client tsdown does not start Typert. Consequently, `pnpm run typecheck` runs the complete Host lib phase before Client tsc, while `pnpm run build` continues through Client tsdown and the Web build. The [API Remotes generated-contract build note](../.agents/notes/implemented/process/2026-08-08-api-remotes-generated-contract-build.md) records this ordering decision.
-
-`pnpm run build` embeds the caller's exact `CLOCKY_CLIENT_*` environment and uses no public client values when none are set. `pnpm run build:clocky` is the cross-platform local equivalent of the CI and release artifact build. Each successful complete build writes a gitignored record that binds those values to the Vite output and dynamic client bundles; release packing and built Web tests reject a missing record or artifacts changed by a later partial build.
-
-Static analysis and tests resolve workspace imports through the base `paths` map to `src` and must pass on a clean tree; gates that consume built `lib/` output declare that dependency explicitly. Generated Host-for-Client Remote declarations are the deliberate exception: the public `typecheck`, `lint`, and `doc-typecheck` commands generate them first, while internal `*:contracts-ready` scripts assume that an invoking public command or scheduler gate already depends on the Typert contract-generation pass or the complete build. See the [solution-root note](../.agents/notes/implemented/process/2026-07-22-tsconfig-solution-root-two-aggregates.md) for the two-aggregate setup, the [ts-build-config note](../.agents/notes/implemented/process/2026-06-17-ts-build-config.md) for tsc-first emit ownership, and the [Typert Remote note](../.agents/notes/implemented/architecture/2026-08-02-typert-remote-method-calls.md) for the gate-preparation contract.
-
-Business services declare callable methods on the Host with `@Remote` or `@RemoteScope`; the Host build generates Host-for-Client types and runtime contributions, and the Client's `api-remotes` composition loads those contributions under `ctx.remote` and scoped `agentCtx.remote` namespaces. See [API Gateway](api-gateway.md) for the generated artifacts on both sides, their assembly relationships, the SRC development fallback, and the Web build order.
-
-If a relevant local check consumes built package output, build once first:
-
-```sh
-pnpm run build
-```
-
-Type-aware lint consumes referenced projects' declarations. Client projects set `disableSourceOfProjectReferenceRedirect` so Host implementation imports cannot introduce Host `Context` merges into the Client program. Public `lint` and `lint:fix` run `typecheck` first; CI lint waits for Client tsc. Direct `lint:contracts-ready` calls require both compiler faces' declarations.
-
-`pnpm run hygiene` includes `publint`, which validates package entrypoints against the built `lib/*.js` files, and `verify-node-next-types`, which validates built declarations against a temporary NodeNext consumer. A fresh worktree has no bundled JS or declarations until `pnpm run build` runs; ordinary commits and pushes do not require that build unless their selected checks consume it.
+Build once before checks that consume `lib/`, including `hygiene` (`publint` and the NodeNext declaration consumer). Ordinary commits and pushes need no complete build unless their selected checks consume artifacts.
 
 ### Environment variables
 
-The real DeepSeek provider profile and key-backed agent demos read credentials from the environment or from a gitignored `.env` at the repo root. Headless Team, headless-agent, and text ACP live tests can instead use an explicit local OpenAI-compatible route:
+DeepSeek profiles and key-backed demos read credentials from the environment or a gitignored repo-root `.env`. Headless Team, headless-agent, and text ACP live tests also accept a local OpenAI-compatible route:
 
 ```sh
 DEEPSEEK_API_KEY=sk-...
@@ -104,76 +69,84 @@ CLOCKY_LOCAL_MODEL_API_KEY=EMPTY
 CLOCKY_LOCAL_MODEL_REASONING_EFFORT=high # optional; local Qwen maps high to xhigh
 ```
 
-`DEEPSEEK_BASE_URL` is optional and defaults to the public API. The local base URL and model id are optional, but the selected local route still requires `CLOCKY_LOCAL_MODEL_API_KEY` (use `EMPTY` for the supplied unauthenticated server). `CLOCKY_LOCAL_MODEL_REASONING_EFFORT` is optional; on the tested Qwen route, canonical `high` is sent as the endpoint's accepted `xhigh` spelling. The local base URL selects the test route; the checked-in headless and ACP examples use the canonical `http://127.0.0.1:18000/v1` endpoint. Never commit real credentials. Local suites self-skip when neither local base URL nor `DEEPSEEK_API_KEY` is set; other real-model suites retain their provider-specific skip conditions.
+`DEEPSEEK_BASE_URL` defaults to the public API. A nonempty local base URL selects the local test route; model id is optional, but that route requires `CLOCKY_LOCAL_MODEL_API_KEY` (`EMPTY` for the supplied unauthenticated server). Checked-in headless and ACP examples use `http://127.0.0.1:18000/v1`. Optional reasoning effort `high` maps to `xhigh` on the tested Qwen endpoint. These suites skip without either route; other suites retain provider-specific credential conditions. Never commit credentials; see [testing policy](testing.md).
 
 ### Git integrations
 
-The pairing merge driver derives a conflicted `.i18n.yaml` record from the confirmed ancestor, current, and other owner blobs when both language files use Git's default text strategy and merge cleanly. It fails closed on owner conflicts, non-text merge configuration, or invalid records; after an already-stopped merge, run `pnpm run resolve-translation-pairing-conflicts`, which stages every safe pairing record and exits unsuccessfully if other pairing conflicts still need manual work. See the [bilingual documentation contract](i18n/README.md#the-pairing-contract) for the exact files and states the driver accepts.
+The pairing merge driver derives a conflicted `.i18n.yaml` record only when both owner files use Git's default text strategy and merge cleanly. Owner conflicts, non-text strategies, and invalid records remain unresolved. After a stopped merge, run:
 
-The installer probes the exact Node/tsx driver entrypoint before publishing its worktree configuration. If that runtime later becomes unavailable, the Node-independent launcher writes Git's ordinary text result, leaves the sidecar unresolved, and prints the recovery path; restore dependencies and run `pnpm run resolve-translation-pairing-conflicts`, or run `git merge --abort`. If `pre-merge-commit` rejects an otherwise clean merge, Git leaves the complete result staged without a commit; repair the failure and run `git commit`, or abort. The [automatic pairing merges Agent Note](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md#failure-contract) owns the exact index and `MERGE_HEAD` states.
+```sh
+pnpm run resolve-translation-pairing-conflicts
+```
 
-lefthook is configured in `lefthook.yml` as a fast local checkpoint:
+This stages every safe pairing record and exits unsuccessfully if other pairing conflicts still need manual work. The [pairing contract](i18n/README.md#the-pairing-contract) defines accepted files and states.
 
-- `pre-commit` verifies staged pairing records against the staged owner blobs, validates staged files with the project-free `.oxlintrc.staged.json` profile and applies Oxlint fixes with one bounded retry, regenerates `THIRD_PARTY_NOTICES.md` when a staged file is one of its inputs, checks the staged diff for whitespace errors, and runs the vendor manifest guard.
-- `pre-merge-commit` performs the same index-backed pairing check before Git creates an automatic merge commit.
-- `pre-push` runs `pnpm run typecheck`, which completes the Host lib phase, including generated Typert contracts, before the Client TypeScript check.
+If the installed driver runtime becomes unavailable, the launcher writes Git's ordinary text result and leaves the sidecar unresolved. Restore dependencies and rerun the recovery command, or use `git merge --abort`. If `pre-merge-commit` rejects a clean merge, its result remains staged without a commit: repair and run `git commit`, or abort. The [failure contract](../.agents/notes/implemented/process/2026-08-08-automatic-translation-pairing-merges.md#failure-contract) owns exact index and `MERGE_HEAD` states.
 
-The vendor manifest guard checks that changes under `vendor/*/src` are staged with the matching `vendor/README.md` manifest update. See `vendor/README.md` before editing vendored code.
+[Lefthook configuration](../lefthook.yml) defines the local checkpoints:
 
-Apart from the scoped staged-record verification, the hooks intentionally do not run tests, snapshots, documentation checks, builds, or hygiene. Contributors run the [checks relevant to the changed behavior](../AGENTS.md#run-relevant-checks-locally) once; CI owns exhaustive coverage, built-artifact smokes, and the Node 22.19, 24, and 26 compatibility matrix.
+- `pre-commit`: staged pairing and frozen-note checks, project-free Oxlint fixes with one bounded retry, notices regeneration when an input changes, whitespace checks, and the vendor manifest guard. Vendored source changes require their manifest update staged together.
+- `pre-merge-commit`: staged pairing and frozen-note checks before an automatic merge commit.
+- `pre-push`: `pnpm run typecheck`, including Host contract generation before Client tsc.
 
-Contributors can opt into the comprehensive local gate set with `pnpm run check:all`. The command is independent of the Git hooks and is not an agent instruction.
+Hooks do not run tests, snapshots, full documentation checks, or hygiene. Run the relevant checks below; CI owns exhaustive coverage and compatibility. `pnpm run check:all` is an optional comprehensive local run, independent of hooks.
 
 ### CI gates
 
-The keyless [CI workflow](../.github/workflows/ci.yml) groups independent gates into broad lanes and runs a smaller compatibility signal across supported Node versions. Artifact consumers wait for one build within their lane. The separate real-API workflow runs `pnpm run test:e2e` with its configured worker bound. See [scripts/run-gates.ts](../scripts/run-gates.ts) and the workflow files for the current gate and job inventory.
+The keyless [CI workflow](../.github/workflows/ci.yml) groups independent checks into lanes; artifact consumers wait for one build per lane. The separate real-API workflow runs e2e tests with its configured worker bound. [scripts/run-gates.ts](../scripts/run-gates.ts) and the workflow files own the current gate/job inventory.
 
 ### Daily commands
 
-The root [contributor instructions](../AGENTS.md#commands) summarize common commands, while [`package.json`](../package.json) and [scripts/run-gates.ts](../scripts/run-gates.ts) own the current script and gate inventories. Select the smallest checks that cover the changed surface. Documentation changes use `pnpm run doc-sync`; package-public behavior changes also update the owning README or JSDoc, and built-artifact checks require `pnpm run build` first.
+Choose checks for the changed behavior using [dsh-pre-push-checks](../.agents/skills/dsh-pre-push-checks/SKILL.md). Run required checks once; broaden or repeat for changed inputs, failures, or unresolved risks. [`package.json`](../package.json) owns available scripts.
+
+| Command | Use |
+|---|---|
+| `pnpm run clean` | Remove build outputs and safe residue from deleted packages. |
+| `pnpm run test` | Unit tests; filter by path or test name. |
+| `pnpm run test:coverage` | Per-file coverage gate on package source. |
+| `pnpm run test:e2e` | Real-model tests; unavailable routes self-skip. |
+| `pnpm run test:snapshot` | Keyless assembled-output replay. |
+| `pnpm run test:snapshot:record` | Re-record model transcripts with credentials. |
+| `pnpm run test:snapshot:refresh` | Refresh expected output from valid replay input. |
+| `pnpm run typecheck` | Prepare Host contracts, then check Client types. |
+| `pnpm run lint` | Type-aware lint after typecheck. |
+| `pnpm run duplication` | Cross-file TypeScript clone detection. |
+| `pnpm run build` | Prepare all runtime and Web artifacts. |
+| `pnpm run hygiene` | Built-package and workspace checks; build first. |
+| `pnpm run doc-sync` | Documentation checks. |
+| `pnpm run docs:dev` / `pnpm run docs:check` | Preview / validate the documentation site. |
+
+Package-public changes update their README and JSDoc; intentional snapshot updates require reviewing every diff. Use `check:windows-wine` only to diagnose a known Windows failure; CI owns routine Windows checks.
 
 ### Demos
 
-Run the repository build separately before using these source-checkout demos:
+Build once before these source-checkout demos. Each needs the API key named by its provider profile, supplied through the environment or repo-root `.env`:
 
 ```sh
 pnpm run build
-```
-
-The one-shot Headless coding agent needs the API key named by its configured provider profile in the environment or repo-root `.env`:
-
-```sh
 pnpm clocky --profile headless "summarize this workspace"
-```
-
-The self-referential cordis demo can inspect and modify its live plugin runtime and needs the same credentials (`web` by default, or `acp`):
-
-```sh
 pnpm run demo:cordis
-```
-
-The ACP automation server exposes fresh agent sessions over JSON-RPC stdio and also needs the API key named by its configured provider profile:
-
-```sh
 pnpm run demo:acp
 ```
 
+Headless runs one coding task. The Cordis demo inspects and modifies its live plugin runtime (`web` by default, or `acp`). The ACP demo serves fresh agent sessions over JSON-RPC stdio.
+
 ### TODO markers
 
-Use one of three comment tags to flag known issues in the code, ordered by urgency:
-
-- `FIXME` — an issue that should block a new release. A release should not ship with an open `FIXME` unless reviewers explicitly agree the change can be merged anyway.
-- `TODO` — an issue that should be fixed soon, once we have the resources.
-- `XXX` — an issue that we may fix someday; lowest priority, no commitment.
-
-Pick the tag that matches the urgency so anyone scanning the code can tell a release blocker from a someday-maybe.
+- `FIXME`: release blocker; shipping with it requires explicit reviewer agreement.
+- `TODO`: fix soon when resources are available.
+- `XXX`: possible future work, without a commitment.
 
 ### Documenting types verbatim (`ts type-equiv`)
 
-The [subsystems](subsystems/README.md) pages paste source-equivalent declarations together with their original JSDoc so a reader sees the exact type definition and source contract. To keep a paste from drifting when source changes, fence it as ` ```ts type-equiv ` (instead of ` ```ts `) and register it in `scripts/type-equiv.manifest.json` with the source file and symbol it mirrors:
+[Subsystem pages](subsystems/README.md) paste source declarations with their original JSDoc. Use a ` ```ts type-equiv ` fence and register its document, source, and symbol in `scripts/type-equiv.manifest.json`:
 
 ```json
 { "doc": "docs/subsystems/session.md", "symbol": "SessionEvent", "source": "packages/core/session/src/types.ts" }
 ```
 
-`pnpm run verify-type-equiv` (part of `doc-sync`) then extracts that symbol's declaration and attached JSDoc from source via the TypeScript parser and asserts the block matches both. For a class whose implementation bodies do not belong in the catalog, use ` ```ts public-api ` and set `"projection": "public-api"`; the checked projection retains the public fields, constructor, accessors, methods, and original class/member JSDoc while omitting bodies and private or protected members. Comparison ignores whitespace and non-JSDoc comments but requires every original JSDoc comment, including member documentation, so readers see the source contract beside the exact type definition. The gate enforces a 1:1 correspondence by document, symbol, and projection between primary blocks and manifest entries; a paired `.zh.md` block reuses its unsuffixed sibling's entry only when the whole tracked fence sequence is byte-identical and ordered identically. `doc-typecheck` applies the same derivative rule to compilable fences, while skipping both source-equivalence fence kinds from compilation and its opt-out ratio. When you change a documented declaration or its JSDoc, the gate fails until you update the paste; when you add or remove a primary block, update the manifest in the same change.
+For a class without implementation bodies, use ` ```ts public-api ` and `"projection": "public-api"`. The projection retains public fields, constructor, accessors, methods, and class/member JSDoc; it omits bodies and private/protected members.
+
+`verify-type-equiv` compares declarations and every original JSDoc, ignoring whitespace and non-JSDoc comments. Primary blocks and manifest entries correspond one to one by document, symbol, and projection. Update the paste when its declaration/JSDoc changes, and update the manifest when adding or removing a primary block.
+
+A Chinese counterpart reuses the primary entry only when its complete tracked fence sequence is byte-identical and ordered identically. `doc-typecheck` uses the same derivative rule for compilable fences; both source-equivalence fence kinds are excluded from compilation and its opt-out ratio.

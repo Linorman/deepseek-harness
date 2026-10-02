@@ -198,6 +198,10 @@ export class AgentRuntime extends Service {
     if (expectedProvider !== undefined && provider !== expectedProvider) {
       throw new AgentRuntimeError('AgentRuntime implementation changed before coordinated startup', 'AGENT_RUNTIME_PROVIDER_CHANGED')
     }
+    if (!provider.participantKinds.some(kind => kind === request.participant.kind)) {
+      throw new AgentRuntimeError(`AgentRuntime provider '${provider.name}' does not support '${request.participant.kind}' participants`,
+        'AGENT_RUNTIME_PARTICIPANT_UNSUPPORTED')
+    }
     const handle = await provider.activate(request)
     try {
       const activation = activationSnapshotSchema.parse(handle.activation)

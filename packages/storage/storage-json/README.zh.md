@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+`readJsonLogSnapshot(root, descriptor, limits)` 只以只读文件描述符打开现有原子日志文档。缺失 root／stream 不会创建，不取得 backend owner，并限制编码文档／返回 JSON 字节和保留行数。stream version 与 sequence 连续性仍须验证；原地大小变化会拒绝，不返回混合数据。
+
 [存储中心](../storage/README.zh.md)的 JSON 后端：配置根目录下保存人类可读的 KV 单元和追加日志文件，注册为后端 `json`。设计见[领域 KV 存储 Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.zh.md)。
 
 Log facet 每次 yield 扫描一个目录条目，解码规范 stream name，不读取 journal body。请求 prefix 之外的条目也计入扫描工作量。打开 stream 仍执行完整格式验证；discovery 不证明 body 完整性，也不承诺稳定的目录快照。

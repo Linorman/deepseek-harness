@@ -42,6 +42,30 @@ it('rejects invalid deployment limits', () => {
   expect(() => createTeamWorkspaceStore({ maxDraftBytes: -1 })).toThrow()
 })
 
+it('shares answer and channel limits, preserves retry identity and removes private answers on authority replacement', () => {
+  const answer = { answers: { question: { selected: ['甲'], custom: '😀'.repeat(30) } }, retry: { fingerprint: 'payload', key: 'retry' as never } }
+  const bytes = new TextEncoder().encode(JSON.stringify(['team', 'action', 'question', answer])).byteLength
+  const store = createTeamWorkspaceStore({ maxDrafts: 1, maxDraftBytes: bytes, maxViewStates: 2 }).create()
+  store.actions.setActionDraft('team' as never, 'question' as never, answer)
+  store.actions.update('other' as never, {})
+  store.actions.update('new' as never, {})
+  expect(store.getSnapshot().byTeam.team?.actionDrafts.question).toEqual(answer)
+  expect(store.getSnapshot().byTeam.other).toBeUndefined()
+  const before = store.getSnapshot()
+  expect(() => store.actions.setChannelDraft('team' as never, 'channel' as never, draft('input'))).toThrow(DraftCapacityError)
+  expect(() => store.actions.setActionDraft('team' as never, 'question' as never, { ...answer,
+    answers: { question: { selected: ['甲'], custom: '😀'.repeat(30) + 'x' } } })).toThrow(DraftCapacityError)
+  expect(store.getSnapshot()).toBe(before)
+  store.actions.clearFormDrafts()
+  expect(store.getSnapshot().draftBytes).toBe(0)
+  expect(store.getSnapshot().draftCount).toBe(0)
+  expect(store.getSnapshot().byTeam.team?.actionDrafts).toEqual({})
+  store.actions.setChannelDraft('team' as never, 'channel' as never, draft(''))
+  store.actions.clearFormDrafts()
+  expect(store.getSnapshot().byTeam.team?.channelDrafts.channel).toBeUndefined()
+  expect(store.getSnapshot().draftCount).toBe(0)
+})
+
 it('evicts old clean view preferences while preserving all unsent drafts', () => {
   const store = createTeamWorkspaceStore({ maxDrafts: 1, maxViewStates: 3 }).create()
   store.actions.setChannelDraft('pinned' as never, 'channel' as never, draft('Unsent'))
@@ -63,6 +87,27 @@ it('applies defaults when the browser Loader mounts the plugin without a config 
   let received: unknown
   try {
     await ctx.plugin({ Config, apply: (_ctx: Context, config: unknown) => { received = config } })
-    expect(received).toEqual({ maxDrafts: 32, maxDraftBytes: 8 * 1024 * 1024, maxViewStates: 128 })
+    expect(received).toEqual({ identityCacheCapacity: 512, identityBatchSize: 64, identityRefreshMs: 5000,
+      readinessRefreshMs: 5000, capabilityRefreshMs: 5000, taskReferenceCapacity: 512,
+      taskReferenceBatchSize: 64, taskReferenceRefreshMs: 5000, attentionRefreshMs: 5000, attentionPreviewLimit: 3, attentionPageLimit: 64,
+      maxDrafts: 32, maxDraftBytes: 8 * 1024 * 1024, maxViewStates: 128 })
   } finally { await ctx.fiber.dispose() }
+})
+
+it.each([{ identityCacheCapacity: 0 }, { identityBatchSize: 0 }, { identityBatchSize: 1.5 },
+  { identityRefreshMs: 0 }, { identityRefreshMs: 2_147_483_648 }])('rejects invalid identity reader limits: %j', (config) => {
+  expect(() => Config.parse(config)).toThrow()
+})
+
+it('clears only the denied Team input and releases its channel capacity', () => {
+  const store = createTeamWorkspaceStore({ maxDrafts: 2, maxDraftBytes: 4096 }).create()
+  store.actions.setChannelDraft('source' as never, 'channel-a' as never, draft('Keep source input'))
+  store.actions.setChannelDraft('target' as never, 'channel-b' as never, draft('Retire denied input'))
+  store.actions.clearFormDrafts('target' as never)
+  expect(store.getSnapshot().byTeam.source?.channelDrafts['channel-a']?.text).toBe('Keep source input')
+  expect(store.getSnapshot().byTeam.target?.channelDrafts).toEqual({})
+  expect(store.getSnapshot().draftCount).toBe(1)
+  store.actions.clearFormDrafts()
+  expect(store.getSnapshot().draftCount).toBe(0)
+  expect(store.getSnapshot().draftBytes).toBe(0)
 })

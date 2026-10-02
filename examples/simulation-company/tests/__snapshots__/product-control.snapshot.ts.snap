@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`drives, pauses and queries original product scheduling requests (json) 1`] = `
+{
+  "appliedOperations": 6,
+  "directoryRuns": 1,
+  "driver": "completed",
+  "entities": 2,
+  "originalResume": "found",
+  "originalRetryKeptPause": true,
+  "pausedDuringInference": true,
+  "phase": "paused",
+  "preparedWithoutInference": true,
+  "received": "1",
+  "scopedToolsOnly": true,
+  "stock": "1",
+}
+`;
+
+exports[`drives, pauses and queries original product scheduling requests (json) 2`] = `
+{
+  "coldOwner": "not-held",
+  "historicalStart": "running",
+  "modelRequests": 0,
+  "originalResume": "found",
+  "phase": "paused",
+  "requiresRecovery": true,
+}
+`;
+
+exports[`drives, pauses and queries original product scheduling requests (sqlite) 1`] = `
+{
+  "appliedOperations": 6,
+  "directoryRuns": 1,
+  "driver": "completed",
+  "entities": 2,
+  "originalResume": "found",
+  "originalRetryKeptPause": true,
+  "pausedDuringInference": true,
+  "phase": "paused",
+  "preparedWithoutInference": true,
+  "received": "1",
+  "scopedToolsOnly": true,
+  "stock": "1",
+}
+`;
+
+exports[`drives, pauses and queries original product scheduling requests (sqlite) 2`] = `
+{
+  "coldOwner": "not-held",
+  "historicalStart": "running",
+  "modelRequests": 0,
+  "originalResume": "found",
+  "phase": "paused",
+  "requiresRecovery": true,
+}
+`;

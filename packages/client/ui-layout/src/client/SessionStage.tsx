@@ -34,7 +34,7 @@ export function SessionStage({ inspecting, visible, title, context, backLabel, e
       if (inspecting && previous instanceof HTMLElement && previous.isConnected) previous.focus()
     }
   }, [inspecting, visible])
-  return <dialog ref={dialogRef} className={css.sessionStage} data-inspecting={inspecting || undefined}
+  return <dialog ref={dialogRef} role={inspecting ? undefined : 'region'} className={css.sessionStage} data-inspecting={inspecting || undefined}
     data-expanded={expanded || undefined} aria-label={title} aria-modal={inspecting && visible ? true : undefined}
     onCancel={(event) => { event.preventDefault(); close() }}>
     {inspecting && <header className={css.sessionStageHeader}>

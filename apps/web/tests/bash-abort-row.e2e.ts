@@ -67,7 +67,7 @@ describe.skipIf(MODE === 'record')('web e2e: cancelled Bash row disclosure', () 
     await call.getByText('setInterval(() => {}, 1000)', { exact: false }).waitFor()
     await expect.poll(() => call.getByText('Error: tool call aborted', { exact: true }).count()).toBe(2)
 
-    const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
+    const snapshot = (await captureStableAria(page, '[data-session-columns] > [class*="centerCol"]', scaffold.workspaceCwd))
       // The borrowed fixture's UTC date is still the previous day in PDT;
       // the disclosure golden must not depend on the runner timezone.
       .replace(/\b\d{1,2}\/\d{1,2}(?= \{\{clock\}\})/g, '{{date}}')

@@ -68,6 +68,8 @@ Why is the roster yml rows and not a scan? Because which plugins compose into a 
 4. `settled` = every entry created + `loader.await()` quiescent + an all-ACTIVE sweep. The sweep lists each import-failed, FAILED, or PENDING fiber with its missing services. It exists because cordis inject waits have no timeout — the sweep is the fail-loud floor.
 5. The framework-free loading page projects real fiber states via `internal/status`. After the sweep, the kernel calls `ctx.uiRenderer.mount(container)` and replaces the page with the real UI in one pass.
 
+The Host graph includes only enabled entries whose current fiber is `ACTIVE`. Package membership alone does not prove required services are available. Construction/disposal and `internal/status` events share the same per-name dirty set and microtask flush; missing required services remove the row, and successful reactivation restores one row with the retained bundle hash. Consumers read after `loader.await()`. The [node-half lifecycle test](../../../../packages/client/modules/tests/node-half.client.spec.ts) uses a real Loader and delayed apply to verify pending/loading exclusion, dependency loss, remount, single effect retirement and exactly one graph change per membership change. This avoids advertising an unavailable product without adding a second feature-availability authority.
+
 ### Hot reload: one driver plugin, self-watched bundles
 
 Hot reload is a composition decision: the web bundle mounts the `client-hmr` row (a normal plugin package) unconditionally; its node half brings the bundle watch and the SSE channel, and the chain stays idle until a rebuild watcher rewrites client bundles. A composition that must not expose it disables the row.

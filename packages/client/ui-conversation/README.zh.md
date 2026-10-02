@@ -6,7 +6,7 @@
 
 压缩（compaction）在检查点自身的消息流位置渲染为一行折叠标记，不替换其上方的 transcript（文本记录）。自动压缩使用「上下文已压缩」标题。每个已加载对应 `compaction/summary` 事件的完成标记都会显示被替换条目数量和估算 token 数量，并可点击展开摘要。手动 `/compact` 开始时显示为运行中的 `compact` 行；成功结算后，其显式摘要事件引用会在保持同一 React key 的前提下把该命令折叠进检查点行。完成的检查点静止时保留上下文压缩（context compaction）图标，仅在悬停或键盘聚焦时将其替换为收起／展开指示图标。输入被拒绝、没有可压缩历史、取消和失败时仍使用通用命令行及处理器撰写的文本。配对绝不依赖相邻关系，因为压缩运行期间可能注入持久上下文。面向模型的带框检查点载荷绝不渲染；被引用的 `compaction/summary` 事件位于已加载窗口之外时，检查点仍然可见但不可展开。
 
-常驻会话壳会跨无会话与会话状态切换而保留。局部 Team 任务草稿会把同一套输入机表面提供给无会话编辑器：首条文本同时成为 Team 目标和首条人类输入，并由幂等的 `team.start` 操作接纳。接纳后刷新 Session 元数据并选择 Team 概览；协调者转录仅通过显式检查操作打开。失败则保留草稿以进行完全相同的重试。没有 Team 草稿时，无会话编辑器会保持禁用，并提示用户从侧边栏新建任务。Hero 前方的标记是独立的根作用域 `conversation.hero.brand.mark` slot，未被占用时回退到机器人图形。根组件始终拥有同一个滚动容器与 Hero／编辑器子树；协调者 Session 到达时，彼此独立的严格会话页头和主体 outlet 只填入各自区域，因此滚动主体、编辑器 seat 与 textarea 都保留原有 React 和 DOM identity。空白会话与活跃会话渲染相同的输入区主体；InputHub 将草稿镜像到会话 store。活跃阶段，会话标题栏作为普通列 chrome，显示当前会话 title、操作、实用控件和视图标签。其下滚动容器（`data-conversation-scroll`）承载流动排版的各视图与 sticky 编辑器栈（统计 dock＋输入区 dock＋输入栏）。该滚动容器无条件预留自己的滚动条槽，选用编辑器 overlay 的视图也仍把它保留为滚动容器，因此无论对话记录是否滚动、无论展示哪个视图标签，输入卡片都保持同一个横向位置（[决策](../../../.agents/notes/implemented/bug-fix/2026-08-04-composer-tab-gutter-reservation.zh.md)）。textarea 上的滚轮会链式处理：限高草稿先在本地滚动，到达边缘后再转交给该宿主。只有 Safari 会在原生编辑缩短草稿并留下陈旧软换行溢出时执行绘制前恢复；草稿增长、程序化更新与其他浏览器都不会为这项恢复读取布局（[决策](../../../.agents/notes/implemented/bug-fix/2026-08-13-safari-textarea-soft-wrap-reflow.zh.md)）。
+常驻会话壳会跨无会话与会话状态切换而保留。局部 Team 任务草稿会把同一套输入机表面提供给无会话编辑器：首条文本同时成为 Team 目标和首条人类输入，并由幂等的 `team.start` 操作接纳。接纳后刷新 Session 元数据并选择 Team 概览；协调者转录仅通过显式检查操作打开。旧查看选择在 IO 前清除，迟到的接纳响应不会关闭用户期间主动打开的检查视图。失败则保留草稿以进行完全相同的重试。没有 Team 草稿时，无会话编辑器会保持禁用，并提示用户从侧边栏新建任务。Hero 前方的标记是独立的根作用域 `conversation.hero.brand.mark` slot，未被占用时回退到机器人图形。根组件始终拥有同一个滚动容器与 Hero／编辑器子树；协调者 Session 到达时，彼此独立的严格会话页头和主体 outlet 只填入各自区域，因此滚动主体、编辑器 seat 与 textarea 都保留原有 React 和 DOM identity。空白会话与活跃会话渲染相同的输入区主体；InputHub 将草稿镜像到会话 store。活跃阶段，会话标题栏作为普通列 chrome，显示当前会话 title、操作、实用控件和视图标签。其下滚动容器（`data-conversation-scroll`）承载流动排版的各视图与 sticky 编辑器栈（统计 dock＋输入区 dock＋输入栏）。该滚动容器无条件预留自己的滚动条槽，选用编辑器 overlay 的视图也仍把它保留为滚动容器，因此无论对话记录是否滚动、无论展示哪个视图标签，输入卡片都保持同一个横向位置（[决策](../../../.agents/notes/implemented/bug-fix/2026-08-04-composer-tab-gutter-reservation.zh.md)）。textarea 上的滚轮会链式处理：限高草稿先在本地滚动，到达边缘后再转交给该宿主。只有 Safari 会在原生编辑缩短草稿并留下陈旧软换行溢出时执行绘制前恢复；草稿增长、程序化更新与其他浏览器都不会为这项恢复读取布局（[决策](../../../.agents/notes/implemented/bug-fix/2026-08-13-safari-textarea-soft-wrap-reflow.zh.md)）。
 
 别的插件可以经 `ctx.conversation.blocks` 让某个会话的编辑器变为惰性：它设置一个携带自己本地化理由的 block，输入栏就渲染同一个禁用的 textarea，并把该理由作为 placeholder。推送方向是约束而非偏好：知道某会话发不出消息的插件（ui-model-selection，在没有适配器服务其路由时）本就依赖本包，因此本包读不到它们。模型 seat 是 block 唯一保留可用的控件——这份约定里的每个 block 都靠选模型来解除，把它一起锁上会让编辑器索要它自己拦下的那件事。block 只是提示性设计；无论客户端禁用了什么，宿主都会拒绝一个它无法路由的提示词。
 
@@ -45,6 +45,10 @@ Host 带 placement 的 `session/queue` 快照也会携带待处理 steering。Qu
 `src/client/` 按领域组织。`contract/` 是 slot 声明、组合 props 与跨领域类型的共享表层；`skeleton/`、`chat/`、`input/`、`queue/` 和 `settings/` 保持内部实现，`apply.ts` 是它们的组装点。`/client` 导出表层只包含 loader entry、service class 和 contract 类型；组件与 store factory 经 slot 注册抵达页面。
 
 完成的一轮会物化一个有序的 `turn-tail` Conversation Node。它由引擎维护的 `TurnLocation` 提供收尾 Assistant 和 Turn data；renderer 在该 Node 的 IconActions 之前渲染 `conversation.chat.turnTail` chain，并派发包含 Turn、收尾 seq 和 `openFile` 的 `TurnTailOwnerProps`。本包只拥有空位；`@clocky/clocky-client-ui-deliverables` 把改写工具的 `locations` 累积到 Turn data，并拥有产物行、chip 上限和文案，因此把该插件从 cordis.yml 中组合掉即可关闭该交互面，空位以零成本渲染为空。收尾正文经由同一个开关参与其中：chat 视图向可选的 `chatFileMentions` service（ctx.get；由同一插件提供）索取收尾消息的行内代码词表，并把结果接进 MarkdownText 的 `fileMentions` seam——service 缺席时正文保持死文本。
+
+属于当前已选仿真管理 Team 的 Session 保留记录查看，并显示只读提示；输入框、队列操作、问题答复与审批控件不显示。输入状态机及私有草稿仍由 Session 持有，普通 Team 与其他 Session 的输入行为保持原有语义。仿真事件输入和调度控制在运行工作区进行，Host 独立拒绝普通 Session 修改。
+
+已有可写协调会话使用 Team 目标及明确接收者的空态。worker、历史会话及非成员检查不显示直接提示／模型控件，但保留原输入 owner 和独立鉴权的交互链。关闭检查不取消执行，也不清除保留输入。首次工作的宣传空态仅用于未绑定的首次输入上下文。
 
 ## 模型体验
 

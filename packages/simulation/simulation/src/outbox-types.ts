@@ -55,6 +55,9 @@ export interface SimulationPostAttempt {
 }
 /** Publication responsibility survives uncertainty and source-writer retirement. */
 export interface SimulationOutbox {
+  /** Original exact allowances; retries reuse these facts rather than refunding or extending another budget. */
+  readonly retryAuthorizations?: Readonly<Record<import('./identities.ts').SimulationOutboxRetryId,
+    import('./outbox-retry.ts').SimulationOutboxRetryGrant>>
   readonly ready: boolean
   readonly attempts: readonly SimulationPostAttempt[]
   readonly budgetStart: number

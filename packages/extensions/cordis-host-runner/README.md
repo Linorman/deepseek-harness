@@ -4,6 +4,8 @@ English | [中文](README.zh.md)
 
 The host half of model-mounted dynamic packages: the definition registry, the `node:vm` sandbox and fiber lifecycle for host halves, the invoke handler table, and the run round trip a browser page carries out. Provided as `ctx.dynamicCordisRunner`. The model-facing tools live in [`@clocky/clocky-tool-cordis`](../tool-cordis/README.md); the browser half is loaded by [`@clocky/clocky-cordis-client-runner`](../cordis-client-runner/README.md).
 
+Forwarded activation requests, resolutions, package announcements/retractions and inspect-query settlements carry the owning Session identity. The runner derives it from its retained request or plugin record, including after cancellation, so each notification can be authorized without a Host correlation cache.
+
 ## What it does
 
 Two phases: `define` only records, and everything with an effect hangs off a run.

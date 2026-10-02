@@ -83,6 +83,7 @@ function mountFrame() {
   const element = () => (
     <AppFrame
       t={((key: string) => key)}
+      showTeams={() => { instance.actions.showWorkspace('team') }}
       closeSession={() => { selectedSession.current = undefined }}
       useStore={hookOf(instance)}
       actions={instance.actions}
@@ -115,6 +116,7 @@ function drag(handle: Element, fromX: number, toX: number): void {
 }
 
 beforeEach(() => {
+  window.history.replaceState(null, '', '/')
   frameWidth = 1920
   selectedSession.current = 's-test' as SessionId
   selectedSessionBlank.current = false
@@ -141,6 +143,18 @@ afterEach(() => {
 })
 
 describe('AppFrame', () => {
+  it('keeps a requested Team failure reachable while no Team or Session has loaded', () => {
+    selectedSession.current = undefined
+    window.history.replaceState(null, '', '/?team=unavailable')
+    const view = mountFrame()
+    expect(view.queryByRole('dialog')).toBeNull()
+    act(() => {
+      window.history.pushState(null, '', '/')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(view.getByRole('region', { name: 'newTeam' })).toBeDefined()
+  })
+
   it('renders three tracks from store state', () => {
     const { frame } = mountFrame()
     expect(tracks(frame)).toEqual([SIDEBAR_DEFAULT, 0])
@@ -220,7 +234,7 @@ describe('AppFrame', () => {
 
   it('sidebar slot receives live concession output as owner props', () => {
     const { slotCalls } = mountFrame()
-    expect(slotCalls.find(c => c.key === 'sidebar')!.props).toEqual({ collapsed: false, width: SIDEBAR_DEFAULT })
+    expect(slotCalls.find(c => c.key === 'sidebar')!.props).toEqual({ workspace: 'team', collapsed: false, width: SIDEBAR_DEFAULT })
   })
 
   it('sidebar drag widens through rAF-batched pointer moves', () => {
@@ -253,6 +267,7 @@ describe('AppFrame', () => {
     expect(tracks(frame)).toEqual([SIDEBAR_DEFAULT, 0])
     expect(getByTestId('details-content')).toBeTruthy()
     expect(frame.hasAttribute('data-details-collapsed')).toBe(true)
+    expect(getByTestId('details-content').closest('[hidden]')).not.toBeNull()
   })
 
   it('closed sidebar keeps its compact rail with mounted slot content and collapsed owner props', () => {
@@ -262,7 +277,7 @@ describe('AppFrame', () => {
     expect(getByTestId('sidebar-content')).toBeTruthy()
     expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
     const lastSidebarCall = slotCalls.filter(c => c.key === 'sidebar').at(-1)!
-    expect(lastSidebarCall.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
+    expect(lastSidebarCall.props).toEqual({ workspace: 'team', collapsed: true, width: SIDEBAR_COLLAPSED })
   })
 
   it('viewport shrink triggers the concession chain via ResizeObserver', () => {
@@ -294,7 +309,7 @@ describe('AppFrame — narrow-viewport auto-collapse', () => {
     const { frame, slotCalls } = mountFrame()
     expect(tracks(frame)).toEqual([SIDEBAR_COLLAPSED, 0])
     expect(frame.hasAttribute('data-sidebar-collapsed')).toBe(true)
-    expect(slotCalls.filter(c => c.key === 'sidebar').at(-1)!.props).toEqual({ collapsed: true, width: SIDEBAR_COLLAPSED })
+    expect(slotCalls.filter(c => c.key === 'sidebar').at(-1)!.props).toEqual({ workspace: 'team', collapsed: true, width: SIDEBAR_COLLAPSED })
     expect(frame.querySelectorAll('[class*="handle"]')).toHaveLength(0)
   })
 

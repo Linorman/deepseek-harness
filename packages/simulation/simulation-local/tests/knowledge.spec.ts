@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { simulationKnowledgeRequestSchema, simulationKnowledgeQuerySchema, simulationDecisionIdSchema, simulationPolicyRefSchema } from '@clocky/clocky-simulation'
+import { selectKnowledge, simulationKnowledgeRequestSchema, simulationKnowledgeQuerySchema, simulationDecisionIdSchema, simulationPolicyRefSchema } from '@clocky/clocky-simulation'
 import type { SimulationKnowledge, SimulationSnapshot } from '@clocky/clocky-simulation'
-import { assertKnowledgeProjection, selectKnowledge } from '../src/knowledge.ts'
+import { assertKnowledgeProjection } from '../src/knowledge.ts'
 import { createBusinessHarness } from './business-harness.ts'
 import { contextRequest } from './context-fixture.ts'
 

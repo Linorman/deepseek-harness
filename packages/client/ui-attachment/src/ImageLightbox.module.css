@@ -1,6 +1,14 @@
 .backdrop {
   position: fixed;
   inset: 0;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  background: transparent;
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -42,3 +50,6 @@
   color: var(--clocky-alias-label-primary);
   cursor: pointer;
 }
+
+.backdrop::backdrop { background: transparent; }
+.backdrop:not([open]) { display: none; }

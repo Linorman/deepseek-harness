@@ -11,7 +11,7 @@ import type { TeamAuditList } from '@clocky/clocky-client-runtime/client'
 
 function TeamOverview(props: Omit<Parameters<typeof SourceTeamOverview>[0], 'state'> & { state: ReturnType<typeof workspaceState> }) {
   const empty = { items: [], loading: false, loadingMore: false, hasNewer: false }
-  return <SourceTeamOverview {...props} state={workspaceSelection(props.state)} humanActions={props.state.humanActions}
+  return <SourceTeamOverview {...props} state={workspaceSelection(props.state)}
     collections={{ teamId: props.state.team.id, members: { ...empty, items: props.state.participants.map(workspaceMemberSummary) },
       tasks: { ...empty, items: props.state.tasks.map(workspaceTaskSummary) }, workflowPlans: empty, artifacts: empty }} />
 }
@@ -20,6 +20,33 @@ function TeamActivity(props: Omit<Parameters<typeof SourceTeamActivity>[0], 'sta
 }
 
 afterEach(cleanup)
+
+it('labels a Simulation Team read-only while retaining explicit Session inspection', async () => {
+  const { TeamHeader } = await import('../src/client/TeamHeader.tsx')
+  const original = workspaceState()
+  const state = workspaceSelection({ ...original, rules: { simulationRunId: 'run' },
+    team: { ...original.team, phase: 'stalled' } })
+  const onResume = vi.fn(async () => {})
+  const onCancel = vi.fn(async () => {})
+  const openCoordinator = vi.fn(async () => {})
+  const view = render(<TeamHeader state={state} view="overview" translate={makeTranslate(en)}
+    onResume={onResume} onCancel={onCancel} openCoordinator={openCoordinator} />)
+  expect(view.getByText(en['workspace.simulationManaged'])).toBeTruthy()
+  expect(view.queryByRole('button', { name: 'Resume' })).toBeNull()
+  expect(view.queryByRole('button', { name: en['workspace.teamActions'] })).toBeNull()
+  fireEvent.click(view.getByRole('button', { name: en['workspace.inspectCoordinator'] }))
+  await waitFor(() => { expect(openCoordinator).toHaveBeenCalledOnce() })
+  expect(onResume).not.toHaveBeenCalled()
+  expect(onCancel).not.toHaveBeenCalled()
+})
+
+it('keeps an off-page owner assigned when its member name is unavailable', () => {
+  const task = workspaceTask('Assigned work', { phase: 'assigned', lease: { attemptId: 'attempt' as never, participantId: 'off-page-member' as never, activationId: 'activation' as never, assignedAt: 1, expiresAt: 100, assignedRevision: 1, ordinal: 1, durationMs: 99, renewedAt: 1 } })
+  const view = render(<TeamOverview state={{ ...workspaceState(), tasks: [task] }} translate={makeTranslate(en)}
+    artifacts={[]} openTask={vi.fn()} navigate={vi.fn()} inspectActivity={vi.fn()} />)
+  expect(view.getByRole('cell', { name: 'Assigned · off-page-member' })).toBeTruthy()
+  expect(view.queryByText('Unassigned')).toBeNull()
+})
 
 it('counts the full Team while limiting task previews and opens the exact selected task', () => {
   const tasks = Array.from({ length: 9 }, (_, index) => workspaceTask(`Work ${index}`, { phase: index === 0 ? 'completed' : 'pending' }))
@@ -58,7 +85,7 @@ it('keeps unavailable usage distinct from zero and includes cache usage without 
         turns: 2,
         costUnits: 3,
         updatedAt: 1 } }} />)
-  const usage = view.getByText('Tokens').parentElement
+  const usage = view.getByText('Tokens').closest('details')
   expect(usage?.textContent).toContain('170')
   expect(usage?.textContent).toContain('Includes child Teams')
   expect(usage?.textContent).toContain('Cost units3')
@@ -120,9 +147,8 @@ it('keeps aggregate counts independent from the one loaded task page', () => {
 
 it('does not count a delivered action again on top of the authoritative pending total', () => {
   const state = workspaceState()
-  const view = render(<SourceTeamOverview state={{ ...workspaceSelection(state), pendingHumanActionCount: 2 }}
-    pendingActions={[{ kind: 'approval', requestId: 'approval', teamId: state.team.id, sessionId: 'session' as never,
-      approvalId: 'approval' as never, toolName: 'shell' }]}
-    translate={makeTranslate(en)} artifacts={[]} openTask={vi.fn()} navigate={vi.fn()} inspectActivity={vi.fn()} />)
-  expect(view.getByText('Needs attention').parentElement?.textContent).toContain('2')
+  const view = render(<SourceTeamOverview state={{ ...workspaceSelection(state), pendingHumanActionCount: 2,
+    attentionCounts: { recovery: 0, humanActions: 2, reviews: 0, total: 2 } }}
+  translate={makeTranslate(en)} artifacts={[]} openTask={vi.fn()} navigate={vi.fn()} inspectActivity={vi.fn()} />)
+  expect(view.getByText('Needs your attention', { selector: 'dt' }).parentElement?.textContent).toContain('2')
 })

@@ -25,7 +25,7 @@ import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
   launchWebScaffold, recordFixture, watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
-import { newEnglishPage, saveFailureShot } from './support.ts'
+import { openCoordinatorConversation, newEnglishPage, saveFailureShot } from './support.ts'
 
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/approval-composer', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
@@ -99,6 +99,7 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
     const settled = scaffold.whenTurnSettled(MODE === 'record' ? 240_000 : 60_000)
     await input.fill(PROMPT)
     await input.press('Enter')
+    await openCoordinatorConversation(page)
 
     // The panel takes over the input area while the tool blocks. Its presence
     // is a STABLE waiting state (it stays until answered), so waitFor is

@@ -26,6 +26,8 @@ declare module '@clocky/clocky-client-ui-slots' {
      * package's `sidebar` entry; the shell supplies a generic text fallback.
      */
     'sidebar.brand.name': { kind: 'single'; scope: 'root'; owner: SidebarBrandNameOwnerProps }
+    /** Optional product workspace entries, ordered above the active directory. */
+    'sidebar.workspaceNavigation': { kind: 'list'; scope: 'root'; owner: SidebarSectionOwnerProps & { workspace: 'team' | 'simulation' } }
     /** Team task navigation rendered in the product sidebar. */
     'sidebar.teamTasks': { kind: 'single'; scope: 'root'; owner: SidebarSectionOwnerProps }
     /** Legacy Workspace/Session browser slot retained for non-product composition tests. */
@@ -106,6 +108,7 @@ export type SidebarRootComponentProps =
   & PropsRenderSlots<
     | 'sidebar.brand.mark'
     | 'sidebar.brand.name'
+    | 'sidebar.workspaceNavigation'
     | 'sidebar.teamTasks'
     | 'sidebar.workspaces'
     | 'sidebar.settings'

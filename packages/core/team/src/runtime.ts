@@ -1,3 +1,12 @@
+import type { TeamIdentityResolveRequest, TeamIdentityResolvePage } from './types.ts'
+import { ExecutionProfiles } from './execution-profiles.ts'
+import type { TeamExecutionProfileRegistration, TeamExecutionProfilesRequest, TeamExecutionProfilesPage } from './types.ts'
+import type { TeamMemberExecutionQuery, TeamMemberExecutionSources, TeamMemberReadinessRequest, TeamMemberReadinessPage } from './types.ts'
+import type { TeamHumanActorLookup, TeamHumanActorSelection, TeamHumanReadAuthority } from './types.ts'
+import { teamHumanReaderScopeSchema } from './schema.ts'
+import type { TeamHumanReaderProof, TeamHumanReaderScope, TeamProductDiscoveryRequest, TeamProductDirectoryPage } from './types.ts'
+import type { TeamTaskWorkspaceMode } from './types.ts'
+import type { TeamTaskCapabilities, TeamTaskCapabilitiesRequest } from './types.ts'
 import { teamDeliveryOwnerScopeSchema } from './schema.ts'
 import type { TeamDeliveryOwnerProof, TeamDeliveryOwnerScope, TeamDeliveryOwnerProofSource } from './types.ts'
 import type { TeamMemberInspectRequest, TeamMemberInspection } from './types.ts'
@@ -342,6 +351,22 @@ declare module '@clocky/cordis' {
   }
 
   interface Events {
+    /** Read exact route and activation ownership; listeners must not reenter Team reads or mutate work.
+     * @param query - Authorized Team and current member descriptor.
+     * @param next - Other independent execution owners; all listeners delegate.
+     * @mode waterfall
+     */
+    'team/member-execution-observe'(this: TeamRuntime, query: TeamMemberExecutionQuery,
+      next: () => Promise<TeamMemberExecutionSources>): Promise<TeamMemberExecutionSources>
+
+    /** Observe modes supported by live schedulers without preparing or assigning work.
+     * @param teamId - Team selected by the authenticated product query.
+     * @param next - Remaining scheduling providers; every listener delegates before combining modes.
+     * @mode waterfall
+     */
+    'team/task-scheduling-modes'(this: TeamRuntime, teamId: TeamId,
+      next: () => Promise<readonly TeamTaskWorkspaceMode[]>): Promise<readonly TeamTaskWorkspaceMode[]>
+
     /**
      * A Team channel adapter became available for future channel openings.
      * @param adapter - registered adapter identity.
@@ -452,6 +477,8 @@ function immutableChannelEvent(event: ChannelEvent): ChannelEvent {
  * transport.
  */
 export abstract class TeamRuntime extends Service {
+  /** Live execution descriptors shared with the provider-owned invitation/read serializers. */
+  protected readonly executionProfiles: ExecutionProfiles
   private readonly systemDelegationProofSources = new Map<string, TeamSystemDelegationProofSource>()
   private readonly childRunAuthorizations = new WeakMap<TeamChildRunAuthorization, {
     readonly scope: TeamChildRunScope
@@ -532,6 +559,7 @@ export abstract class TeamRuntime extends Service {
       throw new Error('@clocky/clocky-team is the abstract Team runtime seam; load a Team provider')
     }
     super(ctx, 'teams')
+    this.executionProfiles = new ExecutionProfiles()
   }
 
   /** Retain a child operation capability in this exact Team provider instance.
@@ -922,6 +950,7 @@ export abstract class TeamRuntime extends Service {
     const registered: TeamHumanActorProofSource = Object.freeze({
       name: sourceName,
       resolveHumanActorProof: source.resolveHumanActorProof.bind(source),
+      ...source.resolveHumanReaderProof === undefined ? {} : { resolveHumanReaderProof: source.resolveHumanReaderProof.bind(source) },
     })
     // oxlint-disable-next-line typescript/no-misused-promises -- direct return preserves Cordis disposer identity.
     return this.ctx.effect(function* (this: TeamRuntime) {
@@ -936,6 +965,18 @@ export abstract class TeamRuntime extends Service {
         this.humanActorProofSources.delete(sourceName)
       }
     }.bind(this), 'teams.registerHumanActorProofSource()')
+  }
+
+  /** Resolve a currently live authenticated reader; this proof grants no mutation capability.
+   * @param proof - Opaque value held by a registered principal reader issuer.
+   * @returns immutable principal facts, or rejection for a foreign or revoked value.
+   */
+  protected requireHumanReaderProof(proof: TeamHumanReaderProof): TeamHumanReaderScope {
+    for (const source of this.humanActorProofSources.values()) {
+      const scope = source.resolveHumanReaderProof?.(proof)
+      if (scope !== undefined) return Object.freeze(teamHumanReaderScopeSchema.parse(scope))
+    }
+    throw new TeamError('Product Team reader is absent, revoked or foreign', 'TEAM_ACTOR_PROOF_INVALID')
   }
 
   /**
@@ -2704,11 +2745,85 @@ export abstract class TeamRuntime extends Service {
     return Promise.reject(new TeamError('Team provider does not support human-action reads', 'TEAM_INVALID_ARGUMENT'))
   }
 
+  /** Inspect an exact human request and its current handling allowance.
+   * @param request - Team/request identity and its current read proof.
+   * @returns bounded body and handling hint at one Team revision; unsupported providers reject.
+   */
+  inspectHumanAction(request: import('./types.ts').TeamActionInspectRequest): Promise<import('./types.ts').TeamActionInspection> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support human-action inspection', 'TEAM_INVALID_ARGUMENT'))
+  }
+
   /** Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.
    * @param request - Team selected for read-only inspection.
    * @returns the lightweight selection projection; no activation is created or resumed.
    */
   abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>
+
+  /** Read one authorized, revision-pinned page of Team pending responsibilities.
+   * @param request - Complete Team/cursor input and its current human read proof.
+   * @returns authoritative counts and byte-bounded summaries; no task or model is started.
+   */
+  getTeamAttention(request: import('./types.ts').TeamAttentionReadRequest): Promise<import('./types.ts').TeamAttentionPage> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support pending-item reads', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /** Register a deployment-owned execution descriptor and its current availability.
+   * @param registration - Public profile fields and a pure live-owner availability reader.
+   * @returns disposer owned by the registering plugin fiber.
+   */
+  registerExecutionProfile(registration: TeamExecutionProfileRegistration): () => void {
+    return this.executionProfiles.register(this.ctx, registration)
+  }
+
+  /** Read authorized deployment choices without starting any execution.
+   * @param request - Selected member kind, continuation and exact read proof.
+   * @returns a byte-bounded catalog page and the independently revalidated selection.
+   */
+  abstract getExecutionProfiles(request: TeamExecutionProfilesRequest): Promise<TeamExecutionProfilesPage>
+
+  /** Resolve only display identities referenced by an authorized view.
+   * @param request - Finite IDs, revision-bound continuation and membership proof.
+   * @returns a bounded page with indistinguishable unknown or inaccessible identities.
+   */
+  abstract resolveIdentities(request: TeamIdentityResolveRequest): Promise<TeamIdentityResolvePage>
+
+  /** Read current participation and execution readiness without starting actors.
+   * @param request - Exact member set, optional continuation and a live membership proof.
+   * @returns a bounded page; continuation rejects a changed Team journal watermark.
+   */
+  abstract getMemberReadiness(request: TeamMemberReadinessRequest): Promise<TeamMemberReadinessPage>
+
+  /** Resolve principal-owned membership for the live human-proof issuer.
+   * @param request - Exact Team and authenticated principal identity.
+   * @returns bounded proof-issuer facts; missing or ambiguous membership rejects.
+   */
+  abstract resolveHumanActor(request: TeamHumanActorLookup): Promise<TeamHumanActorSelection>
+
+  /** Resolve current membership for inspection through canonical parent-task reservations.
+   * @param request - Target Team and authenticated principal identity from the proof issuer.
+   * @returns the nearest active human's Team and identity; missing, ambiguous or invalid lineage rejects.
+   */
+  abstract resolveHumanReadAuthority(request: TeamHumanActorLookup): Promise<TeamHumanReadAuthority>
+
+  /** Verify a Session's reserved or published participant identity under current read authority.
+   * @param request - Exact Team, participant and Session tuple with a live payload-bound proof.
+   * @returns completion after ownership and current direct/ancestor membership agree.
+   */
+  abstract assertHumanSessionRead(request: import('./types.ts').TeamHumanSessionReadRequest): Promise<void>
+
+  /** Discover only Teams readable by the current principal, within provider work and complete response limits.
+   * @param request - Revocable reader, encrypted reader-bound continuation and requested scan allowance.
+   * @returns safe metadata and continuation; an empty page can still require bounded continuation.
+   */
+  abstract listHumanTeamsPage(request: TeamProductDiscoveryRequest): Promise<TeamProductDirectoryPage>
+
+  /** Observe current human task-authoring permission under the provider's serializer.
+   * @param request - Exact selected scopes and a live membership proof.
+   * @returns choices without grants or authorized path lists; reads do not create work.
+   */
+  abstract getTaskCapabilities(request: TeamTaskCapabilitiesRequest): Promise<TeamTaskCapabilities>
 
   /** Read bounded display summaries without materializing task/plan execution history.
    * @param request - Team, collection, provider-order cursor and requested row limit.
@@ -2721,6 +2836,15 @@ export abstract class TeamRuntime extends Service {
    * @returns detached data capped by the provider's response budget; indivisible oversized records reject.
    */
   abstract inspectTask(request: TeamTaskInspectRequest): Promise<TeamTaskInspection>
+
+  /** Resolve exact task titles and lifecycle status without enumerating the task collection.
+   * @param request - Team, explicit IDs and revision-pinned continuation.
+   * @returns bounded references; trusted consumers own authorization and unsupported providers reject.
+   */
+  resolveTaskReferences(request: import('./types.ts').TeamTaskReferencesInput): Promise<import('./types.ts').TeamTaskReferencesPage> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support task reference reads', 'TEAM_INVALID_ARGUMENT'))
+  }
 
 
   /** Resolve the latest published Session of one retained Team member without starting an Agent.
@@ -3283,10 +3407,19 @@ export abstract class TeamRuntime extends Service {
 
   /**
    * Compare-and-set a lease-free task details edit without changing phase, scheduler facts, or attempts.
-   * @param request - current coordinator proof plus JSON-only task detail fields.
-   * @returns the detached task projection after the committed details edit.
+   * @param request - current coordinator or human proof, caller-owned command identity and JSON-only task detail fields.
+   * @returns original acceptance metadata and the detached current task, which may have advanced since admission.
    */
-  abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot>
+  abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<import('./types.ts').TeamTaskDetailsUpdateResult>
+
+  /** Read original task-update admission without executing or retrying it.
+   * @param request - Exact Team/task/command identity.
+   * @returns original acceptance, terminal semantic refusal or not-found at this read; native consumers own authorization.
+   */
+  getTaskUpdateResult(request: import('./types.ts').TeamTaskUpdateLookupInput): Promise<import('./types.ts').TeamTaskUpdateLookup> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not expose task update receipts', 'TEAM_INVALID_ARGUMENT'))
+  }
 
   /**
    * Persist a single-task cancellation while exact live work retains ownership.
@@ -3294,6 +3427,16 @@ export abstract class TeamRuntime extends Service {
    * @returns accepted stop progress or the settled task after owner cleanup.
    */
   abstract cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot>
+
+  /**
+   * Persist cancellation of one exact Simulation-created task without retiring its live attempt prematurely.
+   * @param request - Revocable Simulation source proof, immutable run/operation provenance and original work fence.
+   * @returns accepted stop progress or settled cancellation; exact retries retain the first cancellation target and reason.
+   */
+  cancelRuntimeTask(request: import('./types.ts').TeamSimulationTaskCancelRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task cancellation', 'TEAM_INVALID_ARGUMENT'))
+  }
 
   /**
    * Continue an accepted lease-free cancellation after interrupted channel cleanup.
@@ -3339,6 +3482,27 @@ export abstract class TeamRuntime extends Service {
   abstract resolveTaskReviewFromResponse(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot>
 
   /**
+   * Review an exact native completed result using a revocable Simulation source proof.
+   * @param request - Runtime-only authority deriving the original task, reviewer and command payload.
+   * @returns current canonical task after acceptance, or the current task retaining the identical historical decision.
+   * Changed payloads under the same run-wide command identity reject; no reviewer activation is required.
+   */
+  resolveSimulationTaskReview(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task review', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /**
+   * Assign the exact attempt already durably reserved by the Simulation owner.
+   * @param request - Revocable source proof, canonical task revision and selected actor/attempt.
+   * @returns the assigned task after all ordinary capability, lease and budget constraints pass.
+   */
+  assignSimulationTask(request: import('./types.ts').TeamSimulationTaskAssignRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task assignment', 'TEAM_INVALID_ARGUMENT'))
+  }
+
+  /**
    * Assign a pending task, mint its next non-reusable attempt id, and commit its bounded lease.
    * The scheduler source selects the exact task, participant, optional activation,
    * wake channel, and lease duration through runtime-only authority.
@@ -3346,6 +3510,16 @@ export abstract class TeamRuntime extends Service {
    * @returns the detached assigned task projection with its current lease.
    */
   abstract assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot>
+
+  /**
+   * Start the Simulation attempt whose identified input has reached durable Session storage.
+   * @param request - Exact native task-input source proof and task revision/attempt fence.
+   * @returns running task with the original assigned lease; an exact retained start does not append again.
+   */
+  startSimulationTaskAttempt(request: import('./types.ts').TeamSimulationTaskStartRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task start', 'TEAM_INVALID_ARGUMENT'))
+  }
 
   /**
    * Start the exact current attempt after checking its revision, id, participant, and optional activation epoch.
@@ -3372,6 +3546,16 @@ export abstract class TeamRuntime extends Service {
    * @returns the detached task projection with its renewed current lease.
    */
   abstract heartbeatTaskAttempt(request: TeamTaskAttemptHeartbeatRequest): Promise<TeamTaskSnapshot>
+
+  /**
+   * Settle the exact Simulation attempt from its native result proof after ordinary Team result checks.
+   * @param request - Current writer authority and retained original terminal outcome.
+   * @returns task receipt; identical current-source retries retain the original outcome.
+   */
+  settleSimulationTaskAttempt(request: import('./types.ts').TeamSimulationTaskSettleRequest): Promise<TeamTaskSnapshot> {
+    void request
+    return Promise.reject(new TeamError('Team provider does not support Simulation task settlement', 'TEAM_INVALID_ARGUMENT'))
+  }
 
   /**
    * Settle the exact current attempt once, retaining its closed outcome and removing its lease.
@@ -3624,6 +3808,12 @@ export abstract class TeamRuntime extends Service {
    * @returns the current channel projection and WAL cursor.
    */
   abstract getChannel(request: ChannelGetRequest): Promise<ChannelSnapshot>
+
+  /** Read attached-channel ownership for an authenticated consumer's authorization lookup.
+   * @param request - Exact channel identity from the consumer request.
+   * @returns the attached Team/channel tuple within the provider's response allowance.
+   */
+  abstract getChannelOwner(request: ChannelGetRequest): Promise<import('./types.ts').ChannelOwnerSnapshot>
 
   /**
    * Read channel metadata only for a current member activation, including pending admission.

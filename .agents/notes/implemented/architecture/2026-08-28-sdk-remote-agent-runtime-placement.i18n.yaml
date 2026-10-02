@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-28-sdk-remote-agent-runtime-placement.md
-2026-08-28-sdk-remote-agent-runtime-placement.md: e5fa1ab9b5c96c4b91a7e5551547d8fa1d7ad5d2
-2026-08-28-sdk-remote-agent-runtime-placement.zh.md: a69200d6e361a020eb1fcd8371710ad3658beabd
+2026-08-28-sdk-remote-agent-runtime-placement.md: d08e8e85bfb43621e3f030ba44ddad40d7254b29
+2026-08-28-sdk-remote-agent-runtime-placement.zh.md: c2730311dd2d9689aa6ef3ece91383d16c9b7829

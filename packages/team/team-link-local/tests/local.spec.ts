@@ -181,6 +181,7 @@ function receipt(overrides: Record<string, unknown> = {}): ChannelReceiptRecord 
 /** Build the active attempt projection returned after a bound task-start claim. */
 function runningTask(overrides: Record<string, unknown> = {}): TeamTaskSnapshot {
   return teamTaskSnapshotSchema.parse({
+    createdAt: 0,
     id: taskId,
     teamId,
     revision: 2,

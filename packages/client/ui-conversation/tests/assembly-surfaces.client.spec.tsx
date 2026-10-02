@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /** Conversation assembly acceptance independent of Tool presentation. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, waitFor } from '@testing-library/react'
 import { LocaleRuntime } from '@clocky/clocky-client-locale/client'
 import type { ISession, SessionId, TeamTaskSelection } from '@clocky/clocky-client-runtime/client'
 import type { PropsRenderSlots } from '@clocky/clocky-client-ui-slots'
@@ -66,7 +66,7 @@ async function bench(opts?: { blank?: boolean }) {
 }
 
 describe('resident composer', () => {
-  it('starts a Team from the local task draft without opening its coordinator transcript', async () => {
+  it.each([false, true])('starts a Team without overriding later inspection (opened during refresh: %s)', async (inspectDuringRefresh) => {
     const coordinator = 'team-coordinator' as SessionId
     const runtime = await SlotTestRuntime.create()
     runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
@@ -81,11 +81,16 @@ describe('resident composer', () => {
       summary: { title: 'Coordinator', displayTitle: 'Coordinator', cwd: '/proj' },
       session: { loadOlder: vi.fn<ISession['loadOlder']>() },
     }, { current: false })
-    const selection: TeamTaskSelection = {
+    const selection: Awaited<ReturnType<typeof runtime.teamTasks.start>> = {
       teamId: 'team-1' as TeamTaskSelection['teamId'],
       state: {} as TeamTaskSelection['state'],
       coordinatorSessionId: coordinator,
     }
+    const refreshing = Promise.withResolvers<undefined>(), release = Promise.withResolvers<undefined>()
+    const originalRefresh = runtime.sessions.refresh.bind(runtime.sessions)
+    vi.spyOn(runtime.sessions, 'refresh').mockImplementation(async () => {
+      refreshing.resolve(undefined); await release.promise; return originalRefresh()
+    })
     const start = vi.fn(async () => selection)
     runtime.teamTasks.stub('start', start)
     runtime.teamTasks.startDraft({ agentPreset: 'cordis' })
@@ -105,10 +110,16 @@ describe('resident composer', () => {
         agentPreset: 'cordis',
       }, expect.any(AbortSignal))
     })
+    await refreshing.promise
+    await act(async () => {
+      if (inspectDuringRefresh) runtime.sessions.open(coordinator)
+      release.resolve(undefined); await release.promise
+    })
+    expect(runtime.sessions.list.getSnapshot().current).toBe(inspectDuringRefresh ? coordinator : undefined)
     await waitFor(() => {
       expect(runtime.sessions.calls).toContainEqual({ method: 'refresh', args: [] })
       expect(runtime.sessions.calls).toContainEqual({ method: 'clear', args: [] })
-      expect(runtime.sessions.calls).not.toContainEqual({ method: 'open', args: [coordinator] })
+      expect(runtime.sessions.calls.filter(call => call.method === 'open')).toHaveLength(inspectDuringRefresh ? 1 : 0)
     })
     expect(runtime.workspaces.calls).toEqual([])
     await runtime.dispose()

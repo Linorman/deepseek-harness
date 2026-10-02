@@ -169,7 +169,8 @@ describe('Durable Team record integrity', () => {
 
 const goal = { teamId: 'team', revision: 1, objective: 'Review', phase: 'active', budgets: {} }
 const team = { id: 'team', goal, phase: 'active', depth: 0, maxTeamDepth: 1, cursor: 0, createdAt: 0, updatedAt: 0 }
-const task = { ...taskFields, id: 'task', teamId: 'team', revision: 1, execution: { kind: 'participant' }, phase: 'pending',
+const task = {
+  createdAt: 0, ...taskFields, id: 'task', teamId: 'team', revision: 1, execution: { kind: 'participant' }, phase: 'pending',
   createCommand: { creator: actor, idempotencyKey: 'create' }, reviewHistory: [], attemptCount: 0, attemptHistory: [] }
 const integration = { sourceTaskId: 'source', sourceAttemptId: 'attempt', provider: 'local', target: 'main', mode: 'integrate' }
 const childBinding = { parentTeamId: 'team', parentTaskId: 'task', childTeamId: 'child', delegationId: 'delegation',

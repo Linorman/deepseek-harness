@@ -114,14 +114,12 @@ One row per surviving suggestion, ordered by leverage:
 
 Every "Suggested motion" cell carries exact values — the curve, the duration, the properties — pulled from this repo's shared vocabulary (`--ease-out: cubic-bezier(0.23, 1, 0.32, 1)`, `--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)`, `--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1)`), never approximated. Animate `transform` and `opacity` only; include reduced-motion handling (gentler, not zero) and `@media (hover: hover) and (pointer: fine)` gating when the suggestion involves hover.
 
-### Part 2 — Rejected candidates (REQUIRED)
+### Part 2 — Rejected candidates
 
-List 2–5 places you considered and deliberately did **not** suggest, each with the gate question that killed it:
+Report only candidates actually inspected and rejected within the requested scope, each with its location and the gate question that ruled it out. There is no minimum count; omit this section when none were rejected. Examples:
 
 - `CommandMenu.tsx:12` — command palette open/close. **Rejected: keyboard-initiated, 100+/day. Never animate.**
 - `Chart.tsx:88` — animated line drawing on the analytics graph. **Rejected: functional data the user is reading; decoration hinders.**
-
-This section is what separates this skill from an animation wishlist.
 
 ### Part 3 — Verdict
 

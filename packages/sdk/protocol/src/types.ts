@@ -1,8 +1,9 @@
+import type { SimulationSdkRequestMap } from './simulation.ts'
 import type { TeamMemberInspection } from '@clocky/clocky-team'
 import type { TeamWorkflowInspectRequest, TeamWorkflowInspection } from '@clocky/clocky-team'
 import type { TeamHumanActionSnapshot } from '@clocky/clocky-team'
 import type { TeamTaskInspectionSelection, TeamTaskInspection } from '@clocky/clocky-team'
-import type { TeamBrowseKind, TeamBrowsePage } from '@clocky/clocky-team'
+import type { TeamBrowseKind, TeamBrowsePage, TeamTaskQuery, TeamTaskQueryCursor } from '@clocky/clocky-team'
 import type { TeamMemberSessionSnapshot } from '@clocky/clocky-team'
 import type { EncodedImageAttachment, ImageAttachmentRef } from '@clocky/clocky-attachment'
 import type { TeamHumanActionAnswer, TeamHumanActionResponseResult } from '@clocky/clocky-team'
@@ -44,7 +45,6 @@ import type {
   TeamQuiescenceSnapshot,
   TeamMetricsSnapshot,
   TeamPhase,
-  TeamSnapshot,
   TeamStateSnapshot,
   TeamSelectionSnapshot,
   TeamTaskReviewPolicy,
@@ -70,10 +70,9 @@ export interface TeamListParams {
   readonly limit?: number | undefined
 }
 
-/** Durable Team summaries visible to an SDK client. */
+/** Bounded metadata readable by the authenticated SDK principal. */
 export interface TeamListResult {
-  readonly scanned: number
-  readonly items: readonly TeamSnapshot[]
+  readonly items: readonly import('@clocky/clocky-team').TeamProductSummary[]
   readonly nextCursor?: string | undefined
 }
 
@@ -112,8 +111,18 @@ export interface TeamMemberInspectParams {
 /** Bounded member detail, never a complete Team state. */
 export interface TeamMemberInspectResult { readonly detail: TeamMemberInspection }
 
-/** Collection summary read with optional provider-order continuation. */
+/** Task query accepts wire identities without requiring callers to cast branded ids. */
+export type TeamTaskQueryInput = Omit<TeamTaskQuery, 'excludeTaskId'> & { readonly excludeTaskId?: string | undefined }
+/** Public continuation received from a task query; it grants no access. */
+export type TeamTaskQueryCursorInput = Omit<TeamTaskQueryCursor, 'teamId' | 'query'> & {
+  readonly teamId: string
+  readonly query: TeamTaskQueryInput
+}
+
+/** Collection summary read with an optional independently filtered task query. */
 export interface TeamBrowseParams {
+  readonly query?: TeamTaskQueryInput | undefined
+  readonly queryCursor?: TeamTaskQueryCursorInput | undefined
   readonly teamId: string
   readonly kind: TeamBrowseKind
   readonly afterCursor?: number | undefined
@@ -389,8 +398,17 @@ export interface TeamTaskCreateResult { readonly value: TeamTaskSnapshot }
 export interface TeamTaskGetParams { readonly teamId: string; readonly taskId: string }
 /** Wire declaration for TeamTaskGetResult. */
 export interface TeamTaskGetResult { readonly value: TeamTaskSnapshot }
+/** Exact original-operation lookup without resending a task update. */
+export interface TeamTaskUpdateLookupParams {
+  readonly teamId: string
+  readonly taskId: string
+  readonly commandId: string
+}
+/** Original immutable acceptance, or absence at the current authorized read. */
+export type TeamTaskUpdateLookupResult = import('@clocky/clocky-team').TeamTaskUpdateLookup
 /** Wire declaration for TeamTaskUpdateParams. */
 export interface TeamTaskUpdateParams {
+  readonly commandId: string
   readonly teamId: string
   readonly taskId: string
   readonly expectedRevision: number
@@ -399,7 +417,7 @@ export interface TeamTaskUpdateParams {
   readonly blockedBy?: readonly string[]
 }
 /** Wire declaration for TeamTaskUpdateResult. */
-export interface TeamTaskUpdateResult { readonly value: TeamTaskSnapshot }
+export interface TeamTaskUpdateResult { readonly value: import('@clocky/clocky-team').TeamTaskDetailsUpdateResult }
 /** Wire declaration for TeamTaskCancelParams. */
 export interface TeamTaskCancelParams {
   readonly teamId: string
@@ -679,7 +697,7 @@ export interface HarnessSdkNotificationMap {
 }
 
 /** Client-to-server request methods with their param and result shapes. */
-export interface HarnessSdkRequestMap {
+export interface HarnessSdkRequestMap extends SimulationSdkRequestMap {
   'team/inbox-respond': { params: TeamInboxRespondParams; result: TeamHumanActionResponseResult }
   'team/workflow-plan-inspect': { params: TeamWorkflowInspectParams; result: TeamWorkflowInspection }
   'team/action-read': { params: TeamActionReadParams; result: TeamHumanActionSnapshot }
@@ -729,6 +747,7 @@ export interface HarnessSdkRequestMap {
   'team/task-list': { params: TeamTaskListParams; result: TeamTaskListResult }
   'team/workflow-plan-list': { params: TeamWorkflowPlanListParams; result: TeamWorkflowPlanListResult }
   'team/artifact-list': { params: TeamArtifactListParams; result: TeamArtifactListResult }
+  'team/task-update-result': { params: TeamTaskUpdateLookupParams; result: TeamTaskUpdateLookupResult }
   'team/task-update': { params: TeamTaskUpdateParams; result: TeamTaskUpdateResult }
   'team/task-cancel': { params: TeamTaskCancelParams; result: TeamTaskCancelResult }
   'team/task-delete': { params: TeamTaskDeleteParams; result: TeamTaskDeleteResult }

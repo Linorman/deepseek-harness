@@ -38,8 +38,8 @@ function workflow(withDependency = false) {
   if (aTemplate === undefined || bTemplate === undefined) throw new Error('workflow fixture requires two templates')
   const { id: aTemplateId, ...aFields } = aTemplate
   const { id: bTemplateId, ...bFields } = bTemplate
-  const a = task({ ...aFields, id: 'task-review', workflowPlanId: plan.id, workflowTemplateId: aTemplateId })
-  const b = task({ ...bFields, blockedBy: withDependency ? [a.id] : [], id: 'task-summary', workflowPlanId: plan.id, workflowTemplateId: bTemplateId })
+  const a = task({ ...aFields, id: 'task-review', createdAt: 17, workflowPlanId: plan.id, workflowTemplateId: aTemplateId })
+  const b = task({ ...bFields, blockedBy: withDependency ? [a.id] : [], id: 'task-summary', createdAt: 19, workflowPlanId: plan.id, workflowTemplateId: bTemplateId })
   const partial = { ...plan, revision: 2, taskBindings: [{ templateId: 'review', taskId: a.id }] }
   const bound = { ...partial, revision: 3, taskBindings: [...partial.taskBindings, { templateId: 'summary', taskId: b.id }] }
   const ready = { ...bound, revision: 4, phase: 'ready', channelId: 'workflow-channel' }
@@ -289,7 +289,7 @@ for (const backend of ['json', 'sqlite'] as const) {
     it('preserves admitted bindings when a later revision also adds a resource', async () => {
       const { a, partial, partialRows, ready, readyRows } = workflow()
       const attached = { type: 'channel/attached', channelId: 'workflow-channel', createdAt: 19 }
-      const alternate = task({ ...a, id: 'alternate-review', createCommand: {
+      const alternate = task({ ...a, id: 'alternate-review', createdAt: 20, createCommand: {
         ...a.createCommand, idempotencyKey: 'alternate-review-key',
       } })
       const variants = [
@@ -318,7 +318,7 @@ for (const backend of ['json', 'sqlite'] as const) {
 
 it.each(['json', 'sqlite'] as const)('refuses task creation after its workflow left compilation (%s)', async (backend) => {
   const { a, readyRows } = workflow()
-  const late = task({ ...a, id: 'late-review', createCommand: { ...a.createCommand, idempotencyKey: 'late-review' } })
+  const late = task({ ...a, id: 'late-review', createdAt: 23, createCommand: { ...a.createCommand, idempotencyKey: 'late-review' } })
   const ctx = await recover(backend, [...readyRows, taskChanged({ task: late, createdAt: 23 })])
   await expect(ctx.teams.getTeam({ teamId })).rejects.toThrow('left compiling')
 })

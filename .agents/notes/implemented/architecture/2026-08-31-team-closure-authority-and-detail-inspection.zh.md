@@ -10,6 +10,8 @@ Team completion 和 cancellation 可以通过普通 phase write 表示，而 tas
 
 ## Decision
 
+[产品检查决策](2026-09-28-parent-team-product-inspection.zh.md)管理父团队授权读取及 Host 取消响应。Host 可在清理继续时返回已受理的持久取消与当前 phase；TeamRun 和 Hub 仍要求原有收尾证据才允许取消进入终态。
+
 `TeamRuntime` 暴露 typed `completeTeam()`、`failTeam()` 和 `cancelTeam()` command。Completion 要求准确的 coordinator-to-human final Envelope、持久 human receipt、已完成的 objective，以及 task、activation、human action、channel 和 delivery 都已 quiescent。Failure 要求 task 和 activation 已到终态。Cancellation 首先追加 `team/cancellation` request，将 active 或 stalled admission 移到 `quiescing`，取消无 lease 的 work 与 pending human action，并关闭 channel；active lease 或 activation 在 owner settle 或 fence 前仍然可见。相同 key 的 retry 会在这些 resource quiesce 后完成 request，不同 key 会冲突。本地 `TeamRun` Consumer 会在释放 coordinator lease 前请求 cancellation；若拒绝发生时没有可观察到的 cancellation request，则会保留本地 run ownership 以供 retry。Product Host 不再路由通用的 `team.phase` mutation。
 
 挂载的 `team-closure-driver` Consumer 会在重启后从持久 Team state 恢复已接受的 completion、failure 和 cancellation intent。TeamRun 在 completion intent 后、receipt 与本地 teardown 前持久化独立的 final-result admission。只有 intent 的结果由 driver 通过追加到同一个封闭 sink 来接纳，driver 返回新的 cursor，之后只凭新的 continuation authority 修复 receipt。它还会在 coordinator 的 missing-final、structured turn failure 或 frozen budget exhaustion 返回 caller 前记录该事实。Closure-owned pending delivery 会在 channel 和 Team 的终态 record 提交前收到带明确 reason 的 `channel/delivery-expired`；未确认的 remote termination 会保持 stalled，而不会被报告为已 settle。

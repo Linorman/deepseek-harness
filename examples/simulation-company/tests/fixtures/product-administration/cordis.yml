@@ -1,0 +1,14 @@
+- name: cordis:include
+  config:
+    path: ../../../cordis.yml
+- name: ../../product-administration-model.ts
+- name: '@clocky/clocky-user-questions'
+- name: '@clocky/clocky-simulation-product'
+  config:
+    directoryStream: product-directory
+    imports: []
+- name: '@clocky/clocky-simulation-product/administration'
+  config:
+    journalStream: product-commands
+    templates: !!js JSON.parse(process.env.COMPANY_PRODUCT_TEMPLATES)
+    recoveryPageSize: 1

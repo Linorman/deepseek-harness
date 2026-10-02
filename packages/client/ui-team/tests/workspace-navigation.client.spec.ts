@@ -32,3 +32,26 @@ it('preserves a selected workflow in its own navigation identity', () => {
   expect(readWorkspaceRoute(workspaceRouteUrl('http://localhost/?theme=dark', route))).toEqual(route)
   expect(workspaceRouteIdentity({ ...route, planId: 'different' as never })).not.toBe(workspaceRouteIdentity(route))
 })
+
+it('restores only the request identity without placing answer input in the URL', () => {
+  const route = readWorkspaceRoute('http://localhost/?team=team&view=attention&action=request')!
+  expect(route.actionId).toBe('request')
+  expect(readWorkspaceRoute(workspaceRouteUrl('http://localhost/', route))).toEqual(route)
+  expect(workspaceRouteIdentity({ ...route, actionId: 'other' as never })).not.toBe(workspaceRouteIdentity(route))
+  expect(workspaceRouteUrl('http://localhost/?team=team&action=request&theme=dark', undefined)).toBe('http://localhost/?theme=dark')
+})
+
+it('round-trips task form identities and rejects incompatible external form targets', () => {
+  for (const query of ['form=taskCreate', 'form=taskUpdate&formTask=existing', 'form=taskReview&formTask=review', 'form=taskIntegrate&formTask=source']) {
+    const route = readWorkspaceRoute(`http://localhost/?team=team&view=tasks&${query}`)!
+    const result = workspaceRouteUrl('http://localhost/?theme=dark', route)
+    expect(readWorkspaceRoute(result)).toEqual(route)
+    expect(result).not.toContain('description')
+    expect(workspaceRouteIdentity({ ...route, taskForm: undefined })).not.toBe(workspaceRouteIdentity(route))
+  }
+  for (const query of ['form=unknown', 'form=taskCreate&formTask=existing', 'form=taskUpdate', 'form=taskReview&formTask=']) {
+    expect(() => readWorkspaceRoute(`http://localhost/?team=team&${query}`)).toThrow()
+  }
+  expect(workspaceRouteUrl('http://localhost/?team=team&form=taskUpdate&formTask=existing&theme=dark', undefined))
+    .toBe('http://localhost/?theme=dark')
+})

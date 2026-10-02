@@ -1,0 +1,11 @@
+- name: cordis:include
+  config:
+    path: ../sdk-review/cordis.yml
+- id: sdk-execution-fault
+  name: ./fault.ts
+- name: '@clocky/clocky-simulation-product/context-readers'
+  config:
+    readers:
+      - principalId: sdk-reader
+        entityIds: [buyer]
+        content: [context]

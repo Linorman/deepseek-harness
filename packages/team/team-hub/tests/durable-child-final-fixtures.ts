@@ -26,7 +26,8 @@ export function retainedChildFinalFixture(senderId: ParticipantId, sourceSession
   const service = participant({ id: 'retained-parent-service', kind: 'service', role: 'parent-service' })
   const channelId = channelIdSchema.parse('final-channel')
   const binding = teamChildRunBindingSchema.parse({ parentTeamId: parentId, parentTaskId: reservation.reserved.id,
-    childTeamId: teamId, delegationId: reservation.reserved.delegation!.id, parentServiceId: service.id, coordinatorId: senderId, channelId })
+    childTeamId: teamId, delegationId: reservation.reserved.delegation!.id, parentServiceId: service.id,
+    coordinatorId: senderId, channelId })
   const memberRecords = [participantChanged({ participant: service, createdAt: 14 }),
     participantChanged({ participant: { ...service, phase: 'provisioning' }, createdAt: 14 }),
     participantChanged({ participant: { ...service, phase: 'active' }, createdAt: 14 })]
@@ -44,17 +45,21 @@ export function retainedChildFinalFixture(senderId: ParticipantId, sourceSession
       invitation: { ...invitation, status: 'acknowledged', acknowledgementKey: `child-resource:${invitation.participantId}`, settledAt: 26 } })),
     { type: 'channel/phase', sequence: 2 + invitations.length * 2, phase: 'active', createdAt: 26 }]
   const request = { id: 'resource-child-request', teamId, channelId, sequence: prefix.length, senderId: service.id,
-    audience: [senderId], kind: 'request', payload: { text: 'Complete the delegated work.' }, delivery: 'turn', priority: 'normal', createdAt: 26 }
+    audience: [senderId], kind: 'request', payload: { text: 'Complete the delegated work.' }, delivery: 'turn', priority: 'normal',
+    createdAt: 26 }
   const response = { id: 'final-a', teamId, channelId, sequence: prefix.length + 2, senderId,
-    audience: [service.id], kind: 'response', payload: { text: 'The retained child result.' }, delivery: 'turn', priority: 'normal', createdAt: 26,
+    audience: [service.id], kind: 'response', payload: { text: 'The retained child result.' }, delivery: 'turn', priority: 'normal',
+    createdAt: 26,
     causationId: request.id }
   const records = [...prefix,
     { type: 'channel/envelope', envelope: request, deliveryIntents: [{ participantId: senderId, envelopeId: request.id, delivery: 'turn' }] },
-    { type: 'channel/receipt', sequence: request.sequence + 1, createdAt: 26, participantId: senderId, envelopeId: request.id, cursor: request.sequence },
+    { type: 'channel/receipt', sequence: request.sequence + 1,
+      createdAt: 26, participantId: senderId, envelopeId: request.id, cursor: request.sequence },
     { type: 'channel/envelope', envelope: response, deliveryIntents: [{ participantId: service.id, envelopeId: response.id, delivery: 'turn' }] },
     { type: 'channel/phase', phase: 'closing', sequence: response.sequence + 1, createdAt: 26 },
     { type: 'channel/closed', phase: 'closed', sequence: response.sequence + 2, createdAt: 26 },
-    { type: 'channel/receipt', sequence: response.sequence + 3, createdAt: 31, participantId: service.id, envelopeId: response.id, cursor: response.sequence }]
+    { type: 'channel/receipt', sequence: response.sequence + 3,
+      createdAt: 31, participantId: service.id, envelopeId: response.id, cursor: response.sequence }]
   const charge = { id: 'charge-a', sourceTeamId: teamId, parentTaskId: reservation.reserved.id, originTeamId: teamId,
     sourceSampleId: 'sample-a', participantId: senderId, sessionId: sourceSessionId, provider: 'mock', model: 'model',
     turn: 1, step: 1, usage: { inputTokens: 2, outputTokens: 3 }, observedAt: 25 }
@@ -64,14 +69,18 @@ export function retainedChildFinalFixture(senderId: ParticipantId, sourceSession
       usage: { inputTokens: 2, outputTokens: 3, cacheReadTokens: 0, cacheWriteTokens: 0, turns: 1, costUnits: 0, updatedAt: 25 } }]
 
   const parent = teamDelegationResultAdmissionSchema.parse({ binding, requestEnvelopeId: request.id, requestSequence: request.sequence,
-    responseEnvelopeId: response.id, responseSequence: response.sequence, contentFingerprint: fingerprintTeamChildResultContent(response.payload),
+    responseEnvelopeId: response.id, responseSequence: response.sequence,
+    contentFingerprint: fingerprintTeamChildResultContent(response.payload),
     text: response.payload.text, artifacts: [], parentTaskRevision: reservation.reserved.revision + 1,
     parentCursor: parentRecords.length, admittedAt: 31 })
   const parentTask = teamTaskSnapshotSchema.parse({ ...reservation.reserved, revision: parent.parentTaskRevision,
     delegation: { ...reservation.reserved.delegation, phase: 'settling', result: parent, updatedAt: 31 } })
-  const parentTeam: DurableTeamFixture = { id: parentId, records: [...parentRecords, { type: 'task/changed', task: parentTask, createdAt: 31 }] }
+  const parentTeam: DurableTeamFixture = { id: parentId, records: [...parentRecords, { type: 'task/changed', task: parentTask,
+    createdAt: 31 }] }
   let projection
-  for (const [cursor, record] of records.entries()) projection = foldChannelRecord(projection, channelRecordSchema.parse(record), cursor, channelId, consultChannelAdapter)
+  for (const [cursor, record] of records.entries()) {
+    projection = foldChannelRecord(projection, channelRecordSchema.parse(record), cursor, channelId, consultChannelAdapter)
+  }
   if (projection === undefined) throw new Error('Child final fixture requires a consult projection')
   const channel: DurableChannelFixture = { id: channelId, records, checkpoint: channelProjectionData(projection) }
   return { memberRecords, channel, parentTeam,

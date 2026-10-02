@@ -1,3 +1,4 @@
+import { teamTaskUpdateCommandIdSchema } from '@clocky/clocky-team'
 import type { TeamListPageRequest } from '@clocky/clocky-team'
 import { fingerprintChannelSummarySources } from '@clocky/clocky-team'
 import { admitTestFinal } from './final-admission-fixture.ts'
@@ -4080,6 +4081,7 @@ for (const backend of ['json', 'sqlite'] as const) {
       const task = await harness.ctx.teams.createTask({ actor: createProof, ...createInput })
       expect(task.createCommand.creator).toEqual({ teamId: created.team.id, participantId: human.id })
       const updateInput = {
+        commandId: teamTaskUpdateCommandIdSchema.parse('human-update-proof'),
         teamId: created.team.id,
         taskId: task.id,
         expectedRevision: task.revision,

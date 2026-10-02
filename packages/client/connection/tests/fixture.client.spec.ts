@@ -816,6 +816,22 @@ describe('createFixtureApi', () => {
 })
 
 describe('FixtureApiClient (protocol-level fake carrier)', () => {
+  it('returns an explicit unavailable result when its Host does not deploy Simulation', async () => {
+    const client = new FixtureApiClient()
+    for (const response of await Promise.all([client.simulations.list({}), client.simulations.catalog({}),
+      client.simulations.runStatuses({ runIds: ['run' as never] }),
+      client.simulations.retryOperation({ runId: 'run' as never, commandId: 'grant' as never, operationId: 'operation' as never,
+        expectedAttemptCount: 1, reason: 'Reconcile original target' }),
+      client.simulations.listTasks({ runId: 'run' as never }),
+      client.simulations.cancelTask({ runId: 'run' as never, commandId: 'cancel' as never, operationId: 'operation' as never,
+        expectedRevision: 1, expectedAttemptId: null, reason: 'Cancel original task' }),
+      client.simulations.listTaskReviews({ runId: 'run' as never }),
+      client.simulations.resolveTaskReview({ runId: 'run' as never, commandId: 'review' as never, operationId: 'operation' as never,
+        attemptId: 'attempt' as never, expectedRevision: 1, nextPhase: 'completed', reason: 'Original review' })])) {
+      expect(response.result).toMatchObject({ ok: false, error: { code: 'simulation-product-unavailable' } })
+      expect(response.rpcId).toBeTruthy()
+    }
+  })
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()

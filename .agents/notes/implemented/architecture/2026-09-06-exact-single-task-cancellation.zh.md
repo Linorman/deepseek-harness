@@ -20,6 +20,8 @@ TeamRun 和模型工具提供有界取消进度；Host 与两种 SDK 保留相�
 
 Task 终态提交在同一 journal batch 中取消仍 pending 且绑定该 task 的 human action，使用明确的`task-cancelled`业务 outcome。已经结算的 Host 决定与 Session `approval/decided`事件保持不变。
 
+`cancelRuntimeTask()` 为 Simulation 任务所有者提供独立且封闭的 `simulation-task-cancel` proof。Hub 在目标查找前、Team 队列内及 policy IO 后，将其绑定到不可变的 run／任务创建来源、creator 和生命周期所有者。可为空的 attempt fence 选择当前 lease 或最初保留的取消目标；无 lease 的 pending／review 工作选择 `null`。来源不依赖 live writer，也不能改变最初 intent、普通 attempt 上限、已完成 review 结果或物理终止责任。普通 human 与 TeamRun 取消 proof 保留原入口，不能使用该入口。[原生审核决策](2026-10-01-simulation-task-review-authority.zh.md)继续拥有独立的 reviewer／结果权限。
+
 ## 考虑过的替代方案
 
 **立即进入终态。** 不采用，因为 owner 仍在执行时，task 状态可能已经声称资源释放。
@@ -27,6 +29,8 @@ Task 终态提交在同一 journal batch 中取消仍 pending 且绑定该 task 
 **软 Participant interruption。** 不采用，因为它没有 task-attempt fence，也不证明停止已经完成。
 
 **独立取消 registry。** 不采用，因为它会复制 durable Task authority。
+
+**普通 human 取消 Simulation 任务。** 不采用，因为 Team 成员资格不能证明已受理原生 operation 或精确保留 attempt 的所有权。
 
 ## 影响
 
@@ -37,3 +41,5 @@ Lease 期限经过或 allocation 清理失败后，取消可能仍未进入终�
 Keyless example 使用真实文件操作 approval 等待和真实 Participant 审阅，通过模型工具取消，并在同一 Team 中完成后续工作。Owning tests 覆盖保留的期限事实、activation fence、持久回放、旧 attempt acknowledgement，以及 Local/WebSocket 重连。
 
 两种 SDK 的 owning snapshot 还保留真实 child 被取消的 tool turn，以及保留的 waking 输入触发的后续 turn，协调者仍返回显式 Team final。TypeScript 验证源码与构建运行时；Python advanced 场景验证构建后的工作区运行时，single-executable 验证仍归发行检查。
+
+[精确 Simulation 取消测试](../../../../packages/team/team-hub/tests/runtime-task-cancellation.spec.ts)覆盖 JSON／SQLite 的 pending、assigned、running 和 review 工作，保留 lease／结果／attempt 上限，精确原重试和 checkpoint 回放，替换选择、错误 attempt、缺失或撤销来源，以及 policy 等待期间撤权。这些测试验证 Hub 权限与 intent；生产 executor 取消和 Web 编排仍各自负责端到端验证。

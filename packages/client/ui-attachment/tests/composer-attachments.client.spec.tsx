@@ -146,7 +146,7 @@ describe('ComposerAttachments', () => {
 
     view.rerender(<ComposerAttachments {...initial} />)
     fireEvent.click(view.getByTitle('查看原图'))
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent(view.getByRole('dialog', { name: '原图预览' }), new Event('cancel', { cancelable: true }))
     expect(view.queryByRole('dialog', { name: '原图预览' })).toBeNull()
   })
 

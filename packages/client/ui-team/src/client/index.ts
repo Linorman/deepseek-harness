@@ -1,8 +1,11 @@
+import { WorkspaceNavigationError } from './navigation-error.ts'
+import { WorkspaceNavigation } from './WorkspaceNavigation.tsx'
 /** Registers the Team task browser in the sidebar shell. */
 
 import type { BoundActions } from '@clocky/clocky-client-ui-slots'
 import type { WorkspaceRoute } from './workspace-navigation.ts'
 import type { ClientContext, TeamId, TeamTaskId } from '@clocky/clocky-client-runtime/client'
+import type { ConnectionHandle } from '@clocky/clocky-client-connection/client'
 import type {} from '@clocky/clocky-client-locale/client'
 import type {} from '@clocky/clocky-client-ui-sidebar/client'
 import type {} from '@clocky/clocky-client-ui-layout/client'
@@ -34,7 +37,7 @@ declare module '@clocky/clocky-client-ui-slots' {
 const NS = 'team'
 
 /** Services required by the Team browser. */
-export const inject = ['slots', 'sessions', 'teamTasks', 'locale']
+export const inject = ['slots', 'sessions', 'teamTasks', 'locale', 'connection', 'layout']
 
 /** Mount the sidebar Team browser.
  * @param ctx - Client root context.
@@ -43,6 +46,7 @@ export const inject = ['slots', 'sessions', 'teamTasks', 'locale']
  */
 export function apply(ctx: ClientContext, config: Config = {}): void {
   const limits = Config.parse(config)
+  const connection = ctx.get('connection') as ConnectionHandle
   const workspaceStore = createTeamWorkspaceStore(limits)
   let navigationRequest: AbortController | undefined
   const cancelRestoration = () => { navigationRequest?.abort() }
@@ -81,6 +85,7 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   ctx.effect(() => () => { stopLiveUpdates?.() }, 'ui-team: live Team updates')
 
   const openTeam = async (teamId: TeamId) => {
+    ctx.layout.showWorkspace('team')
     if (inspect === undefined) throw new Error('Read-only Team inspection is unavailable')
     cancelRestoration()
     inspection.cancel()
@@ -93,6 +98,7 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   }
   const cancelTeam = async (teamId: TeamId) => await ctx.teamTasks.cancel(teamId)
   const resumeTeam = async (teamId: TeamId) => {
+    ctx.layout.showWorkspace('team')
     cancelRestoration()
     inspection.cancel()
     ctx.sessions.clear()
@@ -148,13 +154,47 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   const readChannelCatalog = ctx.teamTasks.readChannelCatalog === undefined ? undefined
     : async () => { await ctx.teamTasks.readChannelCatalog?.() }
   const readArtifact = async (teamId: TeamId, artifactId: string, signal?: AbortSignal) => {
-    const artifact = await ctx.teamTasks.readArtifact?.(teamId, artifactId, signal)
-    if (artifact === undefined) throw new Error(`Artifact '${artifactId}' cannot be read`)
-    return artifact
+    if (ctx.teamTasks.readArtifact === undefined) throw new Error(`Artifact '${artifactId}' cannot be read`)
+    await ctx.teamTasks.readArtifact(teamId, artifactId, signal)
   }
+  ctx.effect(() => () => { ctx.teamTasks.closeArtifactDetail?.() }, 'ui-team: artifact viewing lifetime')
   const readTaskDetail: TeamBrowserInjected['readTaskDetail'] = ctx.teamTasks.readTaskDetail === undefined ? undefined
     : async (teamId, taskId, section, mode) => { await ctx.teamTasks.readTaskDetail?.(teamId, taskId, section, mode) }
   const closeTaskDetail = () => { ctx.teamTasks.closeTaskDetail?.() }
+  const watchIdentities: TeamBrowserInjected['watchIdentities'] = ctx.teamTasks.watchIdentities === undefined ? undefined
+    : (teamId, ids) => ctx.teamTasks.watchIdentities?.(teamId, ids, { refreshMs: limits.identityRefreshMs,
+      capacity: limits.identityCacheCapacity, batchSize: limits.identityBatchSize }) ?? (() => {})
+  const refreshIdentities = async (): Promise<void> => { await ctx.teamTasks.refreshIdentities?.() }
+  const watchExecutionProfiles: TeamBrowserInjected['watchExecutionProfiles'] = ctx.teamTasks.watchExecutionProfiles === undefined ? undefined
+    : input => ctx.teamTasks.watchExecutionProfiles?.(input, limits.capabilityRefreshMs) ?? (() => {})
+  const refreshExecutionProfiles = async (): Promise<void> => { await ctx.teamTasks.refreshExecutionProfiles?.() }
+  const watchMemberReadiness: TeamBrowserInjected['watchMemberReadiness'] = ctx.teamTasks.watchMemberReadiness === undefined ? undefined
+    : input => ctx.teamTasks.watchMemberReadiness?.(input, limits.readinessRefreshMs) ?? (() => {})
+  const refreshMemberReadiness = ctx.teamTasks.refreshMemberReadiness?.bind(ctx.teamTasks)
+  const watchTaskCapabilities: TeamBrowserInjected['watchTaskCapabilities'] = ctx.teamTasks.watchTaskCapabilities === undefined ? undefined
+    : input => ctx.teamTasks.watchTaskCapabilities?.(input, limits.capabilityRefreshMs) ?? (() => {})
+  const refreshTaskCapabilities = ctx.teamTasks.refreshTaskCapabilities?.bind(ctx.teamTasks)
+  const watchAttention: TeamBrowserInjected['watchAttention'] = ctx.teamTasks.watchAttention === undefined ? undefined
+    : teamId => ctx.teamTasks.watchAttention?.(teamId, { limit: limits.attentionPreviewLimit,
+      refreshMs: limits.attentionRefreshMs }) ?? (() => {})
+  const readAttention: TeamBrowserInjected['readAttention'] = ctx.teamTasks.readAttention === undefined ? undefined
+    : async (teamId, mode) => { await ctx.teamTasks.readAttention?.(teamId, limits.attentionPageLimit, mode) }
+  const refreshAttentionPreview: TeamBrowserInjected['refreshAttentionPreview'] = ctx.teamTasks.refreshAttentionPreview === undefined ? undefined
+    : async (teamId) => { if (ctx.teamTasks.list.getSnapshot().current === teamId) await ctx.teamTasks.refreshAttentionPreview?.() }
+  const pauseAttention = ctx.teamTasks.pauseAttention?.bind(ctx.teamTasks)
+  const inspectAction = ctx.teamTasks.inspectAction?.bind(ctx.teamTasks)
+  const closeActionDetail = ctx.teamTasks.closeActionDetail?.bind(ctx.teamTasks)
+  const openPendingAction: TeamBrowserInjected['openPendingAction'] = inspectAction === undefined ? undefined
+    : async (teamId, id) => { await inspectAction(teamId, id) }
+  const readTaskQuery = ctx.teamTasks.readTaskQuery?.bind(ctx.teamTasks)
+  const pauseTaskQuery = ctx.teamTasks.pauseTaskQuery?.bind(ctx.teamTasks)
+  const lookupTaskUpdate = ctx.teamTasks.lookupTaskUpdate?.bind(ctx.teamTasks)
+  const watchTaskReferences: TeamBrowserInjected['watchTaskReferences'] = ctx.teamTasks.watchTaskReferences === undefined ? undefined
+    : (teamId, ids) => ctx.teamTasks.watchTaskReferences?.(teamId, ids, { capacity: limits.taskReferenceCapacity,
+      batchSize: limits.taskReferenceBatchSize, refreshMs: limits.taskReferenceRefreshMs }) ?? (() => {})
+  const refreshTaskReferences = ctx.teamTasks.refreshTaskReferences?.bind(ctx.teamTasks)
+  const readDependencies = ctx.teamTasks.readDependencies?.bind(ctx.teamTasks)
+  const closeDependencies = ctx.teamTasks.closeDependencies?.bind(ctx.teamTasks)
   const readCollections = ctx.teamTasks.readCollections === undefined ? undefined
     : async (teamId: TeamId, collection: Parameters<NonNullable<TeamBrowserInjected['readCollections']>>[1], mode?: 'refresh' | 'next' | 'first', signal?: AbortSignal) => {
       await ctx.teamTasks.readCollections?.(teamId, collection, mode, signal)
@@ -176,6 +216,10 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
   ): Promise<void> => {
     await ctx.teamTasks.cancelTask?.(teamId, taskId, expectedRevision, reason, signal)
   }
+  ctx.slots.inject('sidebar.workspaceNavigation', () => ctx.slots.register({
+    name: 'sidebar.workspaceNavigation', id: 'team', order: -100, locale: NS,
+    inject: () => ({ open: () => { ctx.layout.showWorkspace('team') } }),
+  }, WorkspaceNavigation))
   ctx.slots.inject('sidebar.teamTasks', () => ctx.slots.register({
     name: 'sidebar.teamTasks',
     locale: NS,
@@ -187,7 +231,8 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
       archiveTeam,
       cancelTeam,
       resumeTeam,
-      inspectMember: ctx.teamTasks.inspectMember?.bind(ctx.teamTasks),
+      readMemberDetail: ctx.teamTasks.readMemberDetail?.bind(ctx.teamTasks),
+      closeMemberDetail: ctx.teamTasks.closeMemberDetail?.bind(ctx.teamTasks),
       readWorkflowDetail: ctx.teamTasks.readWorkflowDetail?.bind(ctx.teamTasks),
       closeWorkflowDetail: ctx.teamTasks.closeWorkflowDetail?.bind(ctx.teamTasks),
       openParticipantSession,
@@ -202,6 +247,11 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
       readArtifact,
       ...readCollections === undefined ? {} : { readCollections },
       ...readTaskDetail === undefined ? {} : { readTaskDetail, closeTaskDetail },
+      watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction, inspectAction, closeActionDetail,
+      readTaskQuery, pauseTaskQuery, readDependencies, closeDependencies, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
+      watchIdentities, refreshIdentities,
+      watchExecutionProfiles, refreshExecutionProfiles,
+      watchTaskCapabilities, refreshTaskCapabilities, watchMemberReadiness, refreshMemberReadiness,
       ...deleteTask === undefined ? {} : { deleteTask },
       ...cancelTask === undefined ? {} : { cancelTask },
       ...draftControls,
@@ -214,7 +264,9 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
     children: { 'team.channel.message': { kind: 'single', scope: 'root' } },
     locale: NS,
     inject: (actions: BoundActions<ReturnType<typeof createTeamWorkspaceStore>>) => ({
+      hooks: { hostDescription: connection.hostDescription },
       maxDraftBytes: limits.maxDraftBytes,
+      navigateApplication: (href: string) => { ctx.layout.navigate(href) },
       restoreNavigation: async (route: WorkspaceRoute | undefined, externalSignal: AbortSignal) => {
         cancelRestoration()
         const request = new AbortController()
@@ -231,30 +283,42 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
             return
           }
           if (inspect === undefined) throw new Error('Read-only Team inspection is unavailable')
-          let selected = ctx.teamTasks.list.getSnapshot().selected
-          if (selected?.teamId !== route.teamId) {
-            inspection.cancel()
-            ctx.sessions.clear()
-            selected = await inspect(route.teamId, signal)
-          }
+          // A rejected exact target must leave its navigation error reachable instead of retaining an older modal Session.
+          inspection.cancel()
+          ctx.sessions.clear()
+          // History/source restoration revalidates the target even when an older selection is retained.
+          const selected = await inspect(route.teamId, signal)
           signal.throwIfAborted()
           if (ctx.teamTasks.list.getSnapshot().current !== route.teamId) return
+          if (route.actionId !== undefined) {
+            const current = await inspectAction?.(route.teamId, route.actionId)
+            signal.throwIfAborted()
+            if (current === undefined) throw new WorkspaceNavigationError('missing', 'This request is not available in the selected Team')
+          }
+          if (route.taskForm !== undefined && 'taskId' in route.taskForm) {
+            await readTaskDetail?.(route.teamId, route.taskForm.taskId)
+            signal.throwIfAborted()
+            const detail = ctx.teamTasks.list.getSnapshot().taskDetail
+            if (detail?.taskId !== route.taskForm.taskId || detail.record.value === undefined || detail.record.error !== undefined) {
+              throw new WorkspaceNavigationError('missing', 'This task form is not available in the selected Team')
+            }
+          }
           if (route.taskId !== undefined) {
             await readTaskDetail?.(route.teamId, route.taskId)
             signal.throwIfAborted()
             const detail = ctx.teamTasks.list.getSnapshot().taskDetail
             if (detail?.taskId !== route.taskId || detail.record.value?.task.phase === 'deleted' || detail.record.error !== undefined) {
-              throw new Error('This task is not available in the selected Team')
+              throw new WorkspaceNavigationError('missing', 'This task is not available in the selected Team')
             }
           }
-          if (route.sessionId !== undefined && route.sessionId !== selected.coordinatorSessionId) {
+          if (route.sessionId !== undefined && (route.participantId !== undefined || route.sessionId !== selected.coordinatorSessionId)) {
             if (route.participantId === undefined || ctx.teamTasks.participantSession === undefined) {
-              throw new Error('A member identity is required to restore this Session. Open it from the member list.')
+              throw new WorkspaceNavigationError('binding', 'A member identity is required to restore this Session. Open it from the member list.')
             }
             const resolved = await ctx.teamTasks.participantSession(route.teamId, route.participantId, signal)
-            if (resolved !== route.sessionId) throw new Error('This Session does not belong to the selected member')
+            if (resolved !== route.sessionId) throw new WorkspaceNavigationError('binding', 'This Session does not belong to the selected member')
           }
-          actions.update(route.teamId, { view: route.view, ...(route.view === 'workflows' ? { workflowPlanId: route.planId } : {}), ...(route.view === 'tasks' ? { taskId: route.taskId, taskSearch: route.search, taskPhase: route.phase } : {}) })
+          actions.update(route.teamId, { view: route.view, taskForm: route.taskForm, actionId: route.actionId, ...(route.view === 'workflows' ? { workflowPlanId: route.planId } : {}), ...(route.view === 'tasks' ? { taskId: route.taskId, taskSearch: route.search, taskPhase: route.phase } : {}) })
           if (route.sessionId === undefined) ctx.sessions.clear()
           if (route.view === 'channels' && route.channelId !== undefined && ctx.teamTasks.list.getSnapshot().channel?.channelId !== route.channelId) await readChannel(route.channelId, -1, signal)
           signal.throwIfAborted()
@@ -273,12 +337,15 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
         cancelRestoration()
         const selection = ctx.teamTasks.list.getSnapshot().selected
         if (selection === undefined) return
-        await inspection.open(selection.teamId, () => Promise.resolve(selection.coordinatorSessionId))
+        const sessionId = selection.coordinatorSessionId
+        if (sessionId === undefined) throw new Error('This Team has no bound coordinator Session; inspect a member Session instead')
+        await inspection.open(selection.teamId, () => Promise.resolve(sessionId))
       },
       cancelTeam,
       resumeTeam,
       openTeam,
-      inspectMember: ctx.teamTasks.inspectMember?.bind(ctx.teamTasks),
+      readMemberDetail: ctx.teamTasks.readMemberDetail?.bind(ctx.teamTasks),
+      closeMemberDetail: ctx.teamTasks.closeMemberDetail?.bind(ctx.teamTasks),
       readWorkflowDetail: ctx.teamTasks.readWorkflowDetail?.bind(ctx.teamTasks),
       closeWorkflowDetail: ctx.teamTasks.closeWorkflowDetail?.bind(ctx.teamTasks),
       openParticipantSession,
@@ -294,6 +361,11 @@ export function apply(ctx: ClientContext, config: Config = {}): void {
       readArtifact,
       ...readCollections === undefined ? {} : { readCollections },
       ...readTaskDetail === undefined ? {} : { readTaskDetail, closeTaskDetail },
+      watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction, inspectAction, closeActionDetail,
+      readTaskQuery, pauseTaskQuery, readDependencies, closeDependencies, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
+      watchIdentities, refreshIdentities,
+      watchExecutionProfiles, refreshExecutionProfiles,
+      watchTaskCapabilities, refreshTaskCapabilities, watchMemberReadiness, refreshMemberReadiness,
       ...deleteTask === undefined ? {} : { deleteTask },
       ...cancelTask === undefined ? {} : { cancelTask },
     }),

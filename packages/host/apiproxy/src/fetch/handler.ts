@@ -1,7 +1,29 @@
+import { simulationProductRequestsInputSchema, simulationProductRetryRequestInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductPreflightInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductOperationRetryInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRunStatusesInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductTasksInputSchema, simulationProductTaskCancelInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductTaskReviewListInputSchema, simulationProductTaskReviewResolveInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductSourceInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductRecordsInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductWatchInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductCheckpointInputSchema, simulationProductRestoreInputSchema, simulationProductIngressInputSchema, simulationProductIngressQuerySchema } from '@clocky/clocky-simulation-product/schema'
+import { simulationProductControlInputSchema, simulationProductManageInputSchema, simulationProductManagementInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { teamTaskUpdateLookupInputSchema } from '../api/teams.schema.ts'
+import { simulationProductListInputSchema, simulationProductInspectInputSchema, simulationProductBrowseInputSchema,
+  simulationProductObjectInputSchema, simulationProductCreateInputSchema, simulationProductPrepareInputSchema,
+  simulationProductRequestInputSchema, simulationProductCatalogInputSchema } from '@clocky/clocky-simulation-product/schema'
+import { teamActionInspectInputSchema } from '../api/teams.schema.ts'
+import { teamAttentionReadInputSchema } from '../api/teams.schema.ts'
+import { teamIdentityResolveInputSchema } from '../api/teams.schema.ts'
+import { teamExecutionProfilesInputSchema } from '../api/teams.schema.ts'
+import { teamMemberReadinessInputSchema } from '../api/teams.schema.ts'
+import { teamCapabilitiesInputSchema } from '../api/teams.schema.ts'
 import { teamMemberInspectInputSchema } from '../api/teams.schema.ts'
 import { teamWorkflowInspectRequestSchema } from '@clocky/clocky-team/schema'
 import { teamHumanActionReadRequestSchema } from '@clocky/clocky-team/schema'
-import { teamSelectionRequestSchema } from '@clocky/clocky-team/schema'
+import { teamProductSelectionRequestSchema } from '../api/teams.schema.ts'
+import { teamTaskReferencesInputSchema } from '../api/teams.schema.ts'
 import { teamTaskInspectRequestSchema } from '../api/teams.schema.ts'
 import { teamBrowseInputSchema } from '../api/teams.schema.ts'
 import { teamMemberSessionRequestSchema } from '../api/teams.schema.ts'
@@ -134,13 +156,142 @@ const UNARY_ROUTES: UnaryRoutes = {
   'session.attachment': { schema: sessionAttachmentRequestSchema, invoke: (api, r) => api.sessions.attachment(r) },
   'session.updateQueue': { schema: sessionUpdateQueueRequestSchema, invoke: (api, r) => api.sessions.updateQueue(r) },
   'session.cancel': { schema: sessionCancelRequestSchema, invoke: (api, r) => api.sessions.cancel(r) },
+  'simulation.checkpoints.create': { schema: simulationProductCheckpointInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.checkpoint(r)
+  } },
+  'simulation.runs.restore': { schema: simulationProductRestoreInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.restore(r)
+  } },
+  'simulation.tasks.list': { schema: simulationProductTasksInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.listTasks(r)
+  } },
+  'simulation.tasks.cancel': { schema: simulationProductTaskCancelInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.cancelTask(r)
+  } },
+  'simulation.tasks.review.list': { schema: simulationProductTaskReviewListInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.listTaskReviews(r)
+  } },
+  'simulation.tasks.review.resolve': { schema: simulationProductTaskReviewResolveInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.resolveTaskReview(r)
+  } },
+  'simulation.ingress.create': { schema: simulationProductIngressInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.ingress(r)
+  } },
+  'simulation.ingress.get': { schema: simulationProductIngressQuerySchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.ingressRequest(r)
+  } },
+  'simulation.runs.control': { schema: simulationProductControlInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.control(r)
+  } },
+  'simulation.runs.manage': { schema: simulationProductManageInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.manage(r)
+  } },
+  'simulation.management.get': { schema: simulationProductManagementInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.managementRequest(r)
+  } },
+  'simulation.catalog': { schema: simulationProductCatalogInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.catalog(r)
+  } },
+  'simulation.runs.preflight': { schema: simulationProductPreflightInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.preflight(r)
+  } },
+  'simulation.runs.create': { schema: simulationProductCreateInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.create(r)
+  } },
+  'simulation.runs.prepare': { schema: simulationProductPrepareInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.prepare(r)
+  } },
+  'simulation.requests.list': { schema: simulationProductRequestsInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.listRequests(r)
+  } },
+  'simulation.requests.retry': { schema: simulationProductRetryRequestInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.retryRequest(r)
+  } },
+  'simulation.requests.get': { schema: simulationProductRequestInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation products are not deployed.', details: {} } } })
+    return api.simulations.request(r)
+  } },
+  'simulation.operation.retry': { schema: simulationProductOperationRetryInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.retryOperation(r)
+  } },
+  'simulation.runs.statuses': { schema: simulationProductRunStatusesInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) throw new Error('Simulations API is not available')
+    return api.simulations.runStatuses(r)
+  } },
+  'simulation.runs.list': { schema: simulationProductListInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.list(r)
+  } },
+  'simulation.runs.inspect': { schema: simulationProductInspectInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.inspect(r)
+  } },
+  'simulation.collections.list': { schema: simulationProductBrowseInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.browse(r)
+  } },
+  'simulation.sources.inspect': { schema: simulationProductSourceInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.inspectSource(r)
+  } },
+  'simulation.records.list': { schema: simulationProductRecordsInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.records(r)
+  } },
+  'simulation.changes.watch': { schema: simulationProductWatchInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.watch(r)
+  } },
+  'simulation.objects.inspect': { schema: simulationProductObjectInputSchema, invoke: (api, r) => {
+    if (api.simulations === undefined) return Promise.resolve({ rpcId: r.rpcId, result: { ok: false as const,
+      error: { code: 'simulation-product-unavailable' as const, message: 'Simulation product reads are not deployed.', details: {} } } })
+    return api.simulations.inspectObject(r)
+  } },
   'team.list': { schema: teamListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.list'>(api, r, team => team.list(r)) },
   'team.workflow.plan.inspect': { schema: teamWorkflowInspectRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.workflow.plan.inspect'>(api, r, team => team.workflowPlanInspect(r)) },
   'team.action.read': { schema: teamHumanActionReadRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.action.read'>(api, r, team => team.actionRead(r)) },
-  'team.selection': { schema: teamSelectionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.selection'>(api, r, team => team.selection(r)) },
+  'team.selection': { schema: teamProductSelectionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.selection'>(api, r, team => team.selection(r)) },
   'team.member.inspect': { schema: teamMemberInspectInputSchema, invoke: (api, r) => unavailableTeamApi<'team.member.inspect'>(api, r, team => team.memberInspect(r)) },
   'team.member.session': { schema: teamMemberSessionRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.member.session'>(api, r, team => team.memberSession(r)) },
+  'team.task.references': { schema: teamTaskReferencesInputSchema, invoke: (api, r) => unavailableTeamApi<'team.task.references'>(api, r, team => team.taskReferences(r)) },
   'team.task.inspect': { schema: teamTaskInspectRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.inspect'>(api, r, team => team.taskInspect(r)) },
+  'team.executionProfiles': { schema: teamExecutionProfilesInputSchema, invoke: (api, r) => unavailableTeamApi<'team.executionProfiles'>(api, r, team => team.executionProfiles(r)) },
+  'team.action.inspect': { schema: teamActionInspectInputSchema, invoke: (api, r) => unavailableTeamApi<'team.action.inspect'>(api, r, team => team.actionInspect(r)) },
+  'team.attention.read': { schema: teamAttentionReadInputSchema, invoke: (api, r) => unavailableTeamApi<'team.attention.read'>(api, r, team => team.attentionRead(r)) },
+  'team.identity.resolve': { schema: teamIdentityResolveInputSchema, invoke: (api, r) => unavailableTeamApi<'team.identity.resolve'>(api, r, team => team.identityResolve(r)) },
+  'team.member.readiness': { schema: teamMemberReadinessInputSchema, invoke: (api, r) => unavailableTeamApi<'team.member.readiness'>(api, r, team => team.memberReadiness(r)) },
+  'team.capabilities': { schema: teamCapabilitiesInputSchema, invoke: (api, r) => unavailableTeamApi<'team.capabilities'>(api, r, team => team.capabilities(r)) },
   'team.browse': { schema: teamBrowseInputSchema, invoke: (api, r) => unavailableTeamApi<'team.browse'>(api, r, team => team.browse(r)) },
   'team.get': { schema: teamGetRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.get'>(api, r, team => team.get(r)) },
   'team.create': { schema: teamCreateRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.create'>(api, r, team => team.create(r, signal)) },
@@ -186,6 +337,7 @@ const UNARY_ROUTES: UnaryRoutes = {
   'team.task.get': { schema: teamTaskGetRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.get'>(api, r, team => team.taskGet(r)) },
   'team.task.list': { schema: teamTaskListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.list'>(api, r, team => team.taskList(r)) },
   'team.workflow.plan.list': { schema: teamWorkflowPlanListRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.workflow.plan.list'>(api, r, team => team.workflowPlanList(r)) },
+  'team.task.update.result': { schema: teamTaskUpdateLookupInputSchema, invoke: (api, r) => unavailableTeamApi<'team.task.update.result'>(api, r, team => team.taskUpdateResult(r)) },
   'team.task.update': { schema: teamTaskUpdateRequestSchema, invoke: (api, r) => unavailableTeamApi<'team.task.update'>(api, r, team => team.taskUpdate(r)) },
   'team.task.watch': { schema: teamTaskWatchRequestSchema, invoke: (api, r, signal) => unavailableTeamApi<'team.task.watch'>(api, r, team => team.taskWatch(r, signal)) },
   'host.describe': { schema: hostDescribeRequestSchema, invoke: (api, r) => api.host.describe(r) },
@@ -368,10 +520,12 @@ export function toFetchHandler(api: ApiProxy, context: ApiFetchContext = {}): { 
       // No-envelope read channels (SSE GET streams + host-only download):
       // physical routes that answer directly, without a wire envelope.
       if (path === '/api/events.mux' && req.method === 'GET') {
-        return sseResponse(api.events.mux({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal))
+        return withAuthenticatedProductCall(context.authenticatedProductCall, () =>
+          sseResponse(api.events.mux({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal)))
       }
       if (path === '/api/events.host' && req.method === 'GET') {
-        return sseResponse(api.events.host({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal))
+        return withAuthenticatedProductCall(context.authenticatedProductCall, () =>
+          sseResponse(api.events.host({ rpcId: RpcId(randomUUID()), payload: {} }, dispatchSignal)))
       }
       if (path === '/api/session.export' && (req.method === 'GET' || req.method === 'HEAD')) {
         // Query params are a different boundary from the POST envelope, but
@@ -380,7 +534,8 @@ export function toFetchHandler(api: ApiProxy, context: ApiFetchContext = {}): { 
         if (!parsed.success) {
           return new Response('missing or invalid sessionId query parameter', { status: 400 })
         }
-        const response = await api.downloads.sessionLog(parsed.data, dispatchSignal)
+        const response = await withAuthenticatedProductCall(context.authenticatedProductCall, async () =>
+          await api.downloads.sessionLog(parsed.data, dispatchSignal))
         if (req.method === 'GET') return response
         await response.body?.cancel()
         return new Response(null, { status: response.status, headers: response.headers })

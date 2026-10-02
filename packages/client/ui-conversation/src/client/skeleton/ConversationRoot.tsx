@@ -21,7 +21,24 @@ export function ConversationRoot({
   const session = useSession(s => s)
   const inputState = useInput(s => s)
   const summaryBlank = useSessions(s => sessionId === undefined ? undefined : s.byId[sessionId]?.blank)
+  const sessionTeamId = useSessions(s => sessionId === undefined ? undefined : s.byId[sessionId]?.team?.teamId)
   const teamDraft = useTeamTasks?.(state => state.draft)
+  const inspection = useTeamTasks?.((state) => {
+    const selected = state.selected
+    if (sessionId === undefined || selected === undefined || state.current !== selected.teamId
+      || !(sessionTeamId === selected.teamId || selected.coordinatorSessionId === sessionId
+        || state.memberSession?.teamId === selected.teamId && state.memberSession.sessionId === sessionId)) return 'unrelated'
+    if (selected.state.executionManagement === 'simulation-managed') return 'simulation'
+    return selected.state.readAccess === 'member' && selected.coordinatorSessionId === sessionId
+      && !['completed', 'failed', 'cancelled'].includes(selected.state.team.phase) ? 'coordinator' : 'record'
+  }) ?? 'unrelated'
+  const simulationManaged = inspection === 'simulation'
+  const readOnly = simulationManaged || inspection === 'record'
+  const coordinatorObjective = useTeamTasks?.((state) => {
+    if (inspection !== 'coordinator' || state.selected === undefined) return undefined
+    return state.selected.state.metadata?.kind === 'available'
+      ? state.selected.state.metadata.goal.objective : state.selected.state.goal.objective.text
+  })
   // A plugin this package cannot import (ui-model-selection) says this session cannot
   // send; its reason is already localized by whoever raised it.
   const composerBlock = useComposerBlock(block => block)
@@ -63,7 +80,7 @@ export function ConversationRoot({
   const inert = sessionId === undefined && teamDraft === undefined
   // A raised block uses the same textarea with the blocker's own reason.
   const blocked = !inert && composerBlock !== undefined
-  const inputBar = renderSlot('conversation.composer.bar', {
+  const inputBar = readOnly ? null : renderSlot('conversation.composer.bar', {
     variant: hero ? 'hero' : 'composer',
     ...(inert
       ? {
@@ -75,7 +92,7 @@ export function ConversationRoot({
         // block keeps the model seat live because choosing a model is how the
         // user clears it.
         ? { blocked: composerBlock, placeholder: composerBlock.reason }
-        : hero ? { placeholder: t('placeholder.hero') } : {}),
+        : inspection === 'coordinator' ? { placeholder: t('placeholder.coordinator') } : hero ? { placeholder: t('placeholder.hero') } : {}),
     overlay: renderSlot('conversation.input.overlay', {}),
     leftItems: zone === undefined ? null : renderSlot('conversation.input.left', zone),
     rightItems: zone === undefined ? null : renderSlot('conversation.input.right', zone),
@@ -86,15 +103,22 @@ export function ConversationRoot({
 
   const composerBar = (
     <div className={clsx(css.composerStack, hero && css.composerHero)}>
-      {hero && <HeroGlow className={css.heroGlow} />}
-      {hero && <HeroShell t={t} renderSlot={renderSlot} />}
-      {zone !== undefined && renderSlot('conversation.input.dock', zone)}
+      {hero && inspection === 'unrelated' && <HeroGlow className={css.heroGlow} />}
+      {hero && inspection === 'unrelated' && <HeroShell t={t} renderSlot={renderSlot} />}
+      {hero && inspection !== 'unrelated' && <section className={css.contextualEmpty}>
+        <h2>{t(inspection === 'coordinator' ? 'session.coordinatorEmpty' : 'session.recordEmpty')}</h2>
+        {coordinatorObjective !== undefined && <p>{coordinatorObjective}</p>}
+        {inspection === 'coordinator' && <p>{t('session.coordinatorHint')}</p>}
+      </section>}
+      {inspection === 'record' && <p role="status">{t('session.workerReadOnly')}</p>}
+      {!readOnly && zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
     </div>
   )
 
-  const phase = settling ? 'settling' : hero ? 'hero' : 'active'
-  const composer = renderSlotChain(
+  const phase = readOnly ? 'active' : settling ? 'settling' : hero ? 'hero' : 'active'
+  // Session/input owners remain mounted; only their write controls leave the view.
+  const composer = simulationManaged ? <p role="status">{t('session.simulationReadOnly')}</p> : renderSlotChain(
     'conversation.composer',
     { interactions: pending, session },
     { fallback: composerBar, overlay: true },

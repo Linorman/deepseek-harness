@@ -47,6 +47,9 @@ async function setup(): Promise<{ readonly ctx: Context; readonly fiber: Context
 }
 
 describe('ProductPrincipalRegistry', () => {
+  it('rejects empty or whitespace-padded principal identifiers before branding', () => {
+    for (const id of ['', ' principal', 'principal ']) expect(() => productPrincipalId(id)).toThrow(TypeError)
+  })
   it('registers named providers and exposes a fresh immutable call context for each admitted operation', async () => {
     const { ctx, fiber } = await setup()
     const source = provider()
@@ -112,7 +115,9 @@ describe('ProductPrincipalRegistry', () => {
     const dispose = ctx.productPrincipals.registerProvider(source.provider)
     const lease = await ctx.productPrincipals.authenticate({ provider: 'local', credential: 'test-product-secret' })
     let complete!: () => void
-    const admitted = lease.withCall(async () => await new Promise<string>((resolve) => {
+    let activeSignal: AbortSignal | undefined
+    const admitted = lease.withCall(async call => await new Promise<string>((resolve) => {
+      activeSignal = call.signal
       complete = () => { resolve('settled') }
     }))
     await vi.waitFor(() => {
@@ -120,6 +125,8 @@ describe('ProductPrincipalRegistry', () => {
     })
 
     const retiring = dispose()
+    expect(lease.signal.aborted).toBe(true)
+    expect(activeSignal?.aborted).toBe(true)
     await expect(lease.withCall(async () => 'unreachable')).rejects.toMatchObject({ code: 'PRODUCT_AUTH_INVALID' })
     expect(source.revoke).not.toHaveBeenCalled()
 
@@ -236,6 +243,7 @@ describe('ProductPrincipalRegistry', () => {
       ['null-principal', { principal: null, signal: validSignal, revoke: vi.fn() }],
       ['array-principal', { principal: [], signal: validSignal, revoke: vi.fn() }],
       ['bad-generation', { principal: { ...validPrincipal, credentialGeneration: 0 }, signal: validSignal, revoke: vi.fn() }],
+      ['empty-subject', { principal: { ...validPrincipal, subject: ' ' }, signal: validSignal, revoke: vi.fn() }],
     ]
     for (const [name, result] of cases) {
       const revoke = typeof result === 'object' && result !== null && 'revoke' in result

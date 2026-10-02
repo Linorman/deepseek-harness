@@ -10,7 +10,7 @@ import { z } from 'zod'
  * half's registration/notification face).
  *
  * Scanning is incremental per package — there is no full-rescan code path.
- * Every cordis `internal/plugin` emission (fiber construction/disposal) marks
+ * Cordis `internal/plugin` and `internal/status` emissions mark
  * the fiber's entry name dirty; a microtask flush reconciles each dirty name
  * against the live loader entries. The activation pass seeds the same dirty
  * set with all current entries and flushes synchronously, so first scan and
@@ -28,7 +28,7 @@ import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import { Service } from '@clocky/cordis'
+import { FiberState, Service } from '@clocky/cordis'
 import type { Context } from '@clocky/cordis'
 import type {} from '@clocky/cordis-plugin-loader'
 import type { IndexInjection } from '@clocky/clocky-host-webserver'
@@ -325,7 +325,7 @@ export class ClientModuleRegistry extends Service {
     // Subscribe before seeding so a fiber arriving mid-activation lands in the
     // same dirty set (Set idempotence makes the overlap harmless). An entry-less
     // fiber is a child plugin or a manual mount — never a loader row; O(1) drop.
-    ctx.on('internal/plugin', (fiber) => {
+    const reconcileFiber = (fiber: import('@clocky/cordis').Fiber) => {
       const entryName = fiber.entry?.options.name
       if (entryName === undefined) return
       this.dirty.add(entryName)
@@ -335,7 +335,9 @@ export class ClientModuleRegistry extends Service {
         this.flushQueued = false
         this.flush((err) => { ctx.logger.warn(err) })
       })
-    })
+    }
+    ctx.on('internal/plugin', reconcileFiber)
+    ctx.on('internal/status', reconcileFiber)
 
     // Activation pass: the initial scan IS the incremental path over the
     // current entries, flushed synchronously (nothing async between subscribe,
@@ -503,7 +505,7 @@ export class ClientModuleRegistry extends Service {
   private processOne(entryName: string): boolean {
     let qualifies = false
     for (const entry of this.ctx.loader.entries()) {
-      if (entry.options.name === entryName && entry.fiber !== undefined && !entry.disabled) {
+      if (entry.options.name === entryName && entry.fiber?.state === FiberState.ACTIVE && !entry.disabled) {
         qualifies = true
         break
       }

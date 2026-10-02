@@ -1,3 +1,4 @@
+import type { ProductAuthorizationScope } from './rpc.ts'
 /**
  * host domain zod schemas (names derived from map keys).
  */
@@ -12,6 +13,7 @@ export const hostDescribeRequestSchema = z.object({}) satisfies z.ZodType<Wire<R
 
 /** host.describe response value. */
 export const hostDescribeValueSchema = z.object({
+  authorizationScope: z.string().regex(/^[a-f0-9]{64}$/).transform(value => value as ProductAuthorizationScope).optional(),
   version: z.string(),
   cwd: z.string(),
   provider: z.string().optional(),

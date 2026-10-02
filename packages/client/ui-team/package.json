@@ -32,12 +32,16 @@
   "clocky": {
     "client": {
       "inject": [
+        "@clocky/clocky-client-connection",
         "@clocky/clocky-client-runtime",
         "@clocky/clocky-client-locale",
         "@clocky/clocky-client-ui-sidebar",
         "@clocky/clocky-client-ui-layout"
       ],
-      "platform": "web"
+      "platform": "web",
+      "external": [
+        "@clocky/clocky-client-ui-layout/client"
+      ]
     }
   },
   "scripts": {

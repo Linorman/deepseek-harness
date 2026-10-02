@@ -19,6 +19,7 @@ import type { SimulationTeamConnection } from './types.ts'
  * @param resolve - Current registered implementation; only needed before computation.
  * @param check - Connection and actor admission recheck after asynchronous work.
  * @param flush - Canonical Session checkpoint before returning completion.
+ * @param beforeCompute - Persist associated task input and start its exact attempt under the actor maintenance lock.
  * @param wakeId - Optional consumed wake responsibility.
  * @returns retained submitted/accepted/cancelled decision without starting inference.
  */
@@ -26,6 +27,7 @@ export async function executeDeterministic(run: SimulationRun, connection: Simul
   writer: SimulationWriterLease, entityId: SimulationEntityId, id: SimulationDecisionId,
   context: Omit<SimulationContextRequest, 'maxBytes' | 'teamCursor'>, policy: SimulationPolicyRef,
   resolve: () => SimulationDeterministicPolicy, check: () => void, flush: () => Promise<boolean>,
+  beforeCompute: (check: () => void) => Promise<void>,
   wakeId?: SimulationEventId): Promise<SimulationDecision> {
   check()
   const decisions = run.snapshot().decisions
@@ -52,6 +54,8 @@ export async function executeDeterministic(run: SimulationRun, connection: Simul
       const prepared = await connection.prepareContext(entityId, id, context)
       if (prepared.status !== 'prepared') throw new Error('Simulation deterministic context exceeds its configured budget')
     }
+    current()
+    await beforeCompute(current)
     current()
     decision = run.snapshot().decisions[id]
     if (decision?.context?.status === 'prepared' && decision.context.referencedReports?.length) {

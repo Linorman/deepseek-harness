@@ -1,3 +1,7 @@
+import { dispatchSimulation } from './simulation.ts'
+import { teamTaskUpdateLookupParamsSchema, type TeamTaskUpdateLookupParams, type TeamTaskUpdateLookupResult } from '@clocky/clocky-sdk-protocol'
+import { teamTaskUpdateLookupInputSchema } from '@clocky/clocky-team'
+import { teamBrowseRequestSchema } from '@clocky/clocky-team'
 import { teamMemberInspectParamsSchema, type TeamMemberInspectParams, type TeamMemberInspectResult } from '@clocky/clocky-sdk-protocol'
 import type { TeamWorkflowInspectParams } from '@clocky/clocky-sdk-protocol'
 import type { TeamWorkflowInspection } from '@clocky/clocky-team'
@@ -9,7 +13,9 @@ import { teamSelectionParamsSchema, type TeamSelectionParams } from '@clocky/clo
 import { teamTaskInspectParamsSchema, type TeamTaskInspectParams, type TeamTaskInspectResult } from '@clocky/clocky-sdk-protocol'
 import { teamBrowseParamsSchema, type TeamBrowseParams, type TeamBrowseResult } from '@clocky/clocky-sdk-protocol'
 import { teamMemberSessionParamsSchema, type TeamMemberSessionParams, type TeamMemberSessionResult } from '@clocky/clocky-sdk-protocol'
-import { teamDiscoveryCursorSchema } from '@clocky/clocky-team'
+import { teamProductDiscoveryCursorSchema } from '@clocky/clocky-team/schema'
+import { withoutPrivateTeamArtifacts, withoutPrivateTaskHistoryArtifacts, withoutPrivateWorkflowArtifacts, teamEventOwnerId } from '@clocky/clocky-team/selection'
+import { NotificationQueue } from './notification-queue.ts'
 import { admitEncodedImages } from '@clocky/clocky-attachment'
 import { parseDirectChannelV4MessagePayload } from '@clocky/clocky-team-channel-direct'
 import type {} from '@clocky/clocky-team-channel-summary'
@@ -37,7 +43,7 @@ import type {
   AuthenticatedProductPrincipalLease,
   ProductPrincipalId,
 } from '@clocky/clocky-product-principal'
-import { SessionId } from '@clocky/clocky-session'
+import { SessionId, type SessionHeader } from '@clocky/clocky-session'
 import type { SessionPersistence } from '@clocky/clocky-session-persistence'
 import { parseDirectChannelV3MessagePayload } from '@clocky/clocky-team-channel-direct'
 import type { DirectChannelHumanContentBlock } from '@clocky/clocky-team-channel-direct'
@@ -253,6 +259,18 @@ import type { ZodType } from 'zod'
 /** Maximum verified artifact bytes returned by one SDK request. */
 const MAX_TEAM_ARTIFACT_READ_BYTES = 8 * 1024 * 1024
 
+/** Notification allowance and transport-owner callbacks resolved by the SDK server. */
+export interface SdkNotificationOptions {
+  /** Maximum admitted packets, including a packet waiting for authorization/drain. */
+  readonly maxPendingFrames?: number
+  /** Maximum serialized notification bytes awaiting publication. */
+  readonly maxPendingBytes?: number
+  /** Wait for prior notification writes without retaining an unbounded transport backlog. */
+  readonly drain?: () => Promise<void>
+  /** Stop the physical connection after overflow or an unexpected publication failure. */
+  readonly onFailure?: (error: Error) => void
+}
+
 interface ProductTeamRecord {
   readonly run: TeamRunHandle
   /** Stable principal that created this current-run record. */
@@ -278,6 +296,8 @@ interface LinkEnrollmentFingerprint {
 
 /** One exact remote Agent lifetime reserved by an activation target. */
 interface ActivationRecord {
+  /** Authenticated SDK principal that accepted this internal remote epoch. */
+  readonly owner: ProductPrincipalId
   /** Immutable wire-owned Team/Participant/Session/epoch identity. */
   readonly target: SdkActivationTarget
   /** Immutable initial Session construction mode. */
@@ -322,6 +342,7 @@ class SdkActivationError extends JsonRpcRequestError {
 
 /** Stable application classifications for Team-request rejections. */
 type SdkTeamErrorCode =
+  | 'SDK_TEAM_FORBIDDEN'
   | 'SDK_TEAM_NOT_FOUND'
   | 'SDK_TEAM_AUTHENTICATED_ACTOR_UNAVAILABLE'
   | 'SDK_TEAM_ARTIFACT_NOT_FOUND'
@@ -354,6 +375,10 @@ class SdkProductAuthenticationError extends JsonRpcRequestError {
  * Its initialized route cannot change while a remote activation is resident.
  */
 export class HarnessSdkJsonRpcServer {
+  private readonly notifications: NotificationQueue
+  private notificationEpoch = 0
+  private notificationFailure: Error | undefined
+  private connectionPrincipal: ProductPrincipalId | undefined
   private cwd = process.cwd()
   private provider: string | undefined
   private model: string | undefined
@@ -370,6 +395,7 @@ export class HarnessSdkJsonRpcServer {
   private readonly disposers: (() => void)[] = []
   /** Current connection-scoped product-authentication lease; never exposes a credential. */
   private connectionLease: AuthenticatedProductPrincipalLease | undefined
+  private connectionRetirementDisposer: (() => void) | undefined
   /** Serializes replacement authentication so one connection never leaks an abandoned lease. */
   private initializationTail: Promise<void> = Promise.resolve()
   private shutdownTask: Promise<Record<string, never>> | undefined
@@ -379,17 +405,30 @@ export class HarnessSdkJsonRpcServer {
     private readonly ctx: Context,
     private readonly transport: JsonRpcTransportPeer,
     private readonly productPrincipalProvider = 'local',
+    private readonly notificationOptions: SdkNotificationOptions = {},
   ) {
+    this.notifications = new NotificationQueue({ frames: notificationOptions.maxPendingFrames ?? 4096,
+      bytes: notificationOptions.maxPendingBytes ?? 8 * 1024 * 1024 }, (error) => {
+      this.notificationEpoch++
+      this.notificationFailure = error
+      notificationOptions.onFailure?.(error)
+    })
+    this.notifications.stop()
     if (productPrincipalProvider.length === 0 || productPrincipalProvider.trim() !== productPrincipalProvider) {
       throw new Error('SDK product principal provider must be non-empty without surrounding whitespace')
     }
     this.disposers.push(ctx.on('session/event', (session, event) => {
       const payload: SessionEventNotification = { sessionId: String(session.id), event }
-      this.transport.notify('session.event', payload)
+      const record = this.activationSessions.get(session.id)
+      const owned = record?.handle?.agent.session === session ? record : undefined
+      const header = { ...session.header }
+      this.queueNotification('session.event', payload, call => this.mayNotifySession(header, call, owned))
     }))
     this.disposers.push(ctx.on('agent/status', ({ agent, status }) => {
-      this.transport.notify('session.status', { sessionId: String(agent.session.id), status })
       const record = this.activationForAgent(agent)
+      const header = { ...agent.session.header }
+      this.queueNotification('session.status', { sessionId: String(agent.session.id), status },
+        call => this.mayNotifySession(header, call, record))
       if (record !== undefined && record.status !== 'stopping' && record.status !== 'offline') {
         this.transitionActivation(record, status)
       }
@@ -401,10 +440,13 @@ export class HarnessSdkJsonRpcServer {
       void this.closeLinkDelivery(record).catch(() => undefined)
     }))
     this.disposers.push(ctx.on('team/changed', (event) => {
-      this.transport.notify('team.event', { event })
+      this.queueNotification('team.event', { event }, call => this.mayNotifyTeam(teamEventOwnerId(event), call))
     }))
     this.disposers.push(ctx.on('channel/changed', (event) => {
-      this.transport.notify('channel.event', { event })
+      this.queueNotification('channel.event', { event }, async (call) => {
+        const owner = await this.requireTeams().getChannelOwner({ channelId: event.channelId })
+        return await this.mayNotifyTeam(owner.teamId, call)
+      })
     }))
   }
 
@@ -420,6 +462,11 @@ export class HarnessSdkJsonRpcServer {
     this.initializationTail = operation.then(() => undefined, () => undefined)
     return operation
   }
+
+  /** Wait for admitted notification writes and their transport drain.
+   * @returns completion after the current publication queue settles.
+   */
+  async drainNotifications(): Promise<void> { await this.notifications.drain() }
 
   /** Authenticate and retain one connection lease before the route becomes usable. */
   private async initializeConnection(params: InitializeParams): Promise<InitializeResult> {
@@ -454,12 +501,29 @@ export class HarnessSdkJsonRpcServer {
       await nextLease.revoke()
       throw new Error(`no adapter registered for provider "${params.provider}"`)
     }
+    const principal = await nextLease.withCall(call => Promise.resolve(call.principal.id))
+    if (this.hasResidentActivation() && this.connectionPrincipal !== principal) {
+      await nextLease.revoke()
+      throw new SdkActivationError('SDK principal cannot change while a remote activation is resident', 'SDK_ACTIVATION_ROUTE_LOCKED')
+    }
     this.cwd = cwd
     this.provider = params.provider
     this.model = params.model
     this.maxTokens = params.maxTokens
     const previousLease = this.connectionLease
+    this.connectionRetirementDisposer?.()
     this.connectionLease = nextLease
+    this.connectionPrincipal = principal
+    this.notificationEpoch++
+    this.notifications.reset()
+    this.notificationFailure = undefined
+    const retire = (): void => { this.retireConnection(nextLease) }
+    nextLease.signal.addEventListener('abort', retire, { once: true })
+    this.connectionRetirementDisposer = () => { nextLease.signal.removeEventListener('abort', retire) }
+    if (nextLease.signal.aborted) {
+      retire()
+      throw new SdkProductAuthenticationError('PRODUCT_AUTH_INVALID')
+    }
     if (previousLease !== undefined) void previousLease.revoke().catch(() => undefined)
     return { serverInfo: { name: 'clocky-sdk-runtime', version: '0.0.1' } }
   }
@@ -605,6 +669,7 @@ export class HarnessSdkJsonRpcServer {
       teamId: record.run.teamId,
       humanOwner: { kind: 'product-principal', principalId: call.principal.id },
     })
+    await this.notifications.drain()
     this.productTeams.set(params.teamId, { ...record, state: 'terminal' })
     return {
       teamId: String(final.teamId),
@@ -682,12 +747,12 @@ export class HarnessSdkJsonRpcServer {
    */
   async listTeams(params: TeamListParams): Promise<TeamListResult> {
     this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.listTeamsPage({
-      afterCursor: params.afterCursor === undefined || params.afterCursor === -1 ? -1 : teamDiscoveryCursorSchema.parse(params.afterCursor),
-      limit: params.limit ?? 128,
-    })
+    return await this.withAuthenticatedProductCall(async call => await this.requireHumanActors().withReader(call, async reader =>
+      await this.requireTeams().listHumanTeamsPage({ reader,
+        afterCursor: params.afterCursor === undefined || params.afterCursor === -1
+          ? -1 : teamProductDiscoveryCursorSchema.parse(params.afterCursor),
+        limit: params.limit ?? 128,
+      })))
   }
 
   /** Resolve one retained member's published Session without starting an Agent.
@@ -695,11 +760,13 @@ export class HarnessSdkJsonRpcServer {
    * @returns exact published binding.
    */
   async getTeamMemberSession(params: TeamMemberSessionParams): Promise<TeamMemberSessionResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { binding: await teams.getMemberSession({ teamId: teamIdSchema.parse(params.teamId),
-      participantId: participantIdSchema.parse(params.participantId) }) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { binding: await teams.getMemberSession({ teamId: teamIdSchema.parse(params.teamId),
+        participantId: participantIdSchema.parse(params.participantId) }) }
+    })
   }
 
   /** Read current task fields or one revision-pinned history page without private artifact references.
@@ -707,11 +774,13 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated bounded task inspection.
    */
   async inspectTeamTask(params: TeamTaskInspectParams): Promise<TeamTaskInspectResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { inspection: await teams.inspectTask({ ...params, teamId: teamIdSchema.parse(params.teamId),
-      taskId: teamTaskIdSchema.parse(params.taskId) }) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { inspection: await teams.inspectTask({ ...params, teamId: teamIdSchema.parse(params.teamId),
+        taskId: teamTaskIdSchema.parse(params.taskId) }) }
+    })
   }
 
   /** Read bounded collection summaries.
@@ -719,10 +788,12 @@ export class HarnessSdkJsonRpcServer {
    * @returns the matching page.
    */
   async browseTeam(params: TeamBrowseParams): Promise<TeamBrowseResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { page: await teams.browse({ ...params, teamId: teamIdSchema.parse(params.teamId) }) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { page: await teams.browse(teamBrowseRequestSchema.parse(params)) }
+    })
   }
 
   /** Read one bounded workflow inspection from the runtime.
@@ -730,10 +801,12 @@ export class HarnessSdkJsonRpcServer {
    * @returns current metadata and task/dependency rows.
    */
   async inspectWorkflowPlan(params: TeamWorkflowInspectParams): Promise<TeamWorkflowInspection> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.inspectWorkflowPlan(teamWorkflowInspectRequestSchema.parse(params))
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return await teams.inspectWorkflowPlan(teamWorkflowInspectRequestSchema.parse(params))
+    })
   }
 
   /** Read one current human action under the provider's response allowance.
@@ -741,10 +814,12 @@ export class HarnessSdkJsonRpcServer {
    * @returns current action without any other Team history.
    */
   async readTeamAction(params: TeamActionReadParams): Promise<TeamHumanActionSnapshot> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.getHumanAction(teamHumanActionReadRequestSchema.parse(params))
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return await teams.getHumanAction(teamHumanActionReadRequestSchema.parse(params))
+    })
   }
 
   /** Read member metadata and capabilities without starting an Agent.
@@ -752,11 +827,13 @@ export class HarnessSdkJsonRpcServer {
    * @returns provider-owned detail.
    */
   async inspectTeamMember(params: TeamMemberInspectParams): Promise<TeamMemberInspectResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { detail: await teams.inspectMember({ ...params, teamId: teamIdSchema.parse(params.teamId),
-      participantId: participantIdSchema.parse(params.participantId) }) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { detail: await teams.inspectMember({ ...params, teamId: teamIdSchema.parse(params.teamId),
+        participantId: participantIdSchema.parse(params.participantId) }) }
+    })
   }
 
   /** Read bounded Team selection data without activating an Agent.
@@ -764,12 +841,14 @@ export class HarnessSdkJsonRpcServer {
    * @returns selection projection from the runtime.
    */
   async getTeamSelection(params: TeamSelectionParams): Promise<TeamSelectionResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { selection: await teams.getTeamSelection({
-      teamId: teamIdSchema.parse(params.teamId), includeMetadata: params.includeMetadata,
-    }) }
+    return await this.withReadableTeam(params.teamId, async (_call, readAccess) => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { selection: await teams.getTeamSelection({
+        teamId: teamIdSchema.parse(params.teamId), includeMetadata: params.includeMetadata, readAccess,
+      }) }
+    })
   }
 
   /**
@@ -778,10 +857,12 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async getTeam(params: TeamGetParams): Promise<TeamGetResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { state: await teams.getTeam({ teamId: teamIdSchema.parse(params.teamId) }) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { state: withoutPrivateTeamArtifacts(await teams.getTeam({ teamId: teamIdSchema.parse(params.teamId) })) }
+    })
   }
 
   /**
@@ -838,10 +919,12 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async teamQuiescence(params: TeamQuiescenceParams): Promise<TeamQuiescenceResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return { value: await teams.inspectQuiescence(teamIdSchema.parse(params.teamId)) }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return { value: await teams.inspectQuiescence(teamIdSchema.parse(params.teamId)) }
+    })
   }
 
   /**
@@ -862,22 +945,24 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async teamAuditRead(params: TeamAuditReadParams): Promise<TeamAuditReadResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    const page = await teams.readAudit({
-      teamId: teamIdSchema.parse(params.teamId),
-      ...params.channelId === undefined ? {} : { channelId: channelIdSchema.parse(params.channelId) },
-      afterCursor: params.afterCursor ?? -1,
-      limit: params.limit ?? 128,
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      const page = await teams.readAudit({
+        teamId: teamIdSchema.parse(params.teamId),
+        ...params.channelId === undefined ? {} : { channelId: channelIdSchema.parse(params.channelId) },
+        afterCursor: params.afterCursor ?? -1,
+        limit: params.limit ?? 128,
+      })
+      return {
+        teamId: String(page.teamId),
+        ...page.channelId === undefined ? {} : { channelId: String(page.channelId) },
+        ...page.firstCursor === undefined ? {} : { firstCursor: page.firstCursor },
+        items: page.items,
+        ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
+      }
     })
-    return {
-      teamId: String(page.teamId),
-      ...page.channelId === undefined ? {} : { channelId: String(page.channelId) },
-      ...page.firstCursor === undefined ? {} : { firstCursor: page.firstCursor },
-      items: page.items,
-      ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
-    }
   }
 
   /**
@@ -886,34 +971,36 @@ export class HarnessSdkJsonRpcServer {
    * @returns verified bytes and the exact durable reference.
    */
   async teamArtifactRead(params: TeamArtifactReadParams): Promise<TeamArtifactReadResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    const artifacts = this.ctx.get('teamArtifacts')
-    if (artifacts === undefined) {
-      throw new SdkTeamError('SDK runtime has no Team artifact provider', 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
-    }
-    const selected = await teams.getArtifact({ teamId: teamIdSchema.parse(params.teamId), artifactId: params.artifactId })
-    if (selected === undefined) {
-      throw new SdkTeamError(`Team artifact '${params.artifactId}' was not found`, 'SDK_TEAM_ARTIFACT_NOT_FOUND')
-    }
-    const provider = selected.provider
-    if (provider === undefined || artifacts.getProvider(provider) === undefined) {
-      throw new SdkTeamError(`Team artifact '${selected.id}' is unavailable`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
-    }
-    let bytes: Uint8Array
-    try {
-      bytes = await artifacts.read(provider, { reference: selected })
-    } catch (error: unknown) {
-      if (error instanceof TeamArtifactError && error.code === 'TEAM_ARTIFACT_NOT_FOUND') {
-        throw new SdkTeamError(`Team artifact '${selected.id}' was not found`, 'SDK_TEAM_ARTIFACT_NOT_FOUND')
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      const artifacts = this.ctx.get('teamArtifacts')
+      if (artifacts === undefined) {
+        throw new SdkTeamError('SDK runtime has no Team artifact provider', 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
       }
-      throw new SdkTeamError(`Team artifact '${selected.id}' is unavailable`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
-    }
-    if (bytes.byteLength > MAX_TEAM_ARTIFACT_READ_BYTES) {
-      throw new SdkTeamError(`Team artifact '${selected.id}' exceeds the SDK read limit`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
-    }
-    return { artifact: selected, bytes: bytes.byteLength, data: Buffer.from(bytes).toString('base64') }
+      const selected = await teams.getArtifact({ teamId: teamIdSchema.parse(params.teamId), artifactId: params.artifactId })
+      if (selected === undefined) {
+        throw new SdkTeamError(`Team artifact '${params.artifactId}' was not found`, 'SDK_TEAM_ARTIFACT_NOT_FOUND')
+      }
+      const provider = selected.provider
+      if (provider === undefined || artifacts.getProvider(provider) === undefined) {
+        throw new SdkTeamError(`Team artifact '${selected.id}' is unavailable`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
+      }
+      let bytes: Uint8Array
+      try {
+        bytes = await artifacts.read(provider, { reference: selected })
+      } catch (error: unknown) {
+        if (error instanceof TeamArtifactError && error.code === 'TEAM_ARTIFACT_NOT_FOUND') {
+          throw new SdkTeamError(`Team artifact '${selected.id}' was not found`, 'SDK_TEAM_ARTIFACT_NOT_FOUND')
+        }
+        throw new SdkTeamError(`Team artifact '${selected.id}' is unavailable`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
+      }
+      if (bytes.byteLength > MAX_TEAM_ARTIFACT_READ_BYTES) {
+        throw new SdkTeamError(`Team artifact '${selected.id}' exceeds the SDK read limit`, 'SDK_TEAM_ARTIFACT_UNAVAILABLE')
+      }
+      return { artifact: selected, bytes: bytes.byteLength, data: Buffer.from(bytes).toString('base64') }
+    })
   }
 
   /**
@@ -922,13 +1009,15 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async listTeamArtifacts(params: TeamArtifactListParams): Promise<TeamArtifactListResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.listArtifactsPage({
-      teamId: teamIdSchema.parse(params.teamId),
-      afterCursor: params.afterCursor ?? -1,
-      limit: params.limit ?? 128,
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return await teams.listArtifactsPage({
+        teamId: teamIdSchema.parse(params.teamId),
+        afterCursor: params.afterCursor ?? -1,
+        limit: params.limit ?? 128,
+      })
     })
   }
 
@@ -938,13 +1027,15 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async listTeamMembers(params: TeamMemberListParams): Promise<TeamMemberListResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.listParticipantsPage({
-      teamId: teamIdSchema.parse(params.teamId),
-      afterCursor: params.afterCursor ?? -1,
-      limit: params.limit ?? 128,
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return await teams.listParticipantsPage({
+        teamId: teamIdSchema.parse(params.teamId),
+        afterCursor: params.afterCursor ?? -1,
+        limit: params.limit ?? 128,
+      })
     })
   }
 
@@ -1233,16 +1324,18 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async readTeamChannel(params: TeamChannelReadParams): Promise<TeamChannelReadResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return {
-      value: await teams.readChannelPage({
-        channelId: channelIdSchema.parse(params.channelId),
-        afterCursor: params.afterCursor ?? -1,
-        limit: params.limit ?? 128,
-      }),
-    }
+    return await this.withReadableChannel(params.channelId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return {
+        value: await teams.readChannelPage({
+          channelId: channelIdSchema.parse(params.channelId),
+          afterCursor: params.afterCursor ?? -1,
+          limit: params.limit ?? 128,
+        }),
+      }
+    })
   }
 
   /**
@@ -1379,6 +1472,54 @@ export class HarnessSdkJsonRpcServer {
     return await this.requireHumanActors().withProof(call, input, operation)
   }
 
+  /** Retain current direct or canonical parent read authority through one SDK management read. */
+  private async withReadableTeam<T>(teamId: string,
+    read: (call: AuthenticatedProductCall, access: 'member' | 'parent-inspection') => Promise<T>): Promise<T> {
+    this.requireRoute()
+    return await this.withAuthenticatedProductCall(call => this.withReadableTeamCall(teamId, call, read))
+  }
+
+  /** Check one parsed Team read against the already admitted connection call. */
+  private async withReadableTeamCall<T>(teamId: string, call: AuthenticatedProductCall,
+    read: (call: AuthenticatedProductCall, access: 'member' | 'parent-inspection') => Promise<T>): Promise<T> {
+    const teams = this.requireTeams()
+    const input = { teamId: teamIdSchema.parse(teamId), participantIds: [] }
+    try {
+      return await this.requireHumanActors().withProof(call, { teamId: input.teamId, operation: 'identity-resolve-read',
+        fence: { kind: 'read' }, payload: input }, async (actor, authorityTeamId) => {
+        await teams.resolveIdentities({ ...input, actor })
+        try { return await read(call, authorityTeamId === input.teamId ? 'member' : 'parent-inspection') }
+        finally { await teams.resolveIdentities({ ...input, actor }); call.signal.throwIfAborted() }
+      })
+    } catch (error: unknown) {
+      if (call.signal.aborted) throw new SdkProductAuthenticationError('PRODUCT_AUTH_INVALID')
+      if (typeof error === 'object' && error !== null && 'code' in error
+        && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+          || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS' || error.code === 'TEAM_ACTOR_PROOF_INVALID'
+          || error.code === 'TEAM_NOT_FOUND')) {
+        throw new SdkTeamError('Authenticated principal cannot inspect this Team.', 'SDK_TEAM_FORBIDDEN')
+      }
+      throw error
+    }
+  }
+
+  /** Resolve channel ownership privately and retain its Team read proof through the selected operation. */
+  private async withReadableChannel<T>(channelId: string, read: (call: AuthenticatedProductCall) => Promise<T>): Promise<T> {
+    this.requireRoute()
+    return await this.withAuthenticatedProductCall(async (call) => {
+      try {
+        const owner = await this.requireTeams().getChannelOwner({ channelId: channelIdSchema.parse(channelId) })
+        return await this.withReadableTeamCall(owner.teamId, call, read)
+      } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'code' in error
+          && (error.code === 'TEAM_CHANNEL_NOT_FOUND' || error.code === 'TEAM_NOT_FOUND')) {
+          throw new SdkTeamError('Authenticated principal cannot inspect this channel.', 'SDK_TEAM_FORBIDDEN')
+        }
+        throw error
+      }
+    })
+  }
+
   /**
    * Wait for one channel WAL cursor to advance or close.
    * @param params - validated Team operation parameters.
@@ -1386,16 +1527,18 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async watchTeamChannel(params: TeamChannelWatchParams, signal?: AbortSignal): Promise<TeamChannelWatchResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return {
-      value: await teams.watchChannel({
-        channelId: channelIdSchema.parse(params.channelId),
-        afterCursor: params.afterCursor ?? -1,
-        ...signal === undefined ? {} : { signal },
-      }),
-    }
+    return await this.withReadableChannel(params.channelId, async (call) => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return {
+        value: await teams.watchChannel({
+          channelId: channelIdSchema.parse(params.channelId),
+          afterCursor: params.afterCursor ?? -1,
+          signal: AbortSignal.any([call.signal, ...signal === undefined ? [] : [signal]]),
+        }),
+      }
+    })
   }
 
   /**
@@ -1404,13 +1547,16 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async listTeamTasks(params: TeamTaskListParams): Promise<TeamTaskListResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return await teams.listTasksPage({
-      teamId: teamIdSchema.parse(params.teamId),
-      afterCursor: params.afterCursor ?? -1,
-      limit: params.limit ?? 128,
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      const page = await teams.listTasksPage({
+        teamId: teamIdSchema.parse(params.teamId),
+        afterCursor: params.afterCursor ?? -1,
+        limit: params.limit ?? 128,
+      })
+      return { ...page, items: page.items.map(withoutPrivateTaskHistoryArtifacts) }
     })
   }
 
@@ -1420,18 +1566,20 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async listWorkflowPlans(params: TeamWorkflowPlanListParams): Promise<TeamWorkflowPlanListResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    const page = await teams.listWorkflowPlansPage({
-      teamId: teamIdSchema.parse(params.teamId),
-      afterCursor: params.afterCursor ?? -1,
-      limit: params.limit ?? 128,
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      const page = await teams.listWorkflowPlansPage({
+        teamId: teamIdSchema.parse(params.teamId),
+        afterCursor: params.afterCursor ?? -1,
+        limit: params.limit ?? 128,
+      })
+      return {
+        items: page.items.map(withoutPrivateWorkflowArtifacts),
+        ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
+      }
     })
-    return {
-      items: page.items,
-      ...page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor },
-    }
   }
 
   /**
@@ -1449,21 +1597,34 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async getTeamTask(params: TeamTaskGetParams): Promise<TeamTaskGetResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return {
-      value: await teams.getTask({
-        teamId: teamIdSchema.parse(params.teamId),
-        taskId: teamTaskIdSchema.parse(params.taskId),
-      }),
-    }
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return {
+        value: withoutPrivateTaskHistoryArtifacts(await teams.getTask({
+          teamId: teamIdSchema.parse(params.teamId),
+          taskId: teamTaskIdSchema.parse(params.taskId),
+        })),
+      }
+    })
+  }
+
+  /** Inspect a task update's original admission without executing it.
+   * @param params - Team, task and original command identity.
+   * @returns original acceptance or absence at this authorized read.
+   */
+  async getTeamTaskUpdateResult(params: TeamTaskUpdateLookupParams): Promise<TeamTaskUpdateLookupResult> {
+    return await this.withReadableTeam(params.teamId, async () => {
+      this.requireRoute()
+      return await this.requireTeams().getTaskUpdateResult(teamTaskUpdateLookupInputSchema.parse(params))
+    })
   }
 
   /**
    * Update one Team task through the current connection's human proof.
    * @param params - actor-free task-details update input.
-   * @returns the updated task projection.
+   * @returns original acceptance metadata and current task state, which may have advanced since admission.
    */
   async updateTeamTask(params: TeamTaskUpdateParams): Promise<TeamTaskUpdateResult> {
     return await this.withAuthenticatedProductCall(async call => await this.updateTeamTaskWithCall(params, call))
@@ -1523,7 +1684,7 @@ export class HarnessSdkJsonRpcServer {
       humanTaskRevisionProofInput(input),
       async actor => await this.requireTeams().updateTaskDetails({ actor, ...input }),
     )
-    return { value }
+    return { value: { ...value, task: withoutPrivateTaskHistoryArtifacts(value.task) } }
   }
 
   /** Bind one task cancellation to the current connection before Hub admission. */
@@ -1578,16 +1739,18 @@ export class HarnessSdkJsonRpcServer {
    * @returns the validated result from the runtime.
    */
   async watchTeamTasks(params: TeamTaskWatchParams, signal?: AbortSignal): Promise<TeamTaskWatchResult> {
-    this.requireRoute()
-    const teams = this.ctx.get('teams')
-    if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
-    return {
-      value: await teams.watchTeam({
-        teamId: teamIdSchema.parse(params.teamId),
-        afterCursor: params.afterCursor ?? -1,
-        ...signal === undefined ? {} : { signal },
-      }),
-    }
+    return await this.withReadableTeam(params.teamId, async (call) => {
+      this.requireRoute()
+      const teams = this.ctx.get('teams')
+      if (teams === undefined) throw new SdkTeamError('SDK runtime has no Team provider')
+      return {
+        value: await teams.watchTeam({
+          teamId: teamIdSchema.parse(params.teamId),
+          afterCursor: params.afterCursor ?? -1,
+          signal: AbortSignal.any([call.signal, ...signal === undefined ? [] : [signal]]),
+        }),
+      }
+    })
   }
 
   /**
@@ -1601,6 +1764,9 @@ export class HarnessSdkJsonRpcServer {
     if (this.shuttingDown) throw new Error('SDK server is shutting down')
     const existing = this.activations.get(params.target.activationId)
     if (existing !== undefined) {
+      if (existing.owner !== this.requireConnectionPrincipal()) {
+        throw new SdkActivationError('Activation was not found', 'SDK_ACTIVATION_NOT_FOUND')
+      }
       this.assertMatchingTarget(existing, params.target)
       if (!sameSeed(existing.seed, params.seed)) {
         throw new SdkActivationError(
@@ -1625,6 +1791,7 @@ export class HarnessSdkJsonRpcServer {
       )
     }
     const record: ActivationRecord = {
+      owner: this.requireConnectionPrincipal(),
       target: freezeTarget(params.target),
       seed: freezeSeed(params.seed),
       handle: undefined,
@@ -1650,7 +1817,9 @@ export class HarnessSdkJsonRpcServer {
         this.activations.delete(record.target.activationId)
       },
     )
-    return { state: await opening }
+    const state = await opening
+    await this.notifications.drain()
+    return { state }
   }
 
   /**
@@ -1752,7 +1921,9 @@ export class HarnessSdkJsonRpcServer {
    */
   async disposeActivation(params: ActivationDisposeParams): Promise<ActivationDisposeResult> {
     const record = this.requireActivation(params.target)
-    return { state: await this.disposeActivationRecord(record) }
+    const state = await this.disposeActivationRecord(record)
+    await this.notifications.drain()
+    return { state }
   }
 
   /**
@@ -1798,6 +1969,7 @@ export class HarnessSdkJsonRpcServer {
     failures.push(...teardownResults
       .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
       .map(result => result.reason as unknown))
+    await this.notifications.drain()
     if (failures.length === 1) throw failures[0]
     if (failures.length > 1) throw new AggregateError(failures, 'SDK server teardown failed')
     return {}
@@ -1832,6 +2004,7 @@ export class HarnessSdkJsonRpcServer {
     params: Record<string, unknown> | undefined,
     call: AuthenticatedProductCall,
   ): Promise<unknown> {
+    if (method.startsWith('simulation/')) return dispatchSimulation(this.ctx, method, params, call)
     switch (method) {
       case 'activation/open':
         return this.openActivation(parseWireParams('activation/open', activationOpenParamsSchema, params))
@@ -1946,6 +2119,8 @@ export class HarnessSdkJsonRpcServer {
         return this.listTeamTasks(parseWireParams('team/task-list', teamTaskListParamsSchema, params))
       case 'team/workflow-plan-list':
         return this.listWorkflowPlans(parseWireParams('team/workflow-plan-list', teamWorkflowPlanListParamsSchema, params))
+      case 'team/task-update-result':
+        return this.getTeamTaskUpdateResult(parseWireParams('team/task-update-result', teamTaskUpdateLookupParamsSchema, params))
       case 'team/task-update':
         return this.updateTeamTaskWithCall(parseWireParams('team/task-update', teamTaskUpdateParamsSchema, params), call)
       case 'team/task-cancel':
@@ -1975,26 +2150,121 @@ export class HarnessSdkJsonRpcServer {
   /** Run one post-initialization request through the retained connection lease. */
   private async withAuthenticatedProductCall<T>(
     operation: (call: AuthenticatedProductCall) => Promise<T>,
+    signal?: AbortSignal,
   ): Promise<T> {
     const lease = this.connectionLease
     if (lease === undefined) throw new SdkProductAuthenticationError('PRODUCT_AUTH_REQUIRED')
     try {
-      return await lease.withCall(operation)
+      return await lease.withCall(async (call) => {
+        const result = await operation(call)
+        if (call.signal.aborted || this.connectionLease !== lease) throw new SdkProductAuthenticationError('PRODUCT_AUTH_INVALID')
+        return result
+      }, signal)
     } catch (error: unknown) {
+      if (this.connectionLease !== lease || lease.signal.aborted) throw new SdkProductAuthenticationError('PRODUCT_AUTH_INVALID')
       if (!(error instanceof ProductPrincipalError)) throw error
-      if (this.connectionLease === lease) {
-        this.connectionLease = undefined
-        void lease.revoke().catch(() => undefined)
-      }
+      this.retireConnection(lease)
       throw productAuthenticationError(error)
     }
   }
 
+  /** Admit a notification only to the initialized connection generation which observed its source. */
+  private queueNotification(method: string, params: object,
+    authorize: (call: AuthenticatedProductCall) => Promise<boolean>): void {
+    if (this.connectionLease === undefined) return
+    const epoch = this.notificationEpoch
+    this.notifications.push({ method, params, publish: async (signal) => {
+      if (epoch !== this.notificationEpoch) return
+      try {
+        await this.withAuthenticatedProductCall(async (call) => {
+          if (!await authorize(call) || epoch !== this.notificationEpoch || call.signal.aborted || signal.aborted) return
+          this.transport.notify(method, params)
+          await this.drainNotification(AbortSignal.any([call.signal, signal]))
+        }, signal)
+      } catch (error: unknown) {
+        if (error instanceof SdkTeamError && (error.data as { code?: string } | undefined)?.code === 'SDK_TEAM_FORBIDDEN') return
+        if (error instanceof SdkProductAuthenticationError || typeof error === 'object' && error !== null && 'code' in error
+          && (error.code === 'TEAM_HUMAN_ACTOR_FORBIDDEN' || error.code === 'TEAM_HUMAN_ACTOR_NOT_FOUND'
+            || error.code === 'TEAM_HUMAN_ACTOR_AMBIGUOUS' || error.code === 'TEAM_ACTOR_PROOF_INVALID'
+            || error.code === 'TEAM_NOT_FOUND' || error.code === 'TEAM_CHANNEL_NOT_FOUND')) return
+        throw error
+      }
+    } })
+  }
+
+  /** Stop waiting on a written packet when its connection retires; the transport owner closes failed output. */
+  private async drainNotification(signal: AbortSignal): Promise<void> {
+    if (this.notificationOptions.drain === undefined || signal.aborted) return
+    const cancelled = Promise.withResolvers<undefined>()
+    const abort = (): void => { cancelled.resolve(undefined) }
+    signal.addEventListener('abort', abort, { once: true })
+    try { await Promise.race([this.notificationOptions.drain(), cancelled.promise]) }
+    finally { signal.removeEventListener('abort', abort) }
+  }
+
+  /** Recheck current human read authority without adding a second connection lease. */
+  private async mayNotifyTeam(teamId: string, call: AuthenticatedProductCall): Promise<boolean> {
+    await this.withReadableTeamCall(teamId, call, async () => {})
+    return true
+  }
+
+  /** Authorize an exact internal remote epoch or resolve a management Session's durable Team ancestry. */
+  private async mayNotifySession(header: SessionHeader, call: AuthenticatedProductCall, record?: ActivationRecord): Promise<boolean> {
+    if (record !== undefined && record.owner === call.principal.id && record.target.teamId === header.teamId
+      && record.target.participantId === header.participantId && record.target.sessionId === header.id
+      && this.activations.get(record.target.activationId) === record
+      && (this.activationSessions.get(header.id) === undefined || this.activationSessions.get(header.id) === record)) return true
+    let current = header
+    const seen = new Set<SessionId>()
+    let persisted: Map<SessionId, SessionHeader> | undefined
+    while (current.teamId === undefined && current.participantId === undefined && current.parentSession !== undefined) {
+      if (seen.has(current.id)) return false
+      seen.add(current.id)
+      let parent = this.ctx.sessions.get(current.parentSession)?.header
+      if (parent === undefined) {
+        persisted ??= new Map((await this.ctx.get('sessionPersistence')?.list() ?? []).map(meta => [meta.id, meta]))
+        parent = persisted.get(current.parentSession)
+      }
+      if (parent === undefined) return false
+      current = parent
+    }
+    if (current.teamId === undefined || current.participantId === undefined) return false
+    if (this.ctx.get('teamHumanActors') === undefined) return false
+    const input = { teamId: teamIdSchema.parse(current.teamId),
+      participantId: participantIdSchema.parse(current.participantId), sessionId: current.id }
+    await this.requireHumanActors().withProof(call, { teamId: input.teamId, operation: 'session-content-read',
+      fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) }, async (actor) => {
+      await this.requireTeams().assertHumanSessionRead({ actor, ...input })
+    })
+    return true
+  }
+
   /** Drop the retained connection lease only after any admitted request has settled. */
   private async releaseConnectionLease(): Promise<void> {
+    this.notificationEpoch++
+    this.notifications.stop()
     const lease = this.connectionLease
+    this.connectionRetirementDisposer?.()
+    this.connectionRetirementDisposer = undefined
     this.connectionLease = undefined
     if (lease !== undefined) await lease.revoke()
+  }
+
+  /** Stop idle and pending notification publication when its authentication lease retires. */
+  private retireConnection(lease: AuthenticatedProductPrincipalLease): void {
+    if (this.connectionLease !== lease) return
+    this.connectionRetirementDisposer?.()
+    this.connectionRetirementDisposer = undefined
+    this.connectionLease = undefined
+    this.notificationEpoch++
+    this.notifications.stop()
+    const error = new Error('SDK product authentication retired')
+    this.notificationFailure = error
+    void lease.revoke().catch(() => undefined)
+    try { this.notificationOptions.onFailure?.(error) }
+    catch {
+      // Transport-owner callback failure cannot restore a retired credential or publish its backlog.
+    }
   }
 
   private hasAdapterFor(provider: string): boolean {
@@ -2088,6 +2358,9 @@ export class HarnessSdkJsonRpcServer {
 
   /** Return the configured runtime route or reject activation before side effects. */
   private requireRoute(): { provider: string; model: string; maxTokens: number | undefined } {
+    if (this.notificationFailure !== undefined) {
+      throw new JsonRpcRequestError(-32_004, 'SDK notification stream is unavailable; reinitialize', { code: 'SDK_NOTIFICATION_UNAVAILABLE' })
+    }
     if (this.provider === undefined || this.model === undefined) {
       throw new SdkActivationError(
         'SDK server is not initialized with a provider and model',
@@ -2097,10 +2370,16 @@ export class HarnessSdkJsonRpcServer {
     return { provider: this.provider, model: this.model, maxTokens: this.maxTokens }
   }
 
+  /** Read detached identity only after the initialized connection established its principal. */
+  private requireConnectionPrincipal(): ProductPrincipalId {
+    if (this.connectionPrincipal === undefined) throw new SdkProductAuthenticationError('PRODUCT_AUTH_REQUIRED')
+    return this.connectionPrincipal
+  }
+
   /** Read one exact activation, rejecting an id that does not belong to this process. */
   private requireActivation(target: SdkActivationTarget): ActivationRecord {
     const record = this.activations.get(target.activationId)
-    if (record === undefined) {
+    if (record === undefined || record.owner !== this.connectionPrincipal) {
       throw new SdkActivationError(
         `Activation '${target.activationId}' was not found`,
         'SDK_ACTIVATION_NOT_FOUND',
@@ -2242,13 +2521,14 @@ export class HarnessSdkJsonRpcServer {
     record.statusSequence += 1
     if (status === 'offline') this.releaseActivationResidency(record)
     const state = this.activationState(record)
-    this.transport.notify('activation.status', { state })
+    this.queueNotification('activation.status', { state }, call => Promise.resolve(call.principal.id === record.owner))
     return state
   }
 
   /** Notify the first reserved `starting` state before publication work begins. */
   private notifyActivation(record: ActivationRecord): void {
-    this.transport.notify('activation.status', { state: this.activationState(record) })
+    this.queueNotification('activation.status', { state: this.activationState(record) },
+      call => Promise.resolve(call.principal.id === record.owner))
   }
 
   /** Whether any epoch is still resident and therefore pins the initialized route. */
@@ -2398,6 +2678,7 @@ function sdkTaskCreateInput(params: TeamTaskCreateParams): TeamTaskCreateInput {
 /** Parse one exact actor-free SDK task-details update as its canonical Hub input. */
 function sdkTaskUpdateInput(params: TeamTaskUpdateParams): TeamTaskDetailsUpdateInput {
   return teamTaskDetailsUpdateInputSchema.parse({
+    commandId: params.commandId,
     teamId: teamIdSchema.parse(params.teamId),
     taskId: teamTaskIdSchema.parse(params.taskId),
     expectedRevision: params.expectedRevision,

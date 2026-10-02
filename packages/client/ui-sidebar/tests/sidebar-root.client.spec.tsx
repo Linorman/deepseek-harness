@@ -32,9 +32,9 @@ function mountShell({ collapsed = false, width = 300 }: { collapsed?: boolean; w
   let footerActionOwner: SidebarFooterActionOwnerProps | undefined
   const brandMark = <span data-testid="custom-brand-mark">M</span>
   const brandName = <span data-testid="custom-brand-name">Custom Brand</span>
-  let current = { collapsed, width }
+  let current = { collapsed, width, workspace: 'team' as 'team' | 'simulation' }
   const root = () => (
-    <SidebarRoot
+    <SidebarRoot workspace={current.workspace}
       collapsed={current.collapsed} width={current.width}
       useSessions={neverHook} useWorkspaces={neverHook}
       startTask={startTask} toggleSidebar={toggleSidebar} t={t}
@@ -97,7 +97,7 @@ describe('SidebarRoot shell', () => {
     expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
     // Expanded, both the wordmark and the capsule start a task draft.
-    const starters = screen.getAllByRole('button', { name: 'New task' })
+    const starters = screen.getAllByRole('button', { name: 'New team work' })
     expect(starters).toHaveLength(2)
     for (const button of starters) fireEvent.click(button)
     expect(b.startTask).toHaveBeenCalledTimes(2)
@@ -107,7 +107,7 @@ describe('SidebarRoot shell', () => {
 
   it('renders the product name and a single fallback mark when no package fills the slots', () => {
     vi.stubEnv('CLOCKY_CLIENT_COMMIT_HASH', '0123456')
-    const { container } = render(<SidebarRoot
+    const { container } = render(<SidebarRoot workspace="team"
       collapsed={false} width={300}
       useSessions={neverHook} useWorkspaces={neverHook}
       startTask={vi.fn()} toggleSidebar={vi.fn()} t={t}
@@ -155,4 +155,15 @@ describe('SidebarRoot shell', () => {
     expect(b.workspaceRegionOwner().wide).toBe(false)
     expect(screen.getByRole('button', { name: 'Open sidebar' })).toBeTruthy()
   })
+})
+
+it('keeps the retained Team directory mounted but inaccessible while Simulation is selected', () => {
+  const shell = mountShell()
+  const region = screen.getByTestId('team-region')
+  shell.rerender({ workspace: 'simulation' })
+  expect(region.closest('[hidden]')).not.toBeNull()
+  expect(screen.getByTestId('settings-seat').closest('[hidden]')).toBeNull()
+  shell.rerender({ workspace: 'team' })
+  expect(screen.getByTestId('team-region')).toBe(region)
+  expect(region.closest('[hidden]')).toBeNull()
 })

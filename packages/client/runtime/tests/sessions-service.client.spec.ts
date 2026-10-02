@@ -51,6 +51,49 @@ async function feedList(b: Bench, rows: FeedRow[]): Promise<void> {
 }
 
 describe('list store projection', () => {
+  it('removes an inspected Team and its cached title when the Host withdraws read authority', async () => {
+    const b = bench()
+    try {
+      await b.ctx.plugin({ name: 'session-revoke-test-ready', apply() {} })
+      const team = { teamId: 'revoked-team' as never, participantId: 'member' as never }
+      await feedList(b, [{ id: 'private-session', cwd: '/project', team }, { id: 'unrelated-session', cwd: '/other' }])
+      b.svc.open(sid('private-session'))
+      await Promise.resolve()
+      const previous = b.svc.scope(sid('private-session'))
+      b.svc.handleMuxEnvelope({ rpcId: 'revoke' as never, payload: { type: 'team/access-revoked', teamId: team.teamId } })
+      await Promise.resolve()
+      expect(b.svc.list.getSnapshot().ids).toEqual([sid('unrelated-session')])
+      expect(b.svc.list.getSnapshot().current).toBeUndefined()
+      expect(previous === undefined ? undefined : b.svc.sessionOf(previous)).toBeUndefined()
+    } finally { await b.ctx.fiber.dispose() }
+  })
+
+  it('drops old-principal scopes and projection titles when a new handshake scope arrives', async () => {
+    const b = bench()
+    try {
+      await b.ctx.plugin({ name: 'session-authority-test-ready', apply() {} })
+      b.svc.handleConnected('a'.repeat(64) as never)
+      await b.svc.refresh()
+      await feedList(b, [{ id: 's1', cwd: '/project' }])
+      const previous = b.svc.scope(sid('s1'))
+      expect(previous).toBeDefined()
+      b.svc.handleMuxEnvelope({ rpcId: 'secret-title' as never, payload: { type: 'session/projection',
+        sessionId: sid('s1'), key: 'title', value: 'Private previous title', seq: 4 } })
+      await Promise.resolve()
+      expect(b.svc.list.getSnapshot().byId[sid('s1')]?.displayTitle).toBe('Private previous title')
+      b.api.onList = async () => ok({ items: [] })
+      b.svc.handleConnected('b'.repeat(64) as never)
+      await b.svc.refresh()
+      await Promise.resolve()
+      expect(b.svc.list.getSnapshot().ids).toEqual([])
+      expect(b.svc.list.getSnapshot().current).toBeUndefined()
+      expect(previous === undefined ? undefined : b.svc.sessionOf(previous)).toBeUndefined()
+      await feedList(b, [{ id: 's1', cwd: '/project' }])
+      expect(b.svc.list.getSnapshot().byId[sid('s1')]?.displayTitle).not.toBe('Private previous title')
+      expect(b.svc.scope(sid('s1'))).not.toBe(previous)
+    } finally { await b.ctx.fiber.dispose() }
+  })
+
   it('retains exact Team ownership through both list refresh and live metadata updates', async () => {
     const b = bench()
     const team = { teamId: 'team' as never, participantId: 'member' as never }

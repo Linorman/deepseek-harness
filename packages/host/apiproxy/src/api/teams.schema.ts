@@ -1,18 +1,42 @@
+import { teamTaskDetailsUpdateResultSchema, teamTaskUpdateLookupSchema } from '@clocky/clocky-team/schema'
+export { teamTaskUpdateLookupInputSchema } from '@clocky/clocky-team/schema'
+import { teamTaskReferencesPageSchema } from '@clocky/clocky-team/schema'
+export { teamTaskReferencesInputSchema, teamTaskReferencesPageSchema } from '@clocky/clocky-team/schema'
+import { teamActionInspectionSchema } from '@clocky/clocky-team/schema'
+export { teamActionInspectInputSchema } from '@clocky/clocky-team/schema'
+import { teamIdentityResolvePageSchema } from '@clocky/clocky-team/schema'
+export { teamAttentionReadInputSchema, teamAttentionPageSchema } from '@clocky/clocky-team/schema'
+import { teamAttentionPageSchema } from '@clocky/clocky-team/schema'
+export { teamIdentityResolveInputSchema } from '@clocky/clocky-team/schema'
+import type { ProductAuthorizationScope } from './rpc.ts'
+import type { TeamIdentityResolution } from './teams.ts'
+import { teamExecutionProfileIdSchema } from '@clocky/clocky-team/schema'
+export { teamExecutionProfilesInputSchema, teamExecutionProfilesPageSchema } from '@clocky/clocky-team/schema'
+export { teamMemberReadinessInputSchema, teamMemberReadinessPageSchema } from '@clocky/clocky-team/schema'
+import { teamTaskCapabilitiesInputSchema, teamTaskCapabilitiesSchema } from '@clocky/clocky-team/schema'
+import type { TeamCapabilityObservationId } from '@clocky/clocky-team'
 import { teamMemberInspectRequestSchema as coreMemberInspectRequestSchema, teamMemberInspectionSchema } from '@clocky/clocky-team/schema'
 import { teamWorkflowInspectionSchema as coreWorkflowInspectionSchema } from '@clocky/clocky-team/schema'
 import { teamHumanActionSnapshotSchema as coreHumanActionSnapshotSchema } from '@clocky/clocky-team/schema'
 import { teamTaskInspectionSchema as coreTaskInspectionSchema } from '@clocky/clocky-team/schema'
 export { teamTaskInspectRequestSchema, teamTaskInspectionSchema } from '@clocky/clocky-team/schema'
-import { teamBrowsePageSchema } from '@clocky/clocky-team/schema'
+import { teamBrowseRequestSchema, teamBrowsePageSchema } from '@clocky/clocky-team/schema'
 import { teamMemberSessionRequestSchema as coreMemberSessionRequestSchema, teamMemberSessionSnapshotSchema } from '@clocky/clocky-team/schema'
 import { teamSelectionSnapshotSchema } from '@clocky/clocky-team/schema'
-import { teamDiscoveryCursorSchema } from '@clocky/clocky-team/schema'
+import { teamProductDiscoveryCursorSchema as teamDiscoveryCursorSchema } from '@clocky/clocky-team/schema'
 import { teamHumanInboxPageSchema as coreHumanInboxPageSchema, teamHumanActionResponseResultSchema as coreHumanActionResponseResultSchema } from '@clocky/clocky-team/schema'
 export { teamHumanActionResponseInputSchema } from '@clocky/clocky-team/schema'
 export { teamHumanInboxReadInputSchema, teamHumanInboxAcknowledgeInputSchema, teamHumanInboxAcknowledgementSchema } from '@clocky/clocky-team/schema'
 /** Zod schemas for the browser-safe Team product domain. */
 
 import { z } from 'zod'
+
+/** team.task.references response value. */
+export const teamTaskReferencesValueSchema = teamTaskReferencesPageSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.references'>>>
+/** team.action.inspect response value. */
+export const teamActionInspectionValueSchema = teamActionInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.action.inspect'>>>
+/** team.attention.read response value. */
+export const teamAttentionValueSchema = teamAttentionPageSchema as unknown as z.ZodType<Wire<ResponseValue<'team.attention.read'>>>
 import {
   channelParticipantSchema,
   teamChannelCatalogSchema,
@@ -58,7 +82,7 @@ import {
   teamTaskSnapshotSchema,
   teamTaskWorkspaceModeSchema,
   teamWatchResultSchema,
-  teamListPageSchema as coreTeamListPageSchema,
+  teamProductDirectoryPageSchema as coreTeamListPageSchema,
   teamMemberListPageSchema as coreTeamMemberListPageSchema,
   teamStateSnapshotSchema,
   teamQuiescenceSnapshotSchema,
@@ -70,6 +94,18 @@ import { modelSelectionSchema, promptContentPartSchema, imageMediaTypeSchema, at
 import type { RequestPayload, ResponseValue } from './rpc-map.ts'
 import type { Wire } from './rpc.schema.ts'
 import type { TeamArtifactList, TeamArtifactReadResult, TeamAuditList, TeamFinal, TeamInputReceipt, TeamWorkflowPlanList } from './teams.ts'
+
+/** Authenticated task-authoring selections, with no actor or grant supplied by the browser. */
+export const teamCapabilitiesInputSchema = teamTaskCapabilitiesInputSchema
+/** Revision and independent runtime availability are bound to an opaque observation digest. */
+export const teamCapabilitiesValueSchema = z.object({
+  observationId: z.string().regex(/^[a-f0-9]{64}$/).transform(value => value as TeamCapabilityObservationId),
+  observedAt: z.number().int().nonnegative(),
+}).loose().transform(({ observationId, observedAt, ...value }, context) => {
+  const parsed = teamTaskCapabilitiesSchema.safeParse(value)
+  if (!parsed.success) { context.addIssue({ code: 'custom', message: 'Invalid task capability observation' }); return z.NEVER }
+  return { ...parsed.data, observationId, observedAt }
+}) satisfies z.ZodType<Wire<ResponseValue<'team.capabilities'>>>
 
 /** team.list request payload. */
 export const teamListRequestSchema = z.object({
@@ -86,9 +122,7 @@ export const teamMemberSessionRequestSchema = coreMemberSessionRequestSchema
 export const teamMemberSessionValueSchema = teamMemberSessionSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.member.session'>>>
 
 /** Explicit collection selection and optional provider-order continuation. */
-export const teamBrowseInputSchema = z.object({ teamId: teamIdSchema, kind: z.enum(['tasks', 'members', 'workflowPlans']),
-  afterCursor: z.number().int().min(-1).optional(), limit: z.number().int().positive().optional(),
-}).strict() satisfies z.ZodType<Wire<RequestPayload<'team.browse'>>>
+export const teamBrowseInputSchema = teamBrowseRequestSchema as unknown as z.ZodType<Wire<RequestPayload<'team.browse'>>>
 /** Bounded task inspection in the carrier's JSON-only type view. */
 export const teamTaskInspectionValueSchema = coreTaskInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.inspect'>>>
 
@@ -101,7 +135,13 @@ export const teamGetRequestSchema = z.object({
 }).strict() satisfies z.ZodType<Wire<RequestPayload<'team.get'>>>
 
 /** team.selection response value. */
-export const teamSelectionValueSchema = teamSelectionSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.selection'>>>
+export const teamProductSelectionRequestSchema = z.object({ teamId: teamIdSchema, includeMetadata: z.boolean().optional() })
+  .strict() satisfies z.ZodType<Wire<RequestPayload<'team.selection'>>>
+
+/** Authenticated read observation plus the complete bounded Team projection. */
+export const teamSelectionValueSchema = (z.looseObject({ readAccess: z.enum(['member', 'parent-inspection']) })
+  .transform(value => ({ ...teamSelectionSnapshotSchema.parse(value), readAccess: value.readAccess }))) as unknown as
+  z.ZodType<Wire<ResponseValue<'team.selection'>>>
 
 /** team.get and team.create response value. */
 export const teamStateValueSchema = teamStateSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.get'>>>
@@ -263,6 +303,7 @@ export const teamMemberListValueSchema = coreTeamMemberListPageSchema as unknown
 
 /** team.member.invite request payload. */
 export const teamMemberInviteRequestSchema = z.object({
+  executionProfileId: teamExecutionProfileIdSchema.optional(),
   teamId: teamIdSchema,
   expectedCursor: z.number().int().nonnegative(),
   kind: z.enum(['local-agent', 'remote-agent', 'service'] as const),
@@ -473,7 +514,7 @@ export const teamWorkflowPlanListValueSchema = z.object({
 export const teamTaskUpdateRequestSchema = coreTeamTaskDetailsUpdateInputSchema as unknown as z.ZodType<Wire<RequestPayload<'team.task.update'>>>
 
 /** team.task.update response value. */
-export const teamTaskUpdateValueSchema = teamTaskSnapshotSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.update'>>>
+export const teamTaskUpdateValueSchema = teamTaskDetailsUpdateResultSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.update'>>>
 
 /** team.task.cancel request payload. */
 export const teamTaskCancelRequestSchema = coreTeamTaskCancelInputSchema satisfies z.ZodType<Wire<RequestPayload<'team.task.cancel'>>>
@@ -523,3 +564,11 @@ export const teamWorkflowInspectionValueSchema = coreWorkflowInspectionSchema as
 export const teamMemberInspectInputSchema = coreMemberInspectRequestSchema
 /** Bounded metadata and capability page for one retained member. */
 export const teamMemberInspectValueSchema = teamMemberInspectionSchema as unknown as z.ZodType<Wire<ResponseValue<'team.member.inspect'>>>
+
+/** The cache scope is transport-authenticated and never authorizes a subsequent read. */
+export const teamIdentityResolutionSchema = teamIdentityResolvePageSchema.safeExtend({
+  authorizationScope: z.string().regex(/^[a-f0-9]{64}$/).transform(value => value as ProductAuthorizationScope),
+}) satisfies z.ZodType<TeamIdentityResolution>
+
+/** team.task.update.result never executes or retries a command. */
+export const teamTaskUpdateLookupValueSchema = teamTaskUpdateLookupSchema as unknown as z.ZodType<Wire<ResponseValue<'team.task.update.result'>>>

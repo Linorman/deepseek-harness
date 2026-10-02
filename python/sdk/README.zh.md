@@ -2,6 +2,32 @@
 
 [English](https://github.com/Linorman/clocky/blob/master/python/sdk/README.md) | 中文
 
+控制响应公开完整已安装拓扑中最多 32 个已授权输入目标；每个 ingress 命令仍只选择一个实体。
+
+`list_simulation_requests(SimulationRequestsInput(...))` 发现一页有界原 receipt，不含私有命令输入。`retry_simulation_request(SimulationRetryRequestInput(...))` 只接受运行和保留命令身份；仅已受理命令会重放后端保留的原输入，终态 receipt 不变。两个 client 核对运行、命令、所请求 revision 与页大小，不自动遍历分页或重试，并拒绝私有或被替换的结果。
+
+两个公开 client 的 `preflight_simulation(SimulationPreflightInput(...))` 返回当前就绪状态，不携带命令身份，也不预留资源。`SimulationLimitsInput` 只允许可选的部署许可运行额度；`SimulationPreflightResult` 必须携带解析后的配置或有界字段问题之一。目录配置包含默认值和可编辑键。精确十进制 `maxTime` 保持字符串；创建会独立复核并保留原命令。
+
+`SimulationCheckpointDiagnostic` 只携带有限公开 stage／code、精确规范对象身份及可选未确认清理。receipt 与检查点详情模型拒绝成功或无关操作的诊断，并禁止 provider 消息、路径及任意 cause。
+
+`retry_simulation_operation(SimulationOperationRetryInput(...))` 通过两个公开 client 提交一次精确原有 outbox 额度授权。严格输入只规范化原因一次，拒绝命令身份首尾空白及不安全／非正尝试次数。原查询保留 `retryOperation`；不同 payload 不能复用命令，`not-found` 不授权新身份。授权／查询与显式调度及目标对账分开。
+
+`get_simulation_run_statuses(SimulationRunStatusesInput(...))` 通过两个公开 client 读取一次精确、有序的已授权批次。严格原生指标保留规范十进制区间和已计费未知尝试；`modelPool` 分开报告真实时间 Host permit／队列占用及运行预算。场景版本只来自原受信任模板。missing／unavailable 观察保持显式；提供私有或替换字段时拒绝。
+
+`list_simulation_task_reviews()` 与 `resolve_simulation_task_review()` 共用严格的 `SimulationTaskReview*` 模型和已安装场景权限。client 核对精确所属运行、revision／页或原审核命令。`get_simulation_request()` 保留原 `review` 输入；冷修改要求显式恢复。审核不授予普通 Team 修改或正文权限。
+
+`inspect_simulation_source(SimulationSourceInput(...))` 返回严格的 `SimulationSourceInspection`。用不透明 cursor 继续定位，找到后用 cursor 与 `envelope.sequence` 继续正文。选择／revision／位置不符或删节结果携带正文时拒绝。
+
+知识输入接受精确决策 `reference`，严格 model 及 client 关联拒绝版本或来源字段替换。每个返回文本片段仍遵循当前受众和 Host 内容 grant。
+
+`watch_simulation(SimulationWatchInput(...))` 进行一次有界真实时间元数据等待。精确 run 核对和严格 DTO 拒绝被替换或私有结果，reset 使旧策略／正文响应失效。重复观察由调用方决定，不继续模型。
+
+选定运行时挂载产品服务时，`Clocky` 和 `HarnessClient` 提供 Simulation 产品元数据、创建／准备，以及 `get_simulation_control()`、`manage_simulation()`、`get_simulation_management()`、`checkpoint_simulation()`、`restore_simulation()`、`ingress_simulation()` 和 `get_simulation_ingress()`。公开 `Simulation*Input` 模型拒绝执行配置及无效集合／section 筛选；响应模型保留精确十进制时间字符串，并在 Host 标记删节时拒绝正文。`inspect_simulation_object()` 支持独立分页的实体关系与冻结决策上下文。只有明确 Host 上下文 grant 才公开已记录纯文本；来源引用不授予 Team／Session 正文访问，且该视图不是完整模型请求。client 核对选择／revision、命令类型、恢复目标、原调度 phase 和输入目标／时间。断线后保留原命令、管理或输入 ID 与 payload；`not-found` 不证明失败。创建准备 paused 运行，不推理；旧调度重试保留原结果，不撤销后来暂停。检查点／恢复保持暂停，恢复验证当前后缀，不回滚也不推理，输入分配与消费保持独立。这些方法不会自动重试命令或遍历分页。
+
+调用 `update_team_task()` 或 `Team.update_task()` 时保留 `commandId` 与原字段。受理时返回原 `value.receipt` 和当前 `value.task`。`get_team_task_update_result()` 与 `Team.update_result()` 只读取已受理、终态拒绝或当前未找到的结果。严格 model 校验拒绝原因和原 revision 比较，client 核对精确命令身份。`not-found` 仍将延迟请求保留为未确定。
+
+`list_teams()` 只返回已认证主体可读的安全元数据，不含物理扫描计数或授权 grant。加密 `nextCursor` 只对该主体代际有效；过期游标要求明确读取首页。Team 读取要求当前成员权限，不启动模型执行。
+
 通过 JSON-RPC stdio 驱动 Clocky 的 Python 子进程 SDK。运行时继承指定 Cordis 组合所声明的环境变量，调用方可以直接使用真实模型端点，也可以把这些变量指向本地代理。
 
 请从 PyPI 安装 `clocky-sdk` 分发包；导入模块仍为 `clocky`：
@@ -78,6 +104,11 @@ Team-list 的 `nextCursor` 是 opaque string，`after_cursor=-1` 开始新扫描
 
 `inspect_team_task(team_id, task_id, "record")`返回当前字段及历史计数。使用`"attempts"`或`"reviews"`，配合`after_cursor`、`limit`和`expected_revision`读取有界历史页。响应会校验所选 Team、任务、分区、版本和窗口。版本过期时需要刷新记录；私有产物引用不会返回。
 
+
+`list_simulation_tasks()` 读取有界的规范运行任务控制。`cancel_simulation_task()` 固定来源操作、任务 revision、原命令与精确 attempt；必填且可空的 `expectedAttemptId` 将显式 `None` 保留为 JSON `null`，要求没有活动 lease。SDK 核对运行／命令／回执类型，拒绝缺失的 fence、actor 字段及无效操作提示。`get_simulation_request()` 仅在匹配的 `cancel-task` 回执下公开原始 `cancellation`；查询不重试，也不推理。
+
 ## 单任务取消
 
 `HarnessClient.cancel_team_task()`和`Team.cancel_task()`接收`teamId`、`taskId`、`expectedRevision`及可选`reason`（Team helper 提供自身 Team id）。`value.cancellation`保留精确 intent；assigned 或 running phase 表示终止仍在等待。Team 继续运行，应观察任务直到 cancelled。 [取消归属](../../.agents/notes/implemented/architecture/2026-09-06-exact-single-task-cancellation.zh.md).
+
+`read_simulation_records(SimulationRecordsInput(...))` 返回严格的 `SimulationRecordsPage`，核对精确 run／筛选／模式。元数据不包含原始 JSON 文本；原文需要独立的整运行历史正文授权，以保持 Unicode 完整的有序分片返回，并携带一致重建所需的 revision 与策略版本。

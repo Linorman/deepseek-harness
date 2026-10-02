@@ -10,6 +10,8 @@ A loopback browser loads the provider's `hasDocument` capability through `settin
 
 The browser half declares the `settings.onboarding` slot. Deployment plugins contribute optional steps through that slot; the shell itself owns only sequencing, completion, and layout, and carries no provider or product policy.
 
+The compact Settings trigger retains localized, visually hidden text so it remains named for keyboard and screen-reader navigation.
+
 ## Model Experience
 
 None, as the plugin renders browser settings UI; nothing here reaches a model request.

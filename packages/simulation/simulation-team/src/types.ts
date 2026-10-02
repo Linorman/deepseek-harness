@@ -61,6 +61,23 @@ export interface SimulationTeamDriveResult {
   readonly nextAttemptAt?: number
 }
 
+/** Result acceptance remains separate from the canonical Team receipt. */
+export type SimulationTaskCompletionResult =
+  | { readonly status: 'waiting'; readonly reason: string; readonly execution: import('@clocky/clocky-simulation').SimulationTaskExecution }
+  | { readonly status: 'settled' | 'interrupted'; readonly execution: import('@clocky/clocky-simulation').SimulationTaskExecution }
+
+/** Administrative review of one original completed attempt; identities resolve from the attached run. */
+export interface SimulationTaskReviewRequest {
+  /** Run-wide exact command retry identity. */
+  readonly commandId: string
+  readonly attemptId: import('@clocky/clocky-team').TaskAttemptId
+  /** Active native entity bound to the task's frozen participant reviewer. */
+  readonly reviewerEntityId: SimulationEntityId
+  readonly expectedRevision: number
+  readonly nextPhase: 'completed' | 'pending'
+  readonly reason: string
+}
+
 /** One run's attachment to its canonical execution Team. */
 export interface SimulationTeamConnection {
   /**
@@ -139,10 +156,58 @@ export interface SimulationTeamConnection {
     context: Omit<SimulationContextRequest, 'maxBytes' | 'teamCursor'>, policy: import('@clocky/clocky-simulation').SimulationPolicyRef,
     wakeId?: SimulationEventId): Promise<SimulationDecision>
   /**
-   * Read a canonical Team task revision and retain its execution evidence for an accepted interaction.
+   * Reserve and assign one exact task attempt without waking an actor or invoking a model.
+   * @param request - Stable attempt identity, accepted creation, selected resident entity and optional explicit interaction.
+   * @returns retained reservation and exact canonical assignment; an IO failure remains retryable with the same selection.
+   */
+  assignTask(request: { readonly attemptId: import('@clocky/clocky-team').TaskAttemptId
+    readonly operationId: import('@clocky/clocky-simulation').SimulationOperationId
+    readonly entityId: SimulationEntityId
+    readonly interactionId?: import('@clocky/clocky-simulation').SimulationInteractionId
+    readonly reportContinuation?: import('@clocky/clocky-simulation').SimulationTaskReportContinuation
+    readonly leaseDurationMs: number }):
+  Promise<import('@clocky/clocky-simulation').SimulationTaskExecution>
+  /**
+   * Cancel an exact accepted source task before draining its busy actor; no ordinary Team mutation authority is granted.
+   * @param request - Current revision and exact live attempt, or null for pending/review work, with its original reason.
+   * @param authorize - Optional current caller admission lease, rechecked before canonical mutation.
+   * @returns canonical task after cancellation intent and affected actor cleanup; already accepted effects keep their identity.
+   */
+  cancelTask(request: { readonly operationId: import('@clocky/clocky-simulation').SimulationOperationId
+    readonly expectedRevision: number
+    readonly expectedAttemptId: import('@clocky/clocky-team').TaskAttemptId | null
+    readonly reason?: string | undefined }, authorize?: () => void): Promise<import('@clocky/clocky-team').TeamTaskSnapshot>
+  /**
+   * Drive a recorded task decision through durable input, exact attempt start and scoped cognition.
+   * @param request - Stable attempt/decision/predecessor, reason, optional deterministic policy and authorized scenario context.
+   * @returns recorded decision; this does not infer task completion from submission or apply world effects.
+   */
+  executeTaskDecision(request: { readonly attemptId: import('@clocky/clocky-team').TaskAttemptId
+    readonly decisionId: SimulationDecisionId
+    readonly predecessor: SimulationDecisionId | null
+    readonly reason: string
+    readonly policy?: import('@clocky/clocky-simulation').SimulationPolicyRef
+    readonly context: Omit<SimulationContextRequest, 'maxBytes' | 'teamCursor'> }): Promise<SimulationDecision>
+  /**
+   * Check the selected scenario completion policy and reconcile its immutable result with the original task.
+   * @param request - Exact attempt and registered policy generation; changed policy retries reject.
+   * @returns waiting, original target receipt or interruption without repeating world effects or inference.
+   */
+  completeTask(request: { readonly attemptId: import('@clocky/clocky-team').TaskAttemptId
+    readonly policy: import('@clocky/clocky-simulation').SimulationPolicyRef }): Promise<SimulationTaskCompletionResult>
+  /**
+   * Resolve one retained completed result through its exact native reviewer binding, without activation or inference.
+   * @param request - Stable command, original attempt, reviewer entity, task revision and decision.
+   * @param authorize - Optional caller-owned admission lease, rechecked by the source proof around Hub policy IO and after owner waits.
+   * @returns current canonical task retaining the original decision on an identical retry.
+   * Changed payloads reject. Paused and running runs admit review; checkpoint collection and close withdraw authority.
+   */
+  reviewTask(request: SimulationTaskReviewRequest, authorize?: () => void): Promise<import('@clocky/clocky-team').TeamTaskSnapshot>
+  /**
+   * Read a canonical Simulation-created Team task revision and retain its exact attempt evidence for an accepted interaction.
    * @param interactionId - Interaction whose immutable linkage is being established or refreshed.
    * @param expectedRevision - Interaction revision before the source observation.
-   * @param taskId - Task owned by this connection's Team; later calls must retain the same identity.
+   * @param taskId - Task backed by this run's accepted creation receipt; its executor must match the interaction assignee.
    * @returns updated interaction; completion fulfills only the explicit task-completed policy.
    */
   reconcileTask(interactionId: import('@clocky/clocky-simulation').SimulationInteractionId, expectedRevision: number,

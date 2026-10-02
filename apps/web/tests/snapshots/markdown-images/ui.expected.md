@@ -1,11 +1,10 @@
-- banner:
-  - text: Markdown image policy
-  - button "Session log":
-    - text: Session log
-    - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- text: Markdown image policy
+- button "Session log":
+  - text: Session log
+  - img
+- tablist:
+  - tab "Chat" [selected]
+  - tab "Trajectory"
 - text: Show the Markdown image policy. {{clock}}
 - button "Copy":
   - img

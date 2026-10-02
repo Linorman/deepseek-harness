@@ -10,12 +10,14 @@ import {
   teamHumanActorScopeSchema,
 } from '@clocky/clocky-team'
 import type {
-  ParticipantSnapshot,
   TeamHumanActorProof,
   TeamHumanActorProofInput,
   TeamHumanActorProofResolution,
   TeamHumanActorProofSource,
   TeamHumanActorScope,
+  TeamHumanReaderProof,
+  TeamHumanReaderScope,
+  TeamHumanReaderLease,
 } from '@clocky/clocky-team'
 
 /** Cordis plugin name. */
@@ -42,21 +44,10 @@ function createHumanActorProof(): TeamHumanActorProof {
   return Object.freeze(proof) as TeamHumanActorProof
 }
 
-/** Return whether one active human participant owns the supplied product principal. */
-function isOwnedActiveHuman(participant: ParticipantSnapshot, principalId: string): boolean {
-  if (participant.kind !== 'human'
-    || participant.phase !== 'active'
-    || participant.owner?.kind !== 'product-principal') return false
-  try {
-    return productPrincipalId(participant.owner.principalId) === principalId
-  } catch {
-    return false
-  }
-}
-
 /** Effect-scoped product-principal to active-human binder. */
 export class TeamHumanActor extends Service {
   private readonly proofs = new Map<TeamHumanActorProof, TeamHumanActorScope>()
+  private readonly readers = new Map<TeamHumanReaderProof, { scope: TeamHumanReaderScope; close: () => void }>()
   private closed = false
 
   /** @param ctx - Context that owns the Team provider and registered product-principal seam. */
@@ -65,6 +56,7 @@ export class TeamHumanActor extends Service {
     teamHumanActorProofSources.set(this, Object.freeze({
       name: PROOF_SOURCE_NAME,
       resolveHumanActorProof: (proof: TeamHumanActorProof): TeamHumanActorScope | undefined => this.resolve(proof),
+      resolveHumanReaderProof: (proof: TeamHumanReaderProof): TeamHumanReaderScope | undefined => this.readers.get(proof)?.scope,
     } satisfies TeamHumanActorProofSource))
   }
 
@@ -73,36 +65,31 @@ export class TeamHumanActor extends Service {
    * hold its exact payload-bound proof only while the supplied operation runs.
    * @param call - runtime-only authenticated product call retained by its transport lease.
    * @param input - complete parsed JSON-only mutation input and observed fence.
-   * @param operation - Hub call that may resolve the proof more than once before settling.
+   * @param operation - Hub call and membership Team; descendant reads never grant target-Team mutations.
    * @returns the operation result after the proof is revoked.
    */
   async withProof<T>(
     call: AuthenticatedProductCall,
     input: TeamHumanActorProofInput,
-    operation: (proof: TeamHumanActorProof) => Promise<T>,
+    operation: (proof: TeamHumanActorProof, authorityTeamId: import('@clocky/clocky-team').TeamId) => Promise<T>,
   ): Promise<T> {
     const parsed = this.parseInput(input)
     this.assertLive(call.signal)
-    const state = await this.ctx.teams.getTeam({ teamId: parsed.teamId })
+    const lookup = { teamId: parsed.teamId, principalId: productPrincipalId(call.principal.id) }
+    const descendantRead = parsed.operation === 'attention-read' || parsed.operation === 'session-content-read' || parsed.operation === 'identity-resolve-read' || parsed.operation === 'member-readiness-read'
+      || parsed.operation === 'channel-list-read' || parsed.operation === 'channel-content-read'
+    const selection = descendantRead ? await this.ctx.teams.resolveHumanReadAuthority(lookup)
+      : { ...await this.ctx.teams.resolveHumanActor(lookup), teamId: parsed.teamId }
     this.assertLive(call.signal)
-    const principalId = productPrincipalId(call.principal.id)
-    const matches = state.participants.filter(participant => isOwnedActiveHuman(participant, principalId))
-    if (matches.length === 0) {
-      throw new TeamError('Authenticated principal owns no active human Team participant', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
-    }
-    if (matches.length > 1) {
-      throw new TeamError('Authenticated principal maps to multiple active human Team participants', 'TEAM_HUMAN_ACTOR_AMBIGUOUS')
-    }
-    const participant = matches[0] as ParticipantSnapshot
-    const grant = participant.authorityGrant
-    if (parsed.operation !== 'channel-invitation-read' && parsed.operation !== 'channel-admission-read' && parsed.operation !== 'channel-list-read' && parsed.operation !== 'channel-content-read' && (grant === undefined || !grant.operations.includes(parsed.operation))) {
+    if (parsed.operation !== 'channel-invitation-read' && parsed.operation !== 'channel-admission-read' && parsed.operation !== 'channel-list-read'
+      && parsed.operation !== 'channel-content-read' && parsed.operation !== 'task-capabilities-read' && parsed.operation !== 'member-readiness-read' && parsed.operation !== 'execution-profiles-read' && parsed.operation !== 'identity-resolve-read' && parsed.operation !== 'session-content-read' && parsed.operation !== 'attention-read' && !selection.operations.includes(parsed.operation)) {
       throw new TeamError('Active human Team participant is not authorized for this operation', 'TEAM_HUMAN_ACTOR_FORBIDDEN')
     }
     const scope = teamHumanActorScopeSchema.parse({
-      teamId: parsed.teamId,
-      participantId: participant.id,
+      teamId: selection.teamId,
+      participantId: selection.participantId,
       operation: parsed.operation,
-      payloadFingerprint: fingerprintTeamHumanActorPayload(parsed),
+      payloadFingerprint: fingerprintTeamHumanActorPayload({ ...parsed, teamId: selection.teamId }),
       fence: parsed.fence,
     })
     const proof = createHumanActorProof()
@@ -111,17 +98,51 @@ export class TeamHumanActor extends Service {
     call.signal.addEventListener('abort', revoke, { once: true })
     try {
       this.assertLive(call.signal)
-      return await operation(proof)
+      return await operation(proof, selection.teamId)
     } finally {
       call.signal.removeEventListener('abort', revoke)
       revoke()
     }
   }
 
+  /** Retain an authenticated principal for discovery without granting any Team membership or mutation.
+   * @param call - Current authenticated transport lease.
+   * @param operation - Read consumer which must check current Team visibility itself.
+   * @returns operation result after the reader is revoked.
+   */
+  async withReader<T>(call: AuthenticatedProductCall, operation: (reader: TeamHumanReaderProof) => Promise<T>): Promise<T> {
+    const lease = this.openReader(call)
+    try {
+      const value = await operation(lease.reader)
+      this.assertLive(call.signal)
+      return value
+    } finally { lease.close() }
+  }
+
+  /** Open principal read authority for a streaming consumer which owns final cleanup.
+   * @param call - Current authenticated transport lease.
+   * @returns non-serializable reader, retirement signal and idempotent close action.
+   */
+  openReader(call: AuthenticatedProductCall): TeamHumanReaderLease {
+    this.assertLive(call.signal)
+    const reader = createHumanActorProof() as unknown as TeamHumanReaderProof
+    const controller = new AbortController()
+    const close = () => {
+      this.readers.delete(reader)
+      call.signal.removeEventListener('abort', close)
+      controller.abort()
+    }
+    this.readers.set(reader, { scope: Object.freeze({ principalId: productPrincipalId(call.principal.id), issuer: call.principal.issuer,
+      subject: call.principal.subject, credentialGeneration: call.credentialGeneration }), close })
+    call.signal.addEventListener('abort', close, { once: true })
+    return Object.freeze({ reader, signal: controller.signal, close })
+  }
+
   /** Invalidate every outstanding proof before the source leaves the Team runtime. */
   close(): void {
     this.closed = true
     this.proofs.clear()
+    for (const reader of [...this.readers.values()]) reader.close()
   }
 
   /** Resolve only a currently live proof issued by this exact binder instance. */

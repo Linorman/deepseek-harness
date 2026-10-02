@@ -168,7 +168,7 @@ describe('dynamic runner dispatch', () => {
     expect(ctx.get('dynDoubler')).toEqual({ ok: true })
     // Its own business: the only announcement is the run-state one.
     expect(gateway.events).toEqual([
-      ['cordis/dynamic-package', { pluginId, packageId, pluginRunId: 'run-1', name: 'doubler' }],
+      ['cordis/dynamic-package', { agentId: AGENT_A.id, pluginId, packageId, pluginRunId: 'run-1', name: 'doubler' }],
     ])
     await expect(runner.invoke(pluginId, 'run-1' as never, 'double', { value: 21 }))
       .resolves.toEqual({ ok: true, value: 42 })
@@ -347,7 +347,7 @@ describe('dynamic runner dispatch', () => {
       .resolves.toEqual({ accepted: false })
     expect(gateway.events).toContainEqual([
       'cordis/request-run-resolved',
-      { requestId, outcome: 'cancelled' },
+      { agentId: AGENT_A.id, requestId, outcome: 'cancelled' },
     ])
     await expect(runner.runHostHalf(AGENT_A, pluginId, packageId, 'run', null, false))
       .resolves.toMatchObject({ ok: true, pluginRunId: 'run-2', startedHere: true })
@@ -373,7 +373,7 @@ describe('dynamic runner dispatch', () => {
     controller.abort()
     expect(gateway.events).toContainEqual([
       'cordis/request-run-resolved',
-      { requestId, outcome: 'cancelled' },
+      { agentId: AGENT_A.id, requestId, outcome: 'cancelled' },
     ])
   })
 
@@ -435,7 +435,7 @@ describe('dynamic runner teardown', () => {
     await expect(runner.invoke(pluginId, first.pluginRunId, 'double', { value: 1 }))
       .resolves.toMatchObject({ code: 'plugin-not-running' })
     expect(gateway.events.at(-1)).toEqual(['cordis/dynamic-retract', {
-      pluginId, packageId, pluginRunId: first.pluginRunId,
+      agentId: AGENT_A.id, pluginId, packageId, pluginRunId: first.pluginRunId,
     }])
     expect(running(runner, AGENT_A)).toEqual([{ id: pluginId, running: false }])
     // Runnable again, with a fresh activation identity.
@@ -455,8 +455,8 @@ describe('dynamic runner teardown', () => {
     // The retract mirrors the start announcement: a run-control surface tracks
     // "is it running", which is independent of whether a browser half existed.
     expect(gateway.events).toEqual([
-      ['cordis/dynamic-package', { pluginId, packageId, pluginRunId: 'run-1', name: 'doubler' }],
-      ['cordis/dynamic-retract', { pluginId, packageId, pluginRunId: 'run-1' }],
+      ['cordis/dynamic-package', { agentId: AGENT_A.id, pluginId, packageId, pluginRunId: 'run-1', name: 'doubler' }],
+      ['cordis/dynamic-retract', { agentId: AGENT_A.id, pluginId, packageId, pluginRunId: 'run-1' }],
     ])
   })
 

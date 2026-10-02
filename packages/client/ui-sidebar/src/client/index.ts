@@ -33,6 +33,7 @@ export function apply(ctx: ClientContext): void {
 
   const injectProps = (): SidebarRootInjected => ({
     startTask: () => {
+      ctx.layout.showWorkspace('team')
       ctx.teamTasks.startDraft()
       ctx.sessions.clear()
     },
@@ -49,6 +50,7 @@ export function apply(ctx: ClientContext): void {
       children: {
         'sidebar.brand.mark': { kind: 'single', scope: 'root' },
         'sidebar.brand.name': { kind: 'single', scope: 'root' },
+        'sidebar.workspaceNavigation': { kind: 'list', scope: 'root' },
         'sidebar.teamTasks': { kind: 'single', scope: 'root' },
         'sidebar.workspaces': { kind: 'single', scope: 'root' },
         'sidebar.settings': { kind: 'single', scope: 'root' },

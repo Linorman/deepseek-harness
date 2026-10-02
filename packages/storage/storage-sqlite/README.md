@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+`readSqliteLogSnapshot(path, descriptor, limits)` uses an existing read-only connection and one read transaction without schema initialization, migration, backend ownership or journal mutation. It checks physical/stream versions and encoded row/checkpoint sizes before decoding, then validates complete response bounds. SQLite may create or reuse WAL/SHM bookkeeping files during a read-only connection; these are [SQLite WAL semantics](https://www.sqlite.org/walformat.html), not an accepted application write. Immutable mode is unsuitable for a concurrently mutable journal.
+
 SQLite backend for the [storage hub](../storage/README.md): registers as backend `sqlite`, serving `kv` and append-log facets over one `node:sqlite` database file (or `:memory:`). Design and trade-offs: [domain KV storage Agent Note](../../../.agents/notes/proposed/architecture/2026-07-24-domain-kv-storage-and-workspace.md).
 
 Log-name discovery seeks one row at a time through the stream-name index, with a UTF-8 prefix range and exclusive last-name key. It does not read log entries or checkpoints. New names after the current key can join a scan; a fresh scan discovers insertions before that key.

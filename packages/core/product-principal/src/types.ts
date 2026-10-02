@@ -71,6 +71,8 @@ export interface ProductPrincipalAuthenticateRequest extends ProductPrincipalPro
 
 /** A revocable authenticated connection or request lease. */
 export interface AuthenticatedProductPrincipalLease {
+  /** Aborts immediately when this credential or provider retires, including between calls. */
+  readonly signal: AbortSignal
   /**
    * Run one admitted operation with a fresh immutable call context. Callers
    * must use this method rather than retaining a principal independently.
@@ -79,7 +81,7 @@ export interface AuthenticatedProductPrincipalLease {
     operation: (call: AuthenticatedProductCall) => Promise<T>,
     signal?: AbortSignal,
   ): Promise<T>
-  /** Stop future calls and release after any already admitted call settles. */
+  /** Abort active call signals, stop future calls, and release after admitted calls settle. */
   revoke(): Promise<void>
 }
 

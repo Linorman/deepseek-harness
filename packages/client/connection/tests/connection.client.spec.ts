@@ -20,6 +20,39 @@ function subscribedFrame(lastSeq = 0) {
 }
 
 describe('connection lifecycle', () => {
+  it('holds received frames until the description and authorization reset have completed', async () => {
+    const api = new FakeApiClient()
+    const description = await api.onDescribe({})
+    const gate = deferred<Awaited<ReturnType<FakeApiClient['onDescribe']>>>()
+    api.onDescribe = () => gate.promise
+    const order: string[] = []
+    const controller = new ConnectionController(api, { onConnected: () => order.push('authorized'),
+      onMuxEnvelope: () => order.push('frame') }, FAST)
+    controller.start()
+    try {
+      await vi.waitFor(() => { expect(api.openMuxCount).toBe(1) })
+      api.pushMux(subscribedFrame())
+      await Promise.resolve(); await Promise.resolve()
+      expect(order).toEqual([])
+      gate.resolve(description)
+      await vi.waitFor(() => { expect(order).toEqual(['authorized', 'frame']) })
+    } finally { controller.stop() }
+  })
+
+  it('reports explicit product denial once without forwarding the denied generation frames', async () => {
+    const api = new FakeApiClient()
+    api.onDescribe = () => Promise.resolve({ rpcId: 'denied' as never, result: { ok: false,
+      error: { code: 'PRODUCT_AUTH_REQUIRED', message: 'Required', details: {} } } })
+    const seen: string[] = []
+    const controller = new ConnectionController(api, { onAuthorizationLost: () => { seen.push('denied'); controller.stop() },
+      onMuxEnvelope: () => seen.push('frame') }, FAST)
+    controller.start()
+    try {
+      await vi.waitFor(() => { expect(seen).toEqual(['denied']) })
+      expect(api.openMuxCount).toBe(0)
+    } finally { controller.stop() }
+  })
+
   it('announces connected after describe + both streams open, then pumps frames to sinks', async () => {
     const api = new FakeApiClient()
     const muxSeen: string[] = []

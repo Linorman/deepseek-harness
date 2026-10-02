@@ -10,6 +10,7 @@
  */
 import type { BoundActions } from '@clocky/clocky-client-ui-slots'
 import type { createLayoutStore } from './stores.ts'
+import { readWorkspaceSource, workspaceNavigationSource, SIMULATION_ROUTE_KEYS, WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
 
 /** The layout store's bound action set (framework-baked, draft params peeled). */
 export type PanelActions = BoundActions<ReturnType<typeof createLayoutStore>>
@@ -21,6 +22,12 @@ export type PanelActions = BoundActions<ReturnType<typeof createLayoutStore>>
  * only).
  */
 export interface ILayout {
+  /** Navigate within this application without reloading retained drafts.
+   * @param href - Same-origin workspace URL; references grant no authority.
+   */
+  navigate(href: string): void
+  /** Select a product workspace without changing either domain's durable execution. @param workspace - Product domain to display. */
+  showWorkspace(workspace: 'team' | 'simulation'): void
   /** Toggle the sidebar panel (closed ⟷ contract default width). */
   toggleSidebar(): void
   /** Open the details panel (no-op when already open). */
@@ -32,6 +39,47 @@ export interface ILayout {
 /** Cross-plugin panel-action face (ctx.layout). */
 export class LayoutController implements ILayout {
   #panels: PanelActions | undefined
+  /** @param workspace - Product domain to display; selection carries no execution authority. */
+  showWorkspace(workspace: 'team' | 'simulation'): void {
+    const url = new URL(window.location.href)
+    if (workspace === 'simulation') url.searchParams.set('workspace', 'simulation')
+    else {
+      url.searchParams.delete('workspace')
+      for (const key of SIMULATION_ROUTE_KEYS) url.searchParams.delete(key)
+    }
+    this.navigate(url.href)
+  }
+
+  /** @param href - Same-origin workspace URL; destination owners perform authorized reads. */
+  navigate(href: string): void {
+    const url = new URL(href, window.location.href)
+    if (url.origin !== window.location.origin) throw new Error('Workspace navigation requires the current origin')
+    if (url.href !== window.location.href) {
+      const current = new URL(window.location.href)
+      const crossTarget = url.searchParams.has('team') && url.searchParams.get('workspace') !== 'simulation'
+        && (current.searchParams.get('workspace') === 'simulation' || current.searchParams.get('team') !== url.searchParams.get('team'))
+      const metadata = crossTarget ? workspaceNavigationSource(current.href, url.href) : {}
+      const source = metadata.clockyWorkspaceSource
+      const returnSource = readWorkspaceSource(window.history.state, current.href)
+      const state: unknown = window.history.state
+      const returnFocus = state !== null && typeof state === 'object' && 'clockyWorkspaceFocus' in state
+        && typeof state.clockyWorkspaceFocus === 'string' ? state.clockyWorkspaceFocus : current.href
+      if (source !== undefined) {
+        window.history.replaceState({ ...(returnSource === undefined ? {} : workspaceNavigationSource(returnSource, returnFocus)),
+          clockyReturnDestination: source,
+          clockyReturnFocus: metadata.clockyWorkspaceFocus }, '', current.href)
+      }
+      window.history.pushState(returnSource === url.href ? { clockyReturnDestination: returnSource, clockyReturnFocus: returnFocus }
+        : metadata, '', url)
+    }
+    this.restoreWorkspace()
+    window.dispatchEvent(new Event(WORKSPACE_NAVIGATION_EVENT))
+  }
+
+  /** Restore product visibility after browser Back/Forward without executing a domain operation. */
+  restoreWorkspace(): void {
+    this.#require().showWorkspace(new URL(window.location.href).searchParams.get('workspace') === 'simulation' ? 'simulation' : 'team')
+  }
 
   /**
    * Adopt the root entry's bound store actions. Called from the root

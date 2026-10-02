@@ -2,9 +2,54 @@
 
 [English](README.md) | 中文
 
+`simulation.requests.list` 读取一个所属运行的有界原始 receipt 元数据，不含保留的创建或审核输入。继续游标绑定当前主体、凭据代际、运行 revision 与页大小；历史变化或服务重启后须重新读取首页。`simulation.requests.retry` 只接受精确运行和原命令身份：终态结果不变，已受理命令按当前准入规则执行后端保留的原输入。未知或无关命令会被拒绝，不分配新命令。
+
+`simulation.runs.preflight` 接受不含 `commandId` 的已认证创建草稿，返回当前解析后的额度或有界字段问题。它不创建运行、Team、actor 或持久请求。可选 `limits` 仅接受允许字段，并按已安装部署的最大值和可编辑键校验；未知配置字段会被拒绝。创建会在持久受理前独立复核。未部署 administration 时返回 `simulation-product-unavailable`。
+
+`simulation.sources.inspect` 通过已有认证 carrier 提供有界冻结来源定位与独立授权文本。输入是 run、decision 和来源序号，不接受主体或任意频道；响应核对原选择、可选 revision／位置及页大小。
+
+`simulation.records.list` 返回有界日志元数据或独立授权的原始 JSON 文本。fetch 客户端校验精确筛选、模式、revision、来源序号和请求页大小。失效通知及原文授权由 Simulation 产品服务持有，浏览器不能传入文件系统选择或权限字段。
+
+`checkpoint/restore/ingress/ingressRequest` 通过同一已认证 fetch carrier 保留原 Simulation 操作。检查点／恢复响应保留命令 kind、run 及所选／派生完整检查点身份。输入响应保留实体和精确十进制时间，将分配与消费分开报告；删节私有正文及归因。client 拒绝被替换的引用。[原生维护语义](../../simulation/simulation-product/README.zh.md#checkpoints-recovery-and-input)定义受理工作生命周期、冷恢复、后缀保持及输入范围。
+
+Simulation 的 `control()` 读取已认证创建 owner 的当前 phase、driver、在途工作及动作提示。`manage()` 保留原生调度身份，将原结果与当前控制分开返回；旧重试不能撤销后来的暂停。`managementRequest()` 查询原结果，不进行调度。严格的 actor-free 输入拒绝任意 provider／spec／revision 覆盖；client 核对 run、management ID 与原 phase。[产品 owner](../../simulation/simulation-product/README.zh.md#product-scheduling-ownership)定义调度间隔、准备、冷恢复要求及退役。
+
+`simulation.runs.list/inspect` 使用显式组装的 [Simulation 产品目录](../../simulation/simulation-product/README.zh.md)。两者要求当前产品认证；发现返回安全的登记元数据，精确检查在原生历史 IO 前后验证所属主体权限。类型化 fetch carrier 提供 `client.simulations.list/inspect`，校验公开 DTO，并拒绝返回另一 run ID 的检查结果。部署不可用、访问拒绝与输入无效分别表示；未知失败不包含内部诊断。这些读取不取得执行所有权，也不启动推理。
+
+`simulation.collections.list` 和 `simulation.objects.inspect` 使用相同的已认证读取 dispatch，提供绑定 revision 的元数据页与精确 section。carrier 提供 `client.simulations.browse/inspectObject`，拒绝替换的选择器/revision，并保留 `simulation-product-stale` 作为明确刷新条件。attempt/检查点引用分页的完整 section 包装计入产品字节限额。私有上下文与诊断保持删节；元数据引用不授予 Team/Session 正文权限。
+
+`team.task.update` 返回原受理信息和已过滤当前任务，或仅在提供方提交语义拒绝后返回 `team-task-update-rejected` 错误。错误元数据包含原身份、revision、时间和原因。`team.task.update.result` 在 IO 前后校验直接或规范父 Team 权限，包括读取失败，返回受理、拒绝或当前未找到。查询不携带原说明或私有诊断，也不授予编辑权限。
+
+`team.task.references` 在 provider IO 前后使用当前直接／规范父团队读取检查，包括失败读取。精确请求的标题／状态切片不授权任务修改。
+
+`team.action.inspect` 在 provider IO 前后执行相同的当前直接／规范父团队读取检查，包括失败结果。请求结算后仍可读取其精确记录；处理状态仅提供只读指引，`team.inbox.respond` 保留独立的 proof、权限及 revision 检查。
+
+`team.list` 通过加密产品续页只返回当前主体的安全元数据；`team-discovery-expired` 要求明确刷新首页。标题标记截断，条目不含 grant、goal budget 正文和物理扫描计数。原始 `team.channel.read`／`watch` 与 `team.artifact.read` 在 provider IO 期间保留当前授权，返回前复查。频道拒绝不返回查询得到的 Team id。
+
+Team Session 历史、模型元数据和图片读取要求当前成员或规范父团队权限及准确的持久 Session 绑定，在 IO 前后检查。没有直接 Team 元数据的后代沿不可变 `parentSession` header 查找 Team 所有者；缺失或循环祖先链拒绝正文访问。Session 列表保留该所有者，供撤销时清理。Mux 与 Host Session 帧保留发出时的归属，在送达前复查权限；Team／频道帧使用当前读取权限。认证或 binder 退役会结束订阅。`maxPendingEventFrames` 与 `maxPendingEventBytes` 限制排队数据；超限结束订阅，要求重连并重新读取。`team/access-revoked` 清理此前可见的 Team 数据。 冷 Team Session 及其持久关联后代可在没有项目 `cwd` 时列出和查看；存储 IO 前后仍核对当前 Team 权限与保留的 participant 绑定，读取后的 header 必须保持准确的 Session 身份及归属元组。普通无 `cwd` 的冷日志仍不提供服务，此读取路径不会恢复 Agent。
+
+工作区响应与排队快照按当前读取权限过滤 Session 和归档引用。工作区元数据保留其 Host 访问语义。已知不可读引用不能通过通用 Workspace 路径重排或归档。Session ZIP 导出在 IO 前后检查根／后代日志，以及每个媒体对象最先引用它的 Session，并复查每个压缩输出块。撤销会中断归档；错误不带 backend 诊断。认证或 binder 退役取消 producer，完成／取消会退役 reader。Session 所有的 remote 事件携带归属，并在送达时检查。明确的产品访问拒绝清理客户端业务缓存；普通网络失败保留此前可读内容。SDK 目录与选中读取共用当前成员检查与产物投影；SDK 通知归属仍须独立审计。
+
+选中 Team 的元数据、成员绑定、任务／工作流检查、集合分页、人工事项、审计与静止状态要求当前直接或规范父团队读取权限，并在 provider 读取后复查。`team.selection.readAccess` 由 Host 计算；载体解析器拒绝自报的访问元数据。取消遇到已知待清理结果时，只有确认准确的持久 TeamRun 取消 key 与读取权限后才返回当前 phase；该响应不承诺清理已进入终态。
+
+选择结果与目录的 `executionManagement` 元数据从不可变的仿真所有权得出。此类 Team 的普通产品执行与管理返回 `TEAM_POLICY_DENIED`；检查仍遵守当前成员权限，运行管理员不会隐式获得 Team 读取授权。Hub 在串行器内独立拒绝通用人工修改；普通 Envelope 发送保留 Simulation 专用来源／证明要求。
+
+`team.identity.resolve` 独立于成员分页返回授权名称。对于同一主体代际，其不透明 `authorizationScope` 与 `host.describe` 一致；客户端固定握手标识，在上下文替换或授权拒绝后丢弃数据。该标识不授予访问权限。`team.member.inspect` 要求同样的活跃人工成员身份，并在读取后复查；受信任的核心成员检查仍是独立的进程内 API。
+
+`team.executionProfiles` 列出请求成员类型的已授权部署描述。续页绑定注册版本，`selectedId` 保留页外选择。`team.member.invite` 可携带 `executionProfileId` 及其精确描述。过期页返回 `team-profile-stale`；已撤销或不可用的选择返回 `team-profile-unavailable`。不公开启动路径或凭据。
+
 所有客户端共用的 API 网关由三部分组成：TypeScript API 约定（`src/api/`，不依赖 Node，可从浏览器导入）、fetch 载体对（`src/fetch/`：宿主侧的 `toFetchHandler`，以及客户端侧的 `AbstractApiClient` 与平台子类）和宿主侧实现（`src/api-proxy.ts`：`createApiProxy` 加上默认导出的 `ApiProxyService` 网关插件，其配置为 `{nativeOpen?, sessionExportCompressionLevel?, coldBlankProbeMaxBytes?}`，提供 `ctx.apiProxy`）。该包不注册任何路由；HTTP 等载体自行包装 `ctx.apiProxy`。随发行版交付的 Web 组合位于 [`packages/bundle/web-app/cordis.patch.yml`](../../bundle/web-app/cordis.patch.yml)，其默认 Agent（智能体）模型选择属于 base 组合包中的 [`@clocky/clocky-agent-default-model`](../../core/agent-default-model/README.zh.md)。
 
 `team.channel.summarize` 通过经过认证的产品调用接收 `ChannelSummarySelectionInput`。人类绑定器要求活跃且拥有该身份的人类及其 `send` 授权；显式摘要 Consumer 返回有界持久化文本、来源指纹和重试身份。摘要对全频道可见，因此私密子集来源会被拒绝。生成上限与策略语义见[摘要 Consumer](../../team/team-channel-summary/README.zh.md)。
+
+`team.capabilities` 要求已认证且 active 的 Team human，并返回有界的任务编写判定。Host 将 Hub 的 grant／生命周期判定与实际 workspace provider、scheduler 模式合并，不返回完整 grant 或获准路径前缀。观察 ID 涵盖 credential generation 和运行时可用性，不只依赖 Team cursor。同一当前 Team 读取 proof 跨越 scheduler／provider IO，包括失败观察；持久成员资格失效后，即使凭据仍有效，也不返回任何结果。无权读取返回授权错误。能力读取不启动执行或预留资源，每次写入仍独立鉴权。
+
+`team.member.readiness` 要求已认证且 active 的 Team human。有字节上限的分页保留请求成员顺序和 Team revision 限制，观察 ID 还涵盖 principal credential generation。读取不会接管执行所有者或启动模型。
+
+`team.attention.read` 在 provider IO 前认证当前直接成员或规范父团队读取权限，并在 IO 后复查，包括失败结果。它返回有界待处理总量／摘要及当前处理提示，不依赖主体 inbox 当前页或其显示确认。
+
+
+`simulation.tasks.list` 与 `simulation.tasks.cancel` 通过同一认证 carrier 提供有界的规范运行任务控制与原取消回执。取消固定来源操作、任务 revision、命令及当前 attempt；`null` 显式要求没有活动 lease。严格输入拒绝伪造的 actor 字段。响应核对请求的运行／分页／revision，或原命令与 `cancel-task` 类型；`simulation.requests.get` 返回该原始 `cancellation`，不授予通用 Team 权限，也不启动推理。
 
 ## 共享 Agent 默认值（`agent-default-model` Settings 分节）
 

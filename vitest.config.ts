@@ -207,7 +207,8 @@ export default defineConfig({
         'packages/client/ui-renderer/src/client/*',
         // These isolated state owners have complete unit coverage; keep them
         // outside the broader client-runtime GUI debt exemption.
-        'packages/client/runtime/src/**/!(settings-scope|task-inspector|workflow-inspector).ts',
+        'packages/client/runtime/src/client/{sessions,teams,workspaces}/service.ts',
+        'packages/client/runtime/src/**/!(settings-scope|task-inspector|workflow-inspector|task-query|attention-query|action-inspector|task-references|task-capabilities|team-observation|member-readiness|execution-profiles|identity-resolver|access|administration|service).ts',
         // Keep the browser conversation tree under its existing GUI debt
         // exemption while gating the newly stateful Host half and vocabulary.
         'packages/client/ui-conversation/src/client/*',

@@ -879,6 +879,7 @@ function isErrno(error: unknown, code: string): boolean {
 
 /** Provider for fresh and persisted-resume remote Agent activations over the SDK protocol. */
 class SdkRuntimeProvider implements SdkAgentRuntimeProvider {
+  readonly participantKinds = ['remote-agent'] as const
   readonly terminationMode = 'owned-process' as const
   private readonly activations = new Map<string, ActivationEntry>()
   private readonly processInspector: ProcessInspector | undefined

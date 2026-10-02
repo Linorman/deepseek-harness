@@ -6,14 +6,15 @@
 // Team channel path and clears only after Team admission succeeds.
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
+import { openAssembledCoordinator, installAssembledBootEnv, mountAssembledApp } from './assembled-boot.ts'
 
 installAssembledBootEnv()
 
 /** Open the fixture Team coordinator and settle its resident interactions. */
 async function coordinatorComposer(): Promise<HTMLTextAreaElement> {
-  const tasks = await screen.findByRole('region', { name: 'Tasks' }, { timeout: 10_000 })
+  const tasks = await screen.findByRole('region', { name: 'Team directory' }, { timeout: 10_000 })
   fireEvent.click(within(tasks).getByText('Demonstrate the fixture Team API.'))
+  await openAssembledCoordinator()
   await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })

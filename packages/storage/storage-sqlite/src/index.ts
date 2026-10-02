@@ -18,6 +18,7 @@ import { openDatabase, recordTableName, type JournalMode } from './schema.ts'
 import { SqliteKvUnit } from './unit.ts'
 
 export { STORAGE_SQLITE_SCHEMA_VERSION, type JournalMode } from './schema.ts'
+export { readSqliteLogSnapshot } from './readonly-log.ts'
 
 /** Cordis plugin name. */
 export const name = 'storage-sqlite'

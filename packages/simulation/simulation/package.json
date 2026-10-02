@@ -23,11 +23,32 @@
       "default": "./lib/invariant.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./time-types": {
+      "types": "./lib/types/time-types.d.ts",
+      "default": "./lib/types/time-types.js"
+    },
+    "./identities": {
+      "types": "./lib/types/identities.d.ts",
+      "default": "./lib/types/identities.js"
+    },
+    "./metrics-types": {
+      "types": "./lib/types/metrics-types.d.ts",
+      "default": "./lib/types/metrics-types.js"
+    },
+    "./checkpoint-diagnostics-types": {
+      "types": "./lib/types/checkpoint-diagnostics-types.d.ts",
+      "default": "./lib/types/checkpoint-diagnostics-types.js"
+    },
+    "./checkpoint-diagnostics-schema": {
+      "types": "./lib/types/checkpoint-diagnostics-schema.d.ts",
+      "default": "./lib/types/checkpoint-diagnostics-schema.js"
+    }
   },
   "files": [
     "lib/index.js",
     "lib/invariant.js",
+    "lib/types/**/*.js",
     "lib/types/**/*.d.ts"
   ],
   "license": "MIT",

@@ -6,6 +6,8 @@ import type { SimulationChange, SimulationEntity, SimulationEntityId, Simulation
 import type { SimulationEntityBinding, SimulationWriterActivation, SimulationWriterLease, SimulationWriterReservation } from './writer-types.ts'
 import type { ActivationReservationId } from '@clocky/clocky-team'
 import type { Branded } from '@clocky/clocky-brand'
+import type { SimTime } from './time-types.ts'
+export type { SimTime } from './time-types.ts'
 
 /** Stable identity within one simulation provider's storage root. */
 export type SimulationRunId = Branded<'SimulationRunId'>
@@ -23,8 +25,6 @@ export interface SimulationChannelReservation {
   readonly spec: SimulationChannelSpec
   readonly confirmed: boolean
 }
-/** Canonical non-negative decimal simulation time; compare numerically. */
-export type SimTime = Branded<'SimTime'>
 /** Explicit durable semantics that must match when reopening a run. */
 export interface SimulationRunSpec {
   readonly maxQueuedDecisions: number
@@ -67,6 +67,12 @@ export interface SimulationTeamReservation {
 }
 /** Current projection at an exact journal tail. */
 export interface SimulationSnapshot {
+  readonly taskCancellations?: Readonly<Record<SimulationOperationId,
+    import('./task-cancellation.ts').SimulationTaskCancellationRecord>>
+  readonly taskDecisionOwners?: Readonly<Record<SimulationDecisionId, { readonly attemptId: import('@clocky/clocky-team').TaskAttemptId
+    readonly index: number }>>
+  readonly taskExecutions?: Readonly<Record<import('@clocky/clocky-team').TaskAttemptId,
+    import('./task-execution.ts').SimulationTaskExecution>>
   readonly checkpoints?: Readonly<Record<import('./checkpoint.ts').SimulationCheckpointId, import('./checkpoint.ts').SimulationCheckpointOperation>>
   readonly latestCheckpointId?: import('./checkpoint.ts').SimulationCheckpointId
   readonly management?: Readonly<Record<import('./management.ts').SimulationManagementId, import('./management.ts').SimulationManagementOperation>>
@@ -129,9 +135,11 @@ export interface SimulationRun {
    * Retain a terminal collection failure without replacing the latest complete manifest.
    * @param id - Pending checkpoint request.
    * @param error - Concrete acquisition/publication failure.
+   * @param diagnostic - Optional safe typed stage, category and source reference; raw failures remain private.
    * @returns retained failed request.
    */
-  failCheckpoint(id: import('./checkpoint.ts').SimulationCheckpointId, error: string): Promise<import('./checkpoint.ts').SimulationCheckpointOperation>
+  failCheckpoint(id: import('./checkpoint.ts').SimulationCheckpointId, error: string,
+    diagnostic?: import('./checkpoint-diagnostics-types.ts').SimulationCheckpointDiagnostic): Promise<import('./checkpoint.ts').SimulationCheckpointOperation>
   /**
    * Block new mutations, drain admitted work and seal one quiescent run position.
    * @param maxDrainRounds - Positive bound on queue-stability observations during retirement cleanup.
@@ -380,13 +388,13 @@ export interface SimulationRun {
   ): Promise<SimulationDispatchResult>
   /**
    * Authorize another bounded retry budget for an unknown target outcome without changing payload or identity.
-   * @param operationId - Unknown communication.
-   * @param reason - Recorded administrative recovery decision.
-   * @param wallTime - Real timestamp at which retries become eligible.
-   * @param expectedRevision - Observed run tail.
-   * @returns the committed projection; resuming a stalled run remains explicit.
+   * @param request - Exact original command, unknown operation, attempt-count fence, reason and accepted real timestamp.
+   * @param authorize - Optional caller lease rechecked at the native queue and after IO.
+   * @returns original immutable grant, including on exact retries after later attempts or phases; changed payloads reject.
+   * First acceptance requires the current unknown due external intent. This never publishes or resumes scheduling.
    */
-  retryOutbox(operationId: SimulationOperationId, reason: string, wallTime: number, expectedRevision: number): Promise<SimulationSnapshot>
+  retryOutbox(request: import('./outbox-retry.ts').SimulationOutboxRetryRequest,
+    authorize?: () => void): Promise<import('./outbox-retry.ts').SimulationOutboxRetryGrant>
   /**
    * Compare-and-set the administrative phase. Failure leaves the projection unchanged.
    * @param phase - Requested phase.
@@ -395,9 +403,68 @@ export interface SimulationRun {
    */
   setPhase(phase: 'paused' | 'running', expectedRevision: number): Promise<SimulationSnapshot>
   /**
-   * Retain a task revision read from its authoritative Team owner by the run coordinator.
-   * @param request - Exact source fact and interaction revision; never model-supplied evidence.
-   * @returns updated interaction with task execution and independent commitment state.
+   * Retain one immutable attempt reservation and optional interaction linkage atomically before cross-owner assignment.
+   * @param request - Accepted creation, canonical pending task, current writer identity and optional explicit accepted interaction.
+   * @param expectedRevision - Run revision before first acceptance; exact retries return the retained reservation.
+   * @returns durable responsibility for this task attempt.
+   */
+  reserveTaskExecution(request: import('./task-execution.ts').SimulationTaskExecutionRequest,
+    expectedRevision: number): Promise<import('./task-execution.ts').SimulationTaskExecution>
+  /**
+   * Retain the accepted canonical cancellation before stopping its exact actor or awaiting busy work.
+   * @param request - Exact source task and original Team cancellation snapshot, selected by its proof owner.
+   * @returns original immutable native admission fence; retries cannot change the target or reason.
+   */
+  recordTaskCancellation(request: import('./task-cancellation.ts').SimulationTaskCancellation):
+  Promise<import('./task-cancellation.ts').SimulationTaskCancellationRecord>
+  /**
+   * Retain the exact canonical assignment or settled attempt fact without repeating Hub effects.
+   * @param observation - Reserved attempt and its current Team revision.
+   * @returns retained responsibility and source evidence.
+   */
+  observeTaskExecution(observation: import('./task-execution.ts').SimulationTaskExecutionObservation):
+  Promise<import('./task-execution.ts').SimulationTaskExecution>
+  /**
+   * Retain task instructions and ordered decision identity before creating its input.
+   * @param request - Exact attempt, new decision, predecessor and canonical task instructions.
+   * @returns immutable association; exact retries retain the original source selection.
+   */
+  associateTaskDecision(request: import('./task-execution.ts').SimulationTaskDecisionRequest):
+  Promise<import('./task-execution.ts').SimulationTaskDecision>
+  /**
+   * Retain the identified task input after its queued or deterministic-consumed Session event has reached durable storage.
+   * @param receipt - Exact task decision and prepared input identity.
+   * @returns association with its immutable input receipt; no actor is woken by this method.
+   */
+  recordTaskInput(receipt: import('./task-execution.ts').SimulationTaskInputReceipt):
+  Promise<import('./task-execution.ts').SimulationTaskDecision>
+  /**
+   * Select one immutable completion policy before evaluating a task's result.
+   * @param attemptId - Exact retained task attempt.
+   * @param policy - Registered scenario rule and generation selected by its trusted owner.
+   * @returns retained policy selection; changing its generation on retry rejects.
+   */
+  selectTaskCompletionPolicy(attemptId: import('@clocky/clocky-team').TaskAttemptId,
+    policy: import('./deterministic.ts').SimulationPolicyRef): Promise<import('./task-execution.ts').SimulationTaskExecution>
+  /**
+   * Retain a terminal policy result after independently checking its applied operation evidence.
+   * @param request - Original attempt, selected policy, effect references and terminal outcome.
+   * @param expectedRevision - Exact world snapshot evaluated by the policy before first acceptance.
+   * @returns original immutable result intent; this method does not settle the Team attempt.
+   */
+  recordTaskResult(request: import('./task-completion.ts').SimulationTaskResultRequest,
+    expectedRevision: number): Promise<import('./task-completion.ts').SimulationTaskResult>
+  /**
+   * Retire an unfinished attempt responsibility after canonical controller quiescence.
+   * @param retirement - Exact original attempt, immutable controller evidence and interruption reason.
+   * @returns retained retirement; this neither settles a Team attempt nor claims world completion.
+   */
+  retireTaskExecution(retirement: import('./task-execution.ts').SimulationTaskExecutionRetirement):
+  Promise<import('./task-execution.ts').SimulationTaskExecution>
+  /**
+   * Reconcile one accepted interaction using an exact Simulation-created task revision.
+   * @param request - Immutable creation, attempt and interaction revision facts; requireOpenCommitment rejects newer facts after closure.
+   * @returns the updated interaction, preserving independent fulfillment rules.
    */
   reconcileTask(request: import('./task-evidence.ts').SimulationTaskReconcileRequest): Promise<import('./business-types.ts').SimulationInteraction>
   /**
@@ -508,4 +575,10 @@ export interface SimulationProvider {
    * @returns live run.
    */
   open(selection: SimulationRunSelection): Promise<SimulationRun>
+  /**
+   * Observe an existing run without writer ownership, creation or restoration.
+   * @param selection - Resolved provider and immutable expected spec.
+   * @returns detached history and observed owner, or undefined for a missing run; native consumers own authorization.
+   */
+  inspect?(selection: import('./inspection.ts').SimulationInspectionSelection): Promise<import('./inspection.ts').SimulationRunObservation | undefined>
 }

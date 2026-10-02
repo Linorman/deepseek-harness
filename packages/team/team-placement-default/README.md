@@ -2,9 +2,13 @@
 
 English | [中文](README.zh.md)
 
+Each route role registers public execution profiles for local and remote agent kinds. Availability checks the registered provider’s supported participant kinds; unloading placement removes its profiles. IDs describe only the public participant fields, so changing private startup options does not promise a frozen execution specification.
+
 `ctx.teamPlacement.prepare(teamId)` starts explicitly routed active Agent participants for ready tasks before the DAG scheduler assigns leases. Calls for the same Team coalesce; the activation controller owns participant/session uniqueness and durable publication. Cancelled or deleted work cannot retain an otherwise unused activation published during its startup.
 
 `ctx.teamPlacement.prepareRoles(teamId, roles)` prepares authorized workflow roles before any task is ready. Every role must identify one active member; agent roles without a resident epoch require one configured route. The complete batch is validated against `maxActivationsPerDrive` before startup. Stopping or unquiesced epochs reject with `TEAM_ACTIVATION_RECOVERY_CONFLICT`; placement never treats disconnection as termination. Recovered roles reuse their Session, and task workspace eligibility remains mandatory at assignment.
+
+Read-only member observations match the same explicit route fields and verify the actual runtime provider and its accepted participant kinds. They do not call prepare or activate. A managed TeamRun owner takes precedence; competing configured owners are rejected. The configuration reference returned for diagnostics is `team-placement-default.routes`.
 
 ## Configuration
 

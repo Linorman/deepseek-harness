@@ -35,7 +35,7 @@
 - button "Bad response":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
-- textbox "Message the agent"
+- textbox "Message the coordinator"
 - button "Commands" [disabled]:
   - img
 - button "Select model, current Test Model":

@@ -15,7 +15,8 @@ export function childUsageReservation(childTeamId: string, taskId: string, creat
   const grant = { operations: ['register', 'usage', 'close'], workspaceModes: ['shared'], readScopes: [], writeScopes: [], budgets: {} }
   const owner = participant({ teamId: ownerTeamId, id: `charge-owner:${taskId}`, kind: 'human', role: 'human',
     owner: { kind: 'system' }, authorityGrant: grant })
-  const initial = teamTaskSnapshotSchema.parse({ id: taskId, teamId: ownerTeamId, revision: 1,
+  const initial = teamTaskSnapshotSchema.parse({
+    createdAt: createdAt, id: taskId, teamId: ownerTeamId, revision: 1,
     execution: { kind: 'child-team', templateId: 'durable-fixture', templateVersion: 1, authorityGrant: grant, budget: {} },
     createCommand: { creator: { teamId: ownerTeamId, participantId: owner.id }, idempotencyKey: `create:${taskId}` },
     subject: 'Delegated work', description: 'Complete the delegated work.', phase: 'pending', blockedBy: [], requiredCapabilities: [],

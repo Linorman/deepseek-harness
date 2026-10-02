@@ -395,6 +395,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
       },
       {
+        signature: 'simulations?: SimulationsApi',
+        description: 'Simulation product reads require an explicitly composed product directory.',
+        parameters: [],
+      },
+      {
         signature: 'downloads: DownloadsApi',
         description: 'Host-only download surfaces (GET, no wire envelope); absent from IApiClient.',
         parameters: [],
@@ -1673,6 +1678,212 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'simulationAdministration',
+    summary: 'One administration journal and one Host handle per original product creation; startup never resumes models.',
+    description: 'One administration journal and one Host handle per original product creation; startup never resumes models.',
+    methods: [
+      {
+        signature: 'catalog(call: AuthenticatedProductCall): Promise<SimulationProductCatalog>',
+        description: 'Read the complete bounded installed company catalog under current authentication.',
+        parameters: [{ name: 'call', description: 'Transport-authenticated principal and wait lifetime.' }],
+        returns: 'safe version/route/limit metadata; never resolves a native execution handle.',
+      },
+      {
+        signature: 'preflight(request: SimulationProductPreflightInput, call: AuthenticatedProductCall): Promise<SimulationProductPreflightResult>',
+        description: 'Validate permitted creation settings and current deployment/capacity without durable acceptance.',
+        parameters: [{ name: 'request', description: 'Template, names, stock and explicitly allowlisted immutable allowances.' }, { name: 'call', description: 'Current authenticated principal and read lifetime.' }],
+        returns: 'bounded field issues or exact defaults; readiness reserves no run, writer, actor or model permit.',
+      },
+      {
+        signature: 'create(request: SimulationProductCreateInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Persist one original allocation and launch bounded preparation after durable acceptance.',
+        parameters: [{ name: 'request', description: 'Caller-retained command and permitted template parameters.' }, { name: 'call', description: 'Current authenticated owner; carrier cancellation never cancels accepted preparation.' }],
+        returns: 'stable run/command receipt; exact retries return its historical state and changed payloads reject.',
+      },
+      {
+        signature: 'prepare(request: SimulationProductPrepareInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Register a distinct explicit preparation attempt on the original owned creation.',
+        parameters: [{ name: 'request', description: 'Original run and new or exact-retried preparation identity.' }, { name: 'call', description: 'Authenticated owning principal; known/private absence has one refusal.' }],
+        returns: 'immutable preparation attempt receipt; original failed attempts remain failed.',
+      },
+      {
+        signature: 'request(request: SimulationProductRequestInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestResult>',
+        description: 'Query the exact original accepted or terminal request without running reconciliation.',
+        parameters: [{ name: 'request', description: 'Original command identity.' }, { name: 'call', description: 'Current authenticated principal.' }],
+        returns: 'original fact or non-authoritative not-found; no outcome is inferred from a disconnected waiter.',
+      },
+      {
+        signature: 'listRequests(request: SimulationProductRequestsInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestsPage>',
+        description: 'Discover original receipts after reconnecting or reauthenticating without opening a native owner.',
+        parameters: [{ name: 'request', description: 'Owned run, bounded page and optional exact journal revision.' }, { name: 'call', description: 'Current authenticated principal; continuations bind this credential and service lifetime.' }],
+        returns: 'receipt-only page ordered by acceptance time and command identity; journal changes retire continuations.',
+      },
+      {
+        signature: 'async retryRequest(request: SimulationProductRetryRequestInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Resume only the selected original retained semantics after an explicit user retry.',
+        parameters: [{ name: 'request', description: 'Exact owned run and original durable command identity; unknown selections refuse without allocation.' }, { name: 'call', description: 'Current authenticated run owner; the original operation rechecks authority and native admission.' }],
+        returns: 'original receipt unchanged when terminal; accepted commands use their existing public operation. Cold accepted review/retry-operation commands require explicit owner restoration first. Disconnected waiters do not cancel accepted preparation or maintenance; authentication-sensitive review/retry mutations keep their rules.',
+      },
+      {
+        signature: 'checkpoint(request: SimulationProductCheckpointInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Retain a full checkpoint request before closing scheduling admission and collecting native owners.',
+        parameters: [{ name: 'request', description: 'Original product run and caller-retained command; collector policy is server-derived.' }, { name: 'call', description: 'Current authenticated owning principal; its retirement only ends the waiter.' }],
+        returns: 'durable operation receipt; query the same command to distinguish accepted from terminal outcome.',
+      },
+      {
+        signature: 'restore(request: SimulationProductRestoreInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Explicitly validate a full checkpoint and the current suffix, retire old writers and acquire a paused product owner.',
+        parameters: [{ name: 'request', description: 'Original run, command and completed checkpoint; implementation/policy versions are server-derived.' }, { name: 'call', description: 'Current authenticated owner; a lost waiter does not cancel accepted recovery.' }],
+        returns: 'original durable recovery receipt; a new command revalidates history even after prior recovery success.',
+      },
+      {
+        signature: 'ingress(request: SimulationProductIngressInput, call: AuthenticatedProductCall): Promise<SimulationProductIngressReceipt>',
+        description: 'Register one attributed input without adding world authority or changing the scheduling phase.',
+        parameters: [{ name: 'request', description: 'Exact original input identity, allowed entity, text and canonical earliest time.' }, { name: 'call', description: 'Current authenticated owner; attribution comes from this principal, not browser fields.' }],
+        returns: 'original assignment and independently observed consumption; identical retries do not inject twice.',
+      },
+      {
+        signature: 'ingressRequest(request: SimulationProductIngressQuery, call: AuthenticatedProductCall): Promise<SimulationProductIngressResult>',
+        description: 'Read one original assignment and its recorded decision consumption without starting or attaching a run.',
+        parameters: [{ name: 'request', description: 'Exact original run/input identity.' }, { name: 'call', description: 'Current authenticated owner checked around provider IO.' }],
+        returns: 'original metadata or non-authoritative absence; text and principal details are omitted.',
+      },
+      {
+        signature: 'control(request: SimulationProductControlInput, call: AuthenticatedProductCall): Promise<SimulationProductControl>',
+        description: 'Inspect current scheduling ownership and preconditions without attaching or driving actors.',
+        parameters: [{ name: 'request', description: 'Original registered product run.' }, { name: 'call', description: 'Current authenticated owning principal.' }],
+        returns: 'separate durable phase, driver and in-flight work; a cold run remains recovery-required.',
+      },
+      {
+        signature: 'runStatuses(request: SimulationProductRunStatusesInput, call: AuthenticatedProductCall): Promise<SimulationProductRunStatusesPage>',
+        description: 'Enrich one bounded authorized Native status batch with independent current company scheduling metadata.',
+        parameters: [{ name: 'request', description: 'Exact registered run identities; native reads authorize the entire batch before provider IO.' }, { name: 'call', description: 'Current authenticated reader; absent company administration never denies permitted directory metadata.' }],
+        returns: 'bounded native facts, trusted original scenario version and real shared permits, without acquiring any owner.',
+      },
+      {
+        signature: 'manage(request: SimulationProductManageInput, call: AuthenticatedProductCall): Promise<SimulationProductManageResult>',
+        description: 'Persist scheduling intent and drive the owned company through bounded background batches.',
+        parameters: [{ name: 'request', description: 'Exact caller-retained management identity and target phase; no proxy-only CAS is accepted.' }, { name: 'call', description: 'Current authenticated owner; retiring the carrier ends only its wait, not admitted scheduling.' }],
+        returns: 'original redacted management result and separate current observation; terminal retry never undoes later pause.',
+      },
+      {
+        signature: 'managementRequest(request: SimulationProductManagementInput, call: AuthenticatedProductCall): Promise<SimulationProductManagementResult>',
+        description: 'Query a durable original scheduling result through read-only history when its execution owner is absent.',
+        parameters: [{ name: 'request', description: 'Original product run and management identity.' }, { name: 'call', description: 'Current authenticated owner, checked before and after provider IO.' }],
+        returns: 'historical redacted result or non-authoritative absence; never opens a run or resumes models.',
+      },
+      {
+        signature: 'listTasks(request: SimulationProductTasksInput, call: AuthenticatedProductCall): Promise<SimulationProductTasksPage>',
+        description: 'Read current run-owned task controls without exposing task bodies, opening execution or starting inference.',
+        parameters: [{ name: 'request', description: 'Exact owned run, canonical observation fence and bounded continuation.' }, { name: 'call', description: 'Current authenticated owner; every canonical read rechecks ownership before publication.' }],
+        returns: 'one bounded task-source window; its cursor binds both world and canonical task revisions.',
+      },
+      {
+        signature: 'cancelTask(request: SimulationProductTaskCancelInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Persist one original scoped cancellation before canonical task IO; accepted work outlives its transport waiter.',
+        parameters: [{ name: 'request', description: 'Original command and exact source/task revision/attempt selection, with authored reason.' }, { name: 'call', description: 'Current run owner; native authority is minted from the retained accepted source.' }],
+        returns: 'original request receipt; completion confirms cancellation/cleanup, never general Team write access.',
+      },
+      {
+        signature: 'listTaskReviews(request: SimulationProductTaskReviewListInput, call: AuthenticatedProductCall): Promise<SimulationProductTaskReviewPage>',
+        description: 'Observe bounded canonical task review metadata without opening a run, attaching actors or invoking models.',
+        parameters: [{ name: 'request', description: 'Owned run, exact world revision and bounded continuation.' }, { name: 'call', description: 'Current authenticated product owner; revoked reads reject after canonical IO.' }],
+        returns: 'only run-owned latest attempt metadata and current non-authorizing action hints.',
+      },
+      {
+        signature: 'resolveTaskReview(request: SimulationProductTaskReviewResolveInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Persist a scene-scoped original review before canonical mutation; browser fields never grant Team authority.',
+        parameters: [{ name: 'request', description: 'Exact task creation, completed attempt, observed task revision and immutable outcome/reason.' }, { name: 'call', description: 'Current authenticated run owner, rechecked at the serialized write position.' }],
+        returns: 'original accepted or terminal request receipt; cold writes require explicit restore, cold reads stay inert.',
+      },
+      {
+        signature: 'retryOperation(request: SimulationProductOperationRetryInput, call: AuthenticatedProductCall): Promise<SimulationProductRequestReceipt>',
+        description: 'Retain one exact retry permission before native IO; unknown accepted outcomes keep their original identity.',
+        parameters: [{ name: 'request', description: 'Original command, accepted external operation, positive attempt-count fence and reason.' }, { name: 'call', description: 'Current authenticated run owner; queued native mutation rechecks this lease.' }],
+        returns: 'original accepted or terminal receipt. Cold accepted requests require explicit owner restore and this same retry.',
+      },
+    ],
+  },
+  {
+    key: 'simulationProducts',
+    summary: 'One Host-owned metadata directory; list/inspect never take Simulation execution ownership.',
+    description: 'One Host-owned metadata directory; list/inspect never take Simulation execution ownership.',
+    methods: [
+      {
+        signature: 'creationRegistrar(): (record: SimulationProductRecord) => Promise<void>',
+        description: 'Obtain a process-local registration capability for the trusted creation owner; it cannot cross JSON transports.',
+        parameters: [],
+        returns: 'a writer that persists the original allocated registration, coalesces exact retries and refuses changed ownership/spec. The caller persists its creation intent first and drains this capability before its own teardown. Reads never invoke it.',
+      },
+      {
+        signature: 'list(request: SimulationProductListInput, call: AuthenticatedProductCall): Promise<SimulationProductRunPage>',
+        description: 'Read safe metadata for the current principal without opening provider history.',
+        parameters: [{ name: 'request', description: 'Actor-free query and opaque continuation.' }, { name: 'call', description: 'Transport-authenticated current principal and cancellation lifetime.' }],
+        returns: 'complete bounded authorized directory window; new observations require first-page restart.',
+      },
+      {
+        signature: 'inspect(request: SimulationProductInspectInput, call: AuthenticatedProductCall): Promise<SimulationProductRunInspection>',
+        description: 'Inspect exact registered history under current ownership association before and after provider IO.',
+        parameters: [{ name: 'request', description: 'Registered run identity only.' }, { name: 'call', description: 'Transport-authenticated principal and cancellation lifetime.' }],
+        returns: 'bounded administrative world summary without knowledge, instructions or physical paths.',
+      },
+      {
+        signature: 'runStatuses(request: SimulationProductRunStatusesInput, call: AuthenticatedProductCall): Promise<SimulationProductRunStatusesPage>',
+        description: 'Observe a finite authorized directory window without opening, restoring or executing any native run.',
+        parameters: [{ name: 'request', description: 'Distinct registered run identities bounded by maxPageSize and complete request bytes.' }, { name: 'call', description: 'Current authenticated principal and credential-retirement lifetime.' }],
+        returns: 'request-ordered observations; independent provider or accounting failures yield safe per-run unavailability. Missing authorization or credential retirement rejects the whole batch, and complete response overflow rejects without partial rows.',
+      },
+      {
+        signature: 'inspectSource(request: SimulationProductSourceInput, call: AuthenticatedProductCall): Promise<SimulationProductSourceInspection>',
+        description: 'Inspect one exact Team Envelope reference retained by a prepared decision.',
+        parameters: [{ name: 'request', description: 'Frozen source ordinal, bounded lookup/body continuation and optional exact position.' }, { name: 'call', description: 'Authenticated owner; Simulation disclosure and Team membership remain independent.' }],
+        returns: 'inert source text, explicit lookup progress or redacted absence; every IO is followed by authority checks.',
+      },
+      {
+        signature: 'readRecords(request: SimulationProductRecordsInput, call: AuthenticatedProductCall): Promise<SimulationProductRecordsPage>',
+        description: 'Browse original journal sequences without opening execution or inferring history from snapshots.',
+        parameters: [{ name: 'request', description: 'Exact run, optional kind/sequence and policy-bound continuation.' }, { name: 'call', description: 'Current authenticated owner and transport lifetime.' }],
+        returns: 'bounded metadata or explicit whole-run-authorized JSON text parts; policy changes reject the old page.',
+      },
+      {
+        signature: 'browse(request: SimulationProductBrowseInput, call: AuthenticatedProductCall): Promise<SimulationProductCollectionPage>',
+        description: 'Read one filtered administrative collection at an exact native world revision.',
+        parameters: [{ name: 'request', description: 'Registered run, collection-specific filters and opaque continuation.' }, { name: 'call', description: 'Current transport-authenticated principal and cancellation lifetime.' }],
+        returns: 'bounded redacted rows and authoritative filtered total; changed revision/query rejects continuation.',
+      },
+      {
+        signature: 'inspectObject(request: SimulationProductObjectInput, call: AuthenticatedProductCall): Promise<SimulationProductObjectInspection>',
+        description: 'Read exact object sections; private context text requires a separate trusted entity-scoped reader.',
+        parameters: [{ name: 'request', description: 'Registered run, branded object and section, optional revision fence and section page.' }, { name: 'call', description: 'Current authenticated principal and cancellation lifetime.' }],
+        returns: 'bounded section or authorized absence; stale revision/page requires explicit refresh.',
+      },
+      {
+        signature: 'operationRetryReaderRegistrar(): (reader: SimulationProductOperationRetryReader) => () => void',
+        description: 'Obtain the process-local registration capability for the original administration owner.',
+        parameters: [],
+        returns: 'single-reader registrar; its disposer removes hints and invalidates pending observations without native effects.',
+      },
+      {
+        signature: 'contextReaderRegistrar(): (readers: readonly SimulationProductContextReader[]) => () => void',
+        description: 'Obtain a runtime-only policy registration capability for trusted deployment plugins, with no effect merely from discovery.',
+        parameters: [],
+        returns: 'a registrar whose validated grants retire with their disposer. It cannot be serialized or used after this service closes.',
+      },
+      {
+        signature: 'recordReaderRegistrar(): (readers: readonly SimulationProductRecordReader[]) => () => void',
+        description: 'Obtain the trusted whole-run historical journal policy registrar.',
+        parameters: [],
+        returns: 'process-local registrar; disposal revokes content and invalidates waiting readers without stopping execution.',
+      },
+      {
+        signature: 'watch(request: SimulationProductWatchInput, call: AuthenticatedProductCall): Promise<SimulationProductWatchResult>',
+        description: 'Wait for metadata invalidation without opening execution or returning bodies. Polls use ordinary bounded read admission.',
+        parameters: [{ name: 'request', description: 'Exact run, prior authenticated cursor and optional real wait; zero is an immediate probe.' }, { name: 'call', description: 'Current credential lease; cancellation and unload retire the wait and drain admitted native IO.' }],
+        returns: 'current policy lifetime and world observation. Expired/foreign cursors reset; provider absence is explicit.',
+      },
+    ],
+  },
+  {
     key: 'simulations',
     summary: 'Registry whose providers own run IO and exclusive coordinator lifetimes.',
     description: 'Registry whose providers own run IO and exclusive coordinator lifetimes.',
@@ -1694,6 +1905,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Open a resolved run.',
         parameters: [{ name: 'selection', description: 'Explicit provider and run configuration.' }],
         returns: 'caller-owned run.',
+      },
+      {
+        signature: 'resolveInspection(request: SimulationInspectionSelection): SimulationInspectionSelection',
+        description: 'Resolve immutable selection and provider support before read-only IO.',
+        parameters: [{ name: 'request', description: 'Provider and expected run spec; no execution or storage path flags.' }],
+        returns: 'validated supported inspection selection.',
+      },
+      {
+        signature: 'inspect(selection: SimulationInspectionSelection): Promise<SimulationRunObservation | undefined>',
+        description: 'Read existing run facts without opening an execution owner or changing phase.',
+        parameters: [{ name: 'selection', description: 'Resolved inspection selection.' }],
+        returns: 'detached history and owner observation, or undefined for a missing run; caller owns authorization and redaction.',
       },
     ],
   },
@@ -1719,6 +1942,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Create or reconcile the run\'s canonical execution Team before attaching its lifecycle owner.',
         parameters: [{ name: 'run', description: 'Open, unattached run whose root identity is journal-owned.' }, { name: 'creation', description: 'Explicit Team goal, budgets and optional authority grant.' }, { name: 'ownerName', description: 'Immutable lifecycle owner used by the subsequent attachment.' }],
         returns: 'the confirmed Team; target response loss reuses the reserved identity.',
+      },
+      {
+        signature: 'registerTaskCompletionPolicy(policy: import(\'@clocky/clocky-simulation\').SimulationTaskCompletionPolicy): () => void',
+        description: 'Register one trusted bounded pure task completion rule; source disposal retires future evaluation.',
+        parameters: [{ name: 'policy', description: 'Exact policy generation and deterministic world-effect evaluator.' }],
+        returns: 'HMR-safe disposer; accepted result retries use the recorded result without re-evaluation.',
       },
       {
         signature: 'registerSummaryPolicy(policy: import(\'@clocky/clocky-simulation\').SimulationSummaryPolicy): () => void',
@@ -2211,10 +2440,22 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Effect-scoped product-principal to active-human binder.',
     methods: [
       {
-        signature: 'async withProof<T>( call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof) => Promise<T>, ): Promise<T>',
+        signature: 'async withProof<T>( call: AuthenticatedProductCall, input: TeamHumanActorProofInput, operation: (proof: TeamHumanActorProof, authorityTeamId: import(\'@clocky/clocky-team\').TeamId) => Promise<T>, ): Promise<T>',
         description: 'Map one authenticated principal to exactly one active human participant and hold its exact payload-bound proof only while the supplied operation runs.',
-        parameters: [{ name: 'call', description: 'runtime-only authenticated product call retained by its transport lease.' }, { name: 'input', description: 'complete parsed JSON-only mutation input and observed fence.' }, { name: 'operation', description: 'Hub call that may resolve the proof more than once before settling.' }],
+        parameters: [{ name: 'call', description: 'runtime-only authenticated product call retained by its transport lease.' }, { name: 'input', description: 'complete parsed JSON-only mutation input and observed fence.' }, { name: 'operation', description: 'Hub call and membership Team; descendant reads never grant target-Team mutations.' }],
         returns: 'the operation result after the proof is revoked.',
+      },
+      {
+        signature: 'async withReader<T>(call: AuthenticatedProductCall, operation: (reader: TeamHumanReaderProof) => Promise<T>): Promise<T>',
+        description: 'Retain an authenticated principal for discovery without granting any Team membership or mutation.',
+        parameters: [{ name: 'call', description: 'Current authenticated transport lease.' }, { name: 'operation', description: 'Read consumer which must check current Team visibility itself.' }],
+        returns: 'operation result after the reader is revoked.',
+      },
+      {
+        signature: 'openReader(call: AuthenticatedProductCall): TeamHumanReaderLease',
+        description: 'Open principal read authority for a streaming consumer which owns final cleanup.',
+        parameters: [{ name: 'call', description: 'Current authenticated transport lease.' }],
+        returns: 'non-serializable reader, retirement signal and idempotent close action.',
       },
       {
         signature: 'close(): void',
@@ -2822,10 +3063,76 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the bounded action snapshot; unsupported providers reject.',
       },
       {
+        signature: 'inspectHumanAction(request: import(\'./types.ts\').TeamActionInspectRequest): Promise<import(\'./types.ts\').TeamActionInspection>',
+        description: 'Inspect an exact human request and its current handling allowance.',
+        parameters: [{ name: 'request', description: 'Team/request identity and its current read proof.' }],
+        returns: 'bounded body and handling hint at one Team revision; unsupported providers reject.',
+      },
+      {
         signature: 'abstract getTeamSelection(request: TeamSelectionRequest): Promise<TeamSelectionSnapshot>',
         description: 'Read initial Team identity, bounded display text, counts and exact coordinator binding without history arrays.',
         parameters: [{ name: 'request', description: 'Team selected for read-only inspection.' }],
         returns: 'the lightweight selection projection; no activation is created or resumed.',
+      },
+      {
+        signature: 'getTeamAttention(request: import(\'./types.ts\').TeamAttentionReadRequest): Promise<import(\'./types.ts\').TeamAttentionPage>',
+        description: 'Read one authorized, revision-pinned page of Team pending responsibilities.',
+        parameters: [{ name: 'request', description: 'Complete Team/cursor input and its current human read proof.' }],
+        returns: 'authoritative counts and byte-bounded summaries; no task or model is started.',
+      },
+      {
+        signature: 'registerExecutionProfile(registration: TeamExecutionProfileRegistration): () => void',
+        description: 'Register a deployment-owned execution descriptor and its current availability.',
+        parameters: [{ name: 'registration', description: 'Public profile fields and a pure live-owner availability reader.' }],
+        returns: 'disposer owned by the registering plugin fiber.',
+      },
+      {
+        signature: 'abstract getExecutionProfiles(request: TeamExecutionProfilesRequest): Promise<TeamExecutionProfilesPage>',
+        description: 'Read authorized deployment choices without starting any execution.',
+        parameters: [{ name: 'request', description: 'Selected member kind, continuation and exact read proof.' }],
+        returns: 'a byte-bounded catalog page and the independently revalidated selection.',
+      },
+      {
+        signature: 'abstract resolveIdentities(request: TeamIdentityResolveRequest): Promise<TeamIdentityResolvePage>',
+        description: 'Resolve only display identities referenced by an authorized view.',
+        parameters: [{ name: 'request', description: 'Finite IDs, revision-bound continuation and membership proof.' }],
+        returns: 'a bounded page with indistinguishable unknown or inaccessible identities.',
+      },
+      {
+        signature: 'abstract getMemberReadiness(request: TeamMemberReadinessRequest): Promise<TeamMemberReadinessPage>',
+        description: 'Read current participation and execution readiness without starting actors.',
+        parameters: [{ name: 'request', description: 'Exact member set, optional continuation and a live membership proof.' }],
+        returns: 'a bounded page; continuation rejects a changed Team journal watermark.',
+      },
+      {
+        signature: 'abstract resolveHumanActor(request: TeamHumanActorLookup): Promise<TeamHumanActorSelection>',
+        description: 'Resolve principal-owned membership for the live human-proof issuer.',
+        parameters: [{ name: 'request', description: 'Exact Team and authenticated principal identity.' }],
+        returns: 'bounded proof-issuer facts; missing or ambiguous membership rejects.',
+      },
+      {
+        signature: 'abstract resolveHumanReadAuthority(request: TeamHumanActorLookup): Promise<TeamHumanReadAuthority>',
+        description: 'Resolve current membership for inspection through canonical parent-task reservations.',
+        parameters: [{ name: 'request', description: 'Target Team and authenticated principal identity from the proof issuer.' }],
+        returns: 'the nearest active human\'s Team and identity; missing, ambiguous or invalid lineage rejects.',
+      },
+      {
+        signature: 'abstract assertHumanSessionRead(request: import(\'./types.ts\').TeamHumanSessionReadRequest): Promise<void>',
+        description: 'Verify a Session\'s reserved or published participant identity under current read authority.',
+        parameters: [{ name: 'request', description: 'Exact Team, participant and Session tuple with a live payload-bound proof.' }],
+        returns: 'completion after ownership and current direct/ancestor membership agree.',
+      },
+      {
+        signature: 'abstract listHumanTeamsPage(request: TeamProductDiscoveryRequest): Promise<TeamProductDirectoryPage>',
+        description: 'Discover only Teams readable by the current principal, within provider work and complete response limits.',
+        parameters: [{ name: 'request', description: 'Revocable reader, encrypted reader-bound continuation and requested scan allowance.' }],
+        returns: 'safe metadata and continuation; an empty page can still require bounded continuation.',
+      },
+      {
+        signature: 'abstract getTaskCapabilities(request: TeamTaskCapabilitiesRequest): Promise<TeamTaskCapabilities>',
+        description: 'Observe current human task-authoring permission under the provider\'s serializer.',
+        parameters: [{ name: 'request', description: 'Exact selected scopes and a live membership proof.' }],
+        returns: 'choices without grants or authorized path lists; reads do not create work.',
       },
       {
         signature: 'abstract browse(request: TeamBrowseRequest): Promise<TeamBrowsePage>',
@@ -2838,6 +3145,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read current task fields or one bounded attempt/review history page, without private artifact references.',
         parameters: [{ name: 'request', description: 'Exact Team/task, section, optional revision fence and history continuation.' }],
         returns: 'detached data capped by the provider\'s response budget; indivisible oversized records reject.',
+      },
+      {
+        signature: 'resolveTaskReferences(request: import(\'./types.ts\').TeamTaskReferencesInput): Promise<import(\'./types.ts\').TeamTaskReferencesPage>',
+        description: 'Resolve exact task titles and lifecycle status without enumerating the task collection.',
+        parameters: [{ name: 'request', description: 'Team, explicit IDs and revision-pinned continuation.' }],
+        returns: 'bounded references; trusted consumers own authorization and unsupported providers reject.',
       },
       {
         signature: 'abstract getMemberSession(request: TeamMemberSessionRequest): Promise<TeamMemberSessionSnapshot>',
@@ -3176,16 +3489,28 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'visible artifact references and an optional continuation cursor.',
       },
       {
-        signature: 'abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<TeamTaskSnapshot>',
+        signature: 'abstract updateTaskDetails(request: TeamTaskDetailsUpdateRequest): Promise<import(\'./types.ts\').TeamTaskDetailsUpdateResult>',
         description: 'Compare-and-set a lease-free task details edit without changing phase, scheduler facts, or attempts.',
-        parameters: [{ name: 'request', description: 'current coordinator proof plus JSON-only task detail fields.' }],
-        returns: 'the detached task projection after the committed details edit.',
+        parameters: [{ name: 'request', description: 'current coordinator or human proof, caller-owned command identity and JSON-only task detail fields.' }],
+        returns: 'original acceptance metadata and the detached current task, which may have advanced since admission.',
+      },
+      {
+        signature: 'getTaskUpdateResult(request: import(\'./types.ts\').TeamTaskUpdateLookupInput): Promise<import(\'./types.ts\').TeamTaskUpdateLookup>',
+        description: 'Read original task-update admission without executing or retrying it.',
+        parameters: [{ name: 'request', description: 'Exact Team/task/command identity.' }],
+        returns: 'original acceptance, terminal semantic refusal or not-found at this read; native consumers own authorization.',
       },
       {
         signature: 'abstract cancelTask(request: TeamTaskCancelRequest): Promise<TeamTaskSnapshot>',
         description: 'Persist a single-task cancellation while exact live work retains ownership.',
         parameters: [{ name: 'request', description: 'Team/task identities and the observed task revision.' }],
         returns: 'accepted stop progress or the settled task after owner cleanup.',
+      },
+      {
+        signature: 'cancelRuntimeTask(request: import(\'./types.ts\').TeamSimulationTaskCancelRequest): Promise<TeamTaskSnapshot>',
+        description: 'Persist cancellation of one exact Simulation-created task without retiring its live attempt prematurely.',
+        parameters: [{ name: 'request', description: 'Revocable Simulation source proof, immutable run/operation provenance and original work fence.' }],
+        returns: 'accepted stop progress or settled cancellation; exact retries retain the first cancellation target and reason.',
       },
       {
         signature: 'abstract reconcileTaskCancellation(request: TeamTaskCancellationReconcileRequest): Promise<TeamTaskSnapshot>',
@@ -3218,10 +3543,28 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'the detached task projection after the recovered review decision.',
       },
       {
+        signature: 'resolveSimulationTaskReview(request: TeamTaskReviewRecoverRequest): Promise<TeamTaskSnapshot>',
+        description: 'Review an exact native completed result using a revocable Simulation source proof.',
+        parameters: [{ name: 'request', description: 'Runtime-only authority deriving the original task, reviewer and command payload.' }],
+        returns: 'current canonical task after acceptance, or the current task retaining the identical historical decision. Changed payloads under the same run-wide command identity reject; no reviewer activation is required.',
+      },
+      {
+        signature: 'assignSimulationTask(request: import(\'./types.ts\').TeamSimulationTaskAssignRequest): Promise<TeamTaskSnapshot>',
+        description: 'Assign the exact attempt already durably reserved by the Simulation owner.',
+        parameters: [{ name: 'request', description: 'Revocable source proof, canonical task revision and selected actor/attempt.' }],
+        returns: 'the assigned task after all ordinary capability, lease and budget constraints pass.',
+      },
+      {
         signature: 'abstract assignTask(request: TeamTaskAssignRequest): Promise<TeamTaskSnapshot>',
         description: 'Assign a pending task, mint its next non-reusable attempt id, and commit its bounded lease. The scheduler source selects the exact task, participant, optional activation, wake channel, and lease duration through runtime-only authority.',
         parameters: [{ name: 'request', description: 'scheduler proof plus JSON-only assignment identifiers and bounds.' }],
         returns: 'the detached assigned task projection with its current lease.',
+      },
+      {
+        signature: 'startSimulationTaskAttempt(request: import(\'./types.ts\').TeamSimulationTaskStartRequest): Promise<TeamTaskSnapshot>',
+        description: 'Start the Simulation attempt whose identified input has reached durable Session storage.',
+        parameters: [{ name: 'request', description: 'Exact native task-input source proof and task revision/attempt fence.' }],
+        returns: 'running task with the original assigned lease; an exact retained start does not append again.',
       },
       {
         signature: 'abstract startTaskAttempt(request: TeamTaskAttemptStartRequest): Promise<TeamTaskSnapshot>',
@@ -3240,6 +3583,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Renew the exact current attempt for its fixed lease duration after resolving its runtime-only actor proof. Providers derive the Team, Participant, activation, and Session from that proof before renewing the lease.',
         parameters: [{ name: 'request', description: 'Runtime actor proof, task-attempt identity, and observed revision.' }],
         returns: 'the detached task projection with its renewed current lease.',
+      },
+      {
+        signature: 'settleSimulationTaskAttempt(request: import(\'./types.ts\').TeamSimulationTaskSettleRequest): Promise<TeamTaskSnapshot>',
+        description: 'Settle the exact Simulation attempt from its native result proof after ordinary Team result checks.',
+        parameters: [{ name: 'request', description: 'Current writer authority and retained original terminal outcome.' }],
+        returns: 'task receipt; identical current-source retries retain the original outcome.',
       },
       {
         signature: 'abstract settleTaskAttempt(request: TeamTaskAttemptSettleRequest): Promise<TeamTaskSnapshot>',
@@ -3408,6 +3757,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read one detached channel projection.',
         parameters: [{ name: 'request', description: 'channel identity to read.' }],
         returns: 'the current channel projection and WAL cursor.',
+      },
+      {
+        signature: 'abstract getChannelOwner(request: ChannelGetRequest): Promise<import(\'./types.ts\').ChannelOwnerSnapshot>',
+        description: 'Read attached-channel ownership for an authenticated consumer\'s authorization lookup.',
+        parameters: [{ name: 'request', description: 'Exact channel identity from the consumer request.' }],
+        returns: 'the attached Team/channel tuple within the provider\'s response allowance.',
       },
       {
         signature: 'getChannelForActor(request: ChannelActorGetRequest): Promise<ChannelSnapshot>',
@@ -4314,7 +4669,7 @@ export const EVENT_API: readonly EventApiEntry[] = [
   {
     name: 'cordis/dynamic-package',
     mode: 'emit',
-    signature: '\'cordis/dynamic-package\'(pkg: DynamicCordisPackage): void',
+    signature: '\'cordis/dynamic-package\'(pkg: DynamicCordisPackage & { agentId: SessionId }): void',
     summary: 'One exact Plugin/Package activation is now live in the Host.',
     description: 'One exact Plugin/Package activation is now live in the Host.',
     parameters: [{ name: 'pkg', description: 'stable plugin, immutable package, run identity, and label.' }],
@@ -4576,6 +4931,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'event', description: 'committed Team record projection.' }],
   },
   {
+    name: 'team/member-execution-observe',
+    mode: 'waterfall',
+    signature: '\'team/member-execution-observe\'(this: TeamRuntime, query: TeamMemberExecutionQuery, next: () => Promise<TeamMemberExecutionSources>): Promise<TeamMemberExecutionSources>',
+    summary: 'Read exact route and activation ownership; listeners must not reenter Team reads or mutate work.',
+    description: 'Read exact route and activation ownership; listeners must not reenter Team reads or mutate work.',
+    parameters: [{ name: 'query', description: 'Authorized Team and current member descriptor.' }, { name: 'next', description: 'Other independent execution owners; all listeners delegate.' }],
+  },
+  {
     name: 'team/policy',
     mode: 'waterfall',
     signature: '\'team/policy\'(this: TeamRuntime, request: TeamPolicyRequest, next: () => Promise<TeamPolicyDecision>): Promise<TeamPolicyDecision>',
@@ -4598,6 +4961,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'A policy no longer intercepts future Team operations.',
     description: 'A policy no longer intercepts future Team operations.',
     parameters: [{ name: 'policy', description: 'removed policy identity.' }],
+  },
+  {
+    name: 'team/task-scheduling-modes',
+    mode: 'waterfall',
+    signature: '\'team/task-scheduling-modes\'(this: TeamRuntime, teamId: TeamId, next: () => Promise<readonly TeamTaskWorkspaceMode[]>): Promise<readonly TeamTaskWorkspaceMode[]>',
+    summary: 'Observe modes supported by live schedulers without preparing or assigning work.',
+    description: 'Observe modes supported by live schedulers without preparing or assigning work.',
+    parameters: [{ name: 'teamId', description: 'Team selected by the authenticated product query.' }, { name: 'next', description: 'Remaining scheduling providers; every listener delegates before combining modes.' }],
   },
   {
     name: 'team/view-policy-added',
@@ -4881,7 +5252,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentRuntimeProvider',
-    declaration: 'export interface AgentRuntimeProvider {\n    readonly name: string;\n    readonly terminationMode: ActivationTerminationMode;\n    activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>;\n}',
+    declaration: 'export interface AgentRuntimeProvider {\n    readonly participantKinds: readonly (\'local-agent\' | \'remote-agent\')[];\n    readonly name: string;\n    readonly terminationMode: ActivationTerminationMode;\n    activate(request: AgentRuntimeActivationRequest): Promise<ActivationHandle>;\n}',
   },
   {
     name: 'AgentRuntimeProviderRef',
@@ -4977,7 +5348,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AuthenticatedProductPrincipalLease',
-    declaration: 'export interface AuthenticatedProductPrincipalLease {\n    withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>, signal?: AbortSignal): Promise<T>;\n    revoke(): Promise<void>;\n}',
+    declaration: 'export interface AuthenticatedProductPrincipalLease {\n    readonly signal: AbortSignal;\n    withCall<T>(operation: (call: AuthenticatedProductCall) => Promise<T>, signal?: AbortSignal): Promise<T>;\n    revoke(): Promise<void>;\n}',
   },
   {
     name: 'AuthorizationEntry',
@@ -5248,6 +5619,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type ChannelOpenRequest = ChannelOpenInput & ({\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamSystemChannelLifecycleProof;\n    readonly authorityKind: \'channel-lifecycle\';\n} | {\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamHumanActorProof;\n    readonly authorityKind: \'human\';\n} | {\n    readonly workflowPlanId?: undefined;\n    readonly expectedPlanRevision?: undefined;\n    readonly actor: TeamSystemTopologyProof;\n    readonly authorityKind?: undefined;\n} | {\n    readonly workflowPlanId: TeamWorkflowPlanId;\n    readonly expectedPlanRevision: number;\n    readonly actor: TeamSystemWorkflowProof;\n    readonly authorityKind?: undefined;\n});',
   },
   {
+    name: 'ChannelOwnerSnapshot',
+    declaration: 'export interface ChannelOwnerSnapshot {\n    readonly channelId: ChannelId;\n    readonly teamId: TeamId;\n}',
+  },
+  {
     name: 'ChannelParticipant',
     declaration: 'export interface ChannelParticipant {\n    readonly id: ParticipantId;\n    readonly role: string;\n}',
   },
@@ -5493,7 +5868,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'CordisInspectQueryResolved',
-    declaration: 'export interface CordisInspectQueryResolved {\n    requestId: CordisInspectRequestId;\n}',
+    declaration: 'export interface CordisInspectQueryResolved {\n    agentId: SessionId;\n    requestId: CordisInspectRequestId;\n}',
   },
   {
     name: 'CordisInspectRequestId',
@@ -5629,11 +6004,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'DynamicCordisRequestResolved',
-    declaration: 'export interface DynamicCordisRequestResolved {\n    requestId: ApprovalRequestId;\n    outcome: RequestRunOutcome;\n}',
+    declaration: 'export interface DynamicCordisRequestResolved {\n    agentId: SessionId;\n    requestId: ApprovalRequestId;\n    outcome: RequestRunOutcome;\n}',
   },
   {
     name: 'DynamicCordisRetracted',
-    declaration: 'export interface DynamicCordisRetracted {\n    pluginId: CordisDynamicPluginId;\n    packageId: CordisDynamicPackageId;\n    pluginRunId: CordisDynamicPluginRunId;\n}',
+    declaration: 'export interface DynamicCordisRetracted {\n    agentId: SessionId;\n    pluginId: CordisDynamicPluginId;\n    packageId: CordisDynamicPackageId;\n    pluginRunId: CordisDynamicPluginRunId;\n}',
   },
   {
     name: 'DynamicCordisRunRequest',
@@ -5890,6 +6265,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'JsonSchemaType',
     declaration: 'export type JsonSchemaType = \'object\' | \'array\' | \'string\' | \'number\' | \'integer\' | \'boolean\' | \'null\';',
+  },
+  {
+    name: 'Key',
+    declaration: 'export type Key = keyof typeof en;',
   },
   {
     name: 'KnobState',
@@ -6205,7 +6584,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ParticipantInviteInput',
-    declaration: 'export interface ParticipantInviteInput {\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n}',
+    declaration: 'export interface ParticipantInviteInput {\n    readonly executionProfileId?: TeamExecutionProfileId | undefined;\n    readonly teamId: TeamId;\n    readonly expectedCursor: number;\n    readonly kind: ParticipantKind;\n    readonly displayName: string;\n    readonly role: string;\n    readonly capabilities: readonly string[];\n    readonly owner?: TeamParticipantOwner | undefined;\n    readonly provider?: string | undefined;\n    readonly preset?: string | undefined;\n    readonly model?: string | undefined;\n    readonly authScheme?: string | undefined;\n    readonly authorityGrant?: TeamAuthorityGrant | undefined;\n}',
   },
   {
     name: 'ParticipantInviteRequest',
@@ -6278,6 +6657,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PreToolDecision',
     declaration: 'export type PreToolDecision = {\n    kind: \'allow\';\n} | {\n    kind: \'deny\';\n    reason: string;\n} | {\n    kind: \'ask\';\n    reason?: string;\n};',
+  },
+  {
+    name: 'ProductAuthorizationScope',
+    declaration: 'export type ProductAuthorizationScope = Branded<\'ProductAuthorizationScope\'>;',
   },
   {
     name: 'ProductPrincipal',
@@ -6924,14 +7307,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SimulationActivationRequest = Pick<TeamActivationRequest, \'provider\' | \'agent\' | \'signal\'> & {\n    readonly seed: {\n        readonly kind: \'fresh\';\n    } | {\n        readonly kind: \'resume\';\n    };\n};',
   },
   {
-    name: 'SimulationBudgetGrantId',
-    declaration: 'export type SimulationBudgetGrantId = z.infer<typeof simulationBudgetGrantIdSchema>;',
-  },
-  {
-    name: 'SimulationBudgetGrantRequest',
-    declaration: 'export type SimulationBudgetGrantRequest = z.infer<typeof simulationBudgetGrantRequestSchema>;',
-  },
-  {
     name: 'SimulationCapacityGrantId',
     declaration: 'export type SimulationCapacityGrantId = z.infer<typeof simulationCapacityGrantIdSchema>;',
   },
@@ -6956,8 +7331,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SimulationCheckpointCut {\n    readonly snapshot: import(\'./types.ts\').SimulationSnapshot;\n    readonly reference: SimulationRunPersistenceReference;\n    publish(manifest: import(\'./checkpoint.ts\').SimulationCheckpointManifest): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    release(): void;\n}',
   },
   {
+    name: 'SimulationCheckpointDiagnostic',
+    declaration: 'export interface SimulationCheckpointDiagnostic {\n    readonly stage: \'collect\' | \'validate\' | \'restore\' | \'retire\' | \'publish\';\n    readonly code: \'source-unavailable\' | \'source-moved\' | \'history-incomplete\' | \'binding-mismatch\' | \'owner-conflict\' | \'owner-not-quiescent\' | \'unsupported-ownership\' | \'manifest-mismatch\' | \'version-mismatch\' | \'cancelled\' | \'unavailable\';\n    readonly subject: SimulationCheckpointSubject;\n    readonly cleanup?: \'unconfirmed\' | undefined;\n}',
+  },
+  {
     name: 'SimulationCheckpointId',
-    declaration: 'export type SimulationCheckpointId = z.infer<typeof simulationCheckpointIdSchema>;',
+    declaration: 'export type SimulationCheckpointId = Branded<\'SimulationCheckpointId\'>;',
   },
   {
     name: 'SimulationCheckpointManifest',
@@ -6965,7 +7344,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationCheckpointOperation',
-    declaration: 'export type SimulationCheckpointOperation = {\n    readonly request: SimulationCheckpointRequest;\n    readonly startedSequence: number;\n} & ({\n    readonly status: \'in-progress\';\n} | {\n    readonly status: \'failed\';\n    readonly finishedSequence: number;\n    readonly error: string;\n} | {\n    readonly status: \'completed\';\n    readonly finishedSequence: number;\n    readonly manifest: SimulationCheckpointManifest;\n});',
+    declaration: 'export type SimulationCheckpointOperation = {\n    readonly request: SimulationCheckpointRequest;\n    readonly startedSequence: number;\n} & ({\n    readonly status: \'in-progress\';\n} | {\n    readonly status: \'failed\';\n    readonly finishedSequence: number;\n    readonly error: string;\n    readonly diagnostic?: SimulationCheckpointDiagnostic | undefined;\n} | {\n    readonly status: \'completed\';\n    readonly finishedSequence: number;\n    readonly publishedAt: number;\n    readonly manifest: SimulationCheckpointManifest;\n});',
   },
   {
     name: 'SimulationCheckpointRequest',
@@ -6978,6 +7357,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SimulationCheckpointRestoreRequest',
     declaration: 'export type SimulationCheckpointRestoreRequest = z.infer<typeof simulationCheckpointRestoreRequestSchema>;',
+  },
+  {
+    name: 'SimulationCheckpointSubject',
+    declaration: 'export type SimulationCheckpointSubject = {\n    readonly kind: \'run\';\n} | {\n    readonly kind: \'checkpoint\';\n    readonly checkpointId: SimulationCheckpointId;\n} | {\n    readonly kind: \'team\';\n    readonly teamId: TeamId;\n} | {\n    readonly kind: \'channel\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n} | {\n    readonly kind: \'session\';\n    readonly sessionId: SessionId;\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n} | {\n    readonly kind: \'entity\';\n    readonly entityId: SimulationEntityId;\n};',
+  },
+  {
+    name: 'SimulationCompanyParameters',
+    declaration: 'export interface SimulationCompanyParameters {\n    readonly buyerName: string;\n    readonly supplierName: string;\n    readonly initialStock: string;\n}',
   },
   {
     name: 'SimulationContextReference',
@@ -6996,36 +7383,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SimulationContextViewEventData {\n    readonly version: 1;\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly entityId: Branded<\'SimulationEntityId\'>;\n    readonly windowId: Branded<\'SimulationWindowId\'>;\n    readonly slot: Branded<\'SimulationDecisionSlot\'>;\n    readonly epoch: Branded<\'SimulationWriterEpoch\'>;\n    readonly time: Branded<\'SimTime\'>;\n    readonly inputId: Branded<\'SimulationInputId\'>;\n    readonly projections: {\n        readonly run: number;\n        readonly entity: number;\n        readonly team: number;\n    };\n    readonly versions: {\n        readonly rules: string;\n        readonly policy: string;\n        readonly persona: string;\n        readonly model: string;\n    };\n    readonly sources: SimulationContextReference[];\n    readonly content: SimulationContextSection[];\n}',
   },
   {
-    name: 'SimulationDecisionDispatch',
-    declaration: 'export interface SimulationDecisionDispatch {\n    readonly round: z.infer<typeof simulationEventSlotSchema>;\n    readonly nextOrdinal: z.infer<typeof simulationEventSlotSchema>;\n    readonly tickets: Readonly<Record<z.infer<typeof simulationDecisionIdSchema>, SimulationDispatchTicket>>;\n    readonly selections: Readonly<Record<z.infer<typeof simulationWindowIdSchema>, SimulationDispatchSelection>>;\n    readonly active?: z.infer<typeof simulationWindowIdSchema>;\n}',
-  },
-  {
     name: 'SimulationDecisionId',
-    declaration: 'export type SimulationDecisionId = z.infer<typeof simulationDecisionIdSchema>;',
+    declaration: 'export type SimulationDecisionId = Branded<\'SimulationDecisionId\'>;',
   },
   {
     name: 'SimulationDecisionSlot',
-    declaration: 'export type SimulationDecisionSlot = z.infer<typeof simulationDecisionSlotSchema>;',
+    declaration: 'export type SimulationDecisionSlot = Branded<\'SimulationDecisionSlot\'>;',
   },
   {
     name: 'SimulationDeterministicPolicy',
     declaration: 'export interface SimulationDeterministicPolicy extends SimulationPolicyRef {\n    decide(this: void, view: Readonly<SimulationContextViewEventData>): readonly SimulationProposal[];\n}',
-  },
-  {
-    name: 'SimulationDispatchCandidate',
-    declaration: 'export type SimulationDispatchCandidate = z.infer<typeof simulationDispatchCandidateSchema>;',
-  },
-  {
-    name: 'SimulationDispatchSelection',
-    declaration: 'export interface SimulationDispatchSelection {\n    readonly request: SimulationDispatchSelectionRequest;\n    readonly round: z.infer<typeof simulationEventSlotSchema>;\n    readonly decisions: readonly z.infer<typeof simulationDecisionIdSchema>[];\n    readonly status: \'reserved\' | \'opened\' | \'cancelled\';\n}',
-  },
-  {
-    name: 'SimulationDispatchSelectionRequest',
-    declaration: 'export type SimulationDispatchSelectionRequest = z.infer<typeof simulationDispatchSelectionRequestSchema>;',
-  },
-  {
-    name: 'SimulationDispatchTicket',
-    declaration: 'export interface SimulationDispatchTicket {\n    readonly candidate: SimulationDispatchCandidate;\n    readonly ordinal: z.infer<typeof simulationEventSlotSchema>;\n    readonly queuedRound: z.infer<typeof simulationEventSlotSchema>;\n    readonly status: \'queued\' | \'reserved\' | \'opened\' | \'cancelled\';\n}',
   },
   {
     name: 'SimulationDriveRequest',
@@ -7041,7 +7408,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationEventId',
-    declaration: 'export type SimulationEventId = z.infer<typeof simulationEventIdSchema>;',
+    declaration: 'export type SimulationEventId = Branded<\'SimulationEventId\'>;',
   },
   {
     name: 'SimulationEventKey',
@@ -7061,11 +7428,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationIngressId',
-    declaration: 'export type SimulationIngressId = z.infer<typeof simulationIngressIdSchema>;',
+    declaration: 'export type SimulationIngressId = Branded<\'SimulationIngressId\'>;',
   },
   {
     name: 'SimulationIngressRequest',
     declaration: 'export type SimulationIngressRequest = z.infer<typeof simulationIngressRequestSchema>;',
+  },
+  {
+    name: 'SimulationInspectionSelection',
+    declaration: 'export interface SimulationInspectionSelection {\n    readonly provider: string;\n    readonly spec: SimulationRunSpec;\n    readonly includeRecords?: boolean | undefined;\n}',
   },
   {
     name: 'SimulationKnowledge',
@@ -7101,7 +7472,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SimulationOperationId',
-    declaration: 'export type SimulationOperationId = z.infer<typeof simulationOperationIdSchema>;',
+    declaration: 'export type SimulationOperationId = Branded<\'SimulationOperationId\'>;',
+  },
+  {
+    name: 'SimulationOwnerObservation',
+    declaration: 'export type SimulationOwnerObservation = \'this-provider\' | \'unowned\' | \'other-owner\' | \'unavailable\';',
   },
   {
     name: 'SimulationParticipantInviteScope',
@@ -7120,20 +7495,424 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SimulationPolicyRef = z.infer<typeof simulationPolicyRefSchema>;',
   },
   {
+    name: 'SimulationProductAdministrationControl',
+    declaration: 'export interface SimulationProductAdministrationControl {\n    readonly actions: {\n        readonly checkpoint: SimulationProductMaintenanceAction;\n        readonly restore: SimulationProductMaintenanceAction;\n        readonly prepare: SimulationProductMaintenanceAction;\n        readonly ingress: SimulationProductMaintenanceAction;\n    };\n    readonly ingress: {\n        readonly maxTime: SimTime;\n        readonly maxBytes: number;\n        readonly targets: readonly {\n            readonly id: SimulationEntityId;\n            readonly name: SimulationProductText;\n        }[];\n    };\n    readonly recovery?: {\n        readonly checkpointId: SimulationCheckpointId;\n        readonly publishedAt: number;\n        readonly time: SimTime;\n        readonly revision: number;\n        readonly references: {\n            readonly runs: number;\n            readonly teams: number;\n            readonly channels: number;\n            readonly sessions: number;\n        };\n    } | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductBrowseInput',
+    declaration: 'export type SimulationProductBrowseInput = PageInput & ({\n    readonly collection: \'entities\';\n    readonly phase?: SimulationProductEntityPhase | undefined;\n    readonly cognition?: \'none\' | \'agent\' | undefined;\n} | {\n    readonly collection: \'decisions\';\n    readonly status?: SimulationProductDecisionStatus | undefined;\n    readonly entityId?: SimulationEntityId | undefined;\n} | {\n    readonly collection: \'operations\';\n    readonly status?: SimulationProductOperationStatus | undefined;\n    readonly entityId?: SimulationEntityId | undefined;\n    readonly decisionId?: SimulationDecisionId | undefined;\n} | {\n    readonly collection: \'checkpoints\';\n    readonly status?: SimulationProductCheckpointStatus | undefined;\n});',
+  },
+  {
+    name: 'SimulationProductCatalog',
+    declaration: 'export interface SimulationProductCatalog {\n    readonly items: readonly SimulationProductTemplateSummary[];\n}',
+  },
+  {
+    name: 'SimulationProductCheckpointInput',
+    declaration: 'export interface SimulationProductCheckpointInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n}',
+  },
+  {
+    name: 'SimulationProductCheckpointStatus',
+    declaration: 'export type SimulationProductCheckpointStatus = \'in-progress\' | \'failed\' | \'completed\';',
+  },
+  {
+    name: 'SimulationProductCheckpointSummary',
+    declaration: 'export interface SimulationProductCheckpointSummary {\n    readonly id: SimulationCheckpointId;\n    readonly status: SimulationProductCheckpointStatus;\n    readonly startedSequence: number;\n    readonly finishedSequence?: number | undefined;\n    readonly time?: SimTime | undefined;\n    readonly publishedAt?: number | undefined;\n    readonly latestSuccessful: boolean;\n    readonly sourceValidation: \'not-performed\';\n}',
+  },
+  {
+    name: 'SimulationProductCollectionPage',
+    declaration: 'export type SimulationProductCollectionPage = PageObservation & ({\n    readonly collection: \'entities\';\n    readonly items: readonly SimulationProductEntitySummary[];\n} | {\n    readonly collection: \'decisions\';\n    readonly items: readonly SimulationProductDecisionSummary[];\n} | {\n    readonly collection: \'operations\';\n    readonly items: readonly SimulationProductOperationSummary[];\n} | {\n    readonly collection: \'checkpoints\';\n    readonly items: readonly SimulationProductCheckpointSummary[];\n});',
+  },
+  {
+    name: 'SimulationProductCommandId',
+    declaration: 'export type SimulationProductCommandId = Branded<\'SimulationProductCommandId\'>;',
+  },
+  {
+    name: 'SimulationProductConfiguration',
+    declaration: 'export interface SimulationProductConfiguration {\n    readonly limits: SimulationProductLimits;\n    readonly budgetInterval: string;\n    readonly tickUnit: SimulationProductText;\n    readonly rulesVersion: SimulationProductText;\n    readonly policyVersion: SimulationProductText;\n    readonly sharedModelLimit: number;\n}',
+  },
+  {
+    name: 'SimulationProductContextBody',
+    declaration: 'export type SimulationProductContextBody = {\n    readonly status: \'withheld\' | \'unsupported\';\n} | {\n    readonly status: \'text\';\n    readonly text: string;\n    readonly part: number;\n    readonly parts: number;\n};',
+  },
+  {
+    name: 'SimulationProductContextItem',
+    declaration: 'export type SimulationProductContextItem = {\n    readonly kind: \'section\';\n    readonly index: number;\n    readonly block: number;\n    readonly section: SimulationProductText;\n    readonly required: boolean;\n    readonly body: SimulationProductContextBody;\n} | {\n    readonly kind: \'knowledge\';\n    readonly id: Branded<\'SimulationKnowledgeId\'>;\n    readonly revision: number;\n} | {\n    readonly kind: \'run-event\';\n    readonly sequence: number;\n} | {\n    readonly kind: \'team-envelope\';\n    readonly sourceIndex: number;\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n};',
+  },
+  {
+    name: 'SimulationProductContextReader',
+    declaration: 'export interface SimulationProductContextReader {\n    readonly principalId: ProductPrincipalId;\n    readonly runId?: SimulationProductRunId | undefined;\n    readonly entityIds: readonly SimulationEntityId[];\n    readonly content?: readonly (\'context\' | \'knowledge\' | \'sources\')[] | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductContextSummary',
+    declaration: 'export type SimulationProductContextSummary = {\n    readonly status: \'absent\';\n} | {\n    readonly status: \'overflow\';\n    readonly requiredBytes: number;\n    readonly maxBytes: number;\n} | {\n    readonly status: \'prepared\';\n    readonly retainedBytes: number;\n    readonly maxBytes: number;\n    readonly knowledgeCount: number;\n    readonly sourceCount: number;\n    readonly sectionCount: number;\n    readonly content: \'withheld\';\n};',
+  },
+  {
+    name: 'SimulationProductControl',
+    declaration: 'export interface SimulationProductControl {\n    readonly runId: SimulationProductRunId;\n    readonly administration: SimulationProductAdministrationControl;\n    readonly budget: SimulationProductControlBudget;\n    readonly modelPool?: SimulationProductModelPoolObservation | undefined;\n    readonly versions?: SimulationProductVersionSummary | undefined;\n    readonly owner: \'held\' | \'not-held\';\n    readonly phase?: \'paused\' | \'running\' | \'stalled\' | undefined;\n    readonly revision?: number | undefined;\n    readonly driver: \'idle\' | \'scheduled\' | \'advancing\' | \'checkpointing\' | \'waiting\' | \'completed\' | \'failed\' | \'retiring\';\n    readonly inFlight: boolean;\n    readonly observedAt: number;\n    readonly stop?: \'paused\' | \'stalled\' | \'until\' | \'work-limit\' | \'decision-required\' | \'retry\' | \'outcome-unknown\' | \'recipient-required\' | \'recipient-busy\' | \'coordination-limit\' | \'resident-capacity\' | \'residency-recovery-required\' | \'review-required\' | \'completed\' | \'scenario-blocked\' | \'recovery-required\' | undefined;\n    readonly nextAttemptAt?: number | undefined;\n    readonly actions: {\n        readonly start: SimulationProductControlAction;\n        readonly pause: SimulationProductControlAction;\n    };\n}',
+  },
+  {
+    name: 'SimulationProductControlAction',
+    declaration: 'export interface SimulationProductControlAction {\n    readonly allowed: boolean;\n    readonly reason: SimulationProductControlReason;\n}',
+  },
+  {
+    name: 'SimulationProductControlBudget',
+    declaration: 'export interface SimulationProductControlBudget {\n    readonly model: {\n        readonly provider: string;\n        readonly name: string;\n    };\n    readonly tokensPerRequest: number;\n    readonly tokensPerInterval: number;\n    readonly interval: SimTime;\n    readonly residentActors: number;\n    readonly sharedModelLimit: number;\n}',
+  },
+  {
+    name: 'SimulationProductControlInput',
+    declaration: 'export interface SimulationProductControlInput {\n    readonly runId: SimulationProductRunId;\n}',
+  },
+  {
+    name: 'SimulationProductControlReason',
+    declaration: 'export type SimulationProductControlReason = \'ready\' | \'recovery-required\' | \'checkpoint-in-progress\' | \'preparation-in-progress\' | \'management-in-progress\' | \'stalled\' | \'driver-failed\' | \'execution-unavailable\' | \'review-required\' | \'scenario-completed\' | \'scenario-blocked\' | \'outcome-unknown\' | \'retiring\';',
+  },
+  {
+    name: 'SimulationProductCreateInput',
+    declaration: 'export interface SimulationProductCreateInput {\n    readonly commandId: SimulationProductCommandId;\n    readonly templateId: SimulationProductTemplateId;\n    readonly templateVersion: \'1\';\n    readonly name: string;\n    readonly parameters: SimulationCompanyParameters;\n    readonly limits?: {\n        readonly [Key in keyof SimulationProductLimits]?: SimulationProductLimits[Key] | undefined;\n    } | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductCursor',
+    declaration: 'export type SimulationProductCursor = Branded<\'SimulationProductCursor\'>;',
+  },
+  {
+    name: 'SimulationProductDecisionStatus',
+    declaration: 'export type SimulationProductDecisionStatus = \'open\' | \'submitted\' | \'accepted\' | \'cancelled\';',
+  },
+  {
+    name: 'SimulationProductDecisionSummary',
+    declaration: 'export interface SimulationProductDecisionSummary {\n    readonly id: SimulationDecisionId;\n    readonly entityId: SimulationEntityId;\n    readonly slot: SimulationDecisionSlot;\n    readonly time: SimTime;\n    readonly snapshotRevision: number;\n    readonly status: SimulationProductDecisionStatus;\n    readonly operationCount: number;\n}',
+  },
+  {
+    name: 'SimulationProductEntityPhase',
+    declaration: 'export type SimulationProductEntityPhase = \'active\' | \'inactive\' | \'terminated\';',
+  },
+  {
+    name: 'SimulationProductEntitySummary',
+    declaration: 'export interface SimulationProductEntitySummary {\n    readonly id: SimulationEntityId;\n    readonly name?: SimulationProductText | undefined;\n    readonly kind: SimulationProductText;\n    readonly phase: SimulationProductEntityPhase;\n    readonly cognition: \'none\' | \'agent\';\n    readonly writer: \'none\' | \'reserved\' | \'active\' | \'revoked\' | \'released\';\n}',
+  },
+  {
+    name: 'SimulationProductEnvelopeSource',
+    declaration: 'export interface SimulationProductEnvelopeSource {\n    readonly kind: \'team-envelope\';\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n}',
+  },
+  {
+    name: 'SimulationProductFrozenContext',
+    declaration: 'export interface SimulationProductFrozenContext {\n    readonly time: SimTime;\n    readonly slot: SimulationDecisionSlot;\n    readonly entityId: SimulationEntityId;\n    readonly epoch: SimulationWriterEpoch;\n    readonly projections: {\n        readonly run: number;\n        readonly entity: number;\n        readonly team: number;\n    };\n    readonly versions: {\n        readonly rules: SimulationProductText;\n        readonly policy: SimulationProductText;\n        readonly persona: SimulationProductText;\n        readonly model: SimulationProductText;\n    };\n}',
+  },
+  {
+    name: 'SimulationProductImport',
+    declaration: 'export interface SimulationProductImport {\n    readonly id: SimulationProductRunId;\n    readonly name: string;\n    readonly provider: string;\n    readonly spec: SimulationRunSpec;\n    readonly ownerPrincipalId: ProductPrincipalId;\n}',
+  },
+  {
+    name: 'SimulationProductInference',
+    declaration: 'export interface SimulationProductInference {\n    readonly startedAt: number;\n    readonly deadline: number;\n    readonly finishedAt?: number | undefined;\n    readonly expiredAt?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductIngressInput',
+    declaration: 'export interface SimulationProductIngressInput {\n    readonly runId: SimulationProductRunId;\n    readonly ingressId: SimulationIngressId;\n    readonly entityId: SimulationEntityId;\n    readonly text: string;\n    readonly availableAt: SimTime;\n}',
+  },
+  {
+    name: 'SimulationProductIngressQuery',
+    declaration: 'export interface SimulationProductIngressQuery {\n    readonly runId: SimulationProductRunId;\n    readonly ingressId: SimulationIngressId;\n}',
+  },
+  {
+    name: 'SimulationProductIngressReceipt',
+    declaration: 'export interface SimulationProductIngressReceipt {\n    readonly runId: SimulationProductRunId;\n    readonly ingressId: SimulationIngressId;\n    readonly entityId: SimulationEntityId;\n    readonly eventId: SimulationEventId;\n    readonly availableAt: SimTime;\n    readonly assignedAt: SimTime;\n    readonly sequence: number;\n    readonly status: \'pending\' | \'claimed\' | \'consumed\' | \'cancelled\';\n    readonly decisionId?: SimulationDecisionId | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductIngressResult',
+    declaration: 'export type SimulationProductIngressResult = {\n    readonly runId: SimulationProductRunId;\n    readonly ingressId: SimulationIngressId;\n} & ({\n    readonly status: \'not-found\';\n} | {\n    readonly status: \'found\';\n    readonly receipt: SimulationProductIngressReceipt;\n});',
+  },
+  {
+    name: 'SimulationProductInspectInput',
+    declaration: 'export interface SimulationProductInspectInput {\n    readonly runId: SimulationProductRunId;\n}',
+  },
+  {
+    name: 'SimulationProductKnowledgeDetail',
+    declaration: 'export interface SimulationProductKnowledgeDetail {\n    readonly collection: \'entities\' | \'decisions\';\n    readonly section: \'knowledge\';\n    readonly id: SimulationEntityId | SimulationDecisionId;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly bodyAccess: \'allowed\' | \'withheld\';\n    readonly entityId: SimulationEntityId;\n    readonly time: SimTime;\n    readonly cutoffRevision: number;\n    readonly selected?: SimulationProductKnowledgeRef | undefined;\n    readonly knowledge: {\n        readonly items: readonly SimulationProductKnowledgeItem[];\n        readonly total: number;\n        readonly nextCursor?: SimulationProductCursor | undefined;\n    };\n}',
+  },
+  {
+    name: 'SimulationProductKnowledgeItem',
+    declaration: 'export interface SimulationProductKnowledgeItem {\n    readonly reference: SimulationProductKnowledgeRef;\n    readonly owner: SimulationEntityId;\n    readonly observedAt: SimTime;\n    readonly availableAt: SimTime;\n    readonly validFrom: SimTime;\n    readonly validUntil: SimTime | null;\n    readonly sequence: number;\n    readonly body: SimulationProductContextBody;\n    readonly source: SimulationProductKnowledgeSource;\n    readonly premises: readonly SimulationProductKnowledgeRef[];\n}',
+  },
+  {
+    name: 'SimulationProductKnowledgeRef',
+    declaration: 'export interface SimulationProductKnowledgeRef {\n    readonly id: Branded<\'SimulationKnowledgeId\'>;\n    readonly revision: number;\n}',
+  },
+  {
+    name: 'SimulationProductKnowledgeSource',
+    declaration: 'export type SimulationProductKnowledgeSource = {\n    readonly kind: \'observation\';\n    readonly worldRevision: number;\n    readonly visibilityPolicy: SimulationProductText;\n} | {\n    readonly kind: \'report\';\n    readonly operationId: SimulationOperationId;\n    readonly body: SimulationProductContextBody;\n} | {\n    readonly kind: \'inference\';\n    readonly decisionId: SimulationDecisionId;\n    readonly confidence?: number | undefined;\n} | {\n    readonly kind: \'summary\';\n    readonly cursor: number;\n    readonly policy: SimulationProductText;\n    readonly policyVersion: SimulationProductText;\n} | {\n    readonly kind: \'belief\';\n    readonly profileRevision: number;\n    readonly policyVersion: SimulationProductText;\n    readonly confidence?: number | undefined;\n};',
+  },
+  {
+    name: 'SimulationProductLimits',
+    declaration: 'export interface SimulationProductLimits {\n    readonly maxEntities: number;\n    readonly maxResidentActors: number;\n    readonly tokensPerModelRequest: number;\n    readonly maxTokensPerInterval: number;\n    readonly maxTime: string;\n}',
+  },
+  {
+    name: 'SimulationProductListInput',
+    declaration: 'export interface SimulationProductListInput {\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly limit?: number | undefined;\n    readonly search?: string | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductMaintenanceAction',
+    declaration: 'export interface SimulationProductMaintenanceAction {\n    readonly allowed: boolean;\n    readonly reason: SimulationProductMaintenanceReason;\n}',
+  },
+  {
+    name: 'SimulationProductMaintenanceReason',
+    declaration: 'export type SimulationProductMaintenanceReason = \'ready\' | \'preparation-in-progress\' | \'request-capacity\' | \'recovery-required\' | \'retiring\' | \'checkpoint-in-progress\' | \'management-in-progress\' | \'checkpoint-required\' | \'ownership-unavailable\' | \'scenario-progressed\' | \'ingress-capacity\' | \'target-unavailable\';',
+  },
+  {
+    name: 'SimulationProductManageInput',
+    declaration: 'export interface SimulationProductManageInput {\n    readonly runId: SimulationProductRunId;\n    readonly managementId: SimulationProductManagementId;\n    readonly phase: \'paused\' | \'running\';\n}',
+  },
+  {
+    name: 'SimulationProductManagementId',
+    declaration: 'export type SimulationProductManagementId = Branded<\'SimulationProductManagementId\'>;',
+  },
+  {
+    name: 'SimulationProductManagementInput',
+    declaration: 'export interface SimulationProductManagementInput extends SimulationProductControlInput {\n    readonly managementId: SimulationProductManagementId;\n}',
+  },
+  {
+    name: 'SimulationProductManagementReceipt',
+    declaration: 'export interface SimulationProductManagementReceipt {\n    readonly managementId: SimulationProductManagementId;\n    readonly phase: \'paused\' | \'running\';\n    readonly status: \'in-progress\' | \'completed\' | \'failed\';\n    readonly startedSequence: number;\n    readonly finishedSequence?: number | undefined;\n    readonly failure?: \'details-withheld\' | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductManagementResult',
+    declaration: 'export type SimulationProductManagementResult = {\n    readonly runId: SimulationProductRunId;\n    readonly managementId: SimulationProductManagementId;\n} & ({\n    readonly status: \'not-found\';\n} | {\n    readonly status: \'found\';\n    readonly operation: SimulationProductManagementReceipt;\n});',
+  },
+  {
+    name: 'SimulationProductManageResult',
+    declaration: 'export interface SimulationProductManageResult {\n    readonly runId: SimulationProductRunId;\n    readonly operation: SimulationProductManagementReceipt;\n    readonly control: SimulationProductControl;\n}',
+  },
+  {
+    name: 'SimulationProductModelPoolObservation',
+    declaration: 'export type SimulationProductModelPoolObservation = {\n    readonly status: \'unavailable\';\n    readonly clock: \'real\';\n    readonly observedAt: number;\n} | {\n    readonly status: \'observed\';\n    readonly clock: \'real\';\n    readonly observedAt: number;\n    readonly active: number;\n    readonly queued: number;\n    readonly limit: number;\n    readonly queueLimit: number;\n};',
+  },
+  {
+    name: 'SimulationProductObjectDetail',
+    declaration: 'export type SimulationProductObjectDetail = SimulationProductKnowledgeDetail | {\n    readonly collection: \'entities\';\n    readonly section: \'relationships\';\n    readonly id: SimulationEntityId;\n    readonly time: SimTime;\n    readonly relationships: DetailPage<SimulationProductRelation>;\n} | {\n    readonly collection: \'decisions\';\n    readonly section: \'context\';\n    readonly id: SimulationDecisionId;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly accounting: SimulationProductContextSummary;\n    readonly bodyAccess: \'allowed\' | \'withheld\';\n    readonly frozen?: SimulationProductFrozenContext | undefined;\n    readonly items: DetailPage<SimulationProductContextItem>;\n} | {\n    readonly collection: \'entities\';\n    readonly section: \'identity\';\n    readonly id: SimulationEntityId;\n    readonly summary: SimulationProductEntitySummary;\n    readonly revision: number;\n    readonly profileRevision: number;\n    readonly writerEpoch?: SimulationWriterEpoch | undefined;\n    readonly binding?: {\n        readonly teamId: TeamId;\n        readonly participantId: ParticipantId;\n        readonly sessionId: SessionId;\n    } | undefined;\n} | {\n    readonly collection: \'decisions\';\n    readonly section: \'execution\';\n    readonly id: SimulationDecisionId;\n    readonly summary: SimulationProductDecisionSummary;\n    readonly context: SimulationProductContextSummary;\n    readonly inference?: SimulationProductInference | undefined;\n    readonly closedAt?: number | undefined;\n     /* …truncated — full shape in source */',
+  },
+  {
+    name: 'SimulationProductObjectInput',
+    declaration: 'export type SimulationProductObjectInput = {\n    readonly runId: SimulationProductRunId;\n    readonly expectedRevision?: number | undefined;\n} & ((Extract<SimulationProductObjectSelection, {\n    section: \'knowledge\';\n}> & {\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n}) | {\n    readonly collection: \'entities\';\n    readonly id: SimulationEntityId;\n    readonly section: \'identity\';\n} | {\n    readonly collection: \'decisions\';\n    readonly id: SimulationDecisionId;\n    readonly section: \'execution\';\n} | ({\n    readonly collection: \'entities\';\n    readonly id: SimulationEntityId;\n    readonly section: \'relationships\';\n} & {\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n}) | ({\n    readonly collection: \'decisions\';\n    readonly id: SimulationDecisionId;\n    readonly section: \'context\';\n} & {\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n}) | {\n    readonly collection: \'operations\';\n    readonly id: SimulationOperationId;\n    readonly section: \'execution\';\n} | ({\n    readonly collection: \'operations\';\n    readonly id: SimulationOperationId;\n    readonly section: \'attempts\';\n} & {\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n}) | (Extract<SimulationProductObjectSelection, {\n    collection: \'checkpoints\';\n}> & {\n    readonly limit?: number | undefined;\n    readonly curs /* …truncated — full shape in source */',
+  },
+  {
+    name: 'SimulationProductObjectInspection',
+    declaration: 'export interface SimulationProductObjectInspection {\n    readonly runId: SimulationProductRunId;\n    readonly snapshotRevision: number;\n    readonly observedAt: number;\n    readonly selection: SimulationProductObjectSelection;\n    readonly status: \'found\' | \'missing\';\n    readonly value?: SimulationProductObjectDetail | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductObjectSelection',
+    declaration: 'export type SimulationProductObjectSelection = {\n    readonly collection: \'entities\';\n    readonly id: SimulationEntityId;\n    readonly section: \'knowledge\';\n} | {\n    readonly collection: \'decisions\';\n    readonly id: SimulationDecisionId;\n    readonly section: \'knowledge\';\n    readonly reference?: SimulationProductKnowledgeRef | undefined;\n} | {\n    readonly collection: \'entities\';\n    readonly id: SimulationEntityId;\n    readonly section: \'identity\' | \'relationships\';\n} | {\n    readonly collection: \'decisions\';\n    readonly id: SimulationDecisionId;\n    readonly section: \'execution\' | \'context\';\n} | {\n    readonly collection: \'operations\';\n    readonly id: SimulationOperationId;\n    readonly section: \'execution\' | \'attempts\';\n} | {\n    readonly collection: \'checkpoints\';\n    readonly id: SimulationCheckpointId;\n    readonly section: \'references\';\n};',
+  },
+  {
+    name: 'SimulationProductOperationalStatus',
+    declaration: 'export type SimulationProductOperationalStatus = {\n    readonly status: \'unavailable\';\n    readonly observedAt: number;\n    readonly scenario: {\n        readonly status: \'unavailable\';\n    };\n} | {\n    readonly status: \'observed\';\n    readonly observedAt: number;\n    readonly scenario: SimulationProductScenarioVersion;\n    readonly owner: SimulationProductControl[\'owner\'];\n    readonly driver: SimulationProductControl[\'driver\'];\n    readonly inFlight: boolean;\n    readonly stop?: SimulationProductControl[\'stop\'] | undefined;\n    readonly nextAttemptAt?: number | undefined;\n};',
+  },
+  {
+    name: 'SimulationProductOperationRetryCapability',
+    declaration: 'export interface SimulationProductOperationRetryCapability {\n    readonly allowed: boolean;\n    readonly reason: \'ready\' | \'not-external\' | \'outcome-known\' | \'not-unknown\' | \'not-due\' | \'maintenance-in-progress\' | \'recovery-required\' | \'request-in-progress\' | \'capacity-unavailable\';\n    readonly expectedAttemptCount: number;\n    readonly maxAttempts: number;\n}',
+  },
+  {
+    name: 'SimulationProductOperationRetryInput',
+    declaration: 'export interface SimulationProductOperationRetryInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n    readonly operationId: SimulationOperationId;\n    readonly expectedAttemptCount: number;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'SimulationProductOperationRetryReader',
+    declaration: 'export type SimulationProductOperationRetryReader = (runId: SimulationProductRunId, operationId: SimulationOperationId, native: SimulationProductOperationRetryCapability, call: AuthenticatedProductCall) => Promise<SimulationProductOperationRetryCapability>;',
+  },
+  {
+    name: 'SimulationProductOperationStatus',
+    declaration: 'export type SimulationProductOperationStatus = \'pending\' | \'applied\' | \'rejected\' | \'blocked-authority\' | \'blocked-dependency\' | \'outcome-unknown\';',
+  },
+  {
+    name: 'SimulationProductOperationSummary',
+    declaration: 'export interface SimulationProductOperationSummary {\n    readonly id: SimulationOperationId;\n    readonly entityId: SimulationEntityId;\n    readonly decisionId: SimulationDecisionId;\n    readonly index: number;\n    readonly kind: SimulationProductText;\n    readonly status: SimulationProductOperationStatus;\n    readonly publication: \'not-applicable\' | \'pending\' | \'published\';\n    readonly delivery: \'not-applicable\' | \'pending\' | \'input-persisted\' | \'receipted\';\n    readonly deliveryFailure?: \'unresolved\' | \'retained-input\' | \'absent-input\' | \'entity-terminated\' | undefined;\n    readonly task: \'not-applicable\' | \'pending\' | \'created\';\n}',
+  },
+  {
+    name: 'SimulationProductPreflightInput',
+    declaration: 'export type SimulationProductPreflightInput = Omit<SimulationProductCreateInput, \'commandId\'>;',
+  },
+  {
+    name: 'SimulationProductPreflightIssue',
+    declaration: 'export interface SimulationProductPreflightIssue {\n    readonly field: string;\n    readonly code: \'invalid\' | \'not-allowed\' | \'unavailable\' | \'capacity-unavailable\';\n    readonly message: SimulationProductText;\n}',
+  },
+  {
+    name: 'SimulationProductPreflightResult',
+    declaration: 'export type SimulationProductPreflightResult = {\n    readonly status: \'ready\';\n    readonly configuration: SimulationProductConfiguration;\n} | {\n    readonly status: \'invalid\';\n    readonly issues: readonly SimulationProductPreflightIssue[];\n};',
+  },
+  {
+    name: 'SimulationProductPrepareInput',
+    declaration: 'export interface SimulationProductPrepareInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n}',
+  },
+  {
+    name: 'SimulationProductReadVersion',
+    declaration: 'export type SimulationProductReadVersion = Branded<\'SimulationProductReadVersion\'>;',
+  },
+  {
+    name: 'SimulationProductRecord',
+    declaration: 'export interface SimulationProductRecord extends SimulationProductImport {\n    readonly registeredAt: number;\n}',
+  },
+  {
+    name: 'SimulationProductRecordItem',
+    declaration: 'export interface SimulationProductRecordItem {\n    readonly sequence: number;\n    readonly kind: SimulationProductText;\n    readonly action?: SimulationProductText | undefined;\n    readonly body: {\n        readonly status: \'withheld\';\n    } | {\n        readonly status: \'text\';\n        readonly text: string;\n        readonly part: number;\n        readonly parts: number;\n    };\n}',
+  },
+  {
+    name: 'SimulationProductRecordReader',
+    declaration: 'export interface SimulationProductRecordReader {\n    readonly principalId: ProductPrincipalId;\n    readonly runId?: SimulationProductRunId | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRecordsInput',
+    declaration: 'export interface SimulationProductRecordsInput {\n    readonly runId: SimulationProductRunId;\n    readonly mode: \'metadata\' | \'original\';\n    readonly kind?: string | undefined;\n    readonly sequence?: number | undefined;\n    readonly expectedRevision?: number | undefined;\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRecordsPage',
+    declaration: 'export interface SimulationProductRecordsPage {\n    readonly runId: SimulationProductRunId;\n    readonly snapshotRevision: number;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly observedAt: number;\n    readonly mode: \'metadata\' | \'original\';\n    readonly bodyAccess: \'allowed\' | \'withheld\';\n    readonly selection: {\n        readonly kind?: string | undefined;\n        readonly sequence?: number | undefined;\n    };\n    readonly totalRecords: number;\n    readonly items: readonly SimulationProductRecordItem[];\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRelation',
+    declaration: 'export interface SimulationProductRelation {\n    readonly id: SimulationRelationId;\n    readonly subject: SimulationEntityId;\n    readonly object: SimulationEntityId;\n    readonly relation: SimulationProductText;\n    readonly scope?: SimulationEntityId | undefined;\n    readonly revision: number;\n    readonly validFrom: SimTime;\n    readonly validUntil: SimTime | null;\n    readonly active: boolean;\n}',
+  },
+  {
+    name: 'SimulationProductRequestInput',
+    declaration: 'export interface SimulationProductRequestInput {\n    readonly commandId: SimulationProductCommandId;\n}',
+  },
+  {
+    name: 'SimulationProductRequestReceipt',
+    declaration: 'export interface SimulationProductRequestReceipt {\n    readonly commandId: SimulationProductCommandId;\n    readonly runId: SimulationProductRunId;\n    readonly kind: \'create\' | \'prepare\' | \'checkpoint\' | \'restore\' | \'review\' | \'retry-operation\' | \'cancel-task\';\n    readonly acceptedAt: number;\n    readonly status: \'accepted\' | \'completed\' | \'failed\';\n    readonly checkpointId?: SimulationCheckpointId | undefined;\n    readonly failure?: \'preparation-required\' | \'recovery-required\' | \'unavailable\' | \'checkpoint-failed\' | \'restore-failed\' | \'review-failed\' | \'retry-operation-failed\' | \'cancel-task-failed\' | undefined;\n    readonly diagnostic?: SimulationCheckpointDiagnostic | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRequestResult',
+    declaration: 'export type SimulationProductRequestResult = {\n    readonly status: \'not-found\';\n    readonly commandId: SimulationProductCommandId;\n} | {\n    readonly status: \'found\';\n    readonly request: SimulationProductRequestReceipt;\n    readonly review?: import(\'./review-types.ts\').SimulationProductTaskReviewResolveInput | undefined;\n    readonly cancellation?: import(\'./task-control-types.ts\').SimulationProductTaskCancelInput | undefined;\n    readonly retryOperation?: import(\'./operation-retry-types.ts\').SimulationProductOperationRetryInput | undefined;\n};',
+  },
+  {
+    name: 'SimulationProductRequestsInput',
+    declaration: 'export interface SimulationProductRequestsInput {\n    readonly runId: SimulationProductRunId;\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly expectedRevision?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRequestsPage',
+    declaration: 'export interface SimulationProductRequestsPage {\n    readonly runId: SimulationProductRunId;\n    readonly snapshotRevision: number;\n    readonly items: readonly SimulationProductRequestReceipt[];\n    readonly total: number;\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRestoreInput',
+    declaration: 'export interface SimulationProductRestoreInput extends SimulationProductCheckpointInput {\n    readonly checkpointId: SimulationCheckpointId;\n}',
+  },
+  {
+    name: 'SimulationProductRetryRequestInput',
+    declaration: 'export interface SimulationProductRetryRequestInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n}',
+  },
+  {
+    name: 'SimulationProductRunId',
+    declaration: 'export type SimulationProductRunId = Branded<\'SimulationProductRunId\'>;',
+  },
+  {
+    name: 'SimulationProductRunInspection',
+    declaration: 'export interface SimulationProductRunInspection {\n    readonly run: SimulationProductRunSummary;\n    readonly status: \'observed\' | \'missing\';\n    readonly operational?: import(\'./control-types.ts\').SimulationProductOperationalStatus | undefined;\n    readonly world?: {\n        readonly revision: number;\n        readonly phase: \'paused\' | \'running\' | \'stalled\';\n        readonly time: SimTime;\n        readonly tickUnit: SimulationProductText;\n        readonly rulesVersion?: SimulationProductText | undefined;\n        readonly policyVersion?: SimulationProductText | undefined;\n        readonly metrics?: SimulationRuntimeMetrics | undefined;\n        readonly schedulerStop?: {\n            readonly code: string;\n            readonly recovery: string;\n        } | undefined;\n        readonly owner: \'this-provider\' | \'unowned\' | \'other-owner\' | \'unavailable\';\n        readonly entityCount: number;\n        readonly decisionCount: number;\n        readonly operationCount: number;\n        readonly observedAt: number;\n    } | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRunPage',
+    declaration: 'export interface SimulationProductRunPage {\n    readonly items: readonly SimulationProductRunSummary[];\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRunStatus',
+    declaration: 'export type SimulationProductRunStatus = SimulationProductRunInspection | {\n    readonly run: SimulationProductRunSummary;\n    readonly status: \'unavailable\';\n    readonly errorSummary: SimulationProductText;\n    readonly operational?: import(\'./control-types.ts\').SimulationProductOperationalStatus | undefined;\n};',
+  },
+  {
+    name: 'SimulationProductRunStatusesInput',
+    declaration: 'export interface SimulationProductRunStatusesInput {\n    readonly runIds: readonly SimulationProductRunId[];\n}',
+  },
+  {
+    name: 'SimulationProductRunStatusesPage',
+    declaration: 'export interface SimulationProductRunStatusesPage {\n    readonly items: readonly SimulationProductRunStatus[];\n    readonly modelPool?: import(\'./control-types.ts\').SimulationProductModelPoolObservation | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductRunSummary',
+    declaration: 'export interface SimulationProductRunSummary {\n    readonly id: SimulationProductRunId;\n    readonly name: SimulationProductText;\n    readonly registeredAt: number;\n    readonly observation: \'not-observed\';\n}',
+  },
+  {
+    name: 'SimulationProductScenarioVersion',
+    declaration: 'export type SimulationProductScenarioVersion = {\n    readonly status: \'unavailable\';\n} | {\n    readonly status: \'observed\';\n    readonly templateId: SimulationProductText;\n    readonly version: \'1\';\n    readonly driverVersion: \'1\';\n    readonly execution: \'cognition-only\' | \'automatic-tasks\';\n};',
+  },
+  {
+    name: 'SimulationProductSourceInput',
+    declaration: 'export interface SimulationProductSourceInput {\n    readonly runId: SimulationProductRunId;\n    readonly decisionId: SimulationDecisionId;\n    readonly sourceIndex: number;\n    readonly envelopeSequence?: number | undefined;\n    readonly expectedRevision?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly limit?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductSourceInspection',
+    declaration: 'export interface SimulationProductSourceInspection {\n    readonly runId: SimulationProductRunId;\n    readonly decisionId: SimulationDecisionId;\n    readonly sourceIndex: number;\n    readonly snapshotRevision: number;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly observedAt: number;\n    readonly source?: SimulationProductEnvelopeSource | undefined;\n    readonly status: \'missing\' | \'withheld\' | \'unavailable\' | \'searching\' | \'found\';\n    readonly envelope?: {\n        readonly sequence: number;\n        readonly kind: SimulationProductText;\n        readonly createdAt: number;\n    } | undefined;\n    readonly items: readonly {\n        readonly block: number;\n        readonly body: SimulationProductContextBody;\n    }[];\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductTaskCancelInput',
+    declaration: 'export interface SimulationProductTaskCancelInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n    readonly operationId: SimulationOperationId;\n    readonly expectedRevision: number;\n    readonly expectedAttemptId: TaskAttemptId | null;\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'SimulationProductTaskControl',
+    declaration: 'export interface SimulationProductTaskControl {\n    readonly operationId: SimulationOperationId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly taskRevision: number;\n    readonly phase: TeamTaskPhase;\n    readonly attemptCount: number;\n    readonly maxAttempts: number;\n    readonly expectedAttemptId: TaskAttemptId | null;\n    readonly cancellation?: {\n        readonly requestedAt: number;\n        readonly target: \'pending\' | \'review\' | \'attempt\' | \'delegation\';\n    } | undefined;\n    readonly cancel: {\n        readonly allowed: boolean;\n        readonly reason: \'ready\' | \'terminal\' | \'cancellation-pending\' | \'recovery-required\' | \'maintenance-in-progress\';\n    };\n}',
+  },
+  {
+    name: 'SimulationProductTaskReviewListInput',
+    declaration: 'export interface SimulationProductTaskReviewListInput {\n    readonly runId: SimulationProductRunId;\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly expectedRevision?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductTaskReviewPage',
+    declaration: 'export interface SimulationProductTaskReviewPage {\n    readonly runId: SimulationProductRunId;\n    readonly snapshotRevision: number;\n    readonly observedAt: number;\n    readonly items: readonly SimulationProductTaskReviewSummary[];\n    readonly total: number;\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductTaskReviewResolveInput',
+    declaration: 'export interface SimulationProductTaskReviewResolveInput {\n    readonly runId: SimulationProductRunId;\n    readonly commandId: SimulationProductCommandId;\n    readonly operationId: SimulationOperationId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n}',
+  },
+  {
+    name: 'SimulationProductTaskReviewSummary',
+    declaration: 'export interface SimulationProductTaskReviewSummary {\n    readonly operationId: SimulationOperationId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly taskRevision: number;\n    readonly reviewerEntityId: SimulationEntityId;\n    readonly phase: TeamTaskPhase;\n    readonly attemptCount: number;\n    readonly maxAttempts: number;\n    readonly evidence?: {\n        readonly inventoryTransfer?: {\n            readonly operationId: SimulationOperationId;\n            readonly status: \'applied\';\n            readonly quantity: \'1\';\n        } | undefined;\n        readonly report: {\n            readonly operationId: SimulationOperationId;\n            readonly delivery: \'persisted\';\n        };\n    } | undefined;\n    readonly action: {\n        readonly allowed: boolean;\n        readonly reason: \'ready\' | \'review-disabled\' | \'recovery-required\' | \'maintenance-in-progress\' | \'target-changed\' | \'review-unavailable\';\n    };\n}',
+  },
+  {
+    name: 'SimulationProductTasksInput',
+    declaration: 'export interface SimulationProductTasksInput {\n    readonly runId: SimulationProductRunId;\n    readonly limit?: number | undefined;\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly expectedRevision?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductTasksPage',
+    declaration: 'export interface SimulationProductTasksPage {\n    readonly runId: SimulationProductRunId;\n    readonly snapshotRevision: number;\n    readonly observedAt: number;\n    readonly total: number;\n    readonly items: readonly SimulationProductTaskControl[];\n    readonly nextCursor?: SimulationProductCursor | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductTemplateId',
+    declaration: 'export type SimulationProductTemplateId = Branded<\'SimulationProductTemplateId\'>;',
+  },
+  {
+    name: 'SimulationProductTemplateSummary',
+    declaration: 'export interface SimulationProductTemplateSummary {\n    readonly id: SimulationProductTemplateId;\n    readonly version: \'1\';\n    readonly name: SimulationProductText;\n    readonly kind: \'company-procurement\' | \'task-workflow\';\n    readonly model: {\n        readonly provider: string;\n        readonly name: string;\n    };\n    readonly tickUnit: SimulationProductText;\n    readonly execution: \'cognition-only\' | \'automatic-tasks\';\n    readonly cognition?: \'model\' | \'deterministic\' | undefined;\n    readonly review: \'none\' | \'buyer\' | \'participant\';\n    readonly maxStock: string;\n    readonly configuration?: (SimulationProductConfiguration & {\n        readonly editable: readonly (keyof SimulationProductLimits)[];\n    }) | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductText',
+    declaration: 'export interface SimulationProductText {\n    readonly text: string;\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'SimulationProductVersionSummary',
+    declaration: 'export interface SimulationProductVersionSummary {\n    readonly rulesVersion: SimulationProductText;\n    readonly policyVersion: SimulationProductText;\n    readonly tickUnit: SimulationProductText;\n    readonly scenario: SimulationProductScenarioVersion;\n}',
+  },
+  {
+    name: 'SimulationProductWatchInput',
+    declaration: 'export interface SimulationProductWatchInput {\n    readonly runId: SimulationProductRunId;\n    readonly cursor?: SimulationProductCursor | undefined;\n    readonly waitMs?: number | undefined;\n}',
+  },
+  {
+    name: 'SimulationProductWatchResult',
+    declaration: 'export interface SimulationProductWatchResult {\n    readonly runId: SimulationProductRunId;\n    readonly readVersion: SimulationProductReadVersion;\n    readonly cursor: SimulationProductCursor;\n    readonly status: \'changed\' | \'unchanged\' | \'reset\';\n    readonly world: SimulationProductWatchWorld;\n    readonly observedAt: number;\n}',
+  },
+  {
+    name: 'SimulationProductWatchWorld',
+    declaration: 'export type SimulationProductWatchWorld = {\n    readonly status: \'observed\';\n    readonly revision: number;\n} | {\n    readonly status: \'missing\' | \'unavailable\';\n};',
+  },
+  {
     name: 'SimulationProposal',
     declaration: 'export type SimulationProposal = z.infer<typeof simulationProposalSchema>;',
   },
   {
     name: 'SimulationProvider',
-    declaration: 'export interface SimulationProvider {\n    readonly name: string;\n    open(selection: SimulationRunSelection): Promise<SimulationRun>;\n}',
+    declaration: 'export interface SimulationProvider {\n    readonly name: string;\n    open(selection: SimulationRunSelection): Promise<SimulationRun>;\n    inspect?(selection: import(\'./inspection.ts\').SimulationInspectionSelection): Promise<import(\'./inspection.ts\').SimulationRunObservation | undefined>;\n}',
   },
   {
     name: 'SimulationQuantity',
     declaration: 'export type SimulationQuantity = z.infer<typeof simulationQuantitySchema>;',
   },
   {
-    name: 'SimulationQueueUsage',
-    declaration: 'export interface SimulationQueueUsage {\n    readonly events: {\n        readonly used: number;\n        readonly limit: number;\n    };\n    readonly interactions: {\n        readonly used: number;\n        readonly limit: number;\n    };\n}',
+    name: 'SimulationRelationId',
+    declaration: 'export type SimulationRelationId = Branded<\'SimulationRelationId\'>;',
   },
   {
     name: 'SimulationRelationRule',
@@ -7148,16 +7927,24 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SimulationResidencyResult = {\n    readonly status: \'resident\';\n    readonly lease: TeamActivationLease;\n} | {\n    readonly status: \'capacity\' | \'recovery-required\';\n    readonly entityId: SimulationEntityId;\n};',
   },
   {
+    name: 'SimulationResidentSlots',
+    declaration: 'export interface SimulationResidentSlots {\n    readonly used: number;\n    readonly limit: number;\n    readonly recoveryRequired: number;\n}',
+  },
+  {
     name: 'SimulationRootCreationScope',
     declaration: 'export interface SimulationRootCreationScope extends TeamRootCreateInput {\n    readonly kind: \'simulation-root-create\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly lifecycleOwner: string;\n    readonly teamId: TeamId;\n}',
   },
   {
     name: 'SimulationRun',
-    declaration: 'export interface SimulationRun {\n    beginCheckpoint(request: import(\'./checkpoint.ts\').SimulationCheckpointRequest): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    failCheckpoint(id: import(\'./checkpoint.ts\').SimulationCheckpointId, error: string): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    acquireCheckpointCut(maxDrainRounds: number, signal?: AbortSignal): Promise<import(\'./checkpoint-reference.ts\').SimulationCheckpointCut>;\n    getPersistenceReference(expectedRevision: number): Promise<import(\'./checkpoint-reference.ts\').SimulationRunPersistenceReference>;\n    managePhase(request: import(\'./management.ts\').SimulationPhaseManagementRequest): Promise<import(\'./management.ts\').SimulationManagementOperation>;\n    population(): {\n        readonly entities: number;\n        readonly chargedActors: number;\n    };\n    ingest(request: import(\'./ingress.ts\').SimulationIngressRequest): Promise<SimulationIngress>;\n    acknowledgeConflict(id: SimulationOperationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    reconcileTokenUsage(id: import(\'./tokens.ts\').SimulationTokenReservationId, usage: import(\'./tokens.ts\').SimulationTokenUsage): Promise<import(\'./tokens.ts\').SimulationTokenReservation>;\n    acknowledgeTokenOverrun(id: import(\'./tokens.ts\').SimulationTokenReservationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    queueUsage(): import(\'./capacity.ts\').SimulationQueueUsage;\n    extendCapacity(request: im /* …truncated — full shape in source */',
+    declaration: 'export interface SimulationRun {\n    beginCheckpoint(request: import(\'./checkpoint.ts\').SimulationCheckpointRequest): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    failCheckpoint(id: import(\'./checkpoint.ts\').SimulationCheckpointId, error: string, diagnostic?: import(\'./checkpoint-diagnostics-types.ts\').SimulationCheckpointDiagnostic): Promise<import(\'./checkpoint.ts\').SimulationCheckpointOperation>;\n    acquireCheckpointCut(maxDrainRounds: number, signal?: AbortSignal): Promise<import(\'./checkpoint-reference.ts\').SimulationCheckpointCut>;\n    getPersistenceReference(expectedRevision: number): Promise<import(\'./checkpoint-reference.ts\').SimulationRunPersistenceReference>;\n    managePhase(request: import(\'./management.ts\').SimulationPhaseManagementRequest): Promise<import(\'./management.ts\').SimulationManagementOperation>;\n    population(): {\n        readonly entities: number;\n        readonly chargedActors: number;\n    };\n    ingest(request: import(\'./ingress.ts\').SimulationIngressRequest): Promise<SimulationIngress>;\n    acknowledgeConflict(id: SimulationOperationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    reconcileTokenUsage(id: import(\'./tokens.ts\').SimulationTokenReservationId, usage: import(\'./tokens.ts\').SimulationTokenUsage): Promise<import(\'./tokens.ts\').SimulationTokenReservation>;\n    acknowledgeTokenOverrun(id: import(\'./tokens.ts\').SimulationTokenReservationId, expectedRevision: number): Promise<SimulationSnapshot>;\n    q /* …truncated — full shape in source */',
   },
   {
     name: 'SimulationRunId',
     declaration: 'export type SimulationRunId = Branded<\'SimulationRunId\'>;',
+  },
+  {
+    name: 'SimulationRunObservation',
+    declaration: 'export interface SimulationRunObservation {\n    readonly snapshot: SimulationSnapshot;\n    readonly owner: SimulationOwnerObservation;\n    readonly records?: readonly {\n        readonly sequence: number;\n        readonly value: unknown;\n    }[] | undefined;\n}',
   },
   {
     name: 'SimulationRunPersistenceReference',
@@ -7176,16 +7963,92 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SimulationRunSpec {\n    readonly maxQueuedDecisions: number;\n    readonly maxDispatchWaitRounds: number;\n    readonly maxTokensPerInterval: number;\n    readonly tokensPerModelRequest: number;\n    readonly budgetInterval: SimTime;\n    readonly maxDecisionsPerInterval: number;\n    readonly maxMessagesPerInterval: number;\n    readonly maxPendingEvents: number;\n    readonly maxPendingInteractions: number;\n    readonly maxKnowledgeBytes: number;\n    readonly maxKnowledgePerQuery: number;\n    readonly maxEntities: number;\n    readonly maxResidentActors: number;\n    readonly maxIngressBytes: number;\n    readonly maxConflictRetries: number;\n    readonly decisionTimeoutMs: number;\n    readonly maxDecisionsPerWindow: number;\n    readonly runId: SimulationRunId;\n    readonly tickUnit: string;\n    readonly origin: string;\n    readonly maxTime: SimTime;\n    readonly rulesVersion: string;\n    readonly policyVersion: string;\n    readonly outboxMaxAttempts: number;\n    readonly outboxRetryDelayMs: number;\n    readonly maxDriveSteps: number;\n    readonly maxMicrostepsPerTime: number;\n    readonly phaseOrder: readonly SimulationEventPhase[];\n    readonly maxOperationsPerDecision: number;\n    readonly maxResourceQuantity: import(\'./business-types.ts\').SimulationQuantity;\n    readonly relationRules: readonly SimulationRelationRule[];\n}',
   },
   {
+    name: 'SimulationRuntimeMetrics',
+    declaration: 'export interface SimulationRuntimeMetrics {\n    readonly budgets: {\n        readonly interval: SimTime;\n        readonly width: SimTime;\n        readonly tokens: {\n            readonly charged: number;\n            readonly limit: number;\n            readonly unknownAttempts: number;\n        };\n        readonly decisions: {\n            readonly used: number;\n            readonly limit: number;\n        };\n        readonly messages: {\n            readonly used: number;\n            readonly limit: number;\n        };\n    };\n    readonly residentSlots: SimulationResidentSlots;\n    readonly pendingDecisionCount: number;\n    readonly pendingExternalOperationCount: number;\n    readonly unknownOperationCount: number;\n}',
+  },
+  {
+    name: 'SimulationsApi',
+    declaration: 'export interface SimulationsApi {\n    listTasks(request: RpcRequest<SimulationProductTasksInput>): Promise<RpcResponse<SimulationProductTasksPage>>;\n    cancelTask(request: RpcRequest<SimulationProductTaskCancelInput>): Promise<RpcResponse<SimulationProductRequestReceipt>>;\n    retryOperation(request: RpcRequest<SimulationProductOperationRetryInput>): Promise<RpcResponse<SimulationProductRequestReceipt>>;\n    runStatuses(request: RpcRequest<SimulationProductRunStatusesInput>): Promise<RpcResponse<SimulationProductRunStatusesPage>>;\n    listTaskReviews(request: RpcRequest<SimulationProductTaskReviewListInput>): Promise<RpcResponse<SimulationProductTaskReviewPage>>;\n    resolveTaskReview(request: RpcRequest<SimulationProductTaskReviewResolveInput>): Promise<RpcResponse<SimulationProductRequestReceipt>>;\n    inspectSource(request: RpcRequest<SimulationProductSourceInput>): Promise<RpcResponse<SimulationProductSourceInspection>>;\n    records(request: RpcRequest<SimulationProductRecordsInput>): Promise<RpcResponse<SimulationProductRecordsPage>>;\n    watch(request: RpcRequest<SimulationProductWatchInput>): Promise<RpcResponse<SimulationProductWatchResult>>;\n    checkpoint(request: RpcRequest<SimulationProductCheckpointInput>): Promise<RpcResponse<SimulationProductRequestReceipt>>;\n    restore(request: RpcRequest<SimulationProductRestoreInput>): Promise<RpcResponse<SimulationProductRequestReceipt>>;\n    ingress(request: RpcRequest<SimulationProductIngressInput>): Promise<RpcResponse /* …truncated — full shape in source */',
+  },
+  {
     name: 'SimulationSnapshot',
-    declaration: 'export interface SimulationSnapshot {\n    readonly checkpoints?: Readonly<Record<import(\'./checkpoint.ts\').SimulationCheckpointId, import(\'./checkpoint.ts\').SimulationCheckpointOperation>>;\n    readonly latestCheckpointId?: import(\'./checkpoint.ts\').SimulationCheckpointId;\n    readonly management?: Readonly<Record<import(\'./management.ts\').SimulationManagementId, import(\'./management.ts\').SimulationManagementOperation>>;\n    readonly knowledge?: Readonly<Record<import(\'./knowledge.ts\').SimulationKnowledgeId, readonly import(\'./knowledge.ts\').SimulationKnowledge[]>>;\n    readonly capacityGrants?: Readonly<Record<import(\'./capacity.ts\').SimulationCapacityGrantId, import(\'./capacity.ts\').SimulationCapacityGrantRequest>>;\n    readonly tokenReservations?: Readonly<Record<import(\'./tokens.ts\').SimulationTokenReservationId, import(\'./tokens.ts\').SimulationTokenReservation>>;\n    readonly nextTokenSlot?: import(\'./scheduler-types.ts\').SimulationEventSlot;\n    readonly budgetGrants?: Readonly<Record<import(\'./budget.ts\').SimulationBudgetGrantId, import(\'./budget.ts\').SimulationBudgetGrantRequest>>;\n    readonly decisionDispatch?: import(\'./dispatch.ts\').SimulationDecisionDispatch;\n    readonly nextIngressSlot?: SimulationEventSlot;\n    readonly ingresses?: Readonly<Record<import(\'./ingress.ts\').SimulationIngressId, SimulationIngress>>;\n    readonly activeWindowId?: import(\'./window.ts\').SimulationWindowId;\n    readonly windows?: Readonly<Record<import(\'./window.ts\').SimulationWindowId /* …truncated — full shape in source */',
+    declaration: 'export interface SimulationSnapshot {\n    readonly taskCancellations?: Readonly<Record<SimulationOperationId, import(\'./task-cancellation.ts\').SimulationTaskCancellationRecord>>;\n    readonly taskDecisionOwners?: Readonly<Record<SimulationDecisionId, {\n        readonly attemptId: import(\'@clocky/clocky-team\').TaskAttemptId;\n        readonly index: number;\n    }>>;\n    readonly taskExecutions?: Readonly<Record<import(\'@clocky/clocky-team\').TaskAttemptId, import(\'./task-execution.ts\').SimulationTaskExecution>>;\n    readonly checkpoints?: Readonly<Record<import(\'./checkpoint.ts\').SimulationCheckpointId, import(\'./checkpoint.ts\').SimulationCheckpointOperation>>;\n    readonly latestCheckpointId?: import(\'./checkpoint.ts\').SimulationCheckpointId;\n    readonly management?: Readonly<Record<import(\'./management.ts\').SimulationManagementId, import(\'./management.ts\').SimulationManagementOperation>>;\n    readonly knowledge?: Readonly<Record<import(\'./knowledge.ts\').SimulationKnowledgeId, readonly import(\'./knowledge.ts\').SimulationKnowledge[]>>;\n    readonly capacityGrants?: Readonly<Record<import(\'./capacity.ts\').SimulationCapacityGrantId, import(\'./capacity.ts\').SimulationCapacityGrantRequest>>;\n    readonly tokenReservations?: Readonly<Record<import(\'./tokens.ts\').SimulationTokenReservationId, import(\'./tokens.ts\').SimulationTokenReservation>>;\n    readonly nextTokenSlot?: import(\'./scheduler-types.ts\').SimulationEventSlot;\n    readonly budgetGrants?: Readonly<Record<import(\'./budget. /* …truncated — full shape in source */',
   },
   {
     name: 'SimulationSummaryPolicy',
     declaration: 'export interface SimulationSummaryPolicy extends SimulationPolicyRef {\n    summarize(this: void, items: readonly Readonly<Omit<SimulationKnowledge, \'readers\'>>[]): string;\n}',
   },
   {
+    name: 'SimulationTaskAssignScope',
+    declaration: 'export interface SimulationTaskAssignScope {\n    readonly kind: \'simulation-task-assign\';\n    readonly creatorId: ParticipantId;\n    readonly ordinal: number;\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly entityId: Branded<\'SimulationEntityId\'>;\n    readonly epoch: Branded<\'SimulationWriterEpoch\'>;\n    readonly lifecycleOwner: string;\n    readonly sessionId: SessionId;\n    readonly reservationId: ActivationReservationId;\n    readonly input: TeamSimulationTaskAssignInput;\n}',
+  },
+  {
+    name: 'SimulationTaskCancellation',
+    declaration: 'export type SimulationTaskCancellation = z.infer<typeof simulationTaskCancellationSchema>;',
+  },
+  {
+    name: 'SimulationTaskCancellationRecord',
+    declaration: 'export interface SimulationTaskCancellationRecord {\n    readonly request: SimulationTaskCancellation;\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'SimulationTaskCancelScope',
+    declaration: 'export interface SimulationTaskCancelScope {\n    readonly kind: \'simulation-task-cancel\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly creatorId: ParticipantId;\n    readonly lifecycleOwner: string;\n    readonly input: TeamSimulationTaskCancelInput;\n}',
+  },
+  {
+    name: 'SimulationTaskCompletionAssessment',
+    declaration: 'export type SimulationTaskCompletionAssessment = {\n    readonly status: \'waiting\';\n    readonly reason: string;\n} | {\n    readonly status: \'result\';\n    readonly operations: readonly import(\'./business-types.ts\').SimulationOperationId[];\n    readonly outcome: SimulationTaskPolicyOutcome;\n};',
+  },
+  {
+    name: 'SimulationTaskCompletionPolicy',
+    declaration: 'export interface SimulationTaskCompletionPolicy extends SimulationPolicyRef {\n    evaluate(this: void, state: Readonly<SimulationSnapshot>, execution: Readonly<SimulationTaskExecution>): SimulationTaskCompletionAssessment;\n}',
+  },
+  {
     name: 'SimulationTaskCreateScope',
     declaration: 'export interface SimulationTaskCreateScope {\n    readonly kind: \'simulation-task-create\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly lifecycleOwner: string;\n    readonly participantId: ParticipantId;\n    readonly publishAllowed: boolean;\n    readonly input: Omit<TeamTaskCreateInput, \'expectedCursor\'>;\n}',
+  },
+  {
+    name: 'SimulationTaskDecision',
+    declaration: 'export interface SimulationTaskDecision {\n    readonly request: SimulationTaskDecisionRequest;\n    readonly sequence: number;\n    readonly epoch: import(\'./writer-types.ts\').SimulationWriterEpoch;\n    readonly input?: {\n        readonly id: string;\n        readonly sequence: number;\n    };\n}',
+  },
+  {
+    name: 'SimulationTaskDecisionRequest',
+    declaration: 'export type SimulationTaskDecisionRequest = z.infer<typeof simulationTaskDecisionRequestSchema>;',
+  },
+  {
+    name: 'SimulationTaskEvidence',
+    declaration: 'export type SimulationTaskEvidence = z.infer<typeof simulationTaskEvidenceSchema>;',
+  },
+  {
+    name: 'SimulationTaskExecution',
+    declaration: 'export interface SimulationTaskExecution {\n    readonly completionPolicy?: import(\'./deterministic.ts\').SimulationPolicyRef;\n    readonly result?: import(\'./task-completion.ts\').SimulationTaskResult;\n    readonly decisions?: readonly SimulationTaskDecision[];\n    readonly retired?: {\n        readonly sequence: number;\n        readonly quiescedAt: number;\n        readonly source: \'quiesced\' | \'fenced\';\n        readonly reason: string;\n    };\n    readonly request: SimulationTaskExecutionRequest;\n    readonly reservedSequence: number;\n    readonly task?: import(\'./task-evidence.ts\').SimulationTaskEvidence;\n}',
+  },
+  {
+    name: 'SimulationTaskExecutionRequest',
+    declaration: 'export type SimulationTaskExecutionRequest = z.infer<typeof simulationTaskExecutionRequestSchema>;',
+  },
+  {
+    name: 'SimulationTaskPolicyOutcome',
+    declaration: 'export type SimulationTaskPolicyOutcome = Extract<import(\'@clocky/clocky-team\').TaskAttemptOutcome, {\n    readonly kind: \'completed\' | \'failed\' | \'cancelled\';\n}>;',
+  },
+  {
+    name: 'SimulationTaskResult',
+    declaration: 'export interface SimulationTaskResult {\n    readonly request: SimulationTaskResultRequest;\n    readonly sequence: number;\n}',
+  },
+  {
+    name: 'SimulationTaskResultRequest',
+    declaration: 'export type SimulationTaskResultRequest = z.infer<typeof simulationTaskResultRequestSchema>;',
+  },
+  {
+    name: 'SimulationTaskReviewScope',
+    declaration: 'export interface SimulationTaskReviewScope extends TeamSimulationTaskReviewCommand {\n    readonly kind: \'simulation-task-review\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly lifecycleOwner: string;\n    readonly creatorId: ParticipantId;\n    readonly initiatorId: ParticipantId;\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n    readonly reviewerSessionId: SessionId;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n    readonly outcome: Extract<TaskAttemptOutcome, {\n        kind: \'completed\';\n    }>;\n}',
+  },
+  {
+    name: 'SimulationTaskSettleScope',
+    declaration: 'export interface SimulationTaskSettleScope extends Omit<SimulationTaskAssignScope, \'kind\' | \'input\'> {\n    readonly kind: \'simulation-task-settle\';\n    readonly input: TeamSimulationTaskSettleInput;\n}',
+  },
+  {
+    name: 'SimulationTaskStartScope',
+    declaration: 'export interface SimulationTaskStartScope extends Omit<SimulationTaskAssignScope, \'kind\' | \'input\'> {\n    readonly kind: \'simulation-task-start\';\n    readonly decisionId: Branded<\'SimulationDecisionId\'>;\n    readonly inputId: string;\n    readonly input: TeamSimulationTaskStartInput;\n}',
   },
   {
     name: 'SimulationTeamConnection',
@@ -7433,11 +8296,23 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TaskAttemptSnapshot',
-    declaration: 'export interface TaskAttemptSnapshot {\n    readonly id: TaskAttemptId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly ordinal: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId;\n    readonly wakeChannelId?: ChannelId;\n    readonly assignedAt: number;\n    readonly startedAt?: number;\n    readonly leaseExpiresAt: number;\n    readonly settledAt: number;\n    readonly outcome: TaskAttemptOutcome;\n}',
+    declaration: 'export interface TaskAttemptSnapshot {\n    readonly id: TaskAttemptId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly ordinal: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId;\n    readonly wakeChannelId?: ChannelId;\n    readonly assignedAt: number;\n    readonly startedAt?: number;\n    readonly leaseExpiresAt: number;\n    readonly settledAt: number;\n    readonly retirement?: {\n        readonly source: \'quiesced\' | \'fenced\';\n    };\n    readonly outcome: TaskAttemptOutcome;\n}',
   },
   {
     name: 'TaskLeaseSnapshot',
     declaration: 'export interface TaskLeaseSnapshot {\n    readonly attemptId: TaskAttemptId;\n    readonly assignedRevision: number;\n    readonly ordinal: number;\n    readonly participantId: ParticipantId;\n    readonly activationId?: ActivationId;\n    readonly wakeChannelId?: ChannelId;\n    readonly assignedAt: number;\n    readonly startedAt?: number;\n    readonly durationMs: number;\n    readonly renewedAt: number;\n    readonly expiresAt: number;\n}',
+  },
+  {
+    name: 'TeamActionInspectInput',
+    declaration: 'export interface TeamActionInspectInput {\n    readonly teamId: TeamId;\n    readonly actionId: TeamHumanActionId;\n}',
+  },
+  {
+    name: 'TeamActionInspection',
+    declaration: 'export interface TeamActionInspection {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly action: import(\'./types.ts\').TeamHumanActionSnapshot;\n    readonly handling: TeamAttentionHandling;\n}',
+  },
+  {
+    name: 'TeamActionInspectRequest',
+    declaration: 'export interface TeamActionInspectRequest extends TeamActionInspectInput {\n    readonly actor: TeamHumanActorProof;\n}',
   },
   {
     name: 'TeamActivationColdReplaceRequest',
@@ -7544,6 +8419,38 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamArtifactWriteRequest {\n    readonly teamId: TeamId;\n    readonly taskId?: TeamTaskId | undefined;\n    readonly sourceAttemptId?: TaskAttemptId | undefined;\n    readonly kind: TeamArtifactReference[\'kind\'];\n    readonly visibility: TeamArtifactReference[\'visibility\'];\n    readonly name?: string | undefined;\n    readonly data: TeamArtifactData;\n    readonly metadata?: JsonObject | undefined;\n}',
   },
   {
+    name: 'TeamAttentionCounts',
+    declaration: 'export interface TeamAttentionCounts {\n    readonly recovery: number;\n    readonly humanActions: number;\n    readonly reviews: number;\n    readonly total: number;\n}',
+  },
+  {
+    name: 'TeamAttentionCursor',
+    declaration: 'export interface TeamAttentionCursor {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly order: \'attention-priority-time-id-v1\';\n    readonly position: TeamAttentionPosition;\n}',
+  },
+  {
+    name: 'TeamAttentionHandling',
+    declaration: 'export type TeamAttentionHandling = {\n    readonly kind: \'actionable\';\n} | {\n    readonly kind: \'waiting\';\n    readonly reason: \'parent-inspection\' | \'not-authorized\' | \'team-inactive\' | \'simulation-managed\' | \'closure-in-progress\' | \'reviewer-required\' | \'response-accepted\' | \'source-changed\' | \'recovery-owner-required\' | \'already-processed\';\n};',
+  },
+  {
+    name: 'TeamAttentionItem',
+    declaration: 'export type TeamAttentionItem = TeamAttentionPosition & {\n    readonly handling: TeamAttentionHandling;\n} & ({\n    readonly kind: \'team-recovery\';\n    readonly reason: {\n        readonly code: string;\n        readonly message: TeamSelectionText;\n    };\n} | {\n    readonly kind: \'task-recovery\';\n    readonly revision: number;\n    readonly subject: TeamSelectionText;\n    readonly delegationId: TeamDelegationId;\n    readonly childTeamId?: TeamId | undefined;\n    readonly reason?: {\n        readonly code: string;\n        readonly message: TeamSelectionText;\n    } | undefined;\n} | {\n    readonly kind: \'task-review\';\n    readonly revision: number;\n    readonly subject: TeamSelectionText;\n    readonly reviewerId: ParticipantId;\n} | {\n    readonly kind: \'human-action\';\n    readonly updatedAt: number;\n    readonly actionKind: \'approval\' | \'question\';\n});',
+  },
+  {
+    name: 'TeamAttentionPage',
+    declaration: 'export interface TeamAttentionPage {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly counts: TeamAttentionCounts;\n    readonly items: readonly TeamAttentionItem[];\n    readonly nextCursor?: TeamAttentionCursor | undefined;\n}',
+  },
+  {
+    name: 'TeamAttentionPosition',
+    declaration: 'export type TeamAttentionPosition = {\n    readonly kind: \'team-recovery\';\n    readonly id: TeamId;\n    readonly createdAt: number;\n} | {\n    readonly kind: \'task-recovery\' | \'task-review\';\n    readonly id: TeamTaskId;\n    readonly createdAt: number;\n} | {\n    readonly kind: \'human-action\';\n    readonly id: TeamHumanActionId;\n    readonly createdAt: number;\n};',
+  },
+  {
+    name: 'TeamAttentionReadInput',
+    declaration: 'export interface TeamAttentionReadInput {\n    readonly teamId: TeamId;\n    readonly cursor?: TeamAttentionCursor | undefined;\n    readonly limit?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamAttentionReadRequest',
+    declaration: 'export interface TeamAttentionReadRequest extends TeamAttentionReadInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
     name: 'TeamAuditReadRequest',
     declaration: 'export interface TeamAuditReadRequest {\n    readonly teamId: TeamId;\n    readonly channelId?: ChannelId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
   },
@@ -7557,11 +8464,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamBrowsePage',
-    declaration: 'export type TeamBrowsePage = {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly total: number;\n    readonly scanned: number;\n    readonly nextCursor?: number | undefined;\n} & ({\n    readonly kind: \'tasks\';\n    readonly items: readonly TeamTaskSummary[];\n} | {\n    readonly kind: \'members\';\n    readonly items: readonly TeamMemberSummary[];\n} | {\n    readonly kind: \'workflowPlans\';\n    readonly items: readonly TeamWorkflowSummary[];\n});',
+    declaration: 'export type TeamBrowsePage = {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly total: number;\n    readonly scanned: number;\n    readonly nextCursor?: number | undefined;\n} & ({\n    readonly kind: \'tasks\';\n    readonly items: readonly TeamTaskSummary[];\n    readonly query?: TeamTaskQuery | undefined;\n    readonly sourceTotal?: number | undefined;\n    readonly nextQueryCursor?: TeamTaskQueryCursor | undefined;\n} | {\n    readonly kind: \'members\';\n    readonly items: readonly TeamMemberSummary[];\n} | {\n    readonly kind: \'workflowPlans\';\n    readonly items: readonly TeamWorkflowSummary[];\n});',
   },
   {
     name: 'TeamBrowseRequest',
-    declaration: 'export interface TeamBrowseRequest {\n    readonly teamId: TeamId;\n    readonly kind: TeamBrowseKind;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
+    declaration: 'export interface TeamBrowseRequest {\n    readonly teamId: TeamId;\n    readonly kind: TeamBrowseKind;\n    readonly query?: TeamTaskQuery | undefined;\n    readonly queryCursor?: TeamTaskQueryCursor | undefined;\n    readonly afterCursor?: number | undefined;\n    readonly limit?: number | undefined;\n}',
   },
   {
     name: 'TeamCancelInput',
@@ -7590,6 +8497,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamCancelRequest',
     declaration: 'export interface TeamCancelRequest extends TeamCancelInput {\n    readonly actor: TeamClosureAuthority;\n}',
+  },
+  {
+    name: 'TeamCapabilityObservationId',
+    declaration: 'export type TeamCapabilityObservationId = Branded<\'TeamCapabilityObservationId\'>;',
   },
   {
     name: 'TeamChannelAdapter',
@@ -7809,7 +8720,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamDagScheduler',
-    declaration: 'export class TeamDagScheduler {\n    readonly envelopePostProofSource: TeamSystemEnvelopePostProofSource;\n    readonly taskReviewProofSource: TeamSystemTaskReviewProofSource;\n    readonly phaseProofSource: TeamSystemPhaseProofSource;\n    readonly maintenanceProofSource: TeamSystemMaintenanceProofSource;\n    readonly taskLeaseProofSource: TeamSystemTaskLeaseProofSource;\n    readonly schedulerChannelProofSource: TeamSystemSchedulerChannelProofSource;\n    constructor(private readonly ctx: Context, config: Config);\n    start(): void;\n    drive(request: TeamSchedulerDriveRequest = {}): Promise<void>;\n    close(): Promise<void>;\n}',
+    declaration: 'export class TeamDagScheduler {\n    readonly envelopePostProofSource: TeamSystemEnvelopePostProofSource;\n    readonly taskReviewProofSource: TeamSystemTaskReviewProofSource;\n    readonly phaseProofSource: TeamSystemPhaseProofSource;\n    readonly maintenanceProofSource: TeamSystemMaintenanceProofSource;\n    readonly taskLeaseProofSource: TeamSystemTaskLeaseProofSource;\n    readonly schedulerChannelProofSource: TeamSystemSchedulerChannelProofSource;\n    supportedWorkspaceModes(): readonly TeamTaskWorkspaceMode[];\n    constructor(private readonly ctx: Context, config: Config);\n    start(): void;\n    drive(request: TeamSchedulerDriveRequest = {}): Promise<void>;\n    close(): Promise<void>;\n}',
   },
   {
     name: 'TeamDelegationEnvelopePostScope',
@@ -7850,6 +8761,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamEvent',
     declaration: 'export type TeamEvent = {\n    readonly type: \'team/created\';\n    readonly team: TeamSnapshot;\n} | {\n    readonly type: \'team/changed\';\n    readonly team: TeamSnapshot;\n} | {\n    readonly type: \'goal/changed\';\n    readonly goal: TeamGoalSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'participant/changed\';\n    readonly participant: ParticipantSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'activation/changed\';\n    readonly binding: ActivationBindingSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'participant-interrupt/changed\';\n    readonly interrupt: ParticipantInterruptSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'human-action/changed\';\n    readonly action: TeamHumanActionSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'usage/changed\';\n    readonly teamId: TeamId;\n    readonly usage: TeamUsageSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'workflow-plan/changed\';\n    readonly plan: TeamWorkflowPlanSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'task/changed\';\n    readonly task: TeamTaskSnapshot;\n    readonly cursor: number;\n    readonly createdAt: number;\n} | {\n    readonly type: \'workspace/observed\';\n    readonly observation: TeamWorkspac /* …truncated — full shape in source */',
+  },
+  {
+    name: 'TeamExecutionProfile',
+    declaration: 'export interface TeamExecutionProfile {\n    readonly id: TeamExecutionProfileId;\n    readonly kind: \'local-agent\' | \'remote-agent\';\n    readonly role: string;\n    readonly provider: string;\n    readonly preset?: string | undefined;\n    readonly model: string;\n}',
+  },
+  {
+    name: 'TeamExecutionProfileChoice',
+    declaration: 'export interface TeamExecutionProfileChoice extends TeamExecutionProfile {\n    readonly available: boolean;\n    readonly reasons: readonly (\'provider-unavailable\' | \'participant-kind-unsupported\' | \'owner-closing\')[];\n}',
+  },
+  {
+    name: 'TeamExecutionProfileCursor',
+    declaration: 'export interface TeamExecutionProfileCursor {\n    readonly teamId: TeamId;\n    readonly kind: Exclude<ParticipantKind, \'human\'>;\n    readonly revision: number;\n    readonly offset: number;\n}',
+  },
+  {
+    name: 'TeamExecutionProfileId',
+    declaration: 'export type TeamExecutionProfileId = Branded<\'TeamExecutionProfileId\'>;',
+  },
+  {
+    name: 'TeamExecutionProfileRegistration',
+    declaration: 'export interface TeamExecutionProfileRegistration {\n    readonly profile: TeamExecutionProfile;\n    readonly availability: () => TeamExecutionProfileChoice[\'reasons\'];\n}',
+  },
+  {
+    name: 'TeamExecutionProfilesPage',
+    declaration: 'export interface TeamExecutionProfilesPage {\n    readonly teamId: TeamId;\n    readonly kind: Exclude<ParticipantKind, \'human\'>;\n    readonly revision: number;\n    readonly allowed: boolean;\n    readonly reason?: \'not-authorized\' | \'team-inactive\' | \'member-limit\' | \'simulation-managed\' | undefined;\n    readonly items: readonly TeamExecutionProfileChoice[];\n    readonly selected?: TeamExecutionProfileChoice | undefined;\n    readonly nextCursor?: TeamExecutionProfileCursor | undefined;\n}',
+  },
+  {
+    name: 'TeamExecutionProfilesRequest',
+    declaration: 'export interface TeamExecutionProfilesRequest extends TeamExecutionProfilesInput {\n    readonly actor: TeamHumanActorProof;\n}',
   },
   {
     name: 'TeamFailInput',
@@ -7988,6 +8927,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamHumanActionUpsertRequest extends TeamHumanActionUpsertInput {\n    readonly actor: TeamSystemHumanActionProof;\n}',
   },
   {
+    name: 'TeamHumanActorLookup',
+    declaration: 'export interface TeamHumanActorLookup {\n    readonly teamId: TeamId;\n    readonly principalId: Branded<\'ProductPrincipalId\'>;\n}',
+  },
+  {
     name: 'TeamHumanActorPayloadFingerprint',
     declaration: 'export type TeamHumanActorPayloadFingerprint = Branded<\'TeamHumanActorPayloadFingerprint\'>;',
   },
@@ -8001,15 +8944,19 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamHumanActorProofInput',
-    declaration: 'export interface TeamHumanActorProofInput {\n    readonly teamId: TeamId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\';\n    readonly fence: TeamHumanActorProofFence;\n    readonly payload: JsonValue;\n}',
+    declaration: 'export interface TeamHumanActorProofInput {\n    readonly teamId: TeamId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\' | \'task-capabilities-read\' | \'member-readiness-read\' | \'execution-profiles-read\' | \'identity-resolve-read\' | \'session-content-read\' | \'attention-read\';\n    readonly fence: TeamHumanActorProofFence;\n    readonly payload: JsonValue;\n}',
   },
   {
     name: 'TeamHumanActorProofSource',
-    declaration: 'export interface TeamHumanActorProofSource {\n    readonly name: string;\n    resolveHumanActorProof(proof: TeamHumanActorProof): TeamHumanActorScope | undefined;\n}',
+    declaration: 'export interface TeamHumanActorProofSource {\n    readonly name: string;\n    resolveHumanActorProof(proof: TeamHumanActorProof): TeamHumanActorScope | undefined;\n    resolveHumanReaderProof?(proof: TeamHumanReaderProof): TeamHumanReaderScope | undefined;\n}',
   },
   {
     name: 'TeamHumanActorScope',
-    declaration: 'export interface TeamHumanActorScope {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\';\n    readonly payloadFingerprint: TeamHumanActorPayloadFingerprint;\n    readonly fence: TeamHumanActorProofFence;\n}',
+    declaration: 'export interface TeamHumanActorScope {\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly operation: TeamPolicyHook | \'channel-invitation-read\' | \'channel-admission-read\' | \'channel-list-read\' | \'channel-content-read\' | \'task-capabilities-read\' | \'member-readiness-read\' | \'execution-profiles-read\' | \'identity-resolve-read\' | \'session-content-read\' | \'attention-read\';\n    readonly payloadFingerprint: TeamHumanActorPayloadFingerprint;\n    readonly fence: TeamHumanActorProofFence;\n}',
+  },
+  {
+    name: 'TeamHumanActorSelection',
+    declaration: 'export interface TeamHumanActorSelection {\n    readonly participantId: ParticipantId;\n    readonly operations: readonly TeamPolicyHook[];\n}',
   },
   {
     name: 'TeamHumanChannelDeliveryRequest',
@@ -8060,12 +9007,32 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamHumanMessageInput {\n    readonly principalId: ProductPrincipalId;\n    readonly recipientId: ParticipantId;\n    readonly teamId: TeamId;\n    readonly channelId: ChannelId;\n    readonly envelopeId: EnvelopeId;\n    readonly envelope: TeamEnvelope;\n    readonly view?: TeamChannelViewEventData | undefined;\n    readonly text: string;\n}',
   },
   {
+    name: 'TeamHumanReadAuthority',
+    declaration: 'export interface TeamHumanReadAuthority extends TeamHumanActorSelection {\n    readonly teamId: TeamId;\n}',
+  },
+  {
+    name: 'TeamHumanReaderLease',
+    declaration: 'export interface TeamHumanReaderLease {\n    readonly reader: TeamHumanReaderProof;\n    readonly signal: AbortSignal;\n    close(): void;\n}',
+  },
+  {
+    name: 'TeamHumanReaderProof',
+    declaration: 'export interface TeamHumanReaderProof {\n    readonly [teamHumanReaderProofBrand]: never;\n}',
+  },
+  {
+    name: 'TeamHumanReaderScope',
+    declaration: 'export interface TeamHumanReaderScope {\n    readonly principalId: Branded<\'ProductPrincipalId\'>;\n    readonly issuer: string;\n    readonly subject: string;\n    readonly credentialGeneration: number;\n}',
+  },
+  {
     name: 'TeamHumanResumeAuthorization',
     declaration: 'export interface TeamHumanResumeAuthorization {\n    readonly [teamHumanResumeAuthorizationBrand]: never;\n    isLive(): boolean;\n    assert(): Promise<TeamStateSnapshot>;\n    close(): void;\n}',
   },
   {
     name: 'TeamHumanResumeRequest',
     declaration: 'export interface TeamHumanResumeRequest extends TeamResumeInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamHumanSessionReadRequest',
+    declaration: 'export interface TeamHumanSessionReadRequest {\n    readonly actor: TeamHumanActorProof;\n    readonly teamId: TeamId;\n    readonly participantId: ParticipantId;\n    readonly sessionId: SessionId;\n}',
   },
   {
     name: 'TeamHumanSinkProof',
@@ -8082,6 +9049,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamId',
     declaration: 'export type TeamId = Branded<\'TeamId\'>;',
+  },
+  {
+    name: 'TeamIdentityResolution',
+    declaration: 'export interface TeamIdentityResolution extends TeamIdentityResolvePage {\n    readonly authorizationScope: ProductAuthorizationScope;\n}',
+  },
+  {
+    name: 'TeamIdentityResolveInput',
+    declaration: 'export interface TeamIdentityResolveInput {\n    readonly teamId: TeamId;\n    readonly participantIds: readonly ParticipantId[];\n    readonly afterCursor?: number | undefined;\n    readonly expectedTeamCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamIdentityResolvePage',
+    declaration: 'export interface TeamIdentityResolvePage {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly items: readonly TeamResolvedIdentity[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamIdentityResolveRequest',
+    declaration: 'export interface TeamIdentityResolveRequest extends TeamIdentityResolveInput {\n    readonly actor: TeamHumanActorProof;\n}',
   },
   {
     name: 'TeamImplementationLeaseMetrics',
@@ -8200,16 +9183,20 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamLinkTerminationReason {\n    readonly code: string;\n    readonly message: string;\n}',
   },
   {
-    name: 'TeamList',
-    declaration: 'export type TeamList = TeamListPage;',
-  },
-  {
     name: 'TeamListPage',
     declaration: 'export interface TeamListPage {\n    readonly scanned: number;\n    readonly items: readonly TeamSnapshot[];\n    readonly nextCursor?: TeamDiscoveryCursor | undefined;\n}',
   },
   {
     name: 'TeamListPageRequest',
     declaration: 'export interface TeamListPageRequest {\n    readonly afterCursor: TeamDiscoveryCursor | -1;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMemberExecutionQuery',
+    declaration: 'export interface TeamMemberExecutionQuery {\n    readonly teamId: TeamId;\n    readonly participant: Pick<ParticipantSnapshot, \'id\' | \'kind\' | \'phase\' | \'role\' | \'provider\' | \'preset\' | \'model\'>;\n}',
+  },
+  {
+    name: 'TeamMemberExecutionSources',
+    declaration: 'export interface TeamMemberExecutionSources {\n    readonly activation?: {\n        readonly state: \'attached\' | \'starting\' | \'stopping\' | \'recovery-required\';\n        readonly activationId?: ActivationId | undefined;\n    } | undefined;\n    readonly route?: {\n        readonly kind: \'managed\' | \'configured\';\n        readonly provider: string;\n        readonly configuration: string;\n        readonly reasons: readonly (\'provider-unavailable\' | \'participant-kind-unsupported\' | \'owner-closing\' | \'pool-capacity\' | \'route-unavailable\')[];\n    } | undefined;\n}',
   },
   {
     name: 'TeamMemberInspection',
@@ -8230,6 +9217,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamMemberListPageRequest',
     declaration: 'export interface TeamMemberListPageRequest {\n    readonly teamId: TeamId;\n    readonly afterCursor: number;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamMemberReadinessRequest',
+    declaration: 'export interface TeamMemberReadinessRequest extends TeamMemberReadinessInput {\n    readonly actor: TeamHumanActorProof;\n}',
   },
   {
     name: 'TeamMemberSessionRequest',
@@ -8292,8 +9283,28 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamPolicyRequest {\n    readonly hook: TeamPolicyHook;\n    readonly teamId?: TeamId;\n    readonly actorId?: ParticipantId;\n    readonly facts: JsonObject;\n}',
   },
   {
+    name: 'TeamProductDirectoryPage',
+    declaration: 'export interface TeamProductDirectoryPage {\n    readonly items: readonly TeamProductSummary[];\n    readonly nextCursor?: TeamProductDiscoveryCursor | undefined;\n}',
+  },
+  {
+    name: 'TeamProductDiscoveryCursor',
+    declaration: 'export type TeamProductDiscoveryCursor = Branded<\'TeamProductDiscoveryCursor\'>;',
+  },
+  {
+    name: 'TeamProductDiscoveryRequest',
+    declaration: 'export interface TeamProductDiscoveryRequest {\n    readonly reader: TeamHumanReaderProof;\n    readonly afterCursor: TeamProductDiscoveryCursor | -1;\n    readonly limit: number;\n}',
+  },
+  {
+    name: 'TeamProductSummary',
+    declaration: 'export interface TeamProductSummary extends Pick<TeamSnapshot, \'id\' | \'phase\' | \'depth\' | \'maxTeamDepth\' | \'cursor\' | \'createdAt\' | \'updatedAt\'> {\n    readonly executionManagement?: TeamSelectionSnapshot[\'executionManagement\'];\n    readonly parentTeamId?: TeamSnapshot[\'parentTeamId\'];\n    readonly parentTaskId?: TeamSnapshot[\'parentTaskId\'];\n    readonly workspacePath?: TeamSnapshot[\'workspacePath\'];\n    readonly goal: Pick<TeamGoalSnapshot, \'teamId\' | \'revision\' | \'objective\' | \'phase\'>;\n    readonly objectiveTruncated: boolean;\n    readonly readAccess: \'member\' | \'parent-inspection\';\n}',
+  },
+  {
     name: 'TeamQuiescenceSnapshot',
     declaration: 'export interface TeamQuiescenceSnapshot {\n    readonly teamId: TeamId;\n    readonly quiescent: boolean;\n    readonly reasons: readonly string[];\n    readonly activeTaskIds: readonly TeamTaskId[];\n    readonly activeActivationIds: readonly ActivationId[];\n    readonly activeWorkspaceAllocationIds: readonly TeamWorkspaceAllocationId[];\n    readonly openChannelIds: readonly ChannelId[];\n}',
+  },
+  {
+    name: 'TeamResolvedIdentity',
+    declaration: 'export type TeamResolvedIdentity = {\n    readonly participantId: ParticipantId;\n    readonly state: \'unavailable\';\n} | {\n    readonly participantId: ParticipantId;\n    readonly state: \'resolved\';\n    readonly displayName: TeamSelectionText;\n    readonly phase: ParticipantPhase;\n};',
   },
   {
     name: 'TeamResourceBudget',
@@ -8561,7 +9572,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamsApi',
-    declaration: 'export interface TeamsApi {\n    memberInspect(request: RpcRequest<TeamMemberInspectRequest>): Promise<RpcResponse<TeamMemberInspection>>;\n    actionRead(request: RpcRequest<TeamHumanActionReadRequest>): Promise<RpcResponse<TeamHumanActionSnapshot>>;\n    taskInspect(request: RpcRequest<TeamTaskInspectRequest>): Promise<RpcResponse<TeamTaskInspection>>;\n    browse(request: RpcRequest<{\n        teamId: TeamId;\n        kind: TeamBrowseKind;\n        afterCursor?: number;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamBrowsePage>>;\n    memberSession(request: RpcRequest<TeamMemberSessionRequest>): Promise<RpcResponse<TeamMemberSessionSnapshot>>;\n    inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>;\n    inboxRead(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxWatch(request: RpcRequest<TeamHumanInboxReadInput>): Promise<RpcResponse<TeamHumanInboxPage>>;\n    inboxAcknowledge(request: RpcRequest<TeamHumanInboxAcknowledgeInput>): Promise<RpcResponse<TeamHumanInboxAcknowledgement>>;\n    list(request: RpcRequest<{\n        afterCursor?: TeamDiscoveryCursor | -1;\n        limit?: number;\n    }>): Promise<RpcResponse<TeamList>>;\n    selection(request: RpcRequest<TeamSelectionRequest>): Promise<RpcResponse<TeamSelectionSnapshot>>;\n    get(request: RpcRequest<{\n        teamId: TeamId;\n    }>): Promise<RpcResponse<TeamStateSnapshot>>;\n    create(request: RpcRequest<{\n   /* …truncated — full shape in source */',
+    declaration: 'export interface TeamsApi {\n    actionInspect(request: RpcRequest<TeamActionInspectInput>): Promise<RpcResponse<TeamActionInspection>>;\n    attentionRead(request: RpcRequest<TeamAttentionReadInput>): Promise<RpcResponse<TeamAttentionPage>>;\n    executionProfiles(request: RpcRequest<TeamExecutionProfilesInput>): Promise<RpcResponse<TeamExecutionProfilesPage>>;\n    identityResolve(request: RpcRequest<TeamIdentityResolveInput>): Promise<RpcResponse<TeamIdentityResolution>>;\n    memberReadiness(request: RpcRequest<TeamMemberReadinessInput>): Promise<RpcResponse<TeamMemberReadinessPage>>;\n    capabilities(request: RpcRequest<TeamTaskCapabilitiesInput>): Promise<RpcResponse<TeamTaskCapabilitiesObservation>>;\n    memberInspect(request: RpcRequest<TeamMemberInspectRequest>): Promise<RpcResponse<TeamMemberInspection>>;\n    actionRead(request: RpcRequest<TeamHumanActionReadRequest>): Promise<RpcResponse<TeamHumanActionSnapshot>>;\n    taskReferences(request: RpcRequest<TeamTaskReferencesInput>): Promise<RpcResponse<TeamTaskReferencesPage>>;\n    taskInspect(request: RpcRequest<TeamTaskInspectRequest>): Promise<RpcResponse<TeamTaskInspection>>;\n    browse(request: RpcRequest<TeamBrowseRequest>): Promise<RpcResponse<TeamBrowsePage>>;\n    memberSession(request: RpcRequest<TeamMemberSessionRequest>): Promise<RpcResponse<TeamMemberSessionSnapshot>>;\n    inboxRespond(request: RpcRequest<TeamHumanActionResponseInput>): Promise<RpcResponse<TeamHumanActionResponseResult>>;\n    inboxRead(request:  /* …truncated — full shape in source */',
   },
   {
     name: 'TeamSchedulerDriveRequest',
@@ -8573,15 +9584,31 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSelectionRequest',
-    declaration: 'export interface TeamSelectionRequest extends TeamGetRequest {\n    readonly includeMetadata?: boolean | undefined;\n}',
+    declaration: 'export interface TeamSelectionRequest extends TeamGetRequest {\n    readonly includeMetadata?: boolean | undefined;\n    readonly readAccess?: \'member\' | \'parent-inspection\' | undefined;\n}',
   },
   {
     name: 'TeamSelectionSnapshot',
-    declaration: 'export interface TeamSelectionSnapshot {\n    readonly metadata?: TeamSelectionMetadata | undefined;\n    readonly cancellation?: {\n        readonly reason: TeamSelectionText;\n    } | undefined;\n    readonly pendingHumanActionCount?: number | undefined;\n    readonly team: Pick<TeamSnapshot, \'id\' | \'parentTeamId\' | \'parentTaskId\' | \'depth\' | \'maxTeamDepth\' | \'workspacePath\' | \'phase\' | \'cursor\' | \'createdAt\' | \'updatedAt\' | \'archivedAt\'>;\n    readonly goal: {\n        readonly revision: number;\n        readonly phase: TeamGoalPhase;\n        readonly objective: TeamSelectionText;\n    };\n    readonly stallReason?: {\n        readonly code: string;\n        readonly message: TeamSelectionText;\n    } | undefined;\n    readonly closureKind?: \'complete\' | \'fail\' | \'cancel\' | undefined;\n    readonly coordinator: {\n        readonly kind: \'bound\';\n        readonly name: TeamSelectionText;\n        readonly participantKind: \'local-agent\' | \'remote-agent\';\n        readonly participantPhase: ParticipantPhase;\n        readonly binding: Pick<ActivationBindingSnapshot, \'activation\' | \'sessionId\' | \'provider\'>;\n    } | {\n        readonly kind: \'unavailable\';\n        readonly reason: \'missing-participant\' | \'ambiguous-participant\' | \'not-agent\' | \'starting\' | \'missing-binding\';\n    };\n    readonly counts: {\n        readonly participants: number;\n        readonly activations: number;\n        readonly tasks: Readonly<Record<TeamTaskPhase, number>>;\n        readonly channels: number;\n        readonly wo /* …truncated — full shape in source */',
+    declaration: 'export interface TeamSelectionSnapshot {\n    readonly executionManagement?: \'simulation-managed\' | undefined;\n    readonly readAccess?: TeamSelectionRequest[\'readAccess\'];\n    readonly metadata?: TeamSelectionMetadata | undefined;\n    readonly cancellation?: {\n        readonly reason: TeamSelectionText;\n    } | undefined;\n    readonly pendingHumanActionCount?: number | undefined;\n    readonly attentionCounts?: import(\'./attention-types.ts\').TeamAttentionCounts | undefined;\n    readonly team: Pick<TeamSnapshot, \'id\' | \'parentTeamId\' | \'parentTaskId\' | \'depth\' | \'maxTeamDepth\' | \'workspacePath\' | \'phase\' | \'cursor\' | \'createdAt\' | \'updatedAt\' | \'archivedAt\'>;\n    readonly goal: {\n        readonly revision: number;\n        readonly phase: TeamGoalPhase;\n        readonly objective: TeamSelectionText;\n    };\n    readonly stallReason?: {\n        readonly code: string;\n        readonly message: TeamSelectionText;\n    } | undefined;\n    readonly closureKind?: \'complete\' | \'fail\' | \'cancel\' | undefined;\n    readonly coordinator: {\n        readonly kind: \'bound\';\n        readonly name: TeamSelectionText;\n        readonly participantKind: \'local-agent\' | \'remote-agent\';\n        readonly participantPhase: ParticipantPhase;\n        readonly binding: Pick<ActivationBindingSnapshot, \'activation\' | \'sessionId\' | \'provider\'>;\n    } | {\n        readonly kind: \'unavailable\';\n        readonly reason: \'missing-participant\' | \'ambiguous-participant\' | \'not-agent\' | \'starting\' | \'missing-binding\';\n /* …truncated — full shape in source */',
   },
   {
     name: 'TeamSelectionText',
     declaration: 'export interface TeamSelectionText {\n    readonly text: string;\n    readonly truncated: boolean;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskAssignInput',
+    declaration: 'export interface TeamSimulationTaskAssignInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly participantId: ParticipantId;\n    readonly activationId: ActivationId;\n    readonly attemptId: TaskAttemptId;\n    readonly leaseDurationMs: number;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskAssignRequest',
+    declaration: 'export interface TeamSimulationTaskAssignRequest extends TeamSimulationTaskAssignInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskCancelInput',
+    declaration: 'export interface TeamSimulationTaskCancelInput extends TeamTaskCancelInput {\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly expectedAttemptId: TaskAttemptId | null;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskCancelRequest',
+    declaration: 'export interface TeamSimulationTaskCancelRequest extends TeamSimulationTaskCancelInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
   },
   {
     name: 'TeamSimulationTaskCreateRequest',
@@ -8590,6 +9617,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamSimulationTaskCreator',
     declaration: 'export interface TeamSimulationTaskCreator extends TeamHumanTaskCreator {\n    readonly kind: \'simulation\';\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskReviewCommand',
+    declaration: 'export interface TeamSimulationTaskReviewCommand {\n    readonly runId: Branded<\'SimulationRunId\'>;\n    readonly commandId: string;\n    readonly operationId: Branded<\'SimulationOperationId\'>;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskSettleInput',
+    declaration: 'export interface TeamSimulationTaskSettleInput extends TeamSimulationTaskStartInput {\n    readonly outcome: TaskAttemptOutcome;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskSettleRequest',
+    declaration: 'export interface TeamSimulationTaskSettleRequest extends TeamSimulationTaskSettleInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskStartInput',
+    declaration: 'export interface TeamSimulationTaskStartInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly attemptId: TaskAttemptId;\n    readonly expectedRevision: number;\n}',
+  },
+  {
+    name: 'TeamSimulationTaskStartRequest',
+    declaration: 'export interface TeamSimulationTaskStartRequest extends TeamSimulationTaskStartInput {\n    readonly actor: TeamSystemTaskControlProof;\n}',
   },
   {
     name: 'TeamSnapshot',
@@ -8869,7 +9916,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemTaskControlScope',
-    declaration: 'export type TeamSystemTaskControlScope = SimulationTaskCreateScope | TeamRunDefaultWorkerOwnerProposalScope | TeamRunDefaultWorkerCancelScope | TeamRunWorkflowTaskCancelScope;',
+    declaration: 'export type TeamSystemTaskControlScope = SimulationTaskCreateScope | SimulationTaskAssignScope | SimulationTaskStartScope | SimulationTaskSettleScope | SimulationTaskCancelScope | TeamRunDefaultWorkerOwnerProposalScope | TeamRunDefaultWorkerCancelScope | TeamRunWorkflowTaskCancelScope;',
   },
   {
     name: 'TeamSystemTaskLeaseProof',
@@ -8893,7 +9940,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamSystemTaskReviewScope',
-    declaration: 'export type TeamSystemTaskReviewScope = SchedulerReviewResponseTaskReviewScope;',
+    declaration: 'export type TeamSystemTaskReviewScope = SchedulerReviewResponseTaskReviewScope | SimulationTaskReviewScope;',
   },
   {
     name: 'TeamSystemTopologyProof',
@@ -9012,6 +10059,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamTaskCancelRequest extends TeamTaskCancelInput {\n    readonly actor: TeamSystemTaskControlProof | TeamHumanActorProof;\n}',
   },
   {
+    name: 'TeamTaskCapabilities',
+    declaration: 'export interface TeamTaskCapabilities {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly create: TeamTaskCapabilityChoice;\n    readonly workspaceModes: readonly (TeamTaskCapabilityChoice & {\n        readonly mode: TeamTaskWorkspaceMode;\n    })[];\n    readonly readScopes: {\n        readonly editable: boolean;\n        readonly accepted: boolean;\n    };\n    readonly writeScopes: {\n        readonly editable: boolean;\n        readonly accepted: boolean;\n    };\n    readonly maxAttempts: number;\n}',
+  },
+  {
+    name: 'TeamTaskCapabilitiesObservation',
+    declaration: 'export interface TeamTaskCapabilitiesObservation extends TeamTaskCapabilities {\n    readonly observationId: TeamCapabilityObservationId;\n    readonly observedAt: number;\n}',
+  },
+  {
+    name: 'TeamTaskCapabilitiesRequest',
+    declaration: 'export interface TeamTaskCapabilitiesRequest extends TeamTaskCapabilitiesInput {\n    readonly actor: TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskCapabilityChoice',
+    declaration: 'export interface TeamTaskCapabilityChoice {\n    readonly allowed: boolean;\n    readonly reasons: readonly TeamTaskCapabilityReason[];\n}',
+  },
+  {
+    name: 'TeamTaskCapabilityReason',
+    declaration: 'export type TeamTaskCapabilityReason = \'not-authorized\' | \'team-inactive\' | \'task-limit\' | \'time-budget\' | \'simulation-managed\' | \'provider-unavailable\' | \'scheduler-unavailable\';',
+  },
+  {
     name: 'TeamTaskCommandCreator',
     declaration: 'export type TeamTaskCommandCreator = TeamTaskCreator | TeamHumanTaskCreator | TeamSimulationTaskCreator;',
   },
@@ -9109,11 +10176,15 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamTaskDetailsUpdateInput',
-    declaration: 'export interface TeamTaskDetailsUpdateInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly subject?: string;\n    readonly description?: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n}',
+    declaration: 'export interface TeamTaskDetailsUpdateInput {\n    readonly commandId: import(\'./task-update.ts\').TeamTaskUpdateCommandId;\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly expectedRevision: number;\n    readonly subject?: string;\n    readonly description?: string;\n    readonly blockedBy?: readonly TeamTaskId[];\n}',
   },
   {
     name: 'TeamTaskDetailsUpdateRequest',
     declaration: 'export interface TeamTaskDetailsUpdateRequest extends TeamTaskDetailsUpdateInput {\n    readonly actor: TeamActorProof | TeamHumanActorProof;\n}',
+  },
+  {
+    name: 'TeamTaskDetailsUpdateResult',
+    declaration: 'export interface TeamTaskDetailsUpdateResult {\n    readonly receipt: TeamTaskUpdateReceipt;\n    readonly task: TeamTaskSnapshot;\n}',
   },
   {
     name: 'TeamTaskExecution',
@@ -9168,8 +10239,24 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface TeamTaskPlacement {\n    readonly participantIds?: readonly ParticipantId[] | undefined;\n    readonly roles?: readonly string[] | undefined;\n    readonly providers?: readonly string[] | undefined;\n    readonly presets?: readonly string[] | undefined;\n    readonly models?: readonly string[] | undefined;\n}',
   },
   {
+    name: 'TeamTaskQueryCursor',
+    declaration: 'export interface TeamTaskQueryCursor {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly query: TeamTaskQuery;\n    readonly order: \'task-insertion-v1\';\n    readonly afterCursor: number;\n}',
+  },
+  {
+    name: 'TeamTaskReference',
+    declaration: 'export type TeamTaskReference = {\n    readonly taskId: TeamTaskId;\n    readonly state: \'unavailable\';\n} | {\n    readonly taskId: TeamTaskId;\n    readonly state: \'resolved\';\n    readonly revision: number;\n    readonly phase: TeamTaskSnapshot[\'phase\'];\n    readonly subject: TeamSelectionText;\n};',
+  },
+  {
+    name: 'TeamTaskReferencesInput',
+    declaration: 'export interface TeamTaskReferencesInput {\n    readonly teamId: TeamId;\n    readonly taskIds: readonly TeamTaskId[];\n    readonly expectedTeamCursor?: number | undefined;\n    readonly afterCursor?: number | undefined;\n}',
+  },
+  {
+    name: 'TeamTaskReferencesPage',
+    declaration: 'export interface TeamTaskReferencesPage {\n    readonly teamId: TeamId;\n    readonly teamCursor: number;\n    readonly items: readonly TeamTaskReference[];\n    readonly nextCursor?: number | undefined;\n}',
+  },
+  {
     name: 'TeamTaskReviewDecision',
-    declaration: 'export interface TeamTaskReviewDecision {\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n    readonly decidedAt: number;\n}',
+    declaration: 'export interface TeamTaskReviewDecision {\n    readonly attemptId: TaskAttemptId;\n    readonly reviewerId: ParticipantId;\n    readonly nextPhase: \'completed\' | \'pending\';\n    readonly reason: string;\n    readonly decidedAt: number;\n    readonly simulationCommand?: TeamSimulationTaskReviewCommand | undefined;\n}',
   },
   {
     name: 'TeamTaskReviewPolicy',
@@ -9189,7 +10276,31 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'TeamTaskSnapshot',
-    declaration: 'export interface TeamTaskSnapshot {\n    readonly id: TeamTaskId;\n    readonly teamId: TeamId;\n    readonly revision: number;\n    readonly execution: TeamTaskExecution;\n    readonly delegation?: TeamTaskDelegationSnapshot | undefined;\n    readonly parentTaskId?: TeamTaskId;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly workflowTemplateId?: TeamWorkflowTaskTemplateId | undefined;\n    readonly createCommand: TeamTaskCreateCommand;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly subject: string;\n    readonly description: string;\n    readonly integration?: TeamTaskIntegrationSpec | undefined;\n    readonly phase: TeamTaskPhase;\n    readonly blockedBy: readonly TeamTaskId[];\n    readonly requiredCapabilities: readonly string[];\n    readonly priority: number;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly workspaceMode: TeamTaskWorkspaceMode;\n    readonly budget: JsonObject;\n    readonly reviewPolicy: TeamTaskReviewPolicy;\n    readonly reviewHistory: readonly TeamTaskReviewDecision[];\n    readonly maxAttempts: number;\n    readonly attemptCount: number;\n    readonly attemptHistory: readonly TaskAttemptSnapshot[];\n    readonly blockedByOutcome?: TeamTaskDependencyOutcome | undefined;\n    readonly cancellation?: TeamTaskCancellationSnapshot | undefined;\n    readonly lease?: TaskLeaseSnapshot;\n}',
+    declaration: 'export interface TeamTaskSnapshot {\n    readonly id: TeamTaskId;\n    readonly teamId: TeamId;\n    readonly createdAt: number;\n    readonly revision: number;\n    readonly execution: TeamTaskExecution;\n    readonly delegation?: TeamTaskDelegationSnapshot | undefined;\n    readonly parentTaskId?: TeamTaskId;\n    readonly workflowPlanId?: TeamWorkflowPlanId | undefined;\n    readonly workflowTemplateId?: TeamWorkflowTaskTemplateId | undefined;\n    readonly createCommand: TeamTaskCreateCommand;\n    readonly proposedOwnerId?: ParticipantId | undefined;\n    readonly placement?: TeamTaskPlacement | undefined;\n    readonly subject: string;\n    readonly description: string;\n    readonly integration?: TeamTaskIntegrationSpec | undefined;\n    readonly phase: TeamTaskPhase;\n    readonly blockedBy: readonly TeamTaskId[];\n    readonly requiredCapabilities: readonly string[];\n    readonly priority: number;\n    readonly readScopes: readonly string[];\n    readonly writeScopes: readonly string[];\n    readonly workspaceMode: TeamTaskWorkspaceMode;\n    readonly budget: JsonObject;\n    readonly reviewPolicy: TeamTaskReviewPolicy;\n    readonly reviewHistory: readonly TeamTaskReviewDecision[];\n    readonly maxAttempts: number;\n    readonly attemptCount: number;\n    readonly attemptHistory: readonly TaskAttemptSnapshot[];\n    readonly blockedByOutcome?: TeamTaskDependencyOutcome | undefined;\n    readonly cancellation?: TeamTaskCancellationSnapshot | undefined;\n    readonly lease?: TaskLeaseSnapshot;\n}',
+  },
+  {
+    name: 'TeamTaskUpdateCommandId',
+    declaration: 'export type TeamTaskUpdateCommandId = Branded<\'TeamTaskUpdateCommandId\'>;',
+  },
+  {
+    name: 'TeamTaskUpdateLookup',
+    declaration: 'export type TeamTaskUpdateLookup = {\n    readonly kind: \'applied\';\n    readonly receipt: TeamTaskUpdateReceipt;\n} | {\n    readonly kind: \'rejected\';\n    readonly rejection: TeamTaskUpdateRejection;\n} | {\n    readonly kind: \'not-found\';\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly commandId: TeamTaskUpdateCommandId;\n};',
+  },
+  {
+    name: 'TeamTaskUpdateLookupInput',
+    declaration: 'export interface TeamTaskUpdateLookupInput {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly commandId: TeamTaskUpdateCommandId;\n}',
+  },
+  {
+    name: 'TeamTaskUpdateReceipt',
+    declaration: 'export interface TeamTaskUpdateReceipt {\n    readonly teamId: TeamId;\n    readonly taskId: TeamTaskId;\n    readonly commandId: TeamTaskUpdateCommandId;\n    readonly expectedRevision: number;\n    readonly appliedRevision: number;\n    readonly appliedAt: number;\n}',
+  },
+  {
+    name: 'TeamTaskUpdateRejection',
+    declaration: 'export interface TeamTaskUpdateRejection extends TeamTaskUpdateLookupInput {\n    readonly expectedRevision: number;\n    readonly observedRevision: number;\n    readonly rejectedAt: number;\n    readonly reason: TeamTaskUpdateRejectionReason;\n}',
+  },
+  {
+    name: 'TeamTaskUpdateRejectionReason',
+    declaration: 'export type TeamTaskUpdateRejectionReason = \'stale-revision\' | \'workflow-owned\' | \'active-execution\' | \'invalid-edit\';',
   },
   {
     name: 'TeamTaskWorkspaceMode',

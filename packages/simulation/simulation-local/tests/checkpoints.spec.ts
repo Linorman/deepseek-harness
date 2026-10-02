@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { checkpointState, simulationCheckpointManifestSchema, simulationCheckpointRequestSchema, simulationIngressRequestSchema } from '@clocky/clocky-simulation'
 import type { SimulationCheckpointCut, SimulationCheckpointRequest } from '@clocky/clocky-simulation'
 import type { LogStream } from '@clocky/clocky-storage'
+import { SIMULATION_JOURNAL_VERSION } from '../src/journal.ts'
 import { createBusinessHarness } from './business-harness.ts'
 
 const request = (id: string) => simulationCheckpointRequestSchema.parse({ id, implementationVersion: 'fixture-1', maxDrainRounds: 4, maxAttempts: 3 })
@@ -323,5 +324,102 @@ it.each(['json', 'sqlite'] as const)('%s retains exact context versions, pending
       expect(restored.snapshot().operations[accepted.operationIds[0]!]!.result).toBeUndefined()
       expect(restored.snapshot().ingresses?.[ingress.request.id]).toEqual(ingress)
     } finally { await restored.close() }
+  } finally { await h.close() }
+})
+
+it.each(['json', 'sqlite'] as const)('retains the real publication time across exact retry and cold replay (%s)', async (backend) => {
+  const h = await createBusinessHarness(backend)
+  try {
+    const command = request('publication-time')
+    await h.run.beginCheckpoint(command)
+    const cut = await h.run.acquireCheckpointCut(4)
+    const before = Date.now()
+    const published = await cut.publish(manifest(cut, command))
+    if (published.status !== 'completed') throw new Error('Checkpoint did not publish')
+    expect(published.publishedAt).toBeGreaterThanOrEqual(before)
+    expect(published.publishedAt).toBeLessThanOrEqual(Date.now())
+    expect(await cut.publish(manifest(cut, command))).toEqual(published)
+    cut.release()
+    await h.run.close()
+    const reopened = await h.provider.open({ ...h.selection, mode: 'open' })
+    try { expect(reopened.snapshot().checkpoints?.[command.id]).toEqual(published) }
+    finally { await reopened.close() }
+  } finally { await h.close() }
+})
+
+it('rejects omitting an executed Session as unmaterialized and retains a matching materialized reference', async () => {
+  const h = await createBusinessHarness('json')
+  try {
+    const actor = await h.actor('executed')
+    await actor.lease.revoke(); await actor.lease.release()
+    const command = request('executed-reference')
+    await h.run.beginCheckpoint(command)
+    const cut = await h.run.acquireCheckpointCut(4)
+    try {
+      const base = manifest(cut, command)
+      const binding = cut.snapshot.entities[actor.id]?.binding
+      if (binding === undefined) throw new Error('Executed actor has no binding')
+      const unmaterialized = { kind: 'unmaterialized', ...binding }
+      await expect(cut.publish({ ...base, sessions: [unmaterialized] } as never)).rejects.toThrow('executed Session')
+      const materialized = { kind: 'materialized', ...binding, formatVersion: 0, sequence: -1, revision: 'fixture',
+        fingerprint: `sha256:${'0'.repeat(64)}`, retention: 'full' }
+      expect((await cut.publish({ ...base, sessions: [materialized] } as never)).status).toBe('completed')
+    } finally { cut.release() }
+  } finally { await h.close() }
+})
+
+it('requires every reserved channel reference while permitting a world entity with no execution binding', async () => {
+  const h = await createBusinessHarness('json')
+  try {
+    const { simulationChannelSpecSchema, simulationChangeSchema, simulationEntityBindingSchema } = await import('@clocky/clocky-simulation')
+    await h.run.setPhase('paused', h.run.snapshot().revision)
+    const reservation = await h.run.reserveTeam({ goal: { objective: 'Checkpoint references', budgets: {} }, budgets: {},
+      rules: { simulationRunId: h.selection.spec.runId, activationLifecycleOwner: 'simulation/references' } }, h.run.snapshot().revision)
+    const teamId = reservation.teamReservation?.teamId
+    if (teamId === undefined) throw new Error('No native Team reservation')
+    await h.run.confirmTeam(teamId, h.run.snapshot().revision)
+    for (const id of ['a', 'b']) {
+      await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id, entityKind: 'person', cognition: 'agent', profile: {} }),
+        h.run.snapshot().revision)
+      await h.run.bindEntity(id as never, simulationEntityBindingSchema.parse({ teamId, participantId: id, sessionId: id }),
+        h.run.snapshot().revision)
+    }
+    await h.run.change(simulationChangeSchema.parse({ kind: 'entity/create', id: 'unbound', entityKind: 'org', cognition: 'none', profile: {} }),
+      h.run.snapshot().revision)
+    const spec = simulationChannelSpecSchema.parse({ key: 'reserved',
+      members: [{ entityId: 'a', role: 'a' }, { entityId: 'b', role: 'b' }], limits: {} })
+    await h.run.reserveChannel(spec, h.run.snapshot().revision)
+    const command = request('reserved-references')
+    await h.run.beginCheckpoint(command)
+    const cut = await h.run.acquireCheckpointCut(4)
+    try {
+      const template = manifest(cut, command)
+      const base = { ...template, team: { ...template.team, owner: { kind: 'team', teamId } } }
+      const sessions = Object.values(cut.snapshot.entities).flatMap(entity => entity.binding === undefined ? []
+        : [{ kind: 'unmaterialized', ...entity.binding }])
+      await expect(cut.publish({ ...base, sessions } as never)).rejects.toThrow('canonical owner references')
+      const channelId = cut.snapshot.channelReservations?.[spec.key]?.channelId
+      if (channelId === undefined) throw new Error('Reservation has no channel')
+      const channels = [{ ...base.team, owner: { kind: 'channel', channelId } }]
+      expect((await cut.publish({ ...base, sessions, channels } as never)).status).toBe('completed')
+    } finally { cut.release() }
+  } finally { await h.close() }
+})
+
+it('rejects missing, negative, fractional or non-numeric publication times at the durable journal parser', async () => {
+  const h = await createBusinessHarness('json')
+  try {
+    const { checkpointRecordSchema } = await import('../src/checkpoints.ts')
+    const command = request('timestamp-parser')
+    await h.run.beginCheckpoint(command)
+    const cut = await h.run.acquireCheckpointCut(4)
+    try {
+      const value = manifest(cut, command)
+      for (const publishedAt of [undefined, -1, 0.5, '100', Number.MAX_SAFE_INTEGER + 1]) {
+        expect(checkpointRecordSchema.safeParse({ kind: 'checkpoint/published', manifest: value, publishedAt }).success).toBe(false)
+      }
+      expect(checkpointRecordSchema.safeParse({ kind: 'checkpoint/published', manifest: value, publishedAt: 0 }).success).toBe(true)
+      expect(cut.reference.stream.version).toBe(SIMULATION_JOURNAL_VERSION)
+    } finally { cut.release() }
   } finally { await h.close() }
 })

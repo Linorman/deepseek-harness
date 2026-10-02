@@ -14,6 +14,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { ReactNode } from 'react'
 import type { PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@clocky/clocky-client-ui-slots'
 import { SessionStage } from './SessionStage.tsx'
+import { WORKSPACE_NAVIGATION_EVENT } from './navigation.ts'
 import { computeColumns, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_DEFAULT } from './columns.ts'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
@@ -21,10 +22,10 @@ import css from './AppFrame.module.css'
 /** Full composed props: runtime share + child-slot render share + store share. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
-  & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay' | 'team.workspace'>
+  & PropsRenderSlots<'sidebar' | 'conversation' | 'details' | 'shell.overlay' | 'team.workspace' | 'simulation.workspace'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'layout'>
-  & { closeSession: () => void }
+  & { closeSession: () => void; showTeams: () => void }
 
 /** Center column grid item (session-body building block). */
 function CenterColumn(props: { children?: ReactNode }) {
@@ -32,8 +33,8 @@ function CenterColumn(props: { children?: ReactNode }) {
 }
 
 /** Details column grid item; width 0 keeps the subtree mounted (never unmount on close). */
-function DetailsColumn(props: { children?: ReactNode }) {
-  return <div className={css.detailsCol}>{props.children}</div>
+function DetailsColumn(props: { children?: ReactNode; hidden: boolean }) {
+  return <div className={css.detailsCol} hidden={props.hidden}>{props.children}</div>
 }
 
 /**
@@ -92,6 +93,7 @@ export function AppFrame({
   useSessions,
   useTeamTasks,
   closeSession,
+  showTeams,
   t,
   actions,
   renderSlot,
@@ -108,12 +110,31 @@ export function AppFrame({
     return coordinator.kind === 'bound' && coordinator.binding.sessionId === sessionId
       ? `${objective} / ${coordinator.name.text}` : objective
   })
-  const inspecting = selectedTeam !== undefined
+  const coordinatorConversation = useTeamTasks?.(state => state.selected !== undefined
+    && state.current === state.selected.teamId && sessionId !== undefined && state.selected.coordinatorSessionId === sessionId
+    && state.selected.state.readAccess === 'member' && state.selected.state.executionManagement !== 'simulation-managed'
+    && !['completed', 'failed', 'cancelled'].includes(state.selected.state.team.phase)) ?? false
+  const simulation = panels.workspace === 'simulation'
+  const [requestedTeam, setRequestedTeam] = useState(() => new URLSearchParams(window.location.search).has('team'))
+  const inspecting = (selectedTeam !== undefined || requestedTeam) && !simulation
   const detailsSession = useSessions((s) => {
     const current = s.current
     return current !== undefined && s.byId[current]?.blank === false ? current : undefined
   })
   const frameRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const restore = () => {
+      const route = new URLSearchParams(window.location.search)
+      setRequestedTeam(route.has('team'))
+      actions.showWorkspace(route.get('workspace') === 'simulation' ? 'simulation' : 'team')
+    }
+    window.addEventListener('popstate', restore)
+    window.addEventListener(WORKSPACE_NAVIGATION_EVENT, restore)
+    return () => {
+      window.removeEventListener('popstate', restore)
+      window.removeEventListener(WORKSPACE_NAVIGATION_EVENT, restore)
+    }
+  }, [actions])
   const [viewport, setViewport] = useState(() => window.innerWidth)
 
   const lastSession = useRef(detailsSession)
@@ -196,6 +217,7 @@ export function AppFrame({
             (collapsed follows the resolved rail, so a derived auto-collapse
             renders the rail UI too). */}
         {renderSlot('sidebar', {
+          workspace: panels.workspace,
           collapsed: sidebarCollapsed,
           width: cols.sidebar,
         })}
@@ -207,12 +229,16 @@ export function AppFrame({
             is session-maybe; the strict details entry naturally renders
             empty while no session is current. */}
         <CenterColumn>
-          {renderSlot('team.workspace', {})}
-          <SessionStage inspecting={inspecting} visible={!inspecting || sessionId !== undefined}
-            title={t('session')} context={sessionContext} backLabel={t('back')} expandLabel={t('expand')} restoreLabel={t('restore')} close={closeSession}>
+          <div className={css.productStage} hidden={simulation}>{renderSlot('team.workspace', {})}</div>
+          {renderSlot('simulation.workspace', { visible: simulation }, { fallback: simulation
+            ? <section className={css.unavailable} role="region" aria-label={t('simulationUnavailable')}>
+              <p>{t('simulationUnavailable')}</p><button type="button" onClick={showTeams}>{t('backToTeams')}</button>
+            </section> : null })}
+          <SessionStage inspecting={inspecting} visible={!simulation && (!inspecting || sessionId !== undefined)}
+            title={t(!inspecting && sessionId === undefined ? 'newTeam' : coordinatorConversation ? 'coordinator' : 'session')} context={sessionContext} backLabel={t('back')} expandLabel={t('expand')} restoreLabel={t('restore')} close={closeSession}>
             <div className={css.sessionColumns} data-session-columns style={{ gridTemplateColumns: `minmax(0, 1fr) ${cols.details}px` }}>
               <CenterColumn>{renderSlot('conversation', {})}</CenterColumn>
-              <DetailsColumn>{renderSlot('details', {})}</DetailsColumn>
+              <DetailsColumn hidden={cols.details === 0}>{renderSlot('details', {})}</DetailsColumn>
             </div>
           </SessionStage>
         </CenterColumn>

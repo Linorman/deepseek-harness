@@ -1,10 +1,20 @@
+export { normalizeTaskDetailsUpdate, taskUpdateReceipt, taskUpdateRejection } from './task-update.ts'
+export { resolveTaskReferences } from './task-references.ts'
+export { resolveTeamIdentities } from './identity-resolution.ts'
+export { teamEventOwnerId } from './event-owner.ts'
+export { withoutPrivateTaskHistoryArtifacts, withoutPrivateTeamArtifacts, withoutPrivateWorkflowArtifacts } from './product-artifacts.ts'
+export { memberReadiness } from './member-readiness.ts'
+import { TeamError } from './error.ts'
+import type { TeamHumanActorLookup, TeamHumanActorSelection } from './types.ts'
+import { teamAttentionCounts } from './attention.ts'
+export { teamAttentionCounts, projectTeamAttention, humanActionHandling } from './attention.ts'
 export { projectMemberInspection } from './member-inspection.ts'
 import { teamTextSummary as textSummary } from './display-text.ts'
 export { projectWorkflowInspection } from './workflow-inspection.ts'
 import type { JsonObject, TeamUsageSnapshot, TeamHumanActionSnapshot } from './types.ts'
 export { projectTaskInspection, withoutPrivateTaskArtifacts } from './task-inspection.ts'
 export type { TeamTaskInspectionProjection } from './task-inspection.ts'
-import type { TeamBrowseSpec, TeamBrowsePage, TeamTaskSummary, TeamMemberSummary, TeamWorkflowSummary, TeamWorkflowPlanId, TeamWorkflowPlanSnapshot } from './types.ts'
+import type { TeamTaskQuery, TeamBrowseSpec, TeamBrowsePage, TeamTaskSummary, TeamMemberSummary, TeamWorkflowSummary, TeamWorkflowPlanId, TeamWorkflowPlanSnapshot } from './types.ts'
 /** Bounded Team display projections, separate from complete runtime replay state. */
 import type {
   ActivationBindingSnapshot, ActivationId, ChannelId, ParticipantId, ParticipantSnapshot,
@@ -13,13 +23,14 @@ import type {
 
 /** Collection views needed for bounded selection; implementations retain their own replay state. */
 export interface TeamSelectionSource {
+  readonly rules: JsonObject
   readonly budgets?: JsonObject
   readonly usage?: TeamUsageSnapshot
   readonly humanActions?: ReadonlyMap<unknown, Pick<TeamHumanActionSnapshot, 'phase'>>
   readonly team: TeamSnapshot
   readonly participants: ReadonlyMap<ParticipantId, ParticipantSnapshot>
   readonly activations: ReadonlyMap<ActivationId, ActivationBindingSnapshot>
-  readonly tasks: ReadonlyMap<TeamTaskId, Pick<TeamTaskSnapshot, 'phase'>>
+  readonly tasks: ReadonlyMap<TeamTaskId, Pick<TeamTaskSnapshot, 'phase' | 'delegation'>>
   readonly channelIds: ReadonlySet<ChannelId>
   readonly workflowPlans: { readonly size: number }
 }
@@ -31,15 +42,37 @@ export type TeamSelectionProjection =
 
 const utf8 = new TextEncoder()
 
+/** Project directory metadata with an exact authorized access marker and bounded title.
+ * @param team - Current authoritative Team metadata, excluding execution histories.
+ * @param membershipTeam - Team whose current human membership authorized this read.
+ * @param maxTextBytes - Deployment allowance for the title's UTF-8 prefix.
+ * @param rules - Immutable authoritative execution-owner rules; their contents remain private.
+ * @returns safe directory metadata without authority grants or goal budget bodies.
+ */
+export function projectTeamProductSummary(team: import('./types.ts').TeamSnapshot, membershipTeam: import('./types.ts').TeamId,
+  maxTextBytes: number, rules: JsonObject): import('./types.ts').TeamProductSummary {
+  const objective = textSummary(team.goal.objective, maxTextBytes)
+  return { ...rules['simulationRunId'] === undefined ? {} : { executionManagement: 'simulation-managed' },
+    id: team.id, phase: team.phase, depth: team.depth, maxTeamDepth: team.maxTeamDepth,
+    cursor: team.cursor, createdAt: team.createdAt, updatedAt: team.updatedAt,
+    ...team.parentTeamId === undefined ? {} : { parentTeamId: team.parentTeamId },
+    ...team.parentTaskId === undefined ? {} : { parentTaskId: team.parentTaskId },
+    ...team.workspacePath === undefined ? {} : { workspacePath: team.workspacePath },
+    goal: { teamId: team.id, revision: team.goal.revision, phase: team.goal.phase, objective: objective.text },
+    objectiveTruncated: objective.truncated, readAccess: membershipTeam === team.id ? 'member' : 'parent-inspection' }
+}
+
 /** Project current identity, coordinator binding and counts without materializing history arrays.
  * @param projection - Authoritative in-memory Team state under its serializer.
  * @param maxTextBytes - UTF-8 allowance for each display field.
  * @param maxBytes - Allowance for the complete emitted JSON value, including metadata.
  * @param includeMetadata - Include exact scalar metadata when it fits the same response allowance.
+ * @param readAccess - Authenticated product observation included in the complete response allowance.
  * @returns bounded first-selection data or the structural size failure.
  */
 export function projectTeamSelection(
   projection: TeamSelectionSource, maxTextBytes: number, maxBytes: number, includeMetadata = false,
+  readAccess?: TeamSelectionSnapshot['readAccess'],
 ): TeamSelectionProjection {
   const team = projection.team
   maxTextBytes = Math.min(maxTextBytes, maxBytes)
@@ -79,6 +112,8 @@ export function projectTeamSelection(
     for (const action of projection.humanActions.values()) if (action.phase === 'pending') pendingHumanActionCount += 1
   }
   const value: TeamSelectionSnapshot = {
+    ...projection.rules['simulationRunId'] === undefined ? {} : { executionManagement: 'simulation-managed' },
+    ...readAccess === undefined ? {} : { readAccess },
     team: { id: team.id, depth: team.depth, maxTeamDepth: team.maxTeamDepth, phase: team.phase,
       cursor: team.cursor, createdAt: team.createdAt, updatedAt: team.updatedAt,
       ...team.parentTeamId === undefined ? {} : { parentTeamId: team.parentTeamId },
@@ -88,7 +123,8 @@ export function projectTeamSelection(
     goal: { revision: team.goal.revision, phase: team.goal.phase, objective: textSummary(team.goal.objective, maxTextBytes) },
     coordinator,
     ...team.cancellation === undefined ? {} : { cancellation: { reason: textSummary(team.cancellation.reason.message, maxTextBytes) } },
-    ...projection.humanActions === undefined ? {} : { pendingHumanActionCount: pendingHumanActionCount },
+    ...projection.humanActions === undefined ? {} : { pendingHumanActionCount: pendingHumanActionCount,
+      attentionCounts: teamAttentionCounts(projection) },
     ...team.stallReason === undefined ? {} : { stallReason: {
       code: team.stallReason.code, message: textSummary(team.stallReason.message, maxTextBytes),
     } },
@@ -159,7 +195,7 @@ export interface TeamBrowseSource {
 /** A complete bounded page or an explicit failure to fit one indivisible row. */
 export type TeamBrowseProjection =
   | { readonly ok: true; readonly value: TeamBrowsePage }
-  | { readonly ok: false; readonly reason: 'owner' | 'metadata' | 'row' }
+  | { readonly ok: false; readonly reason: 'owner' | 'metadata' | 'row' | 'query' | 'revision' }
 
 /** Project a byte- and row-limited response without copying execution history.
  * @param source - authoritative Team collections under their serializer.
@@ -174,18 +210,9 @@ export function projectTeamBrowse(
   if (source.team.id !== request.teamId) return { ok: false, reason: 'owner' }
   const textLimit = Math.min(maxTextBytes, maxBytes)
   switch (request.kind) {
-    case 'tasks': return browseRows(source.tasks, source.team, request, maxBytes, (task): TeamTaskSummary => {
-      const ownerId = task.lease?.participantId ?? task.attemptHistory.at(-1)?.participantId
-      return { id: task.id, teamId: task.teamId, revision: task.revision, phase: task.phase,
-        subject: textSummary(task.subject, textLimit), executionKind: task.execution.kind,
-        ...ownerId === undefined ? {} : { ownerId },
-        ...task.reviewPolicy.kind === 'participant' ? { reviewerId: task.reviewPolicy.reviewerId } : {},
-        ...task.delegation?.childTeamId === undefined ? {} : { childTeamId: task.delegation.childTeamId },
-        ...task.workflowPlanId === undefined ? {} : { workflowPlanId: task.workflowPlanId },
-        priority: task.priority, attemptCount: task.attemptCount, maxAttempts: task.maxAttempts,
-        dependencyCount: task.blockedBy.length, reviewCount: task.reviewHistory.length,
-        hasLease: task.lease !== undefined, cancellationRequested: task.cancellation !== undefined }
-    })
+    case 'tasks': return request.query === undefined
+      ? browseRows(source.tasks, source.team, request, maxBytes, task => taskSummary(task, textLimit))
+      : queryTasks(source, request, request.query, textLimit, maxBytes)
     case 'members': return browseRows(source.participants, source.team, request, maxBytes, (member): TeamMemberSummary => ({
       id: member.id, teamId: member.teamId, kind: member.kind, phase: member.phase,
       displayName: textSummary(member.displayName, textLimit), role: member.role,
@@ -200,6 +227,71 @@ export function projectTeamBrowse(
     default: return assertNever(request.kind)
   }
 }
+
+/** Shared task summary projection for ordinary lists and independent filtered queries. */
+function taskSummary(task: TeamTaskSnapshot, textLimit: number): TeamTaskSummary {
+  const ownerId = task.lease?.participantId ?? task.attemptHistory.at(-1)?.participantId
+  return { id: task.id, teamId: task.teamId, revision: task.revision, phase: task.phase,
+    subject: textSummary(task.subject, textLimit), executionKind: task.execution.kind,
+    ...ownerId === undefined ? {} : { ownerId },
+    ...task.reviewPolicy.kind === 'participant' ? { reviewerId: task.reviewPolicy.reviewerId } : {},
+    ...task.delegation?.childTeamId === undefined ? {} : { childTeamId: task.delegation.childTeamId },
+    ...task.workflowPlanId === undefined ? {} : { workflowPlanId: task.workflowPlanId },
+    priority: task.priority, attemptCount: task.attemptCount, maxAttempts: task.maxAttempts,
+    dependencyCount: task.blockedBy.length, reviewCount: task.reviewHistory.length,
+    hasLease: task.lease !== undefined, cancellationRequested: task.cancellation !== undefined }
+
+}
+
+/** Filter directly over authoritative records, retaining at most one response page. */
+function queryTasks(source: TeamBrowseSource, request: TeamBrowseSpec, query: TeamTaskQuery,
+  textLimit: number, maxBytes: number): TeamBrowseProjection {
+  const cursor = request.queryCursor
+  if (cursor !== undefined) {
+    if (cursor.teamId !== source.team.id
+      || cursor.query.search !== query.search || cursor.query.phase !== query.phase
+      || cursor.query.excludeTaskId !== query.excludeTaskId) return { ok: false, reason: 'query' }
+    if (cursor.teamCursor !== source.team.cursor) return { ok: false, reason: 'revision' }
+  }
+  const search = query.search.trim().toLowerCase()
+  const matches = (task: TeamTaskSnapshot) => task.phase !== 'deleted' && task.id !== query.excludeTaskId
+    && (query.phase === undefined || task.phase === query.phase) && task.subject.toLowerCase().includes(search)
+  let total = 0
+  let position = -1
+  const candidates: { task: TeamTaskSnapshot; position: number }[] = []
+  for (const task of source.tasks.values()) {
+    position++
+    if (!matches(task)) continue
+    total++
+    if (position > request.afterCursor && candidates.length <= request.limit) candidates.push({ task, position })
+  }
+  const items: TeamTaskSummary[] = []
+  const header = { kind: 'tasks' as const, teamId: source.team.id, teamCursor: source.team.cursor,
+    query, sourceTotal: source.tasks.size, total, scanned: source.tasks.size }
+  const page = (after: number | undefined): Extract<TeamBrowsePage, { kind: 'tasks' }> => ({ ...header, items,
+    ...after === undefined ? {} : { nextQueryCursor: { teamId: source.team.id, teamCursor: source.team.cursor,
+      query, order: 'task-insertion-v1' as const, afterCursor: after } } })
+  if (utf8.encode(JSON.stringify(page(undefined))).byteLength > maxBytes) return { ok: false, reason: 'metadata' }
+  let itemBytes = 0
+  let next: number | undefined
+  for (const [index, candidate] of candidates.entries()) {
+    if (index === request.limit) break
+    const row = taskSummary(candidate.task, textLimit)
+    if (row.teamId !== source.team.id) return { ok: false, reason: 'owner' }
+    const rowBytes = utf8.encode(JSON.stringify(row)).byteLength
+    const after = index < candidates.length - 1 ? candidate.position : undefined
+    const metadataBytes = utf8.encode(JSON.stringify({ ...page(after), items: [] })).byteLength
+    if (metadataBytes + itemBytes + (items.length === 0 ? 0 : 1) + rowBytes > maxBytes) {
+      if (items.length === 0) return { ok: false, reason: 'row' }
+      break
+    }
+    items.push(row)
+    itemBytes += rowBytes + (items.length > 1 ? 1 : 0)
+    next = after
+  }
+  return { ok: true, value: page(next) }
+}
+
 
 type BrowseRow = TeamTaskSummary | TeamMemberSummary | TeamWorkflowSummary
 
@@ -258,4 +350,33 @@ export function projectHumanAction(action: TeamHumanActionSnapshot | undefined, 
   if (action === undefined) return { ok: false, reason: 'missing' }
   if (utf8.encode(JSON.stringify(action)).byteLength > maxBytes) return { ok: false, reason: 'too-large' }
   return { ok: true, value: structuredClone(action) }
+}
+
+/** Resolve one active principal-owned human without copying grants, task bodies, or participant history.
+ * @param participants - Authoritative Team membership under its serializer.
+ * @param request - Exact Team and authenticated principal identity.
+ * @returns minimal proof-issuer facts; missing or ambiguous membership rejects.
+ */
+export function selectHumanActor(participants: Iterable<ParticipantSnapshot>, request: TeamHumanActorLookup): TeamHumanActorSelection {
+  const selection = findHumanActor(participants, request)
+  if (selection === undefined) throw new TeamError('Authenticated principal owns no active human Team participant', 'TEAM_HUMAN_ACTOR_NOT_FOUND')
+  return selection
+}
+
+/** Find membership while allowing the read owner to inspect a reserved ancestor when none exists locally.
+ * @param participants - Authoritative membership under its Team serializer.
+ * @param request - Exact Team and authenticated principal identity.
+ * @returns minimal issuer facts or undefined; ambiguous membership rejects without selecting an ancestor.
+ */
+export function findHumanActor(participants: Iterable<ParticipantSnapshot>,
+  request: TeamHumanActorLookup): TeamHumanActorSelection | undefined {
+  let match: ParticipantSnapshot | undefined
+  for (const participant of participants) {
+    if (participant.teamId !== request.teamId || participant.kind !== 'human' || participant.phase !== 'active'
+      || participant.owner?.kind !== 'product-principal' || participant.owner.principalId !== request.principalId) continue
+    if (match !== undefined) throw new TeamError('Authenticated principal maps to multiple active human Team participants', 'TEAM_HUMAN_ACTOR_AMBIGUOUS')
+    match = participant
+  }
+  if (match === undefined) return undefined
+  return { participantId: match.id, operations: [...new Set(match.authorityGrant?.operations ?? [])] }
 }

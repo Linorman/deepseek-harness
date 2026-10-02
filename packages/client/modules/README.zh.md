@@ -12,7 +12,9 @@ Host 会在 parser preload 运行前安装 `window.__ModuleLoader__`。其 queue
 
 Node 侧会扫描已启用的 Loader 配置项以发现 web `clocky.client` 包，解析每个 `exports["./client"]`，把构建后的 bundle 哈希和包专属 `clocky.client.external` 请求写入启动图，把动态提供方排在消费者之前，并通过 `/plugins` 提供该文件及其 sourcemap。源码启动会把宿主侧导入映射到 TypeScript 源码，但仍消费这一构建后的客户端导出；缺失文件共享一条构建说明，随后以包／路径列表列出各项，而无关的文件系统错误仍是独立故障。
 
-`clocky.client.external` 是统一基座之外的可选精确 specifier 请求列表。统一基座包括外壳播种的 React、Cordis 和静态 UI 库，以及由 HTML parser 预载的 runtime。请求由其命名的动态 package row 或精确静态表键回答；只有末尾 `/client` 会别名到 package row，并且不存在 provider 别名声明。纯类型 import 会被擦除，不产生请求。组合阶段会拒绝畸形请求、缺失提供方、自请求和同步请求环；import 与 prefetch 会在消费者物化前递归登记动态提供方。参见[共享模块与模块图](../AGENTS.md#shared-modules-and-the-module-graph)。
+只有 `ACTIVE` Host fiber 发布浏览器条目。即使 Loader entry 仍启用，pending、loading、failed 和退休中的 fiber 也不发布。构造／销毁与生命周期状态事件复用按包合并的对账；必需服务丢失移除条目，重新激活恢复单个条目并保留 bundle revision。消费 graph 前以 `loader.await()` 作为启动屏障。Registry 不拥有执行或世界状态。
+
+`clocky.client.external` 是统一基座之外的可选精确 specifier 请求列表。统一基座包括外壳播种的 React、Cordis 和静态 UI 库，以及由 HTML parser 预载的 runtime。请求由其命名的动态 package row 或精确静态表键回答；只有末尾 `/client` 会别名到 package row，并且不存在 provider 别名声明。纯类型 import 会被擦除，不产生请求。组合阶段会拒绝畸形请求、缺失提供方、自请求和同步请求环；import 与 prefetch 会在消费者物化前递归登记动态提供方。参见[客户端加载与依赖](../AGENTS.md#loading-and-dependencies)。
 
 `Config.browserConfig`将准确的已声明浏览器包名映射到显式公开的 JSON 配置。只有此映射会写入启动行，不推断或复制 Host 插件配置。未知目标和非 JSON 值在加载时拒绝。配置参与 graph revision，并在页面启动时应用；修改后需要刷新页面。这些值属于浏览器公开内容，不能放置凭据。
 

@@ -14,6 +14,10 @@ import { taskConcurrencyUsage, taskChildTeamReservation, teamClosureIdempotencyK
   type JsonObject, type TeamSystemChildCreationProof, type TeamSystemChildCreationScope,
   type TeamSystemClosureDriverProof, type TeamSystemClosureDriverScope, type TeamSystemTaskControlProof, type TeamSystemTaskControlScope } from '@clocky/clocky-team'
 import TeamHub from '../src/index.ts'
+import ProductPrincipalRegistry, { productPrincipalId } from '@clocky/clocky-product-principal'
+import type { AuthenticatedProductCall } from '@clocky/clocky-product-principal'
+import * as TeamHumanActor from '@clocky/clocky-team-human-actor'
+import { jsonObjectSchema, teamIdSchema } from '@clocky/clocky-team'
 import { delegationFixture } from './delegation-fixtures.ts'
 import { createTestCoordinatorTask, provisionTestCoordinator } from './fixtures.ts'
 import { inviteBootstrapParticipant, transitionBootstrapParticipant } from '../../../core/team/tests/bootstrap-topology-authority.ts'
@@ -100,6 +104,59 @@ async function endpoints(backend: 'json' | 'sqlite' = 'json') {
 }
 
 describe('child endpoint publication authority', () => {
+  it.each(['json', 'sqlite'] as const)('permits ancestor inspection through the reserved task without child mutation authority (%s)', async (backend) => {
+    const { ctx, fixture, create } = await setup(backend)
+    const child = await create()
+    await provisionTestCoordinator(ctx, child.team.id)
+    await ctx.plugin(ProductPrincipalRegistry)
+    await ctx.plugin(TeamHumanActor)
+    const principalId = productPrincipalId('parent-read-owner')
+    const human = await inviteBootstrapParticipant(ctx, { teamId: fixture.parentId,
+      expectedCursor: (await ctx.teams.getTeam({ teamId: fixture.parentId })).team.cursor,
+      kind: 'human', role: 'owner', displayName: 'Parent reader', capabilities: [],
+      owner: { kind: 'product-principal', principalId },
+      authorityGrant: { operations: [], workspaceModes: [], readScopes: [], writeScopes: [], budgets: {} } })
+    for (const phase of ['provisioning', 'active'] as const) await transitionBootstrapParticipant(ctx, {
+      teamId: fixture.parentId, participantId: human.id,
+      expectedCursor: (await ctx.teams.getTeam({ teamId: fixture.parentId })).team.cursor, phase,
+    })
+    const authority = await ctx.teams.resolveHumanReadAuthority({ teamId: child.team.id, principalId })
+    expect(authority).toEqual({ teamId: fixture.parentId, participantId: human.id, operations: [] })
+    const member = (await ctx.teams.getTeam({ teamId: child.team.id })).participants[0]!
+    const controller = new AbortController()
+    const call: AuthenticatedProductCall = { principal: { id: principalId, issuer: 'test', subject: 'owner',
+      assurance: 'test', credentialGeneration: 1 }, credentialGeneration: 1, signal: controller.signal }
+    const input = { teamId: child.team.id, participantIds: [member.id] }
+    let issued: import('@clocky/clocky-team').TeamHumanActorProof | undefined
+    await ctx.teamHumanActors.withProof(call, { teamId: child.team.id, operation: 'identity-resolve-read',
+      fence: { kind: 'read' }, payload: jsonObjectSchema.parse(input) }, async (actor, membershipTeam) => {
+      issued = actor
+      expect(membershipTeam).toBe(fixture.parentId)
+      expect((await ctx.teams.resolveIdentities({ ...input, actor })).items[0]?.state).toBe('resolved')
+      const directory = await ctx.teamHumanActors.withReader(call, async reader => await ctx.teams.listHumanTeamsPage({
+        reader, afterCursor: -1, limit: 128,
+      }))
+      expect(directory.items.map(item => item.id).sort()).toEqual([fixture.parentId, child.team.id].sort())
+      expect(directory.items.find(item => item.id === child.team.id)?.readAccess).toBe('parent-inspection')
+      expect(directory.items.find(item => item.id === fixture.parentId)?.readAccess).toBe('member')
+      expect(directory.items.every(item => !('authorityGrant' in item) && !('budgets' in item.goal))).toBe(true)
+      await expect(ctx.teams.resolveIdentities({ ...input, teamId: fixture.parentId, actor }))
+        .rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+      controller.abort()
+      await expect(ctx.teams.resolveIdentities({ ...input, actor })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    })
+    await expect(ctx.teams.resolveIdentities({ ...input, actor: issued! })).rejects.toMatchObject({ code: 'TEAM_ACTOR_PROOF_INVALID' })
+    const freshCall = { ...call, signal: new AbortController().signal }
+    const mutation = { teamId: child.team.id, operation: 'task-mutate' as const,
+      fence: { kind: 'cursor' as const, cursor: child.team.cursor }, payload: {} }
+    await expect(ctx.teamHumanActors.withProof(freshCall, mutation, async () => { throw new Error('Inherited read cannot reach mutation') }))
+      .rejects.toMatchObject({ code: 'TEAM_HUMAN_ACTOR_NOT_FOUND' })
+    for (const teamId of [child.team.id, teamIdSchema.parse('absent-private-team')]) {
+      await expect(ctx.teams.resolveHumanReadAuthority({ teamId, principalId: productPrincipalId('foreign-reader') }))
+        .rejects.toMatchObject({ code: 'TEAM_HUMAN_ACTOR_FORBIDDEN', message: 'Authenticated principal cannot inspect this Team' })
+    }
+  })
+
   it.each(['json', 'sqlite'] as const)('publishes one exact binding and keeps retries idempotent (%s)', async (backend) => {
     const f = await endpoints(backend)
     try {

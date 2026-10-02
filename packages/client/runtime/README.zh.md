@@ -2,7 +2,25 @@
 
 [English](README.md) | 中文
 
+来源权限刷新独立于仿真世界 watch。`watchSource()` 持有一个精确来源及配置的读取结算后计时器，`inspectSource()` 继续定位或原文分页，`refreshSource()` 刷新当前原文。Team 撤权帧会为祖先权限依赖保守清除正文，不改变其他编写授权。来源切换取消旧 IO，所有者在卸载时排空已接收读取。
+
+`recordExporter()` 创建由插件持有的有界日志下载所有者，跟踪当前选择、凭据代际及策略观察，重建有序完整记录，并在调用同步文件消费者前重新验证。进度不含正文，取消清除保留输出，卸载排空已接收读取。日志列表与精确原文检查分别在 `records`、`record` 中保持独立有界。
+
+`ctx.simulationRuns` 持有有界目录／run／集合／对象／模板／预检／控制观察。`preflight(input)` 保留一个精确草稿校验窗口，不分配命令身份；替换、暂停查看、断线及凭据退役取消进行中的校验，不返回过期授权。`closePreflight()` 清理已改变或关闭的草稿；创建权限拒绝不撤销独立运行查看及私有输入。读取等待握手完成，并隔离请求／授权代际。普通断线保留标记内容，认证或查看拒绝清除；行政控制权限与查看权限保持独立。`observe(runId, { waitMs, retryMs })` 为可见运行持有一个有界元数据等待及重试计时器。策略替换清除私有页并取消持有旧响应，不改变编写授权或原命令；后续世界 revision 只将保留页面标记过期。新握手在策略核对前隐藏上下文正文。disposer 只退休自己的观察者，插件卸载排空被替换的等待。`pause()` 取消视图读取并释放未观察私有上下文，不取消已受理执行。`administration(ctx, options)` 为 UI 插件创建有界原命令 owner，在 IO 前保留精确 create／prepare／checkpoint／restore／manage／ingress 输入，独立查询持久结果。编写输入捕获授权版本，后到响应不能进入另一账号，`not-found` 不分配新身份。UI 注册者提供明确额度，通过 inject hook 绑定裸观察源。见 [Simulation 工作区约定](../ui-simulation/README.zh.md)。
+
+`lookupTaskUpdate()` 在选中 Team 权限下读取精确原 Team／task／command 的结果。取消、Team 替换与授权替换会收回旧结果和诊断。管理操作转交确定拒绝前，会将元数据与已提交身份和 revision 核对。结果 revision 推进任务检查的最低版本，再次读取失败仍将旧字段标为过期。明确权限拒绝清理私有数据，普通失败保留数据，`not-found` 不触发自动写入。
+
+表单拥有一个独立于候选查询和任务检查的任务引用观察。它仅对请求 ID 分批，所有页面固定同一 Team revision，原子发布完整集合，并把已观测变化标为过期。替换和退役隔离迟到 IO；普通失败保留已授权条目。消费者容量、批量和轮询额度约束其生命周期。
+
+请求检查器拥有一个精确人工事项的正文、处理状态和 Team cursor。新的 Team revision 或收到的答复事实要求重新检查；旧读取不能覆盖更新事实。普通 IO 失败与断线保留标明过期的内容，权限收回则清除。UI 答复草稿与这些服务端事实分开存储。
+
+`readMemberDetail()` 在 `list.memberDetail` 中持有一个精确成员的 capability 分页。续页固定已观察的 Team cursor，更新事实要求明确刷新。普通失败保留分页；选择切换、授权替换及卸载清除分页并取消待完成读取，重连重新验证原窗口。
+
 TeamTaskRuntime 保留有界 selection、可选标量元数据和独立集合窗口。首次打开与后台刷新使用`team.selection`；类型化任务事件使独立任务 inspector 标记为待刷新。成员 Session 链接携带 Participant 身份，并通过`team.member.session`核对。Session 摘要携带头部中不可变的 Team/Participant 身份；协调者输入通过有界 selection 核对，不需要独立历史路由缓存。进入草稿或归档会释放当前选择和窗口。
+
+明确的产品访问失效会清理 Session 正文／fiber、Team 数据与本地首次输入草稿，以及工作区元数据。该重置隔离更早的未完成响应。重连重置当前授权后才分发该代际保留的帧；基线读取负责对账这些增量。
+
+Host 授权 scope 变化时，WorkspaceManager 对未完成的基线和修改回执设置代际隔离。Team 撤销会清理工作区与归档缓存中的已知 Session 引用；后到帧不能重新填充。当前已授权基线可恢复访问。工作区元数据保留其 Host 访问语义。
 
 Team、通道和收件箱列表、通道记录及审计视图各保留一个 provider 页。续页替换当前窗口，失败保留原页。Team/通道列表刷新重读当前起点，返回首页才重启遍历；已选 Team、任务和通道不依赖列表成员。收件箱换页复用未提交回答确认。通道同意操作的重试身份由通道、参与者、邀请版本和 manifest 指纹派生，不需要历史键缓存。
 
@@ -12,6 +30,13 @@ Team、通道和收件箱列表、通道记录及审计视图各保留一个 pro
 
 <a id="slot-declaration-injection"></a>
 
+Team 待处理预览与完整列表页使用 runtime 持有的独立读取器。普通 IO 失败保留获准内容，明确拒绝会清除内容。已知新 revision 会阻止续页，直到显式刷新。轮询只读取预览首页；Team 替换、凭据变更和断线阻止迟到响应发布。所属 UI 提供经过验证的行数与刷新额度。
+
+
+`listRequests()` 持有一个运行行政日志的元数据窗口，其 revision 独立于 Native 世界推进。权限拒绝只清除此行政响应。冷 `retry-request` 保存准确原 run／command 选择，通过 Host 保留的 payload 查询／重试；已有原请求保留原命令类别。返回 receipt 同时核对两个 ID。授权替换清理选择，普通视图取消不终止已受理 Host 工作。
+
+仿真原命令还独立暴露有界的请求日志观察，与保留回执分开。日志 revision 仅在同一运行内排序元数据；已完成／失败的元数据解释较早的已受理回执，不替换回执。不可比较的终态需要核对。离开当前页的观察标为保留结果，读取拒绝清除元数据，账号替换清除原命令。只有查询成功才替换回执；日志已确认终态时阻止再次提交该原命令。日志投影超过完整记录字节上限时，预留的容量标记明确呈现待核对状态并阻止重试／释放；离开当前页不能清除此标记，只有可容纳的新鲜观察才能完成核对。原输入与查询能力仍然保留。
+
 ## Slot 声明注入
 
 `ctx.slots.inject(name, callback)` 将完整的 `SlotMap` key 作为贡献项的依赖，适用于贡献方插件可独立于声明条目激活的情形。声明存在时，它会同步运行 `callback`，否则等待；声明折叠会 dispose（资源释放）回调 effect，重新声明则会再次运行回调。控制器归调用方的插件 fiber 所有，因此卸载贡献方会取消等待或移除其活跃注册项。直接调用 `slots.register()` 向未声明 slot 注册仍会抛出异常。
@@ -20,9 +45,17 @@ Team、通道和收件箱列表、通道记录及审计视图各保留一个 pro
 
 ## Team 任务产品状态
 
-Team 列表刷新只读取用户已明确请求的页范围。`loadMore()` 根据 `nextCursor` 获取一页，失败时保留已有行；后续刷新维持该请求范围。runtime 暴露的 channel read 也保留同一 `nextCursor`，因此 detail consumer 可以显式请求后续 WAL page。`readArtifact(teamId, artifactId, signal?)` 通过 Host 对准确的 durable reference 和 provider 解析已校验 bytes；runtime 会保留 Host error 与 cancellation 结果，而不会直接读取 URI。
+Team 列表刷新只读取用户已明确请求的页范围。`loadMore()` 根据 `nextCursor` 获取一页，失败时保留已有行；后续刷新维持该请求范围。runtime 暴露的 channel read 也保留同一 `nextCursor`，因此 detail consumer 可以显式请求后续 WAL page。`readArtifact(teamId, artifactId, signal?)` 通过 Host 验证精确引用，并发布单一 `artifactDetail` 窗口；返回读取结算，不返回字节。相同目标的刷新失败及普通断线保留已获准内容，重连后重新验证；目标／Team 选择／授权替换、已知拒绝及关闭均取消旧 IO 并清理旧窗口。不直接读取引用 URI。
 
 `TeamTaskRuntime` 持有 `ctx.teamTasks`。客户端启动时会清除已选转录并调用 `startDraft()`，不分配 Team 或 Session。`start()` 通过 `team.start` 将修剪后的文本同时作为 Team 目标和首条可信人类消息发送。启动失败时保留同一键和语义指纹；在放弃草稿前，改变后的重试会被拒绝。`open(teamId)` 读取持久化 Team 状态并解析协调者 activation 的 Session id。`archive(teamId)` 使用当前 Team cursor，在 Host 确认持久归档标记后隐藏终态 Team。连接时会对 Team 列表进行单飞刷新；尚无 Team watch 流。Session 刷新与转录导航仍归调用方持有，因为 Team runtime 从不把 Session 视作产品身份。
+
+`inspect()` 与重连刷新允许 Team 没有已绑定的协调者。此时 `TeamTaskSelection.coordinatorSessionId` 缺省；独立授权的成员 Session 查询仍可使用。旧有 `open()`、`start()` 和显式 `resume()` 仍要求已绑定协调者，并返回必需的 Session 身份。检查不会调用这些执行操作。
+
+`SimulationRuntime.listTaskReviews()` 保留一个可取消、固定观察版本的元数据页。审核读取拒绝清理该行政页面，不撤销独立查看授权。原命令 owner 接入 `review` 请求，核对查询恢复的操作、尝试、版本、审核结果和规范原因后才接受原回执。读取或查询不激活审核实体，也不授予普通 Team 修改权限。
+
+`SimulationRuntime.directory()` 在当前名称页成功后读取准确有序的 `runStatuses()` 批次，只允许查询保留目录中的 ID。替换窗口退休状态 IO，刷新失败保留过期观察。运行选择、连接和授权变化取消在途读取；状态请求不获取原生所有权，也不提交管理意图。
+
+原命令 owner 接入 `retry-operation`，核对查询返回的原运行／操作／尝试次数／规范原因，不用其他 payload 替换不确定身份。结果未知操作预览占一个独立有界响应族，不替换用户的操作表格。读取预览或查询授权不启动推理或目标执行。
 
 `readTaskDetail()`拥有一个当前任务记录、最近的已结算 attempt，以及每类历史的一页替换窗口。成员、任务与工作流集合读取 browse 摘要。历史读取锁定记录版本；切换任务或关闭详情会取消旧读取。模块导航保留这份有界选择，重连后重新验证。观察到新版本时，操作会禁用直到显式刷新。任务写入成功会刷新所选记录；取消后的轮询使用有界详情，并在不再查看该任务时停止。
 

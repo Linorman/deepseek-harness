@@ -51,10 +51,15 @@ export interface SimulationTokenReservation {
 /**
  * Sum the harness's disjoint uncached-input, cache and output buckets.
  * @param usage - Complete provider usage; missing cache buckets denote zero cached tokens.
- * @returns total charged tokens; reasoning is already part of output.
+ * @returns exact total charged tokens; reasoning is already part of output.
+ * @throws when a bucket or total exceeds safe integer capacity; rounded charges are never returned.
  */
 export function simulationTokenCount(usage: SimulationTokenUsage): number {
-  return usage.inputTokens + usage.outputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0)
+  const buckets = [usage.inputTokens, usage.outputTokens, usage.cacheReadTokens ?? 0, usage.cacheWriteTokens ?? 0]
+  if (buckets.some(value => !Number.isSafeInteger(value) || value < 0)) throw new Error('Simulation token bucket exceeds safe integer capacity')
+  const total = buckets.reduce((sum, value) => sum + BigInt(value), 0n)
+  if (total > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Simulation token usage exceeds safe integer capacity')
+  return Number(total)
 }
 
 /** Exact request-log position and compaction transaction, supplied by the canonical compaction owner. */

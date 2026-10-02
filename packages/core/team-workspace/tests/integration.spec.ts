@@ -87,6 +87,7 @@ function integrationTask(overrides: Record<string, unknown> = {}): TeamTaskSnaps
 /** Build the shared task fields accepted by the Team task snapshot schema. */
 function task(id: TeamTaskSnapshot['id'], overrides: Record<string, unknown> = {}): TeamTaskSnapshot {
   return teamTaskSnapshotSchema.parse({
+    createdAt: 0,
     id,
     teamId,
     revision: 1,

@@ -109,7 +109,8 @@ describe.each(['json', 'sqlite'] as const)('%s checkpoint owner audit', (backend
       await expect(h.ctx.simulationTeams.restore(h.selection, { ...h.request, implementationVersion: 'foreign' }))
         .rejects.toMatchObject({ message: 'Checkpoint recovery cleanup failed', errors: [
           expect.objectContaining({ message: 'Checkpoint implementation version differs' }), cleanupFailure,
-        ] })
+        ], diagnostic: { stage: 'restore', code: 'version-mismatch', cleanup: 'unconfirmed',
+          subject: { kind: 'checkpoint', checkpointId: h.request.id } } })
     } finally { intercepted.mockRestore(); restoreClose?.() }
   })
 
@@ -131,6 +132,8 @@ describe.each(['json', 'sqlite'] as const)('%s checkpoint owner audit', (backend
     const result = await restored.connection.checkpoint(command)
     expect(result).toMatchObject({ status: 'failed', error: kind === 'missing-channel'
       ? 'Checkpoint run has a confirmed channel missing from its Team' : 'Checkpoint Team has another lifecycle owner' })
+    expect(result).toMatchObject({ diagnostic: { stage: 'collect', code: kind === 'missing-channel' ? 'binding-mismatch' : 'owner-conflict',
+      subject: { kind: 'team', teamId: h.manifest.team.owner.teamId } } })
     expect(restored.run.snapshot().latestCheckpointId).toBe(h.request.id)
     changed.mockRestore()
     expect((await restored.connection.checkpoint(simulationCheckpointRequestSchema.parse({ ...command, id: 'repaired-owner' }))).status).toBe('completed')

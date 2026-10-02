@@ -1,7 +1,7 @@
 /** Interval accounting derived from durable admissions and accepted intents. @module @clocky/clocky-simulation-local/budget */
 import { z } from 'zod'
-import { simulationTokenCount, simulationBudgetGrantRequestSchema, simulationBudgetKindSchema, simTimeSchema } from '@clocky/clocky-simulation'
-import type { SimulationSnapshot, SimulationBudgetKind, SimulationBudgetUsage, SimulationBudgetGrantRequest, SimTime } from '@clocky/clocky-simulation'
+import { budgetInterval, budgetUsage, simulationBudgetGrantRequestSchema, simulationBudgetKindSchema } from '@clocky/clocky-simulation'
+import type { SimulationSnapshot, SimulationBudgetKind, SimulationBudgetGrantRequest } from '@clocky/clocky-simulation'
 
 const grantRequest: z.ZodType<SimulationBudgetGrantRequest> = simulationBudgetGrantRequestSchema
 
@@ -18,39 +18,7 @@ export class SimulationBudgetExceeded extends Error {
     super(`Simulation ${budget} interval budget exhausted; extend the budget and explicitly resume`)
   }
 }
-/**
- * Resolve the canonical start of a simulation-time budget interval.
- * @param state - Immutable interval width.
- * @param time - Simulation time to classify.
- * @returns interval start without floating-point conversion.
- */
-export function budgetInterval(state: SimulationSnapshot, time: SimTime): SimTime {
-  const width = BigInt(state.spec.budgetInterval)
-  return simTimeSchema.parse(String(BigInt(time) / width * width))
-}
-/**
- * Derive usage from durable work; retries, cancellation and writer replacement cannot refund it.
- * @param state - Retained decisions, message intents and explicit grants.
- * @param interval - Canonical interval start to inspect.
- * @returns independent decision, message and token usage with additive granted limits.
- */
-export function budgetUsage(state: SimulationSnapshot, interval = budgetInterval(state, state.time)): SimulationBudgetUsage {
-  const grants = Object.values(state.budgetGrants ?? {}).filter(grant => grant.interval === interval)
-  const limit = (kind: SimulationBudgetKind, initial: number): number => {
-    const total = grants.filter(grant => grant.budget === kind).reduce((sum, grant) => sum + BigInt(grant.amount), BigInt(initial))
-    if (total > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Simulation granted budget exceeds safe integer capacity')
-    return Number(total)
-  }
-  const decisions = Object.values(state.decisions).filter(decision => budgetInterval(state, decision.time) === interval)
-  const ids = new Set(decisions.map(decision => decision.id))
-  const tokens = Object.values(state.tokenReservations ?? {}).filter(value => value.interval === interval)
-    .reduce((sum, value) => sum + (value.status === 'not-dispatched' ? 0 : value.usage === undefined
-      ? Math.max(value.reserved, value.observedUsage === undefined ? 0 : simulationTokenCount(value.observedUsage))
-      : simulationTokenCount(value.usage)), 0)
-  return { interval, tokens: { used: tokens, limit: limit('tokens', state.spec.maxTokensPerInterval) }, decisions: { used: decisions.length, limit: limit('decisions', state.spec.maxDecisionsPerInterval) },
-    messages: { used: Object.values(state.operations).filter(operation => operation.action.kind === 'communication/post'
-      && ids.has(operation.decisionId)).length, limit: limit('messages', state.spec.maxMessagesPerInterval) } }
-}
+export { budgetInterval, budgetUsage } from '@clocky/clocky-simulation'
 /**
  * Reject work before admission when it cannot fit in the current interval.
  * @param state - Current durable usage and grants.

@@ -1,5 +1,6 @@
+import { taskDecision, taskDecisionBlock } from '@clocky/clocky-simulation'
 /** Deterministic, journal-owned context selection before any Session delivery. @module @clocky/clocky-simulation-local/context */
-import { selectKnowledge, knowledgeVisible } from './knowledge.ts'
+import { selectKnowledge, knowledgeVisible } from '@clocky/clocky-simulation'
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { isSimulationContextView } from '@clocky/clocky-session/surface'
@@ -23,17 +24,29 @@ export function prepareContext(
       throw new Error(`Simulation context requires the complete ${kind} section`)
     }
   }
+  const task = taskDecision(state, decision.id)
+  const taskInput = task === undefined ? undefined : taskDecisionBlock(task.execution, task.decision)
   const ingress = decision.ingressId === undefined ? undefined : state.ingresses?.[decision.ingressId]
   if (decision.ingressId !== undefined && (ingress?.request.entityId !== decision.entityId
     || ingress.eventId !== decision.wakeId || state.scheduledEvents[ingress.eventId]?.status !== 'consumed'
     || BigInt(ingress.key.time) > BigInt(decision.time))) throw new Error('Simulation ingress is not available to this decision')
-  const sections = [...(ingress === undefined ? request.sections : request.sections.map(section => section.kind !== 'input' ? section : {
+  let sections = [...(ingress === undefined ? request.sections : request.sections.map(section => section.kind !== 'input' ? section : {
     ...section, blocks: [...section.blocks, ingressBlock(ingress)],
   }))]
   const sources = [...(ingress === undefined || request.sources.some(source => source.kind === 'run-event'
     && source.runId === state.spec.runId && source.sequence === ingress.sequence) ? request.sources : [
       ...request.sources, { kind: 'run-event' as const, runId: state.spec.runId, sequence: ingress.sequence },
     ])]
+  if (taskInput !== undefined && task !== undefined) {
+    sections = sections.map(section => section.kind === 'input' ? { ...section, blocks: [...section.blocks, taskInput] } : section)
+    const reservation = { kind: 'run-event' as const, runId: state.spec.runId, sequence: task.execution.reservedSequence }
+    if (task.execution.request.interaction !== undefined && !sources.some(source => isDeepStrictEqual(source, reservation))) {
+      sources.push(reservation)
+    }
+    if (!sources.some(source => source.kind === 'run-event' && source.runId === state.spec.runId && source.sequence === task.decision.sequence)) {
+      sources.push({ kind: 'run-event', runId: state.spec.runId, sequence: task.decision.sequence })
+    }
+  }
   const knowledge = request.knowledge === undefined ? [] : selectKnowledge(state, { viewer: decision.entityId,
     cursor: decision.snapshotRevision, time: decision.time, limit: request.knowledge.ids.length, ids: request.knowledge.ids })
   if (request.knowledge !== undefined) {
@@ -183,6 +196,15 @@ export function assertContextProjection(state: SimulationSnapshot, decision: Sim
         && context.referencedReports?.includes(item.source.operationId) === true))))) {
       throw new Error('Simulation prepared knowledge lost its retained version or content')
     }
+  }
+  const task = taskDecision(state, decision.id)
+  if (task !== undefined && (!view.sources.some(source => source.kind === 'run-event'
+    && source.runId === state.spec.runId && source.sequence === task.decision.sequence)
+    || task.execution.request.interaction !== undefined && !view.sources.some(source => source.kind === 'run-event'
+      && source.runId === state.spec.runId && source.sequence === task.execution.reservedSequence)
+    || !view.content.some(section => section.kind === 'input'
+      && section.blocks.some(block => isDeepStrictEqual(block, taskDecisionBlock(task.execution, task.decision)))))) {
+    throw new Error('Simulation task context lost its recorded source or instructions')
   }
   if (decision.ingressId !== undefined) {
     const ingress = state.ingresses?.[decision.ingressId]

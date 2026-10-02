@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { PassThrough, Writable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@clocky/cordis'
+import { SessionId } from '@clocky/clocky-session'
 import Loader from '@clocky/cordis-plugin-loader'
 import AgentDefaultModelConfig from '@clocky/clocky-agent-default-model'
 import AgentRuntime from '@clocky/clocky-agent-runtime'
@@ -84,6 +85,7 @@ async function mountPlugin(
   options: {
     writeDelayMs?: number
     failFlush?: boolean
+    maxPendingNotificationBytes?: number
     beforeServer?: (ctx: Context) => Promise<void> | void
   } = {},
 ): Promise<ApplyHarness> {
@@ -158,7 +160,8 @@ async function mountPlugin(
   const exit = (code: number): void => { events.push({ kind: 'exit', code }) }
 
   ctx.effect(() => () => { events.push({ kind: 'root-disposed' }) }, 'jsonrpc test root-disposal witness')
-  const fiber = await ctx.plugin(jsonrpc, { input, output, exit })
+  const fiber = await ctx.plugin(jsonrpc, { input, output, exit,
+    ...options.maxPendingNotificationBytes === undefined ? {} : { maxPendingNotificationBytes: options.maxPendingNotificationBytes } })
 
   const frames = (): Record<string, unknown>[] =>
     events.flatMap(event => event.kind === 'frame' ? [event.frame] : [])
@@ -207,6 +210,28 @@ async function mockCompletionServer(): Promise<{ url: string; requests: unknown[
 }
 
 describe('clocky-sdk-jsonrpc-server plugin apply', () => {
+  it('disposes the runtime and exits nonzero when notification bytes exceed the deployment allowance', async () => {
+    const storageDir = await freshStorageRoot('clocky-jsonrpc-overflow-')
+    vi.stubEnv('TEST_API_KEY', 'test-key')
+    const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const harness = await mountPlugin(storageDir, { maxPendingNotificationBytes: 1 })
+    try {
+      harness.send({ jsonrpc: '2.0', id: 'init', method: 'initialize', params: {
+        credential: SDK_TEST_CREDENTIAL, cwd: storageDir, provider: 'test-provider', model: 'apply-model' } })
+      await harness.waitForFrame(frame => frame.id === 'init', 'initialized bounded transport')
+      harness.ctx.sessions.create(SessionId('overflow-source')).append('turn/start', { turn: 1 })
+      await waitFor(() => harness.exits()[0], 'failed stream exit')
+      expect(harness.exits()).toEqual([1])
+      expect(harness.events.findIndex(event => event.kind === 'root-disposed'))
+        .toBeLessThan(harness.events.findIndex(event => event.kind === 'exit'))
+      expect(harness.frames().filter(frame => frame.id === undefined)).toEqual([])
+      expect(diagnostic).toHaveBeenCalledWith('SDK notification backlog exceeded its configured allowance')
+    } finally {
+      await harness.dispose()
+      diagnostic.mockRestore()
+      await rm(storageDir, { recursive: true, force: true })
+    }
+  })
   it('serves initialize over the injected stdio pair', async () => {
     const storageDir = await freshStorageRoot('clocky-jsonrpc-apply-init-')
     vi.stubEnv('TEST_API_KEY', 'test-key')

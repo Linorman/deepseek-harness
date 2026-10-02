@@ -4,14 +4,20 @@ import { mkdir, realpath, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@clocky/cordis'
 import z from '@clocky/schemastery'
-import { JsonStorageBackend } from '@clocky/clocky-storage-json'
-import { SqliteStorageBackend } from '@clocky/clocky-storage-sqlite'
-import { simulationRunSelectionSchema } from '@clocky/clocky-simulation'
+import { JsonStorageBackend, readJsonLogSnapshot } from '@clocky/clocky-storage-json'
+import { SqliteStorageBackend, readSqliteLogSnapshot } from '@clocky/clocky-storage-sqlite'
+import { simulationRunSelectionSchema, simulationInspectionSelectionSchema } from '@clocky/clocky-simulation'
+import type { SimulationInspectionSelection, SimulationRunObservation, SimulationRunId } from '@clocky/clocky-simulation'
+import { assertLogReadRequest } from '@clocky/clocky-storage'
+import type { LogReadLimits } from '@clocky/clocky-storage'
 import type { SimulationProvider, SimulationRunSelection, SimulationSnapshot } from '@clocky/clocky-simulation'
 import type { LogEntry, StorageBackend } from '@clocky/clocky-storage'
-import { acquireRunOwner } from './owner.ts'
+import { acquireRunOwner, observeRunOwner } from './owner.ts'
 import { foldEntry, foldEntries, SIMULATION_JOURNAL_VERSION } from './journal.ts'
 import { LocalSimulationRun } from './run.ts'
+import { assertWriterProjection } from './writers.ts'
+import { assertBusinessProjection } from './decisions.ts'
+import { assertSchedulerProjection } from './scheduler.ts'
 
 /** Cordis plugin identity. */
 export const name = 'simulation-local'
@@ -27,12 +33,18 @@ export interface Config {
   readonly backend: 'json' | 'sqlite'
   /** Positive maximum journal entries read per recovery page. */
   readonly replayPageSize: number
+  /** Maximum retained entries observed without a writer handle. */
+  readonly inspectionMaxEntries?: number
+  /** Maximum serialized retained journal bytes observed without writer ownership. */
+  readonly inspectionMaxBytes?: number
 }
 /** Deployment choices have no hidden runtime defaults. */
 export const Config: z<Config> = z.object({
   name: z.string().required(), root: z.string().required(),
   backend: z.union(['json', 'sqlite'] as const).required(),
   replayPageSize: z.number().min(1).step(1).required(),
+  inspectionMaxEntries: z.number().min(1).step(1).default(100000),
+  inspectionMaxBytes: z.number().min(1).step(1).default(16777216),
 })
 
 declare module '@clocky/cordis' {
@@ -53,7 +65,9 @@ declare module '@clocky/cordis' {
 export class LocalSimulationProvider implements SimulationProvider {
   readonly name: string
   private readonly openings = new Set<Promise<LocalSimulationRun>>()
-  private readonly runs = new Set<LocalSimulationRun>()
+  private readonly runs = new Map<SimulationRunId, LocalSimulationRun>()
+  private readonly observations = new Set<Promise<SimulationRunObservation | undefined>>()
+  private readonly inspectionLimits: LogReadLimits
   private readonly cleanups = new Set<() => Promise<void>>()
   private closing = false
   private disposal: Promise<void> | undefined
@@ -61,6 +75,8 @@ export class LocalSimulationProvider implements SimulationProvider {
   constructor(private readonly config: Config,
     private readonly committed: (snapshot: SimulationSnapshot, tail: number, previousRevision?: number) => void) {
     this.name = config.name
+    this.inspectionLimits = { maxEntries: config.inspectionMaxEntries ?? 100000, maxBytes: config.inspectionMaxBytes ?? 16777216 }
+    assertLogReadRequest({ name: 'simulation', version: SIMULATION_JOURNAL_VERSION }, this.inspectionLimits)
   }
 
   open(selection: SimulationRunSelection): Promise<LocalSimulationRun> {
@@ -73,14 +89,52 @@ export class LocalSimulationProvider implements SimulationProvider {
     return opening
   }
 
+  /**
+   * Observe a complete bounded existing journal without opening or restoring its run.
+   * @param selection - Expected immutable spec and selected provider.
+   * @returns detached state and owner observation, or undefined for absent history.
+   */
+  inspect(selection: SimulationInspectionSelection): Promise<SimulationRunObservation | undefined> {
+    if (this.closing) return Promise.reject(new Error('Simulation provider is closed'))
+    const selected = simulationInspectionSelectionSchema.parse(selection)
+    if (selected.provider !== this.name) return Promise.reject(new Error('Simulation provider inspection mismatch'))
+    const observation = this.inspectExisting(selected)
+    this.observations.add(observation)
+    void observation.then(() => this.observations.delete(observation), () => this.observations.delete(observation))
+    return observation
+  }
+
+  private async inspectExisting(selection: SimulationInspectionSelection): Promise<SimulationRunObservation | undefined> {
+    const directory = join(this.config.root, createHash('sha256').update(selection.spec.runId).digest('hex'))
+    const other = await stat(join(directory, this.config.backend === 'json' ? 'journal.sqlite' : 'journal')).catch((cause: unknown) => {
+      if ((cause as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+      throw cause
+    })
+    if (other !== undefined) throw new Error('Simulation run storage backend does not match')
+    const descriptor = { name: 'simulation', version: SIMULATION_JOURNAL_VERSION }
+    const log = this.config.backend === 'json'
+      ? await readJsonLogSnapshot(join(directory, 'journal'), descriptor, this.inspectionLimits)
+      : await readSqliteLogSnapshot(join(directory, 'journal.sqlite'), descriptor, this.inspectionLimits)
+    if (log === undefined) return undefined
+    const first = log.entries[0]
+    if (log.firstSequence !== 0 || first === undefined) throw new Error('Simulation inspection has no complete retained history')
+    const initial = foldEntry(undefined, first, selection.spec, this.config.backend)
+    const state = foldEntries(initial, log.entries.slice(1), selection.spec, this.config.backend)
+    assertWriterProjection(state); assertBusinessProjection(state); assertSchedulerProjection(state)
+    const owner = this.runs.has(selection.spec.runId) ? 'this-provider' : await observeRunOwner(join(directory, 'owner.sqlite'))
+    return { snapshot: state, owner, ...selection.includeRecords === true ? { records: log.entries } : {} }
+  }
+
   private async openOwned(selection: SimulationRunSelection): Promise<LocalSimulationRun> {
     const directory = join(this.config.root, createHash('sha256').update(selection.spec.runId).digest('hex'))
     await mkdir(directory, { recursive: true, mode: 0o700 })
     const canonical = await realpath(directory)
     const unlock = acquireRunOwner(join(canonical, 'owner.sqlite'))
     let medium: StorageBackend | undefined
+    let run: LocalSimulationRun | undefined
     const cleanup = async (): Promise<void> => {
       await medium?.close()
+      if (run !== undefined && this.runs.get(selection.spec.runId) === run) this.runs.delete(selection.spec.runId)
       unlock()
       this.cleanups.delete(cleanup)
     }
@@ -118,11 +172,8 @@ export class LocalSimulationProvider implements SimulationProvider {
           after = state.revision
         }
       }
-      const run = new LocalSimulationRun(stream, state, this.config.backend, async () => {
-        await cleanup()
-        this.runs.delete(run)
-      }, this.committed)
-      this.runs.add(run)
+      run = new LocalSimulationRun(stream, state, this.config.backend, cleanup, this.committed)
+      this.runs.set(selection.spec.runId, run)
       this.cleanups.delete(cleanup)
       this.committed(run.snapshot(), stream.tailSequence)
       return run
@@ -147,8 +198,8 @@ export class LocalSimulationProvider implements SimulationProvider {
   }
 
   private async closeOwned(): Promise<void> {
-    await Promise.allSettled([...this.openings])
-    const results = await Promise.allSettled([...this.runs].map(run => run.close()))
+    await Promise.allSettled([...this.openings, ...this.observations])
+    const results = await Promise.allSettled([...this.runs.values()].map(run => run.close()))
     results.push(...await Promise.allSettled([...this.cleanups].map(cleanup => cleanup())))
     const errors = results.filter(result => result.status === 'rejected').map((result): unknown => result.reason)
     if (errors.length > 0) throw new AggregateError(errors, 'Simulation provider cleanup failed')

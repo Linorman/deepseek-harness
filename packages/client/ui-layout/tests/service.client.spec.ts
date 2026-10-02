@@ -10,6 +10,7 @@ import type { PanelActions } from '@clocky/clocky-client-ui-layout/src/client/se
 
 function fakePanels(): PanelActions {
   return {
+    showWorkspace: vi.fn(),
     setSidebar: vi.fn(),
     setDetails: vi.fn(),
     toggleSidebar: vi.fn(),

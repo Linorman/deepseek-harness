@@ -1,12 +1,16 @@
-import type { TeamStateSnapshot } from '@clocky/clocky-client-connection/client'
+import type { TeamTaskSnapshot } from '@clocky/clocky-client-runtime/client'
 // @vitest-environment jsdom
+import { projectTeamProductSummary } from '@clocky/clocky-team/selection'
+import type { TeamStateSnapshot } from '@clocky/clocky-client-connection/client'
 import { DEFAULT_TEAM_VIEW } from '../src/client/workspace-store.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, waitFor, within } from '@testing-library/react'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Context } from '@clocky/cordis'
 import type { IApiClient } from '@clocky/clocky-client-connection/client'
 import { TeamTaskRuntime } from '../../runtime/src/client/teams/service.ts'
+import { ArtifactInspector } from '../../runtime/src/client/teams/artifact-inspector.ts'
+import type { TeamArtifactDetailState, TeamArtifactReadResult } from '@clocky/clocky-client-runtime/client'
 import { bindSnapshotSelector, makeTranslate } from '@clocky/clocky-client-test-runtime'
 import { createSnapshotStore } from '@clocky/clocky-client-runtime/client'
 import type { ChannelId, TeamCollectionsState, TeamId, TeamManagementCommand, TeamTaskListState, TeamChannelState, WorkspaceListState } from '@clocky/clocky-client-runtime/client'
@@ -18,6 +22,43 @@ import type { TeamBrowserProps } from '../src/client/TeamBrowser.tsx'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
+
+it('withholds resume, cancel and archive for unselected Simulation directory rows', () => {
+  const f = props({ resumeTeam: vi.fn(async () => {}), cancelTeam: vi.fn(async () => 'cancelled' as const) })
+  f.state.set({ ...f.state.getSnapshot(), items: [
+    { ...team('simulation-active', 'active'), executionManagement: 'simulation-managed' },
+    { ...team('simulation-stalled', 'stalled'), executionManagement: 'simulation-managed' },
+    { ...team('simulation-completed', 'completed'), executionManagement: 'simulation-managed' },
+  ] })
+  const view = render(<TeamBrowser {...f.props} />)
+  expect(view.getAllByRole('listitem')).toHaveLength(3)
+  expect(view.queryByRole('button', { name: /^Resume / })).toBeNull()
+  expect(view.queryByRole('button', { name: /^Cancel / })).toBeNull()
+  expect(view.queryByRole('button', { name: /^Archive / })).toBeNull()
+})
+
+it('keeps Simulation tasks and members readable while withholding ordinary management controls', () => {
+  const original = pageState('simulation-inspection')
+  const task = workspaceTask('Simulation work', { teamId: original.team.id })
+  const state = { ...original, rules: { simulationRunId: 'run' }, tasks: [task] }
+  const manage = vi.fn(async () => {})
+  const deleteTask = vi.fn(async () => {})
+  const cancelTask = vi.fn(async () => {})
+  const view = render(<RawTeamPage state={state} view="tasks" translate={makeTranslate(en)}
+    manage={manage} deleteTask={deleteTask} cancelTask={cancelTask} />)
+  expect(view.getByText(en['workspace.simulationManaged'])).toBeTruthy()
+  expect(view.queryByRole('button', { name: en['taskForm.taskCreate'] })).toBeNull()
+  fireEvent.click(view.getByRole('button', { name: task.subject }))
+  expect(view.getByRole('complementary')).toBeTruthy()
+  expect(view.queryByRole('button', { name: 'More actions' })).toBeNull()
+  go(view, 'Members')
+  expect(view.queryByRole('button', { name: en['manage.memberInvite'] })).toBeNull()
+  go(view, 'Channels')
+  expect(view.queryByRole('button', { name: en['manage.channelOpen'] })).toBeNull()
+  expect(manage).not.toHaveBeenCalled()
+  expect(deleteTask).not.toHaveBeenCalled()
+  expect(cancelTask).not.toHaveBeenCalled()
+})
 
 it('keeps the selected Team visible outside the current sidebar page and offers a first-page action', async () => {
   const firstTeamPage = vi.fn(async () => {})
@@ -61,7 +102,23 @@ function taskMenu(view: ReturnType<typeof render>, subject: string): void {
 }
 
 /** Standalone module tests retain navigation locally, as the real workspace store does. */
-function RawTeamPage(props: Omit<TeamPageProps, 'state'> & { state: TeamStateSnapshot }) {
+function RawTeamPage(props: Omit<TeamPageProps, 'state' | 'readArtifact'> & { state: TeamStateSnapshot
+  readArtifact?: ((id: string, signal?: AbortSignal) => Promise<TeamArtifactReadResult>) | undefined }) {
+  const latest = useRef(props)
+  latest.current = props
+  const owner = useRef<{ store: ReturnType<typeof createSnapshotStore<TeamArtifactDetailState | undefined>>; reader: ArtifactInspector }>()
+  if (owner.current === undefined) {
+    const store = createSnapshotStore<TeamArtifactDetailState | undefined>(undefined)
+    const api = { teams: { artifactRead: async (input: { artifactId: string }, signal?: AbortSignal) => {
+      const value = await latest.current.readArtifact?.(input.artifactId, signal)
+      if (value === undefined) throw new Error('Fixture has no artifact provider')
+      return { result: { ok: true, value } }
+    } } } as unknown as IApiClient
+    owner.current = { store, reader: new ArtifactInspector(api, (value) => { store.set(value) }, () => {}) }
+  }
+  const artifactOwner = owner.current
+  const artifactDetail = useSyncExternalStore(listener => artifactOwner.store.subscribe(listener), () => artifactOwner.store.getSnapshot())
+  useEffect(() => () => { artifactOwner.reader.close() }, [props.state.team.id])
   const [view, setView] = useState(props.view ?? 'channels')
   useEffect(() => { setView(props.view ?? 'channels') }, [props.view])
   const complete = (task: TeamStateSnapshot['tasks'][number]) => workspaceTask(String(task.id), { ...task, teamId: props.state.team.id })
@@ -73,6 +130,9 @@ function RawTeamPage(props: Omit<TeamPageProps, 'state'> & { state: TeamStateSna
   const empty = { items: [], loading: false, loadingMore: false, hasNewer: false }
   return <SourceTeamPage {...props} state={workspaceSelection({ ...props.state, tasks })} humanActions={props.state.humanActions}
     view={view} onViewChange={setView}
+    artifactDetail={artifactDetail} readArtifact={props.readArtifact === undefined ? undefined : async (id) => {
+      await artifactOwner.reader.read(props.state.team.id, id)
+    }}
     taskView={taskView} onTaskViewChange={(patch) => { setTaskView(current => ({ ...current, ...patch })) }}
     workflowDetail={workflow === undefined ? undefined : workspaceWorkflowDetail(workflow)}
     readWorkflowDetail={async (id) => { setWorkflowId(id) }} closeWorkflowDetail={() => { setWorkflowId(undefined) }}
@@ -91,16 +151,39 @@ function RawTeamPage(props: Omit<TeamPageProps, 'state'> & { state: TeamStateSna
 }
 
 /** Supply explicit preloaded task inspection to isolated form tests. */
-function TeamTaskDialog(props: Omit<Parameters<typeof SourceTaskDialog>[0], 'state'> & { state: TeamStateSnapshot }) {
+function TeamTaskDialog(props: Omit<Parameters<typeof SourceTaskDialog>[0], 'state'> & { state: TeamStateSnapshot; referenceTasks?: readonly TeamTaskSnapshot[] }) {
+  const [capabilityInput, setCapabilityInput] = useState({ teamId: props.state.team.id, integration: props.target.kind === 'taskIntegrate',
+    readScopes: [] as readonly string[], writeScopes: [] as readonly string[] })
+  const watchTaskCapabilities = useCallback((input: typeof capabilityInput) => { setCapabilityInput(input); return () => {} }, [])
+  const [referenceIds, setReferenceIds] = useState<readonly import('@clocky/clocky-client-runtime/client').TeamTaskId[]>([])
+  const watchTaskReferences = useCallback((_teamId: TeamId, ids: typeof referenceIds) => { setReferenceIds(ids); return () => {} }, [])
   const target = props.target
   const task = 'taskId' in target ? props.state.tasks.find(task => task.id === target.taskId) : undefined
   const inspection = task === undefined ? undefined : workspaceTaskDetail(workspaceTask(String(task.id),
     { ...task, teamId: props.state.team.id }))
-  return <SourceTaskDialog {...props} inspection={inspection} />
+  return <SourceTaskDialog {...props} inspection={inspection} readDependencies={async () => {}}
+    watchTaskReferences={watchTaskReferences}
+    taskReferences={{ teamId: props.state.team.id, taskIds: referenceIds, teamCursor: props.state.team.cursor,
+      loading: false, disconnected: false, hasNewer: false, items: referenceIds.map((taskId) => {
+        const found = (props.referenceTasks ?? props.state.tasks).find(item => item.id === taskId)
+        return found === undefined ? { taskId, state: 'unavailable' as const } : { taskId, state: 'resolved' as const,
+          revision: found.revision, phase: found.phase, subject: { text: found.subject, truncated: false } }
+      }) }}
+    watchTaskCapabilities={watchTaskCapabilities}
+    taskCapabilities={{ input: capabilityInput, loading: false, disconnected: false, value: {
+      teamId: props.state.team.id, teamCursor: props.state.team.cursor, observationId: 'a'.repeat(64) as never, observedAt: 1,
+      create: { allowed: true, reasons: [] }, maxAttempts: 100,
+      workspaceModes: (['shared', 'worktree', 'sandbox', 'remote'] as const).map(mode => ({ mode, allowed: true, reasons: [] })),
+      readScopes: { editable: true, accepted: true }, writeScopes: { editable: true, accepted: true },
+    } }}
+    dependencyQuery={{ teamId: props.state.team.id, query: { search: '', ...target.kind === 'taskUpdate' ? { excludeTaskId: target.taskId } : {} }, loading: false, hasNewer: false, disconnected: false,
+      page: { kind: 'tasks', teamId: props.state.team.id, teamCursor: props.state.team.cursor, total: props.state.tasks.length,
+        scanned: props.state.tasks.length, items: props.state.tasks.filter(item => item.id !== task?.id && item.phase !== 'deleted')
+          .map(item => workspaceTaskSummary(workspaceTask(String(item.id), item))) } }} />
 }
 
 /** Drive channel presentation from the same runtime owner as the assembled UI. */
-function TeamPage(props: Omit<TeamPageProps, 'state'> & { state: TeamStateSnapshot }) {
+function TeamPage(props: Parameters<typeof RawTeamPage>[0]) {
   const latest = useRef(props)
   latest.current = props
   const [owner] = useState(() => {
@@ -138,6 +221,11 @@ function TeamPage(props: Omit<TeamPageProps, 'state'> & { state: TeamStateSnapsh
 }
 
 function team(id: string, phase: TeamTaskListState['items'][number]['phase']): TeamTaskListState['items'][number] {
+  const value = rawSidebarTeam(id, phase)
+  return projectTeamProductSummary(value, value.id, 512, {})
+}
+
+function rawSidebarTeam(id: string, phase: TeamTaskListState['items'][number]['phase']): TeamStateSnapshot['team'] {
   const teamId = id as TeamId
   const goal = { teamId, revision: 1, objective: `Objective ${id}`, phase: 'active' as const, budgets: {} }
   return {
@@ -182,7 +270,7 @@ function pageState(id: string, phase: TeamTaskListState['items'][number]['phase'
   const teamId = id as TeamId
   const goal = { teamId, revision: 1, objective: `Objective ${id}`, phase: 'active' as const, budgets: {} }
   return {
-    team: { ...team(id, phase), goal },
+    team: { ...rawSidebarTeam(id, phase), goal },
     goal,
     rules: {},
     budgets: {},
@@ -205,7 +293,7 @@ describe('TeamBrowser', () => {
     const view = render(<TeamBrowser {...b.props} />)
 
     expect(view.queryByText('Project folder')).toBeNull()
-    fireEvent.click(view.getByRole('button', { name: 'Add workspace' }))
+    fireEvent.click(view.getByRole('button', { name: 'Add working folder' }))
     await waitFor(() => {
       expect(pickDirectory).toHaveBeenCalledOnce()
     })
@@ -236,24 +324,23 @@ describe('TeamBrowser', () => {
     const view = render(<TeamBrowser {...b.props} />)
     expect(view.getByRole('region', { name: 'Project one' })).toBeTruthy()
     expect(view.getByText('Objective one')).toBeTruthy()
-    fireEvent.click(view.getByRole('button', { name: 'New task in this workspace Project one' }))
+    fireEvent.click(view.getByRole('button', { name: 'New team work in this folder Project one' }))
     expect(startDraft).toHaveBeenCalledWith({ cwd: workspace.path })
   })
 
-  it('uses the collapsed rail control to request sidebar expansion', () => {
-    const b = props({ wide: false })
-    const view = render(<TeamBrowser {...b.props} />)
-    fireEvent.click(view.getByRole('button', { name: 'Expand task list' }))
-    expect(b.expandSidebar).toHaveBeenCalledOnce()
+  it('leaves collapsed domain navigation to the shared workspace entry', () => {
+    const b = props()
+    const view = render(<TeamBrowser {...b.props} wide={false} />)
+    expect(view.queryByRole('button')).toBeNull()
   })
 
   it('distinguishes a pending list baseline from an empty ready list', () => {
     const b = props()
     b.state.set({ ...b.state.getSnapshot(), phase: 'pending' })
     const view = render(<TeamBrowser {...b.props} />)
-    expect(view.getByText('Loading tasks…')).toBeTruthy()
+    expect(view.getByText('Loading teams…')).toBeTruthy()
     act(() => { b.state.set({ ...b.state.getSnapshot(), phase: 'ready' }) })
-    expect(view.getByText('No tasks yet')).toBeTruthy()
+    expect(view.getByText('No team work yet')).toBeTruthy()
   })
 
   it('renders every Team phase and resolves selection once while an open is pending', async () => {
@@ -376,8 +463,9 @@ describe('TeamBrowser', () => {
     expect(view.getByText('Coordinator needs recovery.')).toBeTruthy()
     expect(view.getByText('Cancellation requested.')).toBeTruthy()
     expect(view.getAllByText('Review the patch').length).toBeGreaterThan(0)
-    expect(view.getByText(/Approval.*delete-file/)).toBeTruthy()
-    expect(view.getByText('Question')).toBeTruthy()
+    expect(view.queryByText(/Approval.*delete-file/)).toBeNull()
+    expect(view.getByText('This deployment cannot read pending items.')).toBeTruthy()
+    expect(view.queryByText('Question')).toBeNull()
     expect(view.queryByText('No Session available')).toBeNull()
     expect(view.getByRole('region', { name: 'Team members' })).toBeTruthy()
     expect(view.getByText('Tokens').parentElement?.textContent).toContain('Tokens5')
@@ -851,8 +939,9 @@ describe('TeamBrowser', () => {
       state={durableState}
       translate={makeTranslate(en)}
     />)
-    expect(view.getByText('Approval', { selector: 'summary' }).parentElement?.textContent).toContain('Pending')
-    expect(view.getByText('Question', { selector: 'summary' }).parentElement?.textContent).toContain('Pending')
+    expect(view.queryByText('Approval', { selector: 'summary' })).toBeNull()
+    expect(view.queryByText('Question', { selector: 'summary' })).toBeNull()
+    expect(view.getByRole('button', { name: 'View all pending items' })).toBeTruthy()
   })
 
   it('keeps the settled worker owner and assigns review status to the reviewer', () => {
@@ -887,8 +976,9 @@ describe('TeamBrowser', () => {
     const view = render(<TeamPage view="members" state={state} translate={makeTranslate(en)} />)
 
     expect(view.getAllByText('Worker').length).toBeGreaterThan(0)
-    expect(view.getByText('Reviewer · Reviewing')).toBeTruthy()
-    expect(view.getByText('Worker · Active')).toBeTruthy()
+    expect(view.getByText('Reviewer · Participation: Allowed to participate')).toBeTruthy()
+    expect(view.queryByText('Reviewer · Reviewing')).toBeNull()
+    expect(view.getByText('Worker · Participation: Allowed to participate')).toBeTruthy()
   })
 
   it('cancels artifact reads when the selected Team changes or the detail unmounts', async () => {
@@ -988,7 +1078,7 @@ describe('TeamBrowser', () => {
     fireEvent.click(await view.findByRole('button', { name: 'Channel 1' }))
     await waitFor(() => { expect(view.getByRole('alert').textContent).toContain('channel read failed') })
     fireEvent.click(await view.findByRole('button', { name: 'Channel 1' }))
-    await waitFor(() => { expect(view.getByText('No channel records')).toBeTruthy() })
+    await waitFor(() => { expect(view.getByText('No messages yet.')).toBeTruthy() })
     fireEvent.click(await view.findByRole('button', { name: 'Channel 1' }))
     await view.findByText('hello')
     channelDetails(view)
@@ -1232,6 +1322,8 @@ describe('Task authoring, review, and integration', () => {
     const view = render(<TeamTaskDialog target={{ kind: 'taskCreate' }} state={state} translate={makeTranslate(en)} manage={manage} onClose={onClose} />)
     fireEvent.change(view.getByLabelText('Task name'), { target: { value: 'Inspect source' } })
     fireEvent.change(view.getByLabelText('Instructions'), { target: { value: 'Read the project and report evidence.' } })
+    fireEvent.click(view.getByText('Advanced execution options'))
+    fireEvent.click(view.getByText('Execution constraints (optional)'))
     fireEvent.change(view.getByLabelText('Total token budget (optional)'), { target: { value: '12000' } })
     fireEvent.change(view.getByLabelText('Read scopes (one path per line)'), { target: { value: 'src/long folder\ndocs' } })
     fireEvent.click(view.getByLabelText('Git worktree'))
@@ -1304,7 +1396,7 @@ it('loads another Team list page only from its continuation control', async () =
   const fixture = props({ loadMoreTeams })
   fixture.state.set({ ...fixture.state.getSnapshot(), nextCursor: 'next' as never, items: [team('first-page', 'active')] })
   const view = render(<TeamBrowser {...fixture.props} />)
-  expect(view.getByText('Tasks loaded: 1')).toBeTruthy()
+  expect(view.getByText('Teams loaded: 1')).toBeTruthy()
   expect(loadMoreTeams).not.toHaveBeenCalled()
   fireEvent.click(view.getByRole('button', { name: 'Next page' }))
   await waitFor(() => { expect(loadMoreTeams).toHaveBeenCalledOnce() })
@@ -1331,6 +1423,7 @@ it('requires explicit review of a newer task revision before retaining and submi
   fireEvent.click(view.getByRole('button', { name: 'Edit task' }))
   await waitFor(() => { expect(onClose).toHaveBeenCalledOnce() })
   expect(manage).toHaveBeenCalledWith({ operation: 'taskUpdate', input: {
+    commandId: expect.any(String) as unknown,
     taskId: task.id, expectedRevision: 2, subject: 'Original name', description: 'My unsent instructions', blockedBy: [],
   } }, expect.any(AbortSignal))
 })
@@ -1348,4 +1441,126 @@ it('reads visible artifacts retained after workspace loss without exposing priva
   fireEvent.click(view.getByRole('button', { name: 'Read artifact' }))
   await view.findByText('saved partial work')
   expect(readArtifact).toHaveBeenCalledWith(saved.id, expect.any(AbortSignal))
+})
+
+
+it('lets an editor remove off-page and deleted dependencies while preserving other selections', async () => {
+  const task = workspaceTask('Edit dependencies', { blockedBy: ['off-page', 'deleted', 'keep'] as never })
+  const deleted = workspaceTask('deleted', { phase: 'deleted' })
+  const state = { ...pageState('dependency-pages'), tasks: [task, deleted] }
+  const manage = vi.fn(async () => {})
+  const view = render(<TeamTaskDialog target={{ kind: 'taskUpdate', taskId: task.id }} state={state}
+    referenceTasks={[...state.tasks, workspaceTask('off-page', { subject: 'Off-page work' }), workspaceTask('keep', { subject: 'Retained work' })]}
+    translate={makeTranslate(en)} manage={manage} onClose={vi.fn()} />)
+  fireEvent.click(view.getByRole('checkbox', { name: 'Off-page work' }))
+  fireEvent.click(view.getByRole('checkbox', { name: 'Deleted dependency: deleted' }))
+  expect(view.getByRole('checkbox', { name: 'Retained work' })).toHaveProperty('checked', true)
+  expect(manage).not.toHaveBeenCalled()
+  fireEvent.click(view.getByRole('button', { name: 'Edit task' }))
+  await waitFor(() => { expect(manage).toHaveBeenCalledWith({ operation: 'taskUpdate', input: {
+    commandId: expect.any(String) as unknown,
+    taskId: task.id, expectedRevision: task.revision, subject: task.subject, description: task.description,
+    blockedBy: ['keep'],
+  } }, expect.any(AbortSignal)) })
+})
+
+it.each([
+  ['artifacts', 'Artifacts', 'Refresh artifacts', 'No artifacts yet. Published task results will appear here.'],
+  ['workflows', 'Workflow plans', 'Refresh workflows', 'No workflows yet. Created workflows will appear here.'],
+] as const)('retains the empty %s module and refresh action through loading and failure', (module, title, refresh, emptyText) => {
+  const state = pageState('empty-module')
+  const readCollections = vi.fn(async () => {})
+  const empty = { items: [], loading: false, loadingMore: false, hasNewer: false }
+  const collections = { teamId: state.team.id, members: empty, tasks: empty, workflowPlans: empty, artifacts: empty }
+  const props = { state, translate: makeTranslate(en), view: module, readCollections, collections }
+  const view = render(<RawTeamPage {...props} />)
+  expect(view.getByRole('region', { name: title })).toBeTruthy()
+  expect(view.getByText(emptyText)).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: refresh }))
+  const key = module === 'workflows' ? 'workflowPlans' : 'artifacts'
+  expect(readCollections).toHaveBeenCalledWith(key)
+  view.rerender(<RawTeamPage {...props} collections={{ ...collections, [key]: { ...empty, loading: true } }} />)
+  expect(view.queryByText(emptyText)).toBeNull()
+  expect(view.getByRole('button', { name: refresh })).toHaveProperty('disabled', true)
+  view.rerender(<RawTeamPage {...props} collections={{ ...collections, [key]: { ...empty, error: 'Read failed' } }} />)
+  expect(view.queryByText(emptyText)).toBeNull()
+  expect(view.getByRole('alert').textContent).toBe('Read failed')
+  expect(view.getByRole('button', { name: refresh })).toHaveProperty('disabled', false)
+})
+
+it('keeps selected dependencies independent from candidate pages, search errors, and IME input', async () => {
+  const base = pageState('query-editor')
+  const task = workspaceTask('Dependency editor', { teamId: base.team.id, blockedBy: ['unloaded' as never] })
+  const other = workspaceTask('Candidate A', { teamId: base.team.id })
+  const next = workspaceTask('Candidate B', { teamId: base.team.id })
+  const state = { ...base, tasks: [task] }
+  const query = { search: '', excludeTaskId: task.id }
+  const page = { teamId: state.team.id, kind: 'tasks' as const, teamCursor: 1, query, total: 2, sourceTotal: 3, scanned: 3,
+    items: [workspaceTaskSummary(other)], nextQueryCursor: { teamId: state.team.id, teamCursor: 1, query,
+      order: 'task-insertion-v1' as const, afterCursor: 1 } }
+  const candidates = { teamId: state.team.id, query, page, loading: false, hasNewer: false, disconnected: false }
+  const readDependencies = vi.fn(async () => {})
+  const manage = vi.fn<(command: TeamManagementCommand, signal?: AbortSignal) => Promise<void>>(async () => {})
+  const props = { target: { kind: 'taskUpdate' as const, taskId: task.id }, state, inspection: workspaceTaskDetail(task),
+    readDependencies, manage, onClose: vi.fn(), translate: makeTranslate(en),
+    watchTaskReferences: () => () => {},
+    taskReferences: { teamId: base.team.id, taskIds: ['unloaded' as never], loading: false, disconnected: false, hasNewer: false, teamCursor: 1,
+      items: [{ taskId: 'unloaded' as never, state: 'resolved' as const, revision: 1, phase: 'pending' as const,
+        subject: { text: 'Unloaded dependency: unloaded', truncated: false } }] } }
+  const view = render(<SourceTaskDialog {...props} dependencyQuery={candidates} />)
+  fireEvent.click(view.getByRole('checkbox', { name: 'Candidate A' }))
+  expect(view.getByText('All candidates on this page are selected.')).toBeTruthy()
+  fireEvent.click(view.getByRole('button', { name: 'Next candidates' }))
+  expect(readDependencies).toHaveBeenLastCalledWith(state.team.id, query, 'next')
+  view.rerender(<SourceTaskDialog {...props} dependencyQuery={{ ...candidates, page: { ...page, items: [workspaceTaskSummary(next)] } }} />)
+  expect(within(view.getByRole('group', { name: 'Selected dependencies' })).getAllByRole('checkbox')).toHaveLength(2)
+  const search = view.getByRole('textbox', { name: 'Search task titles across this Team' })
+  fireEvent.change(search, { target: { value: '中文' } })
+  const beforeComposition = readDependencies.mock.calls.length
+  fireEvent.keyDown(search, { key: 'Enter', isComposing: true })
+  expect(readDependencies).toHaveBeenCalledTimes(beforeComposition)
+  expect(manage).not.toHaveBeenCalled()
+  fireEvent.keyDown(search, { key: 'Enter', isComposing: false })
+  expect(readDependencies).toHaveBeenLastCalledWith(state.team.id, { ...query, search: '中文' }, 'first')
+  fireEvent.click(view.getByRole('button', { name: 'Clear search' }))
+  expect(document.activeElement).toBe(search)
+  expect(search).toHaveProperty('value', '')
+  view.rerender(<SourceTaskDialog {...props} taskReferences={{ ...props.taskReferences, taskIds: ['unloaded' as never, other.id],
+    items: [...props.taskReferences.items, { taskId: other.id, state: 'resolved', revision: 1, phase: 'pending', subject: { text: other.subject, truncated: false } }] }}
+  dependencyQuery={{ ...candidates, error: 'Read failed', hasNewer: true }} />)
+  expect(within(view.getByRole('group', { name: 'Selected dependencies' })).getAllByRole('checkbox')).toHaveLength(2)
+  fireEvent.click(view.getByRole('button', { name: 'Edit task' }))
+  await waitFor(() => { expect(manage.mock.calls[0]?.[0]).toMatchObject({ operation: 'taskUpdate', input: {
+    commandId: expect.any(String) as unknown,
+    blockedBy: ['unloaded', other.id],
+  } }) })
+})
+
+
+it('shows only authorized modes by default and preserves the draft when capability reads fail', () => {
+  const state = pageState('capability-form')
+  const value = { teamId: state.team.id, teamCursor: 1, observationId: 'a'.repeat(64) as never, observedAt: 1, maxAttempts: 2,
+    create: { allowed: true, reasons: [] },
+    workspaceModes: (['shared', 'worktree', 'sandbox', 'remote'] as const).map(mode => ({ mode, allowed: mode === 'shared',
+      reasons: mode === 'shared' ? [] : ['not-authorized' as const] })),
+    readScopes: { editable: false, accepted: true }, writeScopes: { editable: false, accepted: true } }
+  const observation = { input: { teamId: state.team.id, integration: false, readScopes: [], writeScopes: [] },
+    value, loading: false, disconnected: false }
+  const props = { target: { kind: 'taskCreate' as const }, state, translate: makeTranslate(en), manage: vi.fn(async () => {}),
+    onClose: vi.fn(), watchTaskCapabilities: vi.fn(() => () => {}), refreshTaskCapabilities: vi.fn(async () => {}) }
+  const view = render(<SourceTaskDialog {...props} taskCapabilities={observation} />)
+  expect(view.getByRole('radio', { name: 'Shared directory' })).toHaveProperty('disabled', false)
+  fireEvent.change(view.getByLabelText('Task name'), { target: { value: 'Retained task draft' } })
+  fireEvent.click(view.getByText('Advanced execution options'))
+  expect(view.getByRole('radio', { name: /Git worktree/ })).toHaveProperty('disabled', true)
+  expect(view.getByLabelText('Read scopes (one path per line)')).toHaveProperty('disabled', true)
+  expect(view.getByLabelText('Write scopes (one path per line)')).toHaveProperty('disabled', true)
+  view.rerender(<SourceTaskDialog {...props} taskCapabilities={{ ...observation, error: 'Capabilities could not be read' }} />)
+  expect(view.getByRole('button', { name: 'Create task' })).toHaveProperty('disabled', true)
+  expect(view.getByLabelText('Task name')).toHaveProperty('value', 'Retained task draft')
+  fireEvent.click(view.getByRole('button', { name: 'Check execution options again' }))
+  expect(props.refreshTaskCapabilities).toHaveBeenCalledOnce()
+  view.rerender(<SourceTaskDialog {...props} taskCapabilities={{ ...observation, value: undefined }} />)
+  expect(view.getByRole('button', { name: 'Create task' })).toHaveProperty('disabled', true)
+  expect(view.queryByRole('radio', { name: 'Shared directory' })).toBeNull()
 })

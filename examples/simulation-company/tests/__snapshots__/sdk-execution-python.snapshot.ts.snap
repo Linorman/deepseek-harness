@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`preserves original report inputs through the genuine Python SDK stdio client (json) 1`] = `
+{
+  "attempts": 2,
+  "continuationInput": "recorded-and-authorized",
+  "inference": false,
+  "originalReport": "preserved",
+  "reports": 1,
+  "restored": "paused",
+  "review": "completed",
+  "sdk": "python",
+}
+`;
+
+exports[`preserves original report inputs through the genuine Python SDK stdio client (sqlite) 1`] = `
+{
+  "attempts": 2,
+  "continuationInput": "recorded-and-authorized",
+  "inference": false,
+  "originalReport": "preserved",
+  "reports": 1,
+  "restored": "paused",
+  "review": "completed",
+  "sdk": "python",
+}
+`;

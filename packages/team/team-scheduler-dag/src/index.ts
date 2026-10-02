@@ -305,6 +305,13 @@ export class TeamDagScheduler {
   private closing = false
   private disposal: Promise<void> | undefined
 
+  /** Inspect this scheduler's configured assignment modes without admitting work.
+   * @returns a detached list; a closing scheduler offers no modes.
+   */
+  supportedWorkspaceModes(): readonly TeamTaskWorkspaceMode[] {
+    return this.closing ? [] : [...this.config.permittedWorkspaceModes]
+  }
+
   /**
    * @param ctx - Context carrying Team authority and workspace eligibility.
    * @param config - Explicit lease, capacity, workspace, conflict, and shutdown limits.
@@ -787,9 +794,10 @@ export class TeamDagScheduler {
       if (task.phase === 'assigned' || task.phase === 'running') return true
       if (task.phase !== 'review' || task.reviewPolicy.kind !== 'participant') return false
       const reviewerId = task.reviewPolicy.reviewerId
-      return state.participants.some(participant => participant.id === reviewerId && participant.phase === 'active')
-        && state.activations.some(binding => binding.activation.participantId === reviewerId
-          && (binding.activation.status === 'idle' || binding.activation.status === 'running'))
+      const reviewer = state.participants.find(participant => participant.id === reviewerId && participant.phase === 'active')
+      return reviewer !== undefined && (reviewer.kind === 'human'
+        || state.activations.some(binding => binding.activation.participantId === reviewerId
+          && (binding.activation.status === 'idle' || binding.activation.status === 'running')))
     })
     if (inProgress) {
       this.unassignableDrives.delete(teamKey(state.team.id))
@@ -1350,6 +1358,10 @@ export class TeamDagScheduler {
 /** Install one scheduler whose state remains wholly owned by the mounted Team provider. */
 export function apply(ctx: Context, config: Config): void {
   const scheduler = new TeamDagScheduler(ctx, config)
+  ctx.on('team/task-scheduling-modes', async (_teamId, next) => {
+    const others = await next()
+    return [...new Set([...others, ...scheduler.supportedWorkspaceModes()])]
+  })
   ctx.effect(() => {
     const unregisterEnvelopePost = ctx.teams.registerSystemEnvelopePostProofSource(scheduler.envelopePostProofSource)
     const unregisterTaskReview = ctx.teams.registerSystemTaskReviewProofSource(scheduler.taskReviewProofSource)

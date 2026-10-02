@@ -53,6 +53,7 @@ export class WorkspaceRuntime implements IWorkspaces {
   readonly list: SnapshotStore<WorkspaceListState>
   /** Workspace baseline and frame owner. */
   private readonly manager: WorkspaceManager
+  private authorizationScope: import('@clocky/clocky-client-connection/client').HostDescription['authorizationScope']
   /**
    * @param ctx - client root context.
    * @param api - shared wire client.
@@ -203,10 +204,26 @@ export class WorkspaceRuntime implements IWorkspaces {
     this.manager.handleHostEnvelope(envelope)
   }
 
-  /** Rebuild the Workspace baseline after connection. */
-  handleConnected(): void {
+  /** Rebuild the Workspace baseline after connection.
+   * @param scope - Host principal generation; replacement clears metadata issued to the previous principal.
+   */
+  handleConnected(scope?: import('@clocky/clocky-client-connection/client').HostDescription['authorizationScope']): void {
+    if (scope !== this.authorizationScope) {
+      this.authorizationScope = scope
+      this.manager.clearAuthorization()
+    }
     this.manager.handleConnected()
   }
+
+  /** Clear Session references withdrawn by the current Team authorization.
+   * @param ids - Session identities already known before the Team was revoked.
+   */
+  revokeSessionReferences(ids: readonly SessionId[]): void {
+    this.manager.revokeSessionReferences(ids)
+  }
+
+  /** Retire workspace metadata after an explicit product access refusal. */
+  clearAuthorization(): void { this.manager.clearAuthorization() }
 
   private project(): void {
     const workspace = this.manager.getSnapshot()

@@ -1,6 +1,7 @@
+import { MemberReadiness } from './MemberReadiness.tsx'
 import { MemberDetail } from './MemberDetail.tsx'
 import { WorkflowWorkspace, type WorkflowWorkspaceProps } from './WorkflowWorkspace.tsx'
-import { memberLabels, memberPageLabels, type MemberLabel } from './member-labels.ts'
+import { memberLabels, memberPageLabels, overviewMemberLabels, type MemberLabel } from './member-labels.ts'
 /** Durable Team detail surface for the browser product shell. */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -11,7 +12,7 @@ import type {
   ChannelId,
   ChannelReadPageResult,
   ParticipantId,
-  TeamArtifactReadResult,
+  TeamArtifactDetailState,
   TeamArtifactReference,
   TeamAuditList,
   TeamHumanAction,
@@ -34,30 +35,14 @@ import { TeamManagementDialog, type TeamManagementTarget } from './TeamManagemen
 import { TeamTaskDialog, type TeamTaskDialogTarget } from './TeamTaskDialog.tsx'
 import type { TeamWorkspaceView } from './TeamWorkspace.tsx'
 import { TeamOverview } from './TeamOverview.tsx'
+import { TeamAttention } from './TeamAttention.tsx'
+import { ArtifactsWorkspace } from './ArtifactsWorkspace.tsx'
 import { TeamHeader } from './TeamHeader.tsx'
 import { TaskWorkspace } from './TaskWorkspace.tsx'
 import type { ChannelComposerDraft } from './channel-draft.ts'
 import { DEFAULT_TEAM_VIEW, type TeamViewState } from './workspace-store.ts'
 import { ChannelHub } from './ChannelHub.tsx'
-
-/** Compact localized labels for participant and activation status. */
-const participantStatusKey: Record<string, TeamKey> = {
-  invited: 'detail.participant.phase.invited',
-  provisioning: 'detail.participant.phase.provisioning',
-  active: 'detail.participant.phase.active',
-  left: 'detail.participant.phase.left',
-  failed: 'detail.participant.phase.failed',
-  starting: 'detail.activation.starting',
-  running: 'detail.activation.running',
-  idle: 'detail.activation.idle',
-  offline: 'detail.activation.offline',
-  stopping: 'detail.activation.stopping',
-  ready: 'detail.participant.status.ready',
-  assigned: 'detail.participant.status.assigned',
-  working: 'detail.participant.status.working',
-  reviewing: 'detail.participant.status.reviewing',
-  unknown: 'detail.participant.status.unknown',
-}
+import { taskDraftKey, hasTaskDraftInput, type TaskFormDraft } from './task-draft.ts'
 
 /** Localized participant role labels; numbered worker roles share one label. */
 const participantRoleKey: Record<string, TeamKey> = {
@@ -81,12 +66,45 @@ export interface TeamLoadedContext {
 
 /** Controls and projection supplied by the host-facing Team page owner. */
 export interface TeamPageProps {
-  readonly inspectMember?: import('@clocky/clocky-client-runtime/client').ITeamTasks['inspectMember']
+  readonly attentionPreview?: import('@clocky/clocky-client-runtime/client').TeamAttentionState | undefined
+  readonly attention?: import('@clocky/clocky-client-runtime/client').TeamAttentionState | undefined
+  readonly watchAttention?: ((teamId: TeamId) => () => void) | undefined
+  readonly readAttention?: ((teamId: TeamId, mode?: 'first' | 'next') => Promise<void>) | undefined
+  readonly refreshAttentionPreview?: ((teamId: TeamId) => Promise<void>) | undefined
+  readonly pauseAttention?: (() => void) | undefined
+  readonly openPendingAction?: ((teamId: TeamId, id: TeamActionResponseInput['actionId']) => Promise<void>) | undefined
+  readonly memberDetail?: import('@clocky/clocky-client-runtime/client').TeamMemberDetailState | undefined
+  readonly closeMemberDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['closeMemberDetail']
+  readonly readMemberDetail?: import('@clocky/clocky-client-runtime/client').ITeamTasks['readMemberDetail']
+  readonly onTaskDraftChange?: ((target: TeamTaskDialogTarget, draft: TaskFormDraft) => void) | undefined
+  readonly onTaskDraftDiscard?: ((target: TeamTaskDialogTarget) => void) | undefined
   readonly maxDraftBytes?: number | undefined
   readonly workflowDetail?: WorkflowWorkspaceProps['detail']
   readonly readWorkflowDetail?: WorkflowWorkspaceProps['read']
   readonly closeWorkflowDetail?: WorkflowWorkspaceProps['close']
   readonly humanActions?: readonly import('@clocky/clocky-client-connection/client').TeamHumanActionSnapshot[] | undefined
+  identities?: import('@clocky/clocky-client-runtime/client').TeamIdentityState | undefined
+  watchIdentities?: ((teamId: import('@clocky/clocky-client-runtime/client').TeamId, ids: readonly import('@clocky/clocky-client-runtime/client').ParticipantId[]) => () => void) | undefined
+  refreshIdentities?: (() => Promise<void>) | undefined
+  executionProfiles?: import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesState | undefined
+  watchExecutionProfiles?: ((input: import('@clocky/clocky-client-runtime/client').TeamExecutionProfilesInput) => () => void) | undefined
+  refreshExecutionProfiles?: (() => Promise<void>) | undefined
+  readonly memberReadiness?: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessState | undefined
+  readonly watchMemberReadiness?: ((input: import('@clocky/clocky-client-runtime/client').TeamMemberReadinessInput) => () => void) | undefined
+  readonly refreshMemberReadiness?: ITeamTasks['refreshMemberReadiness']
+  readonly taskCapabilities?: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesState | undefined
+  readonly watchTaskCapabilities?: ((input: import('@clocky/clocky-client-runtime/client').TeamTaskCapabilitiesInput) => () => void) | undefined
+  readonly refreshTaskCapabilities?: ITeamTasks['refreshTaskCapabilities']
+  readonly lookupTaskUpdate?: ITeamTasks['lookupTaskUpdate']
+  readonly taskReferences?: import('@clocky/clocky-client-runtime/client').TaskReferencesState | undefined
+  readonly watchTaskReferences?: import('./TeamBrowser.tsx').TeamBrowserInjected['watchTaskReferences']
+  readonly refreshTaskReferences?: (() => Promise<void>) | undefined
+  readonly dependencyQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
+  readonly taskQuery?: import('@clocky/clocky-client-runtime/client').TeamTaskQueryState | undefined
+  readonly readTaskQuery?: ITeamTasks['readTaskQuery']
+  readonly pauseTaskQuery?: ITeamTasks['pauseTaskQuery']
+  readonly readDependencies?: ITeamTasks['readDependencies']
+  readonly closeDependencies?: ITeamTasks['closeDependencies']
   readonly taskDetail?: TeamTaskDetailState | undefined
   readonly readTaskDetail?: ITeamTasks['readTaskDetail']
   readonly closeTaskDetail?: (() => void) | undefined
@@ -95,7 +113,7 @@ export interface TeamPageProps {
   /** Select another module while preserving this Team's browsing state. */
   readonly onViewChange?: (view: TeamWorkspaceView) => void
   /** Open the current coordinator Session on explicit request. */
-  readonly openCoordinator?: () => Promise<void>
+  readonly openCoordinator?: (() => Promise<void>) | undefined
   /** Controlled task preferences when the page belongs to a persistent workspace. */
   readonly taskView?: TeamViewState
   /** Publish task navigation and filtering to the workspace owner. */
@@ -143,7 +161,9 @@ export interface TeamPageProps {
   /** Stop the runtime observation when this inspection surface closes. */
   readonly closeChannelView?: () => void
   /** Read and verify one visible artifact retained by the selected Team. */
-  readonly readArtifact?: (artifactId: string, signal?: AbortSignal) => Promise<TeamArtifactReadResult>
+  readonly readArtifact?: ((artifactId: string, signal?: AbortSignal) => Promise<void>) | undefined
+  /** Runtime-owned bytes for one independently selected exact artifact. */
+  readonly artifactDetail?: TeamArtifactDetailState | undefined
   /** Load one bounded member or task collection page. */
   readonly readCollections?: (collection: TeamCollectionKind, mode?: 'refresh' | 'next' | 'first') => Promise<void>
   /** Answer a durable request through the authenticated principal owner. */
@@ -159,7 +179,15 @@ export interface TeamPageProps {
 }
 
 /** Render the Team objective, lifecycle, roster, task graph, channels, and durable audit controls. */
-export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWorkflowDetail, closeWorkflowDetail, humanActions,
+export function TeamPage({ onTaskDraftChange, onTaskDraftDiscard, maxDraftBytes, readMemberDetail, closeMemberDetail, memberDetail,
+  workflowDetail, readWorkflowDetail, closeWorkflowDetail,
+  attentionPreview, attention, watchAttention, readAttention, refreshAttentionPreview, pauseAttention, openPendingAction,
+  identities, watchIdentities, refreshIdentities,
+  executionProfiles, watchExecutionProfiles, refreshExecutionProfiles,
+  memberReadiness, watchMemberReadiness, refreshMemberReadiness,
+  taskCapabilities, watchTaskCapabilities, refreshTaskCapabilities,
+  taskQuery, readTaskQuery, pauseTaskQuery,
+  dependencyQuery, readDependencies, closeDependencies, taskReferences, watchTaskReferences, refreshTaskReferences, lookupTaskUpdate,
   taskDetail, readTaskDetail, closeTaskDetail,
   view: controlledView,
   onViewChange,
@@ -188,19 +216,33 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
   acknowledgeChannel,
   closeChannelView,
   readArtifact,
+  artifactDetail,
   readCollections,
-  pendingActions = [],
-  respondAction,
-  openActionContext,
   deleteTask,
   cancelTask,
 }: TeamPageProps) {
   const { team } = state
+  const simulationManaged = state.executionManagement === 'simulation-managed'
+  if (simulationManaged) {
+    manage = undefined
+    onCancel = undefined
+    onResume = undefined
+    deleteTask = undefined
+    cancelTask = undefined
+    acknowledgeChannel = undefined
+  }
   const [localTaskView, setLocalTaskView] = useState(DEFAULT_TEAM_VIEW)
   const taskPreferences = taskView ?? localTaskView
   const taskPreferencesRef = useRef(taskPreferences)
   taskPreferencesRef.current = taskPreferences
   const view = controlledView ?? taskPreferences.view
+  useEffect(() => {
+    if (view === 'overview') return watchAttention?.(team.id)
+    if (view === 'attention') {
+      if (attention?.teamId !== team.id || attention.page === undefined) void readAttention?.(team.id, 'first')
+      return () => { pauseAttention?.() }
+    }
+  }, [team.id, view, watchAttention, readAttention, pauseAttention])
   const updateTaskView = onTaskViewChange ??
      ((patch: Partial<TeamViewState>) => {
        setLocalTaskView(current => ({ ...current,
@@ -220,17 +262,61 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
     onViewChange?.('tasks')
   }
   const participants = memberPageLabels(collections?.members.items ?? [])
-  const tasks = (collections?.tasks.items ?? []).map(task => ({ ...task, subject: task.subject.text }))
+  const tableQuery = taskQuery?.teamId === team.id && taskQuery.query.search === taskPreferences.taskSearch
+    && taskQuery.query.phase === (taskPreferences.taskPhase === 'all' ? undefined : taskPreferences.taskPhase)
+    && taskQuery.query.excludeTaskId === undefined ? taskQuery : undefined
+  const taskRows = view === 'tasks' && readTaskQuery !== undefined ? tableQuery?.page?.items ?? [] : collections?.tasks.items ?? []
+  const tasks = taskRows.map(task => ({ ...task, subject: task.subject.text }))
+  const identityIds = JSON.stringify([...new Set([
+    ...((view === 'tasks' || view === 'overview') ? tasks.flatMap(task => task.ownerId === undefined ? [] : [task.ownerId]) : []),
+    ...taskDetail?.record.value?.task.lease?.participantId === undefined ? [] : [taskDetail.record.value.task.lease.participantId],
+    ...taskDetail?.latest.value?.participantId === undefined ? [] : [taskDetail.latest.value.participantId],
+    ...(taskDetail?.attempts.value?.items ?? []).map(attempt => attempt.participantId),
+    ...(view === 'channels' ? (channelListState?.items ?? []).flatMap(channel => channel.manifest.participants.map(member => member.id)) : []),
+    ...(view === 'channels' ? [channelState?.page?.channel, channelState?.admission?.channel, channelState?.invitation?.channel]
+      .flatMap(channel => channel?.manifest.participants.map(member => member.id) ?? []) : []),
+  ])])
+  useEffect(() => {
+    return watchIdentities?.(team.id, JSON.parse(identityIds) as ParticipantId[])
+  }, [team.id, identityIds, watchIdentities])
+  const identityState = identities?.teamId === team.id ? identities : undefined
+  const tableQueryRef = useRef(tableQuery)
+  tableQueryRef.current = tableQuery
+  useEffect(() => {
+    if (view !== 'tasks' || readTaskQuery === undefined) return
+    const current = tableQueryRef.current
+    const search = taskPreferences.taskSearch
+    const phase = taskPreferences.taskPhase === 'all' ? undefined : taskPreferences.taskPhase
+    if (current?.page === undefined || current.query.search !== search || current.query.phase !== phase) {
+      void readTaskQuery(team.id, { search, ...phase === undefined ? {} : { phase } })
+    }
+    return () => { pauseTaskQuery?.() }
+  }, [team.id, view, taskPreferences.taskSearch, taskPreferences.taskPhase, readTaskQuery, pauseTaskQuery])
+  const readTable = (mode: 'first' | 'next') => readTaskQuery?.(team.id, { search: taskPreferences.taskSearch,
+    ...taskPreferences.taskPhase === 'all' ? {} : { phase: taskPreferences.taskPhase } }, mode)
   const loadedContext: TeamLoadedContext = { team, participants: memberLabels(state, participants), tasks }
   const workflowCollection = collections?.workflowPlans
   const workflowPlans = workflowCollection?.items ?? []
   const metadata = state.metadata?.kind === 'available' ? state.metadata : undefined
-  const [taskDialogTarget, setTaskDialogTarget] = useState<TeamTaskDialogTarget | undefined>()
+  const taskDialogTarget = taskPreferences.taskForm
+  const setTaskDialogTarget = (target: TeamTaskDialogTarget | undefined) => { updateTaskView({ taskForm: target }) }
   const [memberDetailId, setMemberDetailId] = useState<ParticipantId>()
+  const readinessIds = JSON.stringify([...new Set([
+    ...(view === 'members' ? participants : view === 'overview' ? overviewMemberLabels(state, participants) : []).map(member => member.id),
+    ...memberDetailId === undefined ? [] : [memberDetailId],
+  ])])
+  useEffect(() => {
+    const participantIds = JSON.parse(readinessIds) as ParticipantId[]
+    if (participantIds.length === 0) return
+    return watchMemberReadiness?.({ teamId: team.id, participantIds })
+  }, [team.id, readinessIds, watchMemberReadiness])
+  const readiness = memberReadiness?.input.teamId === team.id ? memberReadiness : undefined
+  const readinessStale = readiness?.disconnected === true || readiness?.error !== undefined
+    || readiness?.value !== undefined && readiness.value.teamCursor < team.cursor
   const [managementTarget, setManagementTarget] = useState<TeamManagementTarget | undefined>()
-  const canManage = manage !== undefined && !['completed', 'failed', 'cancelled'].includes(team.phase)
+  const canManage = state.readAccess === 'member' && manage !== undefined && team.phase === 'active'
   const [deletedTaskId, setDeletedTaskId] = useState<TeamTaskId | undefined>()
-  const visibleTasks = (collections?.tasks.items ?? []).filter(task => task.phase !== 'deleted' && task.id !== deletedTaskId)
+  const visibleTasks = taskRows.filter(task => task.phase !== 'deleted' && task.id !== deletedTaskId)
   const workers = participants.filter(participant => isWorkerRole(participant.role))
   const activeWorkers = workers.filter(participant => participant.phase === 'active').length
   const workingTasks = state.counts.tasks.assigned + state.counts.tasks.running
@@ -239,12 +325,8 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
   const [auditLoading, setAuditLoading] = useState(false)
   const [auditError, setAuditError] = useState<string | undefined>()
   const auditRequest = useRef<AbortController | undefined>()
-  const artifactRequest = useRef<AbortController | undefined>()
   const deleteTaskRequest = useRef<AbortController | undefined>()
   const cancelTaskRequest = useRef<AbortController | undefined>()
-  const [artifactLoadingId, setArtifactLoadingId] = useState<string | undefined>()
-  const [artifact, setArtifact] = useState<TeamArtifactReadResult | undefined>()
-  const [artifactError, setArtifactError] = useState<string | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<TeamTaskRecord | undefined>()
   const [deletingTaskId, setDeletingTaskId] = useState<TeamTaskId | undefined>()
   const [deleteTaskError, setDeleteTaskError] = useState<string | undefined>()
@@ -263,19 +345,15 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
 
   useEffect(() => {
     auditRequest.current?.abort()
-    setTaskDialogTarget(undefined)
+    if (taskView === undefined) setLocalTaskView(DEFAULT_TEAM_VIEW)
     setFocusedTaskId(undefined)
     setManagementTarget(undefined)
     setMemberDetailId(undefined)
     setAudit(undefined)
     setAuditLoading(false)
     setAuditError(undefined)
-    artifactRequest.current?.abort()
     deleteTaskRequest.current?.abort()
     cancelTaskRequest.current?.abort()
-    setArtifact(undefined)
-    setArtifactError(undefined)
-    setArtifactLoadingId(undefined)
     setDeleteTarget(undefined)
     setDeletingTaskId(undefined)
     setDeleteTaskError(undefined)
@@ -285,7 +363,6 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
     setDeletedTaskId(undefined)
     return () => {
       auditRequest.current?.abort()
-      artifactRequest.current?.abort()
       deleteTaskRequest.current?.abort()
       cancelTaskRequest.current?.abort()
     }
@@ -309,24 +386,7 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
   }
 
   const loadArtifact = async (reference: TeamArtifactReference): Promise<void> => {
-    if (readArtifact === undefined || reference.provider === undefined) return
-    artifactRequest.current?.abort()
-    const controller = new AbortController()
-    artifactRequest.current = controller
-    setArtifactLoadingId(reference.id)
-    setArtifact(undefined)
-    setArtifactError(undefined)
-    try {
-      const next = await readArtifact(reference.id, controller.signal)
-      if (!controller.signal.aborted) setArtifact(next)
-    } catch (error: unknown) {
-      if (!controller.signal.aborted) setArtifactError(error instanceof Error ? error.message : String(error))
-    } finally {
-      if (artifactRequest.current === controller) {
-        artifactRequest.current = undefined
-        setArtifactLoadingId(undefined)
-      }
-    }
+    if (readArtifact !== undefined && reference.provider !== undefined) await readArtifact(reference.id)
   }
 
   const closeDeleteTask = (): void => {
@@ -390,18 +450,30 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
         {...onCancel === undefined ? {} : { onCancel }}
         {...onResume === undefined ? {} : { onResume }} />
 
-      {view === 'overview' && <TeamOverview state={state} collections={collections} humanActions={humanActions} translate={translate} artifacts={artifacts} pendingActions={pendingActions}
+      {identityState?.disconnected && <p role="status" className={css.notice}>{translate('identity.disconnected')}</p>}
+      {identityState?.error !== undefined && <p role="alert" className={css.error}>{identityState.error}
+        {refreshIdentities !== undefined && <Button onClick={() => { void refreshIdentities() }}>{translate('identity.retry')}</Button>}
+      </p>}
+      {view === 'overview' && <TeamOverview openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} memberReadiness={readiness} state={state} collections={collections} attentionPreview={attentionPreview} refreshAttentionPreview={refreshAttentionPreview} openPendingAction={openPendingAction} translate={translate} artifacts={artifacts}
         navigate={(next) => { updateTaskView({ view: next }); onViewChange?.(next) }}
         openTask={(taskId) => { updateTaskView({ taskId, view: 'tasks', taskSearch: '', taskPhase: 'all' }); onViewChange?.('tasks') }}
         inspectActivity={(cursor) => { updateTaskView({ view: 'audit' }); onViewChange?.('audit'); setAudit(undefined); void loadAudit(Math.max(-1, cursor - 1)) }}
         {...readArtifact === undefined ? {} : { openArtifact: (reference: TeamArtifactReference) => { updateTaskView({ view: 'artifacts' }); onViewChange?.('artifacts'); void loadArtifact(reference) } }}
-        {...respondAction === undefined ? {} : { respondAction }}
-        {...openActionContext === undefined ? {} : { openActionContext }}
         {...openParticipantSession === undefined ? {} : { openParticipantSession }}
         {...readAudit === undefined ? {} : { readAudit }} /> }
-      {memberDetailId !== undefined && inspectMember !== undefined && <MemberDetail key={`${team.id}:${memberDetailId}`}
-        teamId={team.id} participantId={memberDetailId} inspect={inspectMember} translate={translate}
+      {memberDetailId !== undefined && readMemberDetail !== undefined && closeMemberDetail !== undefined && <MemberDetail key={`${team.id}:${memberDetailId}`}
+        teamId={team.id} participantId={memberDetailId} read={readMemberDetail} closeDetail={closeMemberDetail}
+        detail={memberDetail} translate={translate}
+        readiness={readiness?.value?.items.find(item => item.participantId === memberDetailId)}
+        readinessStale={readinessStale}
         onClose={() => { setMemberDetailId(undefined) }} />}
+      {view === 'attention' && <TeamAttention
+        state={attention?.teamId === team.id ? attention : undefined}
+        counts={attention?.page !== undefined && attention.page.teamCursor >= team.cursor ? attention.page.counts : state.attentionCounts}
+        translate={translate} read={readAttention === undefined ? undefined : async (mode) => { await readAttention(team.id, mode) }}
+        openTask={(id) => { updateTaskView({ view: 'tasks', taskId: id }); onViewChange?.('tasks') }}
+        openRecovery={() => { updateTaskView({ view: 'audit' }); onViewChange?.('audit') }}
+        openAction={openPendingAction === undefined ? undefined : async (id) => { await openPendingAction(team.id, id) }} />}
       {view === 'members' && <>
         <section className={css.section} aria-label={translate('detail.participants')}>
           <div className={css.sectionHeader}>
@@ -424,34 +496,41 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
           {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
           {collections?.members.loading && <p className={css.muted} role="status">{translate('detail.membersLoading')}</p>}
           {collections?.members.error !== undefined && <p className={css.error} role="alert">{collections.members.error}</p>}
+          <div className={css.actions}>
+            {refreshMemberReadiness !== undefined && <Button aria-busy={readiness?.loading} disabled={readiness?.disconnected}
+              onClick={() => { void refreshMemberReadiness() }}>{translate('readiness.refresh')}</Button>}
+            {readiness?.loading && readiness.value === undefined && <span role="status">{translate('readiness.loading')}</span>}
+            {readiness?.disconnected && <span role="status">{translate('readiness.disconnected')}</span>}
+          </div>
+          {readiness?.error !== undefined && <p className={css.error} role="alert">{readiness.error}</p>}
+          <p className={css.muted}>{translate('readiness.advisory')}</p>
+
           <ul className={css.list}>
             {participants.map((participant) => {
               const canOpen = openParticipantSession !== undefined && participant.kind !== 'human'
               const participantTasks = tasks.filter(task => task.phase === 'review' ? task.reviewerId === participant.id
                 : task.ownerId === participant.id && (task.phase === 'assigned' || task.phase === 'running'))
-              const status = participant.phase !== 'active' ? participant.phase
-                : participantTasks.some(task => task.cancellationRequested) ? 'stopping'
-                  : participantTasks.some(task => task.phase === 'review') ? 'reviewing'
-                    : participantTasks.some(task => task.phase === 'running') ? 'working'
-                      : participantTasks.some(task => task.phase === 'assigned') ? 'assigned' : participant.phase
-              const statusLabel = translate(participantStatusKey[status] ?? 'detail.participant.status.unknown')
+              const execution = readiness?.value?.items.find(item => item.participantId === participant.id)
+              const participation = execution?.participation ?? participant.phase
+              const statusLabel = translate(`detail.participant.phase.${participation}`)
               const roleLabel = translate(participantRoleKey[participant.role]
               ?? (isWorkerRole(participant.role) ? 'detail.participant.role.worker' : 'detail.participant.role.other'))
               return (
                 <li key={participant.id} className={css.participant}>
-                  <span>
+                  <div>
                     <strong>{participant.displayName}</strong>
-                    <small>{roleLabel} · {statusLabel}</small>
+                    <small>{roleLabel} · {translate('readiness.participation')}: {statusLabel}</small>
+                    <MemberReadiness value={execution} stale={readinessStale} translate={translate} />
                     {participantTasks.length > 0 && <span className={css.participantTasks}>{participantTasks.map(task => task.subject).join(' · ')}</span>}
-                  </span>
+                  </div>
                   {canManage && participant.kind !== 'human' && <div className={css.actions}>
-                    {(participant.phase === 'invited' || participant.phase === 'provisioning') && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberActivate', participantId: participant.id }) }}>{translate('manage.memberActivate')}</button>}
-                    {participant.phase === 'active' && <>
+                    {(participation === 'invited' || participation === 'provisioning') && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberActivate', participantId: participant.id }) }}>{translate('manage.memberActivate')}</button>}
+                    {participation === 'active' && <>
                       {<button type="button" onClick={() => { setManagementTarget({ kind: 'memberInterrupt', participantId: participant.id }) }}>{translate('manage.memberInterrupt')}</button>}
                       {participant.role !== 'coordinator' && <button type="button" onClick={() => { setManagementTarget({ kind: 'memberRemove', participantId: participant.id }) }}>{translate('manage.memberRemove')}</button>}
                     </>}
                   </div>}
-                  {inspectMember !== undefined && <button type="button" onClick={() => { setMemberDetailId(participant.id) }}>
+                  {readMemberDetail !== undefined && <button type="button" onClick={() => { setMemberDetailId(participant.id) }}>
                     {translate('memberDetail.open')}
                   </button>}
                   {canOpen ? (
@@ -486,8 +565,7 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
       )}
 
       {view === 'workflows' && <>
-        {(workflowPlans.length > 0 || workflowCollection?.loading || workflowCollection?.error !== undefined
-        || workflowCollection?.hasNewer || (workflowCollection?.startCursor ?? -1) >= 0) && <section className={css.section} aria-label={translate('detail.workflowPlans')}>
+        <section className={css.section} aria-label={translate('detail.workflowPlans')}>
           <div className={css.sectionHeader}><h2>{translate('detail.workflowPlans')}</h2>
             {workflowCollection?.startCursor !== undefined && workflowCollection.startCursor >= 0 && readCollections !== undefined && <button type="button"
               disabled={workflowCollection.loading || workflowCollection.loadingMore} onClick={() => { void readCollections('workflowPlans', 'first') }}>
@@ -505,6 +583,8 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
           {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
           {workflowCollection?.loading && <p className={css.muted} role="status">{translate('detail.workflowLoading')}</p>}
           {workflowCollection?.error !== undefined && <p className={css.error} role="alert">{workflowCollection.error}</p>}
+          {workflowPlans.length === 0 && !workflowCollection?.loading && workflowCollection?.error === undefined
+            && <p className={css.muted} role="status">{translate('detail.workflowsEmpty')}</p>}
           <WorkflowWorkspace plans={workflowPlans} detail={workflowDetail?.teamId === team.id ? workflowDetail : undefined}
             read={readWorkflowDetail === undefined ? undefined : async (id, mode) => {
               updateTaskView({ workflowPlanId: id }); await readWorkflowDetail(id, mode)
@@ -512,7 +592,7 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
             close={closeWorkflowDetail === undefined ? undefined : () => {
               updateTaskView({ workflowPlanId: undefined }); closeWorkflowDetail()
             }} translate={translate} openTask={focusTask} />
-        </section>}
+        </section>
 
       </>}
 
@@ -520,23 +600,42 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
         <section className={css.section} aria-label={translate('detail.tasks')}>
           <div className={css.sectionHeader}><h2>{translate('detail.tasks')}</h2>
             {canManage && <button type="button" onClick={() => { setTaskDialogTarget({ kind: 'taskCreate' }) }}>{translate('taskForm.taskCreate')}</button>}
-            {collections?.tasks.startCursor !== undefined && collections.tasks.startCursor >= 0 && readCollections !== undefined && <button type="button"
-              disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'first') }}>
-              {translate('detail.firstPage')}
-            </button>}
-            {collections?.tasks.nextCursor !== undefined && readCollections !== undefined && <button type="button"
-              disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'next') }}>
-              {translate('detail.loadTasks')}
-            </button>}
-            {readCollections !== undefined && <button type="button"
-              disabled={collections?.tasks.loading || collections?.tasks.loadingMore} onClick={() => { void readCollections('tasks') }}>
-              {translate('detail.refreshTasks')}
-            </button>}
+            {readTaskQuery !== undefined ? <>
+              {tableQuery?.startCursor !== undefined && <button type="button" disabled={tableQuery.loading}
+                onClick={() => { void readTable('first') }}>{translate('detail.firstPage')}</button>}
+              {tableQuery?.page?.nextQueryCursor !== undefined && <button type="button"
+                disabled={tableQuery.loading || tableQuery.hasNewer || tableQuery.disconnected || tableQuery.error !== undefined}
+                onClick={() => { void readTable('next') }}>{translate('detail.loadTasks')}</button>}
+              <button type="button" disabled={tableQuery?.loading} onClick={() => { void readTable('first') }}>{translate('taskView.refreshQuery')}</button>
+            </> : <>
+              {collections?.tasks.startCursor !== undefined && collections.tasks.startCursor >= 0 && readCollections !== undefined && <button type="button"
+                disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'first') }}>
+                {translate('detail.firstPage')}
+              </button>}
+              {collections?.tasks.nextCursor !== undefined && readCollections !== undefined && <button type="button"
+                disabled={collections.tasks.loading || collections.tasks.loadingMore} onClick={() => { void readCollections('tasks', 'next') }}>
+                {translate('detail.loadTasks')}
+              </button>}
+              {readCollections !== undefined && <button type="button"
+                disabled={collections?.tasks.loading || collections?.tasks.loadingMore} onClick={() => { void readCollections('tasks') }}>
+                {translate('detail.refreshTasks')}
+              </button>}
+            </>}
           </div>
-          {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
-          {collections?.tasks.loading && <p className={css.muted} role="status">{translate('detail.tasksLoading')}</p>}
-          {collections?.tasks.error !== undefined && <p className={css.error} role="alert">{collections.tasks.error}</p>}
-          <TaskWorkspace state={loadedContext} tasks={visibleTasks}
+          {readTaskQuery !== undefined ? <>
+            {tableQuery?.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
+            {tableQuery?.hasNewer && <p role="status">{translate('taskView.queryChanged')}</p>}
+            {tableQuery?.disconnected && <p role="status">{translate('taskView.queryDisconnected')}</p>}
+            {tableQuery?.error !== undefined && <p role="alert" className={css.error}>{tableQuery.error}</p>}
+          </> : <>
+            {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
+            {collections?.tasks.loading && <p role="status">{translate('detail.tasksLoading')}</p>}
+            {collections?.tasks.error !== undefined && <p className={css.error} role="alert">{collections.tasks.error}</p>}
+          </>}
+          <TaskWorkspace inspectMember={readMemberDetail === undefined ? undefined : setMemberDetailId}
+            searchScope={readTaskQuery === undefined ? 'loaded' : 'team'} queryState={tableQuery}
+            refreshSearch={readTaskQuery === undefined ? undefined : () => { void readTable('first') }}
+            identities={identityState} state={loadedContext} tasks={visibleTasks}
             detail={taskDetail} readDetail={readTaskDetail} closeDetail={closeTaskDetail}
             viewState={taskPreferences} updateView={updateTaskView}
             translate={translate} canManage={canManage} busy={deletingTaskId !== undefined || cancellingTaskId !== undefined}
@@ -558,7 +657,7 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
 
       </>}
 
-      {view === 'channels' && <ChannelHub maxDraftBytes={maxDraftBytes} state={loadedContext} translate={translate}
+      {view === 'channels' && <ChannelHub openMember={readMemberDetail === undefined ? undefined : setMemberDetailId} identities={identityState} maxDraftBytes={maxDraftBytes} state={loadedContext} translate={translate}
         viewState={taskPreferences}
         updateView={updateTaskView}
         {...onChannelDraftChange === undefined ? {} : { onDraftChange: onChannelDraftChange }}
@@ -575,62 +674,9 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
         {...acknowledgeChannel === undefined ? {} : { acknowledgeChannel }}
         {...closeChannelView === undefined ? {} : { closeChannelView }} />}
 
-      {view === 'artifacts' && <>
-        {(artifacts.length > 0 || artifact !== undefined || artifactLoadingId !== undefined || artifactError !== undefined
-        || collections?.artifacts.loading || collections?.artifacts.error !== undefined || collections?.artifacts.nextCursor !== undefined
-        || collections?.artifacts.hasNewer || (collections?.artifacts.startCursor ?? -1) >= 0) && (
-          <section className={css.section} aria-label={translate('detail.artifacts')}>
-            <div className={css.sectionHeader}><h2>{translate('detail.artifacts')}</h2>
-              {collections?.artifacts.startCursor !== undefined && collections.artifacts.startCursor >= 0 && readCollections !== undefined && <button type="button"
-                disabled={collections.artifacts.loading || collections.artifacts.loadingMore} onClick={() => { void readCollections('artifacts', 'first') }}>
-                {translate('detail.firstPage')}
-              </button>}
-              {collections?.artifacts.nextCursor !== undefined && readCollections !== undefined && <button type="button"
-                disabled={collections.artifacts.loading || collections.artifacts.loadingMore} onClick={() => { void readCollections('artifacts', 'next') }}>
-                {translate('detail.loadArtifacts')}
-              </button>}
-              {readCollections !== undefined && <button type="button"
-                disabled={collections?.artifacts.loading || collections?.artifacts.loadingMore} onClick={() => { void readCollections('artifacts') }}>
-                {translate('detail.refreshArtifacts')}
-              </button>}
-            </div>
-            {artifacts.length > 0 && (
-              <ul className={css.list}>{artifacts.map(artifact => (
-                <li key={artifact.id} className={css.record}>
-                  <strong>{artifact.id}</strong>
-                  <small>{artifact.kind}</small>
-                  {readArtifact !== undefined && artifact.provider !== undefined && (
-                    <button
-                      type="button"
-                      disabled={artifactLoadingId !== undefined}
-                      onClick={() => { void loadArtifact(artifact) }}
-                    >
-                      {artifactLoadingId === artifact.id ? translate('detail.artifactLoading') : translate('detail.artifactRead')}
-                    </button>
-                  )}
-                  {readArtifact !== undefined && artifact.provider === undefined && (
-                    <span className={css.muted}>{translate('detail.artifactUnavailable')}</span>
-                  )}
-                </li>
-              ))}</ul>
-            )}
-            {artifactLoadingId !== undefined && <p className={css.muted} role="status">{translate('detail.artifactLoading')}</p>}
-            {artifactError !== undefined && <p className={css.error} role="alert">{artifactError}</p>}
-            {readCollections !== undefined && <p className={css.muted}>{translate('detail.pageWindow')}</p>}
-            {collections?.artifacts.loading && <p className={css.muted} role="status">{translate('detail.artifactsLoading')}</p>}
-            {collections?.artifacts.error !== undefined && <p className={css.error} role="alert">{collections.artifacts.error}</p>}
-            {artifact !== undefined && <div className={css.result} aria-label={translate('detail.artifactRead')}>
-              <strong>{artifact.artifact.id}</strong>
-              <p className={css.muted} role="status">{artifact.bytes} {translate('detail.artifactBytes')}</p>
-              {artifact.artifact.kind === 'screenshot' || artifact.artifact.kind === 'file'
-                ? <p className={css.muted}>{translate('detail.artifactBinary')}</p>
-                : <pre className={css.json}>{previewArtifactText(artifact.data)}</pre>}
-              <button type="button" onClick={() => { downloadArtifact(artifact) }}>{translate('detail.artifactDownload')}</button>
-            </div>}
-          </section>
-        )}
-
-      </>}
+      {view === 'artifacts' && <ArtifactsWorkspace artifacts={artifacts} collections={collections}
+        detail={artifactDetail?.teamId === team.id ? artifactDetail : undefined}
+        read={readArtifact} readCollections={readCollections} t={translate} />}
 
       {view === 'audit' && hasAuditSection && (
         <section className={css.section} aria-label={translate('detail.audit')}>
@@ -656,14 +702,24 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
           ))}
         </section>
       )}
-      {taskDialogTarget !== undefined && manage !== undefined && <TeamTaskDialog
+      {taskDialogTarget !== undefined && (manage !== undefined
+        || hasTaskDraftInput(taskPreferences.taskDrafts[taskDraftKey(taskDialogTarget)])) && <TeamTaskDialog
         key={`${team.id}:${taskDialogTarget.kind}:${'taskId' in taskDialogTarget ? taskDialogTarget.taskId : ''}`}
-        target={taskDialogTarget} state={loadedContext} translate={translate} manage={manage}
+        draft={taskPreferences.taskDrafts[taskDraftKey(taskDialogTarget)]}
+        {...onTaskDraftChange === undefined ? {} : { onDraftChange: (draft) => { onTaskDraftChange(taskDialogTarget, draft) } }}
+        {...onTaskDraftDiscard === undefined ? {} : { onDraftDiscard: () => { onTaskDraftDiscard(taskDialogTarget) } }}
+        target={taskDialogTarget} state={loadedContext} translate={translate} manage={manage} canSubmit={canManage}
         inspection={taskDetail} readTaskDetail={readTaskDetail}
+        taskCapabilities={taskCapabilities} watchTaskCapabilities={watchTaskCapabilities} refreshTaskCapabilities={refreshTaskCapabilities}
+        taskReferences={taskReferences} watchTaskReferences={watchTaskReferences}
+        refreshTaskReferences={refreshTaskReferences} lookupTaskUpdate={lookupTaskUpdate}
+        dependencyQuery={dependencyQuery} readDependencies={readDependencies} closeDependencies={closeDependencies}
         onClose={() => { setTaskDialogTarget(undefined) }}
       />}
       {managementTarget !== undefined && manage !== undefined && <TeamManagementDialog
         key={`${team.id}:${managementTarget.kind}:${'participantId' in managementTarget ? managementTarget.participantId : 'channelId' in managementTarget ? managementTarget.channelId : ''}`}
+        executionProfiles={executionProfiles}
+        watchExecutionProfiles={watchExecutionProfiles} refreshExecutionProfiles={refreshExecutionProfiles}
         target={managementTarget}
         maxDraftBytes={maxDraftBytes}
         state={loadedContext}
@@ -724,26 +780,4 @@ export function TeamPage({ maxDraftBytes, inspectMember, workflowDetail, readWor
       </Modal>
     </main>
   )
-}
-
-/** Cap text rendering while retaining the complete provider bytes for download. */
-const MAX_ARTIFACT_PREVIEW_BYTES = 128 * 1024
-
-function previewArtifactText(data: string): string {
-  const binary = atob(data)
-  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
-  const preview = new TextDecoder().decode(bytes.subarray(0, MAX_ARTIFACT_PREVIEW_BYTES))
-  return bytes.length > MAX_ARTIFACT_PREVIEW_BYTES ? `${preview}\n…` : preview
-}
-
-function downloadArtifact(result: TeamArtifactReadResult): void {
-  const binary = atob(result.data)
-  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
-  const blob = new Blob([bytes], { type: 'application/octet-stream' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = `artifact-${result.artifact.id.replace(/[^A-Za-z0-9._-]+/g, '-') || 'download'}`
-  anchor.click()
-  setTimeout(() => { URL.revokeObjectURL(url) }, 0)
 }

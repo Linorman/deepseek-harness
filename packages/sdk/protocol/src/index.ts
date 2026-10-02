@@ -1,3 +1,5 @@
+export type { TeamTaskUpdateLookupParams, TeamTaskUpdateLookupResult } from './types.ts'
+export { teamTaskUpdateLookupParamsSchema, teamTaskUpdateLookupResultSchema } from './schema.ts'
 export type { TeamWorkflowInspectParams } from './types.ts'
 export type { TeamActionReadParams } from './types.ts'
 /**
@@ -168,7 +170,7 @@ export type {
   TeamSelectionResult,
   TeamTaskInspectParams,
   TeamTaskInspectResult,
-  TeamBrowseParams,
+  TeamTaskQueryInput, TeamTaskQueryCursorInput, TeamBrowseParams,
   TeamBrowseResult,
   TeamMemberSessionParams,
   TeamMemberInspectParams,
@@ -247,3 +249,5 @@ export type {
 } from './types.ts'
 
 export type { TeamInboxRespondParams } from './types.ts'
+
+export * from './simulation.ts'

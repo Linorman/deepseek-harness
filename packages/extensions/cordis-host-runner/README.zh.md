@@ -4,6 +4,8 @@
 
 由模型挂载的动态包在 host 侧的那一半：定义注册表、host 半所用的 `node:vm` 沙箱与 fiber 生命周期、invoke handler 表，以及由某个浏览器页面执行的 run 往返。以 `ctx.dynamicCordisRunner` 提供。面向模型的工具在 [`@clocky/clocky-tool-cordis`](../tool-cordis/README.zh.md) 中；浏览器半由 [`@clocky/clocky-cordis-client-runner`](../cordis-client-runner/README.zh.md) 装载。
 
+转发的激活请求、结果、package 公布／撤回与 inspect-query 结算携带所属 Session 身份。Runner 从持有的请求或 plugin 记录派生该身份，包括取消之后；每条通知可独立鉴权，不需要 Host 关联缓存。
+
 ## 功能
 
 分两个阶段：`define` 只做登记，一切带副作用的动作都挂在一次 run 上。

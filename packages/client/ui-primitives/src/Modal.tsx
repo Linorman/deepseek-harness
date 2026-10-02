@@ -19,6 +19,7 @@ import css from './Modal.module.css'
  * @param props.description - optional supporting sentence under the title.
  * @param props.children - body (inputs, etc.).
  * @param props.footer - action row (Cancel / Create).
+ * @param props.size - default confirmation geometry or a wide, independently scrolling form.
  * @param props.contentClassName - optional class for a scrollable content region.
  * @param props.bodyClassName - optional geometry for a scrollable body with persistent header and footer.
  * @param props.headless - render children directly in the card (no default
@@ -29,7 +30,7 @@ import css from './Modal.module.css'
  * @returns null when closed; otherwise the overlay tree.
  */
 export function Modal({
-  open, onClose, title, closeLabel = 'Close', description, children, footer, className, contentClassName, bodyClassName, headless = false,
+  open, onClose, title, closeLabel = 'Close', description, children, footer, className, contentClassName, bodyClassName, headless = false, size = 'default',
 }: {
   open: boolean
   onClose: () => void
@@ -42,6 +43,7 @@ export function Modal({
   contentClassName?: string
   bodyClassName?: string
   headless?: boolean
+  size?: 'default' | 'form'
 }) {
   const dialogRef = useRef<HTMLDialogElement | null>(null)
   useLayoutEffect(() => {
@@ -63,7 +65,8 @@ export function Modal({
       <div className={css.mask} aria-hidden="true" onClick={onClose} />
       <dialog
         ref={dialogRef}
-        className={clsx(css.dialog, className)}
+        className={clsx(css.dialog, size === 'form' && css.formDialog, className)}
+        data-workspace-form={size === 'form' || undefined}
         role="dialog"
         aria-modal="true"
         aria-label={title}

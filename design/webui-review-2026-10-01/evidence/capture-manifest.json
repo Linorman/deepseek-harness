@@ -1,0 +1,218 @@
+{
+  "auditStarted": "2026-10-01",
+  "auditContinued": "2026-10-02",
+  "timezone": "Asia/Shanghai",
+  "head": "dbfb6e25b915bf573fd68223f4c1c5ee1ba3b03b",
+  "sourceState": "HEAD plus pre-existing uncommitted work; rebuilt for this audit",
+  "browser": "Codex in-app browser",
+  "data": "isolated Web scaffold; three pending Team tasks; one newly created paused Company procurement simulation; no model execution",
+  "screenshots": [
+    {
+      "path": "design/webui-review-2026-10-01/evidence/01-team-overview.jpg",
+      "sha256": "93e23590afcde3a53412e84f724135c356699f7b81065975514b2310c1bf85d1",
+      "bytes": 54411,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/02-team-task.jpg",
+      "sha256": "36c4f02ae8f5795c7729d78c8bc0c78f87c6ba9576a7556f918831bdf12451c3",
+      "bytes": 54636,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/03-team-channel.jpg",
+      "sha256": "5cfe64e15d34313924c1eb2b972c2ed9b520604459bd18dfd2ee663307c3df4b",
+      "bytes": 38968,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/04-team-channel-selected.jpg",
+      "sha256": "10a062bfb772d8756bc5fccbf9eb238b6f17495ef7b7566ba824557410a9057c",
+      "bytes": 46771,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/05-simulation-empty.jpg",
+      "sha256": "ee3536116da683f4429ea37ffc8703857c04848e230392165023918212c0233b",
+      "bytes": 34030,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/06-simulation-create.jpg",
+      "sha256": "d3fd7a06505ac6e674b716ad943ffe2eeb5b2d41550bca2cb93455e540450b14",
+      "bytes": 47326,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/07-simulation-overview.jpg",
+      "sha256": "f96eb616e9222de45e7377576514fdc00e3f14614a6911bb5538551d535a5417",
+      "bytes": 68330,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/08-simulation-entity.jpg",
+      "sha256": "f8f0631e771f6cbf5c1d33eaedf225eb6e81132b9a8a234c6bc2968f289739fe",
+      "bytes": 59251,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/09-simulation-narrow.jpg",
+      "sha256": "2be403e8e5247c99939cac0009ce1a2aa534192fe49ed45407d57344a0279d2e",
+      "bytes": 30574,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/10-simulation-narrow-detail.jpg",
+      "sha256": "c1d167d2d27cdd184cd66093e5053fae2db3fba832ba537a8df672714128c930",
+      "bytes": 21771,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/11-associated-team.jpg",
+      "sha256": "4a17a6b819ccf4a0751186881e1ae2822dedfa60fa37c93e4bfe5381e655081d",
+      "bytes": 41957,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/12-checkpoints.jpg",
+      "sha256": "7e170c22abd6658f999446bb5368bddaee5a548ad5fe907858f47ecd041c9f0d",
+      "bytes": 54227,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/13-records.jpg",
+      "sha256": "0ad22f6637f6097daedb1726ba6941bd9bacd55a1687408dd48ebb9796fd64f4",
+      "bytes": 53821,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/14-simulation-requests.jpg",
+      "sha256": "1157d2d709f01aa8f5f31b3877086a2075a86e3e70bd0d48977391d608fac3f5",
+      "bytes": 50281,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "path": "design/webui-review-2026-10-01/evidence/15-team-session.jpg",
+      "sha256": "4defd22e53c65adf705e00a5b4a35684d7a78b5e679dffbf0326f23e916df51c",
+      "bytes": 30681,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    }
+  ],
+  "sourceAndArtifactHashes": [
+    {
+      "path": "packages/client/ui-layout/src/client/AppFrame.module.css",
+      "sha256": "5a7b788b30cacf0edbe8e74cd347caa6638a72d29556f7ee37834493979b6a7d",
+      "bytes": 5497
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamWorkspace.module.css",
+      "sha256": "6edd7feb32c0023c25d01fc6bbd8bc96ad03b50231da75f55e578c5d955f43d3",
+      "bytes": 9993
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamWorkspace.tsx",
+      "sha256": "84f721d1486099e00348b8104d8cfb26dd50cae3575d6d68caf327791121ff6a",
+      "bytes": 18813
+    },
+    {
+      "path": "packages/client/ui-team/src/client/TeamOverview.tsx",
+      "sha256": "900810ac5900ffe5f6650f8acfcb13ecb164ca0f6d09ff92b9235ab25a9d3f53",
+      "bytes": 9490
+    },
+    {
+      "path": "packages/client/ui-team/src/client/ChannelHub.tsx",
+      "sha256": "499c8c96a92f370ff319c92527bf4af19aadc3fc14f427e333153f4b3724de99",
+      "bytes": 19932
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/Workspace.tsx",
+      "sha256": "718fb3d6cf58515193073e43508d25801125aa1b3323c59ba962dcf306b8ca88",
+      "bytes": 36967
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/Workspace.module.css",
+      "sha256": "736dbd47c8ba0d19f573e95c2ecab8b9e9bae77ad4a4e0abe7c7e143085d9c7e",
+      "bytes": 5029
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/RunStatus.tsx",
+      "sha256": "f7941252c3596e839aa8bf43e295de26ddd5e203ed6692c59f2af545b5d24c93",
+      "bytes": 6281
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/CreationDialog.tsx",
+      "sha256": "e9070c67f37c9fd874416bb13fe8fb56a49d2a4215ae6d4b1954287dd1e8fca1",
+      "bytes": 15509
+    },
+    {
+      "path": "packages/client/ui-simulation/src/client/PersistentRequests.tsx",
+      "sha256": "6dc2dabaace5e8a1eed407f11789126e2e815510f9935235f47d09a1d384dbb9",
+      "bytes": 5112
+    },
+    {
+      "path": "packages/client/ui-primitives/src/Modal.module.css",
+      "sha256": "556fab759470364b1fe3aa1f06ebb6edb8bf9bf35394a373cbf3438541b9ebc1",
+      "bytes": 2541
+    },
+    {
+      "path": "packages/client/ui-team/lib/client.js",
+      "sha256": "fce6a8c836fc55d2d55158769d15ecd9fd8c369a47bbe422f5a9820f7f0657de",
+      "bytes": 591579
+    },
+    {
+      "path": "packages/client/ui-simulation/lib/client.js",
+      "sha256": "3181c2b40ffc82620e3db9c3782917d998e5d1ac3eb755684a18f74480027a7e",
+      "bytes": 391351
+    },
+    {
+      "path": "apps/web/dist/index.html",
+      "sha256": "87ef0f899eed9c96e2b0cac57fd141a8a2f1e0a5d936ea76e95e39b88015c04c",
+      "bytes": 663
+    }
+  ]
+}

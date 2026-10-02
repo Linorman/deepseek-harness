@@ -1,0 +1,144 @@
+/** Actor-free scheduling controls and safe owner observations, independent of creation receipts. */
+import type { SimTime } from '@clocky/clocky-simulation/time-types'
+import type { SimulationCheckpointId, SimulationEntityId } from '@clocky/clocky-simulation/identities'
+import type { Branded } from '@clocky/clocky-brand'
+import type { SimulationProductRunId, SimulationProductText } from './types.ts'
+
+/** Caller-retained identity of one durable native scheduling request. */
+export type SimulationProductManagementId = Branded<'SimulationProductManagementId'>
+/** Scheduling requests carry no native provider, route, actor or browser-selected revision. */
+export interface SimulationProductManageInput {
+  readonly runId: SimulationProductRunId
+  readonly managementId: SimulationProductManagementId
+  readonly phase: 'paused' | 'running'
+}
+/** Read one run's current product owner without attaching actors or scheduling work. */
+export interface SimulationProductControlInput { readonly runId: SimulationProductRunId }
+/** Read one original management result without resending its operation. */
+export interface SimulationProductManagementInput extends SimulationProductControlInput {
+  readonly managementId: SimulationProductManagementId
+}
+/** Stable remedial category; no native storage diagnostic is exposed. */
+export type SimulationProductControlReason = 'ready' | 'recovery-required' | 'checkpoint-in-progress' | 'preparation-in-progress' | 'management-in-progress'
+  | 'stalled' | 'driver-failed' | 'execution-unavailable' | 'review-required' | 'scenario-completed' | 'scenario-blocked' | 'outcome-unknown' | 'retiring'
+/** Observed permission/precondition hint; each management write checks again in the owner queue. */
+export interface SimulationProductControlAction {
+  readonly allowed: boolean
+  readonly reason: SimulationProductControlReason
+}
+/** Public immutable model/budget limits; credentials, storage and private world facts are excluded. */
+export interface SimulationProductControlBudget {
+  readonly model: { readonly provider: string; readonly name: string }
+  readonly tokensPerRequest: number
+  readonly tokensPerInterval: number
+  readonly interval: SimTime
+  readonly residentActors: number
+  readonly sharedModelLimit: number
+}
+/** Public remedy categories for maintenance; observation does not authorize a write. */
+export type SimulationProductMaintenanceReason = 'ready' | 'preparation-in-progress' | 'request-capacity' | 'recovery-required'
+  | 'retiring' | 'checkpoint-in-progress' | 'management-in-progress' | 'checkpoint-required' | 'ownership-unavailable'
+  | 'scenario-progressed' | 'ingress-capacity' | 'target-unavailable'
+/** One administrative operation's currently observed admission. */
+export interface SimulationProductMaintenanceAction { readonly allowed: boolean; readonly reason: SimulationProductMaintenanceReason }
+/** Bounded allowed targets and exact complete native input/time limits; attribution stays server-derived. */
+export interface SimulationProductAdministrationControl {
+  readonly actions: {
+    readonly checkpoint: SimulationProductMaintenanceAction
+    readonly restore: SimulationProductMaintenanceAction
+    readonly prepare: SimulationProductMaintenanceAction
+    readonly ingress: SimulationProductMaintenanceAction
+  }
+  readonly ingress: {
+    readonly maxTime: SimTime
+    readonly maxBytes: number
+    readonly targets: readonly { readonly id: SimulationEntityId; readonly name: SimulationProductText }[]
+  }
+  readonly recovery?: {
+    readonly checkpointId: SimulationCheckpointId
+    readonly publishedAt: number
+    readonly time: SimTime
+    readonly revision: number
+    readonly references: { readonly runs: number; readonly teams: number; readonly channels: number; readonly sessions: number }
+  } | undefined
+}
+/** Installed scenario identity comes only from the original trusted template, never a run name. */
+export type SimulationProductScenarioVersion = { readonly status: 'unavailable' }
+  | { readonly status: 'observed'
+    readonly templateId: SimulationProductText
+    readonly version: '1'
+    readonly driverVersion: '1'
+    /** Immutable execution mode of the retained creation, independent of the current template catalog. */
+    readonly execution: 'cognition-only' | 'automatic-tasks' }
+/** Public immutable rule/policy and clock labels; caller-owned display text remains bounded. */
+export interface SimulationProductVersionSummary {
+  readonly rulesVersion: SimulationProductText
+  readonly policyVersion: SimulationProductText
+  readonly tickUnit: SimulationProductText
+  readonly scenario: SimulationProductScenarioVersion
+}
+/** Administrative scheduling facts are independent of the native world observation and grant no actions. */
+export type SimulationProductOperationalStatus = { readonly status: 'unavailable'
+  readonly observedAt: number
+  readonly scenario: { readonly status: 'unavailable' } }
+  | { readonly status: 'observed'
+    readonly observedAt: number
+    readonly scenario: SimulationProductScenarioVersion
+    readonly owner: SimulationProductControl['owner']
+    readonly driver: SimulationProductControl['driver']
+    readonly inFlight: boolean
+    readonly stop?: SimulationProductControl['stop'] | undefined
+    readonly nextAttemptAt?: number | undefined }
+
+/** Real-time Host-wide model admission observation; run budget usage is a separate native metric. */
+export type SimulationProductModelPoolObservation = { readonly status: 'unavailable'
+  readonly clock: 'real'
+  readonly observedAt: number }
+  | { readonly status: 'observed'
+    readonly clock: 'real'
+    readonly observedAt: number
+    readonly active: number
+    readonly queued: number
+    readonly limit: number
+    readonly queueLimit: number }
+
+/** Scheduling intent, product driver and in-flight work are separate observations. */
+export interface SimulationProductControl {
+  readonly runId: SimulationProductRunId
+  readonly administration: SimulationProductAdministrationControl
+  readonly budget: SimulationProductControlBudget
+  /** Absence denotes an older protocol peer; deployed owners explicitly report observed or unavailable. */
+  readonly modelPool?: SimulationProductModelPoolObservation | undefined
+  readonly versions?: SimulationProductVersionSummary | undefined
+  readonly owner: 'held' | 'not-held'
+  readonly phase?: 'paused' | 'running' | 'stalled' | undefined
+  readonly revision?: number | undefined
+  readonly driver: 'idle' | 'scheduled' | 'advancing' | 'checkpointing' | 'waiting' | 'completed' | 'failed' | 'retiring'
+  readonly inFlight: boolean
+  readonly observedAt: number
+  readonly stop?: 'paused' | 'stalled' | 'until' | 'work-limit' | 'decision-required' | 'retry' | 'outcome-unknown'
+    | 'recipient-required' | 'recipient-busy' | 'coordination-limit' | 'resident-capacity' | 'residency-recovery-required'
+    | 'review-required' | 'completed' | 'scenario-blocked' | 'recovery-required' | undefined
+  readonly nextAttemptAt?: number | undefined
+  readonly actions: { readonly start: SimulationProductControlAction; readonly pause: SimulationProductControlAction }
+}
+/** Original durable management fact; failed native diagnostic text is withheld. */
+export interface SimulationProductManagementReceipt {
+  readonly managementId: SimulationProductManagementId
+  readonly phase: 'paused' | 'running'
+  readonly status: 'in-progress' | 'completed' | 'failed'
+  readonly startedSequence: number
+  readonly finishedSequence?: number | undefined
+  readonly failure?: 'details-withheld' | undefined
+}
+/** Returning an old completed request does not imply that the current phase equals its original target. */
+export interface SimulationProductManageResult {
+  readonly runId: SimulationProductRunId
+  readonly operation: SimulationProductManagementReceipt
+  readonly control: SimulationProductControl
+}
+/** Absence does not establish failure; queries never take execution ownership or resume inference. */
+export type SimulationProductManagementResult = {
+  readonly runId: SimulationProductRunId
+  readonly managementId: SimulationProductManagementId
+} & ({ readonly status: 'not-found' } | { readonly status: 'found'; readonly operation: SimulationProductManagementReceipt })

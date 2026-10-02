@@ -43,7 +43,7 @@ async function setup(backend: 'json' | 'sqlite', ceiling: number | undefined, ho
   await ctx.plugin(AgentRuntime)
   const starts: AgentRuntimeActivationRequest[] = []
   const stops: string[] = []
-  ctx.agentRuntimes.registerProvider({
+  ctx.agentRuntimes.registerProvider({ participantKinds: ['local-agent', 'remote-agent'] as const,
     name: 'capacity-provider', terminationMode: 'owned-process',
     async activate(request) {
       starts.push(request)

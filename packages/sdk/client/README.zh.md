@@ -2,7 +2,33 @@
 
 [English](README.md) | 中文
 
+`listSimulationRequests()` 在重新连接后发现有界原始 receipt 元数据；`retrySimulationRequest()` 只按运行和命令身份重试后端保留的原请求。两个公开接口核对返回运行、原命令、所请求 revision 和页大小，不自动遍历分页或重试，不接受替换命令 payload，并保留不可变终态 receipt。继续游标过期后须显式读取首页。
+
+`Clocky` 与 `HarnessClient` 的 `preflightSimulation()` 校验允许的创建草稿，不分配命令或运行。它返回解析后的不可变额度或安全字段问题，不预留资源。两个 SDK 接口在使用前校验输入和结果；未知原生配置会被拒绝。`maxTime` 保持精确十进制字符串；创建时给同一草稿补上新保留的命令身份，create 会复核当前部署就绪状态。
+
+失败的检查点／恢复 receipt 和检查点引用详情可包含 typed `diagnostic`，携带阶段、固定公开 code、规范对象及独立的未确认清理标记。这些字段在原结果查询中保留来源身份；原始 provider 文本、文件系统路径及任意 cause 字段会被拒绝。
+
+`retrySimulationOperation()` 为精确未知操作及观察到的尝试次数授予一次原有有界 outbox 重试额度。调用者保留原命令及原因；`getSimulationRequest()` 返回规范化的 `retryOperation` 原意图及不可变 receipt。client 核对运行／命令／kind，拒绝格式错误的原输入，不悄悄修改目标或次数。授权与查询不发布也不启动模型；显式调度执行目标对账。`not-found` 仍表示不确定。
+
+`getSimulationRunStatuses({ runIds })` 读取一次精确、有界的已授权批次。原生指标报告模拟区间费用、保留驻留槽和待处理工作；共享模型池 permit 使用真实时间，与配置预算上限分开。当前行政元数据只含可信场景版本及 owner／driver／停止／重试事实。client 按请求顺序核对每个返回 ID，观察不打开或恢复运行。
+
+`listSimulationTaskReviews()` 与 `resolveSimulationTaskReview()` 提供有界规范元数据和原场景审核命令。审核权限来自受信任模板及已认证运行所有者。client 核对运行／revision／页或原命令／kind；响应丢失后，`getSimulationRequest()` 保留精确原审核输入。参见[行政审核](../../simulation/simulation-product/README.zh.md)。
+
+`inspectSimulationSource()` 沿冻结决策的来源序号读取。searching 结果用 cursor 继续定位，found 结果用 cursor 和精确 `envelope.sequence` 继续正文。响应核对 run、decision、source、revision 与请求页大小；正文同时需要仿真来源 grant 和当前 Team 读取资格。
+
+`readSimulationRecords()` 通过 `simulation/records-list` 按精确 run、kind／sequence 和 metadata／original 模式读取，校验回显筛选、revision 与分页大小。原始 JSON 文本需要独立的整运行历史正文授权，记录数与文本分片数不同。重建记录或导出固定观察时，消费者保留原游标与策略版本。
+
+知识分区保留精确决策引用和当前受众检查，可选 `reference` 在请求、选择与结果之间核对。报告来源正文需要明确 Host 知识／来源 grant。
+
+`watchSimulation()` 以明确旧游标或零等待探测进行一次有界失效等待；不返回正文，也不启动执行。reset 使旧策略／正文响应失效。client 不自动启动周期观察。
+
+`Clocky` 和 `HarnessClient` 提供产品元数据、原创建／准备请求，以及 `getSimulationControl()`、`manageSimulation()`、`getSimulationManagement()`、`checkpointSimulation()`、`restoreSimulation()`、`ingressSimulation()` 和 `getSimulationIngress()`。调用者在结果不确定时保留原命令、管理或输入 ID 与 payload；`not-found` 既不证明失败，也不创建另一个身份。创建准备 paused 运行，不推理。旧调度重试返回原意图，不撤销后来暂停；完整检查点／恢复保留暂停 owner，恢复验证当前后缀，不回滚也不推理。输入分配与消费是独立事实。client 校验公开 DTO 及精确选择／revision、命令类型、恢复目标、调度 phase 和输入目标／时间。这些方法要求[产品组装](../../simulation/simulation-product/README.zh.md)，不会自动重试命令或遍历分页。`inspectSimulationObject()` 支持独立分页的实体关系与冻结决策上下文。正文权限来自 Host，来源引用不授予 Team／Session 访问，该上下文视图不是完整模型请求。
+
+调用 `updateTeamTask()` 或 `HarnessTeam.updateTask()` 时保留 `commandId` 与原字段。已受理重试返回原 receipt 和当前任务；拒绝重试在条件改变后仍保留原失败。`getTeamTaskUpdateResult()` 与 `HarnessTeam.updateResult()` 只读取受理、终态拒绝或当前未找到。client 对每种结果核对精确 Team／task／command 身份。`not-found` 仍将原操作保留为未确定。
+
 以子进程方式驱动 Clocky 运行时、走 stdio JSON-RPC 的 TypeScript 客户端 SDK——[Python SDK](../../../python/README.zh.md)（`clocky`）的设计孪生，共享同一个运行时对端、协议与分层：`Clocky` 是高层自有运行 API，`HarnessClient` 是低层协议客户端。包（package）根枚举消费方接口：两层客户端、面向调用方的类型和 `JsonRpcResponseError`；源模块、规范化辅助函数与订阅投递机制不供消费方导入。纯库：不在任何 Cordis 上下文注册；它所 spawn 的运行时进程是一个完整 harness，其组成由自己的 `cordis.yml` 决定。
+
+`listTeams()` 读取一页已授权安全目录，不含扫描计数或 grant 正文。加密 `nextCursor` 仅保留在当前主体代际内；过期续页要求明确读取首页。`getTeamSelection()` 报告成员或父团队只读状态；读取不启动或恢复 Team。
 
 与 Python SDK 不同，启动规格完全显式（`command`/`args`）：本包面向仓库近旁的 TypeScript 消费方，包括 [`clocky-subagent-clocky-sdk`](../../compat/subagent-clocky-sdk/README.zh.md) 后端和自动化；它们知道自己要启动哪个运行时。捆绑运行时解析（寻找打包可执行文件）仍归 Python 发行版负责。
 
@@ -10,6 +36,9 @@
 `Clocky` 与 `HarnessClient` 提供 `inboxRead({ afterCursor?, limit? })`、`inboxWatch(...)` 和 `inboxAcknowledge({ throughCursor })`。这些方法选择初始化时已认证 principal 的持久 final inbox，不接受 caller identity。读取省略 cursor 时从共享 display position 继续；display acknowledgement 永不创建 channel receipt。[Inbox Consumer](../../team/team-human-client/README.zh.md) 拥有持久化、权限、限制与当前缺口。
 
 Team-list continuation 是 opaque string，`-1` 表示新扫描。`scanned` 表示 discovery 工作量；即使 `items` 为空，也应根据 `nextCursor` 继续。遇到 `TEAM_DISCOVERY_CURSOR_EXPIRED` 时开启新扫描。Member、task 和 channel cursor 仍为数值。
+
+
+`listSimulationTasks()` 读取有界的规范运行任务控制。`cancelSimulationTask()` 固定来源操作、任务 revision、命令 ID 与精确 attempt ID；显式 `null` 要求当前没有活动 attempt lease。客户端拒绝其他运行、命令或回执类型。`getSimulationRequest()` 仅为 `cancel-task` 返回原始 `cancellation`；查询与精确重试不分配新命令。这些方法不授予通用 Team 写权限，也不启动推理。
 
 ## Clocky
 

@@ -38,6 +38,8 @@ export async function ensureResident(run: SimulationRun, connection: SimulationT
     if (candidate === undefined) throw new Error('Simulation eviction candidate does not exist')
     const actor = local(candidateId)
     if (candidate.writer?.phase !== 'active' || actor?.status !== 'idle'
+      || Object.values(state.taskExecutions ?? {}).some(value => value.request.entityId === candidateId
+        && value.retired === undefined && value.task?.executor?.outcome === undefined)
       || Object.values(state.decisions).some(decision => decision.entityId === candidateId
         && (decision.status === 'open' || decision.status === 'submitted'))) continue
     await connection.hibernate(candidateId)

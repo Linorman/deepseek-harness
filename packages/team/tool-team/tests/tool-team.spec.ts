@@ -351,6 +351,7 @@ function acceptedMessageEnvelope(
 /** Build the current running lease used by a task Agent report. */
 function runningTask(teamId: string, participantId: string, activationId: string): TeamTaskSnapshot {
   return teamTaskSnapshotSchema.parse({
+    createdAt: 0,
     id: 'task-tool-team',
     teamId,
     revision: 3,

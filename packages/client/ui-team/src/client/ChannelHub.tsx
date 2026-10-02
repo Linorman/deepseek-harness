@@ -1,3 +1,5 @@
+import { MemberReference } from './MemberReference.tsx'
+import { referencedMemberName } from './member-labels.ts'
 /** Dedicated channel navigation, readable messages, inline input, and on-demand diagnostics. */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button, Input, Menu, IconCloseOutline16, IconEllipsisOutline16 } from '@clocky/clocky-client-ui-primitives'
@@ -11,9 +13,10 @@ import { ChannelSummaryDialog } from './ChannelSummaryDialog.tsx'
 import { TeamManagementDialog, type TeamManagementTarget } from './TeamManagementDialog.tsx'
 import css from './ChannelHub.module.css'
 
-type ChannelHubProps = Pick<TeamPageProps, 'maxDraftBytes' | 'translate' | 'channelState' | 'channelListState' | 'readChannels'
+type ChannelHubProps = Pick<TeamPageProps, 'identities' | 'maxDraftBytes' | 'translate' | 'channelState' | 'channelListState' | 'readChannels'
   | 'readChannel' | 'manage' | 'readChannelAttachment' | 'renderSlot' | 'channelCatalog' | 'readChannelCatalog'
   | 'acknowledgeChannel' | 'closeChannelView'> & {
+    openMember?: ((id: import('@clocky/clocky-client-runtime/client').ParticipantId) => void) | undefined
     state: TeamLoadedContext
     viewState: TeamViewState
     updateView: (patch: Partial<TeamViewState>) => void
@@ -26,7 +29,8 @@ type ChannelHubProps = Pick<TeamPageProps, 'maxDraftBytes' | 'translate' | 'chan
  * @param props - authoritative channel state and existing authenticated read/write operations.
  * @returns the channel workspace, including protocol-aware inline input.
  */
-export function ChannelHub({ maxDraftBytes, state, translate: t, channelState, channelListState, readChannels, readChannel, manage,
+export function ChannelHub({ openMember, identities, maxDraftBytes, state, translate: t, channelState, channelListState,
+  readChannels, readChannel, manage,
   readChannelAttachment,
   renderSlot,
   channelCatalog,
@@ -100,13 +104,14 @@ export function ChannelHub({ maxDraftBytes, state, translate: t, channelState, c
   }, [team.id, readChannels, readChannelCatalog])
   useEffect(() => () => { request.current?.abort(); closeChannelView?.() }, [closeChannelView])
   useEffect(() => {
-    if (selectedId === undefined || readChannel === undefined || request.current !== undefined) return
+    if (selectedId === undefined || readChannel === undefined || request.current !== undefined
+      || loading || page !== undefined || channelState?.error !== undefined) return
     const controller = new AbortController()
     request.current = controller
     void readChannel(selectedId, -1, controller.signal).catch((reason: unknown) => {
       if (!controller.signal.aborted) report(reason)
     })
-  }, [selectedId, readChannel])
+  }, [selectedId, readChannel, loading, page, channelState?.error])
   useLayoutEffect(() => {
     const element = messageScroll.current
     if (element === null) return
@@ -123,8 +128,9 @@ export function ChannelHub({ maxDraftBytes, state, translate: t, channelState, c
     }
     if (pinnedToLatest.current) element.scrollTop = element.scrollHeight
   }, [selectedId, page?.records.length, channelState?.startCursor])
-  const name = (id: string) => participants.find(participant => participant.id === id)?.displayName ?? t('channel.unknownParticipant')
-  const title = channel === undefined ? t('channelHub.select') : channel.manifest.participants.map(endpoint => name(endpoint.id)).join(' · ')
+  const name = (id: string) => referencedMemberName(id, participants.find(participant => participant.id === id)?.displayName
+    ?? t('identity.reference', { id }), identities, t)
+  const title = channel === undefined ? t('workspace.channels') : channel.manifest.participants.map(endpoint => name(endpoint.id)).join(' · ')
   const menu: MenuEntry[] = [{ id: 'refresh', label: t('detail.refresh'), disabled: loading }]
   if (canManage && summaryCapabilities !== undefined && page?.records.some(record => record.type === 'channel/envelope')) {
     menu.push({ id: 'summary', label: t('channel.summarize'), disabled: loading || channelState?.disconnected === true })
@@ -203,7 +209,8 @@ export function ChannelHub({ maxDraftBytes, state, translate: t, channelState, c
         {page?.records.filter(record => record.type === 'channel/envelope').map(record => <ChannelEnvelope key={record.envelope.id}
           record={record} sender={name(record.envelope.senderId)} richContent={direct} renderSlot={renderSlot}
           readAttachment={readChannelAttachment} translate={t} />)}
-        {page !== undefined && page.records.length === 0 && <p className={css.empty}>{t('detail.channelEmpty')}</p>}
+        {page !== undefined && !loading && !page.records.some(record => record.type === 'channel/envelope')
+          && summaries.length === 0 && <p className={css.empty}>{t('channelHub.noMessages')}</p>}
         {selectedId === undefined && <p className={css.empty}>{t('channelHub.select')}</p>}
         {channelState?.startCursor !== undefined && channelState.startCursor >= 0 && selectedId !== undefined && <Button disabled={loading}
           onClick={() => { void load(selectedId, -1) }}>{t('detail.firstPage')}</Button>}
@@ -225,6 +232,12 @@ export function ChannelHub({ maxDraftBytes, state, translate: t, channelState, c
         admission={admission} translate={t} manage={manage} refreshChannel={refresh} onClose={() => { setManagementTarget(undefined) }} />}
     </div>
     {detailsOpen && <aside className={css.details} aria-label={t('channelHub.details')}>
+      {channel !== undefined && <><h4>{t('detail.participants')}</h4><ul>
+        {channel.manifest.participants.map(member => <li key={member.id}>
+          <MemberReference id={member.id} loadedName={participants.find(item => item.id === member.id)?.displayName ?? t('identity.reference', { id: member.id })}
+            identities={identities} inspect={openMember} translate={t} />
+        </li>)}
+      </ul></>}
       <div className={css.listHeader}><h2>{t('channelHub.details')}</h2><Button size="sm" aria-label={t('channelHub.closeDetails')}
         onClick={() => { setDetailsOpen(false) }}><IconCloseOutline16 /></Button></div>
       {admission !== undefined && <section aria-label={t('channel.endpointStatus')}>

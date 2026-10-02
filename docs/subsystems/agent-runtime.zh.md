@@ -4,6 +4,8 @@
 
 `@clocky/clocky-agent-runtime`定义了位于 `ctx.agentRuntimes` 的可复用 activation 注册表。Team／Host 会在调用前解析稳定 Participant 身份、Session 身份、seed 模式和 Agent 组合；已注册的 placement provider 只拥有由此得到的活动 activation epoch。
 
+`AgentRuntimeProvider.participantKinds` 声明接受的 local／remote 成员机制。Registry 在启动前执行它，Team 就绪度读取同一字段。确定的类型拒绝允许 controller 释放 startup reservation，不必将其当成结果未知的 provider 启动。
+
 ## 所有权
 
 `AgentRuntimeActivationRequest`携带 Team、完整 Participant 快照、已保留的 Session id、fresh/fork/resume seed 模式、Agent 选项、可选本地 execution root 和取消信号。fork seed 包含源 Session id 和复制事件前缀。`ActivationHandle`公开其不可变 `ActivationSnapshot`、可选的精确本地 Agent、异步 health projection、之后的 status 订阅、中断和静默释放。其返回的 Team 与 Participant id 必须等于请求；注册表会在拒绝前释放不匹配的 handle，并为初始与之后有效的 status snapshot 发布 `agent-runtime/activation-changed`。

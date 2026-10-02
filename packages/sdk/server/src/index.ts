@@ -25,6 +25,10 @@ export const inject = ['agents', 'teamRuns', 'productPrincipals']
 
 /** JSON-RPC deployment config plus runtime-only test hooks. */
 export interface JsonRpcConfig {
+  /** Maximum notifications waiting for authority or transport drain. @default 4096 */
+  maxPendingNotificationFrames?: number
+  /** Maximum serialized notification bytes awaiting publication. @default 8388608 */
+  maxPendingNotificationBytes?: number
   /** Product-principal provider that authenticates one SDK connection handshake. */
   productPrincipalProvider?: string
   /** Transport input override; production uses `process.stdin`. */
@@ -36,6 +40,8 @@ export interface JsonRpcConfig {
 }
 
 export const Config: Schema<JsonRpcConfig> = Schema.object({
+  maxPendingNotificationFrames: Schema.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(4096),
+  maxPendingNotificationBytes: Schema.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(8 * 1024 * 1024),
   productPrincipalProvider: Schema.string().min(1).pattern(/^\S(?:.*\S)?$/).default('local'),
 })
 
@@ -57,16 +63,27 @@ export function apply(ctx: Context, config: JsonRpcConfig): void {
   const exit = config.exit ?? ((code: number): void => { process.exit(code) })
 
   const transport = new JsonRpcLineTransport(input, output)
-  const server = new HarnessSdkJsonRpcServer(ctx, transport, config.productPrincipalProvider ?? 'local')
+  const server = new HarnessSdkJsonRpcServer(ctx, transport, config.productPrincipalProvider ?? 'local', {
+    ...config.maxPendingNotificationFrames === undefined ? {} : { maxPendingFrames: config.maxPendingNotificationFrames },
+    ...config.maxPendingNotificationBytes === undefined ? {} : { maxPendingBytes: config.maxPendingNotificationBytes },
+    drain: () => transport.flush(),
+    onFailure: (error) => {
+      console.error(error.message)
+      transport.close()
+      void disposeAndExit(1)
+    },
+  })
 
   // Share one exit task so racing shutdown requests cannot dispose the root or
   // exit the process more than once.
   let exitTask: Promise<void> | undefined
-  const disposeAndExit = (): Promise<void> => {
+  let exitCode = 0
+  const disposeAndExit = (requestedCode = 0): Promise<void> => {
+    exitCode = Math.max(exitCode, requestedCode)
     exitTask ??= (async () => {
-      await Promise.allSettled([Promise.resolve().then(() => transport.flush())])
+      if (exitCode === 0) await Promise.allSettled([Promise.resolve().then(() => transport.flush())])
       await Promise.allSettled([Promise.resolve().then(() => rootFiber.dispose())])
-      exit(0)
+      exit(exitCode)
     })()
     return exitTask
   }

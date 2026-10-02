@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "environment": {
+    "CLOCKY_CLIENT_COMMIT_HASH": "dbfb6e2"
+  },
+  "artifacts": {
+    "fileCount": 197,
+    "sha256": "481bf72d11e8b0b32f9761fcaaf8fc0c7b02b562182795b405112f3b15cab2d5"
+  }
+}
